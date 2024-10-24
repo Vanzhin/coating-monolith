@@ -1,0 +1,17 @@
+deptrac:
+  paths:
+    - ./src
+  layers:
+    - name: Shared
+      collectors:
+        - type: directory
+          regex: ./src/Shared/.*
+    - name: Users
+      collectors:
+        - type: directory
+          regex: ./src/Users/.*
+
+  ruleset:
+    Users:
+      - Shared
+    Shared: ~

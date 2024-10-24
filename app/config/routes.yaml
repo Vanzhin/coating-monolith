@@ -1,0 +1,20 @@
+controllers:
+    resource:
+        path: ../src/Shared/Infrastructure/Controller/
+        namespace: App\Shared\Infrastructure\Controller
+    type: attribute
+
+kernel:
+    resource: ../src/Shared/Infrastructure/Kernel.php
+    type: attribute
+
+api_refresh_token:
+    path: /api/auth/token/refresh
+
+api_login_check:
+    path: /api/auth/token/login
+
+users:
+    resource: ../src/Users/Infrastructure/Controller
+    type: attribute
+

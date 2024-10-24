@@ -1,0 +1,7 @@
+services:
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+  App\Tests\Resource\Fixtures\:
+    resource: '%kernel.project_dir%/tests/Resource/Fixtures/*'
+    tags:
+      - { "name": 'doctrine.fixture.orm' }
