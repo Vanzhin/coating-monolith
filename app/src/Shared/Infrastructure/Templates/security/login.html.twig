@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} Вход{% endblock %}
+
+{% block body %}
+    <div class="container form-control w-50 my-4">
+        <form method="post" action="{{ path('app_login') }}" class="form-signin w-100 m-auto">
+            {% if error %}
+                <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+            {% endif %}
+
+            {% if app.user %}
+                <div class="mb-3">
+                    You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
+                </div>
+            {% else %}
+
+            {% endif %}
+
+            <h1 class="h3 mb-3 font-weight-normal">Войти</h1>
+            <label for="inputEmail">Email</label>
+            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control"
+                   autocomplete="email" required autofocus placeholder="Укажите почту...">
+            <label for="inputPassword">Пароль</label>
+            <input type="password" name="password" id="inputPassword" class="form-control"
+                   autocomplete="current-password" required placeholder="Введите пароль...">
+
+            <input type="hidden" name="_csrf_token"
+                   value="{{ csrf_token('authenticate') }}"
+            >
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-lg btn-primary mt-2" type="submit">
+                    Вперед
+                </button>
+{#                <div>#}
+{#                    Впервые на сайте? <a href="{{ path('app_register') }}">Регистрация</a>#}
+{#                </div>#}
+{#                <div>#}
+{#                    Регистрация по ссылке <a href="{{ path('app_login_link') }}">Перейти</a>#}
+{#                </div>#}
+            </div>
+
+        </form>
+
+    </div>
+{% endblock %}

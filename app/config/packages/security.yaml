@@ -31,6 +31,22 @@ security:
       stateless: true
       jwt: ~
 
+    dev:
+      pattern: ^/(_(profiler|wdt)|css|images|js)/
+      security: false
+
+    main:
+      lazy: true
+      pattern:
+      provider: users
+      logout:
+        path: app_logout
+      custom_authenticator: App\Shared\Application\Security\LoginFormAuthenticator
+      remember_me:
+        secret: '%kernel.secret%'
+        always_remember_me: true
+      
+
   access_control:
     - { path: ^/api/auth/token/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/auth/token/refresh, roles: PUBLIC_ACCESS }

@@ -11,4 +11,7 @@ interface UserRepositoryInterface
     public function add(User $user): void;
 
     public function getByUlid(string $ulid): ?User;
+
+    public function getByEmail(string $email): ?User;
+
 }

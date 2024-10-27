@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} LoginLink{% endblock %}
+
+{% block body %}
+    <div class="container form-control w-50 my-4">
+        <h3>Не получили письмо? Попробуйте еще раз.</h3>
+        <a href="{{ path('app_login_link', {'savedEmail' : savedEmail}) }}" class="btn btn-lg btn-primary mt-2">
+            Повторить
+        </a>
+    </div>
+{% endblock %}

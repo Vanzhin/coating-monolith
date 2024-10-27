@@ -1,0 +1,13 @@
+twig:
+  default_path: '%kernel.project_dir%/src/Shared/Infrastructure/Templates'
+  file_name_pattern: '*.twig'
+  globals:
+    app_name: '%env(APP_NAME)%'
+  form_themes: [ 'bootstrap_5_horizontal_layout.html.twig' ]
+
+  paths:
+    'assets/styles': styles
+
+when@test:
+  twig:
+    strict_variables: true

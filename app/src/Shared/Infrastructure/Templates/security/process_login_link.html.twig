@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} LoginLink{% endblock %}
+
+{% block body %}
+    <div class="container form-control w-50 my-4">
+        <form method="POST" action="{{ path('app_login_check') }}" class="form-signin w-100 m-auto">
+            {% if app.user %}
+                <div class="mb-3">
+                    You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
+                </div>
+            {% endif %}
+
+            <h1 class="h3 mb-3 font-weight-normal">Hi! You are about to login to ...</h1>
+            <input type="hidden" name="expires" value="{{ expires }}">
+            <input type="hidden" name="user" value="{{ user }}">
+            <input type="hidden" name="hash" value="{{ hash }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-lg btn-primary mt-2" type="submit">
+                    Sign in
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

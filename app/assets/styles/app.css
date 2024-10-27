@@ -1,0 +1,15 @@
+@import "~bootstrap";
+@import "bootstrap-icons.css";
+@import "blog.css";
+@import "admin/dashboard.css";
+@import "fonts.css";
+/*@import "signin.css";*/
+
+
+.wrapper{
+  max-width: 1110px;
+  margin: 0 auto;
+}
+.fon{
+  background-color: var(--color-fon);
+}
