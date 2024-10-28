@@ -1,13 +1,8 @@
 version: '3.9'
 
-networks:
-  app-network:
-    driver: bridge
-
 services:
 
   manager_php-fpm:
-    domainname: ${DOMAIN}
     hostname: ${DOMAIN}
     build:
       context: ./php-fpm
@@ -28,7 +23,6 @@ services:
     working_dir: /app
 
   manager_supervisor:
-    domainname: ${DOMAIN}
     hostname: ${DOMAIN}
     working_dir: /app
     build:
@@ -49,7 +43,6 @@ services:
       - app-network
 
   manager_php-cli:
-    domainname: ${DOMAIN}
     hostname: ${DOMAIN}
     working_dir: /app
     build:
@@ -67,7 +60,6 @@ services:
       - app-network
 
   manager_nginx:
-    domainname: ${DOMAIN}
     hostname: ${DOMAIN}
     image: nginx:1.25.4
     ports:
@@ -84,13 +76,14 @@ services:
       - ./nginx/certs:/etc/nginx/ssl
 
   manager_redis:
-    domainname: ${DOMAIN}
     hostname: ${DOMAIN}
     working_dir: /app
     image: redis:7.2.1
     restart: always
     volumes:
       - ./redis/data/:/data:rw
+    networks:
+      - app-network
 
   manager_db:
     image: postgres:alpine
@@ -113,8 +106,25 @@ services:
     networks:
       - app-network
 
+  mailhog:
+    container_name: mailhog
+    image: mailhog/mailhog:v1.0.1
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+    depends_on:
+      - manager_php-fpm
+      - manager_db
+    networks:
+      - app-network
+
 volumes:
   nginx_log:
   app_log:
   db:
     driver: local
+networks:
+  app-network:
+    driver: bridge

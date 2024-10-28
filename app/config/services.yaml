@@ -40,5 +40,16 @@ services:
   Lexik\Bundle\JWTAuthenticationBundle\Services\KeyLoader\OpenSSLKeyLoader:
     $publicKey: '%env(resolve:JWT_PUBLIC_KEY)%'
 
+  App\Shared\Domain\Service\RedisService:
+    arguments:
+      - '@app.service_redis_provider'
+
+  app.service_redis_provider:
+    class: \Redis
+    factory: [ 'Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection' ]
+    arguments:
+      - 'redis://%env(resolve:REDIS_HOST)%'
+      - { retry_interval: 2, timeout: 10 }
+
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones

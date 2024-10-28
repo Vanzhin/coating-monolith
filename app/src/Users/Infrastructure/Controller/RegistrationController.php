@@ -40,7 +40,7 @@ class RegistrationController extends AbstractController
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
 
-            if ($exist = $this->userRepository->getByEmail($email)){
+            if ($this->userRepository->getByEmail($email)){
                 $this->addFlash('register_failure', 'User already exists!');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),

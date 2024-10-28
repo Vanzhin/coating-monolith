@@ -17,7 +17,7 @@
 
             {% endif %}
 
-            <h1 class="h3 mb-3 font-weight-normal">Войти</h1>
+            <h1 class="h3 mb-3 font-weight-normal">Вход</h1>
             <label for="inputEmail">Email</label>
             <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control"
                    autocomplete="email" required autofocus placeholder="Укажите почту...">
@@ -32,12 +32,12 @@
                 <button class="btn btn-lg btn-primary mt-2" type="submit">
                     Вперед
                 </button>
-{#                <div>#}
-{#                    Впервые на сайте? <a href="{{ path('app_register') }}">Регистрация</a>#}
-{#                </div>#}
-{#                <div>#}
-{#                    Регистрация по ссылке <a href="{{ path('app_login_link') }}">Перейти</a>#}
-{#                </div>#}
+                <div>
+                    Впервые на сайте? <a href="{{ path('app_sign_up') }}">Регистрация</a>
+                </div>
+                <div>
+                    Вход по ссылке <a href="{{ path('app_login_link') }}">Перейти</a>
+                </div>
             </div>
 
         </form>
