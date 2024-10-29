@@ -1,0 +1,7 @@
+{% extends 'emails/base.html.twig' %}
+{% block title %} Уведомление о вашем запросе на {{ app_name }} {% endblock %}
+{% block body %}
+    <p>Приветствуем Вас!</p>
+    <p>Информация о Вашем запросе отправлена администратору {{ app_name }}.</p>
+    <p>Спасибо за использование сервиса {{ app_name }}.</p>
+{% endblock %}

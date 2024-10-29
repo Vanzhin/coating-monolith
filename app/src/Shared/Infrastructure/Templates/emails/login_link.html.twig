@@ -1,0 +1,10 @@
+{% extends 'emails/base.html.twig' %}
+{% block title %} Письмо содержит ссылку для авторизации на  {{ app_name }} {% endblock %}
+{% block body %}
+    <p>Приветствуем Вас, Пользователь!</p>
+    <p>Это письмо содержит ссылку для авторизации. Ссылка будет активной пару минут.</p>
+    <p class="button">
+        <a class="text-no-decoration text-cornflowerblue" href="{{ uri }}">Авторизоваться</a>
+    </p>
+
+{% endblock %}

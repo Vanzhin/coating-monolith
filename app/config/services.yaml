@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
   app.name: '%env(APP_NAME)%'
+  app.default_from_email: '%env(DEFAULT_FROM_ADDR)%'
+  app.default_from_name: '%env(DEFAULT_FROM_NAME)%'
 
 
 services:
@@ -17,6 +19,18 @@ services:
   # this creates a service per class whose id is the fully-qualified class name
   App\:
     resource: '../src/'
+  _instanceof:
+    App\Shared\Application\Command\CommandHandlerInterface:
+      tags:
+        - { name: messenger.message_handler, bus: command.bus }
+
+    App\Shared\Application\Query\QueryHandlerInterface:
+      tags:
+        - { name: messenger.message_handler, bus: query.bus }
+
+    App\Shared\Application\Event\EventHandlerInterface:
+      tags:
+        - { name: messenger.message_handler, bus: event.bus }
 
   App\*\Domain\Factory\:
     namespace: App\
@@ -50,6 +64,12 @@ services:
     arguments:
       - 'redis://%env(resolve:REDIS_HOST)%'
       - { retry_interval: 2, timeout: 10 }
+
+  App\Shared\Domain\Service\Mailer:
+    arguments:
+      $appName: '%app.name%'
+      $defaultFromEmail: '%app.default_from_email%'
+      $defaultFromName: '%app.default_from_name%'
 
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones

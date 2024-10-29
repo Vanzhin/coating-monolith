@@ -7,6 +7,7 @@
     "php": ">=8.2",
     "ext-ctype": "*",
     "ext-iconv": "*",
+    "ext-redis": "*",
     "doctrine/dbal": "^3",
     "doctrine/doctrine-bundle": "^2.12",
     "doctrine/doctrine-migrations-bundle": "^3.3",
@@ -19,16 +20,18 @@
     "symfony/flex": "^2",
     "symfony/form": "7.0.*",
     "symfony/framework-bundle": "7.0.*",
+    "symfony/mailer": "7.0.*",
+    "symfony/messenger": "7.0.*",
     "symfony/runtime": "7.0.*",
     "symfony/twig-bundle": "7.0.*",
     "symfony/uid": "7.0.*",
     "symfony/validator": "7.0.*",
     "symfony/webpack-encore-bundle": "^2.2",
     "symfony/yaml": "7.0.*",
+    "twig/cssinliner-extra": "^3.13",
     "twig/extra-bundle": "^2.12|^3.0",
     "twig/twig": "^2.12|^3.0",
-    "webmozart/assert": "^1.11",
-    "ext-redis": "*"
+    "webmozart/assert": "^1.11"
   },
   "require-dev": {
     "dama/doctrine-test-bundle": "^8.0",
