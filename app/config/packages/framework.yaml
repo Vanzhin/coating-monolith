@@ -11,7 +11,9 @@ framework:
 
     #esi: true
     #fragments: true
-
+when@prod:
+    webpack_encore:
+        cache: true
 when@test:
     framework:
         test: true

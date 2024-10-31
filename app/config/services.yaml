@@ -71,5 +71,16 @@ services:
       $defaultFromEmail: '%app.default_from_email%'
       $defaultFromName: '%app.default_from_name%'
 
+  # Telegram
+  App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:
+    tags:
+      - { name: monolog.processor, channel: 'coating' }
+  telegram_handler:
+    class: App\Shared\Infrastructure\Log\TelegramLogHandler
+    arguments:
+      - '%env(LOG_TELEGRAM_BOT_KEY)%'
+      - '%env(LOG_TELEGRAM_CHANNEL)%'
+  # Telegram
+
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones
