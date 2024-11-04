@@ -27,11 +27,11 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
     public function authenticate(Request $request): Passport
     {
-        $email = $request->request->get('email',);
+        $email = $request->request->get('email');
 
         return new Passport(
             new UserBadge($email),
-            new PasswordCredentials($request->request->get('password', )),
+            new PasswordCredentials($request->request->get('password')),
             [
                 new CsrfTokenBadge('authenticate', $request->request->get('_csrf_token')),
                 new RememberMeBadge(),
@@ -46,9 +46,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         }
 
         // For example:
-        if (in_array('ROLE_ADMIN', $token->getUser()->getRoles())){
-            return new RedirectResponse($this->urlGenerator->generate('app_admin_index'));
-        }
+//        if (in_array('ROLE_ADMIN', $token->getUser()->getRoles())){
+//            return new RedirectResponse($this->urlGenerator->generate('app_admin_index'));
+//        }
         return new RedirectResponse($this->urlGenerator->generate('app_cabinet'));
     }
 

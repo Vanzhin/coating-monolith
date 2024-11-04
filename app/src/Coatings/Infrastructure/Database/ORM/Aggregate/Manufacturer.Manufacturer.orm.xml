@@ -1,0 +1,17 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer" table="coatings_manufacturer">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="title" type="string" length="50" unique="true"/>
+        <field name="description" type="string" length="750" nullable="true">
+        </field>
+        <one-to-many field="coatings" target-entity="App\Coatings\Domain\Aggregate\Coating\Coating"
+                     mapped-by="manufacturer"/>
+    </entity>
+
+</doctrine-mapping>

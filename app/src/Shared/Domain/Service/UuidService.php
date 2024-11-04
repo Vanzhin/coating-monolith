@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Service;
 
-use Symfony\Component\Uid\Ulid;
+use Symfony\Component\Uid\Uuid;
 
-class UlidService
+class UuidService
 {
     public static function generate(): string
     {
-        return Ulid::generate();
+        return Uuid::v4()->toRfc4122();
     }
 }

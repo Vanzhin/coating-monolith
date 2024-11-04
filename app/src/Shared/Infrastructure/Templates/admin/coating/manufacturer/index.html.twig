@@ -1,0 +1,100 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Производители{% endblock %}
+
+{% block body %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
+        <div class="d-flex flex-md-row align-items-center ">
+            <h2 class="text-body-emphasis">Производители</h2>
+            <div class="btn-toolbar p-2 mb-2 mb-md-0">
+                <div class="btn-group me-2">
+                    <a href="{{ path('app_coating_manufacturer_create') }}" type="button"
+                       class="btn  btn-outline-success">
+                        <i class="bi bi-plus-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
+            <div class="list-group w-100">
+                {% for manufacturer in result.manufacturers %}
+                    <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                        <div class="d-flex gap-2 w-100 justify-content-between">
+                            <div>
+                                <h6 class="mb-0">{{ manufacturer.title }}</h6>
+                                <p class="mb-0 opacity-75">{{ manufacturer.description }}</p>
+                            </div>
+                            <div class="d-flex gap-2 mb-3">
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {#         +page: 1
+    +perPage: 10
+    +total: 2
+        #}
+        <div class=" p-4 gap-4 py-md-5 align-items-center">
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item">
+                        <a href="#" class="page-link {% if result.pager.page == 1 %} disabled {% endif %}"
+                           aria-label="Previous">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                    </li>
+{#                    todo доработать пагинатор и вынести в компонент#}
+                    {% for i in 1 .. result.pager.total / result.pager.perPage%}
+                        <li class="page-item {% if result.pager.page == loop.index %} active {% endif %}"><a class="page-link" href="#">{{ loop.index }}</a></li>
+                    {% endfor %}
+                    <li class="page-item">
+                        <a class="page-link {% if result.pager.page * result.pager.perPage >= result.pager.total %} disabled {% endif %}"
+                           href="#" aria-label="Next">
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+    {#    <div class="list-group"> #}
+    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
+    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
+    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
+    {#                <div> #}
+    {#                    <h6 class="mb-0">List group item heading</h6> #}
+    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph.</p> #}
+    {#                </div> #}
+    {#                <small class="opacity-50 text-nowrap">now</small> #}
+    {#            </div> #}
+    {#        </a> #}
+    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
+    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
+    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
+    {#                <div> #}
+    {#                    <h6 class="mb-0">Another title here</h6> #}
+    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph that goes a little longer so it wraps to a new line.</p> #}
+    {#                </div> #}
+    {#                <small class="opacity-50 text-nowrap">3d</small> #}
+    {#            </div> #}
+    {#        </a> #}
+    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
+    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
+    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
+    {#                <div> #}
+    {#                    <h6 class="mb-0">Third heading</h6> #}
+    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph.</p> #}
+    {#                </div> #}
+    {#                <small class="opacity-50 text-nowrap">1w</small> #}
+    {#            </div> #}
+    {#        </a> #}
+    {#    </div> #}
+{% endblock %}

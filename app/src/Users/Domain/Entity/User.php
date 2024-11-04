@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Domain\Entity;
 
 use App\Shared\Domain\Security\AuthUserInterface;
-use App\Shared\Domain\Service\UlidService;
+use App\Shared\Domain\Service\UuidService;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 
 class User implements AuthUserInterface
@@ -19,8 +19,9 @@ class User implements AuthUserInterface
 
     public function __construct(
         private readonly string $email,
-    ) {
-        $this->ulid = UlidService::generate();
+    )
+    {
+        $this->ulid = UuidService::generate();
     }
 
     public function getUlid(): string

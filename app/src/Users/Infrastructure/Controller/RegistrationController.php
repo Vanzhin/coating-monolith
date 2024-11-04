@@ -25,9 +25,7 @@ class RegistrationController extends AbstractController
     }
 
     #[Route('/sign-up', name: 'app_sign_up')]
-    public function register(Request $request,
-
-    ): Response
+    public function register(Request $request): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_cabinet');
@@ -40,7 +38,7 @@ class RegistrationController extends AbstractController
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
 
-            if ($this->userRepository->getByEmail($email)){
+            if ($this->userRepository->getByEmail($email)) {
                 $this->addFlash('register_failure', 'User already exists!');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),

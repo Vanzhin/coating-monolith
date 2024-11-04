@@ -20,6 +20,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Users/Infrastructure/Database/ORM'
                 prefix: 'App\Users\Domain\Entity'
                 alias: Users
+            Coatings:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Coatings/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Coatings\Domain\Aggregate'
+                alias: Coatings
 
 #            App:
 #                is_bundle: false
