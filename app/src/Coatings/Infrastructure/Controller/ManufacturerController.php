@@ -50,14 +50,15 @@ class ManufacturerController extends AbstractController
                 $command = new CreateManufacturerCommand($title, $description);
                 $this->commandBus->execute($command);
                 $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $title));
-                return $this->render('admin/coating/manufacturer/index.html.twig', compact('error'));
+
+                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
                 return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
             }
         }
-        return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
 
+        return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
     }
 
 }
