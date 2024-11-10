@@ -13,7 +13,8 @@ interface ManufacturerRepositoryInterface
 
     public function findOneByTitle(string $title): ?Manufacturer;
 
-    public function findByFilter(ManufacturersFilter $filter): PaginationResult;
+    public function findOneById(string $manufacturerId): ?Manufacturer;
 
+    public function findByFilter(ManufacturersFilter $filter): PaginationResult;
 
 }

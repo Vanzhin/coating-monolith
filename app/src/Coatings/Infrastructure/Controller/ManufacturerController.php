@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Controller;
 
 use App\Coatings\Application\UseCase\Command\CreateManufacturer\CreateManufacturerCommand;
+use App\Coatings\Application\UseCase\Command\UpdateManufacturer\UpdateManufacturerCommand;
+use App\Coatings\Application\UseCase\Query\GetManufacturer\GetManufacturerQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -43,6 +45,61 @@ class ManufacturerController extends AbstractController
         $title = null;
         $description = null;
         if ($request->isMethod(Request::METHOD_POST)) {
+            try {
+                $title = $request->getPayload()->get('title');
+                $description = $request->getPayload()->get('description');
+                $command = new CreateManufacturerCommand($title, $description);
+                $this->commandBus->execute($command);
+                $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $title));
+
+                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+            } catch (\Exception|\Error $e) {
+                $error = $e->getMessage();
+                return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
+            }
+        }
+
+        return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
+    }
+
+    #[Route(path: '/{id}/edit', name: 'update')]
+    public function update(Request $request, string $id): Response
+    {
+        $error = null;
+        $query = new GetManufacturerQuery($id);
+        $result = $this->queryBus->execute($query);
+        if (null === $result->manufacturer) {
+            $this->addFlash('manufacturer_edited_error', sprintf('Производитель с идентификатором "%s" не найден.', $id));
+            return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+        }
+        if ($request->isMethod(Request::METHOD_POST)) {
+            try {
+                $title = $request->getPayload()->get('title');
+                $description = $request->getPayload()->get('description');
+                $result->manufacturer->title = $title;
+                $result->manufacturer->description = $description;
+                $command = new UpdateManufacturerCommand($id, $result->manufacturer);
+                $result = $this->commandBus->execute($command);
+                $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $title));
+
+                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+            } catch (\Exception|\Error $e) {
+                $error = $e->getMessage();
+                return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
+            }
+        }
+
+        return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
+    }
+
+    #[Route(path: '/{id}/delete', name: 'delete')]
+    public function delete(Request $request): Response
+    {
+        dd('delete', $request);
+        $error = null;
+        $title = null;
+        $description = null;
+        if ($request->isMethod(Request::METHOD_DELETE)) {
             try {
                 $title = $request->getPayload()->get('title');
                 $description = $request->getPayload()->get('description');

@@ -18,10 +18,12 @@ class UniqueTitleManufacturerSpecification implements SpecificationInterface
     public function satisfy(Manufacturer $manufacturer): void
     {
         $exist = $this->repository->findOneByTitle($manufacturer->getTitle());
-        AssertService::null(
-            $exist,
-            sprintf('Производитель с названием "%s" уже существует.', $manufacturer->getTitle())
-        );
+        if ($exist?->getId() !== $manufacturer->getId()) {
+            AssertService::null(
+                $exist,
+                sprintf('Производитель с названием "%s" уже существует.', $manufacturer->getTitle())
+            );
+        }
     }
 
 }

@@ -32,6 +32,9 @@ services:
       tags:
         - { name: messenger.message_handler, bus: event.bus }
 
+    App\Shared\Domain\Specification\SpecificationInterface:
+      public: true
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true

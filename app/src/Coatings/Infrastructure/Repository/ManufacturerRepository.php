@@ -30,6 +30,10 @@ class ManufacturerRepository extends ServiceEntityRepository implements Manufact
         return $this->findOneBy(['title' => $title]);
     }
 
+    public function findOneById(string $manufacturerId): ?Manufacturer
+    {
+        return $this->findOneBy(['id' => $manufacturerId]);
+    }
 
     public function findByFilter(ManufacturersFilter $filter): PaginationResult
     {

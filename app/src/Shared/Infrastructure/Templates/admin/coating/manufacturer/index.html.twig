@@ -24,14 +24,12 @@
                                 <h6 class="mb-0">{{ manufacturer.title }}</h6>
                                 <p class="mb-0 opacity-75">{{ manufacturer.description }}</p>
                             </div>
-                            <div class="d-flex gap-2 mb-3">
-                                <button type="button" class="btn btn-outline-primary">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            </div>
+                            {% include '/components/edit_delete.html.twig'
+                                with {
+                                'edit': 'app_coating_manufacturer_update',
+                                'delete':'app_coating_manufacturer_delete',
+                                'id': manufacturer.id
+                            } %}
                         </div>
                     </div>
                 {% endfor %}

@@ -28,17 +28,13 @@ class Manufacturer extends Aggregate
         string                    $title,
         ManufacturerSpecification $manufacturerSpecification,
         string                    $description = null,
-
-
     )
     {
-        $this->id = UuidService::generate();
         $this->manufacturerSpecification = $manufacturerSpecification;
+        $this->id = UuidService::generate();
         $this->coatings = new ArrayCollection();
         $this->setTitle($title);
         $this->setDescription($description);
-
-
     }
 
     public function setTitle(string $title): void
