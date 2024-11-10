@@ -1,0 +1,31 @@
+<div class=" p-4 gap-4 py-md-5 align-items-center">
+    {% set queryParams = app.request.query.all %}
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+            <li class="page-item">
+                {% set queryParams = queryParams|merge({page: pager.page-1}) %}
+                <a
+                        href="{{ path(app.request.get('_route'), {...queryParams}) }}"
+                        class="page-link {% if pager.page == 1 %} disabled {% endif %}"
+                        aria-label="Previous">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </li>
+            {% for i in 1 .. pager.total_pages %}
+                {% set queryParams = queryParams|merge({page: loop.index}) %}
+                <li class="page-item {% if pager.page == loop.index %} active {% endif %}"><a
+                            class="page-link"
+                            href="{{ path(app.request.get('_route'), {...queryParams}) }}">{{ loop.index }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item">
+                {% set queryParams = queryParams|merge({page: pager.page+1}) %}
+                <a class="page-link {% if pager.page * pager.perPage >= pager.total_items %} disabled {% endif %}"
+                   href="{{ path(app.request.get('_route'), {...queryParams}) }}"
+                   aria-label="Next">
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>

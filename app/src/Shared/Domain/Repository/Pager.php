@@ -6,6 +6,9 @@ namespace App\Shared\Domain\Repository;
 
 readonly class Pager
 {
+    public const DEFAULT_LIMIT = 10;
+    public const DEFAULT_PAGE = 1;
+
     public ?int $total_pages;
 
     public function __construct(
@@ -22,9 +25,9 @@ readonly class Pager
         return new self(1, 0);
     }
 
-    public static function fromPage(int $page, int $perPage): self
+    public static function fromPage(?int $page, ?int $perPage): self
     {
-        return new self($page, $perPage);
+        return new self($page ?? self::DEFAULT_PAGE, $perPage ?? self::DEFAULT_LIMIT);
     }
 
     public function getOffset(): int

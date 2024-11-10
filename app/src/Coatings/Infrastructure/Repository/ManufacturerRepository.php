@@ -34,17 +34,16 @@ class ManufacturerRepository extends ServiceEntityRepository implements Manufact
     public function findByFilter(ManufacturersFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('cm');
-
+        //todo запихать сортинг в фильтр
+        $qb->orderBy('cm.title', 'ASC');
         if ($filter->title) {
-            $qb->where($qb->expr()->like('cm.title', ':title'))
+            $qb->where($qb->expr()->like('LOWER(cm.title)', 'LOWER(:title)'))
                 ->setParameter('title', '%' . $filter->title . '%');
         }
-
         if ($filter->pager) {
             $qb->setMaxResults($filter->pager->getLimit());
             $qb->setFirstResult($filter->pager->getOffset());
         }
-
         $paginator = new Paginator($qb->getQuery());
 
         return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());

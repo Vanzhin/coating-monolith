@@ -37,65 +37,8 @@
                 {% endfor %}
             </div>
         </div>
-        {#         +page: 1
-    +perPage: 10
-    +total: 2
-        #}
-        <div class=" p-4 gap-4 py-md-5 align-items-center">
-            <nav aria-label="Page navigation example">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item">
-                        <a href="#" class="page-link {% if result.pager.page == 1 %} disabled {% endif %}"
-                           aria-label="Previous">
-                            <i class="bi bi-arrow-left"></i>
-                        </a>
-                    </li>
 
-{#                    todo доработать пагинатор и вынести в компонент#}
-                    {% for i in 1 .. result.pager.total_pages%}
-                        <li class="page-item {% if result.pager.page == loop.index %} active {% endif %}"><a class="page-link" href="#">{{ loop.index }}</a></li>
-                    {% endfor %}
-                    <li class="page-item">
-                        <a class="page-link {% if result.pager.page * result.pager.perPage >= result.pager.total_items %} disabled {% endif %}"
-                           href="#" aria-label="Next">
-                            <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+        {% include '/components/pager.html.twig' with {'pager': result.pager} %}
 
     </div>
-    {#    <div class="list-group"> #}
-    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
-    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
-    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
-    {#                <div> #}
-    {#                    <h6 class="mb-0">List group item heading</h6> #}
-    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph.</p> #}
-    {#                </div> #}
-    {#                <small class="opacity-50 text-nowrap">now</small> #}
-    {#            </div> #}
-    {#        </a> #}
-    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
-    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
-    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
-    {#                <div> #}
-    {#                    <h6 class="mb-0">Another title here</h6> #}
-    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph that goes a little longer so it wraps to a new line.</p> #}
-    {#                </div> #}
-    {#                <small class="opacity-50 text-nowrap">3d</small> #}
-    {#            </div> #}
-    {#        </a> #}
-    {#        <a href="#" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> #}
-    {#            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0"> #}
-    {#            <div class="d-flex gap-2 w-100 justify-content-between"> #}
-    {#                <div> #}
-    {#                    <h6 class="mb-0">Third heading</h6> #}
-    {#                    <p class="mb-0 opacity-75">Some placeholder content in a paragraph.</p> #}
-    {#                </div> #}
-    {#                <small class="opacity-50 text-nowrap">1w</small> #}
-    {#            </div> #}
-    {#        </a> #}
-    {#    </div> #}
 {% endblock %}

@@ -26,14 +26,13 @@ class ManufacturerController extends AbstractController
     }
 
     #[Route(path: '/list', name: 'list', methods: ['GET'])]
-    public function list(): Response
+    public function list(Request $request): Response
     {
-        $search = null;
-        $page = 1;
-        $perPage = 10;
-        $query = new GetPagedManufacturersQuery(new ManufacturersFilter($search, Pager::fromPage($page, $perPage)));
+        $search = $request->query->get('search');
+        $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
+        $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
+        $query = new GetPagedManufacturersQuery(new ManufacturersFilter($search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
-
         return $this->render('admin/coating/manufacturer/index.html.twig', compact('result'));
     }
 
