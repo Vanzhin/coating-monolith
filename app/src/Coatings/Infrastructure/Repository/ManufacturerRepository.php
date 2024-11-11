@@ -25,6 +25,12 @@ class ManufacturerRepository extends ServiceEntityRepository implements Manufact
         $this->getEntityManager()->flush();
     }
 
+    public function remove(Manufacturer $manufacturer): void
+    {
+        $this->getEntityManager()->remove($manufacturer);
+        $this->getEntityManager()->flush();
+    }
+
     public function findOneByTitle(string $title): ?Manufacturer
     {
         return $this->findOneBy(['title' => $title]);

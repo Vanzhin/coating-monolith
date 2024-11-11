@@ -8,7 +8,7 @@
             <h2 class="text-body-emphasis">Производители</h2>
             <div class="btn-toolbar p-2 mb-2 mb-md-0">
                 <div class="btn-group me-2">
-                    <a href="{{ path('app_coating_manufacturer_create') }}" type="button"
+                    <a href="{{ path('app_cabinet_coating_manufacturer_create') }}" type="button"
                        class="btn  btn-outline-success">
                         <i class="bi bi-plus-lg"></i>
                     </a>
@@ -17,6 +17,7 @@
         </div>
         <div class="d-flex flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
             <div class="list-group w-100">
+
                 {% for manufacturer in result.manufacturers %}
                     <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
                         <div class="d-flex gap-2 w-100 justify-content-between">
@@ -26,17 +27,20 @@
                             </div>
                             {% include '/components/edit_delete.html.twig'
                                 with {
-                                'edit': 'app_coating_manufacturer_update',
-                                'delete':'app_coating_manufacturer_delete',
-                                'id': manufacturer.id
+                                'edit': 'app_cabinet_coating_manufacturer_update',
+                                'delete':'app_cabinet_coating_manufacturer_delete',
+                                'id': manufacturer.id,
+                                'title': manufacturer.title,
+                                'name': "производителя"
                             } %}
                         </div>
                     </div>
                 {% endfor %}
             </div>
         </div>
+        {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_coating_manufacturer_delete'} %}
 
-        {% include '/components/pager.html.twig' with {'pager': result.pager} %}
+        {% include 'components/pager.html.twig' with {'pager': result.pager} %}
 
     </div>
 {% endblock %}

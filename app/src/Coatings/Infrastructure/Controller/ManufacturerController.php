@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Controller;
 
 use App\Coatings\Application\UseCase\Command\CreateManufacturer\CreateManufacturerCommand;
+use App\Coatings\Application\UseCase\Command\RemoveManufacturer\RemoveManufacturerCommand;
 use App\Coatings\Application\UseCase\Command\UpdateManufacturer\UpdateManufacturerCommand;
 use App\Coatings\Application\UseCase\Query\GetManufacturer\GetManufacturerQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route(path: '/coating/manufacturer', name: 'app_coating_manufacturer_')]
+#[Route(path: '/cabinet/coating/manufacturer', name: 'app_cabinet_coating_manufacturer_')]
 class ManufacturerController extends AbstractController
 {
     public function __construct(
@@ -52,7 +53,7 @@ class ManufacturerController extends AbstractController
                 $this->commandBus->execute($command);
                 $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $title));
 
-                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
                 return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
@@ -70,7 +71,7 @@ class ManufacturerController extends AbstractController
         $result = $this->queryBus->execute($query);
         if (null === $result->manufacturer) {
             $this->addFlash('manufacturer_edited_error', sprintf('Производитель с идентификатором "%s" не найден.', $id));
-            return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+            return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
         }
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
@@ -82,7 +83,7 @@ class ManufacturerController extends AbstractController
                 $result = $this->commandBus->execute($command);
                 $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $title));
 
-                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
+                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
                 return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
@@ -93,28 +94,16 @@ class ManufacturerController extends AbstractController
     }
 
     #[Route(path: '/{id}/delete', name: 'delete')]
-    public function delete(Request $request): Response
+    public function delete(string $id): Response
     {
-        dd('delete', $request);
         $error = null;
-        $title = null;
-        $description = null;
-        if ($request->isMethod(Request::METHOD_DELETE)) {
-            try {
-                $title = $request->getPayload()->get('title');
-                $description = $request->getPayload()->get('description');
-                $command = new CreateManufacturerCommand($title, $description);
-                $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $title));
-
-                return $this->redirectToRoute('app_coating_manufacturer_list', compact('error'));
-            } catch (\Exception|\Error $e) {
-                $error = $e->getMessage();
-                return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
-            }
+        try {
+            $command = new RemoveManufacturerCommand($id);
+            $result = $this->commandBus->execute($command);
+            $this->addFlash('manufacturer_removed_success', 'Производитель удален.');
+        } catch (\Exception|\Error $e) {
+            $error = $e->getMessage();
         }
-
-        return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
+        return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
     }
-
 }

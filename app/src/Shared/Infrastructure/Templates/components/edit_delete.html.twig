@@ -2,7 +2,17 @@
     <a href="{{ path(edit, {'id': id}) }}" type="button" class="btn btn-outline-primary">
         <i class="bi bi-pencil"></i>
     </a>
-    <a href="{{ path(delete, {'id': id}) }}" type="button" class="btn btn-outline-danger">
+{#    <a class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal"#}
+
+{#    >#}
+    <a href="{{ path(delete, {'id': id}) }}"
+       type="button"
+       data-bs-toggle="modal"
+       data-bs-target="#deleteModal"
+       class="btn btn-outline-danger"
+       data-bs-title="{{ title }}"
+       data-bs-id="{{ id }}"
+    >
         <i class="bi bi-trash3"></i>
     </a>
 </div>
