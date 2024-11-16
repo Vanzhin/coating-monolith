@@ -16,16 +16,24 @@
                 <li class="mb-1">
                     <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
                             data-bs-toggle="collapse" data-bs-target="#home-collapse" aria-expanded="true">
-                        Coatings
+                        Админ
                     </button>
                     <div class="collapse show" id="home-collapse">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            <li><a href="{{ path('app_cabinet_coating_coating_list') }}"
+                                   class="link-body-emphasis d-inline-flex text-decoration-none rounded nav-link
+                                    {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}
+                                    ">Покрытия
+                                </a>
+                            </li>
                             <li><a href="{{ path('app_cabinet_coating_manufacturer_list') }}"
-                                   class="link-body-emphasis d-inline-flex text-decoration-none rounded">Производители</a>
+                                   class="link-body-emphasis d-inline-flex text-decoration-none rounded nav-link
+                                    {% if 'app_cabinet_coating_manufacturer' in app.request.get('_route') %}fw-bold{% endif %}
+                                    ">Производители
+                                </a>
                             </li>
-                            <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Updates</a>
-                            </li>
-                            <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Reports</a>
+                            <li><a href="#"
+                                   class="link-body-emphasis d-inline-flex text-decoration-none rounded nav-link ">Reports</a>
                             </li>
                         </ul>
                     </div>

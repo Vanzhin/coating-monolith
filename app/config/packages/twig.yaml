@@ -7,6 +7,7 @@ twig:
 
   paths:
     'assets/styles': styles
+  strict_variables: false
 
 when@test:
   twig:

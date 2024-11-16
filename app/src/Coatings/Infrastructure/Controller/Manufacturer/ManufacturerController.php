@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 
-namespace App\Coatings\Infrastructure\Controller;
+namespace App\Coatings\Infrastructure\Controller\Manufacturer;
 
 use App\Coatings\Application\UseCase\Command\CreateManufacturer\CreateManufacturerCommand;
 use App\Coatings\Application\UseCase\Command\RemoveManufacturer\RemoveManufacturerCommand;

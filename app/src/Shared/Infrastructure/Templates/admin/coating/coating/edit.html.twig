@@ -1,0 +1,46 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Обновление производителя{% endblock %}
+
+{% block body %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
+        <div class="d-flex flex-md-row align-items-center ">
+            <form method="post" action="{{ path('app_cabinet_coating_coating_update',{id: result.coating.id}) }}"
+                  class="form-signin w-100 m-auto">
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                <h1 class="h3 mb-3 font-weight-normal">Обновление производителя</h1>
+                <div class="form-group">
+                    <label for="inputTitle">Название</label>
+                    <input type="text" value="{{ result.coating.title }}" name="title" id="inputTitle"
+                           class="form-control"
+                           autocomplete="title" required autofocus placeholder="Укажите название..."
+                           minlength="3" maxlength="50"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="inputDescription">Описание</label>
+                    <textarea type="text" name="description" id="inputDescription"
+                              class="form-control"
+                              autocomplete="description"
+                              required placeholder="Укажите описание..."
+                              rows="3"
+                              maxlength="750">{{ result.coating.description }}</textarea>
+                    <input type="hidden" name="_csrf_token"
+                           value="{{ csrf_token('authenticate') }}"
+                    >
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-lg btn-primary mt-2" type="submit">
+                        Обновить
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+{% endblock %}

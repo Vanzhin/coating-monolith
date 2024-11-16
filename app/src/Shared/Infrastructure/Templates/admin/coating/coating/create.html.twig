@@ -1,0 +1,145 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Добавление покрытия{% endblock %}
+
+{% block body %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
+        <div class="d-flex flex-md-row align-items-center ">
+            <form method="post" action="{{ path('app_cabinet_coating_coating_create') }}"
+                  class="form-signin w-100 m-auto">
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                <h1 class="h3 mb-3 font-weight-normal">Добавление покрытия</h1>
+                <div class="form-group">
+                    <label for="inputTitle">Название</label>
+                    <input type="text" value="{{ title }}" name="title" id="inputTitle" class="form-control"
+                           autocomplete="title" required autofocus placeholder="Укажите название..."
+                           minlength="3" maxlength="100"
+                    >
+                    <label for="inputDescription">Описание</label>
+                    <textarea type="text" name="description" id="inputDescription"
+                              class="form-control"
+                              autocomplete="description"
+                              required placeholder="Укажите описание..."
+                              rows="3"
+                              maxlength="100">{{ description }}</textarea>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="inputVolumeSolid" class="form-label">Сухой остаток, об %</label>
+                            <input type="number" value="{{ volumeSolid }}" name="volume_solid" id="inputVolumeSolid"
+                                   class="form-control"
+                                   autocomplete="volume_solid" required autofocus placeholder="Укажите сухой остаток..."
+                                   min="10" max="100"
+                            >
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="inputMassDensity" class="form-label">Плотность, кг/л</label>
+                            <input type="number" value="{{ massDensity }}" name="mass_density" id="inputMassDensity"
+                                   class="form-control"
+                                   autocomplete="mass_density" required autofocus placeholder="Укажите плотность..."
+                                   min="0" max="100" step="0.01"
+                            >
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="inputTdsDft" class="form-label">ТСП тех карты, мкм</label>
+                            <input type="number" value="{{ tdsDft }}" name="tds_dft" id="inputTdsDft"
+                                   class="form-control"
+                                   autocomplete="tds_dft" required autofocus placeholder="Укажите тсп..."
+                                   min="10" max="9999"
+                            >
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="inputMinDft" class="form-label">Мин ТСП, мкм</label>
+                            <input type="number" value="{{ minDft }}" name="min_dft" id="inputMinDft"
+                                   class="form-control"
+                                   autocomplete="min_dft" required autofocus placeholder="Укажите мин тсп..."
+                                   min="10" max="9999"
+                            >
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="inputMaxDft" class="form-label">Макс ТСП, мкм</label>
+                            <input type="number" value="{{ maxDft }}" name="max_dft" id="inputMaxDft"
+                                   class="form-control"
+                                   autocomplete="max_dft" required autofocus placeholder="Укажите макс тсп..."
+                                   min="10" max="9999"
+                            >
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="inputApplicationMinTemp" class="form-label">Мин Т нанесения, &deg;С</label>
+                            <input type="number" value="{{ applicationMinTemp }}" name="application_min_temp"
+                                   id="inputApplicationMinTemp" class="form-control"
+                                   autocomplete="application_min_temp" required autofocus
+                                   placeholder="Укажите мин Т ..."
+                                   min="-30" maxlength="50"
+                            >
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="inputDryToTouch" class="form-label">Сухой на отлип, ч</label>
+                            <input type="number" value="{{ dryToTouch }}" name="dry_to_touch" id="inputDryToTouch"
+                                   class="form-control"
+                                   autocomplete="dry_to_touch" required autofocus
+                                   placeholder="Укажите 'сухой на отлип' ..."
+                                   min="0" max="100" step="0.1"
+                            >
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="inputMinRecoatingInterval" class="form-label">Мин инт перекр-я, ч</label>
+                            <input type="number" value="{{ minRecoatingInterval }}" name="min_recoating_interval"
+                                   id="inputMinRecoatingInterval" class="form-control"
+                                   autocomplete="min_recoating_interval" required autofocus
+                                   placeholder="Укажите мин инт перек..."
+                                   min="0" max="100" step="0.1"
+                            >
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="inputMaxRecoatingInterval" class="form-label">Макс инт перекр-я, д</label>
+                            <input type="number" value="{{ maxRecoatingInterval }}" name="max_recoating_interval"
+                                   id="inputMaxRecoatingInterval" class="form-control"
+                                   autocomplete="max_recoating_interval" required autofocus
+                                   placeholder="Укажите макс инт перек..."
+                                   min="0" max="100" step="0.1"
+                            >
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label for="inputFullCure" class="form-label">Полное отверждение, д</label>
+                            <input type="number" value="{{ fullCure }}" name="full_cure" id="inputFullCure"
+                                   class="form-control"
+                                   autocomplete="full_cure" required autofocus
+                                   placeholder="Укажите время полного отверждения..."
+                                   min="-1" max="1000" step="0.5"
+                            >
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="inputManufacturer" class="form-label">Производитель</label>
+                            <select class="form-select" id="inputManufacturer" name="manufacturer_id" required>
+                                <option value="">Укажите производителя...</option>
+                                {% for manufacturer in pagedManufacturers.manufacturers %}
+                                    <option value="{{ manufacturer.id }}">{{ manufacturer.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a valid country.
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="_csrf_token"
+                           value="{{ csrf_token('authenticate') }}"
+                    >
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-lg btn-primary mt-2" type="submit">
+                        Добавить
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+{% endblock %}

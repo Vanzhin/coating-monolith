@@ -21,4 +21,9 @@ enum CoatingProtectionType: string
      * Морское.
      */
     case MARINE = 'Морское';
+
+    /*
+     * Специальное.
+     */
+    case SPECIAL = 'Специальное';
 }
