@@ -120,7 +120,7 @@ class Coating extends Aggregate
     public function setMassDensity(float $massDensity): void
     {
         $this->massDensity = $massDensity;
-        AssertService::greaterThan($this->massDensity, 0);
+        AssertService::greaterThanEq($this->massDensity, 0);
 
     }
 
@@ -132,7 +132,7 @@ class Coating extends Aggregate
     public function setTdsDft(int $tdsDft): void
     {
         $this->tdsDft = $tdsDft;
-        AssertService::greaterThan($this->tdsDft, 0);
+        AssertService::greaterThanEq($this->tdsDft, 0);
     }
 
     public function getMinDft(): int
@@ -143,7 +143,7 @@ class Coating extends Aggregate
     public function setMinDft(int $minDft): void
     {
         $this->minDft = $minDft;
-        AssertService::greaterThan($this->minDft, 10);
+        AssertService::greaterThanEq($this->minDft, 10);
 
     }
 
@@ -155,7 +155,7 @@ class Coating extends Aggregate
     public function setMaxDft(int $maxDft): void
     {
         $this->maxDft = $maxDft;
-        AssertService::lessThan($this->maxDft, 5000);
+        AssertService::lessThanEq($this->maxDft, 5000);
     }
 
     public function getApplicationMinTemp(): int
@@ -176,7 +176,7 @@ class Coating extends Aggregate
     public function setDryToTouch(int $dryToTouch): void
     {
         $this->dryToTouch = $dryToTouch;
-        AssertService::greaterThan($this->dryToTouch, 0);
+        AssertService::greaterThanEq($this->dryToTouch, 0);
 
     }
 
@@ -188,7 +188,7 @@ class Coating extends Aggregate
     public function setMinRecoatingInterval(int $minRecoatingInterval): void
     {
         $this->minRecoatingInterval = $minRecoatingInterval;
-        AssertService::greaterThan($this->minRecoatingInterval, 0);
+        AssertService::greaterThanEq($this->minRecoatingInterval, 0);
 
     }
 
@@ -210,7 +210,7 @@ class Coating extends Aggregate
     public function setFullCure(int $fullCure): void
     {
         $this->fullCure = $fullCure;
-        AssertService::greaterThan($this->fullCure, 0);
+        AssertService::greaterThanEq($this->fullCure, 0);
 
     }
 

@@ -17,9 +17,6 @@ readonly class RemoveManufacturerCommandHandler implements CommandHandlerInterfa
     public function __invoke(RemoveManufacturerCommand $command): RemoveManufacturerCommandResult
     {
         $manufacturer = $this->manufacturerRepository->findOneById($command->id);
-        if (null === $manufacturer) {
-            return new RemoveManufacturerCommandResult();
-        }
         $this->manufacturerRepository->remove($manufacturer);
 
         return new RemoveManufacturerCommandResult();

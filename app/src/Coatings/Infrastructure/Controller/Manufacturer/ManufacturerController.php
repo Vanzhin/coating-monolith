@@ -96,10 +96,9 @@ class ManufacturerController extends AbstractController
     #[Route(path: '/{id}/delete', name: 'delete')]
     public function delete(string $id): Response
     {
-        $error = null;
         try {
             $command = new RemoveManufacturerCommand($id);
-            $result = $this->commandBus->execute($command);
+            $this->commandBus->execute($command);
             $this->addFlash('manufacturer_removed_success', 'Производитель удален.');
         } catch (\Exception|\Error $e) {
             $error = $e->getMessage();

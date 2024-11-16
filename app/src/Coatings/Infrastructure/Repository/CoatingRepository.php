@@ -48,4 +48,9 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
 
         return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
+
+    public function findOneById(string $id): ?Coating
+    {
+        return $this->findOneBy(['id' => $id]);
+    }
 }

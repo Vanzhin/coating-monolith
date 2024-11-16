@@ -61,6 +61,10 @@ services:
     arguments:
       - '@app.service_redis_provider'
 
+  App\Shared\Infrastructure\Validation\Validator:
+    arguments:
+      $validatorBuilder: '@validator.builder'
+
   app.service_redis_provider:
     class: \Redis
     factory: [ 'Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection' ]
@@ -78,6 +82,7 @@ services:
   App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:
     tags:
       - { name: monolog.processor, channel: 'coating' }
+
   telegram_handler:
     class: App\Shared\Infrastructure\Log\TelegramLogHandler
     arguments:
