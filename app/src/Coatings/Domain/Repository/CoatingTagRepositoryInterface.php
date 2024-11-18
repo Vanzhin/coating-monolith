@@ -18,4 +18,7 @@ interface CoatingTagRepositoryInterface
     public function findOneById(string $id): ?CoatingTag;
 
     public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag;
+
+    public function findByFilter(CoatingTagsFilter $filter): PaginationResult;
+
 }

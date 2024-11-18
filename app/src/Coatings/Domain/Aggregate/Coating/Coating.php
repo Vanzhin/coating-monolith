@@ -14,6 +14,9 @@ use Doctrine\Common\Collections\Collection;
 
 class Coating extends Aggregate
 {
+    public const PROTECTION_TYPE = 'CoatingProtectionType';
+    public const COAT_TYPE = 'CoatingCoatType';
+
     private readonly string $id;
     private string $title;
     private string $description;
