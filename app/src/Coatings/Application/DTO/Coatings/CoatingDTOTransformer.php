@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Application\DTO\Coatings;
 
 
+use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 
@@ -16,6 +17,16 @@ class CoatingDTOTransformer
         $manufacturerDto->id = $entity->getManufacturer()->getId();
         $manufacturerDto->title = $entity->getManufacturer()->getTitle();
         $manufacturerDto->description = $entity->getManufacturer()->getDescription();
+
+        $coatingTagDtos = [];
+        foreach ($entity->getTags() as $tag) {
+            $coatingTagDto = new CoatingTagDTO();
+            $coatingTagDto->id = $tag->getId();
+            $coatingTagDto->title = $tag->getTitle();
+            $coatingTagDto->type = $tag->getType();
+
+            $coatingTagDtos[] = $coatingTagDto;
+        }
 
         $dto = new CoatingDTO();
         $dto->id = $entity->getId();
@@ -32,6 +43,7 @@ class CoatingDTOTransformer
         $dto->massDensity = $entity->getMassDensity();
         $dto->volumeSolid = $entity->getVolumeSolid();
         $dto->manufacturer = $manufacturerDto;
+        $dto->tags = $coatingTagDtos;
 
         return $dto;
     }

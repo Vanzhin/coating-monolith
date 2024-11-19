@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\Coatings;
 
+use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 
 class CoatingDTO
@@ -22,4 +23,8 @@ class CoatingDTO
     public int $maxRecoatingInterval;
     public int $fullCure;
     public ManufacturerDTO $manufacturer;
+    /**
+     * @var CoatingTagDTO[]
+     */
+    public array $tags;
 }
