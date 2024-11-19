@@ -23,6 +23,7 @@ readonly class CreateCoatingCommand extends Command
         public int    $maxRecoatingInterval,
         public int    $fullCure,
         public string $manufacturerId,
+        public array $coatingTagIds,
     )
     {
     }

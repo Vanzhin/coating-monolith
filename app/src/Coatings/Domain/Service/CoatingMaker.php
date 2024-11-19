@@ -15,7 +15,8 @@ final readonly class CoatingMaker
     public function __construct(
         private CoatingFactory                  $coatingFactory,
         private CoatingRepositoryInterface      $coatingRepository,
-        private ManufacturerRepositoryInterface $manufacturerRepository
+        private ManufacturerRepositoryInterface $manufacturerRepository,
+        private CoatingTagFetcher $coatingTagFetcher
     )
     {
     }
@@ -33,12 +34,18 @@ final readonly class CoatingMaker
         int    $minRecoatingInterval,
         int    $maxRecoatingInterval,
         int    $fullCure,
-        string $manufacturerId): Coating
+        string $manufacturerId,
+        array $coatingTagIds
+    ): Coating
     {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
         $coating = $this->coatingFactory->create(
             $title, $description, $volumeSolid, $massDensity, $tdsDft, $minDft, $maxDft, $applicationMinTemp,
             $dryToTouch, $minRecoatingInterval, $maxRecoatingInterval, $fullCure, $manufacturer);
+
+        foreach ($coatingTagIds as $coatingTagId) {
+            $coating->addTag($this->coatingTagFetcher->getRequiredTag($coatingTagId));
+        }
         $this->coatingRepository->add($coating);
 
         return $coating;

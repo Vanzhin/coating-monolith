@@ -14,7 +14,6 @@ use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
-use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Validation\Validator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,7 +40,6 @@ class AddAction extends AbstractController
 
         $queryTags = new GetPagedCoatingTagsQuery(new CoatingTagsFilter(Pager::fromPage(1, 1000), null, Coating::COAT_TYPE, Coating::PROTECTION_TYPE));
         $pagedCoatingTags = $this->queryBus->execute($queryTags);
-        dd($pagedCoatingTags);
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
                 $inputData = $request->getPayload()->all();
@@ -53,7 +51,7 @@ class AddAction extends AbstractController
                 $command = new CreateCoatingCommand(
                     $description, $title, (int)$volumeSolid, (int)$massDensity, (int)$tdsDft, (int)$minDft, (int)$maxDft,
                     (int)$applicationMinTemp, (int)$dryToTouch, (int)$minRecoatingInterval, (int)$maxRecoatingInterval,
-                    (int)$fullCure, $manufacturerId
+                    (int)$fullCure, $manufacturerId, $coatingTagIds
                 );
                 $this->commandBus->execute($command);
                 $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $title));
@@ -61,10 +59,10 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData'));
+                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
             }
         }
 
-        return $this->render('admin/coating/coating/create.html.twig', compact('pagedManufacturers'));
+        return $this->render('admin/coating/coating/create.html.twig', compact('pagedManufacturers', 'pagedCoatingTags'));
     }
 }

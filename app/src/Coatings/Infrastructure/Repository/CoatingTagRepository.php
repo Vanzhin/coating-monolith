@@ -36,7 +36,7 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
 
     public function findOneById(string $id): ?CoatingTag
     {
-        // TODO: Implement findOneById() method.
+        return $this->findOneBy(['id' => $id]);
     }
 
     public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag
@@ -52,10 +52,10 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
             $qb->andWhere($qb->expr()->eq('LOWER(ct.title)', 'LOWER(:title)'))
                 ->setParameter('title', $filter->title);
         }
-        foreach ($filter->types as $key =>$type) {
+        foreach ($filter->types as $key => $type) {
             if ($type) {
-                $qb->orWhere($qb->expr()->eq('ct.type', ':type'.$key))
-                    ->setParameter('type'.$key, $type);
+                $qb->orWhere($qb->expr()->eq('ct.type', ':type' . $key))
+                    ->setParameter('type' . $key, $type);
             }
             if (is_null($type)) {
                 $qb->orWhere($qb->expr()->isNull('ct.type'));

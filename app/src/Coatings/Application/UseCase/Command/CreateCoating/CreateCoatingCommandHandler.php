@@ -31,6 +31,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $command->maxRecoatingInterval,
             $command->fullCure,
             $command->manufacturerId,
+            $command->coatingTagIds
         );
 
         return new CreateCoatingCommandResult(

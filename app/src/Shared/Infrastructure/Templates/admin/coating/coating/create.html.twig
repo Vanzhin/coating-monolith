@@ -16,7 +16,8 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <label for="inputTitle">Название</label>
-                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle" class="form-control"
+                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
+                                   class="form-control"
                                    autocomplete="title" required autofocus placeholder="Укажите название..."
                                    minlength="3" maxlength="100"
                             >
@@ -163,6 +164,30 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="col-md-6">
+                            <label for="inputCoatingProtectionType" class="form-label">Вид покрытия</label>
+                            {% for coatingProtectionType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingProtectionType') %}
+                                <div class="form-check">
+                                    <input name="coatingTagIds[]" class="form-check-input" type="checkbox" value="{{ coatingProtectionType.id }}" id="inputCoatingProtectionType"
+                                            {% if coatingProtectionType.id in inputData.coatingTagIds %} checked {% endif %}>
+                                    <label class="form-check-label" for="inputCoatingProtectionType">
+                                        {{ coatingProtectionType.title|trans() }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputCoatingCoatType" class="form-label">Тип покрытия</label>
+                            {% for coatingCoatType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingCoatType') %}
+                                <div class="form-check">
+                                    <input name="coatingTagIds[]" class="form-check-input" type="checkbox" value="{{ coatingCoatType.id }}" id="inputCoatingCoatType"
+                                            {% if coatingCoatType.id in inputData.coatingTagIds %} checked {% endif %}>
+                                    <label class="form-check-label" for="inputCoatingCoatType">
+                                        {{ coatingCoatType.title|trans() }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     <input type="hidden" name="_csrf_token"
                            value="{{ csrf_token('authenticate') }}"
@@ -173,7 +198,6 @@
                         Добавить
                     </button>
                 </div>
-
             </form>
 
         </div>

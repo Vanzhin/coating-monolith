@@ -127,8 +127,15 @@ class CoatingMapper
 
             'manufacturerId' => [
                 new Assert\NotBlank(),
-                new Assert\Type('string'),
+                new Assert\Uuid(),
             ],
+            'coatingTagIds' => new Assert\Optional([
+                new Assert\All([
+                    new Assert\NotBlank(),
+                    new Assert\Uuid(),
+                ])
+
+            ]),
         ],
             allowExtraFields: true);
     }
