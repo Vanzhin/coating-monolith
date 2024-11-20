@@ -7,6 +7,6 @@ namespace App\Coatings\Application\DTO\Manufacturers;
 class ManufacturerDTO
 {
     public string $id;
-    public string $title;
+    public ?string $title;
     public ?string $description;
 }

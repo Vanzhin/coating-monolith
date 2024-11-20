@@ -24,14 +24,16 @@ readonly class CoatingFactory
         int          $minDft,
         int          $maxDft,
         int          $applicationMinTemp,
-        int          $dryToTouch,
-        int          $minRecoatingInterval,
-        int          $maxRecoatingInterval,
-        int          $fullCure,
-        Manufacturer $manufacturer
+        float        $dryToTouch,
+        float        $minRecoatingInterval,
+        float        $maxRecoatingInterval,
+        float        $fullCure,
+        Manufacturer $manufacturer,
+        float        $pack,
     ): Coating
     {
-        return new Coating($title,
+        return new Coating(
+            $title,
             $description,
             $volumeSolid,
             $massDensity,
@@ -43,6 +45,7 @@ readonly class CoatingFactory
             $minRecoatingInterval,
             $maxRecoatingInterval,
             $fullCure,
+            $pack,
             $manufacturer,
             $this->coatingSpecification,
         );

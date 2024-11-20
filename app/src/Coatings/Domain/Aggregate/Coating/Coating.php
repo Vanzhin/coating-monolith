@@ -26,12 +26,13 @@ class Coating extends Aggregate
     private int $minDft;
     private int $maxDft;
     private int $applicationMinTemp;
-    private int $dryToTouch;
-    private int $minRecoatingInterval;
-    private int $maxRecoatingInterval;
-    private int $fullCure;
+    private float $dryToTouch;
+    private float $minRecoatingInterval;
+    private float $maxRecoatingInterval;
+    private float $fullCure;
     private Manufacturer $manufacturer;
     private CoatingSpecification $specification;
+    private float $pack;
 
     /**
      * @var Collection<CoatingTag>
@@ -48,10 +49,11 @@ class Coating extends Aggregate
         int                  $minDft,
         int                  $maxDft,
         int                  $applicationMinTemp,
-        int                  $dryToTouch,
-        int                  $minRecoatingInterval,
-        int                  $maxRecoatingInterval,
-        int                  $fullCure,
+        float                $dryToTouch,
+        float                $minRecoatingInterval,
+        float                $maxRecoatingInterval,
+        float                $fullCure,
+        float                $pack,
         Manufacturer         $manufacturer,
         CoatingSpecification $specification
     )
@@ -71,6 +73,7 @@ class Coating extends Aggregate
         $this->setMinRecoatingInterval($minRecoatingInterval);
         $this->setMaxRecoatingInterval($maxRecoatingInterval);
         $this->setFullCure($fullCure);
+        $this->setPack($pack);
         $this->manufacturer = $manufacturer;
 
     }
@@ -171,61 +174,52 @@ class Coating extends Aggregate
         $this->applicationMinTemp = $applicationMinTemp;
     }
 
-    public function getDryToTouch(): int
+    public function getDryToTouch(): float
     {
         return $this->dryToTouch;
     }
 
-    public function setDryToTouch(int $dryToTouch): void
+    public function setDryToTouch(float $dryToTouch): void
     {
         $this->dryToTouch = $dryToTouch;
         AssertService::greaterThanEq($this->dryToTouch, 0);
 
     }
 
-    public function getMinRecoatingInterval(): int
+    public function getMinRecoatingInterval(): float
     {
         return $this->minRecoatingInterval;
     }
 
-    public function setMinRecoatingInterval(int $minRecoatingInterval): void
+    public function setMinRecoatingInterval(float $minRecoatingInterval): void
     {
         $this->minRecoatingInterval = $minRecoatingInterval;
         AssertService::greaterThanEq($this->minRecoatingInterval, 0);
 
     }
 
-    public function getMaxRecoatingInterval(): int
+    public function getMaxRecoatingInterval(): float
     {
         return $this->maxRecoatingInterval;
     }
 
-    public function setMaxRecoatingInterval(int $maxRecoatingInterval): void
+    public function setMaxRecoatingInterval(float $maxRecoatingInterval): void
     {
         $this->maxRecoatingInterval = $maxRecoatingInterval;
     }
 
-    public function getFullCure(): int
+    public function getFullCure(): float
     {
         return $this->fullCure;
     }
 
-    public function setFullCure(int $fullCure): void
+    public function setFullCure(float $fullCure): void
     {
         $this->fullCure = $fullCure;
         AssertService::greaterThanEq($this->fullCure, 0);
 
     }
 
-    public function getSpecification(): CoatingSpecification
-    {
-        return $this->specification;
-    }
-
-    public function setSpecification(CoatingSpecification $specification): void
-    {
-        $this->specification = $specification;
-    }
 
     public function getTags(): Collection
     {
@@ -253,5 +247,19 @@ class Coating extends Aggregate
     public function setManufacturer(Manufacturer $manufacturer): void
     {
         $this->manufacturer = $manufacturer;
+    }
+
+    public function getPack(): float
+    {
+        return $this->pack;
+    }
+
+    public function setPack(float $pack): void
+    {
+        $this->pack = $pack;
+        if ($pack < 1 || $pack > 1000) {
+            throw new \Exception("Pack must be between 1 and 1000.");
+        }
+
     }
 }

@@ -18,10 +18,11 @@ class CoatingDTO
     public int $minDft;
     public int $maxDft;
     public int $applicationMinTemp;
-    public int $dryToTouch;
-    public int $minRecoatingInterval;
-    public int $maxRecoatingInterval;
-    public int $fullCure;
+    public float $dryToTouch;
+    public float $minRecoatingInterval;
+    public float $maxRecoatingInterval;
+    public float $fullCure;
+    public float $pack;
     public ManufacturerDTO $manufacturer;
     /**
      * @var CoatingTagDTO[]

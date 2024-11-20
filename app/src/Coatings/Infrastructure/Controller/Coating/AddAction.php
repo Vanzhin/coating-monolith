@@ -47,19 +47,15 @@ class AddAction extends AbstractController
                 if ($errors) {
                     throw new \Exception(current($errors)->getFullMessage());
                 }
-                extract($inputData);
-                $command = new CreateCoatingCommand(
-                    $description, $title, (int)$volumeSolid, (int)$massDensity, (int)$tdsDft, (int)$minDft, (int)$maxDft,
-                    (int)$applicationMinTemp, (int)$dryToTouch, (int)$minRecoatingInterval, (int)$maxRecoatingInterval,
-                    (int)$fullCure, $manufacturerId, $coatingTagIds
-                );
+                $dto = $this->coatingMapper->buildCoatingDtoFromInputData($inputData);
+                $command = new CreateCoatingCommand($dto);
                 $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $title));
+                $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
+                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'));
             }
         }
 

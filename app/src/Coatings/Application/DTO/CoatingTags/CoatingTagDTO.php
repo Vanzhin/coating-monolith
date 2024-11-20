@@ -7,6 +7,6 @@ namespace App\Coatings\Application\DTO\CoatingTags;
 class CoatingTagDTO
 {
     public string $id;
-    public string $title;
+    public ?string $title;
     public ?string $type;
 }

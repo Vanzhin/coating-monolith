@@ -18,20 +18,24 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
 
     public function __invoke(CreateCoatingCommand $command): CreateCoatingCommandResult
     {
-        $coating = $this->coatingMaker->make($command->title,
-            $command->description,
-            $command->volumeSolid,
-            $command->massDensity,
-            $command->tdsDft,
-            $command->minDft,
-            $command->maxDft,
-            $command->applicationMinTemp,
-            $command->dryToTouch,
-            $command->minRecoatingInterval,
-            $command->maxRecoatingInterval,
-            $command->fullCure,
-            $command->manufacturerId,
-            $command->coatingTagIds
+        $coating = $this->coatingMaker->make(
+            $command->dto->title,
+            $command->dto->description,
+            $command->dto->volumeSolid,
+            $command->dto->massDensity,
+            $command->dto->tdsDft,
+            $command->dto->minDft,
+            $command->dto->maxDft,
+            $command->dto->applicationMinTemp,
+            $command->dto->dryToTouch,
+            $command->dto->minRecoatingInterval,
+            $command->dto->maxRecoatingInterval,
+            $command->dto->fullCure,
+            $command->dto->manufacturer->id,
+            array_map(function ($tag) {
+                return $tag->id;
+            }, $command->dto->tags),
+            $command->dto->pack
         );
 
         return new CreateCoatingCommandResult(

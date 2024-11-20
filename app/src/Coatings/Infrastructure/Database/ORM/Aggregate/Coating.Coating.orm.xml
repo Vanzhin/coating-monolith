@@ -10,15 +10,16 @@
         <field name="title" type="string" length="100" unique="true"/>
         <field name="description" type="string" length="750" nullable="true"/>
         <field name="volumeSolid" column="volume_solid" type="integer" length="3"/>
-        <field name="massDensity" column="mass_density" type="integer" length="3"/>
+        <field name="massDensity" column="mass_density" type="float" length="5"/>
         <field name="tdsDft" column="tds_dft" type="integer" length="4"/>
         <field name="minDft" column="min_dft" type="integer" length="4"/>
         <field name="maxDft" column="max_dft" type="integer" length="4"/>
         <field name="applicationMinTemp" column="application_min_temp" type="integer" length="3"/>
-        <field name="dryToTouch" column="dry_to_touch" type="integer" length="3"/>
-        <field name="minRecoatingInterval" column="min_recoating_interval" type="integer" length="3"/>
-        <field name="maxRecoatingInterval" column="max_recoating_interval" type="integer" length="3"/>
-        <field name="fullCure" column="full_cure" type="integer" length="3"/>
+        <field name="dryToTouch" column="dry_to_touch" type="float" length="5"/>
+        <field name="minRecoatingInterval" column="min_recoating_interval" type="float" length="5"/>
+        <field name="maxRecoatingInterval" column="max_recoating_interval" type="float" length="5"/>
+        <field name="fullCure" column="full_cure" type="float" length="5"/>
+        <field name="pack" column="pack" type="float" length="5"/>
         <many-to-many field="tags" target-entity="App\Coatings\Domain\Aggregate\Coating\CoatingTag">
             <join-table name="coatings_coating_coating_tag">
                 <join-columns>

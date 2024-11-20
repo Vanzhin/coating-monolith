@@ -4,11 +4,57 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Mapper;
 
+use App\Coatings\Application\DTO\Coatings\CoatingDTO;
+use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
+use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
 class CoatingMapper
 {
+
+    public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
+    {
+        $manufacturerId = $coatingDTO->manufacturer->id;
+        $coatingTagIds = array_map(function ($coatingTag) {
+            return $coatingTag->id;
+        }, $coatingDTO->tags);
+
+        return array_merge(get_object_vars($coatingDTO), compact('manufacturerId', 'coatingTagIds'));
+    }
+
+    public function buildCoatingDtoFromInputData(array $inputData): CoatingDTO
+    {
+        $manufacturer = new ManufacturerDTO();
+        $manufacturer->id = $inputData['manufacturer']['id'];
+
+        $dto = new CoatingDTO();
+        $dto->title = $inputData['title'];
+        $dto->description = $inputData['description'];
+        $dto->volumeSolid = (int)$inputData['volumeSolid'];
+        $dto->massDensity = (float)$inputData['massDensity'];
+        $dto->tdsDft = (int)$inputData['tdsDft'];
+        $dto->minDft = (int)$inputData['minDft'];
+        $dto->maxDft = (int)$inputData['maxDft'];
+        $dto->applicationMinTemp = (int)$inputData['applicationMinTemp'];
+        $dto->dryToTouch = (float)$inputData['dryToTouch'];
+        $dto->minRecoatingInterval = (float)$inputData['minRecoatingInterval'];
+        $dto->maxRecoatingInterval = (float)$inputData['maxRecoatingInterval'];
+        $dto->fullCure = (float)$inputData['fullCure'];
+        $dto->manufacturer = $manufacturer;
+        $dto->pack = (float)$inputData['pack'];
+
+        $tags = [];
+        foreach ($inputData['tags'] as $tag) {
+            $coatingTagDto = new CoatingTagDTO();
+            $coatingTagDto->id = $tag['id'];
+            $tags[] = $coatingTagDto;
+        }
+        $dto->tags = $tags;
+
+        return $dto;
+    }
+
     public function getValidationCollectionCoating(): Assert\Collection
     {
         return new Assert\Collection([
@@ -124,18 +170,39 @@ class CoatingMapper
                     'notInRangeMessage' => 'Время полного отверждения должно быть в переделах от {{ min }} до {{ max }}.'
                 ]),
             ],
-
-            'manufacturerId' => [
+            'pack' => [
                 new Assert\NotBlank(),
-                new Assert\Uuid(),
+                new Assert\Type('numeric'),
+                new Assert\Range([
+                    'min' => 1,
+                    'max' => 1000,
+                    'notInRangeMessage' => 'Время полного отверждения должно быть в переделах от {{ min }} до {{ max }}.'
+                ]),
             ],
-            'coatingTagIds' => new Assert\Optional([
-                new Assert\All([
-                    new Assert\NotBlank(),
-                    new Assert\Uuid(),
-                ])
+
+            'manufacturer' => new Assert\Collection([
+                'id' =>
+                    [
+                        new Assert\NotBlank(),
+                        new Assert\Uuid(),
+                    ],
+                'title' => new Assert\Optional(new Assert\Type('string')),
+                'description' => new Assert\Optional(new Assert\Type('string')),
 
             ]),
+            'tags' => new Assert\Optional([
+                new Assert\All(
+                    new Assert\Collection([
+                        'id' =>
+                            [
+                                new Assert\NotBlank(),
+                                new Assert\Uuid(),
+                            ],
+                        'title' => new Assert\Optional(new Assert\Type('string')),
+                        'type' => new Assert\Optional(new Assert\Type('string')),
+                    ]),
+                ),
+            ])
         ],
             allowExtraFields: true);
     }

@@ -66,7 +66,6 @@ class ManufacturerController extends AbstractController
     #[Route(path: '/{id}/edit', name: 'update')]
     public function update(Request $request, string $id): Response
     {
-        $error = null;
         $query = new GetManufacturerQuery($id);
         $result = $this->queryBus->execute($query);
         if (null === $result->manufacturer) {
@@ -83,14 +82,14 @@ class ManufacturerController extends AbstractController
                 $result = $this->commandBus->execute($command);
                 $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $title));
 
-                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
+                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
                 return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
             }
         }
 
-        return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
+        return $this->render('admin/coating/manufacturer/edit.html.twig', compact( 'result'));
     }
 
     #[Route(path: '/{id}/delete', name: 'delete')]

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
-use App\Coatings\Application\UseCase\Command\CreateCoating\CreateCoatingCommand;
+use App\Coatings\Application\UseCase\Command\UpdateCoating\UpdateCoatingCommand;
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTagsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
@@ -48,9 +48,8 @@ class UpdateAction extends AbstractController
                 $this->addFlash('manufacturer_update_error', sprintf('Coating with id "%s" not found.', $id));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
-
             }
-
+            $inputData = $this->coatingMapper->buildInputDataFromDto($coating->coatingDTO);
             if ($request->isMethod(Request::METHOD_POST)) {
 
                 $inputData = $request->getPayload()->all();
@@ -59,7 +58,7 @@ class UpdateAction extends AbstractController
                     throw new \Exception(current($errors)->getFullMessage());
                 }
                 extract($inputData);
-                $command = new CreateCoatingCommand(
+                $command = new UpdateCoatingCommand(
                     $description, $title, (int)$volumeSolid, (int)$massDensity, (int)$tdsDft, (int)$minDft, (int)$maxDft,
                     (int)$applicationMinTemp, (int)$dryToTouch, (int)$minRecoatingInterval, (int)$maxRecoatingInterval,
                     (int)$fullCure, $manufacturerId, $coatingTagIds
@@ -74,6 +73,6 @@ class UpdateAction extends AbstractController
             return $this->render('admin/coating/coating/edit.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
         }
 
-        return $this->render('admin/coating/coating/edit.html.twig', compact('pagedManufacturers', 'pagedCoatingTags', 'coating'));
+        return $this->render('admin/coating/coating/edit.html.twig', compact('pagedManufacturers', 'pagedCoatingTags', 'inputData'));
     }
 }

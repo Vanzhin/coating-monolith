@@ -42,6 +42,7 @@ class CoatingDTOTransformer
         $dto->tdsDft = $entity->getTdsDft();
         $dto->massDensity = $entity->getMassDensity();
         $dto->volumeSolid = $entity->getVolumeSolid();
+        $dto->pack = $entity->getPack();
         $dto->manufacturer = $manufacturerDto;
         $dto->tags = $coatingTagDtos;
 
