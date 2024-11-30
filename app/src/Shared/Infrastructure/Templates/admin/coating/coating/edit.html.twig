@@ -5,7 +5,7 @@
 {% block body %}
     <div class="col-lg-10 mx-auto p-4 py-md-5 ">
         <div class="d-flex flex-md-row align-items-center ">
-            <form method="post" action="{{ path('app_cabinet_coating_coating_update',{id: inputData.id}) }}"
+            <form method="post" action="{{ path('app_cabinet_coating_coating_update',{id: dto.id}) }}"
                   class="form-signin w-100 m-auto">
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
@@ -16,7 +16,7 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <label for="inputTitle">Название</label>
-                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
+                            <input type="text" value="{{ dto.title }}" name="title" id="inputTitle"
                                    class="form-control"
                                    autocomplete="title" required autofocus placeholder="Укажите название..."
                                    minlength="3" maxlength="100"
@@ -29,13 +29,13 @@
                                       autocomplete="description"
                                       required placeholder="Укажите описание..."
                                       rows="3"
-                                      maxlength="100">{{ inputData.description }}</textarea>
+                                      maxlength="100">{{ dto.description }}</textarea>
                         </div>
                         <div class="col-sm-6">
                             <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
                             <div class="input-group">
                                 <span class="input-group-text">об. %</span>
-                                <input type="number" value="{{ inputData.volumeSolid }}" name="volumeSolid"
+                                <input type="number" value="{{ dto.volumeSolid }}" name="volumeSolid"
                                        id="inputVolumeSolid"
                                        class="form-control"
                                        autocomplete="volumeSolid" required autofocus
@@ -48,7 +48,7 @@
                             <label for="inputMassDensity" class="form-label">Плотность</label>
                             <div class="input-group">
                                 <span class="input-group-text">кг/л</span>
-                                <input type="number" value="{{ inputData.massDensity }}" name="massDensity"
+                                <input type="number" value="{{ dto.massDensity }}" name="massDensity"
                                        id="inputMassDensity"
                                        class="form-control"
                                        autocomplete="massDensity" required autofocus placeholder="Укажите плотность..."
@@ -60,7 +60,7 @@
                             <label for="inputTdsDft" class="form-label">ТСП тех карты</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.tdsDft }}" name="tdsDft" id="inputTdsDft"
+                                <input type="number" value="{{ dto.tdsDft }}" name="tdsDft" id="inputTdsDft"
                                        class="form-control"
                                        autocomplete="tdsDft" required autofocus placeholder="Укажите тсп..."
                                        min="10" max="9999"
@@ -71,7 +71,7 @@
                             <label for="inputMinDft" class="form-label">Мин ТСП</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.minDft }}" name="minDft" id="inputMinDft"
+                                <input type="number" value="{{ dto.minDft }}" name="minDft" id="inputMinDft"
                                        class="form-control"
                                        autocomplete="minDft" required autofocus placeholder="Укажите мин тсп..."
                                        min="10" max="9999"
@@ -82,7 +82,7 @@
                             <label for="inputMaxDft" class="form-label">Макс ТСП</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.maxDft }}" name="maxDft" id="inputMaxDft"
+                                <input type="number" value="{{ dto.maxDft }}" name="maxDft" id="inputMaxDft"
                                        class="form-control"
                                        autocomplete="maxDft" required autofocus placeholder="Укажите макс тсп..."
                                        min="10" max="9999"
@@ -93,7 +93,7 @@
                             <label for="inputApplicationMinTemp" class="form-label">Мин Т нанесения</label>
                             <div class="input-group">
                                 <span class="input-group-text">&deg;С</span>
-                                <input type="number" value="{{ inputData.applicationMinTemp }}"
+                                <input type="number" value="{{ dto.applicationMinTemp }}"
                                        name="applicationMinTemp"
                                        id="inputApplicationMinTemp" class="form-control"
                                        autocomplete="applicationMinTemp" required autofocus
@@ -106,7 +106,7 @@
                             <label for="inputDryToTouch" class="form-label">Сухой на отлип</label>
                             <div class="input-group">
                                 <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ inputData.dryToTouch }}" name="dryToTouch"
+                                <input type="number" value="{{ dto.dryToTouch }}" name="dryToTouch"
                                        id="inputDryToTouch"
                                        class="form-control"
                                        autocomplete="dryToTouch" required autofocus
@@ -119,7 +119,7 @@
                             <label for="inputMinRecoatingInterval" class="form-label">Мин инт перекр-я</label>
                             <div class="input-group">
                                 <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ inputData.minRecoatingInterval }}"
+                                <input type="number" value="{{ dto.minRecoatingInterval }}"
                                        name="minRecoatingInterval"
                                        id="inputMinRecoatingInterval" class="form-control"
                                        autocomplete="minRecoatingInterval" required autofocus
@@ -132,7 +132,7 @@
                             <label for="inputMaxRecoatingInterval" class="form-label">Макс инт перекр-я</label>
                             <div class="input-group">
                                 <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ inputData.maxRecoatingInterval }}"
+                                <input type="number" value="{{ dto.maxRecoatingInterval }}"
                                        name="maxRecoatingInterval"
                                        id="inputMaxRecoatingInterval" class="form-control"
                                        autocomplete="maxRecoatingInterval" required autofocus
@@ -145,7 +145,7 @@
                             <label for="inputFullCure" class="form-label">Полное отверждение</label>
                             <div class="input-group">
                                 <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ inputData.fullCure }}" name="fullCure"
+                                <input type="number" value="{{ dto.fullCure }}" name="fullCure"
                                        id="inputFullCure"
                                        class="form-control"
                                        autocomplete="fullCure" required autofocus
@@ -158,7 +158,7 @@
                             <label for="inputPack" class="form-label">Упаковка</label>
                             <div class="input-group">
                                 <span class="input-group-text">литр</span>
-                                <input type="number" value="{{ inputData.pack }}" name="pack"
+                                <input type="number" value="{{ dto.pack }}" name="pack"
                                        id="inputPack"
                                        class="form-control"
                                        autocomplete="pack" required autofocus
@@ -169,10 +169,10 @@
                         </div>
                         <div class="col-md-12">
                             <label for="inputManufacturer" class="form-label">Производитель</label>
-                            <select class="form-select" id="inputManufacturer" name="manufacturerId" required>
+                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
                                 <option value="">Укажите производителя...</option>
                                 {% for manufacturer in pagedManufacturers.manufacturers %}
-                                    <option {% if manufacturer.id == inputData.manufacturerId %} selected {% endif %}
+                                    <option {% if manufacturer.id == dto.manufacturer.id %} selected {% endif %}
                                             value="{{ manufacturer.id }}">{{ manufacturer.title }}</option>
                                 {% endfor %}
                             </select>
@@ -180,9 +180,12 @@
                         <div class="col-md-6">
                             <label for="inputCoatingProtectionType" class="form-label">Вид покрытия</label>
                             {% for coatingProtectionType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingProtectionType') %}
+                                {% set tags = dto is null ? [] : dto.tags %}
+
                                 <div class="form-check">
-                                    <input name="coatingTagIds[]" class="form-check-input" type="checkbox" value="{{ coatingProtectionType.id }}" id="inputCoatingProtectionType"
-                                            {% if coatingProtectionType.id in inputData.coatingTagIds %} checked {% endif %}>
+                                    <input name="tags[][id]" class="form-check-input" type="checkbox"
+                                           value="{{ coatingProtectionType.id }}" id="inputCoatingProtectionType"
+                                            {% if coatingProtectionType.id in tags|map(t=>t.id) %} checked {% endif %}>
                                     <label class="form-check-label" for="inputCoatingProtectionType">
                                         {{ coatingProtectionType.title|trans() }}
                                     </label>
@@ -192,9 +195,11 @@
                         <div class="col-md-6">
                             <label for="inputCoatingCoatType" class="form-label">Тип покрытия</label>
                             {% for coatingCoatType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingCoatType') %}
+                                {% set tags = dto is null ? [] : dto.tags %}
                                 <div class="form-check">
-                                    <input name="coatingTagIds[]" class="form-check-input" type="checkbox" value="{{ coatingCoatType.id }}" id="inputCoatingCoatType"
-                                            {% if coatingCoatType.id in inputData.coatingTagIds %} checked {% endif %}>
+                                    <input name="tags[][id]" class="form-check-input" type="checkbox"
+                                           value="{{ coatingCoatType.id }}" id="inputCoatingCoatType"
+                                            {% if coatingCoatType.id in tags|map(t=>t.id) %} checked {% endif %}>
                                     <label class="form-check-label" for="inputCoatingCoatType">
                                         {{ coatingCoatType.title|trans() }}
                                     </label>

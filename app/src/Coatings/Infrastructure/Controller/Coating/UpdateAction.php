@@ -46,33 +46,30 @@ class UpdateAction extends AbstractController
             $coating = $this->queryBus->execute($queryCoating);
             if (!$coating->coatingDTO) {
                 $this->addFlash('manufacturer_update_error', sprintf('Coating with id "%s" not found.', $id));
-
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             }
-            $inputData = $this->coatingMapper->buildInputDataFromDto($coating->coatingDTO);
+
+            $dto = $coating->coatingDTO;
             if ($request->isMethod(Request::METHOD_POST)) {
 
                 $inputData = $request->getPayload()->all();
+                $inputData['id'] = $id;
                 $errors = $this->validator->validate($request->getPayload()->all(), $this->coatingMapper->getValidationCollectionCoating());
                 if ($errors) {
                     throw new \Exception(current($errors)->getFullMessage());
                 }
-                extract($inputData);
-                $command = new UpdateCoatingCommand(
-                    $description, $title, (int)$volumeSolid, (int)$massDensity, (int)$tdsDft, (int)$minDft, (int)$maxDft,
-                    (int)$applicationMinTemp, (int)$dryToTouch, (int)$minRecoatingInterval, (int)$maxRecoatingInterval,
-                    (int)$fullCure, $manufacturerId, $coatingTagIds
-                );
+                $dto = $this->coatingMapper->buildCoatingDtoFromInputData($inputData);
+                $command = new UpdateCoatingCommand($id, $dto);
                 $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_updated_success', sprintf('Покрытие "%s" обновлено.', $title));
+                $this->addFlash('manufacturer_updated_success', sprintf('Покрытие "%s" обновлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             }
         } catch (\Exception|\Error $e) {
             $error = $e->getMessage();
-            return $this->render('admin/coating/coating/edit.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
+            return $this->render('admin/coating/coating/edit.html.twig', compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'));
         }
 
-        return $this->render('admin/coating/coating/edit.html.twig', compact('pagedManufacturers', 'pagedCoatingTags', 'inputData'));
+        return $this->render('admin/coating/coating/edit.html.twig', compact('pagedManufacturers', 'pagedCoatingTags', 'dto'));
     }
 }

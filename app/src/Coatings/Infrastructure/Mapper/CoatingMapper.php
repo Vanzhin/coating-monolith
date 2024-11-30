@@ -29,23 +29,24 @@ class CoatingMapper
         $manufacturer->id = $inputData['manufacturer']['id'];
 
         $dto = new CoatingDTO();
-        $dto->title = $inputData['title'];
-        $dto->description = $inputData['description'];
-        $dto->volumeSolid = (int)$inputData['volumeSolid'];
-        $dto->massDensity = (float)$inputData['massDensity'];
-        $dto->tdsDft = (int)$inputData['tdsDft'];
-        $dto->minDft = (int)$inputData['minDft'];
-        $dto->maxDft = (int)$inputData['maxDft'];
-        $dto->applicationMinTemp = (int)$inputData['applicationMinTemp'];
-        $dto->dryToTouch = (float)$inputData['dryToTouch'];
-        $dto->minRecoatingInterval = (float)$inputData['minRecoatingInterval'];
-        $dto->maxRecoatingInterval = (float)$inputData['maxRecoatingInterval'];
-        $dto->fullCure = (float)$inputData['fullCure'];
+        $dto->id = $inputData['id'] ?? null;
+        $dto->title = $inputData['title'] ?? null;
+        $dto->description = $inputData['description'] ?? null;
+        $dto->volumeSolid = (int)$inputData['volumeSolid'] ?? null;
+        $dto->massDensity = (float)$inputData['massDensity'] ?? null;
+        $dto->tdsDft = (int)$inputData['tdsDft'] ?? null;
+        $dto->minDft = (int)$inputData['minDft'] ?? null;
+        $dto->maxDft = (int)$inputData['maxDft'] ?? null;
+        $dto->applicationMinTemp = (int)$inputData['applicationMinTemp'] ?? null;
+        $dto->dryToTouch = (float)$inputData['dryToTouch'] ?? null;
+        $dto->minRecoatingInterval = (float)$inputData['minRecoatingInterval'] ?? null;
+        $dto->maxRecoatingInterval = (float)$inputData['maxRecoatingInterval'] ?? null;
+        $dto->fullCure = (float)$inputData['fullCure'] ?? null;
         $dto->manufacturer = $manufacturer;
-        $dto->pack = (float)$inputData['pack'];
+        $dto->pack = (float)$inputData['pack'] ?? null;
 
         $tags = [];
-        foreach ($inputData['tags'] as $tag) {
+        foreach ($inputData['tags'] ?? [] as $tag) {
             $coatingTagDto = new CoatingTagDTO();
             $coatingTagDto->id = $tag['id'];
             $tags[] = $coatingTagDto;

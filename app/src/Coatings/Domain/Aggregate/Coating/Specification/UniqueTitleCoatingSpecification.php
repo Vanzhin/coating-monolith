@@ -18,10 +18,12 @@ class UniqueTitleCoatingSpecification implements SpecificationInterface
     public function satisfy(Coating $coating): void
     {
         $exist = $this->coatingRepository->findOneByTitle($coating->getTitle());
-        AssertService::null(
-            $exist,
-            sprintf('Coating with title "%s" already exist.', $coating->getTitle())
-        );
+        if ($exist?->getId() !== $coating->getId()) {
+            AssertService::null(
+                $exist,
+                sprintf('Coating with title "%s" already exist.', $coating->getTitle())
+            );
+        }
     }
 
 }

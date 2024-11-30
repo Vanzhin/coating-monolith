@@ -13,6 +13,9 @@ interface CoatingRepositoryInterface
 
     public function findOneById(string $id): ?Coating;
 
+    public function findOneByTitle(string $title): ?Coating;
+
+
     public function remove(Coating $coating): void;
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult;

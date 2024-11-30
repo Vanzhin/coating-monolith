@@ -53,4 +53,10 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
     {
         return $this->findOneBy(['id' => $id]);
     }
+
+    public function findOneByTitle(string $title): ?Coating
+    {
+        return $this->findOneBy(['title' => $title]);
+
+    }
 }
