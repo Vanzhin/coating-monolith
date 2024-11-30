@@ -2,8 +2,9 @@
 declare(strict_types=1);
 
 
-namespace App\Coatings\Domain\Aggregate\Coating;
+namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
+use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Shared\Domain\Aggregate\Aggregate;
@@ -12,14 +13,12 @@ use App\Shared\Domain\Service\UuidService;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-class Coating extends Aggregate
+class CoatingSystem extends Aggregate
 {
-    public const PROTECTION_TYPE = 'CoatingProtectionType';
-    public const COAT_TYPE = 'CoatingCoatType';
-
+    //todo займусь попозже
     private readonly string $id;
-    private string $title;
     private string $description;
+
     private int $volumeSolid;
     private float $massDensity;
     private int $tdsDft;
@@ -33,7 +32,6 @@ class Coating extends Aggregate
     private Manufacturer $manufacturer;
     private CoatingSpecification $specification;
     private float $pack;
-    private ?string $thinner;
 
     /**
      * @var Collection<CoatingTag>
@@ -55,7 +53,6 @@ class Coating extends Aggregate
         float                $maxRecoatingInterval,
         float                $fullCure,
         float                $pack,
-        ?string               $thinner,
         Manufacturer         $manufacturer,
         CoatingSpecification $specification
     )
@@ -76,7 +73,6 @@ class Coating extends Aggregate
         $this->setMaxRecoatingInterval($maxRecoatingInterval);
         $this->setFullCure($fullCure);
         $this->setPack($pack);
-        $this->setThinner($thinner);
         $this->manufacturer = $manufacturer;
 
     }
@@ -263,17 +259,6 @@ class Coating extends Aggregate
         if ($pack < 1 || $pack > 1000) {
             throw new \Exception("Pack must be between 1 and 1000.");
         }
-    }
-
-    public function getThinner(): ?string
-    {
-        return $this->thinner;
-    }
-
-    public function setThinner(?string $thinner): void
-    {
-        $this->thinner = $thinner;
-        AssertService::maxLength($this->thinner, 100);
 
     }
 }

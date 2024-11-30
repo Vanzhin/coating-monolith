@@ -66,6 +66,8 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         if ($command->coatingDTO->pack) {
             $coating->setPack($command->coatingDTO->pack);
         }
+        $coating->setThinner($command->coatingDTO->thinner ?? null);
+
         if ($command->coatingDTO->tags) {
             $coating->getTags()->clear();
             foreach ($command->coatingDTO->tags as $coatingTagDTO) {

@@ -44,6 +44,7 @@ class CoatingDTOTransformer
         $dto->volumeSolid = $entity->getVolumeSolid();
         $dto->pack = $entity->getPack();
         $dto->manufacturer = $manufacturerDto;
+        $dto->thinner = $entity->getThinner();
         $dto->tags = $coatingTagDtos;
 
         return $dto;

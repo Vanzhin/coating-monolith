@@ -33,6 +33,7 @@ class CoatingMapper
             $dto->id = $inputData['id'];
         }
         $dto->title = $inputData['title'] ?? null;
+        $dto->thinner = isset($inputData['thinner']) && strlen($inputData['thinner']) > 0 ? $inputData['thinner'] : null;
         $dto->description = $inputData['description'] ?? null;
         $dto->volumeSolid = (int)$inputData['volumeSolid'] ?? null;
         $dto->massDensity = (float)$inputData['massDensity'] ?? null;

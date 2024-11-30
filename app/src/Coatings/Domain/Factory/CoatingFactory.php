@@ -30,6 +30,7 @@ readonly class CoatingFactory
         float        $fullCure,
         Manufacturer $manufacturer,
         float        $pack,
+        ?string      $thinner,
     ): Coating
     {
         return new Coating(
@@ -46,6 +47,7 @@ readonly class CoatingFactory
             $maxRecoatingInterval,
             $fullCure,
             $pack,
+            $thinner,
             $manufacturer,
             $this->coatingSpecification,
         );

@@ -20,6 +20,7 @@
         <field name="maxRecoatingInterval" column="max_recoating_interval" type="float" length="5"/>
         <field name="fullCure" column="full_cure" type="float" length="5"/>
         <field name="pack" column="pack" type="float" length="5"/>
+        <field name="thinner" type="string" length="100" nullable="true"/>
         <many-to-many field="tags" target-entity="App\Coatings\Domain\Aggregate\Coating\CoatingTag">
             <join-table name="coatings_coating_coating_tag">
                 <join-columns>

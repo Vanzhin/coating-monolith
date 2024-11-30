@@ -23,6 +23,7 @@ class CoatingDTO
     public float $maxRecoatingInterval;
     public float $fullCure;
     public float $pack;
+    public ?string $thinner;
     public ManufacturerDTO $manufacturer;
     /**
      * @var CoatingTagDTO[]

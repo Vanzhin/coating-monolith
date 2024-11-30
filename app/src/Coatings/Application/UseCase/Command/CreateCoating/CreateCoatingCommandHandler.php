@@ -35,7 +35,8 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             array_map(function ($tag) {
                 return $tag->id;
             }, $command->dto->tags),
-            $command->dto->pack
+            $command->dto->pack,
+            $command->dto->thinner,
         );
 
         return new CreateCoatingCommandResult(

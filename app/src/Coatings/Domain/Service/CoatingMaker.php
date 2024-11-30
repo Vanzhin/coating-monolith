@@ -22,27 +22,28 @@ final readonly class CoatingMaker
     }
 
     public function make(
-        string $title,
-        string $description,
-        int    $volumeSolid,
-        float  $massDensity,
-        int    $tdsDft,
-        int    $minDft,
-        int    $maxDft,
-        int    $applicationMinTemp,
-        float  $dryToTouch,
-        float  $minRecoatingInterval,
-        float  $maxRecoatingInterval,
-        float  $fullCure,
-        string $manufacturerId,
-        array  $coatingTagIds,
-        float  $pack,
+        string  $title,
+        string  $description,
+        int     $volumeSolid,
+        float   $massDensity,
+        int     $tdsDft,
+        int     $minDft,
+        int     $maxDft,
+        int     $applicationMinTemp,
+        float   $dryToTouch,
+        float   $minRecoatingInterval,
+        float   $maxRecoatingInterval,
+        float   $fullCure,
+        string  $manufacturerId,
+        array   $coatingTagIds,
+        float   $pack,
+        ?string $thinner,
     ): Coating
     {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
         $coating = $this->coatingFactory->create(
             $title, $description, $volumeSolid, $massDensity, $tdsDft, $minDft, $maxDft, $applicationMinTemp,
-            $dryToTouch, $minRecoatingInterval, $maxRecoatingInterval, $fullCure, $manufacturer, $pack);
+            $dryToTouch, $minRecoatingInterval, $maxRecoatingInterval, $fullCure, $manufacturer, $pack, $thinner);
         foreach ($coatingTagIds as $coatingTagId) {
             $coating->addTag($this->coatingTagFetcher->getRequiredTag($coatingTagId));
         }
