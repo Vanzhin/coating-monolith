@@ -55,7 +55,7 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'));
+                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
             }
         }
 

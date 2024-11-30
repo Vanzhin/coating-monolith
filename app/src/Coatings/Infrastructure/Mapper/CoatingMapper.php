@@ -29,7 +29,9 @@ class CoatingMapper
         $manufacturer->id = $inputData['manufacturer']['id'];
 
         $dto = new CoatingDTO();
-        $dto->id = $inputData['id'] ?? null;
+        if ($inputData['id'] ?? null) {
+            $dto->id = $inputData['id'];
+        }
         $dto->title = $inputData['title'] ?? null;
         $dto->description = $inputData['description'] ?? null;
         $dto->volumeSolid = (int)$inputData['volumeSolid'] ?? null;
@@ -75,7 +77,7 @@ class CoatingMapper
                 new Assert\Type('string'),
                 new Assert\Length([
                     'min' => 3,
-                    'max' => 100,
+                    'max' => 750,
                     'maxMessage' => 'Описание не должно быть длиннее {{ limit }}.',
                     'minMessage' => 'Описание не должно быть короче {{ limit }}.',
                 ]),
