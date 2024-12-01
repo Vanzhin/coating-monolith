@@ -16,12 +16,16 @@
         <field name="thinnerPrice" column="thinner_price" type="float"/>
         <field name="thinnerConsumption" column="thinner_consumption" type="integer"/>
         <field name="loss" column="loss" type="integer" length="3"/>
-        <many-to-one field="proposal" target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo" inversed-by="coats">
+        <many-to-one field="proposal" target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo"
+                     inversed-by="coats">
             <cascade>
                 <cascade-persist/>
                 <cascade-remove/>
             </cascade>
         </many-to-one>
+        <unique-constraints>
+            <unique-constraint fields="coatNumber,proposal"/>
+        </unique-constraints>
     </entity>
 
 </doctrine-mapping>

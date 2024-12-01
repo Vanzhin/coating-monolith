@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal;
 
+use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoItemSpecification;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Service\UuidService;
@@ -20,23 +21,26 @@ class GeneralProposalInfoItem extends Aggregate
     private int $thinnerConsumption;
     private ?int $loss;
     private readonly GeneralProposalInfo $proposal;
+    private readonly GeneralProposalInfoItemSpecification $specification;
 
 
     public function __construct(
-        string              $coatId,
-        int                 $coatNumber,
-        float               $coatPrice,
-        int                 $coatDft,
-        string              $coatColor,
-        float               $thinnerPrice,
-        int                 $thinnerConsumption,
-        GeneralProposalInfo $proposal,
-        ?int                $loss = null,
+        string                               $coatId,
+        int                                  $coatNumber,
+        float                                $coatPrice,
+        int                                  $coatDft,
+        string                               $coatColor,
+        float                                $thinnerPrice,
+        int                                  $thinnerConsumption,
+        GeneralProposalInfo                  $proposal,
+        GeneralProposalInfoItemSpecification $specification,
+        ?int                                 $loss = null,
     )
     {
         $this->id = UuidService::generate();
+        $this->specification = $specification;
         $this->coatId = $coatId;
-        $this->coatNumber = $coatNumber;
+        $this->setCoatNumber($coatNumber);
         $this->coatPrice = $coatPrice;
         $this->coatDft = $coatDft;
         $this->coatColor = $coatColor;
@@ -71,6 +75,7 @@ class GeneralProposalInfoItem extends Aggregate
     {
         $this->coatNumber = $coatNumber;
         AssertService::greaterThanEq($this->coatNumber, 0);
+        $this->specification->uniqueCoatNumberGeneralProposalInfoItemSpecification->satisfy($this);
     }
 
     public function getCoatPrice(): float

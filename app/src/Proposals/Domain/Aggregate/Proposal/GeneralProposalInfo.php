@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal;
 
+use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoSpecification;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Service\UuidService;
@@ -13,7 +14,7 @@ use Doctrine\Common\Collections\Collection;
 class GeneralProposalInfo extends Aggregate
 {
     private readonly string $id;
-    private readonly string $number;
+    private string $number;
     private ?string $description;
     private ?string $basis;
     private \DateTimeImmutable $createdAt;
@@ -28,6 +29,7 @@ class GeneralProposalInfo extends Aggregate
     private ?CoatingSystemCorrosiveCategory $category;
     private ?CoatingSystemSurfaceTreatment $treatment;
     private ?CoatingSystemApplicationMethod $method;
+    private GeneralProposalInfoSpecification $specification;
 
 
     /**
@@ -36,23 +38,25 @@ class GeneralProposalInfo extends Aggregate
     private Collection $coats;
 
     public function __construct(
-        string                          $number,
-        string                          $ownerId,
-        GeneralProposalInfoUnit         $unit,
-        string                          $projectTitle,
-        float                           $projectArea,
-        ?string                         $description = null,
-        ?string                         $basis = null,
-        ?string                         $projectStructureDescription = null,
-        ?CoatingSystemDurability        $durability = null,
-        ?CoatingSystemCorrosiveCategory $category = null,
-        ?CoatingSystemSurfaceTreatment  $treatment = null,
-        ?CoatingSystemApplicationMethod $method = null,
-        int                             $loss = 30,
+        string                           $number,
+        string                           $ownerId,
+        GeneralProposalInfoUnit          $unit,
+        string                           $projectTitle,
+        float                            $projectArea,
+        GeneralProposalInfoSpecification $specification,
+        ?string                          $description = null,
+        ?string                          $basis = null,
+        ?string                          $projectStructureDescription = null,
+        ?CoatingSystemDurability         $durability = null,
+        ?CoatingSystemCorrosiveCategory  $category = null,
+        ?CoatingSystemSurfaceTreatment   $treatment = null,
+        ?CoatingSystemApplicationMethod  $method = null,
+        int                              $loss = 30,
     )
     {
         $this->id = UuidService::generate();
-        $this->number = $number;
+        $this->specification = $specification;
+        $this->setNumber($number);
         $this->description = $description;
         $this->basis = $basis;
         $this->coats = new ArrayCollection();
@@ -79,6 +83,12 @@ class GeneralProposalInfo extends Aggregate
     public function getNumber(): string
     {
         return $this->number;
+    }
+
+    public function setNumber(string $number): void
+    {
+        $this->number = $number;
+        $this->specification->uniqueNumberProposalSpecification->satisfy($this);
     }
 
     public function getDescription(): ?string
