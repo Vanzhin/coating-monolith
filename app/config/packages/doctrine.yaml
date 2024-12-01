@@ -26,6 +26,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Coatings/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Coatings\Domain\Aggregate'
                 alias: Coatings
+            Proposals:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Proposals\Domain\Aggregate'
+                alias: Proposals
 
 #            App:
 #                is_bundle: false

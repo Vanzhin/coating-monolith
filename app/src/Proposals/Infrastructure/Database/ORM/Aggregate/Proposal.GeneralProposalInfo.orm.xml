@@ -1,0 +1,50 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo" table="proposal_general_proposal">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="number" type="string" length="100" unique="true"/>
+        <field name="description" type="string" length="750" nullable="true"/>
+        <field name="basis" type="string" length="750" nullable="true"/>
+        <field name="ownerId" column="owner_id" type="string" length="36"/>
+        <field name="createdAt" column="created_at" type="datetime"/>
+        <field name="updatedAt" column="updated_at" type="datetime" nullable="true"/>
+        <field name="unit"
+               enum-type="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit"
+               length="25">
+        </field>
+        <field name="projectTitle" column="project_title" type="string" length="750"/>
+        <field name="projectArea" column="project_area" type="float"/>
+        <field name="projectStructureDescription" column="project_structure_description" type="string" length="750"/>
+        <field name="loss" column="loss" type="integer" length="3"/>
+        <field name="durability"
+               enum-type="App\Proposals\Domain\Aggregate\Proposal\CoatingSystemDurability"
+               length="50"
+               nullable="true">
+        </field>
+        <field name="category"
+               enum-type="App\Proposals\Domain\Aggregate\Proposal\CoatingSystemCorrosiveCategory"
+               length="100"
+               nullable="true">
+        </field>
+        <field name="treatment"
+               enum-type="App\Proposals\Domain\Aggregate\Proposal\CoatingSystemSurfaceTreatment"
+               length="500"
+               nullable="true">
+        </field>
+        <field name="method"
+               enum-type="App\Proposals\Domain\Aggregate\Proposal\CoatingSystemApplicationMethod"
+               length="100"
+               nullable="true">
+        </field>
+        <one-to-many field="coats"
+                     target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem"
+                     mapped-by="proposal">
+        </one-to-many>
+    </entity>
+
+</doctrine-mapping>

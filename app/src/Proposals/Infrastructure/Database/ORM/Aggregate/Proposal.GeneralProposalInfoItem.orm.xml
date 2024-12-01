@@ -1,0 +1,27 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem"
+            table="proposal_general_proposal_item">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="coatId" column="coat_id" type="string" length="36"/>
+        <field name="coatNumber" column="coat_number" type="integer" length="1"/>
+        <field name="coatPrice" column="coat_price" type="float"/>
+        <field name="coatDft" column="coat_dft" type="integer"/>
+        <field name="coatColor" column="coat_color" length="50"/>
+        <field name="thinnerPrice" column="thinner_price" type="float"/>
+        <field name="thinnerConsumption" column="thinner_consumption" type="integer"/>
+        <field name="loss" column="loss" type="integer" length="3"/>
+        <many-to-one field="proposal" target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo" inversed-by="coats">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </many-to-one>
+    </entity>
+
+</doctrine-mapping>

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Coatings\Domain\Aggregate\CommercialProposal;
+namespace App\Proposals\Domain\Aggregate\Proposal;
 
 /**
  * Типа покрытия по назначению
  */
-enum CommercialProposalUnit: string
+enum GeneralProposalInfoUnit: string
 {
     case LITER = 'Литр';
 
