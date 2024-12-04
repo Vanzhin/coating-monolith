@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
-use App\Coatings\Application\UseCase\Query\GetPagedGeneralProposalInfo\GetPagedGeneralProposalInfoQuery;
+use App\Proposals\Application\UseCase\Query\GetPagedGeneralProposalInfo\GetPagedGeneralProposalInfoQuery;
 use App\Proposals\Domain\Repository\GeneralProposalInfoFilter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route(path: '/proposals/list', name: 'app_proposals_general_proposal_list', methods: ['GET'])]
+#[Route(path: '/cabinet/proposals/list', name: 'app_cabinet_proposals_general_proposal_list', methods: ['GET'])]
 class ListAction extends AbstractController
 {
     public function __construct(
@@ -27,9 +27,9 @@ class ListAction extends AbstractController
         $search = $request->query->get('search');
         $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
         $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
-        $query = new GetPagedGeneralProposalInfoQuery(new GeneralProposalInfoFilter($search, Pager::fromPage($page, $limit)));
+        $query = new GetPagedGeneralProposalInfoQuery(new GeneralProposalInfoFilter($this->getUser()->getUlid(), $search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
 
-        return $this->render('admin/coating/coating/index.html.twig', compact('result'));
+        return $this->render('cabinet/proposal/index.html.twig', compact('result'));
     }
 }

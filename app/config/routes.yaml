@@ -22,3 +22,7 @@ coatings:
   resource: ../src/Coatings/Infrastructure/Controller
   type: attribute
 
+proposals:
+  resource: ../src/Proposals/Infrastructure/Controller
+  type: attribute
+

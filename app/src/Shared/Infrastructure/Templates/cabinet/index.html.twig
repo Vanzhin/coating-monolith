@@ -44,7 +44,7 @@
 
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="#" class="nav-link active" aria-current="page">
+                <a href="#" class="nav-link link-body-emphasis" aria-current="page">
                     <svg class="bi pe-none me-2" width="16" height="16">
                         <use xlink:href="#home"></use>
                     </svg>
@@ -52,11 +52,14 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="nav-link link-body-emphasis">
+                <a href="{{ path('app_cabinet_proposals_general_proposal_list') }}"
+                   class="nav-link
+                   {% if 'app_cabinet_proposals_general_proposal' in app.request.get('_route') %}fw-bold{% endif %}
+                            ">
                     <svg class="bi pe-none me-2" width="16" height="16">
                         <use xlink:href="#speedometer2"></use>
                     </svg>
-                    Dashboard
+                    Мои формы
                 </a>
             </li>
             <li>

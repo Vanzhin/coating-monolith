@@ -45,8 +45,10 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
     public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('gp');
-        $qb->addOrderBy('gp.updated_at', 'ASC');
-        $qb->addOrderBy('gp.created_at', 'ASC');
+        $qb->andWhere($qb->expr()->eq('gp.ownerId', ':owner_id'))
+            ->setParameter('owner_id', $filter->userId);
+        $qb->addOrderBy('gp.updatedAt', 'ASC');
+        $qb->addOrderBy('gp.createdAt', 'ASC');
         if ($filter->search) {
             $qb->andWhere($qb->expr()->like('LOWER(gp.description)', 'LOWER(:search)'))
                 ->setParameter('search', '%' . $filter->search . '%');
