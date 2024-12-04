@@ -11,7 +11,7 @@ use App\Shared\Domain\Repository\PaginationResult;
 
 interface GeneralProposalInfoRepositoryInterface
 {
-    public function add(Coating $coating): void;
+    public function add(GeneralProposalInfo $generalProposalInfo): void;
 
     public function findOneById(string $id): ?Coating;
 

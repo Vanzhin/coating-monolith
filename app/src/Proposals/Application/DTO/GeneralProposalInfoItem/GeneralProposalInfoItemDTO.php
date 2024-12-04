@@ -9,7 +9,7 @@ class GeneralProposalInfoItemDTO
     public string $id;
     public ?string $coatId;
     public ?float $coatPrice;
-    public ?float $coatNumber;
+    public ?int $coatNumber;
     public ?int $coatDft;
     public ?string $coatColor;
     public ?float $thinnerPrice;

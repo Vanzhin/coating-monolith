@@ -20,9 +20,10 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
     }
 
 
-    public function add(Coating $coating): void
+    public function add(GeneralProposalInfo $generalProposalInfo): void
     {
-        // TODO: Implement add() method.
+        $this->getEntityManager()->persist($generalProposalInfo);
+        $this->getEntityManager()->flush();
     }
 
     public function findOneById(string $id): ?Coating
