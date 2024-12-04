@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Proposals\Infrastructure\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
-use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
+use App\Proposals\Domain\Repository\GeneralProposalInfoFilter;
 use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 class GeneralProposalInfoRepository extends ServiceEntityRepository implements GeneralProposalInfoRepositoryInterface
@@ -41,8 +42,21 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
         // TODO: Implement remove() method.
     }
 
-    public function findByFilter(CoatingsFilter $filter): PaginationResult
+    public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult
     {
-        // TODO: Implement findByFilter() method.
+        $qb = $this->createQueryBuilder('gp');
+        $qb->addOrderBy('gp.updated_at', 'ASC');
+        $qb->addOrderBy('gp.created_at', 'ASC');
+        if ($filter->search) {
+            $qb->andWhere($qb->expr()->like('LOWER(gp.description)', 'LOWER(:search)'))
+                ->setParameter('search', '%' . $filter->search . '%');
+        }
+        if ($filter->pager) {
+            $qb->setMaxResults($filter->pager->getLimit());
+            $qb->setFirstResult($filter->pager->getOffset());
+        }
+        $paginator = new Paginator($qb->getQuery());
+
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 }
