@@ -88,6 +88,7 @@ class GeneralProposalInfo extends Aggregate
     public function setNumber(string $number): void
     {
         $this->number = $number;
+        AssertService::greaterThanEq($this->number, 100);
         $this->specification->uniqueNumberProposalSpecification->satisfy($this);
     }
 
@@ -99,6 +100,8 @@ class GeneralProposalInfo extends Aggregate
     public function setDescription(?string $description): void
     {
         $this->description = $description;
+        AssertService::greaterThanEq($this->description, 750);
+
     }
 
     public function getBasis(): ?string
@@ -109,6 +112,8 @@ class GeneralProposalInfo extends Aggregate
     public function setBasis(?string $basis): void
     {
         $this->basis = $basis;
+        AssertService::greaterThanEq($this->basis, 750);
+
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -159,6 +164,7 @@ class GeneralProposalInfo extends Aggregate
     public function setProjectTitle(string $projectTitle): void
     {
         $this->projectTitle = $projectTitle;
+        AssertService::greaterThanEq($this->projectTitle, 750);
     }
 
     public function getProjectArea(): float
@@ -179,6 +185,8 @@ class GeneralProposalInfo extends Aggregate
     public function setProjectStructureDescription(?string $projectStructureDescription): void
     {
         $this->projectStructureDescription = $projectStructureDescription;
+        AssertService::greaterThanEq($this->projectStructureDescription, 750);
+
     }
 
     public function getLoss(): int
@@ -190,6 +198,7 @@ class GeneralProposalInfo extends Aggregate
     {
         $this->loss = $loss;
         AssertService::greaterThanEq($this->loss, 0);
+        AssertService::lessThanEq($this->loss, 100);
     }
 
     public function getDurability(): ?CoatingSystemDurability

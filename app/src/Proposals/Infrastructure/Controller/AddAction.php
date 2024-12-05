@@ -6,6 +6,11 @@ namespace App\Proposals\Infrastructure\Controller;
 
 use App\Coatings\Application\UseCase\Command\CreateCoating\CreateCoatingCommand;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
+use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemApplicationMethod;
+use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemCorrosiveCategory;
+use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemDurability;
+use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemSurfaceTreatment;
+use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -33,6 +38,13 @@ class AddAction extends AbstractController
     {
         $coatings = $this->coatingsAdapter->getPagedCoatings();
 
+        $data = [
+            'units' => GeneralProposalInfoUnit::values(),
+            'durabilities' => CoatingSystemDurability::values(),
+            'categories' => CoatingSystemCorrosiveCategory::values(),
+            'treatments' => CoatingSystemSurfaceTreatment::values(),
+            'methods' => CoatingSystemApplicationMethod::values(),
+        ];
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
                 $inputData = $request->getPayload()->all();
@@ -49,10 +61,10 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData',));
+                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData'));
             }
         }
 
-        return $this->render('cabinet/proposal/create.html.twig', compact('coatings'));
+        return $this->render('cabinet/proposal/create.html.twig', compact('coatings', 'data'));
     }
 }

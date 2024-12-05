@@ -10,19 +10,18 @@
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
-
                 <h1 class="h3 mb-3 font-weight-normal">Добавление формы</h1>
                 <div class="form-group">
-                    <div class="row g-3">
-                        <div class="col-sm-6">
-                            <label for="inputTitle">Название</label>
-                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
+                    <div class="row g-4">
+                        <div class="col-sm-3">
+                            <label for="inputNumber">Номер</label>
+                            <input type="text" value="{{ inputData.number }}" name="number" id="inputNumber"
                                    class="form-control"
-                                   autocomplete="title" required autofocus placeholder="Укажите название..."
+                                   autocomplete="number" autofocus placeholder="Укажите номер..."
                                    minlength="3" maxlength="100"
                             >
                         </div>
-                        <div class="col-sm-6">
+                        <div class="col-sm-4">
                             <label for="inputDescription">Описание</label>
                             <textarea type="text" name="description" id="inputDescription"
                                       class="form-control"
@@ -31,165 +30,151 @@
                                       rows="3"
                                       maxlength="750">{{ inputData.description }}</textarea>
                         </div>
-                        <div class="col-sm-6">
-                            <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
+                        <div class="col-sm-4">
+                            <label for="inputBasis">Основание</label>
+                            <textarea type="text" name="basis" id="inputBasis"
+                                      class="form-control"
+                                      autocomplete="basis"
+                                      required placeholder="Укажите основание..."
+                                      rows="3"
+                                      maxlength="750">{{ inputData.basis }}</textarea>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputProjectArea" class="form-label">Площадь</label>
                             <div class="input-group">
-                                <span class="input-group-text">об. %</span>
-                                <input type="number" value="{{ inputData.volumeSolid }}" name="volumeSolid"
-                                       id="inputVolumeSolid"
+                                <span class="input-group-text">м<sup>2</sup></span>
+                                <input type="number" value="{{ inputData.projectArea }}" name="projectArea"
+                                       id="inputProjectArea"
                                        class="form-control"
-                                       autocomplete="volumeSolid" required autofocus
-                                       placeholder="Укажите сухой остаток..."
-                                       min="10" max="100"
+                                       autocomplete="inputProjectArea" required autofocus
+                                       placeholder="Укажите площадь..."
                                 >
                             </div>
                         </div>
-                        <div class="col-sm-6">
-                            <label for="inputMassDensity" class="form-label">Плотность</label>
+                        <div class="col-sm-2">
+                            <label for="inputLoss" class="form-label">Потери</label>
                             <div class="input-group">
-                                <span class="input-group-text">кг/л</span>
-                                <input type="number" value="{{ inputData.massDensity }}" name="massDensity"
-                                       id="inputMassDensity"
+                                <span class="input-group-text">%</span>
+                                <input type="number" value="{{ inputData.projectArea??30 }}" name="loss"
+                                       id="inputLoss"
                                        class="form-control"
-                                       autocomplete="massDensity" required autofocus placeholder="Укажите плотность..."
-                                       min="0" max="100" step="0.01"
+                                       autocomplete="inputLoss" required autofocus
+                                       placeholder="Укажите потери..."
                                 >
                             </div>
                         </div>
                         <div class="col-sm-4">
-                            <label for="inputTdsDft" class="form-label">ТСП тех карты</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.tdsDft }}" name="tdsDft" id="inputTdsDft"
-                                       class="form-control"
-                                       autocomplete="tdsDft" required autofocus placeholder="Укажите тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
+                            <label for="inputProjectTitle">Объект</label>
+                            <textarea type="text" name="projectTitle" id="inputProjectTitle"
+                                      class="form-control"
+                                      autocomplete="projectTitle"
+                                      required placeholder="Укажите объект..."
+                                      rows="3"
+                                      maxlength="750">{{ inputData.projectTitle }}</textarea>
                         </div>
                         <div class="col-sm-4">
-                            <label for="inputMinDft" class="form-label">Мин ТСП</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.minDft }}" name="minDft" id="inputMinDft"
-                                       class="form-control"
-                                       autocomplete="minDft" required autofocus placeholder="Укажите мин тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <label for="inputMaxDft" class="form-label">Макс ТСП</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.maxDft }}" name="maxDft" id="inputMaxDft"
-                                       class="form-control"
-                                       autocomplete="maxDft" required autofocus placeholder="Укажите макс тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputApplicationMinTemp" class="form-label">Мин Т нанесения</label>
-                            <div class="input-group">
-                                <span class="input-group-text">&deg;С</span>
-                                <input type="number" value="{{ inputData.applicationMinTemp }}"
-                                       name="applicationMinTemp"
-                                       id="inputApplicationMinTemp" class="form-control"
-                                       autocomplete="applicationMinTemp" required autofocus
-                                       placeholder="Укажите мин Т ..."
-                                       min="-30" maxlength="50"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputDryToTouch" class="form-label">Сухой на отлип</label>
-                            <div class="input-group">
-                                <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ inputData.dryToTouch }}" name="dryToTouch"
-                                       id="inputDryToTouch"
-                                       class="form-control"
-                                       autocomplete="dryToTouch" required autofocus
-                                       placeholder="Укажите 'сухой на отлип' ..."
-                                       min="0" max="100" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputMinRecoatingInterval" class="form-label">Мин инт перекр-я</label>
-                            <div class="input-group">
-                                <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ inputData.minRecoatingInterval }}"
-                                       name="minRecoatingInterval"
-                                       id="inputMinRecoatingInterval" class="form-control"
-                                       autocomplete="minRecoatingInterval" required autofocus
-                                       placeholder="Укажите мин инт перек..."
-                                       min="0" max="100" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputMaxRecoatingInterval" class="form-label">Макс инт перекр-я</label>
-                            <div class="input-group">
-                                <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ inputData.maxRecoatingInterval }}"
-                                       name="maxRecoatingInterval"
-                                       id="inputMaxRecoatingInterval" class="form-control"
-                                       autocomplete="maxRecoatingInterval" required autofocus
-                                       placeholder="Укажите макс инт перек..."
-                                       min="0" max="100" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputFullCure" class="form-label">Полное отверждение</label>
-                            <div class="input-group">
-                                <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ inputData.fullCure }}" name="fullCure"
-                                       id="inputFullCure"
-                                       class="form-control"
-                                       autocomplete="fullCure" required autofocus
-                                       placeholder="Укажите время полного отверждения..."
-                                       min="0" max="1000" step="0.5"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputPack" class="form-label">Упаковка</label>
-                            <div class="input-group">
-                                <span class="input-group-text">литр</span>
-                                <input type="number" value="{{ inputData.pack }}" name="pack"
-                                       id="inputPack"
-                                       class="form-control"
-                                       autocomplete="pack" required autofocus
-                                       placeholder="Укажите упаковку..."
-                                       min="1" max="1000" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputThinner" class="form-label">Разбавитель</label>
-                            <div class="input-group">
-                                <input type="text" value="{{ inputData.thinner }}" name="thinner"
-                                       id="inputThinner"
-                                       class="form-control"
-                                       autocomplete="thinner" autofocus
-                                       placeholder="Укажите разбавитель..."
-                                       maxlength="100"
-                                >
-                            </div>
+                            <label for="inputProjectStructureDescription">Элементы</label>
+                            <textarea type="text" name="projectStructureDescription"
+                                      id="inputProjectStructureDescription"
+                                      class="form-control"
+                                      autocomplete="projectStructureDescription"
+                                      required placeholder="Укажите наименование элементов..."
+                                      rows="3"
+                                      maxlength="750">{{ inputData.projectStructureDescription }}</textarea>
                         </div>
                         <div class="col-md-12">
-                            <label for="inputManufacturer" class="form-label">Производитель</label>
-                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
-                                <option value="">Укажите производителя...</option>
-                                {% for manufacturer in pagedManufacturers.manufacturers %}
-                                    <option {% if manufacturer.id == inputData.manufacturer.id %} selected {% endif %}
-                                            value="{{ manufacturer.id }}">{{ manufacturer.title }}</option>
+                            <label for="inputUnit" class="form-label">Ед. измерения</label>
+                            <select class="form-select" id="inputUnit" name="unit" required>
+                                <option value="Литр" selected disabled hidden>Литр</option>
+                                {% for unit in data.units %}
+                                    <option
+                                            {% if unit == inputData.unit %} selected {% endif %}
+                                            value="{{ unit }}">{{ unit }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="col-md-12">
+                            <label for="inputDurability" class="form-label">Долговечность</label>
+                            <select class="form-select" id="inputDurability" name="durability" required>
+                                <option value="" selected disabled hidden>Укажите долговечность...</option>
+                                {% for durability in data.durabilities %}
+                                    <option {% if durability == inputData.durability %} selected {% endif %}
+                                            value="{{ durability }}">{{ durability }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="inputCategory" class="form-label">Корр. категория</label>
+                            <select class="form-select" id="inputCategory" name="category" required>
+                                <option value="" selected disabled hidden>Укажите корр. категорию...</option>
+                                {% for category in data.categories %}
+                                    <option {% if category == inputData.category %} selected {% endif %}
+                                            value="{{ category }}">{{ category }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="inputTreatment" class="form-label">Подготовка</label>
+                            <select class="form-select" id="inputTreatment" name="treatment" required>
+                                <option value="" selected disabled hidden>Укажите подготовку...</option>
+                                {% for treatment in data.treatments %}
+                                    <option {% if treatment == inputData.treatment %} selected {% endif %}
+                                            value="{{ treatment }}">{{ treatment }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="inputMethod" class="form-label">Метод нанесения</label>
+                            <select class="form-select" id="inputMethod" name="method" required>
+                                <option value="" selected disabled hidden>Укажите метод нанесения...</option>
+                                {% for method in data.methods %}
+                                    <option {% if method == inputData.method %} selected {% endif %}
+                                            value="{{ method }}">{{ method }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <hr>
+                        <div class="col-md-12">
+                            <label for="inputCoats" class="form-label">Покрытие</label>
+                            <select class="form-select" id="inputCoats" name="coatId" required>
+                                <option value="" selected disabled hidden>Укажите покрытие...</option>
+                                {% for coat in coatings.coatings %}
+                                    <option {% if coat.id == inputData.coat.id %} selected {% endif %}
+                                            value="{{ coat.id }}">{{ coat.title }} - {{ coat.description }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputCoatPrice" class="form-label">Цена за ед. изм </label>
+                            <div class="input-group">
+                                <span class="input-group-text">₽</span>
+                                <input type="number" value="{{ inputData.coatPrice }}" name="coatPrice"
+                                       id="inputCoatPrice"
+                                       class="form-control"
+                                       autocomplete="inputCoatPrice" required autofocus
+                                       placeholder="Укажите стоимость..."
+                                       min="1" step="0.1"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputCoatDft" class="form-label">ТСП</label>
+                            <div class="input-group">
+                                <span class="input-group-text">мкм</span>
+                                <input type="number" value="{{ inputData.coatDft }}" name="coatDft" id="inputCoatDft"
+                                       class="form-control"
+                                       autocomplete="coatDft" required autofocus placeholder="Укажите тсп..."
+                                       min="10" max="9999"
+                                >
+                            </div>
+                        </div>
                     </div>
+
                     <input type="hidden" name="_csrf_token"
                            value="{{ csrf_token('authenticate') }}"
                     >

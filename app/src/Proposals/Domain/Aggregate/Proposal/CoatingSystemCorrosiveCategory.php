@@ -2,11 +2,15 @@
 
 namespace App\Proposals\Domain\Aggregate\Proposal;
 
+use App\Shared\Domain\Trait\EnumToArray;
+
 /**
  * Типа покрытия по назначению
  */
 enum CoatingSystemCorrosiveCategory: string
 {
+    use EnumToArray;
+
     // Коррозионная среда по ИСО 12944-2
     case C1 = 'C1';
     case C2 = 'C2';
