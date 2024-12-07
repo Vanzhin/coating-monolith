@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
-use App\Coatings\Application\UseCase\Command\CreateCoating\CreateCoatingCommand;
-use App\Coatings\Infrastructure\Mapper\CoatingMapper;
+use App\Proposals\Application\UseCase\Command\CreateGeneralProposalInfo\CreateGeneralProposalInfoCommand;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemApplicationMethod;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemCorrosiveCategory;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemDurability;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemSurfaceTreatment;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
+use App\Proposals\Infrastructure\Mapper\GeneralProposalInfoMapper;
 use App\Shared\Application\Command\CommandBusInterface;
-use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Validation\Validator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,11 +23,10 @@ use Symfony\Component\Routing\Annotation\Route;
 class AddAction extends AbstractController
 {
     public function __construct(
-        private readonly CommandBusInterface $commandBus,
-        private readonly QueryBusInterface   $queryBus,
-        private readonly Validator           $validator,
-        private readonly CoatingMapper       $coatingMapper,
-        private readonly CoatingsAdapter     $coatingsAdapter,
+        private readonly CommandBusInterface       $commandBus,
+        private readonly Validator                 $validator,
+        private readonly GeneralProposalInfoMapper $generalProposalInfoMapper,
+        private readonly CoatingsAdapter           $coatingsAdapter,
 
     )
     {
@@ -48,20 +46,22 @@ class AddAction extends AbstractController
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
                 $inputData = $request->getPayload()->all();
-                dd($inputData);
-                $errors = $this->validator->validate($request->getPayload()->all(), $this->coatingMapper->getValidationCollectionCoating());
+                $inputData['ownerId'] = $this->getUser()->getUlid();
+                $errors = $this->validator->validate($inputData,
+                    $this->generalProposalInfoMapper->getValidationCollectionGeneralProposalInfo());
                 if ($errors) {
                     throw new \Exception(current($errors)->getFullMessage());
                 }
-                $dto = $this->coatingMapper->buildCoatingDtoFromInputData($inputData);
-                $command = new CreateCoatingCommand($dto);
+                $dto = $this->generalProposalInfoMapper->buildDtoFromInputData($inputData);
+                $command = new CreateGeneralProposalInfoCommand($dto);
                 $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
+                $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));
 
-                return $this->redirectToRoute('app_cabinet_coating_coating_list');
+                return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData'));
+                return $this->render('cabinet/proposal/create.html.twig',
+                    compact('error', 'inputData', 'coatings', 'data'));
             }
         }
 

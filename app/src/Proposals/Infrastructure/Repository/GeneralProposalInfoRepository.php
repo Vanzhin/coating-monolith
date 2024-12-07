@@ -27,19 +27,20 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
         $this->getEntityManager()->flush();
     }
 
-    public function findOneById(string $id): ?Coating
+    public function findOneById(string $id): ?GeneralProposalInfo
     {
-        // TODO: Implement findOneById() method.
+        return $this->findOneBy(['id' => $id]);
     }
 
     public function findOneByNumber(string $number): ?GeneralProposalInfo
     {
-        // TODO: Implement findOneByNumber() method.
+        return $this->findOneBy(['number' => $number]);
     }
 
-    public function remove(Coating $coating): void
+    public function remove(GeneralProposalInfo $generalProposalInfo): void
     {
-        // TODO: Implement remove() method.
+        $this->getEntityManager()->remove($generalProposalInfo);
+        $this->getEntityManager()->flush();
     }
 
     public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult

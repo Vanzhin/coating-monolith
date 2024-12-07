@@ -8,9 +8,9 @@ use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoIte
 
 class GeneralProposalInfoDTO
 {
-    public string $id;
+    public ?string $id;
     public ?string $description;
-    public ?string $number;
+    public string $number;
     public ?string $basis;
     public ?string $createdAt;
     public ?string $updatedAt;

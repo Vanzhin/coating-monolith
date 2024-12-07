@@ -38,6 +38,7 @@ class GeneralProposalInfoItem extends Aggregate
     )
     {
         $this->id = UuidService::generate();
+        $this->proposal = $proposal;
         $this->specification = $specification;
         $this->coatId = $coatId;
         $this->setCoatNumber($coatNumber);
@@ -46,7 +47,6 @@ class GeneralProposalInfoItem extends Aggregate
         $this->coatColor = $coatColor;
         $this->thinnerPrice = $thinnerPrice;
         $this->thinnerConsumption = $thinnerConsumption;
-        $this->proposal = $proposal;
         $this->loss = $loss;
     }
 

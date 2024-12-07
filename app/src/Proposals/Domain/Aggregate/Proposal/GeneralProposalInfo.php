@@ -57,15 +57,15 @@ class GeneralProposalInfo extends Aggregate
         $this->id = UuidService::generate();
         $this->specification = $specification;
         $this->setNumber($number);
-        $this->description = $description;
-        $this->basis = $basis;
+        $this->setDescription($description);
+        $this->setBasis($basis);
         $this->coats = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->ownerId = $ownerId;
         $this->unit = $unit;
-        $this->projectTitle = $projectTitle;
+        $this->setProjectTitle($projectTitle);
         $this->projectArea = $projectArea;
-        $this->projectStructureDescription = $projectStructureDescription;
+        $this->setProjectStructureDescription($projectStructureDescription);
         $this->setLoss($loss);
         $this->durability = $durability;
         $this->category = $category;
@@ -88,7 +88,7 @@ class GeneralProposalInfo extends Aggregate
     public function setNumber(string $number): void
     {
         $this->number = $number;
-        AssertService::greaterThanEq($this->number, 100);
+        AssertService::maxLength($this->number, 100);
         $this->specification->uniqueNumberProposalSpecification->satisfy($this);
     }
 
@@ -100,7 +100,7 @@ class GeneralProposalInfo extends Aggregate
     public function setDescription(?string $description): void
     {
         $this->description = $description;
-        AssertService::greaterThanEq($this->description, 750);
+        AssertService::maxLength($this->description, 750);
 
     }
 
@@ -112,7 +112,7 @@ class GeneralProposalInfo extends Aggregate
     public function setBasis(?string $basis): void
     {
         $this->basis = $basis;
-        AssertService::greaterThanEq($this->basis, 750);
+        AssertService::maxLength($this->basis, 750);
 
     }
 
@@ -164,7 +164,7 @@ class GeneralProposalInfo extends Aggregate
     public function setProjectTitle(string $projectTitle): void
     {
         $this->projectTitle = $projectTitle;
-        AssertService::greaterThanEq($this->projectTitle, 750);
+        AssertService::maxLength($this->projectTitle, 750);
     }
 
     public function getProjectArea(): float
@@ -185,7 +185,7 @@ class GeneralProposalInfo extends Aggregate
     public function setProjectStructureDescription(?string $projectStructureDescription): void
     {
         $this->projectStructureDescription = $projectStructureDescription;
-        AssertService::greaterThanEq($this->projectStructureDescription, 750);
+        AssertService::maxLength($this->projectStructureDescription, 750);
 
     }
 

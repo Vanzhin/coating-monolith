@@ -16,28 +16,30 @@
             </div>
         </div>
         <div class="flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
-            {% if result.coatings %}
+            {% if result.proposals %}
                 <div class="list-group w-100">
-                    {% for coating in result.coatings %}
+                    {% for proposal in result.proposals %}
                         <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
                             <div class="d-flex gap-2 w-100 justify-content-between">
                                 <div>
-                                    <h6 class="mb-0">{{ coating.title }}</h6>
-                                    <p class="mb-0 opacity-75">{{ coating.description }}</p>
+                                    <h6 class="mb-0">{{ proposal.number }}</h6>
+                                    <p class="mb-0 opacity-75">{{ proposal.description }}</p>
+                                    <p class="mb-0 opacity-75">{{ proposal.createdAt|timeAgo }}</p>
+
                                 </div>
                                 {% include '/components/edit_delete.html.twig'
                                     with {
-                                    'edit': 'app_cabinet_coating_coating_update',
-                                    'delete':'app_cabinet_coating_coating_delete',
-                                    'id': coating.id,
-                                    'title': coating.title,
+                                    'edit': 'app_cabinet_proposals_general_proposal_update',
+                                    'delete':'app_cabinet_proposals_general_proposal_delete',
+                                    'id': proposal.id,
+                                    'title': proposal.number,
                                     'name': "форма"
                                 } %}
                             </div>
                         </div>
                     {% endfor %}
                 </div>
-                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_coating_coating_delete'} %}
+                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_proposals_general_proposal_delete'} %}
 
                 {% include 'components/pager.html.twig' with {'pager': result.pager} %}
             {% else %}

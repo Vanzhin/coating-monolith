@@ -17,7 +17,7 @@ readonly class GeneralProposalInfoDTOTransformer
     public function fromEntity(GeneralProposalInfo $entity): object
     {
         $itemDTOs = $this->itemDTOTransformer->fromEntityList($entity->getCoats()->toArray());
-        $dto = new GeneralProposalInfoDTo();
+        $dto = new GeneralProposalInfoDTO();
         $dto->id = $entity->getId();
         $dto->number = $entity->getNumber();
         $dto->description = $entity->getDescription();

@@ -7,7 +7,7 @@ namespace App\Proposals\Application\DTO\GeneralProposalInfoItem;
 class GeneralProposalInfoItemDTO
 {
     public string $id;
-    public ?string $coatId;
+    public string $coatId;
     public ?float $coatPrice;
     public ?int $coatNumber;
     public ?int $coatDft;

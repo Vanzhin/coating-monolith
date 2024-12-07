@@ -8,7 +8,10 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
-use App\Customers\Domain\Aggregate\CustomerWaybill\CustomerWaybillItemType;
+use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
+use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
+use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoItemSpecification;
+use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoSpecification;
 use App\Shared\Domain\Specification\SpecificationInterface;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostLoadEventArgs;
@@ -19,9 +22,11 @@ use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 final readonly class InitSpecificationOnPostLoadListener
 {
     // todo надо сделать один на все сущности, но ContainerBagInterface $container не видит спецификацию в параметрах
-    public function __construct(private ContainerBagInterface     $container,
-                                private ManufacturerSpecification $manufacturerSpecification,
-                                private CoatingSpecification      $coatingSpecification,
+    public function __construct(private ContainerBagInterface                $container,
+                                private ManufacturerSpecification            $manufacturerSpecification,
+                                private CoatingSpecification                 $coatingSpecification,
+                                private GeneralProposalInfoItemSpecification $generalProposalInfoItemSpecification,
+                                private GeneralProposalInfoSpecification     $generalProposalInfoSpecification,
     )
     {
     }
@@ -56,6 +61,8 @@ final readonly class InitSpecificationOnPostLoadListener
         return match ($entity::class) {
             Manufacturer::class => $this->manufacturerSpecification,
             Coating::class => $this->coatingSpecification,
+            GeneralProposalInfoItem::class => $this->generalProposalInfoItemSpecification,
+            GeneralProposalInfo::class => $this->generalProposalInfoSpecification,
         };
     }
 }

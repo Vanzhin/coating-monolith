@@ -21,7 +21,7 @@ class UniqueNumberGeneralProposalInfoSpecification implements SpecificationInter
         if ($exist?->getId() !== $proposalInfo->getId()) {
             AssertService::null(
                 $exist,
-                sprintf('GeneralProposal with number "%s" already exist.', $proposalInfo->getNumber())
+                sprintf('GeneralProposalInfo with number "%s" already exist.', $proposalInfo->getNumber())
             );
         }
     }

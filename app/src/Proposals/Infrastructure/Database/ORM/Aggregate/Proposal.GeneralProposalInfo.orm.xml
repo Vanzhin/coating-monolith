@@ -11,8 +11,8 @@
         <field name="description" type="string" length="750" nullable="true"/>
         <field name="basis" type="string" length="750" nullable="true"/>
         <field name="ownerId" column="owner_id" type="string" length="36"/>
-        <field name="createdAt" column="created_at" type="datetime"/>
-        <field name="updatedAt" column="updated_at" type="datetime" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable" nullable="true"/>
         <field name="unit"
                enum-type="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit"
                length="25">
@@ -44,6 +44,10 @@
         <one-to-many field="coats"
                      target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem"
                      mapped-by="proposal">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
         </one-to-many>
     </entity>
 

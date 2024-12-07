@@ -5,7 +5,7 @@
 {% block body %}
     <div class="col-lg-10 mx-auto p-4 py-md-5 ">
         <div class="d-flex flex-md-row align-items-center ">
-            <form method="post" action="{{ path('app_cabinet_coating_coating_create') }}"
+            <form method="post" action="{{ path('app_cabinet_proposals_general_proposal') }}"
                   class="form-signin w-100 m-auto">
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
@@ -18,7 +18,7 @@
                             <input type="text" value="{{ inputData.number }}" name="number" id="inputNumber"
                                    class="form-control"
                                    autocomplete="number" autofocus placeholder="Укажите номер..."
-                                   minlength="3" maxlength="100"
+                                   minlength="1" maxlength="100"
                             >
                         </div>
                         <div class="col-sm-4">
@@ -48,6 +48,7 @@
                                        class="form-control"
                                        autocomplete="inputProjectArea" required autofocus
                                        placeholder="Укажите площадь..."
+                                       min="1" step="0.1"
                                 >
                             </div>
                         </div>
@@ -55,7 +56,7 @@
                             <label for="inputLoss" class="form-label">Потери</label>
                             <div class="input-group">
                                 <span class="input-group-text">%</span>
-                                <input type="number" value="{{ inputData.projectArea??30 }}" name="loss"
+                                <input type="number" value="{{ inputData.loss??30 }}" name="loss"
                                        id="inputLoss"
                                        class="form-control"
                                        autocomplete="inputLoss" required autofocus
@@ -85,7 +86,7 @@
                         <div class="col-md-12">
                             <label for="inputUnit" class="form-label">Ед. измерения</label>
                             <select class="form-select" id="inputUnit" name="unit" required>
-                                <option value="Литр" selected disabled hidden>Литр</option>
+                                <option value="Литр" selected hidden>Литр</option>
                                 {% for unit in data.units %}
                                     <option
                                             {% if unit == inputData.unit %} selected {% endif %}
@@ -141,19 +142,33 @@
                         <hr>
                         <div class="col-md-12">
                             <label for="inputCoats" class="form-label">Покрытие</label>
-                            <select class="form-select" id="inputCoats" name="coatId" required>
+                            <select class="form-select" id="inputCoats" name="coats[1][coatId]" required>
                                 <option value="" selected disabled hidden>Укажите покрытие...</option>
                                 {% for coat in coatings.coatings %}
-                                    <option {% if coat.id == inputData.coat.id %} selected {% endif %}
+                                    <option {% if coat.id == inputData.coats[1]["coatId"] %} selected {% endif %}
                                             value="{{ coat.id }}">{{ coat.title }} - {{ coat.description }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-sm-2">
+                            <label for="inputCoatLoss" class="form-label">Потери</label>
+                            <div class="input-group">
+                                <span class="input-group-text">%</span>
+                                <input type="number" value="{{ inputData.inputData.coats[1]["loss"]??null }}" name="coats[1][loss]"
+                                       id="inputCoatLoss"
+                                       class="form-control"
+                                       autocomplete="inputCoatLoss" autofocus
+                                       placeholder="Укажите потери..."
+                                       min="1" step="5"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
                             <label for="inputCoatPrice" class="form-label">Цена за ед. изм </label>
                             <div class="input-group">
                                 <span class="input-group-text">₽</span>
-                                <input type="number" value="{{ inputData.coatPrice }}" name="coatPrice"
+                                <input type="number" value="{{ inputData.coats[1]["coatPrice"] }}"
+                                       name="coats[1][coatPrice]"
                                        id="inputCoatPrice"
                                        class="form-control"
                                        autocomplete="inputCoatPrice" required autofocus
@@ -162,14 +177,64 @@
                                 >
                             </div>
                         </div>
+                        <input type="number" value="{{ inputData.coats[1]["coatNumber"]??1 }}" hidden
+                               name="coats[1][coatNumber]"
+                               id="inputCoatNumber"
+                               class="form-control"
+                               autocomplete="inputCoatNumber" required autofocus
+                               placeholder="Укажите стоимость..."
+                               min="1" step="1"
+                        >
                         <div class="col-sm-2">
                             <label for="inputCoatDft" class="form-label">ТСП</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ inputData.coatDft }}" name="coatDft" id="inputCoatDft"
+                                <input type="number" value="{{ inputData.coats[1]["coatDft"] }}"
+                                       name="coats[1][coatDft]"
+                                       id="inputCoatDft"
                                        class="form-control"
                                        autocomplete="coatDft" required autofocus placeholder="Укажите тсп..."
                                        min="10" max="9999"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputCoatColor" class="form-label">Оттенок</label>
+                            <div class="input-group">
+                                <input type="text" value="{{ inputData.coats[1]["coatColor"] }}"
+                                       name="coats[1][coatColor]"
+                                       id="inputCoatColor"
+                                       class="form-control"
+                                       autocomplete="coatColor" autofocus placeholder="Укажите цвет..."
+                                       minlength="3" maxlength="100"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputThinnerPrice" class="form-label">Цена р-ля за ед. изм </label>
+                            <div class="input-group">
+                                <span class="input-group-text">₽</span>
+                                <input type="number" value="{{ inputData.coats[1]["thinnerPrice"] }}"
+                                       name="coats[1][thinnerPrice]"
+                                       id="inputThinnerPrice"
+                                       class="form-control"
+                                       autocomplete="inputThinnerPrice" autofocus
+                                       placeholder="Укажите стоимость..."
+                                       min="1" step="0.1"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-sm-2">
+                            <label for="inputThinnerConsumption" class="form-label">Расход р-ля</label>
+                            <div class="input-group">
+                                <span class="input-group-text">%</span>
+                                <input type="number" value="{{ inputData.coats[1]["thinnerConsumption"] }}"
+                                       name="coats[1][thinnerConsumption]"
+                                       id="inputThinnerConsumption"
+                                       class="form-control"
+                                       autocomplete="inputThinnerConsumption" autofocus
+                                       placeholder="Укажите расход..."
+                                       min="1" step="0.1"
                                 >
                             </div>
                         </div>
