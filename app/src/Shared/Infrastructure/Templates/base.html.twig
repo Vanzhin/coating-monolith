@@ -73,14 +73,14 @@
 {% endblock %}
 <main class="container">
     {% if is_granted('IS_IMPERSONATOR') %}
-        <div class="alert alert-warning d-block">Вы находитесь в режиме испонения роли <a role="alert"
-                                                                                          href="{{ impersonation_exit_path(path('app_homepage') ) }}">Выйти</a>
+        <div class="alert alert-warning d-block">Вы находитесь в режиме исполнения роли <a role="alert"
+                                                                                           href="{{ impersonation_exit_path(path('app_homepage') ) }}">Выйти</a>
         </div>
     {% endif %}
     {% if(app.session.flashBag.peekAll()|length > 0) %}
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            {% for messages in app.flashes() %}
-                {% for message in messages %}
+            {% for key, messages in app.flashes() %}
+                {% for  message in messages %}
                     <span> {{ message }}</span>
                 {% endfor %}
             {% endfor %}

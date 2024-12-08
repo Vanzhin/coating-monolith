@@ -8,7 +8,10 @@
             <form method="post" action="{{ path('app_cabinet_proposals_general_proposal_update', {id: dto.id}) }}"
                   class="form-signin w-100 m-auto">
                 {% if error %}
-                    <div class="alert alert-danger">{{ error }}</div>
+                    <twig:Alert
+                            type="danger"
+                            message="{{ error }}"
+                    />
                 {% endif %}
                 <h1 class="h3 mb-3 font-weight-normal">Обновление формы</h1>
                 <div class="form-group">
@@ -139,119 +142,23 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        {% for coat in dto.coats %}
-                        <hr>
-                        <div class="col-md-12">
-                            <label for="inputCoats" class="form-label">Покрытие</label>
-                            <select class="form-select" id="inputCoats" name="coats[1][coatId]" required>
-                                <option value="" selected disabled hidden>Укажите покрытие...</option>
-                                {% for coat in coatings.coatings %}
-                                    <option {% if coat.id in dto.coats|map(coat => coat.coatId) %} selected {% endif %}
-                                            value="{{ coat.id }}">{{ coat.title }} - {{ coat.description }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-sm-2">
-                            <label for="inputCoatLoss" class="form-label">Потери</label>
-                            <div class="input-group">
-                                <span class="input-group-text">%</span>
-                                <input type="number" value="{{ coat.loss??null }}" name="coats[1][loss]"
-                                       id="inputCoatLoss"
-                                       class="form-control"
-                                       autocomplete="inputCoatLoss" autofocus
-                                       placeholder="Укажите потери..."
-                                       min="1" step="5"
-                                >
-                            </div>
-                        </div>
-                        <input type="hidden" name="coats[1][id]"
-                               value="{{ coat.id }}"
+                        {{ component('GeneralProposalInfoItem', {itemDtoCollection: dto.coats, coatingDtoCollection: coatings.coatings, addItem: addItem}) }}
+                        <input type="hidden" name="_csrf_token"
+                               value="{{ csrf_token('authenticate') }}"
                         >
-                        <div class="col-sm-2">
-                            <label for="inputCoatPrice" class="form-label">Цена за ед. изм </label>
-                            <div class="input-group">
-                                <span class="input-group-text">₽</span>
-                                <input type="number" value="{{ coat.coatPrice }}"
-                                       name="coats[1][coatPrice]"
-                                       id="inputCoatPrice"
-                                       class="form-control"
-                                       autocomplete="inputCoatPrice" required autofocus
-                                       placeholder="Укажите стоимость..."
-                                       min="1" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <input type="number" value="{{ coat.coatNumber }}" hidden
-                               name="coats[1][coatNumber]"
-                               id="inputCoatNumber"
-                               class="form-control"
-                               autocomplete="inputCoatNumber" required autofocus
-                               placeholder="Укажите стоимость..."
-                               min="1" step="1"
-                        >
-                        <div class="col-sm-2">
-                            <label for="inputCoatDft" class="form-label">ТСП</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ coat.coatDft }}"
-                                       name="coats[1][coatDft]"
-                                       id="inputCoatDft"
-                                       class="form-control"
-                                       autocomplete="coatDft" required autofocus placeholder="Укажите тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-2">
-                            <label for="inputCoatColor" class="form-label">Оттенок</label>
-                            <div class="input-group">
-                                <input type="text" value="{{ coat.coatColor }}"
-                                       name="coats[1][coatColor]"
-                                       id="inputCoatColor"
-                                       class="form-control"
-                                       autocomplete="coatColor" autofocus placeholder="Укажите цвет..."
-                                       minlength="3" maxlength="100"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-2">
-                            <label for="inputThinnerPrice" class="form-label">Цена р-ля за ед. изм </label>
-                            <div class="input-group">
-                                <span class="input-group-text">₽</span>
-                                <input type="number" value="{{ coat.thinnerPrice }}"
-                                       name="coats[1][thinnerPrice]"
-                                       id="inputThinnerPrice"
-                                       class="form-control"
-                                       autocomplete="inputThinnerPrice" autofocus
-                                       placeholder="Укажите стоимость..."
-                                       min="1" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-2">
-                            <label for="inputThinnerConsumption" class="form-label">Расход р-ля</label>
-                            <div class="input-group">
-                                <span class="input-group-text">%</span>
-                                <input type="number" value="{{ coat.thinnerConsumption }}"
-                                       name="coats[1][thinnerConsumption]"
-                                       id="inputThinnerConsumption"
-                                       class="form-control"
-                                       autocomplete="inputThinnerConsumption" autofocus
-                                       placeholder="Укажите расход..."
-                                       min="1" step="0.1"
-                                >
-                            </div>
-                        </div>
                     </div>
-                    {% endfor %}
-                    <input type="hidden" name="_csrf_token"
-                           value="{{ csrf_token('authenticate') }}"
-                    >
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-lg btn-primary mt-2" type="submit">
-                        Обновить
-                    </button>
+                    <div class="btn-group me-2">
+                        <button class="btn  btn-outline-success" type="submit"
+                                formaction="{{ path('app_cabinet_proposals_general_proposal_update', {id: dto.id, add_item: true}) }}">
+                            Добавить новый слой
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button class="btn btn-lg btn-primary mt-2" type="submit">
+                            Обновить
+                        </button>
+                    </div>
                 </div>
             </form>
 

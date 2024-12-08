@@ -41,9 +41,10 @@ class GeneralProposalInfoItemRepository extends ServiceEntityRepository implemen
         // TODO: Implement findOneByNumber() method.
     }
 
-    public function remove(Coating $coating): void
+    public function remove(GeneralProposalInfoItem $proposalItem): void
     {
-        // TODO: Implement remove() method.
+        $this->getEntityManager()->remove($proposalItem);
+        $this->getEntityManager()->flush();
     }
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult

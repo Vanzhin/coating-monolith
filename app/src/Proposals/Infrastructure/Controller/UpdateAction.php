@@ -32,7 +32,6 @@ class UpdateAction extends AbstractController
         private readonly GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer,
         private readonly GeneralProposalInfoMapper              $generalProposalInfoMapper,
         private readonly CoatingsAdapter                        $coatingsAdapter,
-        private readonly GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
     )
     {
     }
@@ -40,8 +39,9 @@ class UpdateAction extends AbstractController
     public function __invoke(Request $request, string $id): Response
     {
         try {
-            $coatings = $this->coatingsAdapter->getPagedCoatings();
+            $addItem = $request->query->get('add_item') === "1";
 
+            $coatings = $this->coatingsAdapter->getPagedCoatings();
             $data = [
                 'units' => GeneralProposalInfoUnit::values(),
                 'durabilities' => CoatingSystemDurability::values(),
@@ -57,7 +57,6 @@ class UpdateAction extends AbstractController
 
             $dto = $this->generalProposalInfoDTOTransformer->fromEntity($proposal);
             if ($request->isMethod(Request::METHOD_POST)) {
-
                 $inputData = $request->getPayload()->all();
                 $inputData['id'] = $id;
                 $inputData['ownerId'] = $proposal->getOwnerId();
@@ -66,17 +65,20 @@ class UpdateAction extends AbstractController
                     throw new \Exception(current($errors)->getFullMessage());
                 }
                 $dto = $this->generalProposalInfoDTOTransformer->fromArray($inputData);
-                $command = new UpdateGeneralProposalInfoCommand($id, $dto);
-                $this->commandBus->execute($command);
+                $command = new UpdateGeneralProposalInfoCommand($id, $dto, true);
+                $result = $this->commandBus->execute($command);
+                if ($addItem) {
+                    $dto = $result->dto;
+                    return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
+                }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
-
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
         } catch (\Exception|\Error $e) {
             $error = $e->getMessage();
-            return $this->render('cabinet/proposal/edit.html.twig', compact('error', 'coatings', 'data', 'dto'));
+            return $this->render('cabinet/proposal/edit.html.twig', compact('error', 'coatings', 'data', 'dto', 'addItem'));
         }
 
-        return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto'));
+        return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
     }
 }

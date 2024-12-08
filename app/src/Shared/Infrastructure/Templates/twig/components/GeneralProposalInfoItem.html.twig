@@ -1,0 +1,115 @@
+{% for key, coat in itemDtoCollection %}
+    <hr>
+    <div class="col-md-12">
+        <label for="inputCoats" class="form-label">Покрытие</label>
+        <select class="form-select" id="inputCoats" name="coats[{{ key }}][coatId]" required>
+            <option value="" selected disabled hidden>Укажите покрытие...</option>
+            {% for coating in coatingDtoCollection %}
+                <option {% if coating.id == coat.coatId %} selected {% endif %}
+                        value="{{ coating.id }}">{{ coating.title }} - {{ coating.description }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-2">
+        <label for="inputCoatLoss" class="form-label">Потери</label>
+        <div class="input-group">
+            <span class="input-group-text">%</span>
+            <input type="number" value="{{ coat.loss??null }}" name="coats[{{ key }}][loss]"
+                   id="inputCoatLoss"
+                   class="form-control"
+                   autocomplete="inputCoatLoss" autofocus
+                   placeholder="Укажите потери..."
+                   min="1" step="5"
+            >
+        </div>
+    </div>
+    <input type="hidden" name="coats[{{ key }}][id]"
+           value="{{ coat.id }}"
+    >
+    <div class="col-sm-2">
+        <label for="inputCoatPrice" class="form-label">Цена за ед. изм </label>
+        <div class="input-group">
+            <span class="input-group-text">₽</span>
+            <input type="number" value="{{ coat.coatPrice }}"
+                   name="coats[{{ key }}][coatPrice]"
+                   id="inputCoatPrice"
+                   class="form-control"
+                   autocomplete="inputCoatPrice" required autofocus
+                   placeholder="Укажите стоимость..."
+                   min="1" step="0.1"
+            >
+        </div>
+    </div>
+    <input type="number" value="{{ key+1 }}" hidden
+           name="coats[{{ key }}][coatNumber]"
+           id="inputCoatNumber"
+           class="form-control"
+           autocomplete="inputCoatNumber" required autofocus
+           placeholder="Укажите стоимость..."
+           min="1" step="1"
+    >
+    <div class="col-sm-2">
+        <label for="inputCoatDft" class="form-label">ТСП</label>
+        <div class="input-group">
+            <span class="input-group-text">мкм</span>
+            <input type="number" value="{{ coat.coatDft }}"
+                   name="coats[{{ key }}][coatDft]"
+                   id="inputCoatDft"
+                   class="form-control"
+                   autocomplete="coatDft" required autofocus placeholder="Укажите тсп..."
+                   min="10" max="9999"
+            >
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <label for="inputCoatColor" class="form-label">Оттенок</label>
+        <div class="input-group">
+            <input type="text" value="{{ coat.coatColor }}"
+                   name="coats[{{ key }}][coatColor]"
+                   id="inputCoatColor"
+                   class="form-control"
+                   autocomplete="coatColor" required autofocus placeholder="Укажите цвет..."
+                   minlength="3" maxlength="100"
+            >
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <label for="inputThinnerPrice" class="form-label">Цена р-ля за ед. изм </label>
+        <div class="input-group">
+            <span class="input-group-text">₽</span>
+            <input type="number" value="{{ coat.thinnerPrice }}"
+                   name="coats[{{ key }}][thinnerPrice]"
+                   id="inputThinnerPrice"
+                   class="form-control"
+                   autocomplete="inputThinnerPrice" autofocus required
+                   placeholder="Укажите стоимость..."
+                   min="1" step="0.1"
+            >
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <label for="inputThinnerConsumption" class="form-label">Расход р-ля</label>
+        <div class="input-group">
+            <span class="input-group-text">%</span>
+            <input type="number" value="{{ coat.thinnerConsumption }}"
+                   name="coats[{{ key }}][thinnerConsumption]"
+                   id="inputThinnerConsumption"
+                   class="form-control"
+                   autocomplete="inputThinnerConsumption" autofocus required
+                   placeholder="Укажите расход..."
+                   min="1" step="0.1"
+            >
+        </div>
+    </div>
+    {% if coat.id and (itemDtoCollection|filter(coat => coat.id != null ))|length >1 %}
+        <div class="btn-group me-2">
+            <a href="{{ path('app_cabinet_proposals_general_proposal_item_delete', {proposal_id: coat.proposalId, item_id: coat.id}) }}"
+               type="button"
+               class="btn btn-outline-danger">Удалить<i class="bi bi-trash3"></i>
+            </a>
+        </div>
+    {% endif %}
+
+{% endfor %}
+
+

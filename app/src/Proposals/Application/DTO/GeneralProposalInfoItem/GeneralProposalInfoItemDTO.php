@@ -6,14 +6,14 @@ namespace App\Proposals\Application\DTO\GeneralProposalInfoItem;
 
 class GeneralProposalInfoItemDTO
 {
-    public string $id;
-    public string $coatId;
-    public ?float $coatPrice;
-    public ?int $coatNumber;
-    public ?int $coatDft;
-    public ?string $coatColor;
-    public ?float $thinnerPrice;
-    public ?int $thinnerConsumption;
-    public ?int $loss;
-    public ?string $proposalId;
+    public ?string $id = null;
+    public ?string $coatId = null;
+    public ?float $coatPrice = null;
+    public ?int $coatNumber = null;
+    public ?int $coatDft = null;
+    public ?string $coatColor = null;
+    public ?float $thinnerPrice = null;
+    public ?int $thinnerConsumption = null;
+    public ?int $loss = null;
+    public ?string $proposalId = null;
 }

@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace App\Proposals\Application\UseCase\Command\UpdateGeneralProposalInfo;
 
 
+use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTOTransformer;
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTO;
 use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessControl;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemApplicationMethod;
@@ -26,7 +27,8 @@ readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandler
         private GeneralProposalInfoRepositoryInterface     $generalProposalInfoRepository,
         private GeneralProposalInfoItemFactory             $generalProposalInfoItemFactory,
         private GeneralProposalInfoAccessControl           $generalProposalInfoAccessControl,
-        private GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository
+        private GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository,
+        private GeneralProposalInfoDTOTransformer          $generalProposalInfoDTOTransformer,
     )
     {
     }
@@ -78,8 +80,9 @@ readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandler
             $generalProposalInfo->addItem($item);
         }
         $this->generalProposalInfoRepository->add($generalProposalInfo);
+        $result = $command->returnDtoInResult ? $this->generalProposalInfoDTOTransformer->fromEntity($generalProposalInfo) : null;
 
-        return new UpdateGeneralProposalInfoCommandResult();
+        return new UpdateGeneralProposalInfoCommandResult($result);
     }
 
     private function updateGeneralProposalInfoItem(GeneralProposalInfoItem $item, GeneralProposalInfoItemDTO $itemDTO): GeneralProposalInfoItem

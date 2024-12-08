@@ -20,7 +20,7 @@ interface GeneralProposalInfoItemRepositoryInterface
 
     public function findOneById(string $proposalItemId): ?GeneralProposalInfoItem;
 
-    public function remove(Coating $coating): void;
+    public function remove(GeneralProposalInfoItem $proposalItem): void;
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult;
 
