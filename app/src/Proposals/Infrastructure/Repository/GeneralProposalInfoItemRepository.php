@@ -31,6 +31,11 @@ class GeneralProposalInfoItemRepository extends ServiceEntityRepository implemen
         return $this->findOneBy(['proposal' => $proposalId, 'coatNumber' => $coatNumber]);
     }
 
+    public function findOneById(string $proposalItemId): ?GeneralProposalInfoItem
+    {
+        return $this->findOneBy(['id' => $proposalItemId]);
+    }
+
     public function findOneByNumber(string $number): ?GeneralProposalInfo
     {
         // TODO: Implement findOneByNumber() method.

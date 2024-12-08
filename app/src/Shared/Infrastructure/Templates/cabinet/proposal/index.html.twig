@@ -24,7 +24,7 @@
                                 <div>
                                     <h6 class="mb-0">{{ proposal.number }}</h6>
                                     <p class="mb-0 opacity-75">{{ proposal.description }}</p>
-                                    <p class="mb-0 opacity-75">{{ proposal.createdAt|timeAgo }}</p>
+                                    <p class="mb-0 opacity-75">{{ (proposal.updatedAt??proposal.createdAt)|timeAgo }}</p>
 
                                 </div>
                                 {% include '/components/edit_delete.html.twig'

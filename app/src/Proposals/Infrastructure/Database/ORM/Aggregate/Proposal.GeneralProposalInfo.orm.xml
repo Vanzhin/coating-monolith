@@ -45,8 +45,7 @@
                      target-entity="App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem"
                      mapped-by="proposal">
             <cascade>
-                <cascade-persist/>
-                <cascade-remove/>
+                <cascade-all/>
             </cascade>
         </one-to-many>
     </entity>

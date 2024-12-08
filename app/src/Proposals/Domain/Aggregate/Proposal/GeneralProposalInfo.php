@@ -257,4 +257,9 @@ class GeneralProposalInfo extends Aggregate
             $this->coats->add($layer);
         }
     }
+
+    public function isOwnedBy(string $ownerId): bool
+    {
+        return $this->ownerId === $ownerId;
+    }
 }

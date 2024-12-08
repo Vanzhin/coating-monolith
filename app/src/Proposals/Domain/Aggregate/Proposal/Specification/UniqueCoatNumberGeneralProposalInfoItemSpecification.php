@@ -23,9 +23,11 @@ class UniqueCoatNumberGeneralProposalInfoItemSpecification implements Specificat
             $item->getProposal()->getId(),
             $item->getCoatNumber()
         );
-        AssertService::null(
-            $exist,
-            sprintf('Coat number "%s" already exist in this proposal.', $item->getCoatNumber())
-        );
+        if ($exist?->getId() !== $item->getId()) {
+            AssertService::null(
+                $exist,
+                sprintf('Coat number "%s" already exist in this proposal.', $item->getCoatNumber())
+            );
+        }
     }
 }

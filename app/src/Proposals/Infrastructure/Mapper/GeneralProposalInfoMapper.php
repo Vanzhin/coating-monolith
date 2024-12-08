@@ -165,6 +165,12 @@ class GeneralProposalInfoMapper
 
             'coats' => new Assert\All([
                 new Assert\Collection([
+                    'id' => new Assert\Optional([
+                        new Assert\AtLeastOneOf([
+                            new Assert\Blank(),
+                            new Assert\Uuid(),
+                        ])
+                    ]),
                     'coatId' => [
                         new Assert\NotBlank(),
                         new Assert\Type('string'),

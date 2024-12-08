@@ -8,7 +8,7 @@ use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
 
 class GeneralProposalInfoItemDTOTransformer
 {
-    public function fromEntity(GeneralProposalInfoItem $entity): object
+    public function fromEntity(GeneralProposalInfoItem $entity): GeneralProposalInfoItemDTO
     {
         $dto = new GeneralProposalInfoItemDTO();
         $dto->id = $entity->getId();

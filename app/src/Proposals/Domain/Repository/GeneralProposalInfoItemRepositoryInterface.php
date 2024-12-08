@@ -18,6 +18,7 @@ interface GeneralProposalInfoItemRepositoryInterface
 
     public function findOneByNumber(string $number): ?GeneralProposalInfo;
 
+    public function findOneById(string $proposalItemId): ?GeneralProposalInfoItem;
 
     public function remove(Coating $coating): void;
 
