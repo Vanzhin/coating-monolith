@@ -26,12 +26,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class UpdateAction extends AbstractController
 {
     public function __construct(
-        private readonly CommandBusInterface                    $commandBus,
-        private readonly Validator                              $validator,
-        private readonly GeneralProposalInfoFetcher             $generalProposalInfoFetcher,
-        private readonly GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer,
-        private readonly GeneralProposalInfoMapper              $generalProposalInfoMapper,
-        private readonly CoatingsAdapter                        $coatingsAdapter,
+        private readonly CommandBusInterface               $commandBus,
+        private readonly Validator                         $validator,
+        private readonly GeneralProposalInfoFetcher        $generalProposalInfoFetcher,
+        private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
+        private readonly GeneralProposalInfoMapper         $generalProposalInfoMapper,
+        private readonly CoatingsAdapter                   $coatingsAdapter,
     )
     {
     }
@@ -69,7 +69,8 @@ class UpdateAction extends AbstractController
                 $result = $this->commandBus->execute($command);
                 if ($addItem) {
                     $dto = $result->dto;
-                    return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
+
+                    return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
                 }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');

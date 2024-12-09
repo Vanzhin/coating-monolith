@@ -157,7 +157,8 @@
                             <label for="inputCoatLoss" class="form-label">Потери</label>
                             <div class="input-group">
                                 <span class="input-group-text">%</span>
-                                <input type="number" value="{{ inputData.inputData.coats[1]["loss"]??null }}" name="coats[1][loss]"
+                                <input type="number" value="{{ inputData.inputData.coats[1]["loss"]??null }}"
+                                       name="coats[1][loss]"
                                        id="inputCoatLoss"
                                        class="form-control"
                                        autocomplete="inputCoatLoss" autofocus
@@ -246,11 +247,28 @@
                            value="{{ csrf_token('authenticate') }}"
                     >
                 </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-lg btn-primary mt-2" type="submit">
-                        Добавить
+                <div class="btn-group me-2 w-100">
+                    <button class="btn  btn-outline-success mt-2 mb-2" type="submit"
+                            formaction="{{ path('app_cabinet_proposals_general_proposal',{add_item: true}) }}">
+                        Добавить новый слой
+                        <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
+
+                <div class="d-flex flex-md-row">
+                    <div class="d-flex justify-content-between align-items-center m-1">
+                        <button class="btn btn-lg btn-primary mt-2" type="submit">
+                            Добавить
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center m-1">
+                        <a class="btn btn-lg btn-outline-secondary mt-2"
+                           href="{{ path('app_cabinet_proposals_general_proposal_list') }}">
+                            Отменить
+                        </a>
+                    </div>
+                </div>
+
             </form>
         </div>
 

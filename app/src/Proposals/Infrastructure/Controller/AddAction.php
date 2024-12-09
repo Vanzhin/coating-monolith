@@ -34,6 +34,7 @@ class AddAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
+        $addItem = $request->query->get('add_item') === "1";
         $coatings = $this->coatingsAdapter->getPagedCoatings();
 
         $data = [
@@ -54,7 +55,11 @@ class AddAction extends AbstractController
                 }
                 $dto = $this->generalProposalInfoMapper->buildDtoFromInputData($inputData);
                 $command = new CreateGeneralProposalInfoCommand($dto);
-                $this->commandBus->execute($command);
+                $result = $this->commandBus->execute($command);
+                if ($addItem) {
+
+                    return $this->redirectToRoute('app_cabinet_proposals_general_proposal_update', ['id' => $result->id, 'add_item' => $addItem]);
+                }
                 $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
