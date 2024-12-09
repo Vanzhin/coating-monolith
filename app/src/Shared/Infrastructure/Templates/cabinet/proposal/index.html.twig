@@ -27,14 +27,19 @@
                                     <p class="mb-0 opacity-75">{{ (proposal.updatedAt??proposal.createdAt)|timeAgo }}</p>
 
                                 </div>
-                                {% include '/components/edit_delete.html.twig'
-                                    with {
-                                    'edit': 'app_cabinet_proposals_general_proposal_update',
-                                    'delete':'app_cabinet_proposals_general_proposal_delete',
-                                    'id': proposal.id,
-                                    'title': proposal.number,
-                                    'name': "форма"
-                                } %}
+                                <div class="d-flex gap-2 mb-3">
+                                    <a href="{{ path('app_cabinet_proposals_general_proposal_clone', {id: proposal.id}) }}" type="button" class="btn btn-outline-secondary">
+                                        <i class="bi bi-back"></i>
+                                    </a>
+                                    {% include '/components/edit_delete.html.twig'
+                                        with {
+                                        'edit': 'app_cabinet_proposals_general_proposal_update',
+                                        'delete':'app_cabinet_proposals_general_proposal_delete',
+                                        'id': proposal.id,
+                                        'title': proposal.number,
+                                        'name': "форма"
+                                    } %}
+                                </div>
                             </div>
                         </div>
                     {% endfor %}

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Repository;
 
-use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 use App\Proposals\Domain\Repository\GeneralProposalInfoFilter;
 use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
@@ -46,10 +45,9 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
     public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('gp');
-        $qb->andWhere($qb->expr()->eq('gp.ownerId', ':owner_id'))
-            ->setParameter('owner_id', $filter->userId);
-        $qb->addOrderBy('gp.updatedAt', 'ASC');
-        $qb->addOrderBy('gp.createdAt', 'ASC');
+        //сортировка по полю обновлено, если нет, то по олю создано
+        $qb->addSelect('COALESCE(gp.updatedAt, gp.createdAt) AS HIDDEN date')
+        ->orderBy('date', 'DESC');
         if ($filter->search) {
             $qb->andWhere($qb->expr()->like('LOWER(gp.description)', 'LOWER(:search)'))
                 ->setParameter('search', '%' . $filter->search . '%');

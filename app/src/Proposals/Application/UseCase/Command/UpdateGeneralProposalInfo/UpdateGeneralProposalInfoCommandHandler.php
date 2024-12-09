@@ -44,7 +44,7 @@ readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandler
         );
         $generalProposalInfo = $this->generalProposalInfoRepository->findOneById($command->proposalInfoId);
         AssertService::notNull($generalProposalInfo, 'Форма не найдена.');
-
+        $generalProposalInfo->setNumber($command->generalProposalInfoDTO->number);
         $generalProposalInfo->setDescription($command->generalProposalInfoDTO->description);
         $generalProposalInfo->setBasis($command->generalProposalInfoDTO->basis);
         $generalProposalInfo->setUpdatedAt(new \DateTimeImmutable());

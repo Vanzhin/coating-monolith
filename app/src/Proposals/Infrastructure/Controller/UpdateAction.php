@@ -11,7 +11,6 @@ use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemCorrosiveCategory;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemDurability;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemSurfaceTreatment;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
-use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Proposals\Domain\Service\GeneralProposalInfoFetcher;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Proposals\Infrastructure\Mapper\GeneralProposalInfoMapper;
@@ -70,7 +69,7 @@ class UpdateAction extends AbstractController
                 if ($addItem) {
                     $dto = $result->dto;
 
-                    return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
+                    return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
                 }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
