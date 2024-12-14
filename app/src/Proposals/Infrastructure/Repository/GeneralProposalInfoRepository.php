@@ -45,7 +45,7 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
     public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('gp');
-        //сортировка по полю обновлено, если нет, то по олю создано
+        //сортировка по полю обновлено, если нет, то по полю создано
         $qb->addSelect('COALESCE(gp.updatedAt, gp.createdAt) AS HIDDEN date')
         ->orderBy('date', 'DESC');
         if ($filter->search) {

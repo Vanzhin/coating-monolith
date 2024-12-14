@@ -34,18 +34,18 @@ class AddAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $addItem = $request->query->get('add_item') === "1";
-        $coatings = $this->coatingsAdapter->getPagedCoatings();
+        try {
+            $addItem = $request->query->get('add_item') === "1";
+            $coatings = $this->coatingsAdapter->getPagedCoatings();
+            $data = [
+                'units' => GeneralProposalInfoUnit::values(),
+                'durabilities' => CoatingSystemDurability::values(),
+                'categories' => CoatingSystemCorrosiveCategory::values(),
+                'treatments' => CoatingSystemSurfaceTreatment::values(),
+                'methods' => CoatingSystemApplicationMethod::values(),
+            ];
+            if ($request->isMethod(Request::METHOD_POST)) {
 
-        $data = [
-            'units' => GeneralProposalInfoUnit::values(),
-            'durabilities' => CoatingSystemDurability::values(),
-            'categories' => CoatingSystemCorrosiveCategory::values(),
-            'treatments' => CoatingSystemSurfaceTreatment::values(),
-            'methods' => CoatingSystemApplicationMethod::values(),
-        ];
-        if ($request->isMethod(Request::METHOD_POST)) {
-            try {
                 $inputData = $request->getPayload()->all();
                 $inputData['ownerId'] = $this->getUser()->getUlid();
                 $errors = $this->validator->validate($inputData,
@@ -63,13 +63,14 @@ class AddAction extends AbstractController
                 $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
-            } catch (\Exception|\Error $e) {
-                $error = $e->getMessage();
-                return $this->render('cabinet/proposal/create.html.twig',
-                    compact('error', 'inputData', 'coatings', 'data'));
             }
-        }
 
-        return $this->render('cabinet/proposal/create.html.twig', compact('coatings', 'data'));
+            return $this->render('cabinet/proposal/create.html.twig', compact('coatings', 'data'));
+        } catch (\Exception|\Error $e) {
+            $error = $e->getMessage();
+
+            return $this->render('cabinet/proposal/create.html.twig',
+                compact('error', 'inputData', 'coatings', 'data'));
+        }
     }
 }

@@ -28,8 +28,18 @@
 
                                 </div>
                                 <div class="d-flex gap-2 mb-3">
-                                    <a href="{{ path('app_cabinet_proposals_general_proposal_clone', {id: proposal.id}) }}" type="button" class="btn btn-outline-secondary">
+                                    <a href="{{ path('app_cabinet_proposals_general_proposal_clone', {id: proposal.id}) }}"
+                                       type="button" class="btn btn-outline-secondary">
                                         <i class="bi bi-back"></i>
+                                    </a>
+                                    <a href="{{ path('app_cabinet_proposals_general_proposal_download',
+                                        {
+                                            proposalId: proposal.id,
+                                            templateId:'2ee57c86-510c-478c-b59d-b16a38d39564',
+                                            format: 'xlsx'
+                                        }) }}" type="button"
+                                       class="btn btn-outline-secondary">
+                                        <i class="bi bi-download"></i>
                                     </a>
                                     {% include '/components/edit_delete.html.twig'
                                         with {

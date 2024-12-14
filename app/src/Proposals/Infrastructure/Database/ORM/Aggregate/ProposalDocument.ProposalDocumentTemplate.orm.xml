@@ -1,0 +1,19 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Proposals\Domain\Aggregate\ProposalDocument\ProposalDocumentTemplate"
+            table="proposal_proposal_document_template">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="description" type="string" length="100"/>
+        <field name="path" type="string" length="255"/>
+        <field name="availableFormats" column="available_formats" type="json">
+            <options>
+                <option name="default">[]</option>
+            </options>
+        </field>
+    </entity>
+</doctrine-mapping>

@@ -39,7 +39,6 @@ class CloneAction extends AbstractController
             $dto->number = self::PREFIX . $dto->number . '-' . random_int(10, 9999);
             $command = new CreateGeneralProposalInfoCommand($dto);
             $result = $this->commandBus->execute($command);
-
             $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));
 
             return $this->redirectToRoute('app_cabinet_proposals_general_proposal_update', ['id' => $result->id]);
