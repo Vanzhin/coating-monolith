@@ -72,13 +72,15 @@ class UpdateAction extends AbstractController
                     return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
                 }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
+
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
+
+            return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
         } catch (\Exception|\Error $e) {
             $error = $e->getMessage();
+
             return $this->render('cabinet/proposal/edit.html.twig', compact('error', 'coatings', 'data', 'dto', 'addItem'));
         }
-
-        return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
     }
 }
