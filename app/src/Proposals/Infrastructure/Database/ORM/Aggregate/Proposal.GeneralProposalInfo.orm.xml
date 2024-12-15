@@ -47,6 +47,9 @@
             <cascade>
                 <cascade-all/>
             </cascade>
+            <order-by>
+                <order-by-field name="coatNumber" direction="ASC" />
+            </order-by>
         </one-to-many>
     </entity>
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Proposals\Application\UseCase\Command\CreateProposalDocumentFile;
 
 use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessControl;
+use App\Proposals\Application\Service\Handler\GenerateCommercialProposalXlsx;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\AssertService;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -14,6 +15,7 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
 {
     public function __construct(
         private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl,
+        private GenerateCommercialProposalXlsx   $generateGeneralProposalXlsx,
     )
     {
     }
@@ -29,13 +31,13 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
         );
         //todo написать логику заполнения шаблона
         //todo разобраться с путями
-        $inputFileName = '/app/src/Proposals/Infrastructure/Resources/proposals/templates/tkp_template.xlsx';
-//        dd($inputFileName);
         /** Load $inputFileName to a Spreadsheet object **/
-        $spreadsheet = IOFactory::load($inputFileName);
-        $file = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $file->save('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.xlsx');
+        $spreadsheet = $this->generateGeneralProposalXlsx->generate($command->document);
 
-        return new CreateProposalDocumentFileCommandResult(new File('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.xlsx'));
+        $writer = IOFactory::createWriter($spreadsheet, 'Tcpdf');
+
+        $writer->save('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.pdf');
+
+        return new CreateProposalDocumentFileCommandResult(new File('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.pdf'));
     }
 }

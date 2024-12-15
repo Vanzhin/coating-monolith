@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Api;
 
 use App\Coatings\Application\UseCase\PublicUseCaseInteractor;
+use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Proposals\Infrastructure\Adapter\CoatingsApiInterface;
@@ -23,4 +24,8 @@ class CoatingsApi implements CoatingsApiInterface
         return $this->queryInteractor->getPagedCoatings(new CoatingsFilter(null, Pager::fromPage(1, 1000)));
     }
 
+    public function getCoating(string $id): GetCoatingQueryResult
+    {
+        return $this->queryInteractor->getCoating($id);
+    }
 }

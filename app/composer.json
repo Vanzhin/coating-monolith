@@ -35,6 +35,7 @@
     "symfony/validator": "7.0.*",
     "symfony/webpack-encore-bundle": "^2.2",
     "symfony/yaml": "7.0.*",
+    "tecnickcom/tcpdf": "^6.7",
     "twig/cssinliner-extra": "^3.13",
     "twig/extra-bundle": "^2.12|^3.0",
     "twig/twig": "^2.12|^3.0",
