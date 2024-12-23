@@ -9,11 +9,11 @@ use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 
-class GetPagedGeneralProposalInfoQueryHandler implements QueryHandlerInterface
+readonly class GetPagedGeneralProposalInfoQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-        private readonly GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer
+        private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
+        private GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer
     )
     {
     }

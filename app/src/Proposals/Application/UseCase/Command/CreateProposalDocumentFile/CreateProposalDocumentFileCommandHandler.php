@@ -34,7 +34,7 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
         /** Load $inputFileName to a Spreadsheet object **/
         $spreadsheet = $this->generateGeneralProposalXlsx->generate($command->document);
 
-        $writer = IOFactory::createWriter($spreadsheet, 'Tcpdf');
+        $writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
 
         $writer->save('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.pdf');
 

@@ -89,7 +89,7 @@
                         <div class="col-md-12">
                             <label for="inputUnit" class="form-label">Ед. измерения</label>
                             <select class="form-select" id="inputUnit" name="unit" required>
-                                <option value="Литр" selected hidden>Литр</option>
+                                <option value="л" selected hidden>л</option>
                                 {% for unit in data.units %}
                                     <option
                                             {% if unit == dto.unit %} selected {% endif %}

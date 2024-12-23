@@ -21,7 +21,7 @@ class User implements AuthUserInterface
         private readonly string $email,
     )
     {
-        $this->ulid = UuidService::generate();
+        $this->ulid = UuidService::generateUlid();
     }
 
     public function getUlid(): string
