@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
         libpq-dev \
         librabbitmq-dev \
         libssh-dev \
+        libpng-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -xe \
@@ -36,6 +37,7 @@ RUN set -xe \
         pdo_pgsql \
         bcmath \
         sockets \
+        gd \
     && pecl install \
         apcu \
         redis \

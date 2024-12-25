@@ -29,15 +29,13 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
             ),
             'Запрещено.'
         );
-        //todo написать логику заполнения шаблона
-        //todo разобраться с путями
+        //todo написать логику заполнения шаблона если нужно пдф или эксель или еще что-то
         /** Load $inputFileName to a Spreadsheet object **/
         $spreadsheet = $this->generateGeneralProposalXlsx->generate($command->document);
-
         $writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
+        $filename = sys_get_temp_dir() . '/' . uniqid() . '.pdf';
+        $writer->save($filename);
 
-        $writer->save('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.pdf');
-
-        return new CreateProposalDocumentFileCommandResult(new File('/app/src/Proposals/Infrastructure/Resources/proposals/temp/test.pdf'));
+        return new CreateProposalDocumentFileCommandResult(new File($filename));
     }
 }

@@ -30,6 +30,7 @@ class GenerateCommercialProposalXlsx
 
     public function __construct(
         private readonly CoatingsAdapter $adapter,
+        private readonly string          $pathToDirectory,
     )
     {
     }
@@ -40,7 +41,7 @@ class GenerateCommercialProposalXlsx
         $coatsCalcData = [];
         $thinnerData = [];
 
-        $spreadsheet = IOFactory::load($document->getTemplate()->getPath());
+        $spreadsheet = IOFactory::load($this->pathToDirectory . '/' . $document->getTemplate()->getPath());
         $sheet = $spreadsheet->getSheetByName($this->sheetName);
         foreach ($sheet->getRowIterator() as $row) {
             $cellIterator = $row->getCellIterator();

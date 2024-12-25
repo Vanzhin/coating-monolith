@@ -7,6 +7,9 @@ parameters:
   app.name: '%env(APP_NAME)%'
   app.default_from_email: '%env(DEFAULT_FROM_ADDR)%'
   app.default_from_name: '%env(DEFAULT_FROM_NAME)%'
+  cache_adapter: cache.adapter.filesystem
+  general_proposal_template_upload: 'proposals/templates'
+  general_proposal_template_upload_dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Resources/%general_proposal_template_upload%'
 
 
 services:
@@ -77,6 +80,11 @@ services:
       $appName: '%app.name%'
       $defaultFromEmail: '%app.default_from_email%'
       $defaultFromName: '%app.default_from_name%'
+
+  App\Proposals\Application\Service\Handler\GenerateCommercialProposalXlsx:
+    arguments:
+      #      $fileSystem: '@oneup_flysystem.upload_general_proposal_filesystem'
+      $pathToDirectory: '%general_proposal_template_upload_dir%'
 
   # Telegram
   App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:

@@ -1,0 +1,10 @@
+# Read the documentation: https://github.com/1up-lab/OneupFlysystemBundle
+oneup_flysystem:
+  adapters:
+    upload_general_proposal_adapter:
+      local:
+        location: '%general_proposal_template_upload_dir%'
+
+  filesystems:
+    upload_general_proposal:
+      adapter: upload_general_proposal_adapter
