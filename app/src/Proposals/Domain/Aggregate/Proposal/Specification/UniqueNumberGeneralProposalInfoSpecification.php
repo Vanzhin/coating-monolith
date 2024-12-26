@@ -9,9 +9,9 @@ use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Specification\SpecificationInterface;
 
-class UniqueNumberGeneralProposalInfoSpecification implements SpecificationInterface
+readonly class UniqueNumberGeneralProposalInfoSpecification implements SpecificationInterface
 {
-    public function __construct(private readonly GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository)
+    public function __construct(private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository)
     {
     }
 
@@ -21,7 +21,7 @@ class UniqueNumberGeneralProposalInfoSpecification implements SpecificationInter
         if ($exist?->getId() !== $proposalInfo->getId()) {
             AssertService::null(
                 $exist,
-                sprintf('GeneralProposalInfo with number "%s" already exist.', $proposalInfo->getNumber())
+                sprintf('Форма с номером "%s" уже существует.', $proposalInfo->getNumber())
             );
         }
     }

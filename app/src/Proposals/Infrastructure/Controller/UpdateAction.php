@@ -15,14 +15,15 @@ use App\Proposals\Domain\Service\GeneralProposalInfoFetcher;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Proposals\Infrastructure\Mapper\GeneralProposalInfoMapper;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Controller\BaseController;
 use App\Shared\Infrastructure\Validation\Validator;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(path: '/cabinet/proposals/{id}/edit', name: 'app_cabinet_proposals_general_proposal_update')]
-class UpdateAction extends AbstractController
+class UpdateAction extends BaseController
 {
     public function __construct(
         private readonly CommandBusInterface               $commandBus,
@@ -31,8 +32,11 @@ class UpdateAction extends AbstractController
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
         private readonly GeneralProposalInfoMapper         $generalProposalInfoMapper,
         private readonly CoatingsAdapter                   $coatingsAdapter,
+        LoggerInterface                                    $logger,
+
     )
     {
+        parent::__construct($logger);
     }
 
     public function __invoke(Request $request, string $id): Response
@@ -69,18 +73,18 @@ class UpdateAction extends AbstractController
                 if ($addItem) {
                     $dto = $result->dto;
 
-                    return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
+                    return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
                 }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
 
-            return $this->render('cabinet/proposal/edit.html.twig', compact('coatings', 'data', 'dto', 'addItem'));
-        } catch (\Exception|\Error $e) {
-            $error = $e->getMessage();
+            return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
+        } catch (\Throwable $e) {
+            $error = $this->getClientErrorMessage($e);
 
-            return $this->render('cabinet/proposal/edit.html.twig', compact('error', 'coatings', 'data', 'dto', 'addItem'));
+            return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
         }
     }
 }

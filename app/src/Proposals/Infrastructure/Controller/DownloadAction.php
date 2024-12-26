@@ -11,21 +11,24 @@ use App\Proposals\Domain\Repository\ProposalDocumentTemplateRepositoryInterface;
 use App\Proposals\Domain\Service\GeneralProposalInfoFetcher;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\Service\AssertService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Shared\Infrastructure\Controller\BaseController;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(path: '/cabinet/proposals/{proposalId}/download/{templateId}/{format}', name: 'app_cabinet_proposals_general_proposal_download')]
-class DownloadAction extends AbstractController
+class DownloadAction extends BaseController
 {
     public function __construct(
         private readonly CommandBusInterface                         $commandBus,
         private readonly GeneralProposalInfoFetcher                  $generalProposalInfoFetcher,
         private readonly ProposalDocumentTemplateRepositoryInterface $proposalDocumentTemplateRepository,
         private readonly ProposalDocumentFactory                     $proposalDocumentFactory,
+        LoggerInterface                                              $logger,
     )
     {
+        parent::__construct($logger);
     }
 
     public function __invoke(Request $request, string $proposalId, string $templateId, string $format): Response
@@ -47,7 +50,7 @@ class DownloadAction extends AbstractController
             return $this->file($result->file, $this->buildFileName($document) . '.' . $result->file->getExtension());
         } catch (\Throwable $e) {
             $referer = $request->headers->get('referer');
-            $this->addFlash('general_proposal_download_error', $e->getMessage());
+            $this->addFlash('general_proposal_download_error', $this->getClientErrorMessage($e));
 
             return $this->redirect($referer);
         }

@@ -13,23 +13,24 @@ use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Proposals\Infrastructure\Mapper\GeneralProposalInfoMapper;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Controller\BaseController;
 use App\Shared\Infrastructure\Validation\Validator;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(path: '/cabinet/proposals', name: 'app_cabinet_proposals_general_proposal')]
-class AddAction extends AbstractController
+class AddAction extends BaseController
 {
     public function __construct(
         private readonly CommandBusInterface       $commandBus,
         private readonly Validator                 $validator,
         private readonly GeneralProposalInfoMapper $generalProposalInfoMapper,
         private readonly CoatingsAdapter           $coatingsAdapter,
-
-    )
+        LoggerInterface                            $logger)
     {
+        parent::__construct($logger);
     }
 
     public function __invoke(Request $request): Response
@@ -65,12 +66,11 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
 
-            return $this->render('cabinet/proposal/create.html.twig', compact('coatings', 'data'));
-        } catch (\Exception|\Error $e) {
-            $error = $e->getMessage();
+            return $this->render('cabinet/proposal/create.html.twig', compact(array_keys(get_defined_vars())));
+        } catch (\Throwable $e) {
+            $error = $this->getClientErrorMessage($e);
 
-            return $this->render('cabinet/proposal/create.html.twig',
-                compact('error', 'inputData', 'coatings', 'data'));
+            return $this->render('cabinet/proposal/create.html.twig', compact(array_keys(get_defined_vars())));
         }
     }
 }
