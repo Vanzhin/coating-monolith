@@ -5,16 +5,14 @@ services:
   manager_php-fpm:
     hostname: ${DOMAIN}
     build:
-      context: ./php-fpm
+      context: docker/php-fpm
       dockerfile: Dockerfile
       args:
         - INSTALL_XDEBUG=${INSTALL_XDEBUG}
     ports:
       - '9010:9010'
     volumes:
-      - ./../app:/app:rw
-    networks:
-      - app-network
+      - ./app:/app:rw
     depends_on:
       manager_redis:
         condition: service_started
@@ -26,7 +24,7 @@ services:
     hostname: ${DOMAIN}
     working_dir: /app
     build:
-      context: ./supervisor
+      context: docker/supervisor
       dockerfile: Dockerfile
     restart: always
     depends_on:
@@ -36,17 +34,15 @@ services:
         condition: service_healthy
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
-      - ./../app:/app:rw
-      - ./supervisor/conf.d:/etc/supervisor/conf.d
-      - ./supervisor/log:/var/log/supervisor
-    networks:
-      - app-network
+      - ./app:/app:rw
+      - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
+      - ./docker/supervisor/log:/var/log/supervisor
 
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
     build:
-      context: ./php-cli
+      context: docker/php-cli
       dockerfile: Dockerfile
     command: bash -c "composer install && php bin/console --no-interaction doctrine:migrations:migrate"
     depends_on:
@@ -55,25 +51,20 @@ services:
       manager_db:
         condition: service_healthy
     volumes:
-      - ./../app:/app:rw
-    networks:
-      - app-network
+      - ./app:/app:rw
 
   manager_nginx:
     hostname: ${DOMAIN}
     image: nginx:1.25.4
-    ports:
-      - "80:80"
-      - "443:8443"
-    networks:
-      - app-network
     depends_on:
       - manager_php-fpm
     volumes:
-      - ./../app:/app:rw
-      - ./nginx/logs:/var/log/nginx:rw
-      - ./nginx/hosts:/etc/nginx/conf.d
-      - ./nginx/certs:/etc/nginx/ssl
+      - ./app:/app:rw
+      - ./docker/nginx/logs:/var/log/nginx:rw
+      - ./docker/nginx/hosts:/etc/nginx/conf.d
+    networks:
+      default:
+        ipv4_address: ${HOST_NGINX}
 
   manager_redis:
     hostname: ${DOMAIN}
@@ -81,12 +72,10 @@ services:
     image: redis:7.2.1
     restart: always
     volumes:
-      - ./redis/data/:/data:rw
-    networks:
-      - app-network
+      - ./docker/redis/data/:/data:rw
 
   manager_db:
-    image: postgres:alpine
+    image: postgres:17-alpine
     shm_size: 128mb
     restart: always
     healthcheck:
@@ -99,32 +88,27 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - ./db/data:/var/lib/postgresql/data
+      - ./docker/db/data:/var/lib/postgresql/data
     ports:
       - ${DB_EXTERNAL_PORT}:5432
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
-    networks:
-      - app-network
 
-  mailhog:
-    container_name: mailhog
-    image: mailhog/mailhog:v1.0.1
-    restart: always
-    ports:
-      - "8025:8025"
-      - "1025:1025"
+#  mailhog:
+#    container_name: mailhog
+#    image: mailhog/mailhog:v1.0.1
+#    restart: always
+#    ports:
+#      - "8025:8025"
+#      - "1025:1025"
+#
+#    depends_on:
+#      - manager_php-fpm
+#      - manager_db
+#    networks:
+#      - app-network
 
-    depends_on:
-      - manager_php-fpm
-      - manager_db
-    networks:
-      - app-network
-
-volumes:
-  nginx_log:
-  app_log:
-  db:
-    driver: local
 networks:
-  app-network:
-    driver: bridge
+  default:
+    ipam:
+      config:
+        - subnet: ${NETWORK}

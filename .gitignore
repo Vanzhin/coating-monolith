@@ -2,3 +2,4 @@
 
 app/.deptrac.cache
 /app/config/jwt/
+/.env
