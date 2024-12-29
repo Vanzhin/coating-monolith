@@ -17,45 +17,65 @@
         </div>
         <div class="flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
             {% if result.proposals %}
-                <div class="list-group w-100">
-                    {% for proposal in result.proposals %}
-                        <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
-                            <div class="d-flex gap-2 w-100 justify-content-between">
-                                <div>
-                                    <h6 class="mb-0">{{ proposal.number }}</h6>
-                                    <p class="mb-0 opacity-75">{{ proposal.description }}</p>
-                                    <p class="mb-0 opacity-75">{{ (proposal.updatedAt??proposal.createdAt)|timeAgo }}</p>
-
-                                </div>
-                                <div class="d-flex gap-2 mb-3">
-                                    <a href="{{ path('app_cabinet_proposals_general_proposal_clone', {id: proposal.id}) }}"
-                                       type="button" class="btn btn-outline-secondary">
-                                        <i class="bi bi-back"></i>
-                                    </a>
-                                    <a href="{{ path('app_cabinet_proposals_general_proposal_download',
-                                        {
-                                            proposalId: proposal.id,
-                                            templateId:'2ee57c86-510c-478c-b59d-b16a38d39564',
-                                            format: 'xlsx'
-                                        }) }}" type="button"
-                                       class="btn btn-outline-secondary">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                    {% include '/components/edit_delete.html.twig'
-                                        with {
-                                        'edit': 'app_cabinet_proposals_general_proposal_update',
-                                        'delete':'app_cabinet_proposals_general_proposal_delete',
-                                        'id': proposal.id,
-                                        'title': proposal.number,
-                                        'name': "форма"
-                                    } %}
+                <div class="accordion" id="accordionProposal">
+                    {% for key, proposal in result.proposals %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed d-flex gap-2 w-100 justify-content-between"
+                                        type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapse{{ key }}" aria-expanded="false"
+                                        aria-controls="collapse{{ key }}">
+                                    <div class="w-75">
+                                        <h6 class="mb-0">{{ proposal.number }}</h6>
+                                        <p class="mb-0 opacity-75">{{ proposal.description }}</p>
+                                        <p class="mb-0 opacity-75">{{ (proposal.updatedAt??proposal.createdAt)|timeAgo }}</p>
+                                    </div>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <a href="{{ path('app_cabinet_proposals_general_proposal_clone', {id: proposal.id}) }}"
+                                           type="button" class="btn btn-outline-secondary">
+                                            <i class="bi bi-back"></i>
+                                        </a>
+                                        <a href="{{ path('app_cabinet_proposals_general_proposal_download',
+                                            {
+                                                proposalId: proposal.id,
+                                                templateId:'2ee57c86-510c-478c-b59d-b16a38d39564',
+                                                format: 'xlsx'
+                                            }) }}" type="button"
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        {% include '/components/edit_delete.html.twig'
+                                            with {
+                                            'edit': 'app_cabinet_proposals_general_proposal_update',
+                                            'delete':'app_cabinet_proposals_general_proposal_delete',
+                                            'id': proposal.id,
+                                            'title': proposal.number,
+                                            'name': "форма"
+                                        } %}
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ key }}" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionProposal">
+                                <div class="accordion-body">
+                                    <p class="mb-0 opacity-75">Проект: {{ proposal.projectTitle }}</p>
+                                    <p class="mb-0 opacity-75">Элементы: {{ proposal.projectStructureDescription }}</p>
+                                    <p class="mb-0 opacity-75">Площадь: {{ proposal.projectArea }} м<sup>2</sup></p>
+                                    <p class="mb-0 opacity-75">Система:</p>
+                                    <ul class="list-group">
+                                        {% for coat in proposal.coats %}
+                                            <li class="d-flex gap-2 w-100 justify-content-between list-group-item">
+                                                <div>{{ coatings.coatings[coat.coatId].title }}</div>
+                                                <div> {{ coat.coatDft }} мкм</div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
                 {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_proposals_general_proposal_delete'} %}
-
                 {% include 'components/pager.html.twig' with {'pager': result.pager} %}
             {% else %}
                 {% include 'components/empty.html.twig' %}

@@ -6,6 +6,7 @@ namespace App\Proposals\Infrastructure\Controller;
 
 use App\Proposals\Application\UseCase\Query\GetPagedGeneralProposalInfo\GetPagedGeneralProposalInfoQuery;
 use App\Proposals\Domain\Repository\GeneralProposalInfoFilter;
+use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,6 +19,7 @@ class ListAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
+        private readonly CoatingsAdapter   $coatingsAdapter
     )
     {
     }
@@ -29,7 +31,7 @@ class ListAction extends AbstractController
         $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
         $query = new GetPagedGeneralProposalInfoQuery(new GeneralProposalInfoFilter($this->getUser()->getUlid(), $search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
-
-        return $this->render('cabinet/proposal/index.html.twig', compact('result'));
+        $coatings = $this->coatingsAdapter->getPagedCoatings();
+        return $this->render('cabinet/proposal/index.html.twig', compact('result', 'coatings'));
     }
 }

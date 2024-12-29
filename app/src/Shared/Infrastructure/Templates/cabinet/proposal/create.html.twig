@@ -10,14 +10,10 @@
             <form method="post" action="{{ path('app_cabinet_proposals_general_proposal') }}"
                   class="form-signin w-100 p-1  border rounded-3">
                 {% if error %}
-                    <twig:Alert
-                            type="danger"
-                            message="{{ error }}"
-                    />
+                    <twig:Alert type="danger" message="{{ error }}"/>
                 {% endif %}
                 <div class="form-group">
                     <h5 class="mb-3 font-weight-normal">Общие параметры</h5>
-
                     <div class="row g-1 p-1 rounded-3">
                         <div class="col-sm-2 form-floating">
                             <input type="text" value="{{ inputData.number }}" name="number" id="inputNumber"
@@ -146,7 +142,7 @@
                         </div>
                     </div>
                     <h5 class="p-2 font-weight-normal">Система покрытий</h5>
-                    <div class="row g-1 mt-1 p-1 rounded-3 bg-body-tertiary">
+                    <div class="row g-1 mt-1 p-1 border rounded-3 bg-body-tertiary">
                         <div class="col-md-12 form-floating">
                             <select class="form-select" id="inputCoats" name="coats[1][coatId]" required>
                                 <option value="" selected disabled hidden>Укажите покрытие...</option>
@@ -259,7 +255,6 @@
                         <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
-
                 <div class="d-flex flex-md-row">
                     <div class="d-flex justify-content-between align-items-center m-1">
                         <button class="btn btn-lg btn-primary mt-2" type="submit">

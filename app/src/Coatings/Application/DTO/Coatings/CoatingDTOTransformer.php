@@ -59,7 +59,7 @@ class CoatingDTOTransformer
     {
         $coatingDTOs = [];
         foreach ($coatings as $coating) {
-            $coatingDTOs[] = $this->fromEntity($coating);
+            $coatingDTOs[$coating->getId()] = $this->fromEntity($coating);
         }
 
         return $coatingDTOs;
