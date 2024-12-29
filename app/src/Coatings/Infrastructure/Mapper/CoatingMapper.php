@@ -160,7 +160,7 @@ class CoatingMapper
                 new Assert\Type('numeric'),
                 new Assert\Range([
                     'min' => 0,
-                    'max' => 100,
+                    'max' => 1000,
                     'notInRangeMessage' => 'Макс интервал перекрытия должен быть в переделах от {{ min }} до {{ max }}.'
                 ]),
             ],
