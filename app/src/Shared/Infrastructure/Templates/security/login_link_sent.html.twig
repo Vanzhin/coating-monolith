@@ -3,11 +3,14 @@
 {% block title %}{{ parent() }} Письмо отправлено{% endblock %}
 
 {% block body %}
-    <div class="container form-control w-50 my-4">
-        <h2>Письмо отправлено на {{ email }}.</h2>
-        <h3>Не получили письмо? Попробуйте еще раз.</h3>
-        <a href="{{ path('app_login_link', {'email' : email}) }}" class="btn btn-lg btn-primary mt-2">
-            Повторить
-        </a>
+    <div class="container d-flex my-4 justify-content-center align-content-center">
+        <div>
+
+            <h2>Письмо отправлено на {{ email }}.</h2>
+            <h3>Не получили письмо? Попробуйте еще раз.</h3>
+            <a href="{{ path('app_login_link', {'email' : email}) }}" class="btn btn-lg btn-primary mt-2">
+                Повторить
+            </a>
+        </div>
     </div>
 {% endblock %}

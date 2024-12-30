@@ -3,8 +3,8 @@
 {% block title %}{{ parent() }} LoginLink{% endblock %}
 
 {% block body %}
-    <div class="container form-control w-50 my-4">
-        <form method="POST" action="{{ path('app_login_check') }}" class="form-signin w-100 m-auto">
+    <div class="container d-flex my-4 justify-content-center">
+        <form method="POST" action="{{ path('app_login_check') }}" class="form-signin m-auto">
             {% if app.user %}
                 <div class="mb-3">
                     You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>

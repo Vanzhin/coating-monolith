@@ -3,13 +3,13 @@
 {% block title %}{{ parent() }} LoginLink{% endblock %}
 
 {% block body %}
-    <div class="container form-control w-50 my-4">
+    <div class="container d-flex my-4 justify-content-center">
         {% if app.user %}
             <div class="mb-3">
                 You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
             </div>
         {% else %}
-            <form method="post" class="form-signin w-100 m-auto" action="{{ path('app_login_link') }}">
+            <form method="post" class="form-signin m-auto" action="{{ path('app_login_link') }}">
                 <h1 class="h3 mb-3 font-weight-normal">Вход по ссылке</h1>
                 <label for="inputEmail">Email</label>
                 <input type="email" value="{{ email }}" name="email" id="inputEmail" class="form-control"
