@@ -3,7 +3,7 @@
 {% block title %}{{ parent() }} Вход{% endblock %}
 
 {% block body %}
-    <div class="container d-flex my-4 justify-content-center">
+    <div class="container d-flex my-4 justify-content-center ">
         <form method="post" action="{{ path('app_login') }}" class="form-signin m-auto">
             {% if error %}
                 <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
