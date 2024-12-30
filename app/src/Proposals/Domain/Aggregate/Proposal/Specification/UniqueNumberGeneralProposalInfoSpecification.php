@@ -17,7 +17,8 @@ readonly class UniqueNumberGeneralProposalInfoSpecification implements Specifica
 
     public function satisfy(GeneralProposalInfo $proposalInfo): void
     {
-        $exist = $this->generalProposalInfoRepository->findOneByNumber($proposalInfo->getNumber());
+        $exist = $this->generalProposalInfoRepository->findOneByNumberAndUserId(
+            $proposalInfo->getNumber(), $proposalInfo->getOwnerId());
         if ($exist?->getId() !== $proposalInfo->getId()) {
             AssertService::null(
                 $exist,

@@ -55,22 +55,22 @@ class GeneralProposalInfo extends Aggregate
     )
     {
         $this->id = UuidService::generate();
+        $this->ownerId = $ownerId;
         $this->specification = $specification;
-        $this->setNumber($number);
-        $this->setDescription($description);
-        $this->setBasis($basis);
         $this->coats = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
-        $this->ownerId = $ownerId;
         $this->unit = $unit;
-        $this->setProjectTitle($projectTitle);
         $this->projectArea = $projectArea;
-        $this->setProjectStructureDescription($projectStructureDescription);
-        $this->setLoss($loss);
         $this->durability = $durability;
         $this->category = $category;
         $this->treatment = $treatment;
         $this->method = $method;
+        $this->setNumber($number);
+        $this->setDescription($description);
+        $this->setBasis($basis);
+        $this->setProjectTitle($projectTitle);
+        $this->setProjectStructureDescription($projectStructureDescription);
+        $this->setLoss($loss);
 
 
     }

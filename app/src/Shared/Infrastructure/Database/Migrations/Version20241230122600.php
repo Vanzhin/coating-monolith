@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Shared\Infrastructure\Database\Migrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20241230122600 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql('DROP INDEX uniq_de51a16496901f54');
+        $this->addSql('CREATE UNIQUE INDEX UNIQ_DE51A16496901F547E3C61F9 ON proposal_general_proposal (number, owner_id)');
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql('DROP INDEX UNIQ_DE51A16496901F547E3C61F9');
+        $this->addSql('CREATE UNIQUE INDEX uniq_de51a16496901f54 ON proposal_general_proposal (number)');
+    }
+}

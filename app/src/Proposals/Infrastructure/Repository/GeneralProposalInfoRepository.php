@@ -36,6 +36,11 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
         return $this->findOneBy(['number' => $number]);
     }
 
+    public function findOneByNumberAndUserId(string $number, string $userId): ?GeneralProposalInfo
+    {
+        return $this->findOneBy(['number' => $number, 'ownerId' => $userId]);
+    }
+
     public function remove(GeneralProposalInfo $generalProposalInfo): void
     {
         $this->getEntityManager()->remove($generalProposalInfo);

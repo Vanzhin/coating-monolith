@@ -7,7 +7,7 @@
         <id name="id" type="string" length="36">
             <generator strategy="NONE"/>
         </id>
-        <field name="number" type="string" length="100" unique="true"/>
+        <field name="number" type="string" length="100"/>
         <field name="description" type="string" length="750" nullable="true"/>
         <field name="basis" type="string" length="750" nullable="true"/>
         <field name="ownerId" column="owner_id" type="string" length="36"/>
@@ -51,6 +51,9 @@
                 <order-by-field name="coatNumber" direction="ASC" />
             </order-by>
         </one-to-many>
+        <unique-constraints>
+            <unique-constraint fields="number,ownerId"/>
+        </unique-constraints>
     </entity>
 
 </doctrine-mapping>
