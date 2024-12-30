@@ -2,7 +2,7 @@
 
 {% block title %}{{ parent() }} | Обновление производителя{% endblock %}
 
-{% block body %}
+{% block content %}
     <div class="col-lg-10 mx-auto p-4 py-md-5 ">
         <div class="d-flex flex-md-row align-items-center ">
             <form method="post" action="{{ path('app_cabinet_coating_manufacturer_update',{id: result.manufacturer.id}) }}"

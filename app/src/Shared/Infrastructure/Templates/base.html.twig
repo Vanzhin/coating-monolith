@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ app_name }} | {% endblock %}</title>
-    <link rel="icon"
-          href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 10 128 128%22><text y=%221.2em%22 font-size=%2296%22>1h</text></svg>">
-    {# Run `composer require symfony/webpack-encore-bundle` to start using Symfony UX #}
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" href="/icons/favicon.ico" sizes="16x16 32x32"/>
+    <link rel="manifest" href="/icons/site.webmanifest">
+    {# {# Run `composer require symfony/webpack-encore-bundle` to start using Symfony UX #}
     {% block stylesheets %}
         {{ encore_entry_link_tags('app') }}
     {% endblock %}
@@ -65,54 +68,67 @@
         </div>
     </header>
 {% endblock %}
-<main class="container">
-    {% if is_granted('IS_IMPERSONATOR') %}
-        <div class="alert alert-warning d-block">Вы находитесь в режиме исполнения роли
-            <a role="alert" href="{{ impersonation_exit_path(path('app_homepage') ) }}">Выйти
-            </a>
-        </div>
-    {% endif %}
-    {% if(app.session.flashBag.peekAll()|length > 0) %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            {% for key, messages in app.flashes() %}
-                {% for  message in messages %}
-                    <span> {{ message }}</span>
+<main class="d-flex flex-nowrap">
+    <div class="container-fluid">
+        {% if is_granted('IS_IMPERSONATOR') %}
+            <div class="alert alert-warning d-block">Вы находитесь в режиме исполнения роли
+                <a role="alert" href="{{ impersonation_exit_path(path('app_homepage') ) }}">Выйти
+                </a>
+            </div>
+        {% endif %}
+        {% if(app.session.flashBag.peekAll()|length > 0) %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {% for key, messages in app.flashes() %}
+                    {% for  message in messages %}
+                        <span> {{ message }}</span>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
-    {% if(app.user is same as(null)) %}
-        <!-- Modal -->
-        <div class="modal fade" id="noUserModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Не узнаю Вас :(</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    {#                    <div class="modal-body"> #}
-                    {#                        <div>Для этого действия необходимо <a href="{{ path('app_login') }}">авторизоваться</a> или <a #}
-                    {#                                    href="{{ path('app_register') }}">зарегистрироваться</a></div> #}
-                    {#                    </div> #}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+        {% if(app.user is same as(null)) %}
+            <!-- Modal -->
+            <div class="modal fade" id="noUserModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Не узнаю Вас :(</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        {#                    <div class="modal-body"> #}
+                        {#                        <div>Для этого действия необходимо <a href="{{ path('app_login') }}">авторизоваться</a> или <a #}
+                        {#                                    href="{{ path('app_register') }}">зарегистрироваться</a></div> #}
+                        {#                    </div> #}
 
+                    </div>
                 </div>
             </div>
-        </div>
-    {% endif %}
-    <div class="d-flex flex-nowrap vh-100">
-        {% block menu %}
-        {% endblock %}
+        {% endif %}
+
         {% block body %}
         {% endblock %}
     </div>
 </main>
 {% block footer %}
-    <footer class="footer mt-auto py-3 bg-body-tertiary">
-        <div class="container">
-            <span class="text-body-secondary">Place sticky footer content here.</span>
-        </div>
-    </footer>
+    <div class="container">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <p class="col-md-4 mb-0 text-body-secondary">{{ "now"|date("Y") }} 1helper</p>
+
+            <a href="/"
+               class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+            </a>
+
+            <ul class="nav col-md-4 justify-content-end">
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Home</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Features</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Pricing</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">FAQs</a></li>
+                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">About</a></li>
+            </ul>
+        </footer>
+    </div>
+
 {% endblock %}
 </body>
 </html>
