@@ -19,6 +19,8 @@ services:
       manager_db:
         condition: service_healthy
     working_dir: /app
+    networks:
+      - default
 
   manager_supervisor:
     hostname: ${DOMAIN}
@@ -37,6 +39,8 @@ services:
       - ./app:/app:rw
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
+    networks:
+      - default
 
   manager_php-cli:
     hostname: ${DOMAIN}
@@ -52,10 +56,14 @@ services:
         condition: service_healthy
     volumes:
       - ./app:/app:rw
+    networks:
+      - default
 
   manager_nginx:
     hostname: ${DOMAIN}
     image: nginx:1.25.4
+    ports:
+      - '80:80'
     depends_on:
       - manager_php-fpm
     volumes:
@@ -73,6 +81,8 @@ services:
     restart: always
     volumes:
       - ./docker/redis/data/:/data:rw
+    networks:
+      - default
 
   manager_db:
     image: postgres:17-alpine
@@ -92,23 +102,37 @@ services:
     ports:
       - ${DB_EXTERNAL_PORT}:5432
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
+    networks:
+      - default
 
-#  mailhog:
-#    container_name: mailhog
-#    image: mailhog/mailhog:v1.0.1
-#    restart: always
-#    ports:
-#      - "8025:8025"
-#      - "1025:1025"
-#
-#    depends_on:
-#      - manager_php-fpm
-#      - manager_db
-#    networks:
-#      - app-network
+  elasticsearch:
+    container_name: ${ELASTIC_CONTAINER_NAME}
+    image: elasticsearch:9.0.1
+
+    volumes:
+#      - ./docker/elasticsearch/config.yaml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./docker/elasticsearch/data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - cluster.name=docker-cluster
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+    networks:
+      - default
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
+    env_file: .env
 
 networks:
   default:
+    driver: bridge
     ipam:
       config:
         - subnet: ${NETWORK}

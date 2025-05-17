@@ -10,7 +10,7 @@ parameters:
   cache_adapter: cache.adapter.filesystem
   general_proposal_template_upload: 'proposals/templates'
   general_proposal_template_upload_dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Resources/%general_proposal_template_upload%'
-
+  elasticsearch.config_dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ES/config'
 
 services:
   # default configuration for services in *this* file
@@ -96,7 +96,15 @@ services:
     arguments:
       - '%env(LOG_TELEGRAM_BOT_KEY)%'
       - '%env(LOG_TELEGRAM_CHANNEL)%'
-  # Telegram
+
+  #Elastic_search
+  Elastic\Elasticsearch\ClientInterface:
+    factory: [ 'Elastic\Elasticsearch\ClientBuilder', 'fromConfig' ]
+    arguments:
+      - hosts: [ '%env(ELASTIC_DSN)%' ]
+        basicAuthentication: [ '%env(ELASTIC_USERNAME)%', '%env(ELASTIC_PASSWORD)%' ]
+        sslVerification: false
+
 
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones
