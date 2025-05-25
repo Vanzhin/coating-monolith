@@ -13,7 +13,7 @@ class DocumentDTOTransformer
         $products = [];
         foreach ($document->getProducts() as $product) {
             $item = new DocumentProductDTO();
-            $item->id = $product->getId()->jsonSerialize();
+            $item->id = $product->getId()?->jsonSerialize();
             $item->title = $product->getTitle()->getValue();
             $products[] = $item;
         }
@@ -28,6 +28,16 @@ class DocumentDTOTransformer
         $dto->products = $products;
 
         return $dto;
+    }
+
+    public function fromEntityList(array $documents): array
+    {
+        $documentDTOs = [];
+        foreach ($documents as $document) {
+            $documentDTOs[] = $this->fromEntity($document);
+        }
+
+        return $documentDTOs;
     }
 
 }

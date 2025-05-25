@@ -8,7 +8,7 @@ use Symfony\Component\Uid\Uuid;
 
 readonly class DocumentProduct
 {
-    public function __construct(private DocumentTitle $title, private Uuid $id)
+    public function __construct(private DocumentTitle $title, private ?Uuid $id)
     {
     }
 
@@ -17,7 +17,7 @@ readonly class DocumentProduct
         return $this->title;
     }
 
-    public function getId(): Uuid
+    public function getId(): ?Uuid
     {
         return $this->id;
     }

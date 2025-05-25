@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace App\Documents\Domain\Repository;
 
 use App\Documents\Domain\Aggregate\Document\Document;
+use App\Shared\Domain\Repository\PaginationResult;
 
 interface DocumentRepositoryInterface
 {
@@ -17,6 +18,6 @@ interface DocumentRepositoryInterface
 
     public function save(Document $document): void;
 
-//    public function search(BookFilter $filter, ?string $dbTitle = null): PaginationResult;
+    public function search(DocumentFilter $filter): PaginationResult;
 
 }

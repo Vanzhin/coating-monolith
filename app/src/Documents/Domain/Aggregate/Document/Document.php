@@ -20,7 +20,7 @@ class Document extends Aggregate
     /**
      * @var DocumentProduct[] $products
      */
-    private array $products;
+    private array $products = [];
 
     public function __construct(
         private readonly Uuid $id,
@@ -50,6 +50,11 @@ class Document extends Aggregate
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): void
+    {
+        $this->createdAt = $createdAt;
     }
 
     public function getLink(): Link

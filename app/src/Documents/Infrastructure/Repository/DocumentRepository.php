@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Documents\Infrastructure\Repository;
 
 use App\Documents\Domain\Aggregate\Document\Document;
+use App\Documents\Domain\Repository\DocumentFilter;
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
+use App\Documents\Infrastructure\Mapper\DocumentMapper;
+use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Infrastructure\Database\ES\ConfigLoader;
 use App\Shared\Infrastructure\Database\ES\QueryBuilder;
+use App\Shared\Infrastructure\Database\ES\Type;
 use Elastic\Elasticsearch\ClientInterface;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\MissingParameterException;
@@ -21,6 +25,7 @@ class DocumentRepository implements DocumentRepositoryInterface
         private ClientInterface $client,
         private QueryBuilder $queryBuilder,
         private ConfigLoader $defaultConfig,
+        private DocumentMapper $documentMapper,
     ) {
     }
 
@@ -73,5 +78,34 @@ class DocumentRepository implements DocumentRepositoryInterface
     public function save(Document $document): void
     {
         dd($document);
+    }
+
+    public function search(DocumentFilter $filter): PaginationResult
+    {
+        if ($filter->getSearch()) {
+            $this->queryBuilder->addMust(Type::MATCH, 'products.title', $filter->getSearch());
+        }
+        if ($filter->getTitle()) {
+            $this->queryBuilder->addMust(Type::MATCH, 'title', $filter->getTitle());
+        }
+        if ($filter->getCategory()) {
+            $this->queryBuilder->addMust(Type::TERM, 'category', $filter->getCategory());
+        }
+        $this->queryBuilder->addLimit($filter->getPager()->getLimit());
+        $this->queryBuilder->addPage($filter->getPager()->getOffset());
+
+        $result = $this->client->search([
+            'index' => $dbTitle ?? $this->default,
+            'body' => $this->queryBuilder->getQuery()->jsonSerialize(),
+        ])->asArray();
+        $total = $result['hits']['total']['value'] ?? null;
+        $items = [];
+        if ($total) {
+            foreach ($result['hits']['hits'] as $document) {
+                $items[] = $this->documentMapper->mapEntity($document);
+            }
+        }
+
+        return new PaginationResult($items, $total);
     }
 }

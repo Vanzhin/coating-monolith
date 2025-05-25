@@ -23,8 +23,16 @@ class Link implements \Stringable
 
     private function assertValidName(string $value): void
     {
-        if (!filter_var($value, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('News link is not a valid URL.');
+        $encodedUrl = preg_replace_callback(
+            '/[^\x20-\x7f]/',
+            function ($match) {
+                return rawurlencode($match[0]);
+            },
+            $value
+        );
+
+        if (!filter_var($encodedUrl ?? $value, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException(sprintf('Link is not a valid URL: %s.', $value));
         }
     }
 

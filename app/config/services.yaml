@@ -22,6 +22,7 @@ services:
   # this creates a service per class whose id is the fully-qualified class name
   App\:
     resource: '../src/'
+    exclude: '../src/{Shared/Infrastructure/Database/ES/config}'
   _instanceof:
     App\Shared\Application\Command\CommandHandlerInterface:
       tags:
