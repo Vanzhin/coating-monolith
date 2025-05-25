@@ -87,7 +87,7 @@ return [
                 'ignore_above' => 2048,
                 'doc_values' => true
             ],
-            'product' => [
+            'products' => [
                 'type' => 'nested',
                 'properties' => [
                     'title' => [

@@ -26,3 +26,7 @@ proposals:
   resource: ../src/Proposals/Infrastructure/Controller
   type: attribute
 
+documents:
+  resource: ../src/Documents/Infrastructure/Controller
+  type: attribute
+

@@ -32,6 +32,12 @@
                                                             class="d-none d-sm-inline"> Производители</span>
                                                 </a>
                                             </li>
+                                            <li class="w-100">
+                                                <a href="{{ path('app_cabinet_document_create') }}" class="nav-link px-0 text-secondary
+                                        {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}">
+                                                    <i class="fs-6 bi-file-text"></i>
+                                                    <span class="d-none d-sm-inline">Документы</span></a>
+                                            </li>
                                         </ul>
                                     </li>
                                 </ul>

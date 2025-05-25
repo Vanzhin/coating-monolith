@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Documents\Infrastructure\Repository;
 
+use App\Documents\Domain\Aggregate\Document\Document;
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
 use App\Shared\Infrastructure\Database\ES\ConfigLoader;
 use App\Shared\Infrastructure\Database\ES\QueryBuilder;
@@ -17,10 +19,9 @@ class DocumentRepository implements DocumentRepositoryInterface
 
     public function __construct(
         private ClientInterface $client,
-        private QueryBuilder    $queryBuilder,
-        private ConfigLoader    $defaultConfig,
-    )
-    {
+        private QueryBuilder $queryBuilder,
+        private ConfigLoader $defaultConfig,
+    ) {
     }
 
     /**
@@ -61,8 +62,16 @@ class DocumentRepository implements DocumentRepositoryInterface
         return $this->client->indices()->delete($data)->asBool();
     }
 
-    public function bulkInsert(string $itemsData): array
+    public function bulkInsert(string $data, ?string $dbName = null): bool
     {
-        // TODO: Implement bulkInsert() method.
+        return $this->client->bulk([
+            'index' => $dbName ?? $this->default,
+            'body' => $data,
+        ])->asBool();
+    }
+
+    public function save(Document $document): void
+    {
+        dd($document);
     }
 }
