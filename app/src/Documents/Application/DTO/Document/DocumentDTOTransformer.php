@@ -26,6 +26,7 @@ class DocumentDTOTransformer
         $dto->title = $document->getTitle()->getValue();
         $dto->description = $document->getDescription()->getValue();
         $dto->products = $products;
+        $dto->category = $document->getType()->value;
 
         return $dto;
     }

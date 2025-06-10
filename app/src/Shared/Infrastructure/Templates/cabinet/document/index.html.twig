@@ -1,0 +1,48 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Покрытия{% endblock %}
+
+{% block content %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
+        <div class="d-flex flex-md-row align-items-center ">
+            <h2 class="text-body-emphasis">Поиск</h2>
+        </div>
+        <div class="col-lg-10 mx-auto p-4 py-md-5 ">
+            <div class="d-flex flex-md-row align-items-center ">
+                <form method="get" action="{{ path('app_cabinet_document_list') }}"
+                      class="form-signin w-100 m-auto">
+                    <div class="input-group mb-3">
+                        <input type="text" value="{{ inputData.search }}" name="search"
+                               class="form-control"
+                               autocomplete="search" required autofocus placeholder="РС 750, Прометей, эпоксид ..."
+                               minlength="3" maxlength="50"
+                        >
+                        <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Искать</button>
+                    </div>
+                </form>
+
+            </div>
+
+        </div>
+
+        <div class="flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
+            {% if result.documents %}
+                <div class="list-group w-100">
+                    {% for document in result.documents %}
+                        <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                            <div class="d-flex gap-2 w-100 justify-content-between">
+                                <div>
+                                    <h6 class="mb-0">{{ document.title|u.truncate(50, '...')}}</h6>
+                                    <p class="mb-0 opacity-75" >{{ document.description|u.truncate(150, '...') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+            {% else %}
+                {% include 'components/empty.html.twig' %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
