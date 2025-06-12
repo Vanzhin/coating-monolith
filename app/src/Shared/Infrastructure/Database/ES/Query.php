@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Database\ES;
 
@@ -67,6 +67,7 @@ class Query implements \JsonSerializable
         }
         if ($this->should) {
             $result['query']['bool']['should'] = $this->should;
+            $result['query']['bool']['minimum_should_match'] = 1;
         }
         if ($this->must_not) {
             $result['query']['bool']['must_not'] = $this->must_not;

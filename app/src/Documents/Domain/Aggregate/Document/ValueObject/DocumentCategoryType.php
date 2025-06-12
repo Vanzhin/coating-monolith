@@ -31,4 +31,9 @@ enum DocumentCategoryType: string
     case REFERENCE = 'Референс';
 
     case GENERAL = 'Общий документ';
+
+    public static function fromName(string $name)
+    {
+        return constant("self::$name");
+    }
 }

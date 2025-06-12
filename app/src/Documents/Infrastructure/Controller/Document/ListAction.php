@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-
 namespace App\Documents\Infrastructure\Controller\Document;
 
 use App\Documents\Application\UseCase\Query\GetPagedDocuments\GetPagedDocumentsQuery;
+use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType;
 use App\Documents\Domain\Repository\DocumentFilter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
@@ -26,6 +26,7 @@ class ListAction extends AbstractController
     {
         $inputData = $request->query->all();
         $result = null;
+        $categoryTypes = DocumentCategoryType::array();
         if (isset($inputData['search'])) {
             $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
             $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
@@ -35,10 +36,17 @@ class ListAction extends AbstractController
                 null,
                 Pager::fromPage($page, $limit)
             );
+            foreach ($inputData['categories'] ?? [] as $category) {
+                $category = DocumentCategoryType::fromName($category);
+                if ($category) {
+                    $filter->addCategoryType($category);
+                }
+            }
             $query = new GetPagedDocumentsQuery($filter);
             $result = $this->queryBus->execute($query);
         }
-
-        return $this->render('cabinet/document/index.html.twig', compact('result', 'inputData'));
+        return $this->render(
+            'cabinet/document/index.html.twig',
+            compact('result', 'inputData', 'categoryTypes'));
     }
 }

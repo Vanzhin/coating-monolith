@@ -91,9 +91,16 @@ class DocumentRepository implements DocumentRepositoryInterface
         if ($filter->getCategory()) {
             $this->queryBuilder->addMust(Type::TERM, 'category', $filter->getCategory());
         }
+
+        if ($filter->getCategoryTypes()) {
+            $types = array_map(fn($item)=>$item->value, $filter->getCategoryTypes());
+            foreach ($types as $type) {
+                $this->queryBuilder->addShould(Type::TERM, 'category', $type);
+            }
+        }
+
         $this->queryBuilder->addLimit($filter->getPager()->getLimit());
         $this->queryBuilder->addPage($filter->getPager()->getOffset());
-
         $result = $this->client->search([
             'index' => $dbTitle ?? $this->default,
             'body' => $this->queryBuilder->getQuery()->jsonSerialize(),
