@@ -7,7 +7,9 @@ framework:
             enabled: true
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    session:
+        cookie_secure: 'auto'  # Автоматически включает HTTPS, если запрос через него
+        cookie_samesite: 'lax'
 
     #esi: true
     #fragments: true
