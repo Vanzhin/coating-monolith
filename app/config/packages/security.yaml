@@ -36,24 +36,28 @@ security:
       security: false
 
     main:
+      form_login:
+        # "app_login" is the name of the route created previously
+        login_path: app_login
+        check_path: app_login
       lazy: true
-      pattern:
       provider: users
+      entry_point: App\Shared\Application\Security\LoginFormAuthenticator # or 'form_login'
       logout:
         path: app_logout
       custom_authenticator: App\Shared\Application\Security\LoginFormAuthenticator
       remember_me:
         secret: '%kernel.secret%'
         always_remember_me: true
+        signature_properties: [password]
 
-      
+
 
   access_control:
     - { path: ^/api/auth/token/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/auth/token/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/api/users/me,       roles: IS_AUTHENTICATED_FULLY }
     - { path: ^/cabinet/*,       roles: IS_AUTHENTICATED_FULLY }
-
 
 when@test:
   security:
