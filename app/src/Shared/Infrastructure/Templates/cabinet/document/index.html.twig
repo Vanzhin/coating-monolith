@@ -39,13 +39,15 @@
                                         <div class="list-group w-100">
                                             {% for key, categoryType in categoryTypes %}
                                                 <div class="form-check">
-                                                    <input name="categories[]" class="form-check-input" type="checkbox"
+                                                    <input type="checkbox" class="btn-check"
+                                                           id="btn-check-{{ categoryType }}"
+                                                           name="categories[]"
+                                                           autocomplete="off"
                                                            value="{{ categoryType }}" id="inputCategoryType"
                                                             {% if categoryType in categories %} checked {% endif %}
                                                     >
-                                                    <label class="form-check-label" for="inputCategoryType">
-                                                        {{ key }}
-                                                    </label>
+                                                    <label class="btn"
+                                                           for="btn-check-{{ categoryType }}">{{ key }}</label>
                                                 </div>
                                             {% endfor %}
                                         </div>
