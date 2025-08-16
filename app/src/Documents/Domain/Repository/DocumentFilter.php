@@ -7,16 +7,30 @@ namespace App\Documents\Domain\Repository;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType;
 use App\Shared\Domain\Repository\Pager;
 
-class DocumentFilter
+class DocumentFilter implements \JsonSerializable
 {
-    private ?array $categoryTypes = [];
+    private array $categoryTypes = [];
+    private ?string $search = null;
+    private ?string $title = null;
+    private ?string $category = null;
+    public ?Pager $pager = null;
+    private ?string $index = null;
+    private array $sort = [];
+    private ?\DateTimeInterface $createdFrom = null;
+    private ?\DateTimeInterface $createdTo = null;
 
     public function __construct(
-        private ?string $search = null,
-        private ?string $title = null,
-        private ?string $category = null,
-        public ?Pager $pager = null,
+        ?string $search = null,
+        ?string $title = null,
+        ?string $category = null,
+        ?Pager $pager = null,
+        ?string $index = null
     ) {
+        $this->search = $search;
+        $this->title = $title;
+        $this->category = $category;
+        $this->pager = $pager;
+        $this->index = $index;
     }
 
     public function getTitle(): ?string
@@ -24,9 +38,10 @@ class DocumentFilter
         return $this->title;
     }
 
-    public function setTitle(string $title): void
+    public function setTitle(?string $title): self
     {
         $this->title = $title;
+        return $this;
     }
 
     public function getCategory(): ?string
@@ -34,9 +49,10 @@ class DocumentFilter
         return $this->category;
     }
 
-    public function setCategory(string $category): void
+    public function setCategory(?string $category): self
     {
         $this->category = $category;
+        return $this;
     }
 
     public function getPager(): ?Pager
@@ -44,25 +60,101 @@ class DocumentFilter
         return $this->pager;
     }
 
+    public function setPager(?Pager $pager): self
+    {
+        $this->pager = $pager;
+        return $this;
+    }
+
     public function getSearch(): ?string
     {
         return $this->search;
     }
 
-    public function getCategoryTypes(): ?array
+    public function setSearch(?string $search): self
+    {
+        $this->search = $search;
+        return $this;
+    }
+
+    public function getCategoryTypes(): array
     {
         return $this->categoryTypes;
     }
 
-    public function addCategoryType(DocumentCategoryType $categoryType): void
+    public function addCategoryType(DocumentCategoryType $categoryType): self
     {
-        if (!in_array($categoryType, $this->categoryTypes)) {
+        if (!in_array($categoryType, $this->categoryTypes, true)) {
             $this->categoryTypes[] = $categoryType;
         }
+        return $this;
     }
 
-    public function setSearch(?string $search): void
+    public function setCategoryTypes(array $categoryTypes): self
     {
-        $this->search = $search;
+        $this->categoryTypes = [];
+        foreach ($categoryTypes as $type) {
+            $this->addCategoryType($type);
+        }
+        return $this;
+    }
+
+    public function getIndex(): ?string
+    {
+        return $this->index;
+    }
+
+    public function setIndex(?string $index): self
+    {
+        $this->index = $index;
+        return $this;
+    }
+
+    public function getSort(): array
+    {
+        return $this->sort;
+    }
+
+    public function addSort(string $field, string $direction = 'asc'): self
+    {
+        $this->sort[$field] = $direction;
+        return $this;
+    }
+
+    public function getCreatedFrom(): ?\DateTimeInterface
+    {
+        return $this->createdFrom;
+    }
+
+    public function setCreatedFrom(?\DateTimeInterface $date): self
+    {
+        $this->createdFrom = $date;
+        return $this;
+    }
+
+    public function getCreatedTo(): ?\DateTimeInterface
+    {
+        return $this->createdTo;
+    }
+
+    public function setCreatedTo(?\DateTimeInterface $date): self
+    {
+        $this->createdTo = $date;
+        return $this;
+    }
+
+    public function hasFilters(): bool
+    {
+        return $this->search !== null
+            || $this->title !== null
+            || $this->category !== null
+            || !empty($this->categoryTypes)
+            || $this->createdFrom !== null
+            || $this->createdTo !== null;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return get_object_vars($this);
     }
 }

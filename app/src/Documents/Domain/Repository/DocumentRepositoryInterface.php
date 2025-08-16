@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Documents\Domain\Repository;
 
 use App\Documents\Domain\Aggregate\Document\Document;
@@ -20,4 +19,5 @@ interface DocumentRepositoryInterface
 
     public function search(DocumentFilter $filter): PaginationResult;
 
+    public function findCountByCategory(DocumentFilter $filter): array;
 }

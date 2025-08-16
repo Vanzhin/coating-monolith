@@ -6,47 +6,41 @@ namespace App\Shared\Infrastructure\Database\ES;
 
 class Query implements \JsonSerializable
 {
-    private array $must = [];
-    private array $filter = [];
-    private array $should = [];
-    private array $must_not = [];
-    private int $size = 10;
+    private array $query = ['bool' => []];
     private int $from = 0;
+    private int $size = 10;
+    private array $sort = [];
+    private int $minimumShouldMatch = 0;
+    private array $aggregations = [];
 
-
-    public function addFilter(array $data): void
+    public function setMinimumShouldMatch(int $value): void
     {
-        $this->filter[] = $data;
+        $this->minimumShouldMatch = $value;
     }
 
-    public function addMust(array $data): void
+    public function addMust(array $query): void
     {
-        $this->must[] = $data;
+        $this->query['bool']['must'][] = $query;
     }
 
-    public function addShould(array $data): void
+    public function addShould(array $query): void
     {
-        $this->should[] = $data;
+        $this->query['bool']['should'][] = $query;
     }
 
-    public function addMustNot(array $data): void
+    public function addFilter(array $query): void
     {
-        $this->must_not[] = $data;
+        $this->query['bool']['filter'][] = $query;
     }
 
-    public function getSize(): int
+    public function addMustNot(array $query): void
     {
-        return $this->size;
+        $this->query['bool']['must_not'][] = $query;
     }
 
-    public function setSize(int $size): void
+    public function addSort(array $sort): void
     {
-        $this->size = $size;
-    }
-
-    public function getFrom(): int
-    {
-        return $this->from;
+        $this->sort[] = $sort;
     }
 
     public function setFrom(int $from): void
@@ -54,26 +48,44 @@ class Query implements \JsonSerializable
         $this->from = $from;
     }
 
-    public function jsonSerialize(): string
+    public function setSize(int $size): void
     {
-        $size = $this->getSize();
-        $from = $this->getFrom();
-        $result = compact('size', 'from');
-        if ($this->must) {
-            $result['query']['bool']['must'] = $this->must;
-        }
-        if ($this->filter) {
-            $result['query']['bool']['filter'] = $this->filter;
-        }
-        if ($this->should) {
-            $result['query']['bool']['should'] = $this->should;
-            $result['query']['bool']['minimum_should_match'] = 1;
-        }
-        if ($this->must_not) {
-            $result['query']['bool']['must_not'] = $this->must_not;
-        }
-
-        return json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->size = $size;
     }
 
+    public function addAggregation(string $name, array $body): void
+    {
+        $this->aggregations[$name] = $body;
+    }
+
+    public function getQuery(): array
+    {
+        return $this->jsonSerialize();
+    }
+
+    public function jsonSerialize(): array
+    {
+        $result = ['query' => $this->query];
+        if (!empty($this->aggregations)) {
+            $result['aggs'] = $this->aggregations;
+        }
+
+        if ($this->minimumShouldMatch !== 0) {
+            $result['query']['bool']['minimum_should_match'] = $this->minimumShouldMatch;
+        }
+
+        if ($this->from > 0) {
+            $result['from'] = $this->from;
+        }
+
+        if ($this->size !== 10) {
+            $result['size'] = $this->size;
+        }
+
+        if (!empty($this->sort)) {
+            $result['sort'] = $this->sort;
+        }
+
+        return $result;
+    }
 }

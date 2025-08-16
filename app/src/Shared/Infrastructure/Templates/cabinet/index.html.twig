@@ -43,6 +43,12 @@
                                 </ul>
                             {% endif %}
                             <li class="nav-item">
+                                <a href="{{ path('app_cabinet_document_list') }}"
+                                   class="nav-link align-middle px-0 text-secondary
+                                   {% if 'app_cabinet_document_list' in app.request.get('_route') %}fw-bold{% endif %}">
+                                    <i class="fs-4 bi bi-search"></i><span
+                                            class="ms-1 d-none d-sm-inline">Поиск</span>
+                                </a>
                                 <a href="{{ path('app_cabinet_proposals_general_proposal_list') }}"
                                    class="nav-link align-middle px-0 text-secondary
                                    {% if 'app_cabinet_proposals_general_proposal' in app.request.get('_route') %}fw-bold{% endif %}">

@@ -19,98 +19,97 @@
                         >
                         <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Искать</button>
                     </div>
-                    <div class="accordion" id="accordionExample">
-                        <div class="accordion-item">
-                            {% set categories = inputData is null ? [] : inputData.categories %}
-                            <h2 class="accordion-header" id="headingThree">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#collapseThree" aria-expanded="false"
-                                        aria-controls="collapseThree">
-                                    Дополнительно
-                                    {% if categories|length > 0 %}
-                                        <span class="badge bg-secondary m-1">{{ categories|length }}</span>
-                                    {% endif %}
-                                </button>
-                            </h2>
-                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
-                                 data-bs-parent="#accordionExample">
-                                <div class="accordion-body">
-                                    {% if categoryTypes %}
-                                        <div class="list-group w-100">
-                                            {% for key, categoryType in categoryTypes %}
-                                                <div class="form-check">
-                                                    <input type="checkbox" class="btn-check"
-                                                           id="btn-check-{{ categoryType }}"
-                                                           name="categories[]"
-                                                           autocomplete="off"
-                                                           value="{{ categoryType }}" id="inputCategoryType"
-                                                            {% if categoryType in categories %} checked {% endif %}
-                                                    >
-                                                    <label class="btn"
-                                                           for="btn-check-{{ categoryType }}">{{ key }}</label>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        Дополнительных параметров не предусмотрено
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </form>
             </div>
-            <div class="flex-column flex-md-row gap-4 align-items-center">
-                {% if result.documents %}
-                    <div class="list-group">
-                        {% for key, document in result.documents %}
-                            <div class="accordion" id="accordionExample">
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="heading{{ key }}">
-                                        <button class="accordion-button collapsed row m-auto" type="button"
-                                                data-bs-toggle="collapse"
-                                                data-bs-target="#collapse{{ key }}" aria-expanded="false"
-                                                aria-controls="collapse{{ key }}">
-                                            <div>
-                                                <span class="badge bg-primary">{{ document.category }}</span>
-                                                <h6 class="mb-0">{{ document.title|u.truncate(50, '...') }}</h6>
-                                                <p class="mb-0 opacity-75">{{ document.description|u.truncate(150, '...') }}</p>
-                                            </div>
-                                        </button>
-                                    </h2>
-                                    <div id="collapse{{ key }}" class="accordion-collapse collapse "
-                                         aria-labelledby="heading{{ key }}" data-bs-parent="#accordionExample">
-                                        <div class="accordion-body">
-                                            <div class="feature col">
-                                                <h6>Описание</h6>
-                                                <p class="mb-0 opacity-75">{{ document.description }}</p>
-                                                <a href="{{ document.link }}" class="icon-link mb-5 mt-3"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer">
-                                                    Смотреть документ
-                                                    <svg class="bi" width="1em" height="1em">
-                                                        <use xlink:href="#chevron-right"></use>
-                                                    </svg>
-                                                </a>
-                                            </div>
-                                            {% if document.products %}
-                                                <div class="bd-example">
-                                                    {% for product in document.products %}
-                                                        <span class="badge bg-secondary">{{ product.title }}</span>
-                                                    {% endfor %}
+            <div class="d-flex flex-row gap-1">
+                {% if countByCategory.result %}
+                    <ul class="nav flex-column flex-shrink-0 ">  <!-- flex-shrink-0 предотвращает сжатие -->
+                        <li class="nav-item border rounded mb-1">
+                            <a class="nav-link d-flex justify-content-between align-items-center
+                            {% if 'categories' not in app.request.query.all|keys %}
+                                text-bg-secondary rounded-1
+                            {% endif %}"
+                               href="{{ path('app_cabinet_document_list', {
+                                   'search': app.request.query.get('search'),
+                               }) }}">
+                                Всего
+                                <span class="badge bg-light text-dark">
+                                        {{ countByCategory.result.getTotalCount }}
+                                    </span>
+                            </a>
+                        </li>
+                        {% for key, countCategory in countByCategory.result.categories %}
+                            <li class="nav-item border rounded mb-1">
+                                <a class="nav-link d-flex justify-content-between align-items-center
+                                {% if countCategory.category.name in app.request.query.all()['categories']|default([]) %}
+                                    text-bg-secondary rounded-1
+                                {% endif %}"
+                                   href="{{ path('app_cabinet_document_list', {
+                                       'search': app.request.query.get('search'),
+                                       'categories[]': countCategory.category.name
+                                   }) }}">
+                                    {{ countCategory.category.value }}
+                                    <span class="badge bg-light text-dark">
+                                        {{ countCategory.count }}
+                                    </span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="flex-column flex-md-row gap-4 align-items-center flex-grow-1">
+                    {% if result.documents %}
+                        <div class="list-group gap-1">
+                            {% for key, document in result.documents %}
+                                <div class="accordion" id="accordionExample">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading{{ key }}">
+                                            <button class="accordion-button collapsed row m-auto" type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapse{{ key }}" aria-expanded="false"
+                                                    aria-controls="collapse{{ key }}">
+                                                <div>
+                                                    <span class="badge bg-primary">{{ document.category }}</span>
+                                                    <h6 class="mb-0">{{ document.title|u.truncate(50, '...') }}</h6>
+                                                    <p class="mb-0 opacity-75">{{ document.description|u.truncate(150, '...') }}</p>
                                                 </div>
-                                            {% endif %}
+                                            </button>
+                                        </h2>
+                                        <div id="collapse{{ key }}" class="accordion-collapse collapse "
+                                             aria-labelledby="heading{{ key }}" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <div class="feature col">
+                                                    <h6>Описание</h6>
+                                                    <p class="mb-0 opacity-75">{{ document.description }}</p>
+                                                    <a href="{{ document.link }}" class="icon-link mb-5 mt-3"
+                                                       target="_blank"
+                                                       rel="noopener noreferrer">
+                                                        Смотреть документ
+                                                        <svg class="bi" width="1em" height="1em">
+                                                            <use xlink:href="#chevron-right"></use>
+                                                        </svg>
+                                                    </a>
+                                                </div>
+                                                {% if document.products %}
+                                                    <div class="bd-example">
+                                                        {% for product in document.products %}
+                                                            <span class="badge bg-secondary">{{ product.title }}</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    {% include 'components/pager.html.twig' with {'pager': result.pager} %}
-                {% else %}
-                    {% include 'components/empty.html.twig' %}
-                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+                    {% else %}
+                        {% include 'components/empty.html.twig' %}
+                    {% endif %}
+                </div>
             </div>
         </div>
+    </div>
     </div>
 {% endblock %}
