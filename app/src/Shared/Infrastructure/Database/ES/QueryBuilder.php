@@ -107,40 +107,70 @@ class QueryBuilder
 
     private function handleMatchQuery(string $key, string $value, Operator $operator, ?array $options): self
     {
-        $numbers = $this->extractNumbers($value);
-        $text = $this->removeNumbers($value);
+        // Нормализуем ввод - удаляем пробелы между числами и буквами
+        $normalizedValue = preg_replace('/(\d+)\s*([а-яА-Яa-zA-Z]+)/u', '$1$2', $value);
 
-        if (empty($text) && empty($numbers)) {
+        // Разбиваем на токены для сложных запросов
+        $tokens = preg_split('/\s+/', $normalizedValue);
+
+        // Для однословных запросов (как "750К") используем match_phrase с wildcard
+        if (count($tokens) === 1) {
+            $this->addQueryPart([
+                'bool' => [
+                    'should' => [
+                        [
+                            'match_phrase' => [
+                                $key => [
+                                    'query' => $normalizedValue,
+                                    'slop' => 2
+                                ]
+                            ]
+                        ],
+                        [
+                            'wildcard' => [
+                                $key => [
+                                    'value' => "*{$normalizedValue}*",
+                                    'case_insensitive' => true
+                                ]
+                            ]
+                        ]
+                    ],
+                    'minimum_should_match' => 1
+                ]
+            ], $operator);
+
             return $this;
         }
 
-        if (!empty($text) && !empty($numbers)) {
-            $boolQuery = ['bool' => ['must' => []]];
-            $boolQuery['bool']['must'][] = $this->buildMatchQuery($key, trim($text), $options);
+        // Для многословных запросов используем комбинацию подходов
+        $boolQuery = ['bool' => ['must' => []]];
 
-            foreach ($numbers as $number) {
-                $boolQuery['bool']['must'][] = $this->buildRegexpQuery($key, ".*{$number}.*");
+        foreach ($tokens as $token) {
+            if (preg_match('/\d+/', $token)) {
+                // Для токенов с числами используем wildcard
+                $boolQuery['bool']['must'][] = [
+                    'wildcard' => [
+                        $key => [
+                            'value' => "*{$token}*",
+                            'case_insensitive' => true
+                        ]
+                    ]
+                ];
+            } else {
+                // Для текстовых токенов используем match с fuzziness
+                $boolQuery['bool']['must'][] = [
+                    'match' => [
+                        $key => [
+                            'query' => $token,
+                            'fuzziness' => 'AUTO',
+                            'operator' => 'AND'
+                        ]
+                    ]
+                ];
             }
-
-            return $this->addRawQuery($boolQuery, $operator);
         }
 
-        if (!empty($numbers)) {
-            foreach ($numbers as $number) {
-                $this->addQueryPart(
-                    $this->buildRegexpQuery($key, ".*{$number}.*"),
-                    $operator
-                );
-            }
-            return $this;
-        }
-
-        $this->addQueryPart(
-            $this->buildMatchQuery($key, $text, $options),
-            $operator
-        );
-
-        return $this;
+        return $this->addRawQuery($boolQuery, $operator);
     }
 
     private function addQueryPart(array $queryPart, Operator $operator): void
