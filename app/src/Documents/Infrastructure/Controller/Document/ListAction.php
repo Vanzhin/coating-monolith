@@ -48,11 +48,7 @@ class ListAction extends AbstractController
             $query = new GetPagedDocumentsQuery($filter);
             $result = $this->queryBus->execute($query);
             // получаю счетчик по всем категориям
-            $filter = new DocumentFilter(
-                $inputData['search'],
-                null,
-                null,
-            );
+            $filter->setCategoryTypes([]);
 
             $countByCategory = $this->queryBus->execute(new GetDocumentCountByCategoryQuery($filter));
         }

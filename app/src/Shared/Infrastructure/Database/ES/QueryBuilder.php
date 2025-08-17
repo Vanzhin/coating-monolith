@@ -119,38 +119,87 @@ class QueryBuilder
             'р' => ['p'],
             'с' => ['c'],
             'т' => ['t'],
-            'у' => ['y', 'u'],
-            'х' => ['x', 'h'],
+            'у' => ['y'],
+            'х' => ['x'],
             // Добавьте другие буквы по необходимости
         ];
     }
 
     private function handleMatchQuery(string $key, string $value, Operator $operator, ?array $options): self
     {
-        // Нормализуем запрос: приводим к нижнему регистру и удаляем лишние пробелы
-        $normalizedValue = mb_strtolower(trim(preg_replace('/\s+/', ' ', $value)));
-
-        // Генерируем базовые варианты поиска
-        $searchVariations = $this->generateSearchVariations($normalizedValue);
+        // Extract numbers from the search query
+        $numbers = $this->extractNumbers($value);
+        $textParts = $this->removeNumbers($value);
 
         $shouldQueries = [];
 
-        foreach ($searchVariations as $variation) {
-            // Для каждого варианта создаем несколько типов запросов
-            $shouldQueries[] = $this->createPhraseQuery($key, $variation);
-            $shouldQueries[] = $this->createWildcardQuery($key, $variation);
-            $shouldQueries[] = $this->createFuzzyMatchQuery($key, $variation);
-        }
+        // 1. Handle strict number matching if numbers exist in query
+        if (!empty($numbers)) {
+            foreach ($numbers as $number) {
+                // Create exact match for numbers (using term query for exact match)
+                $shouldQueries[] = [
+                    'term' => [
+                        $key => $number
+                    ]
+                ];
 
-        // Добавляем специальные запросы для чисел с буквами (типа "750К")
-        if (preg_match('/\d+[а-яa-z]/u', $normalizedValue)) {
-            $numberLetterVariations = $this->generateNumberLetterVariations($normalizedValue);
-            foreach ($numberLetterVariations as $variant) {
-                $shouldQueries[] = $this->createWildcardQuery($key, $variant);
+                // Also support numbers with optional letters (like "750К")
+                $shouldQueries[] = [
+                    'wildcard' => [
+                        $key => [
+                            'value' => $number . '*',
+                            'case_insensitive' => true
+                        ]
+                    ]
+                ];
             }
         }
 
-        // Собираем все варианты в bool запрос
+        // 2. Handle fuzzy text matching if text parts exist
+        if (!empty(trim($textParts))) {
+            $normalizedValue = mb_strtolower(trim(preg_replace('/\s+/', ' ', $textParts)));
+            $searchVariations = $this->generateSearchVariations($normalizedValue);
+
+            foreach ($searchVariations as $variation) {
+                // For text parts, we keep fuzzy matching
+                $shouldQueries[] = $this->createPhraseQuery($key, $variation);
+                $shouldQueries[] = $this->createWildcardQuery($key, $variation);
+                $shouldQueries[] = $this->createFuzzyMatchQuery($key, $variation);
+            }
+        }
+
+        // 3. If we have both numbers and text, create a combined query
+        if (!empty($numbers) && !empty(trim($textParts))) {
+            $combinedQuery = [
+                'bool' => [
+                    'must' => [
+                        // Strict match for numbers
+                        [
+                            'bool' => [
+                                'should' => array_filter($shouldQueries, function($query) {
+                                    return isset($query['term']) || isset($query['wildcard']['value']) && str_ends_with($query['wildcard']['value'], '*');
+                                }),
+                                'minimum_should_match' => 1
+                            ]
+                        ],
+                        // Fuzzy match for text
+                        [
+                            'bool' => [
+                                'should' => array_filter($shouldQueries, function($query) {
+                                    return isset($query['match_phrase']) || isset($query['wildcard']) || isset($query['match']);
+                                }),
+                                'minimum_should_match' => 1
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            $this->addQueryPart($combinedQuery, $operator);
+            return $this;
+        }
+
+        // 4. If we only have numbers or only text, use simple should queries
         $this->addQueryPart([
             'bool' => [
                 'should' => $shouldQueries,
@@ -161,6 +210,16 @@ class QueryBuilder
         return $this;
     }
 
+    private function extractNumbers(string $value): array
+    {
+        preg_match_all('/\d+/', $value, $matches);
+        return $matches[0] ?? [];
+    }
+
+    private function removeNumbers(string $value): string
+    {
+        return preg_replace('/\d+/', '', $value);
+    }
     private function generateSearchVariations(string $input): array
     {
         $variations = [mb_strtolower($input)];
@@ -254,17 +313,6 @@ class QueryBuilder
     {
         $this->addQueryPart($query, $operator);
         return $this;
-    }
-
-    private function extractNumbers(string $value): array
-    {
-        preg_match_all('/\d+/', $value, $matches);
-        return $matches[0] ?? [];
-    }
-
-    private function removeNumbers(string $value): string
-    {
-        return preg_replace('/\d+/', '', $value);
     }
 
     private function buildQueryPart(Type $type, string $key, mixed $value, ?array $options): array

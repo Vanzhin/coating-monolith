@@ -140,11 +140,32 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function applyFilters(DocumentFilter $filter): void
     {
         if ($searchTerm = $filter->getSearch()) {
+            // Создаем массив should условий для каждого поля
+            $shouldQueries = [];
+
+            // Для каждого поля добавляем match запрос
+            $fields = [
+                'products.title' => ['boost' => 3.0],
+                'title' => [ 'boost' => 2.0],
+                'description' => ['boost' => 1.0]
+            ];
+
+            foreach ($fields as $field => $options) {
+                $shouldQueries[] = [
+                    'match' => [
+                        $field => array_merge(['query' => $searchTerm], $options)
+                    ]
+                ];
+            }
+
+            // Добавляем составной bool запрос через addMust
             $this->queryBuilder->addMust(
-                Type::MATCH,
-                'products.title',
-                $searchTerm,
-                ['fuzziness' => 'AUTO']
+                Type::BOOL,
+                'bool_query', // произвольный ключ, так как QueryBuilder требует строковый ключ
+                [
+                    'should' => $shouldQueries,
+                    'minimum_should_match' => 1
+                ]
             );
         }
 
@@ -153,7 +174,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 Type::MATCH,
                 'title',
                 $title,
-                ['boost' => 2.0] // Повышаем релевантность title
+                ['boost' => 2.0, 'fuzziness' => 'AUTO'] // Повышаем релевантность title
             );
         }
 
