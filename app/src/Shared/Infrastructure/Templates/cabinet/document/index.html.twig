@@ -21,21 +21,58 @@
                     </div>
                 </form>
             </div>
-            <div class="d-flex flex-row gap-1">
+            <div class="d-flex flex-column flex-md-row gap-1">
                 {% if countByCategory.result %}
-                    <ul class="nav flex-column flex-shrink-0 ">  <!-- flex-shrink-0 предотвращает сжатие -->
+
+                    {# Мобильная версия (горизонтальная, компактная) #}
+                    <div class="d-block d-md-none mb-3">
+                        <div class="d-flex flex-wrap gap-1 justify-content-between">
+                            {# Кнопка "Все" #}
+                            <a class="btn btn-sm flex-grow-1 {% if 'categories' not in app.request.query.all|keys %}btn-primary{% else %}btn-outline-primary{% endif %} position-relative"
+                               href="{{ path('app_cabinet_document_list', {
+                                   'search': app.request.query.get('search'),
+                               }) }}"
+                               style="min-width: calc(33% - 0.5rem); max-width: calc(33% - 0.5rem);">
+                                Все
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill {% if 'categories' not in app.request.query.all|keys %}bg-light text-dark{% else %}bg-primary text-white{% endif %}">
+                    {{ countByCategory.result.getTotalCount }}
+                            </span>
+                            </a>
+
+                            {# Кнопки категорий (макс. 3 буквы) #}
+                            {% for key, countCategory in countByCategory.result.categories %}
+                                <a class="btn btn-sm flex-grow-1 {% if countCategory.category.name in app.request.query.all()['categories']|default([]) %}btn-primary{% else %}btn-outline-primary{% endif %} position-relative"
+                                   href="{{ path('app_cabinet_document_list', {
+                                       'search': app.request.query.get('search'),
+                                       'categories[]': countCategory.category.name
+                                   }) }}"
+                                   style="min-width: calc(33% - 0.5rem); max-width: calc(33% - 0.5rem);"
+                                   title="{{ countCategory.category.value }}">
+                                    {{ countCategory.category.value|slice(0, 3) }}{% if countCategory.category.value|length > 3 %}...{% endif %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill {% if countCategory.category.name in app.request.query.all()['categories']|default([]) %}bg-light text-dark{% else %}bg-primary text-white{% endif %}">
+                                {{ countCategory.count }}
+                                </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {# Десктопная версия (вертикальная) #}
+                {% if countByCategory.result %}
+                    <ul class="nav flex-column flex-shrink-0 pe-2 d-none d-md-block" style="width: 200px">
                         <li class="nav-item border rounded mb-1">
                             <a class="nav-link d-flex justify-content-between align-items-center
-                            {% if 'categories' not in app.request.query.all|keys %}
-                                text-bg-secondary rounded-1
-                            {% endif %}"
+                {% if 'categories' not in app.request.query.all|keys %}
+                    text-bg-secondary rounded-1
+                {% endif %}"
                                href="{{ path('app_cabinet_document_list', {
                                    'search': app.request.query.get('search'),
                                }) }}">
                                 Всего
                                 <span class="badge bg-light text-dark">
-                                        {{ countByCategory.result.getTotalCount }}
-                                    </span>
+                        {{ countByCategory.result.getTotalCount }}
+                    </span>
                             </a>
                         </li>
                         {% for key, countCategory in countByCategory.result.categories %}
