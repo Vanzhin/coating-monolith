@@ -16,6 +16,7 @@ class QueryBuilder
     {
         $this->query = new Query();
     }
+
     public function reset(): self
     {
         $this->query = new Query();
@@ -105,72 +106,138 @@ class QueryBuilder
         return $this;
     }
 
+    private function getTransliterationMap(): array
+    {
+        return [
+            'а' => ['a'],
+            'в' => ['b'],
+            'е' => ['e'],
+            'к' => ['k'],
+            'м' => ['m'],
+            'н' => ['n'],
+            'о' => ['o'],
+            'р' => ['p'],
+            'с' => ['c'],
+            'т' => ['t'],
+            'у' => ['y', 'u'],
+            'х' => ['x', 'h'],
+            // Добавьте другие буквы по необходимости
+        ];
+    }
+
     private function handleMatchQuery(string $key, string $value, Operator $operator, ?array $options): self
     {
-        // Нормализуем ввод - удаляем пробелы между числами и буквами
-        $normalizedValue = preg_replace('/(\d+)\s*([а-яА-Яa-zA-Z]+)/u', '$1$2', $value);
+        // Нормализуем запрос: приводим к нижнему регистру и удаляем лишние пробелы
+        $normalizedValue = mb_strtolower(trim(preg_replace('/\s+/', ' ', $value)));
 
-        // Разбиваем на токены для сложных запросов
-        $tokens = preg_split('/\s+/', $normalizedValue);
+        // Генерируем базовые варианты поиска
+        $searchVariations = $this->generateSearchVariations($normalizedValue);
 
-        // Для однословных запросов (как "750К") используем match_phrase с wildcard
-        if (count($tokens) === 1) {
-            $this->addQueryPart([
-                'bool' => [
-                    'should' => [
-                        [
-                            'match_phrase' => [
-                                $key => [
-                                    'query' => $normalizedValue,
-                                    'slop' => 2
-                                ]
-                            ]
-                        ],
-                        [
-                            'wildcard' => [
-                                $key => [
-                                    'value' => "*{$normalizedValue}*",
-                                    'case_insensitive' => true
-                                ]
-                            ]
-                        ]
-                    ],
-                    'minimum_should_match' => 1
-                ]
-            ], $operator);
+        $shouldQueries = [];
 
-            return $this;
+        foreach ($searchVariations as $variation) {
+            // Для каждого варианта создаем несколько типов запросов
+            $shouldQueries[] = $this->createPhraseQuery($key, $variation);
+            $shouldQueries[] = $this->createWildcardQuery($key, $variation);
+            $shouldQueries[] = $this->createFuzzyMatchQuery($key, $variation);
         }
 
-        // Для многословных запросов используем комбинацию подходов
-        $boolQuery = ['bool' => ['must' => []]];
-
-        foreach ($tokens as $token) {
-            if (preg_match('/\d+/', $token)) {
-                // Для токенов с числами используем wildcard
-                $boolQuery['bool']['must'][] = [
-                    'wildcard' => [
-                        $key => [
-                            'value' => "*{$token}*",
-                            'case_insensitive' => true
-                        ]
-                    ]
-                ];
-            } else {
-                // Для текстовых токенов используем match с fuzziness
-                $boolQuery['bool']['must'][] = [
-                    'match' => [
-                        $key => [
-                            'query' => $token,
-                            'fuzziness' => 'AUTO',
-                            'operator' => 'AND'
-                        ]
-                    ]
-                ];
+        // Добавляем специальные запросы для чисел с буквами (типа "750К")
+        if (preg_match('/\d+[а-яa-z]/u', $normalizedValue)) {
+            $numberLetterVariations = $this->generateNumberLetterVariations($normalizedValue);
+            foreach ($numberLetterVariations as $variant) {
+                $shouldQueries[] = $this->createWildcardQuery($key, $variant);
             }
         }
 
-        return $this->addRawQuery($boolQuery, $operator);
+        // Собираем все варианты в bool запрос
+        $this->addQueryPart([
+            'bool' => [
+                'should' => $shouldQueries,
+                'minimum_should_match' => 1
+            ]
+        ], $operator);
+
+        return $this;
+    }
+
+    private function generateSearchVariations(string $input): array
+    {
+        $variations = [mb_strtolower($input)];
+        $translitMap = $this->getTransliterationMap();
+
+        // Генерируем транслитерированные варианты
+        foreach ($translitMap as $ru => $en) {
+            if (mb_strpos($input, $ru) !== false) {
+                foreach ($en as $enChar) {
+                    $variations[] = str_replace($ru, $enChar, $input);
+                }
+            }
+        }
+
+        return array_unique($variations);
+    }
+
+    private function generateNumberLetterVariations(string $input): array
+    {
+        $variations = [];
+
+        // Генерируем варианты типа "750К", "750K", "750 к", "750 k"
+        if (preg_match('/(\d+)\s*([а-яa-z])/ui', $input, $matches)) {
+            $number = $matches[1];
+            $letter = mb_strtolower($matches[2]);
+
+            $variations = [
+                $number . $letter,
+                $number . ' ' . $letter,
+                $number . $this->transliterateLetter($letter),
+                $number . ' ' . $this->transliterateLetter($letter)
+            ];
+        }
+
+        return array_unique($variations);
+    }
+
+    private function transliterateLetter(string $letter): string
+    {
+        $map = $this->getTransliterationMap();
+        return $map[$letter][0] ?? $letter;
+    }
+
+    private function createPhraseQuery(string $key, string $value): array
+    {
+        return [
+            'match_phrase' => [
+                $key => [
+                    'query' => $value,
+                    'slop' => 2
+                ]
+            ]
+        ];
+    }
+
+    private function createWildcardQuery(string $key, string $value): array
+    {
+        return [
+            'wildcard' => [
+                $key => [
+                    'value' => '*' . $value . '*',
+                    'case_insensitive' => true
+                ]
+            ]
+        ];
+    }
+
+    private function createFuzzyMatchQuery(string $key, string $value): array
+    {
+        return [
+            'match' => [
+                $key => [
+                    'query' => $value,
+                    'fuzziness' => 'AUTO'
+                ]
+            ]
+        ];
     }
 
     private function addQueryPart(array $queryPart, Operator $operator): void
@@ -228,7 +295,7 @@ class QueryBuilder
 
     private function buildTermQuery(string $key, mixed $value, ?array $options): array
     {
-        $field = str_ends_with($key, '.keyword') ? $key : $key.'.keyword';
+        $field = str_ends_with($key, '.keyword') ? $key : $key . '.keyword';
         $query = ['value' => $value];
 
         return ['term' => [$field => ($options ? array_merge($query, $options) : $query)]];
