@@ -130,7 +130,13 @@
                                                 {% if document.products %}
                                                     <div class="bd-example">
                                                         {% for product in document.products %}
-                                                            <span class="badge bg-secondary">{{ product.title }}</span>
+                                                            <a class="text-decoration-none"
+                                                                    href="{{ path('app_cabinet_document_list', {
+                                                                'search':  product.title
+                                                                }) }}"
+                                                            >
+                                                                <span class="badge bg-secondary">{{ product.title }}</span>
+                                                            </a>
                                                         {% endfor %}
                                                     </div>
                                                 {% endif %}
