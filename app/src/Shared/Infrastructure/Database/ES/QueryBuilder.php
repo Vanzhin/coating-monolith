@@ -94,7 +94,7 @@ class QueryBuilder
         return $this;
     }
 
-    private function add(Type $type, string $key, mixed $value, Operator $operator, ?array $options = null): self
+    private function add(Type $type, string $key, array|string $value, Operator $operator, ?array $options = null): self
     {
         if ($type === Type::MATCH && is_string($value)) {
             return $this->handleMatchQuery($key, $value, $operator, $options);

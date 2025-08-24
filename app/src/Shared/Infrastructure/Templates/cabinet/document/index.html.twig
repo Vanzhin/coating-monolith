@@ -127,16 +127,27 @@
                                                     </a>
                                                 </div>
                                                 {% if document.products %}
-                                                    <div class="bd-example">
-                                                        {% for product in document.products %}
-                                                            <a class="text-decoration-none"
-                                                                    href="{{ path('app_cabinet_document_list', {
-                                                                'search':  product.title
-                                                                }) }}"
-                                                            >
-                                                                <span class="badge bg-secondary">{{ product.title|upper }}</span>
-                                                            </a>
-                                                        {% endfor %}
+                                                    <div class="mt-2">
+                                                        <strong class="small">Продукты:</strong>
+                                                        <div class="product-tags-container">
+                                                            <div class="product-tags-collapsed" style="max-height: 60px; overflow: hidden;">
+                                                                {% for product in document.products %}
+                                                                    <a class="text-decoration-none me-1 mb-1 d-inline-block"
+                                                                       href="{{ path('app_cabinet_document_list', {
+                                                                           'search': product.title
+                                                                       }) }}">
+                                                                        <span class="badge bg-secondary">{{ product.title|upper }}</span>
+                                                                    </a>
+                                                                {% endfor %}
+                                                            </div>
+
+                                                            {% if document.products|length > 6 %}
+                                                                <button class="btn btn-sm btn-link p-0 mt-1 toggle-products"
+                                                                        onclick="this.previousElementSibling.style.maxHeight = 'none'; this.style.display = 'none';">
+                                                                    + ещё {{ document.products|length - 6 }}
+                                                                </button>
+                                                            {% endif %}
+                                                        </div>
                                                     </div>
                                                 {% endif %}
                                             </div>
@@ -152,6 +163,5 @@
                 </div>
             </div>
         </div>
-    </div>
     </div>
 {% endblock %}
