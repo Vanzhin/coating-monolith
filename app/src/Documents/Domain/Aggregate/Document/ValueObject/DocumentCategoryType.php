@@ -12,17 +12,17 @@ enum DocumentCategoryType: string
 
     case PDS = 'Техническое описание';
 
-    case SDS = 'Паспорт безопасности';
+    case TECHNICAL_INSTRUCTION = 'Техническая инструкция';
 
     case REGULATION = 'Регламент';
 
-    case CERTIFICATE = 'Сертификат';
+    case TECHNICAL_DOCUMENT = 'Технический документ';
 
     case TESTING = 'Испытание';
 
-    case SGR = 'СГР';
+    case CERTIFICATE = 'Сертификат';
 
-    case TECHNICAL_DOCUMENT = 'Технический документ';
+    case SGR = 'СГР';
 
     case PAINTING_ACT = 'Акт окраски';
 
@@ -30,6 +30,8 @@ enum DocumentCategoryType: string
 
     case REFERENCE = 'Референс';
 
+    case SDS = 'Паспорт безопасности';
+    
     case GENERAL = 'Общий документ';
 
     public static function fromName(string $name)
