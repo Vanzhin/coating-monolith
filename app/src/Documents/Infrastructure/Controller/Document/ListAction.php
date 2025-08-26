@@ -29,7 +29,7 @@ class ListAction extends AbstractController
         $result = null;
         $categoryTypes = DocumentCategoryType::array();
         $countByCategory = null;
-        if (isset($inputData['search'])) {
+        if (!empty($inputData['search'])) {
             $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
             $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
             $filter = new DocumentFilter(

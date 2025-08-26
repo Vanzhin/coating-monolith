@@ -10,23 +10,41 @@
         <div class="flex-column flex-md-row gap-4 align-items-center">
             <div class="d-flex flex-md-row align-items-center ">
                 <form method="get" action="{{ path('app_cabinet_document_list') }}"
-                      class="form-signin w-100 m-auto">
+                      class="form-signin w-100 m-auto" id="searchForm">
                     <div class="input-group mb-3">
-                        <input type="text" value="{{ inputData.search }}" name="search"
-                               class="form-control"
-                               autocomplete="search" required autofocus placeholder="РС 750, Прометей ..."
-                               minlength="3" maxlength="50"
-                        >
-                        <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Искать</button>
+                        <div class="form-control p-0" style="min-height: 38px;">
+                            <div class="d-flex flex-wrap align-items-center gap-1 p-1" id="badgesContainer">
+                                {% if inputData.search %}
+                                    {% set searchTerms = inputData.search|split('+') %}
+                                    {% for term in searchTerms %}
+                                        {% if term %}
+                                            <span class="badge bg-light text-dark d-flex align-items-center border">
+                                                {{ term }}
+                                                <button type="button" class="btn-close ms-1" style="font-size: 0.5rem;"
+                                                        onclick="removeSearchTerm('{{ term }}')"></button>
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                <input type="text" id="searchInput" value=""
+                                       class="border-0 flex-grow-1" style="outline: none; min-width: 50px;"
+                                       autocomplete="search" placeholder="РС 750, Прометей ..."
+                                >
+                            </div>
+                        </div>
+                        <input type="hidden" id="hiddenSearch" name="search" value="{{ inputData.search }}">
+                        <button class="btn btn-outline-secondary" type="button" id="searchButton">Искать</button>
                     </div>
                 </form>
             </div>
+
+            <!-- Остальной код остается без изменений -->
             <div class="d-flex flex-column flex-md-row gap-1">
                 {% if countByCategory.result %}
-                    {# Мобильная версия (горизонтальная, компактная) #}
+                    <!-- Мобильная версия -->
                     <div class="d-block d-md-none mb-3">
                         <div class="d-flex flex-wrap gap-1 justify-content-between">
-                            {# Кнопка "Все" #}
+                            <!-- Кнопка "Все" -->
                             <a class="btn btn-sm flex-grow-1 {% if 'categories' not in app.request.query.all|keys %}btn-primary{% else %}btn-outline-primary{% endif %} position-relative"
                                href="{{ path('app_cabinet_document_list', {
                                    'search': app.request.query.get('search'),
@@ -34,11 +52,11 @@
                                style="min-width: calc(33% - 0.5rem); max-width: calc(33% - 0.5rem);">
                                 Все
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill {% if 'categories' not in app.request.query.all|keys %}bg-light text-dark{% else %}bg-primary text-white{% endif %}">
-                    {{ countByCategory.result.getTotalCount }}
-                            </span>
+                                    {{ countByCategory.result.getTotalCount }}
+                                </span>
                             </a>
 
-                            {# Кнопки категорий (макс. 3 буквы) #}
+                            <!-- Кнопки категорий -->
                             {% for key, countCategory in countByCategory.result.categories %}
                                 <a class="btn btn-sm flex-grow-1 {% if countCategory.category.name in app.request.query.all()['categories']|default([]) %}btn-primary{% else %}btn-outline-primary{% endif %} position-relative"
                                    href="{{ path('app_cabinet_document_list', {
@@ -49,15 +67,15 @@
                                    title="{{ countCategory.category.value }}">
                                     {{ countCategory.category.value|slice(0, 3) }}{% if countCategory.category.value|length > 3 %}...{% endif %}
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill {% if countCategory.category.name in app.request.query.all()['categories']|default([]) %}bg-light text-dark{% else %}bg-primary text-white{% endif %}">
-                                {{ countCategory.count }}
-                                </span>
+                                        {{ countCategory.count }}
+                                    </span>
                                 </a>
                             {% endfor %}
                         </div>
                     </div>
                 {% endif %}
 
-                {# Десктопная версия (вертикальная) #}
+                <!-- Десктопная версия -->
                 {% if countByCategory.result %}
                     <ul class="nav flex-column flex-shrink-0 pe-2 d-none d-md-block" style="width: 200px">
                         <li class="nav-item border rounded mb-1">
@@ -70,8 +88,8 @@
                                }) }}">
                                 Всего
                                 <span class="badge bg-light text-dark">
-                        {{ countByCategory.result.getTotalCount }}
-                    </span>
+                                    {{ countByCategory.result.getTotalCount }}
+                                </span>
                             </a>
                         </li>
                         {% for key, countCategory in countByCategory.result.categories %}
@@ -93,6 +111,7 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
+
                 <div class="flex-column flex-md-row gap-4 align-items-center flex-grow-1">
                     {% if result.documents %}
                         <div class="list-group gap-1">
@@ -131,10 +150,10 @@
                                                         <div class="product-tags-container">
                                                             <div class="product-tags-collapsed" style="max-height: 60px; overflow: hidden;">
                                                                 {% for product in document.products %}
-                                                                    <a class="text-decoration-none me-1 mb-1 d-inline-block"
-                                                                       href="{{ path('app_cabinet_document_list', {
-                                                                           'search': product.title
-                                                                       }) }}">
+                                                                    <a class="text-decoration-none me-1 mb-1 d-inline-block product-search-link"
+                                                                       href="#"
+                                                                       data-product="{{ product.title }}"
+                                                                       onclick="addProductToSearch('{{ product.title }}'); return false;">
                                                                         <span class="badge bg-secondary">{{ product.title|upper }}</span>
                                                                     </a>
                                                                 {% endfor %}
@@ -163,4 +182,126 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function removeSearchTerm(termToRemove) {
+            const currentSearch = document.getElementById('hiddenSearch').value;
+            let terms = currentSearch ? currentSearch.split('+') : [];
+            terms = terms.filter(term => term !== termToRemove);
+            document.getElementById('hiddenSearch').value = terms.join('+');
+            document.getElementById('searchForm').submit();
+        }
+
+        function updateSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const hiddenSearch = document.getElementById('hiddenSearch');
+            const newTerm = searchInput.value.trim();
+
+            // Проверка минимальной длины
+            if (newTerm && newTerm.length < 3) {
+                alert('Минимальная длина поискового запроса - 3 символа');
+                searchInput.focus();
+                return false;
+            }
+
+            if (newTerm) {
+                const currentTerms = hiddenSearch.value ? hiddenSearch.value.split('+') : [];
+                const existingIndex = currentTerms.indexOf(newTerm);
+                if (existingIndex !== -1) {
+                    currentTerms.splice(existingIndex, 1);
+                }
+                currentTerms.push(newTerm);
+                hiddenSearch.value = currentTerms.join('+');
+                searchInput.value = '';
+            }
+
+            if (hiddenSearch.value.trim()) {
+                document.getElementById('searchForm').submit();
+            } else {
+                alert('Введите хотя бы один поисковый термин');
+                searchInput.focus();
+            }
+        }
+
+        function addProductToSearch(productTitle) {
+            const hiddenSearch = document.getElementById('hiddenSearch');
+            const currentTerms = hiddenSearch.value ? hiddenSearch.value.split('+') : [];
+
+            // Проверка для продуктов (если нужно)
+            if (productTitle.length < 3) {
+                alert('Название продукта слишком короткое');
+                return false;
+            }
+
+            const existingIndex = currentTerms.indexOf(productTitle);
+            if (existingIndex !== -1) {
+                currentTerms.splice(existingIndex, 1);
+            }
+            currentTerms.push(productTitle);
+            hiddenSearch.value = currentTerms.join('+');
+            document.getElementById('searchForm').submit();
+        }
+
+        // Обработка клика на кнопку поиска
+        document.getElementById('searchButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            updateSearch();
+        });
+
+        // Обработка нажатия Enter в поле ввода
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateSearch();
+            }
+        });
+
+        // Фокус на поле ввода при клике на область
+        document.querySelector('.form-control').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('searchInput').focus();
+            }
+        });
+
+        // Валидация при вводе - предотвращаем ввод менее 3 символов
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            if (this.value.length < 3 && this.value.length > 0) {
+                this.setCustomValidity('Минимальная длина - 3 символа');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+
+    <style>
+        .input-group .form-control {
+            padding: 0;
+        }
+        .badge.bg-light {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+            border: 1px solid #dee2e6 !important;
+        }
+        .badge .btn-close {
+            padding: 0.25rem;
+            filter: invert(0.5) brightness(0.7);
+            opacity: 0.8;
+            width: 0.7em;
+            height: 0.7em;
+        }
+        .badge .btn-close:hover {
+            filter: invert(0.3) brightness(0.5);
+            opacity: 1;
+        }
+        #searchInput:focus {
+            box-shadow: none;
+            border: none !important;
+        }
+        .input-group .form-control > div {
+            min-height: 36px;
+        }
+        .product-search-link {
+            cursor: pointer;
+        }
+    </style>
 {% endblock %}
