@@ -9,13 +9,7 @@ use App\Shared\Domain\Repository\Pager;
 
 class DocumentFilter implements \JsonSerializable
 {
-    public const ALLOWED_FUZZY_FIELDS = [
-        'title',
-        'description',
-        'products',
-        'category',
-        'search'
-    ];
+    private const  SEARCH_SEPARATOR = '+';
 
     private array $categoryTypes = [];
     private ?string $search = null;
@@ -28,7 +22,6 @@ class DocumentFilter implements \JsonSerializable
     private array $sort = [];
     private ?\DateTimeInterface $createdFrom = null;
     private ?\DateTimeInterface $createdTo = null;
-    private array $fuzzyFields = [];
 
     public function __construct(
         ?string $search = null,
@@ -36,14 +29,12 @@ class DocumentFilter implements \JsonSerializable
         ?string $category = null,
         ?Pager $pager = null,
         ?string $index = null,
-        array $fuzzyFields = []
     ) {
         $this->search = $search;
         $this->title = $title;
         $this->category = $category;
         $this->pager = $pager;
         $this->index = $index;
-        $this->setFuzzyFields($fuzzyFields);
     }
 
     public function getTitle(): ?string
@@ -178,54 +169,6 @@ class DocumentFilter implements \JsonSerializable
         return $this;
     }
 
-    public function getFuzzyFields(): array
-    {
-        return $this->fuzzyFields;
-    }
-
-    public function setFuzzyFields(array $fuzzyFields): self
-    {
-        $invalidFields = array_diff($fuzzyFields, self::ALLOWED_FUZZY_FIELDS);
-
-        if (!empty($invalidFields)) {
-            throw new \InvalidArgumentException(sprintf(
-                'Fields %s are not allowed for fuzzy search. Allowed fields: %s',
-                implode(', ', $invalidFields),
-                implode(', ', self::ALLOWED_FUZZY_FIELDS)
-            ));
-        }
-
-        $this->fuzzyFields = array_unique($fuzzyFields);
-        return $this;
-    }
-
-    public function addFuzzyField(string $field): self
-    {
-        if (!in_array($field, self::ALLOWED_FUZZY_FIELDS, true)) {
-            throw new \InvalidArgumentException(sprintf(
-                'Field "%s" is not allowed for fuzzy search. Allowed fields: %s',
-                $field,
-                implode(', ', self::ALLOWED_FUZZY_FIELDS)
-            ));
-        }
-
-        if (!in_array($field, $this->fuzzyFields, true)) {
-            $this->fuzzyFields[] = $field;
-        }
-        return $this;
-    }
-
-    public function removeFuzzyField(string $field): self
-    {
-        $this->fuzzyFields = array_filter($this->fuzzyFields, fn($f) => $f !== $field);
-        return $this;
-    }
-
-    public function isFieldFuzzy(string $field): bool
-    {
-        return in_array($field, $this->fuzzyFields, true);
-    }
-
     public function hasFilters(): bool
     {
         return $this->search !== null
@@ -235,12 +178,31 @@ class DocumentFilter implements \JsonSerializable
             || !empty($this->products)
             || !empty($this->categoryTypes)
             || $this->createdFrom !== null
-            || $this->createdTo !== null
-            || !empty($this->fuzzyFields);
+            || $this->createdTo !== null;
     }
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+
+    public function toArray(): array
     {
         return get_object_vars($this);
+    }
+
+    private function splitSearchQuery(string $searchTerm): array
+    {
+        // Разбиваем по "+", но сохраняем числа с плюсом (например "950+")
+        $pattern = sprintf('/\%s(?=\S)/', self::SEARCH_SEPARATOR);
+        $parts = preg_split($pattern, $searchTerm);
+
+        // Убираем пустые значения и trim
+        $filteredParts = array_filter(array_map('trim', $parts));
+
+        // Убираем плюсы в конце чисел (если есть)
+        return array_map(function ($part) {
+            return preg_replace('/(\d+)\+$/', '$1', $part);
+        }, $filteredParts);
     }
 }

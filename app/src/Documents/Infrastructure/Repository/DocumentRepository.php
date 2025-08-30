@@ -140,33 +140,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function applyFilters(DocumentFilter $filter): void
     {
         if ($searchTerm = $filter->getSearch()) {
-            // Создаем массив should условий для каждого поля
-            $shouldQueries = [];
-
-            // Для каждого поля добавляем match запрос
-            $fields = [
-                'products.title' => ['boost' => 3.0],
-                'title' => [ 'boost' => 2.0],
-                'description' => ['boost' => 1.0]
-            ];
-
-            foreach ($fields as $field => $options) {
-                $shouldQueries[] = [
-                    'match' => [
-                        $field => array_merge(['query' => $searchTerm], $options)
-                    ]
-                ];
-            }
-
-            // Добавляем составной bool запрос через addMust
-            $this->queryBuilder->addMust(
-                Type::BOOL,
-                'bool_query', // произвольный ключ, так как QueryBuilder требует строковый ключ
-                [
-                    'should' => $shouldQueries,
-                    'minimum_should_match' => 1
-                ]
-            );
+            $this->applySearchFilter($searchTerm);
         }
 
         if ($title = $filter->getTitle()) {
@@ -174,7 +148,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 Type::MATCH,
                 'title',
                 $title,
-                ['boost' => 2.0, 'fuzziness' => 'AUTO'] // Повышаем релевантность title
+                ['boost' => 2.0, 'fuzziness' => 'AUTO']
             );
         }
 
@@ -191,6 +165,91 @@ class DocumentRepository implements DocumentRepositoryInterface
         }
     }
 
+    private function applySearchFilter(string $searchTerm): void
+    {
+        // Проверяем, есть ли разделитель + в поисковом запросе
+        if (strpos($searchTerm, '+') !== false) {
+            $this->applyMultiPartSearch($searchTerm);
+        } else {
+            $this->applySingleSearch($searchTerm);
+        }
+    }
+
+    private function applyMultiPartSearch(string $searchTerm): void
+    {
+        // Разбиваем поисковую строку по +
+        $parts = array_filter(array_map('trim', explode('+', $searchTerm)));
+
+        $mustQueries = [];
+
+        foreach ($parts as $part) {
+            if (empty($part)) {
+                continue;
+            }
+
+            // Для каждой части создаем should запрос
+            $shouldQueries = [];
+            $fields = [
+                'products.title' => ['boost' => 3.0],
+                'title' => ['boost' => 2.0],
+                'description' => ['boost' => 1.0]
+            ];
+
+            foreach ($fields as $field => $options) {
+                $shouldQueries[] = [
+                    'match' => [
+                        $field => array_merge(['query' => $part], $options)
+                    ]
+                ];
+            }
+
+            $mustQueries[] = [
+                'bool' => [
+                    'should' => $shouldQueries,
+                    'minimum_should_match' => 1
+                ]
+            ];
+        }
+
+        if (!empty($mustQueries)) {
+            $this->queryBuilder->addMust(
+                Type::BOOL,
+                'multi_part_search',
+                [
+                    'must' => $mustQueries
+                ]
+            );
+        }
+    }
+
+    private function applySingleSearch(string $searchTerm): void
+    {
+        // Старая логика для одиночного поиска
+        $shouldQueries = [];
+        $fields = [
+            'products.title' => ['boost' => 3.0],
+            'title' => ['boost' => 2.0],
+            'description' => ['boost' => 1.0]
+        ];
+
+        foreach ($fields as $field => $options) {
+            $shouldQueries[] = [
+                'match' => [
+                    $field => array_merge(['query' => $searchTerm], $options)
+                ]
+            ];
+        }
+
+        $this->queryBuilder->addMust(
+            Type::BOOL,
+            'bool_query',
+            [
+                'should' => $shouldQueries,
+                'minimum_should_match' => 1
+            ]
+        );
+    }
+
     private function applyCategoryTypesFilter(array $categoryTypes): void
     {
         $types = array_map(fn($item) => $item->value, $categoryTypes);
@@ -203,7 +262,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 Type::TERM,
                 'category',
                 $type,
-                ['boost' => 1.5] // Повышаем вес категорий
+                ['boost' => 1.5]
             );
         }
     }
