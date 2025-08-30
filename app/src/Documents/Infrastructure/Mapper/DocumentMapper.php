@@ -8,6 +8,8 @@ use App\Documents\Domain\Aggregate\Document\Document;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentDescription;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentProduct;
+use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTag;
+use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTagType;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTitle;
 use App\Shared\Domain\Aggregate\ValueObject\Link;
 use Symfony\Component\Uid\Uuid;
@@ -28,10 +30,16 @@ class DocumentMapper
             $item->setUpdatedAt(new \DateTimeImmutable($data['_source']['updated_at']));
         }
 
-        foreach ($data['_source']['products'] as $product) {
+        foreach ($data['_source']['products']??[] as $product) {
             $item->addProduct(new DocumentProduct(
                 new DocumentTitle($product['title']),
                 $product['product_id'] ? new Uuid($product['product_id']) : null,
+            ));
+        }
+        foreach ($data['_source']['tags']??[] as $tag) {
+            $item->addTag(new DocumentTag(
+                new DocumentTitle($tag['title']),
+                DocumentTagType::fromName($tag['type']),
             ));
         }
 

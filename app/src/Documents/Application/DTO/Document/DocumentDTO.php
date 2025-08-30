@@ -14,4 +14,5 @@ class DocumentDTO
     public ?string $createdAt;
     public ?string $updatedAt;
     public ?array $products;
+    public ?array $tags;
 }

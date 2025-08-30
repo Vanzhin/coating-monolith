@@ -153,7 +153,7 @@
                                                                     <a class="text-decoration-none me-1 mb-1 d-inline-block product-search-link"
                                                                        href="#"
                                                                        data-product="{{ product.title }}"
-                                                                       onclick="addProductToSearch('{{ product.title }}'); return false;">
+                                                                       onclick="addItemToSearch('{{ product.title }}'); return false;">
                                                                         <span class="badge bg-secondary">{{ product.title|upper }}</span>
                                                                     </a>
                                                                 {% endfor %}
@@ -168,6 +168,10 @@
                                                         </div>
                                                     </div>
                                                 {% endif %}
+                                                {# ВКЛЮЧАЕМ ОТДЕЛЬНЫЙ ШАБЛОН ДЛЯ ТЕГОВ #}
+                                                {% include 'cabinet/document/tags_grouped.html.twig' with {
+                                                    'tags': document.tags
+                                                } %}
                                             </div>
                                         </div>
                                     </div>
@@ -223,7 +227,7 @@
             }
         }
 
-        function addProductToSearch(productTitle) {
+        function addItemToSearch(productTitle) {
             const hiddenSearch = document.getElementById('hiddenSearch');
             const currentTerms = hiddenSearch.value ? hiddenSearch.value.split('+') : [];
 
@@ -241,6 +245,7 @@
             hiddenSearch.value = currentTerms.join('+');
             document.getElementById('searchForm').submit();
         }
+
 
         // Обработка клика на кнопку поиска
         document.getElementById('searchButton').addEventListener('click', function(e) {

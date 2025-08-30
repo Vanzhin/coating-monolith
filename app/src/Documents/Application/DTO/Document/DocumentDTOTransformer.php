@@ -18,6 +18,14 @@ class DocumentDTOTransformer
             $products[] = $item;
         }
 
+        $tags = [];
+        foreach ($document->getTags() as $tag) {
+            $item = new DocumentTagDTO();
+            $item->title = $tag->getTitle()->getValue();
+            $item->type = $tag->getType()->value;
+            $tags[] = $item;
+        }
+
         $dto = new DocumentDTO();
         $dto->id = $document->getId();
         $dto->createdAt = $document->getCreatedAt()->format(DATE_ATOM);
@@ -27,6 +35,7 @@ class DocumentDTOTransformer
         $dto->description = $document->getDescription()->getValue();
         $dto->products = $products;
         $dto->category = $document->getType()->value;
+        $dto->tags = $tags;
 
         return $dto;
     }

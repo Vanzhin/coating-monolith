@@ -7,6 +7,7 @@ namespace App\Documents\Domain\Aggregate\Document;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentDescription;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentProduct;
+use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTag;
 use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTitle;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\ValueObject\Link;
@@ -21,6 +22,10 @@ class Document extends Aggregate
      * @var DocumentProduct[] $products
      */
     private array $products = [];
+    /**
+     * @var DocumentTag[] $tags
+     */
+    private array $tags = [];
 
     public function __construct(
         private readonly Uuid $id,
@@ -86,6 +91,18 @@ class Document extends Aggregate
     {
         if (!in_array($product, $this->products, true)) {
             $this->products[] = $product;
+        }
+    }
+
+    public function getTags(): array
+    {
+        return $this->tags;
+    }
+
+    public function addTag(DocumentTag $tag): void
+    {
+        if (!in_array($tag, $this->tags, true)) {
+            $this->tags[] = $tag;
         }
     }
 

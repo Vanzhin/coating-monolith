@@ -168,7 +168,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function applySearchFilter(string $searchTerm): void
     {
         // Проверяем, есть ли разделитель + в поисковом запросе
-        if (strpos($searchTerm, '+') !== false) {
+        if (str_contains($searchTerm, DocumentFilter::SEARCH_SEPARATOR)) {
             $this->applyMultiPartSearch($searchTerm);
         } else {
             $this->applySingleSearch($searchTerm);
@@ -178,7 +178,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function applyMultiPartSearch(string $searchTerm): void
     {
         // Разбиваем поисковую строку по +
-        $parts = array_filter(array_map('trim', explode('+', $searchTerm)));
+        $parts = array_filter(array_map('trim', explode(DocumentFilter::SEARCH_SEPARATOR, $searchTerm)));
 
         $mustQueries = [];
 
@@ -188,20 +188,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             }
 
             // Для каждой части создаем should запрос
-            $shouldQueries = [];
-            $fields = [
-                'products.title' => ['boost' => 3.0],
-                'title' => ['boost' => 2.0],
-                'description' => ['boost' => 1.0]
-            ];
-
-            foreach ($fields as $field => $options) {
-                $shouldQueries[] = [
-                    'match' => [
-                        $field => array_merge(['query' => $part], $options)
-                    ]
-                ];
-            }
+            $shouldQueries = $this->buildSearchQueryArray($part);
 
             $mustQueries[] = [
                 'bool' => [
@@ -225,20 +212,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function applySingleSearch(string $searchTerm): void
     {
         // Старая логика для одиночного поиска
-        $shouldQueries = [];
-        $fields = [
-            'products.title' => ['boost' => 3.0],
-            'title' => ['boost' => 2.0],
-            'description' => ['boost' => 1.0]
-        ];
-
-        foreach ($fields as $field => $options) {
-            $shouldQueries[] = [
-                'match' => [
-                    $field => array_merge(['query' => $searchTerm], $options)
-                ]
-            ];
-        }
+        $shouldQueries = $this->buildSearchQueryArray($searchTerm);
 
         $this->queryBuilder->addMust(
             Type::BOOL,
@@ -300,5 +274,29 @@ class DocumentRepository implements DocumentRepositoryInterface
         );
 
         return new PaginationResult($items, $total);
+    }
+
+    /**
+     * @param string $searchTerm
+     * @return array
+     */
+    private function buildSearchQueryArray(string $searchTerm): array
+    {
+        $shouldQueries = [];
+        $fields = [
+            'products.title' => ['boost' => 3.0],
+            'title' => ['boost' => 2.0],
+            'description' => ['boost' => 1.0],
+            'tags.title' => ['boost' => 2.0]
+        ];
+
+        foreach ($fields as $field => $options) {
+            $shouldQueries[] = [
+                'match' => [
+                    $field => array_merge(['query' => $searchTerm], $options)
+                ]
+            ];
+        }
+        return $shouldQueries;
     }
 }

@@ -9,7 +9,7 @@ use App\Shared\Domain\Repository\Pager;
 
 class DocumentFilter implements \JsonSerializable
 {
-    private const  SEARCH_SEPARATOR = '+';
+    public const  SEARCH_SEPARATOR = '+';
 
     private array $categoryTypes = [];
     private ?string $search = null;

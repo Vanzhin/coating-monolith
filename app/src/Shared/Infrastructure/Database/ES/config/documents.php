@@ -112,6 +112,32 @@ return [
                     ],
                 ],
             ],
+            'tags' => [
+                'type' => 'nested',
+                'properties' => [
+                    'title' => [
+                        'type' => 'text',
+                        'analyzer' => 'custom_ru',
+                        'fields' => [
+                            'english' => [
+                                'type' => 'text',
+                                'analyzer' => 'custom_en'
+                            ],
+                            'exact' => [
+                                'type' => 'keyword',
+                                'ignore_above' => 512,
+                                'doc_values' => true
+                            ]
+                        ]
+                    ],
+                    'type' => [
+                        'type' => 'keyword',
+                        'ignore_above' => 100,
+                        'doc_values' => true,
+                        'null_value' => 'NULL'
+                    ]
+                ]
+            ],
             'created_at' => [
                 'type' => 'date',
                 'format' => 'strict_date_optional_time||epoch_millis'

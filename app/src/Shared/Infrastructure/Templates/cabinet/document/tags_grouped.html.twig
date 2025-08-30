@@ -1,0 +1,194 @@
+{# templates/components/tags_grouped.html.twig #}
+
+{# Стили для кастомных бейджиков #}
+<style>
+    .badge-custom-ptm {
+        background: linear-gradient(45deg, #ff6b35, #f7931e);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-frl {
+        background: linear-gradient(45deg, #2d5b7a, #428bca);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-application {
+        background: linear-gradient(45deg, #27ae60, #2ecc71);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-property {
+        background: linear-gradient(45deg, #8e44ad, #9b59b6);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-coating {
+        background: linear-gradient(45deg, #e74c3c, #e67e22);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-surface {
+        background: linear-gradient(45deg, #16a085, #1abc9c);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-process {
+        background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+        color: white !important;
+        border: none;
+    }
+
+    .badge-custom-other {
+        background: linear-gradient(45deg, #34495e, #2c3e50);
+        color: white !important;
+        border: none;
+    }
+
+    .tag-search-link {
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .tags-container {
+        margin-top: 0.25rem;
+    }
+
+    .tags-collapsed {
+        max-height: 60px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .toggle-tags {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-decoration: none;
+    }
+
+    .toggle-tags:hover {
+        color: #495057;
+        text-decoration: underline;
+    }
+</style>
+
+{# БЛОК ТЕГОВ С ГРУППИРОВКОЙ ПО ТИПАМ #}
+{% if tags %}
+    {# Группируем теги по типам #}
+    {% set groupedTags = {} %}
+    {% for tag in tags %}
+        {% set tagType = tag.type ? tag.type|lower : 'other' %}
+        {% if not groupedTags[tagType] %}
+            {% set groupedTags = groupedTags|merge({(tagType): []}) %}
+        {% endif %}
+        {% set groupedTags = groupedTags|merge({(tagType): groupedTags[tagType]|merge([tag])}) %}
+    {% endfor %}
+
+    {# Отображаем теги по группам #}
+    {% for tagType, tagsInGroup in groupedTags %}
+        <div class="mt-2">
+            <strong class="small">{{ tagType|capitalize }}:</strong>
+            <div class="tags-container">
+                <div class="tags-collapsed">
+                    {% for tag in tagsInGroup %}
+                        <a class="tag-search-link me-1 mb-1 d-inline-block"
+                           href="#"
+                           data-tag="{{ tag.title }}"
+                           onclick="addTagToSearch('{{ tag.title }}'); return false;">
+                            {# Кастомные цвета баджей в зависимости от типа тега #}
+                            {% if tagType == 'приведенная толщина металла' %}
+                                <span class="badge badge-custom-ptm">{{ tag.title|upper }}</span>
+                            {% elseif tagType == 'предел огнестойкости' %}
+                                <span class="badge badge-custom-frl">{{ tag.title|upper }}</span>
+                            {% else %}
+                                <span class="badge badge-custom-other">{{ tag.title|upper }}</span>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+
+                {% if tagsInGroup|length > 6 %}
+                    <button class="toggle-tags btn btn-sm btn-link p-0 mt-1"
+                            onclick="toggleTagsVisibility(this)">
+                        + ещё {{ tagsInGroup|length - 6 }}
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+{# Скрипты для работы с тегами #}
+<script>
+    // Функция для добавления тега в поиск
+    function addTagToSearch(tagTitle) {
+        const hiddenSearch = document.getElementById('hiddenSearch');
+        if (!hiddenSearch) {
+            console.error('Элемент hiddenSearch не найден');
+            return false;
+        }
+
+        const currentTerms = hiddenSearch.value ? hiddenSearch.value.split('+') : [];
+
+        if (tagTitle.length < 3) {
+            alert('Название тега слишком короткое');
+            return false;
+        }
+
+        const existingIndex = currentTerms.indexOf(tagTitle);
+        if (existingIndex !== -1) {
+            currentTerms.splice(existingIndex, 1);
+        }
+        currentTerms.push(tagTitle);
+        hiddenSearch.value = currentTerms.join('+');
+
+        // Отправляем форму поиска
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.submit();
+        }
+
+        return false;
+    }
+
+    // Функция для показа/скрытия тегов
+    function toggleTagsVisibility(button) {
+        const tagsContainer = button.previousElementSibling;
+        if (tagsContainer) {
+            if (tagsContainer.style.maxHeight === 'none') {
+                tagsContainer.style.maxHeight = '60px';
+                button.textContent = '+ ещё {{ tagsInGroup|length - 6 }}';
+            } else {
+                tagsContainer.style.maxHeight = 'none';
+                button.textContent = '− свернуть';
+            }
+        }
+    }
+
+    // Инициализация при загрузке документа
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавляем обработчики для всех ссылок тегов
+        const tagLinks = document.querySelectorAll('.tag-search-link');
+        tagLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tagTitle = this.getAttribute('data-tag');
+                addTagToSearch(tagTitle);
+            });
+        });
+
+        // Добавляем обработчики для кнопок "ещё"
+        const toggleButtons = document.querySelectorAll('.toggle-tags');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleTagsVisibility(this);
+            });
+        });
+    });
+</script>

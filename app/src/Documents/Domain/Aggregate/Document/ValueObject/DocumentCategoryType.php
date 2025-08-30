@@ -18,9 +18,9 @@ enum DocumentCategoryType: string
 
     case TECHNICAL_DOCUMENT = 'Технический документ';
 
-    case TESTING = 'Испытание';
+    case TESTING = 'Климатические сертификаты';
 
-    case CERTIFICATE = 'Сертификат';
+    case CERTIFICATE = 'Сертификаты соответствия и протоколы ОГЗ';
 
     case SGR = 'СГР';
 
