@@ -160,8 +160,8 @@
                                                             </div>
 
                                                             {% if document.products|length > 6 %}
-                                                                <button class="btn btn-sm btn-link p-0 mt-1 toggle-products"
-                                                                        onclick="this.previousElementSibling.style.maxHeight = 'none'; this.style.display = 'none';">
+                                                                <button class="toggle-products btn btn-sm btn-link p-0 mt-1"
+                                                                        data-count="{{ document.products|length }}">
                                                                     + ещё {{ document.products|length - 6 }}
                                                                 </button>
                                                             {% endif %}
@@ -201,7 +201,6 @@
             const hiddenSearch = document.getElementById('hiddenSearch');
             const newTerm = searchInput.value.trim();
 
-            // Проверка минимальной длины
             if (newTerm && newTerm.length < 3) {
                 alert('Минимальная длина поискового запроса - 3 символа');
                 searchInput.focus();
@@ -227,57 +226,121 @@
             }
         }
 
-        function addItemToSearch(productTitle) {
+        function addItemToSearch(itemTitle) {
             const hiddenSearch = document.getElementById('hiddenSearch');
             const currentTerms = hiddenSearch.value ? hiddenSearch.value.split('+') : [];
 
-            // Проверка для продуктов (если нужно)
-            if (productTitle.length < 3) {
-                alert('Название продукта слишком короткое');
+            if (itemTitle.length < 3) {
+                alert('Название слишком короткое');
                 return false;
             }
 
-            const existingIndex = currentTerms.indexOf(productTitle);
+            const existingIndex = currentTerms.indexOf(itemTitle);
             if (existingIndex !== -1) {
                 currentTerms.splice(existingIndex, 1);
             }
-            currentTerms.push(productTitle);
+            currentTerms.push(itemTitle);
             hiddenSearch.value = currentTerms.join('+');
             document.getElementById('searchForm').submit();
         }
 
+        // Функция для инициализации всех toggle-кнопок
+        function initToggleButtons() {
+            // Для продуктов
+            document.querySelectorAll('.toggle-products').forEach(button => {
+                button.onclick = function(e) {
+                    e.preventDefault();
+                    const container = this.previousElementSibling;
+                    if (container.style.maxHeight === 'none' || !container.style.maxHeight) {
+                        container.style.maxHeight = '60px';
+                        const productCount = parseInt(this.getAttribute('data-count') || 0);
+                        this.textContent = '+ ещё ' + (productCount - 6);
+                    } else {
+                        container.style.maxHeight = 'none';
+                        this.textContent = '− свернуть';
+                    }
+                };
+            });
 
-        // Обработка клика на кнопку поиска
-        document.getElementById('searchButton').addEventListener('click', function(e) {
-            e.preventDefault();
-            updateSearch();
-        });
+            // Для тегов
+            document.querySelectorAll('.toggle-tags').forEach(button => {
+                button.onclick = function(e) {
+                    e.preventDefault();
+                    const container = this.previousElementSibling;
+                    const totalCount = parseInt(this.getAttribute('data-count') || 0);
 
-        // Обработка нажатия Enter в поле ввода
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+                    if (container.style.maxHeight === 'none' || !container.style.maxHeight) {
+                        container.style.maxHeight = '60px';
+                        this.textContent = '+ ещё ' + (totalCount - 6);
+                    } else {
+                        container.style.maxHeight = 'none';
+                        this.textContent = '− свернуть';
+                    }
+                };
+            });
+
+            // Обработчики для клика по продуктам и тегам
+            document.querySelectorAll('.product-search-link, .tag-search-link').forEach(link => {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    const itemTitle = this.getAttribute('data-product') || this.getAttribute('data-tag');
+                    addItemToSearch(itemTitle);
+                };
+            });
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            initToggleButtons();
+
+            document.getElementById('searchButton').addEventListener('click', function(e) {
                 e.preventDefault();
                 updateSearch();
-            }
+            });
+
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    updateSearch();
+                }
+            });
+
+            document.querySelector('.form-control').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    document.getElementById('searchInput').focus();
+                }
+            });
+
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                if (this.value.length < 3 && this.value.length > 0) {
+                    this.setCustomValidity('Минимальная длина - 3 символа');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+
+            // Переинициализация при раскрытии аккордеонов
+            document.querySelectorAll('.accordion-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    setTimeout(initToggleButtons, 300);
+                });
+            });
         });
 
-        // Фокус на поле ввода при клике на область
-        document.querySelector('.form-control').addEventListener('click', function(e) {
-            if (e.target === this) {
-                document.getElementById('searchInput').focus();
-            }
+        // MutationObserver для автоматической переинициализации
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    setTimeout(initToggleButtons, 100);
+                }
+            });
         });
 
-        // Валидация при вводе - предотвращаем ввод менее 3 символов
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            if (this.value.length < 3 && this.value.length > 0) {
-                this.setCustomValidity('Минимальная длина - 3 символа');
-            } else {
-                this.setCustomValidity('');
-            }
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
         });
     </script>
-
     <style>
         .input-group .form-control {
             padding: 0;

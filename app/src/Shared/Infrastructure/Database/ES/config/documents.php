@@ -21,6 +21,13 @@ return [
                         'english_stop',
                         'english_stemmer'
                     ]
+                ],
+                'number_extractor' => [
+                    'type' => 'custom',
+                    'tokenizer' => 'standard',
+                    'filter' => [
+                        'number_normalizer'
+                    ]
                 ]
             ],
             'filter' => [
@@ -39,6 +46,11 @@ return [
                 'english_stemmer' => [
                     'type' => 'stemmer',
                     'language' => 'english'
+                ],
+                'number_normalizer' => [
+                    'type' => 'pattern_replace',
+                    'pattern' => '[^0-9.]',
+                    'replacement' => ''
                 ]
             ]
         ]
@@ -127,6 +139,17 @@ return [
                                 'type' => 'keyword',
                                 'ignore_above' => 512,
                                 'doc_values' => true
+                            ],
+                            'numeric' => [
+                                'type' => 'scaled_float',
+                                'scaling_factor' => 100,
+                                'ignore_malformed' => true,
+                                'null_value' => null
+                            ],
+                            'normalized' => [
+                                'type' => 'text',
+                                'analyzer' => 'number_extractor',
+                                'fielddata' => true
                             ]
                         ]
                     ],

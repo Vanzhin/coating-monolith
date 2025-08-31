@@ -102,7 +102,7 @@
                            onclick="addTagToSearch('{{ tag.title }}'); return false;">
                             {# Кастомные цвета баджей в зависимости от типа тега #}
                             {% if tagType == 'приведенная толщина металла' %}
-                                <span class="badge badge-custom-ptm">{{ tag.title|upper }}</span>
+                                <span class="badge badge-custom-ptm">{{ tag.title|upper }} мм</span>
                             {% elseif tagType == 'предел огнестойкости' %}
                                 <span class="badge badge-custom-frl">{{ tag.title|upper }}</span>
                             {% else %}
@@ -111,13 +111,6 @@
                         </a>
                     {% endfor %}
                 </div>
-
-                {% if tagsInGroup|length > 6 %}
-                    <button class="toggle-tags btn btn-sm btn-link p-0 mt-1"
-                            onclick="toggleTagsVisibility(this)">
-                        + ещё {{ tagsInGroup|length - 6 }}
-                    </button>
-                {% endif %}
             </div>
         </div>
     {% endfor %}
@@ -155,40 +148,4 @@
 
         return false;
     }
-
-    // Функция для показа/скрытия тегов
-    function toggleTagsVisibility(button) {
-        const tagsContainer = button.previousElementSibling;
-        if (tagsContainer) {
-            if (tagsContainer.style.maxHeight === 'none') {
-                tagsContainer.style.maxHeight = '60px';
-                button.textContent = '+ ещё {{ tagsInGroup|length - 6 }}';
-            } else {
-                tagsContainer.style.maxHeight = 'none';
-                button.textContent = '− свернуть';
-            }
-        }
-    }
-
-    // Инициализация при загрузке документа
-    document.addEventListener('DOMContentLoaded', function() {
-        // Добавляем обработчики для всех ссылок тегов
-        const tagLinks = document.querySelectorAll('.tag-search-link');
-        tagLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const tagTitle = this.getAttribute('data-tag');
-                addTagToSearch(tagTitle);
-            });
-        });
-
-        // Добавляем обработчики для кнопок "ещё"
-        const toggleButtons = document.querySelectorAll('.toggle-tags');
-        toggleButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                toggleTagsVisibility(this);
-            });
-        });
-    });
 </script>
