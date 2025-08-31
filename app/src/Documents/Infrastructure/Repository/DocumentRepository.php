@@ -90,6 +90,10 @@ class DocumentRepository implements DocumentRepositoryInterface
         $this->applyFilters($filter);
         $this->applyPagination($filter);
 
+        // Добавляем дефолтную сортировку по тэгам
+        $this->queryBuilder->addSort('tags.type.keyword', 'desc');
+        $this->queryBuilder->addSort('tags.title.keyword', 'desc');
+
         $result = $this->executeSearch($filter);
 
         return $this->createPaginationResult($result);
@@ -284,8 +288,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     {
         $shouldQueries = [];
         $fields = [
-            //пока будем искать
-            'products.title' => ['boost' => 3.0,'fuzziness' => 'AUTO'],
+            'products.title' => ['boost' => 3.0, 'fuzziness' => 'AUTO'],
             'title' => ['boost' => 2.0],
             'description' => ['boost' => 1.0],
             'tags.title' => ['boost' => 2.0]

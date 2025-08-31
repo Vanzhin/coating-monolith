@@ -190,19 +190,4 @@ class DocumentFilter implements \JsonSerializable
     {
         return get_object_vars($this);
     }
-
-    private function splitSearchQuery(string $searchTerm): array
-    {
-        // Разбиваем по "+", но сохраняем числа с плюсом (например "950+")
-        $pattern = sprintf('/\%s(?=\S)/', self::SEARCH_SEPARATOR);
-        $parts = preg_split($pattern, $searchTerm);
-
-        // Убираем пустые значения и trim
-        $filteredParts = array_filter(array_map('trim', $parts));
-
-        // Убираем плюсы в конце чисел (если есть)
-        return array_map(function ($part) {
-            return preg_replace('/(\d+)\+$/', '$1', $part);
-        }, $filteredParts);
-    }
 }
