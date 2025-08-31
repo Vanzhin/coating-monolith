@@ -5,7 +5,7 @@
 {% block content %}
     <div class="col-lg-10 mx-auto p-2">
         <div class="d-flex flex-md-row align-items-center">
-            <h2 class="text-body-emphasis">Поиск по материалам</h2>
+            <h2 class="text-body-emphasis">Поиск</h2>
         </div>
         <div class="flex-column flex-md-row gap-4 align-items-center">
             <div class="d-flex flex-md-row align-items-center ">
@@ -124,7 +124,7 @@
                                                     data-bs-target="#collapse{{ key }}" aria-expanded="false"
                                                     aria-controls="collapse{{ key }}">
                                                 <div>
-                                                    <span class="badge bg-primary">{{ document.category }}</span>
+                                                    <span class="badge bg-primary text-truncate" style="max-width: 100%;">{{ document.category }}</span>
                                                     <h6 class="mb-0">{{ document.title|u.truncate(50, '...') }}</h6>
                                                     <p class="mb-0 opacity-75">{{ document.description|u.truncate(150, '...') }}</p>
                                                 </div>

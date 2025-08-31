@@ -1,71 +1,209 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ parent() }} Кабинет{% endblock %}
-    {% block body %}
-        <div class="d-flex flex-nowrap">
-            {% block menu %}
-                <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-light">
-                    <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
-                        <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start"
-                            id="menu">
-                            {% if is_granted('ROLE_ADMIN') %}
-                                <ul class="nav nav-pills flex-column mb-auto list-unstyled ps-0">
-                                    <li>
+
+{% block body %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-xl-2 offcanvas-md offcanvas-start bg-light" tabindex="-1" id="sidebarMenu">
+                <div class="offcanvas-header d-md-none">
+                    <h5 class="offcanvas-title">Меню</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu"></button>
+                </div>
+                <div class="offcanvas-body d-flex flex-column px-0">
+                    {% block menu %}
+                        <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
+                            <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100"
+                                id="menu">
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <li class="nav-item w-100">
                                         <a href="#submenu_admin" data-bs-toggle="collapse"
                                            class="nav-link px-0 align-middle text-secondary">
                                             <i class="fs-4 bi-bookmark-star"></i>
-                                            <span class="ms-1 d-none d-sm-inline ">Админ-панель</span>
+                                            <span class="ms-1 d-none d-sm-inline">Админ-панель</span>
                                         </a>
-                                        <ul class="nav flex-column ms-1" id="submenu_admin"
+                                        <ul class="nav flex-column ms-1 collapse" id="submenu_admin"
                                             data-bs-parent="#menu">
                                             <li class="w-100">
-                                                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="nav-link px-0 text-secondary
-                                        {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}">
+                                                <a href="{{ path('app_cabinet_coating_coating_list') }}"
+                                                   class="nav-link px-0 text-secondary {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}">
                                                     <i class="fs-6 bi-grid"></i>
-                                                    <span class="d-none d-sm-inline"> Покрытия</span></a>
-                                            </li>
-                                            <li class="w-100">
-                                                <a href="{{ path('app_cabinet_coating_manufacturer_list') }}"
-                                                   class="nav-link px-0 text-secondary
-                                        {% if 'app_cabinet_coating_manufacturer' in app.request.get('_route') %}fw-bold{% endif %}">
-                                                    <i class="fs-6 bi-grid-1x2"></i><span
-                                                            class="d-none d-sm-inline"> Производители</span>
+                                                    <span class="d-none d-sm-inline"> Покрытия</span>
                                                 </a>
                                             </li>
                                             <li class="w-100">
-                                                <a href="{{ path('app_cabinet_document_create') }}" class="nav-link px-0 text-secondary
-                                        {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}">
+                                                <a href="{{ path('app_cabinet_coating_manufacturer_list') }}"
+                                                   class="nav-link px-0 text-secondary {% if 'app_cabinet_coating_manufacturer' in app.request.get('_route') %}fw-bold{% endif %}">
+                                                    <i class="fs-6 bi-grid-1x2"></i>
+                                                    <span class="d-none d-sm-inline"> Производители</span>
+                                                </a>
+                                            </li>
+                                            <li class="w-100">
+                                                <a href="{{ path('app_cabinet_document_create') }}"
+                                                   class="nav-link px-0 text-secondary {% if 'app_cabinet_coating_coating' in app.request.get('_route') %}fw-bold{% endif %}">
                                                     <i class="fs-6 bi-file-text"></i>
-                                                    <span class="d-none d-sm-inline">Документы</span></a>
+                                                    <span class="d-none d-sm-inline">Документы</span>
+                                                </a>
                                             </li>
                                         </ul>
                                     </li>
-                                </ul>
-                            {% endif %}
-                            <li class="nav-item">
-                                <a href="{{ path('app_cabinet_document_list') }}"
-                                   class="nav-link align-middle px-0 text-secondary
-                                   {% if 'app_cabinet_document_list' in app.request.get('_route') %}fw-bold{% endif %}">
-                                    <i class="fs-4 bi bi-search"></i><span
-                                            class="ms-1 d-none d-sm-inline">Поиск</span>
-                                </a>
-                                <a href="{{ path('app_cabinet_proposals_general_proposal_list') }}"
-                                   class="nav-link align-middle px-0 text-secondary
-                                   {% if 'app_cabinet_proposals_general_proposal' in app.request.get('_route') %}fw-bold{% endif %}">
-                                    <i class="fs-4 bi-files"></i><span
-                                            class="ms-1 d-none d-sm-inline">Мои формы</span>
-                                </a>
-                            </li>
-                        </ul>
-                        <hr>
-                    </div>
+                                {% endif %}
+                                <li class="nav-item w-100">
+                                    <a href="{{ path('app_cabinet_document_list') }}"
+                                       class="nav-link align-middle px-0 text-secondary {% if 'app_cabinet_document_list' in app.request.get('_route') %}fw-bold{% endif %}">
+                                        <i class="fs-4 bi bi-search"></i>
+                                        <span class="ms-1 d-none d-sm-inline">Поиск</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item w-100">
+                                    <a href="{{ path('app_cabinet_proposals_general_proposal_list') }}"
+                                       class="nav-link align-middle px-0 text-secondary {% if 'app_cabinet_proposals_general_proposal' in app.request.get('_route') %}fw-bold{% endif %}">
+                                        <i class="fs-4 bi-files"></i>
+                                        <span class="ms-1 d-none d-sm-inline">Мои формы</span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <hr class="w-100">
+                        </div>
+                    {% endblock %}
                 </div>
-            {% endblock %}
-            {% block content %}
-                <div class="col py-3">
-                    <h3>Здесь будут данные для пользователя</h3>
-                </div>
-            {% endblock %}
-        </div>
-    {% endblock %}
+            </div>
 
+            <!-- Main content -->
+            <main class="col-md-9 col-xl-10 py-3">
+                {% block content %}
+                    <div class="container-fluid">
+                        {% if is_granted('IS_IMPERSONATOR') %}
+                            <div class="alert alert-warning d-block">
+                                Вы находитесь в режиме исполнения роли
+                                <a href="{{ impersonation_exit_path(path('app_homepage')) }}" class="alert-link">
+                                    Выйти из режима
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if app.session.flashBag.peekAll()|length > 0 %}
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                {% for key, messages in app.flashes() %}
+                                    {% for message in messages %}
+                                        <span>{{ message }}</span>
+                                    {% endfor %}
+                                {% endfor %}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <div class="content-area">
+                            <h3>Здесь будут данные для пользователя</h3>
+                            <!-- Основной контент страницы -->
+                        </div>
+                    </div>
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        /* Стили для offcanvas */
+        .offcanvas-md {
+            position: static;
+            visibility: visible;
+            transform: none;
+        }
+
+        @media (max-width: 767.98px) {
+            .offcanvas-md {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: -100%;
+                width: 80%;
+                visibility: hidden;
+                transform: translateX(0);
+                transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            }
+
+            .offcanvas-md.show {
+                visibility: visible;
+                transform: translateX(100%);
+            }
+
+            .mobile-menu-toggle {
+                z-index: 1050;
+            }
+        }
+
+        /* Стили для меню */
+        .bg-light {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-right: 1px solid #dee2e6;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 0.375rem;
+        }
+
+        .nav-link.fw-bold {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #007bff !important;
+        }
+
+        /* Анимации */
+        .collapse {
+            transition: height 0.3s ease;
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Инициализация подменю
+        document.addEventListener('DOMContentLoaded', function() {
+            // Автоматическое раскрытие активного подменю
+            const activeMenuItems = document.querySelectorAll('.nav-link.fw-bold');
+            activeMenuItems.forEach(item => {
+                const parentMenu = item.closest('.collapse');
+                if (parentMenu) {
+                    const bsCollapse = new bootstrap.Collapse(parentMenu, {
+                        toggle: false
+                    });
+                    bsCollapse.show();
+                }
+            });
+
+            // Закрытие offcanvas при клике на ссылку на мобильных
+            if (window.innerWidth < 768) {
+                const offcanvas = document.getElementById('sidebarMenu');
+                const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+
+                document.querySelectorAll('#sidebarMenu .nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (bsOffcanvas) {
+                            bsOffcanvas.hide();
+                        }
+                    });
+                });
+            }
+
+            // Обработка ресайза окна
+            window.addEventListener('resize', function() {
+                const offcanvas = document.getElementById('sidebarMenu');
+                const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+
+                if (window.innerWidth >= 768 && bsOffcanvas) {
+                    bsOffcanvas.hide();
+                }
+            });
+        });
+    </script>
+{% endblock %}

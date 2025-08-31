@@ -9,4 +9,6 @@ interface AuthUserFetcherInterface
     public function getAuthUser(): AuthUserInterface;
 
     public function getAuthUserId(): string;
+
+    public function isAuthenticated(): bool;
 }

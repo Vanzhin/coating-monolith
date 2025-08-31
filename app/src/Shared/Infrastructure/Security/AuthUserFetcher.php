@@ -30,4 +30,9 @@ readonly class AuthUserFetcher implements AuthUserFetcherInterface
     {
         return $this->getAuthUser()->getUlid();
     }
+
+    public function isAuthenticated(): bool
+    {
+        return (bool)$this->security->getUser();
+    }
 }

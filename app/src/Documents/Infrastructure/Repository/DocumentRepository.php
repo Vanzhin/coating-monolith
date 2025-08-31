@@ -288,7 +288,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     {
         $shouldQueries = [];
         $fields = [
-            'products.title' => ['boost' => 3.0],
+            'products.title' => ['boost' => 3.0, 'fuzziness' => 'AUTO'],
             'title' => ['boost' => 2.0],
             'description' => ['boost' => 1.0],
             'tags.title' => ['boost' => 2.0]
