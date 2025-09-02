@@ -112,7 +112,13 @@ return [
                             ],
                             'exact' => [
                                 'type' => 'keyword',
-                                'ignore_above' => 512
+                                'ignore_above' => 512,
+                                'doc_values' => true
+                            ],
+                            'normalized' => [
+                                'type' => 'text',
+                                'analyzer' => 'number_extractor',
+                                'fielddata' => true
                             ]
                         ]
                     ],

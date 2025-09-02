@@ -287,20 +287,72 @@ class DocumentRepository implements DocumentRepositoryInterface
     private function buildSearchQueryArray(string $searchTerm): array
     {
         $shouldQueries = [];
-        $fields = [
-            'products.title' => ['boost' => 3.0, 'fuzziness' => 'AUTO'],
+
+        // Извлекаем цифры из поискового запроса
+        preg_match_all('/\d+/', $searchTerm, $matches);
+        $numbers = $matches[0] ?? [];
+
+        // Обычные поля с стандартным поиском
+        $standardFields = [
+            'products.title' => ['boost' => 3.0],
             'title' => ['boost' => 2.0],
             'description' => ['boost' => 1.0],
             'tags.title' => ['boost' => 2.0]
         ];
 
-        foreach ($fields as $field => $options) {
+        foreach ($standardFields as $field => $options) {
+            $shouldQueries[] = [
+                'match_phrase' => [
+                    $field => array_merge([
+                        'query' => $searchTerm,
+                        'slop' => 2
+                    ], $options)
+                ],
+            ];
+
             $shouldQueries[] = [
                 'match' => [
-                    $field => array_merge(['query' => $searchTerm], $options)
-                ]
+                    $field => array_merge([
+                        'query' => $searchTerm,
+                        'operator' => 'and'
+                    ], $options)
+                ],
             ];
         }
+
+        // ОСОБАЯ ОБРАБОТКА ДЛЯ ЦИФР - используем normalized поле
+        foreach ($numbers as $number) {
+            // Высокий приоритет для точного совпадения цифр в products.title.normalized
+            $shouldQueries[] = [
+                'term' => [
+                    'products.title.normalized' => [
+                        'value' => $number,
+                        'boost' => 15.0 // Максимальный буст
+                    ]
+                ],
+            ];
+
+            // Высокий приоритет для точного совпадения цифр в title.normalized
+            $shouldQueries[] = [
+                'term' => [
+                    'title.normalized' => [
+                        'value' => $number,
+                        'boost' => 10.0
+                    ]
+                ],
+            ];
+
+            // Также ищем в основном поле с высоким бустом
+            $shouldQueries[] = [
+                'match' => [
+                    'products.title' => [
+                        'query' => $number,
+                        'boost' => 8.0
+                    ]
+                ],
+            ];
+        }
+
         return $shouldQueries;
     }
 }

@@ -31,8 +31,12 @@ enum DocumentCategoryType: string
     case REFERENCE = 'Референс';
 
     case SDS = 'Паспорт безопасности';
-    
+
     case GENERAL = 'Общий документ';
+
+    case SPREADING_RATE = 'Расход';
+
+    case COMPATIBLE = 'Таблица совместимости';
 
     public static function fromName(string $name)
     {
