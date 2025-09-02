@@ -13,14 +13,14 @@
                 </div>
                 <div class="offcanvas-body d-flex flex-column px-0">
                     {% block menu %}
-                        <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
+                        <div class="d-flex flex-column align-items-center align-items-sm-start mt-1 mb-1 text-white min-vh-100">
                             <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100"
                                 id="menu">
                                 {% if is_granted('ROLE_ADMIN') %}
                                     <li class="nav-item w-100">
                                         <a href="#submenu_admin" data-bs-toggle="collapse"
                                            class="nav-link px-0 align-middle text-secondary">
-                                            <i class="fs-4 bi-bookmark-star"></i>
+                                            <i class="fs-4 bi-bookmark-star ms-2"></i>
                                             <span class="ms-1 d-none d-sm-inline">Админ-панель</span>
                                         </a>
                                         <ul class="nav flex-column ms-1 collapse" id="submenu_admin"
@@ -52,14 +52,14 @@
                                 <li class="nav-item w-100">
                                     <a href="{{ path('app_cabinet_document_list') }}"
                                        class="nav-link align-middle px-0 text-secondary {% if 'app_cabinet_document_list' in app.request.get('_route') %}fw-bold{% endif %}">
-                                        <i class="fs-4 bi bi-search"></i>
+                                        <i class="fs-4 bi bi-search ms-2"></i>
                                         <span class="ms-1 d-none d-sm-inline">Поиск</span>
                                     </a>
                                 </li>
                                 <li class="nav-item w-100">
                                     <a href="{{ path('app_cabinet_proposals_general_proposal_list') }}"
                                        class="nav-link align-middle px-0 text-secondary {% if 'app_cabinet_proposals_general_proposal' in app.request.get('_route') %}fw-bold{% endif %}">
-                                        <i class="fs-4 bi-files"></i>
+                                        <i class="fs-4 bi-files ms-2"></i>
                                         <span class="ms-1 d-none d-sm-inline">Мои формы</span>
                                     </a>
                                 </li>
