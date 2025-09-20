@@ -7,6 +7,8 @@ namespace App\Users\Domain\Entity;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\Service\UuidService;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 class User implements AuthUserInterface
 {
@@ -17,11 +19,16 @@ class User implements AuthUserInterface
      */
     private array $roles = [];
 
+    /**
+     * @var Collection<Channel>
+     */
+    private Collection $channels;
+
     public function __construct(
         private readonly string $email,
-    )
-    {
+    ) {
         $this->ulid = UuidService::generateUlid();
+        $this->channels = new ArrayCollection();
     }
 
     public function getUlid(): string
@@ -67,4 +74,17 @@ class User implements AuthUserInterface
 
         $this->password = $hasher->hash($this, $password);
     }
+
+    public function getChannels(): Collection
+    {
+        return $this->channels;
+    }
+
+    public function addChannel(Channel $channel): void
+    {
+        if (!$this->channels->contains($channel)) {
+            $this->channels->add($channel);
+        }
+    }
+
 }

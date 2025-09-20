@@ -13,5 +13,12 @@
                 <option name="default">[]</option>
             </options>
         </field>
+        <one-to-many field="channels"
+                     target-entity="App\Users\Domain\Entity\Channel"
+                     mapped-by="owner">
+            <cascade>
+                <cascade-all/>
+            </cascade>
+        </one-to-many>
     </entity>
 </doctrine-mapping>

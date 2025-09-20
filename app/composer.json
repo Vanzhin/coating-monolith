@@ -20,6 +20,7 @@
     "oneup/flysystem-bundle": "^4.12",
     "phpoffice/phpspreadsheet": "^3.6",
     "qossmic/deptrac-shim": "^1.0",
+    "ramsey/uuid": "^4.9",
     "symfony/console": "7.0.*",
     "symfony/dotenv": "7.0.*",
     "symfony/flex": "^2",
