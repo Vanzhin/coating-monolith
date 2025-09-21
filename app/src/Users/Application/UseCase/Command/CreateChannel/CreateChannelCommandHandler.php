@@ -27,7 +27,8 @@ readonly class CreateChannelCommandHandler implements CommandHandlerInterface
     public function __invoke(CreateChannelCommand $command): CreateChannelCommandResult
     {
         AssertService::true(
-            $this->accessControl->canView($command->dto->owner_id, $this->authUserFetcher->getAuthUserId())
+            $this->accessControl->canView($command->dto->owner_id, $this->authUserFetcher->getAuthUserId()),
+            'Доступ запрещен.'
         );
 
         $user = $this->userFetcher->getUserById($command->dto->id);

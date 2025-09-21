@@ -6,7 +6,10 @@ namespace App\Users\Application\DTO;
 
 class TokenDTO
 {
-    public string $token;
-    public string $subjectId;
-    public string $expiresAt;
+    public function __construct(
+        public string $token,
+        public string $subjectId,
+        public string $expiresAt
+    ) {
+    }
 }

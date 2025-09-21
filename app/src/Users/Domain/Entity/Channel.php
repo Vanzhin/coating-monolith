@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
+use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
 use Symfony\Component\Uid\Uuid;
 
-class Channel
+class Channel implements VerificationSubjectInterface
 {
     private bool $isVerified = false;
     private ?\DateTimeImmutable $verifiedAt = null;
@@ -50,11 +51,15 @@ class Channel
         return $this->owner;
     }
 
+    public function getSubjectId(): string
+    {
+       return $this->id->jsonSerialize();
+    }
+
     //todo надо бы заприватить, но тогда нужно прикручивать токен.
-    public function setIsVerified(): void
+    public function markAsVerified(): void
     {
         $this->isVerified = true;
         $this->verifiedAt = new \DateTimeImmutable();
     }
-
 }

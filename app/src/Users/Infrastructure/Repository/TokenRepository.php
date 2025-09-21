@@ -19,7 +19,7 @@ class TokenRepository implements TokenRepositoryInterface
     public function add(Token $token): void
     {
         $this->redisService->set(
-            $this->buildKey($token->getToken(), $token->getSubjectId()),
+            $this->buildKey($token->getSubjectId()),
             $token->toArray(),
             $token->getExpiresAt()->getTimestamp() - time()
         );
@@ -27,7 +27,8 @@ class TokenRepository implements TokenRepositoryInterface
 
     public function findByTokenValueAndSubject(string $value, string $subjectId): ?Token
     {
-        $data = $this->redisService->get($this->buildKey($value, $subjectId));
+        //todo может убрать такой метод
+        $data = $this->redisService->get($this->buildKey($subjectId));
         if (!$data) {
             return null;
         }
@@ -37,7 +38,7 @@ class TokenRepository implements TokenRepositoryInterface
 
     public function findBySubject(string $subjectId): ?Token
     {
-        $data = $this->redisService->get($this->buildKey(null, $subjectId));
+        $data = $this->redisService->get($this->buildKey($subjectId));
         if (!$data) {
             return null;
         }
@@ -45,10 +46,18 @@ class TokenRepository implements TokenRepositoryInterface
         return Token::fromArray($data);
     }
 
-    private function buildKey(?string ...$values): string
+    private function buildKey(string $value): string
     {
-        $keyData = array_map(fn($item) => $item ?? '*', $values);
+        return self::TOKEN_PREFIX . $value;
+    }
 
-        return self::TOKEN_PREFIX . implode(':', $keyData);
+    public function remove(Token $token): void
+    {
+        $this->removeBySubject($token->getSubjectId());
+    }
+
+    public function removeBySubject(string $subjectId): void
+    {
+        $this->redisService->delete($this->buildKey($subjectId));
     }
 }
