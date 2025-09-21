@@ -12,7 +12,7 @@ use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Domain\Service\UserFetcherInterface;
-use Ramsey\Uuid\Uuid;
+use Symfony\Component\Uid\Uuid;
 
 readonly class CreateChannelCommandHandler implements CommandHandlerInterface
 {
@@ -44,7 +44,7 @@ readonly class CreateChannelCommandHandler implements CommandHandlerInterface
         $this->channelRepository->add($channel);
 
         return new CreateChannelCommandResult(
-            $channel->getId()->toString(),
+            $channel->getId()->jsonSerialize(),
         );
     }
 }

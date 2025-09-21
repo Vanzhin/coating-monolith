@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
+use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\Service\UuidService;
+use App\Users\Domain\Event\UserCreatedEvent;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-class User implements AuthUserInterface
+class User extends Aggregate implements AuthUserInterface
 {
     private readonly string $ulid;
     private ?string $password = null;
@@ -29,6 +31,7 @@ class User implements AuthUserInterface
     ) {
         $this->ulid = UuidService::generateUlid();
         $this->channels = new ArrayCollection();
+        $this->raise(new UserCreatedEvent($this->ulid));
     }
 
     public function getUlid(): string
@@ -87,4 +90,8 @@ class User implements AuthUserInterface
         }
     }
 
+    public function getId(): string
+    {
+        return $this->ulid;
+    }
 }

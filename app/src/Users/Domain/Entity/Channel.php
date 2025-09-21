@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
-use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Uid\Uuid;
 
 class Channel
 {
     private bool $isVerified = false;
     private ?\DateTimeImmutable $verifiedAt = null;
-    private ?Token $token = null;
 
     public function __construct(
-        private UuidInterface $id,
+        private readonly Uuid $id,
         private ChannelType $type,
         private string $value,
-        private User $owner
+        private readonly User $owner
     ) {
     }
 
     // Геттеры
-    public function getId(): UuidInterface
+    public function getId(): Uuid
     {
         return $this->id;
     }
@@ -46,67 +45,16 @@ class Channel
         return $this->verifiedAt;
     }
 
-    public function getVerificationToken(): ?Token
-    {
-        return $this->token;
-    }
-
     public function getOwner(): User
     {
         return $this->owner;
     }
 
-    /**
-     * Основной метод верификации
-     */
-    public function verify(string $code): bool
-    {
-        if ($this->token === null || !$this->token->isValid()) {
-            return false;
-        }
-
-        if (!$this->token->equals($code)) {
-            return false;
-        }
-
-        $this->markAsVerified();
-        return true;
-    }
-
-    /**
-     * Установка токена верификации
-     */
-    public function setVerificationToken(Token $token): void
-    {
-        $this->token = $token;
-        $this->isVerified = false;
-        $this->verifiedAt = null;
-    }
-
-    /**
-     * Очистка токена верификации
-     */
-    public function clearVerificationToken(): void
-    {
-        $this->token = null;
-    }
-
-    /**
-     * Проверка возможности верификации
-     */
-    public function isValidForVerification(): bool
-    {
-        return $this->token !== null &&
-            $this->token->isValid();
-    }
-
-    /**
-     * Внутренний метод пометки как верифицированного
-     */
-    private function markAsVerified(): void
+    //todo надо бы заприватить, но тогда нужно прикручивать токен.
+    public function setIsVerified(): void
     {
         $this->isVerified = true;
         $this->verifiedAt = new \DateTimeImmutable();
-        $this->token = null;
     }
+
 }

@@ -9,4 +9,8 @@ use App\Users\Domain\Entity\Channel;
 interface ChannelRepositoryInterface
 {
     public function add(Channel $channel): void;
+
+    public function remove(Channel $channel): void;
+
+    public function findById(string $id): ?Channel;
 }

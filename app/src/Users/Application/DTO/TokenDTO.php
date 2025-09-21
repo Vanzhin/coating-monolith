@@ -6,6 +6,7 @@ namespace App\Users\Application\DTO;
 
 class TokenDTO
 {
-    public ?string $owner_id;
-    public ?bool $expires_at;
+    public string $token;
+    public string $subjectId;
+    public string $expiresAt;
 }

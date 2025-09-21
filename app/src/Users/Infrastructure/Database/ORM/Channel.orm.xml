@@ -15,7 +15,6 @@
             <join-column referenced-column-name="ulid" nullable="false"/>
         </many-to-one>
         <field name="isVerified" column="is_verified" type="boolean"/>
-        <field name="verifiedAt" column="verified_at" type="datetime_immutable"/>
-        <embedded name="token" class="App\Users\Domain\Entity\Token" column-prefix="token_"/>
+        <field name="verifiedAt" column="verified_at" type="datetime_immutable" nullable="true"/>
     </entity>
 </doctrine-mapping>

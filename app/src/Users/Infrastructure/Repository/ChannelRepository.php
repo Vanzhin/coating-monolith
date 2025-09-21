@@ -11,8 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 
 class ChannelRepository extends ServiceEntityRepository implements ChannelRepositoryInterface
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(ManagerRegistry $registry) {
         parent::__construct($registry, Channel::class);
     }
 
@@ -20,5 +19,16 @@ class ChannelRepository extends ServiceEntityRepository implements ChannelReposi
     {
         $this->getEntityManager()->persist($channel);
         $this->getEntityManager()->flush();
+    }
+
+    public function remove(Channel $channel): void
+    {
+        $this->getEntityManager()->remove($channel);
+        $this->getEntityManager()->flush();
+    }
+
+    public function findById(string $id): ?Channel
+    {
+        return  $this->find($id);
     }
 }
