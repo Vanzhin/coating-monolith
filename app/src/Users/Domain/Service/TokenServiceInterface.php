@@ -10,7 +10,7 @@ use App\Users\Domain\Entity\Token;
 interface TokenServiceInterface
 {
     /**
-     * Создает и сохраняет токен верификации для объекта
+     * Создает и сохраняет токен верификации для субъекта
      * Удаляет старые токены и проверяет ограничения по времени
      */
     public function makeToken(VerificationSubjectInterface $verifiable): Token;
@@ -21,16 +21,16 @@ interface TokenServiceInterface
     public function removeToken(VerificationSubjectInterface $verifiable): void;
 
     /**
-     * Проверяет токен для конкретного объекта и возвращает верифицированный объект
+     * Проверяет токен для конкретного объекта и возвращает верифицированный субъект
      *
      * @throws \InvalidArgumentException Если токен невалиден
-     * @throws \DomainException Если токен просрочен или не принадлежит объекту
-     * @throws \DomainException Если объект уже верифицирован
+     * @throws \DomainException Если токен просрочен или не принадлежит субъект
+     * @throws \DomainException Если субъект уже верифицирован
      */
     public function verifySubjectByTokenString(string $tokenString, VerificationSubjectInterface $verifiable): true;
 
     /**
-     * Проверяет, можно ли создать новый токен для объекта
+     * Проверяет, можно ли создать новый токен для субъект
      */
     public function canCreateToken(VerificationSubjectInterface $verifiable): bool;
 

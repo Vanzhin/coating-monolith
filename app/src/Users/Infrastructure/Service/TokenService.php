@@ -52,7 +52,7 @@ class TokenService implements TokenServiceInterface
     {
         // Проверяем, что объект еще не верифицирован
         if ($verifiable->isVerified()) {
-            throw new AppException('Объект уже верифицирован');
+            throw new AppException('Субъект уже верифицирован');
         }
 
         // Ищем токен для данного субъекта
