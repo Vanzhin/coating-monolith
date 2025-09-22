@@ -16,6 +16,7 @@ class User extends Aggregate implements AuthUserInterface
 {
     private readonly string $ulid;
     private ?string $password = null;
+    private bool $isActive = false;
     /**
      * @var array<string>
      */
@@ -93,5 +94,25 @@ class User extends Aggregate implements AuthUserInterface
     public function getId(): string
     {
         return $this->ulid;
+    }
+
+    public function getVerifiedChannels(): Collection
+    {
+        return $this->channels->filter(function (Channel $channel) {
+            return $channel->isVerified();
+        });
+    }
+
+    public function makeActive(): void
+    {
+        if ($this->getVerifiedChannels()->isEmpty()) {
+            return;
+        }
+        $this->isActive = true;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
     }
 }

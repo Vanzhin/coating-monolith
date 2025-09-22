@@ -52,12 +52,12 @@ security:
         signature_properties: [password]
 
 
-
+  access_denied_url: /user/channel/verification
   access_control:
     - { path: ^/api/auth/token/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/auth/token/refresh, roles: PUBLIC_ACCESS }
-    - { path: ^/api/users/me,       roles: IS_AUTHENTICATED_FULLY }
-    - { path: ^/cabinet/*,       roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/users/me,       roles: ACCESS_ACTIVE_USER}
+    - { path: ^/cabinet/*,       roles: ACCESS_ACTIVE_USER }
 
 when@test:
   security:

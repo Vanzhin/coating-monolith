@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
+use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
+use App\Users\Domain\Event\ChannelVerifiedEvent;
 use Symfony\Component\Uid\Uuid;
 
-class Channel implements VerificationSubjectInterface
+class Channel extends Aggregate implements VerificationSubjectInterface
 {
     private bool $isVerified = false;
     private ?\DateTimeImmutable $verifiedAt = null;
@@ -21,9 +23,9 @@ class Channel implements VerificationSubjectInterface
     }
 
     // Геттеры
-    public function getId(): Uuid
+    public function getId(): string
     {
-        return $this->id;
+        return $this->id->jsonSerialize();
     }
 
     public function getType(): ChannelType
@@ -53,7 +55,7 @@ class Channel implements VerificationSubjectInterface
 
     public function getSubjectId(): string
     {
-       return $this->id->jsonSerialize();
+        return $this->id->jsonSerialize();
     }
 
     //todo надо бы заприватить, но тогда нужно прикручивать токен.
@@ -61,5 +63,6 @@ class Channel implements VerificationSubjectInterface
     {
         $this->isVerified = true;
         $this->verifiedAt = new \DateTimeImmutable();
+        $this->raise(new ChannelVerifiedEvent($this->getId()));
     }
 }

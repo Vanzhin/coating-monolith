@@ -45,7 +45,7 @@ readonly class CreateChannelCommandHandler implements CommandHandlerInterface
         $this->channelRepository->add($channel);
 
         return new CreateChannelCommandResult(
-            $channel->getId()->jsonSerialize(),
+            $channel->getId(),
         );
     }
 }

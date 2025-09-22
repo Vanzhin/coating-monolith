@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Users\Application\DTO;
+namespace App\Users\Application\DTO\Channel;
 
 class ChannelDTO
 {
     public ?bool $is_verified = null;
-    public ?TokenDTO $token = null;
     public ?string $verified_at = null;
 
     public function __construct(

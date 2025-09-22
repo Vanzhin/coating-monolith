@@ -1,0 +1,317 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} Верификация канала{% endblock %}
+
+{% block body %}
+    <div class="container-fluid py-3">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+                <div class="form-verification">
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success alert-dismissible fade show mb-3">
+                            {{ flash_success }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-3">
+                            {{ flash_error }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+
+                    <div class="text-center mb-4">
+                        <h1 class="h3 mb-2">Верификация аккаунта</h1>
+                        <p class="text-muted">Подтвердите ваш канал связи</p>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Статус верификации</h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small class="text-muted">Верифицированные:</small>
+                                    <div class="badge bg-success fs-6">{{ user.getVerifiedChannels()|length }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Неверифицированные:</small>
+                                    <div class="badge bg-warning fs-6">{{ user.getChannels()|length - user.getVerifiedChannels()|length }}</div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Для активации аккаунта необходимо верифицировать хотя бы один канал.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{ form_start(verificationForm, {'attr': {'class': 'needs-validation', 'novalidate': true}}) }}
+
+                    <div class="mb-3">
+                        <div class="form-floating">
+                            {{ form_widget(verificationForm.channel, {
+                                'attr': {
+                                    'class': 'form-select',
+                                    'onchange': 'onChannelChange(this)'
+                                }
+                            }) }}
+                            {{ form_label(verificationForm.channel) }}
+                        </div>
+                        <div class="invalid-feedback small">
+                            {{ form_errors(verificationForm.channel) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="button"
+                                class="btn btn-outline-primary w-100 py-2"
+                                id="send-token-btn"
+                                onclick="sendVerificationToken()"
+                                data-channel-id="">
+                            <span id="send-btn-text">Отправить код верификации</span>
+                            <span id="send-timer" class="ms-1"></span>
+                        </button>
+                        <div class="form-text text-center">
+                            Код будет активен в течение 15 минут
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            {{ form_widget(verificationForm.token, {
+                                'attr': {
+                                    'class': 'form-control text-center',
+                                    'style': 'letter-spacing: 0.3rem; font-weight: bold; height: 60px;',
+                                    'placeholder': 'Введите код'
+                                }
+                            }) }}
+                            {{ form_label(verificationForm.token) }}
+                        </div>
+                        <div class="invalid-feedback small">
+                            {{ form_errors(verificationForm.token) }}
+                        </div>
+                    </div>
+
+                    {{ form_rest(verificationForm) }}
+
+                    <div class="mb-3">
+                        <button class="btn btn-primary w-100 py-2" type="submit" id="submit-btn" disabled>
+                            Подтвердить код
+                        </button>
+                    </div>
+
+                    {{ form_end(verificationForm) }}
+
+                    {% if user.getVerifiedChannels()|length > 0 %}
+                        <div class="mt-4">
+                            <h6 class="mb-2">Верифицированные каналы:</h6>
+                            <div class="list-group">
+                                {% for channel in user.getVerifiedChannels() %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <small>
+                                            <span class="text-capitalize">{{ channel.getType() }}</span>:
+                                            <span class="text-truncate">{{ channel.getValue() }}</span>
+                                        </small>
+                                        <span class="badge bg-success rounded-pill">✓</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cooldownInterval;
+        let cooldownTimeLeft = 0;
+        const sendTokenBtn = document.getElementById('send-token-btn');
+        const sendBtnText = document.getElementById('send-btn-text');
+        const sendTimer = document.getElementById('send-timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const tokenInput = document.getElementById('{{ verificationForm.token.vars.id }}');
+        const channelSelect = document.getElementById('{{ verificationForm.channel.vars.id }}');
+
+        // Проверяем состояние кнопки при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            checkCooldownState();
+
+            // Активируем кнопку отправки, если канал уже выбран
+            if (channelSelect.value) {
+                sendTokenBtn.setAttribute('data-channel-id', channelSelect.value);
+            }
+
+            // Активируем поле ввода кода при изменении
+            tokenInput.addEventListener('input', function() {
+                submitBtn.disabled = this.value.length !== 6;
+            });
+        });
+
+        function onChannelChange(select) {
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption.value) {
+                sendTokenBtn.setAttribute('data-channel-id', selectedOption.value);
+                tokenInput.focus();
+            } else {
+                sendTokenBtn.setAttribute('data-channel-id', '');
+            }
+        }
+
+        function sendVerificationToken() {
+            if (cooldownTimeLeft > 0) return;
+
+            const channelId = sendTokenBtn.getAttribute('data-channel-id');
+            if (!channelId) {
+                alert('Пожалуйста, выберите канал для верификации');
+                return;
+            }
+
+            const originalText = sendBtnText.innerHTML;
+            sendTokenBtn.disabled = true;
+            sendBtnText.innerHTML = 'Отправка...';
+
+            fetch('{{ path('app_user_channel_verification_send_token') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    channel_id: channelId
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Запускаем обратный отсчет 5 минут (300 секунд)
+                        startCooldown(data.cooldown_remaining || 300);
+                        showMessage('Код верификации отправлен! Проверьте ваш канал связи.', 'success');
+                        tokenInput.focus();
+                    } else {
+                        showMessage(data.message || 'Ошибка при отправке кода', 'error');
+                        sendTokenBtn.disabled = false;
+                        sendBtnText.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Ошибка при отправке кода. Попробуйте позже.', 'error');
+                    sendTokenBtn.disabled = false;
+                    sendBtnText.innerHTML = originalText;
+                });
+        }
+
+        function startCooldown(seconds) {
+            cooldownTimeLeft = seconds;
+
+            clearInterval(cooldownInterval);
+            cooldownInterval = setInterval(() => {
+                cooldownTimeLeft--;
+
+                if (cooldownTimeLeft <= 0) {
+                    clearInterval(cooldownInterval);
+                    sendTokenBtn.disabled = false;
+                    sendBtnText.innerHTML = 'Отправить код верификации';
+                    sendTimer.innerHTML = '';
+                    localStorage.removeItem('verification_cooldown');
+                } else {
+                    const minutes = Math.floor(cooldownTimeLeft / 60);
+                    const seconds = cooldownTimeLeft % 60;
+                    sendTimer.innerHTML = `(${minutes}:${seconds.toString().padStart(2, '0')})`;
+                    sendBtnText.innerHTML = 'Отправить повторно';
+                    sendTokenBtn.disabled = true;
+
+                    // Сохраняем состояние в localStorage
+                    localStorage.setItem('verification_cooldown',
+                        JSON.stringify({
+                            expires: Date.now() + cooldownTimeLeft * 1000,
+                            timeLeft: cooldownTimeLeft
+                        })
+                    );
+                }
+            }, 1000);
+        }
+
+        function checkCooldownState() {
+            const cooldownData = localStorage.getItem('verification_cooldown');
+            if (cooldownData) {
+                const data = JSON.parse(cooldownData);
+                const timeLeft = Math.max(0, Math.floor((data.expires - Date.now()) / 1000));
+
+                if (timeLeft > 0) {
+                    startCooldown(timeLeft);
+                } else {
+                    localStorage.removeItem('verification_cooldown');
+                }
+            }
+        }
+
+        function showMessage(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show mb-3`;
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <span>${message}</span>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            const form = document.querySelector('.form-verification');
+            const existingAlerts = form.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            form.insertBefore(alertDiv, form.firstChild);
+        }
+    </script>
+
+    <style>
+        .form-verification {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 576px) {
+            .form-verification {
+                padding: 1rem;
+                margin: 0.5rem;
+                border-radius: 8px;
+            }
+
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        #send-token-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-floating > .form-control {
+            height: calc(3rem + 2px);
+        }
+
+        .text-truncate {
+            max-width: 150px;
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
+        }
+    </style>
+{% endblock %}

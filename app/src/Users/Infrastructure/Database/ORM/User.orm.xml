@@ -20,5 +20,6 @@
                 <cascade-all/>
             </cascade>
         </one-to-many>
+        <field name="isActive" column="is_active" type="boolean"/>
     </entity>
 </doctrine-mapping>

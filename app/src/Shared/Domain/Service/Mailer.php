@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Shared\Domain\Service;
 
@@ -16,11 +16,10 @@ class Mailer
 
     public function __construct(
         private readonly MailerInterface $mailer,
-        string                           $appName,
-        string                           $defaultFromEmail,
-        string                           $defaultFromName,
-    )
-    {
+        string $appName,
+        string $defaultFromEmail,
+        string $defaultFromName,
+    ) {
         $this->appName = $appName;
         $this->defaultFromEmail = $defaultFromEmail;
         $this->defaultFromName = $defaultFromName;
@@ -36,6 +35,21 @@ class Mailer
             ->context([
                 'appName' => $this->appName,
                 'uri' => $uri
+            ]);
+        $this->mailer->send($email);
+    }
+
+    public function sendVerificationCode(Address $to, string $code, int $timeToUse): void
+    {
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->defaultFromEmail, $this->defaultFromName))
+            ->to($to)
+            ->subject(sprintf('Код верификации для %s', $this->appName))
+            ->htmlTemplate('emails/verification_code.html.twig')
+            ->context([
+                'appName' => $this->appName,
+                'code' => $code,
+                'time_to_use' => $timeToUse
             ]);
         $this->mailer->send($email);
     }
