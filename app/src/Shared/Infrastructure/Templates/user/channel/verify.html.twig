@@ -45,7 +45,9 @@
                         </div>
                     </div>
 
-                    {{ form_start(verificationForm, {'attr': {'class': 'needs-validation', 'novalidate': true}}) }}
+                    {{ form_start(verificationForm, {'attr': {'class': 'needs-validation', 'novalidate': true},
+                    'action': path('app_user_channel_verification')
+                    }) }}
 
                     <div class="mb-3">
                         <div class="form-floating">
@@ -95,7 +97,7 @@
                     {{ form_rest(verificationForm) }}
 
                     <div class="mb-3">
-                        <button class="btn btn-primary w-100 py-2" type="submit" id="submit-btn" disabled>
+                        <button class="btn btn-primary w-100 py-2" type="submit" id="submit-btn">
                             Подтвердить код
                         </button>
                     </div>
@@ -109,7 +111,7 @@
                                 {% for channel in user.getVerifiedChannels() %}
                                     <div class="list-group-item d-flex justify-content-between align-items-center py-2">
                                         <small>
-                                            <span class="text-capitalize">{{ channel.getType() }}</span>:
+                                            <span class="text-capitalize">{{ channel.getType().value }}</span>:
                                             <span class="text-truncate">{{ channel.getValue() }}</span>
                                         </small>
                                         <span class="badge bg-success rounded-pill">✓</span>
@@ -132,6 +134,7 @@
         const submitBtn = document.getElementById('submit-btn');
         const tokenInput = document.getElementById('{{ verificationForm.token.vars.id }}');
         const channelSelect = document.getElementById('{{ verificationForm.channel.vars.id }}');
+        const form = document.querySelector('form');
 
         // Проверяем состояние кнопки при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
@@ -142,12 +145,39 @@
                 sendTokenBtn.setAttribute('data-channel-id', channelSelect.value);
             }
 
-            // Активируем поле ввода кода при изменении
+            // Визуальная индикация для кнопки подтверждения
             tokenInput.addEventListener('input', function() {
-                submitBtn.disabled = this.value.length !== 6;
+                this.value = this.value.replace(/[^0-9]/g, '');
+
+                if (this.value.length === 6) {
+                    submitBtn.classList.remove('btn-secondary');
+                    submitBtn.classList.add('btn-primary');
+                } else {
+                    submitBtn.classList.remove('btn-primary');
+                    submitBtn.classList.add('btn-secondary');
+                }
+            });
+
+            // Валидация формы при сабмите
+            form.addEventListener('submit', function(e) {
+                // Проверяем длину кода
+                if (tokenInput.value.length !== 6) {
+                    e.preventDefault();
+                    showMessage('Пожалуйста, введите 6-значный код', 'error');
+                    tokenInput.focus();
+                    return;
+                }
+
+                // Проверяем выбран ли канал
+                const channelId = sendTokenBtn.getAttribute('data-channel-id');
+                if (!channelId) {
+                    e.preventDefault();
+                    showMessage('Пожалуйста, выберите канал для верификации', 'error');
+                }
             });
         });
 
+        // Остальные функции остаются без изменений
         function onChannelChange(select) {
             const selectedOption = select.options[select.selectedIndex];
             if (selectedOption.value) {
@@ -163,7 +193,7 @@
 
             const channelId = sendTokenBtn.getAttribute('data-channel-id');
             if (!channelId) {
-                alert('Пожалуйста, выберите канал для верификации');
+                showMessage('Пожалуйста, выберите канал для верификации', 'error');
                 return;
             }
 
@@ -184,7 +214,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Запускаем обратный отсчет 5 минут (300 секунд)
                         startCooldown(data.cooldown_remaining || 300);
                         showMessage('Код верификации отправлен! Проверьте ваш канал связи.', 'success');
                         tokenInput.focus();

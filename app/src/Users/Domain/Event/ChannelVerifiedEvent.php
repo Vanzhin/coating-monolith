@@ -8,7 +8,7 @@ use App\Shared\Domain\Event\EventInterface;
 
 class ChannelVerifiedEvent implements EventInterface
 {
-    public function __construct(public string $ownerId)
+    public function __construct(public string $channelId)
     {
     }
 }

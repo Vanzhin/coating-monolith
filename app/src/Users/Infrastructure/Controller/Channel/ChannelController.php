@@ -3,14 +3,13 @@
 namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Command\CommandBusInterface;
-use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Service\Mailer;
 use App\Users\Application\Service\AccessControl\ChannelAccessControl;
+use App\Users\Application\UseCase\Command\VerifyChannel\VerifyChannelCommand;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Domain\Service\TokenServiceInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +21,10 @@ class ChannelController extends AbstractController
 {
     public function __construct(
         private readonly TokenServiceInterface $tokenService,
-        private readonly EntityManagerInterface $entityManager,
         private readonly ChannelRepositoryInterface $channelRepository,
         private readonly ChannelAccessControl $channelAccessControl,
         private readonly Mailer $mailer,
         private readonly CommandBusInterface $commandBus,
-        private readonly QueryBusInterface $queryBus,
     ) {
     }
 
@@ -49,33 +46,18 @@ class ChannelController extends AbstractController
         ]);
 
         $form->handleRequest($request);
-
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $token = $data['token'];
             /** @var Channel $channel */
             $channel = $data['channel'];
-            dd($token, $channel);
             try {
-                dd(112121);
-                if ($verificationService->verifyToken($user, $channel, $token)) {
-                    $this->addFlash('success', 'Канал успешно верифицирован!');
+                $command = new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token);
+                $this->commandBus->execute($command);
 
-                    if (!$user->getVerifiedChannels()->isEmpty()) {
-                        $user->makeActive();
-                        $this->entityManager->flush();
-
-                        if ($user->isActive()) {
-                            $this->addFlash('success', 'Аккаунт успешно активирован!');
-                            return $this->redirectToRoute('app_cabinet');
-                        }
-                    }
-
-                    // Если верифицирован, но аккаунт еще не активен
-                    return $this->redirectToRoute('app_verification');
-                } else {
-                    $this->addFlash('error', 'Неверный код верификации. Попробуйте еще раз.');
-                }
+                $this->addFlash('success', 'Канал успешно верифицирован!');
+                $this->addFlash('success', 'Аккаунт успешно активирован!');
+                return $this->redirectToRoute('app_cabinet');
             } catch (\Exception $e) {
                 $this->addFlash('error', $e->getMessage());
             }
