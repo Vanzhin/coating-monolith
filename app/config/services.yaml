@@ -94,7 +94,6 @@ services:
   App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:
     tags:
       - { name: monolog.processor, channel: 'coating' }
-
   telegram_handler:
     class: App\Shared\Infrastructure\Log\TelegramLogHandler
     arguments:
@@ -109,6 +108,12 @@ services:
         basicAuthentication: [ '%env(ELASTIC_USERNAME)%', '%env(ELASTIC_PASSWORD)%' ]
         sslVerification: false
 
-
-  # add more service definitions when explicit configuration is needed
-  # please note that last definitions always *replace* previous ones
+  #Валидатор почты
+  App\Users\Infrastructure\Service\Validation\EmailListValidator:
+    arguments:
+      $whitelist: [ ]
+      $blacklist: [ ]
+      $whitelistPatterns: [ '*@offire.ru' ]
+      $blacklistPatterns: [ ]
+      $whitelistEnabled: true
+      $blacklistEnabled: false

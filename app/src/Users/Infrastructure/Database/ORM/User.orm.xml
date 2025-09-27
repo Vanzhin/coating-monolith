@@ -6,7 +6,7 @@
         <id name="ulid" type="string" length="26">
             <generator strategy="NONE"/>
         </id>
-        <field name="email" type="string" unique="true"/>
+        <embedded name="email" class="App\Users\Domain\Entity\ValueObject\Email" use-column-prefix="false"/>
         <field name="password" type="string" nullable="true"/>
         <field name="roles" type="json">
             <options>

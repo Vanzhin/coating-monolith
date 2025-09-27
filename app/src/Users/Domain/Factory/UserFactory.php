@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Domain\Factory;
 
 use App\Users\Domain\Entity\User;
+use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 
 readonly class UserFactory
@@ -15,7 +16,7 @@ readonly class UserFactory
 
     public function create(string $email, ?string $password): User
     {
-        $user = new User($email);
+        $user = new User(new Email($email));
         $user->setPassword($password, $this->hasher);
 
         return $user;

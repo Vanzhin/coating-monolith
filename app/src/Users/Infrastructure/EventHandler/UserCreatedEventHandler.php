@@ -28,7 +28,7 @@ readonly class UserCreatedEventHandler implements EventHandlerInterface
             $channel = new Channel(
                 id: Uuid::v4(),
                 type: ChannelType::EMAIL,
-                value: $user->getEmail(),
+                value: $user->getEmail()->getValue(),
                 owner: $user
             );
             $this->channelRepository->add($channel);

@@ -9,7 +9,7 @@ security:
         # the class of the entity that represents users
         class: App\Users\Domain\Entity\User
         # the property to query by - e.g. email, username, etc
-        property: email
+        property: email.value
 
   firewalls:
     login:

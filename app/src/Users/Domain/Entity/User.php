@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Domain\Entity;
 
 use App\Shared\Domain\Aggregate\Aggregate;
+use App\Users\Domain\Entity\ValueObject\Email;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\Service\UuidService;
 use App\Users\Domain\Event\UserCreatedEvent;
@@ -28,7 +29,7 @@ class User extends Aggregate implements AuthUserInterface
     private Collection $channels;
 
     public function __construct(
-        private readonly string $email,
+        private readonly Email $email,
     ) {
         $this->ulid = UuidService::generateUlid();
         $this->channels = new ArrayCollection();
@@ -40,7 +41,7 @@ class User extends Aggregate implements AuthUserInterface
         return $this->ulid;
     }
 
-    public function getEmail(): string
+    public function getEmail(): Email
     {
         return $this->email;
     }
@@ -65,7 +66,7 @@ class User extends Aggregate implements AuthUserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->email;
+        return $this->email->getValue();
     }
 
     public function setPassword(?string $password, UserPasswordHasherInterface $hasher): void
@@ -103,7 +104,7 @@ class User extends Aggregate implements AuthUserInterface
         });
     }
 
-    public function makeActive(): void
+    public function makeActiveInternally(): void
     {
         if ($this->getVerifiedChannels()->isEmpty()) {
             return;

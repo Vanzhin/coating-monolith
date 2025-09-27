@@ -33,6 +33,13 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Proposals\Domain\Aggregate'
                 alias: Proposals
+            ValueObject:
+              is_bundle: false
+              type: xml
+              dir: '%kernel.project_dir%/src/Users/Infrastructure/Database/ORM/ValueObject'
+              prefix: 'App\Users\Domain\Entity\ValueObject'
+              alias: ValueObject
+
 
 #            App:
 #                is_bundle: false
