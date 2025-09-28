@@ -31,7 +31,7 @@ readonly class CreateChannelCommandHandler implements CommandHandlerInterface
             'Доступ запрещен.'
         );
 
-        $user = $this->userFetcher->getUserById($command->dto->id);
+        $user = $this->userFetcher->getUserById($command->dto->owner_id);
 
         AssertService::notNull($user);
 
