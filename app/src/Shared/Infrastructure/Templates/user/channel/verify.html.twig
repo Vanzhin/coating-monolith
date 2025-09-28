@@ -7,61 +7,74 @@
         <div class="row justify-content-center">
             <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
                 <div class="form-verification">
-                    {% for flash_success in app.flashes('success') %}
-                        <div class="alert alert-success alert-dismissible fade show mb-3">
-                            {{ flash_success }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
+                    {# Единый блок для всех сообщений - flash и ошибок формы #}
+                    <div id="messages-container">
+                        {% for type, messages in app.flashes %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ type }} alert-dismissible fade show mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ message }}</span>
+                                        <button type="button" class="btn-close ms-auto"
+                                                data-bs-dismiss="alert"></button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
 
-                    {% for flash_error in app.flashes('error') %}
-                        <div class="alert alert-danger alert-dismissible fade show mb-3">
-                            {{ flash_error }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
+                        {# Отображение ошибок формы как flash-сообщений #}
+                        {% if verificationForm.vars.errors|length > 0 %}
+                            {% for error in verificationForm.vars.errors %}
+                                <div class="alert alert-danger alert-dismissible fade show mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ error.message }}</span>
+                                        <button type="button" class="btn-close ms-auto"
+                                                data-bs-dismiss="alert"></button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Отображение ошибок полей формы #}
+                        {% for child in verificationForm.children %}
+                            {% if child.vars.errors is defined and child.vars.errors|length > 0 %}
+                                {% for error in child.vars.errors %}
+                                    <div class="alert alert-danger alert-dismissible fade show mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <span>{{ error.message }}</span>
+                                            <button type="button" class="btn-close ms-auto"
+                                                    data-bs-dismiss="alert"></button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
 
                     <div class="text-center mb-4">
                         <h1 class="h3 mb-2">Верификация аккаунта</h1>
                         <p class="text-muted">Подтвердите ваш канал связи</p>
                     </div>
 
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h6 class="card-title mb-3">Статус верификации</h6>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <small class="text-muted">Верифицированные:</small>
-                                    <div class="badge bg-success fs-6">{{ user.getVerifiedChannels()|length }}</div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Неверифицированные:</small>
-                                    <div class="badge bg-warning fs-6">{{ user.getChannels()|length - user.getVerifiedChannels()|length }}</div>
-                                </div>
-                            </div>
-                            <div class="mt-2">
-                                <small class="text-muted">Для активации аккаунта необходимо верифицировать хотя бы один канал.</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{ form_start(verificationForm, {'attr': {'class': 'needs-validation', 'novalidate': true},
-                    'action': path('app_user_channel_verification')
+                    {{ form_start(verificationForm, {
+                        'attr': {
+                            'class': 'needs-validation',
+                            'novalidate': true,
+                            'id': 'verification-form'
+                        },
+                        'action': path('app_user_channel_verification')
                     }) }}
 
                     <div class="mb-3">
                         <div class="form-floating">
                             {{ form_widget(verificationForm.channel, {
                                 'attr': {
-                                    'class': 'form-select',
+                                    'class': 'form-select' ~ (verificationForm.channel.vars.errors|length > 0 ? ' is-invalid' : ''),
                                     'onchange': 'onChannelChange(this)'
                                 }
                             }) }}
                             {{ form_label(verificationForm.channel) }}
                         </div>
-                        <div class="invalid-feedback small">
-                            {{ form_errors(verificationForm.channel) }}
-                        </div>
+                        {# Убрали отображение ошибок под полем #}
                     </div>
 
                     <div class="mb-3">
@@ -73,25 +86,20 @@
                             <span id="send-btn-text">Отправить код верификации</span>
                             <span id="send-timer" class="ms-1"></span>
                         </button>
-                        <div class="form-text text-center">
-                            Код будет активен в течение 15 минут
-                        </div>
                     </div>
 
                     <div class="mb-4">
                         <div class="form-floating">
                             {{ form_widget(verificationForm.token, {
                                 'attr': {
-                                    'class': 'form-control text-center',
+                                    'class': 'form-control text-center' ~ (verificationForm.token.vars.errors|length > 0 ? ' is-invalid' : ''),
                                     'style': 'letter-spacing: 0.3rem; font-weight: bold; height: 60px;',
                                     'placeholder': 'Введите код'
                                 }
                             }) }}
                             {{ form_label(verificationForm.token) }}
                         </div>
-                        <div class="invalid-feedback small">
-                            {{ form_errors(verificationForm.token) }}
-                        </div>
+                        {# Убрали отображение ошибок под полем #}
                     </div>
 
                     {{ form_rest(verificationForm) }}
@@ -103,23 +111,6 @@
                     </div>
 
                     {{ form_end(verificationForm) }}
-
-                    {% if user.getVerifiedChannels()|length > 0 %}
-                        <div class="mt-4">
-                            <h6 class="mb-2">Верифицированные каналы:</h6>
-                            <div class="list-group">
-                                {% for channel in user.getVerifiedChannels() %}
-                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
-                                        <small>
-                                            <span class="text-capitalize">{{ channel.getType().value }}</span>:
-                                            <span class="text-truncate">{{ channel.getValue() }}</span>
-                                        </small>
-                                        <span class="badge bg-success rounded-pill">✓</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -134,10 +125,11 @@
         const submitBtn = document.getElementById('submit-btn');
         const tokenInput = document.getElementById('{{ verificationForm.token.vars.id }}');
         const channelSelect = document.getElementById('{{ verificationForm.channel.vars.id }}');
-        const form = document.querySelector('form');
+        const form = document.getElementById('verification-form');
+        const messagesContainer = document.getElementById('messages-container');
 
         // Проверяем состояние кнопки при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             checkCooldownState();
 
             // Активируем кнопку отправки, если канал уже выбран
@@ -146,7 +138,7 @@
             }
 
             // Визуальная индикация для кнопки подтверждения
-            tokenInput.addEventListener('input', function() {
+            tokenInput.addEventListener('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '');
 
                 if (this.value.length === 6) {
@@ -159,7 +151,10 @@
             });
 
             // Валидация формы при сабмите
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', function (e) {
+                // Очищаем предыдущие сообщения
+                clearMessages();
+
                 // Проверяем длину кода
                 if (tokenInput.value.length !== 6) {
                     e.preventDefault();
@@ -177,7 +172,6 @@
             });
         });
 
-        // Остальные функции остаются без изменений
         function onChannelChange(select) {
             const selectedOption = select.options[select.selectedIndex];
             if (selectedOption.value) {
@@ -201,6 +195,9 @@
             sendTokenBtn.disabled = true;
             sendBtnText.innerHTML = 'Отправка...';
 
+            // Очищаем предыдущие сообщения перед отправкой
+            clearMessages();
+
             fetch('{{ path('app_user_channel_verification_send_token') }}', {
                 method: 'POST',
                 headers: {
@@ -213,12 +210,16 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        startCooldown(data.cooldown_remaining || 300);
+                    const responseData = data.data || data;
+
+console.log( responseData, responseData.data?.cooldown_remaining)
+                    if (responseData.success) {
+                        const cooldown = responseData.data?.cooldown_remaining || 300;
+                        startCooldown(cooldown);
                         showMessage('Код верификации отправлен! Проверьте ваш канал связи.', 'success');
                         tokenInput.focus();
                     } else {
-                        showMessage(data.message || 'Ошибка при отправке кода', 'error');
+                        showMessage(responseData.message || 'Ошибка при отправке кода', 'error');
                         sendTokenBtn.disabled = false;
                         sendBtnText.innerHTML = originalText;
                     }
@@ -286,11 +287,27 @@
                 </div>
             `;
 
-            const form = document.querySelector('.form-verification');
-            const existingAlerts = form.querySelectorAll('.alert');
-            existingAlerts.forEach(alert => alert.remove());
+            messagesContainer.insertBefore(alertDiv, messagesContainer.firstChild);
 
-            form.insertBefore(alertDiv, form.firstChild);
+            // Автоматическое скрытие для success сообщений
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (alertDiv.parentElement) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        function clearMessages() {
+            // Очищаем только динамически добавленные сообщения (не flash)
+            const dynamicAlerts = messagesContainer.querySelectorAll('.alert');
+            dynamicAlerts.forEach(alert => {
+                // Не удаляем flash-сообщения, которые пришли с сервера
+                if (!alert.hasAttribute('data-flash')) {
+                    alert.remove();
+                }
+            });
         }
     </script>
 
@@ -341,6 +358,16 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             vertical-align: bottom;
+        }
+
+        /* Стили для инвалидных полей (только визуальные) */
+        .is-invalid {
+            border-color: #dc3545;
+        }
+
+        .is-invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
     </style>
 {% endblock %}

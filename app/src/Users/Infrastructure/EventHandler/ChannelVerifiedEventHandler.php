@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Infrastructure\EventHandler;
 
 use App\Shared\Application\Event\EventHandlerInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Users\Domain\Event\ChannelVerifiedEvent;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Domain\Repository\UserRepositoryInterface;
@@ -25,7 +26,9 @@ readonly class ChannelVerifiedEventHandler implements EventHandlerInterface
 
         if ($channel) {
             $user = $channel->getOwner();
-            $this->emailValidator->isEmailValid($user->getEmail());
+            if (!$this->emailValidator->isEmailValid($user->getEmail())){
+                throw new AppException(sprintf("Пользователь с email `%s` не может быть активирован.", $user->getEmail()->getValue()));
+            }
             $user->makeActiveInternally();
             $this->userRepository->add($user);
         }
