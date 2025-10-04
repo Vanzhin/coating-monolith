@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Aggregate;
 
+use App\Users\Domain\Service\TokenServiceInterface;
+
 interface VerificationSubjectInterface
 {
     public function getSubjectId(): string;
 
-    public function markAsVerified(): void;
+    public function verify(TokenServiceInterface $tokenService, string $token): void;
 
     public function isVerified(): bool;
 

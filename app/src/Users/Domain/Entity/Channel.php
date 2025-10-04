@@ -7,6 +7,7 @@ namespace App\Users\Domain\Entity;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
 use App\Users\Domain\Event\ChannelVerifiedEvent;
+use App\Users\Domain\Service\TokenServiceInterface;
 use Symfony\Component\Uid\Uuid;
 
 class Channel extends Aggregate implements VerificationSubjectInterface
@@ -58,9 +59,9 @@ class Channel extends Aggregate implements VerificationSubjectInterface
         return $this->id->jsonSerialize();
     }
 
-    //todo надо бы заприватить, но тогда нужно прикручивать токен.
-    public function markAsVerified(): void
+    public function verify(TokenServiceInterface $tokenService, string $token): void
     {
+        $tokenService->verifySubjectByTokenString($token, $this);
         $this->isVerified = true;
         $this->verifiedAt = new \DateTimeImmutable();
         $this->raise(new ChannelVerifiedEvent($this->getId()));
