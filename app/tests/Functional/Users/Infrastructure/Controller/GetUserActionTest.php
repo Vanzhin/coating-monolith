@@ -10,13 +10,18 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 class GetUserActionTest extends WebTestCase
 {
     use FixtureTool;
+    
+    private $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = $this->loadUserFixture();
+    }
 
     public function test_get_user_action(): void
     {
         $client = static::createClient();
-        
-        // Загружаем фикстуру после создания клиента
-        $user = $this->loadUserFixture();
 
         $client->request('POST',
             '/api/auth/token/login',
@@ -24,8 +29,8 @@ class GetUserActionTest extends WebTestCase
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
-                'email' => $user->getEmail(),
-                'password' => $user->getPassword(),
+                'email' => $this->user->getEmail(),
+                'password' => $this->user->getPassword(),
             ])
         );
         $data = json_decode($client->getResponse()->getContent(), true);
@@ -38,10 +43,10 @@ class GetUserActionTest extends WebTestCase
         $client->setServerParameter('HTTP_AUTHORIZATION', sprintf('Bearer %s', $data['data']['token']));
 
         // act
-        $client->request('GET', '/api/users/'.$user->getUlid());
+        $client->request('GET', '/api/users/'.$this->user->getUlid());
         // assert
         $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertEquals($user->getEmail(), $data['data']['email']);
-        $this->assertEquals($user->getUlid(), $data['data']['id']);
+        $this->assertEquals($this->user->getEmail(), $data['data']['email']);
+        $this->assertEquals($this->user->getUlid(), $data['data']['id']);
     }
 }
