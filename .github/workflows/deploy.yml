@@ -237,7 +237,7 @@ jobs:
                     manager_db:
                       condition: service_healthy
                   volumes:
-                    - ./app:/app:ro
+                    - ./app:/app:rw
                   profiles:
                     - cli
               
