@@ -116,9 +116,8 @@ jobs:
         - name: Run Deptrac
           run: |
             cd app
-            echo "Skipping Deptrac for now - focusing on deployment"
-            # vendor/bin/deptrac analyse --config-file=deptrac-modules.yaml
-            # vendor/bin/deptrac analyse --config-file=deptrac-layers.yaml
+            vendor/bin/deptrac analyse --config-file=deptrac-modules.yaml
+            vendor/bin/deptrac analyse --config-file=deptrac-layers.yaml
 
         - name: Run Tests
           run: |
