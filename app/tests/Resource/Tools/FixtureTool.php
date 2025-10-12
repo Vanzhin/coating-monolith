@@ -18,11 +18,6 @@ trait FixtureTool
 
     public function loadUserFixture(): User
     {
-        // Убеждаемся, что kernel загружен
-        if (!static::$kernel) {
-            static::bootKernel();
-        }
-        
         $executor = $this->getDataBaseTool()->loadFixtures([UserFixture::class]);
 
         return $executor->getReferenceRepository()->getReference(UserFixture::REFERENCE);

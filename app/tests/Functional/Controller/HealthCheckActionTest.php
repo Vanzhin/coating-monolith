@@ -14,6 +14,8 @@ class HealthCheckActionTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $jsonResult = json_decode($client->getResponse()->getContent(), true);
-        $this->assertEquals('ok', $jsonResult['status']);
+        $this->assertEquals('success', $jsonResult['result']);
+        $this->assertEquals(200, $jsonResult['status']);
+        $this->assertEquals('ok', $jsonResult['data']['status']);
     }
 }

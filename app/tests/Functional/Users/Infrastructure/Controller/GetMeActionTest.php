@@ -14,6 +14,8 @@ class GetMeActionTest extends WebTestCase
     public function test_get_me_action(): void
     {
         $client = static::createClient();
+        
+        // Загружаем фикстуру после создания клиента
         $user = $this->loadUserFixture();
 
         $client->request('POST',
@@ -28,6 +30,7 @@ class GetMeActionTest extends WebTestCase
         );
         $data = json_decode($client->getResponse()->getContent(), true);
         
+        $this->assertIsArray($data);
         $this->assertArrayHasKey('data', $data);
         $this->assertArrayHasKey('token', $data['data']);
         $this->assertNotNull($data['data']['token']);
