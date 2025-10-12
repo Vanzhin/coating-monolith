@@ -206,6 +206,20 @@ jobs:
               # Copy to project directory
               cp /tmp/docker-compose.prod.yml /var/www/sites/1helper/docker-compose.prod.yml
               
+              # Fix permissions for deploy user
+              sudo chown deploy:deploy /var/www/sites/1helper/docker-compose.prod.yml
+              sudo chmod 644 /var/www/sites/1helper/docker-compose.prod.yml
+              
+              # Check directory permissions and fix them
+              echo "Checking project directory permissions:"
+              ls -la /var/www/sites/1helper/ | head -5
+              echo "Current user: $(whoami)"
+              echo "Current group: $(groups)"
+              
+              # Fix directory permissions for deploy user
+              sudo chown -R deploy:deploy /var/www/sites/1helper/
+              sudo chmod -R 755 /var/www/sites/1helper/
+              
               # Navigate to project directory
               cd /var/www/sites/1helper
               
