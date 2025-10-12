@@ -192,8 +192,8 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
-              # Create docker-compose.prod.yml in home directory first
-              cat > ~/docker-compose.prod.yml << 'EOF'
+              # Create docker-compose.prod.yml in /tmp directory
+              cat > /tmp/docker-compose.prod.yml << 'EOF'
               version: '3.8'
               
               services:
@@ -293,7 +293,7 @@ jobs:
               EOF
               
               # Copy file to project directory
-              cp ~/docker-compose.prod.yml ./docker-compose.prod.yml
+              cp /tmp/docker-compose.prod.yml ./docker-compose.prod.yml
               
               # Verify file was created
               ls -la docker-compose.prod.yml
