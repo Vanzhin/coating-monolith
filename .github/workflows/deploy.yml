@@ -192,11 +192,8 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
-              # Ensure we have write permissions
-              sudo chown -R deploy:deploy /var/www/sites/1helper
-              
-              # Create docker-compose.prod.yml
-              cat > docker-compose.prod.yml << 'EOF'
+              # Create docker-compose.prod.yml in home directory first
+              cat > ~/docker-compose.prod.yml << 'EOF'
               version: '3.8'
               
               services:
@@ -294,6 +291,9 @@ jobs:
                 redis_data:
                 elasticsearch_data:
               EOF
+              
+              # Copy file to project directory
+              cp ~/docker-compose.prod.yml ./docker-compose.prod.yml
               
               # Verify file was created
               ls -la docker-compose.prod.yml
