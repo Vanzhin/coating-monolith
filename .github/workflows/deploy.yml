@@ -234,7 +234,6 @@ jobs:
               
                 manager_php-cli:
                   image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
-                  command: php bin/console --no-interaction doctrine:migrations:migrate
                   depends_on:
                     manager_redis:
                       condition: service_started
@@ -242,6 +241,8 @@ jobs:
                       condition: service_healthy
                   volumes:
                     - ./app:/app:ro
+                  profiles:
+                    - cli
               
                 manager_nginx:
                   image: nginx:1.25.4-alpine
@@ -315,23 +316,23 @@ jobs:
               # Stop existing containers
               docker-compose -f docker-compose.prod.yml down
               
-              # Start containers
+              # Start main containers (without php-cli)
               docker-compose -f docker-compose.prod.yml up -d
               
               # Wait for containers to be ready
-              sleep 10
+              sleep 15
               
               # Check container status
               docker-compose -f docker-compose.prod.yml ps
               
-              # Run migrations
-              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+              # Run migrations using a temporary container
+              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
               
-              # Clear cache
-              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:clear --env=prod
+              # Clear cache using a temporary container
+              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:clear --env=prod
               
-              # Warm up cache
-              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup --env=prod
+              # Warm up cache using a temporary container
+              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:warmup --env=prod
             envs: |
               REGISTRY=${{ env.REGISTRY }}
               IMAGE_NAME=${{ env.IMAGE_NAME }}
