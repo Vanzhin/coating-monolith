@@ -4,19 +4,38 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Users\Infrastructure\Controller;
 
-use App\Tests\Resource\Tools\FixtureTool;
+use App\Users\Domain\Entity\User;
+use App\Users\Domain\Entity\ValueObject\Email;
+use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class GetUserActionTest extends WebTestCase
 {
-    use FixtureTool;
-    
-    private $user;
+    private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = $this->loadUserFixture();
+        
+        // Создаём пользователя программно
+        $this->user = new User(new Email('test@example.com'));
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $this->user->setPassword('password123', $hasher);
+        
+        // Сохраняем в базу
+        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->persist($this->user);
+        $entityManager->flush();
+    }
+
+    protected function tearDown(): void
+    {
+        // Очищаем базу после теста
+        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->remove($this->user);
+        $entityManager->flush();
+        
+        parent::tearDown();
     }
 
     public function test_get_user_action(): void
@@ -30,7 +49,7 @@ class GetUserActionTest extends WebTestCase
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
                 'email' => $this->user->getEmail(),
-                'password' => $this->user->getPassword(),
+                'password' => 'password123',
             ])
         );
         $data = json_decode($client->getResponse()->getContent(), true);
