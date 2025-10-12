@@ -195,6 +195,7 @@ jobs:
               export IMAGE_TAG="latest"
               export DOMAIN="1helper.ru"
               export HOST_NGINX="172.20.0.10"
+              export NETWORK="172.20.0.0/16"
               
               # Copy docker-compose.prod.yml from GitHub repository
               echo "Downloading docker-compose.prod.yml from repository..."
