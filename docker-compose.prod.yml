@@ -56,6 +56,9 @@ services:
   manager_nginx:
     hostname: ${DOMAIN}
     image: nginx:1.25.4
+    ports:
+      - '80:80'
+      - '443:443'
     depends_on:
       - manager_php-fpm
     volumes:
