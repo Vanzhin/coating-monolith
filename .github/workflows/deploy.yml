@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: Vanzhin/coating-monolith
+    REGISTRY: ghcr.io
+    IMAGE_NAME: vanzhin/coating-monolith
 
 jobs:
   test:
