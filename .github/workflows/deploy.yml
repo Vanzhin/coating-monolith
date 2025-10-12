@@ -1,0 +1,181 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: nikolay-vanzhin/coating-monolith
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: coating_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7.2.1
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql, zip, redis
+        coverage: none
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+
+    - name: Install Composer dependencies
+      run: |
+        cd app
+        composer install --prefer-dist --no-progress --no-suggest --no-interaction
+
+    - name: Install Node dependencies
+      run: |
+        cd app
+        npm ci
+
+    - name: Build assets
+      run: |
+        cd app
+        npm run build
+
+    - name: Create .env.test
+      run: |
+        cd app
+        cp .env .env.test
+        echo "APP_ENV=test" >> .env.test
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/coating_test" >> .env.test
+        echo "REDIS_URL=redis://localhost:6379" >> .env.test
+
+    - name: Run PHP CS Fixer
+      run: |
+        cd app
+        vendor/bin/php-cs-fixer fix --dry-run --diff
+
+    - name: Run PHPStan
+      run: |
+        cd app
+        vendor/bin/phpstan analyse --memory-limit=2G
+
+    - name: Run Deptrac
+      run: |
+        cd app
+        vendor/bin/deptrac analyse --config-file=deptrac-modules.yaml
+        vendor/bin/deptrac analyse --config-file=deptrac-layers.yaml
+
+    - name: Run Tests
+      run: |
+        cd app
+        php bin/console doctrine:database:create --env=test --if-not-exists
+        php bin/console doctrine:migrations:migrate --env=test --no-interaction
+        vendor/bin/phpunit
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker-compose.yaml
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to production
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          # Navigate to project directory
+          cd /var/www/sites/1helper
+          
+          # Pull latest image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Stop existing containers
+          docker-compose -f docker-compose.prod.yml down
+          
+          # Update docker-compose with new image
+          export IMAGE_TAG=latest
+          
+          # Start containers
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # Run migrations
+          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+          
+          # Clear cache
+          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:clear --env=prod
+          
+          # Warm up cache
+          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup --env=prod
