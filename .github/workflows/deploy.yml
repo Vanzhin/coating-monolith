@@ -182,35 +182,47 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Deploy to production
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          # Navigate to project directory
-          cd /var/www/sites/1helper
-          
-          # Pull latest images
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-cli:latest
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-supervisor:latest
-          
-          # Stop existing containers
-          docker-compose -f docker-compose.prod.yml down
-          
-          # Update docker-compose with new images
-          export IMAGE_TAG=latest
-          
-          # Start containers
-          docker-compose -f docker-compose.prod.yml up -d
-          
-          # Run migrations
-          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
-          
-          # Clear cache
-          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:clear --env=prod
-          
-          # Warm up cache
-          docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup --env=prod
+        - name: Copy files to server
+          uses: appleboy/scp-action@v0.1.7
+          with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.USERNAME }}
+            key: ${{ secrets.SSH_KEY }}
+            source: "docker-compose.prod.yml"
+            target: "/var/www/sites/1helper/"
+            
+        - name: Deploy to production
+          uses: appleboy/ssh-action@v1.0.0
+          with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.USERNAME }}
+            key: ${{ secrets.SSH_KEY }}
+            script: |
+              # Navigate to project directory
+              cd /var/www/sites/1helper
+              
+              # Pull latest images
+              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
+              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-cli:latest
+              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-supervisor:latest
+              
+              # Stop existing containers
+              docker-compose -f docker-compose.prod.yml down
+              
+              # Update docker-compose with new images
+              export IMAGE_TAG=latest
+              
+              # Start containers
+              docker-compose -f docker-compose.prod.yml up -d
+              
+              # Run migrations
+              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+              
+              # Clear cache
+              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:clear --env=prod
+              
+              # Warm up cache
+              docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup --env=prod
+            envs: |
+              REGISTRY=${{ env.REGISTRY }}
+              IMAGE_NAME=${{ env.IMAGE_NAME }}
