@@ -192,6 +192,9 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
+              # Ensure we have write permissions
+              sudo chown -R deploy:deploy /var/www/sites/1helper
+              
               # Create docker-compose.prod.yml
               cat > docker-compose.prod.yml << 'EOF'
               version: '3.8'
@@ -291,6 +294,11 @@ jobs:
                 redis_data:
                 elasticsearch_data:
               EOF
+              
+              # Verify file was created
+              ls -la docker-compose.prod.yml
+              echo "File content:"
+              head -5 docker-compose.prod.yml
               
               # Pull latest images
               docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
