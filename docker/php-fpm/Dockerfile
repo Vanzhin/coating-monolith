@@ -50,16 +50,16 @@ RUN set -xe \
         memcached \
         amqp
 
-COPY php.ini /usr/local/etc/php/php.ini
+COPY docker/php-fpm/php.ini /usr/local/etc/php/php.ini
 #RUN sed -i -e "s#TIMEZONE#$timezone#g" /usr/local/etc/php/php.ini
 
-COPY xdebug.ini /tmp/xdebug.ini
+COPY docker/php-fpm/xdebug.ini /tmp/xdebug.ini
 #RUN cat /tmp/xdebug.ini >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN cat /tmp/xdebug.ini >> /usr/local/etc/php/conf.d/xdebug.ini
 RUN rm /tmp/xdebug.ini
 
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
-ENV COMPOSER_ALLOW_SUPERUSER 1
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
 RUN mkdir -p /var/www/.composer && chown -R www-data /var/www/.composer
 
@@ -75,7 +75,7 @@ RUN chown -R www-data:www-data /app
 RUN chmod -R 755 /app
 
 # выполняю команду генерации закрытого и открытого ключей для JWT
-COPY entrypoint.sh /entrypoint.sh
+COPY docker/php-fpm/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["php-fpm"]

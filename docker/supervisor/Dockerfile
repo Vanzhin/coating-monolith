@@ -7,7 +7,7 @@ RUN apk add --update zip unzip grep wget bash supervisor
 
 RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2
 
-COPY ./conf.d/supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker/supervisor/conf.d/supervisord.conf /etc/supervisor/supervisord.conf
 RUN rm  -rf /tmp/* /var/cache/apk/*
 
 # Copy application code
@@ -16,7 +16,7 @@ COPY app /app
 
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
-ENV COMPOSER_ALLOW_SUPERUSER 1
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
