@@ -193,6 +193,8 @@ jobs:
               export REGISTRY="${{ env.REGISTRY }}"
               export IMAGE_NAME="${{ env.IMAGE_NAME }}"
               export IMAGE_TAG="latest"
+              export DOMAIN="1helper.ru"
+              export HOST_NGINX="172.20.0.10"
               
               # Check what's using port 80
               echo "Checking port 80 usage:"
@@ -240,16 +242,17 @@ jobs:
                     - cli
               
                 manager_nginx:
-                  image: nginx:1.25.4-alpine
+                  hostname: ${DOMAIN}
+                  image: nginx:1.25.4
                   depends_on:
                     - manager_php-fpm
                   volumes:
-                    - ./app:/app:ro
+                    - ./app:/app:rw
                     - ./docker/nginx/logs:/var/log/nginx:rw
                     - ./docker/nginx/hosts:/etc/nginx/conf.d
-                  ports:
-                    - "8080:80"
-                    - "8443:443"
+                  networks:
+                    default:
+                      ipv4_address: ${HOST_NGINX}
               
                 manager_redis:
                   image: redis:7.2.1-alpine
@@ -295,6 +298,13 @@ jobs:
                 db_data:
                 redis_data:
                 elasticsearch_data:
+              
+              networks:
+                default:
+                  driver: bridge
+                  ipam:
+                    config:
+                      - subnet: 172.20.0.0/16
               EOF
               
               # Copy to project directory
