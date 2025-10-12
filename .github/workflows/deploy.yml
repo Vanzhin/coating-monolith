@@ -70,6 +70,13 @@ jobs:
         APP_NAME="Покрытия-монолит"
         DEFAULT_FROM_ADDR=noreply@test.com
         DEFAULT_FROM_NAME="Покрытия-монолит"
+        TELEGRAM_BOT_TOKEN=test_telegram_token
+        SMS_API_KEY=test_sms_api_key
+        SMS_API_URL=https://test-sms-provider.com/api/send
+        SMS_SENDER_NAME=TestApp
+        LOG_TELEGRAM_BOT_KEY=test_log_telegram_bot_key
+        LOG_TELEGRAM_CHANNEL=test_log_telegram_channel
+        ELASTIC_DSN=http://localhost:9200
         EOF
 
     - name: Install Composer dependencies
