@@ -27,6 +27,10 @@ class GetMeActionTest extends WebTestCase
             ])
         );
         $data = json_decode($client->getResponse()->getContent(), true);
+        
+        $this->assertArrayHasKey('data', $data);
+        $this->assertArrayHasKey('token', $data['data']);
+        $this->assertNotNull($data['data']['token']);
 
         $client->setServerParameter('HTTP_AUTHORIZATION', sprintf('Bearer %s', $data['data']['token']));
 
