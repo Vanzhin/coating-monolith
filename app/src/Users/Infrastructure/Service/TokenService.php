@@ -7,9 +7,9 @@ namespace App\Users\Infrastructure\Service;
 use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
-use App\Users\Domain\Entity\Token;
+use App\Shared\Domain\Service\Token;
 use App\Users\Domain\Repository\TokenRepositoryInterface;
-use App\Users\Domain\Service\TokenServiceInterface;
+use App\Shared\Domain\Service\TokenServiceInterface;
 use Random\RandomException;
 
 class TokenService implements TokenServiceInterface

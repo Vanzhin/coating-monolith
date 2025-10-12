@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Aggregate;
 
-use App\Users\Domain\Service\TokenServiceInterface;
+use App\Shared\Domain\Service\TokenServiceInterface;
 
 interface VerificationSubjectInterface
 {

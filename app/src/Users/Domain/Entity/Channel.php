@@ -7,7 +7,7 @@ namespace App\Users\Domain\Entity;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
 use App\Users\Domain\Event\ChannelVerifiedEvent;
-use App\Users\Domain\Service\TokenServiceInterface;
+use App\Shared\Domain\Service\TokenServiceInterface;
 use Symfony\Component\Uid\Uuid;
 
 class Channel extends Aggregate implements VerificationSubjectInterface
