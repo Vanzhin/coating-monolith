@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 REGISTRY="ghcr.io"
-IMAGE_NAME="nikolay-vanzhin/coating-monolith"
+IMAGE_NAME="Vanzhin/coating-monolith"
 IMAGE_TAG="latest"
 
 # Check if required environment variables are set

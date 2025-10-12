@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nikolay-vanzhin/coating-monolith
+  IMAGE_NAME: Vanzhin/coating-monolith
 
 jobs:
   test:

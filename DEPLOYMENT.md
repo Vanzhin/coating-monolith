@@ -38,7 +38,7 @@ cd /var/www/sites/1helper
 
 #### Клонирование репозитория:
 ```bash
-git clone https://github.com/nikolay-vanzhin/coating-monolith.git .
+git clone https://github.com/Vanzhin/coating-monolith.git .
 ```
 
 #### Настройка переменных окружения:
@@ -129,7 +129,7 @@ docker-compose -f docker-compose.prod.yml logs manager_nginx
 ### Откат к предыдущей версии:
 ```bash
 # Получить список образов
-docker images | grep coating-monolith
+docker images | grep Vanzhin/coating-monolith
 
 # Остановить текущие контейнеры
 docker-compose -f docker-compose.prod.yml down
