@@ -189,10 +189,13 @@ jobs:
             username: ${{ secrets.USERNAME }}
             key: ${{ secrets.SSH_KEY }}
             script: |
+              # Set environment variables
+              export REGISTRY="${{ env.REGISTRY }}"
+              export IMAGE_NAME="${{ env.IMAGE_NAME }}"
+              export IMAGE_TAG="latest"
+              
               # Copy docker-compose.prod.yml to server
               cat > /tmp/docker-compose.prod.yml << 'EOF'
-              version: '3.8'
-              
               services:
                 manager_php-fpm:
                   image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
@@ -296,15 +299,12 @@ jobs:
               cd /var/www/sites/1helper
               
               # Pull latest images
-              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
-              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-cli:latest
-              docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-supervisor:latest
+              docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
+              docker pull ${REGISTRY}/${IMAGE_NAME}-php-cli:latest
+              docker pull ${REGISTRY}/${IMAGE_NAME}-supervisor:latest
               
               # Stop existing containers
               docker-compose -f docker-compose.prod.yml down
-              
-              # Update docker-compose with new images
-              export IMAGE_TAG=latest
               
               # Start containers
               docker-compose -f docker-compose.prod.yml up -d
