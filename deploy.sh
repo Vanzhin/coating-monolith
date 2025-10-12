@@ -26,8 +26,10 @@ if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_NAME" ]; then
     exit 1
 fi
 
-echo -e "${YELLOW}📦 Pulling latest image...${NC}"
-docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+echo -e "${YELLOW}📦 Pulling latest images...${NC}"
+docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG}
+docker pull ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG}
+docker pull ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG}
 
 echo -e "${YELLOW}🛑 Stopping existing containers...${NC}"
 docker-compose -f docker-compose.prod.yml down

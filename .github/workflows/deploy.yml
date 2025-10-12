@@ -125,6 +125,10 @@ jobs:
       contents: read
       packages: write
 
+    strategy:
+      matrix:
+        service: [php-fpm, php-cli, supervisor]
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -140,7 +144,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -153,8 +157,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: ./Dockerfile
+        context: ./docker/${{ matrix.service }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -178,13 +181,15 @@ jobs:
           # Navigate to project directory
           cd /var/www/sites/1helper
           
-          # Pull latest image
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Pull latest images
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-cli:latest
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-supervisor:latest
           
           # Stop existing containers
           docker-compose -f docker-compose.prod.yml down
           
-          # Update docker-compose with new image
+          # Update docker-compose with new images
           export IMAGE_TAG=latest
           
           # Start containers
