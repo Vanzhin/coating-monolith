@@ -192,9 +192,8 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
-              # Create docker-compose.prod.yml if it doesn't exist
-              if [ ! -f docker-compose.prod.yml ]; then
-                cat > docker-compose.prod.yml << 'EOF'
+              # Create docker-compose.prod.yml
+              cat > docker-compose.prod.yml << 'EOF'
               version: '3.8'
               
               services:
@@ -292,7 +291,6 @@ jobs:
                 redis_data:
                 elasticsearch_data:
               EOF
-              fi
               
               # Pull latest images
               docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
