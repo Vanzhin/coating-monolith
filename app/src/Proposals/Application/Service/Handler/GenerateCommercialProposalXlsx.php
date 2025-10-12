@@ -8,6 +8,7 @@ use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Domain\Aggregate\ProposalDocument\ProposalDocument;
 use App\Proposals\Domain\Service\CoatingsServiceInterface;
+use App\Proposals\Domain\Service\CoatingData;
 use App\Shared\Domain\Service\AssertService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -70,37 +71,39 @@ class GenerateCommercialProposalXlsx
                 if ($cell->getValue() === 'Материалы') {
                     /** @var GeneralProposalInfoItem $coat */
                     foreach ($document->getProposalInfo()->getCoats() as $coat) {
-                        $dto = $this->coatingsService->getCoating($coat->getCoatId())->coatingDTO;
-                        AssertService::notNull($dto, 'Одно из покрытий формы не найдено.');
-                        $coatsTitleData[] = [$dto->title, '- ' . mb_substr($dto->description, 0, 100)];
+                        $coatingResult = $this->coatingsService->getCoating($coat->getCoatId());
+                        AssertService::notNull($coatingResult->coatingData, 'Одно из покрытий формы не найдено.');
+                        
+                        $coatingData = $coatingResult->coatingData;
+                        $coatsTitleData[] = [$coatingData->title, '- ' . mb_substr($coatingData->description, 0, 100)];
 
                         $coatsCalcData[] = [
-                            $dto->title,
+                            $coatingData->title,
                             $coat->getCoatColor(),
                             $coat->getCoatDft(),
-                            $dto->volumeSolid,
+                            $coatingData->volumeSolid,
                             $tsr = $this->calculateSpreadingRate(
                                 $coat->getCoatDft(),
-                                $dto->volumeSolid,
-                                $dto->massDensity,
+                                $coatingData->volumeSolid,
+                                $coatingData->massDensity,
                                 $document->getProposalInfo()->getUnit(),
                             ),
                             $psr = $this->calculateSpreadingRate(
                                 $coat->getCoatDft(),
-                                $dto->volumeSolid,
-                                $dto->massDensity,
+                                $coatingData->volumeSolid,
+                                $coatingData->massDensity,
                                 $document->getProposalInfo()->getUnit(),
                                 $document->getProposalInfo()->getLoss()
                             ),
                             $coat->getCoatPrice(),
                             $theoreticalPricePerSqMeter = $coat->getCoatPrice() * $tsr,
                             $practicalPricePerSqMeter = $coat->getCoatPrice() * $psr,
-                            $quantity = ceil($document->getProposalInfo()->getProjectArea() * $psr / $dto->pack) * $dto->pack,
+                            $quantity = ceil($document->getProposalInfo()->getProjectArea() * $psr / $coatingData->pack) * $coatingData->pack,
                             $coatPrice = $coat->getCoatPrice() * $quantity
 
                         ];
                         $thinnerData[] = [
-                            'Разбавитель ' . $dto->thinner . ' для ' . $dto->title,
+                            'Разбавитель ' . $coatingData->thinner . ' для ' . $coatingData->title,
                             null, null, null,
                             $coat->getThinnerConsumption() / 100,
                             null, null,
