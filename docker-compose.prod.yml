@@ -45,19 +45,20 @@ services:
       manager_db:
         condition: service_healthy
     volumes:
-      - ./app:/app:ro
+      - ./app:/app:rw
 
   manager_nginx:
-    image: nginx:1.25.4-alpine
+    hostname: ${DOMAIN}
+    image: nginx:1.25.4
     depends_on:
       - manager_php-fpm
     volumes:
-      - ./app:/app:ro
+      - ./app:/app:rw
       - ./docker/nginx/logs:/var/log/nginx:rw
       - ./docker/nginx/hosts:/etc/nginx/conf.d
-    ports:
-      - "80:80"
-      - "443:443"
+    networks:
+      default:
+        ipv4_address: ${HOST_NGINX}
 
   manager_redis:
     image: redis:7.2.1-alpine
@@ -103,3 +104,9 @@ volumes:
   db_data:
   redis_data:
   elasticsearch_data:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${NETWORK}
