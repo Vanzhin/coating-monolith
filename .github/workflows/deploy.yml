@@ -198,8 +198,7 @@ jobs:
               echo "Checking port 80 usage:"
               sudo netstat -tlnp | grep :80 || echo "Port 80 not in use"
               
-              # Stop any existing nginx/apache services
-              sudo systemctl stop nginx 2>/dev/null || echo "nginx not running"
+              # Stop only conflicting services (not nginx)
               sudo systemctl stop apache2 2>/dev/null || echo "apache2 not running"
               sudo systemctl stop httpd 2>/dev/null || echo "httpd not running"
               
@@ -253,8 +252,8 @@ jobs:
                     - ./docker/nginx/logs:/var/log/nginx:rw
                     - ./docker/nginx/hosts:/etc/nginx/conf.d
                   ports:
-                    - "80:80"
-                    - "443:443"
+                    - "8080:80"
+                    - "8443:443"
               
                 manager_redis:
                   image: redis:7.2.1-alpine
@@ -321,6 +320,33 @@ jobs:
               
               # Wait for containers to be ready
               sleep 15
+              
+              # Configure system nginx as reverse proxy
+              echo "Configuring system nginx as reverse proxy..."
+              sudo tee /etc/nginx/sites-available/coating-monolith << 'EOF'
+              server {
+                  listen 80;
+                  server_name 1helper.ru www.1helper.ru;
+                  
+                  location / {
+                      proxy_pass http://localhost:8080;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }
+              EOF
+              
+              # Enable the site
+              sudo ln -sf /etc/nginx/sites-available/coating-monolith /etc/nginx/sites-enabled/
+              sudo rm -f /etc/nginx/sites-enabled/default
+              
+              # Test nginx configuration
+              sudo nginx -t
+              
+              # Restart system nginx
+              sudo systemctl restart nginx
               
               # Check container status
               docker-compose -f docker-compose.prod.yml ps
