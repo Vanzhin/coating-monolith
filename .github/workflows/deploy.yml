@@ -325,14 +325,20 @@ jobs:
               # Check container status
               docker-compose -f docker-compose.prod.yml ps
               
+              # Verify app directory and console file
+              echo "Checking app directory structure:"
+              ls -la /var/www/sites/1helper/app/ | head -10
+              echo "Checking console file:"
+              ls -la /var/www/sites/1helper/app/bin/console || echo "Console file not found"
+              
               # Run migrations using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
               
               # Clear cache using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:clear --env=prod
+              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:clear --env=prod
               
               # Warm up cache using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:warmup --env=prod
+              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:warmup --env=prod
             envs: |
               REGISTRY=${{ env.REGISTRY }}
               IMAGE_NAME=${{ env.IMAGE_NAME }}
