@@ -26,6 +26,7 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
+    command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
       - ./app:/app:rw
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
