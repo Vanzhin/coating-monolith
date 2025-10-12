@@ -182,6 +182,16 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
+        - name: Copy docker-compose.prod.yml to server
+          uses: appleboy/scp-action@v0.1.7
+          with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.USERNAME }}
+            key: ${{ secrets.SSH_KEY }}
+            source: "docker-compose.prod.yml"
+            target: "/var/www/sites/1helper/"
+            overwrite: true
+            
         - name: Deploy to production
           uses: appleboy/ssh-action@v1.0.0
           with:
@@ -195,120 +205,6 @@ jobs:
               export IMAGE_TAG="latest"
               export DOMAIN="1helper.ru"
               export HOST_NGINX="172.20.0.10"
-              
-              # Check what's using port 80
-              echo "Checking port 80 usage:"
-              sudo netstat -tlnp | grep :80 || echo "Port 80 not in use"
-              
-              # Copy docker-compose.prod.yml to server
-              cat > /tmp/docker-compose.prod.yml << 'EOF'
-              services:
-                manager_php-fpm:
-                  image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
-                  environment:
-                    - APP_ENV=prod
-                    - APP_DEBUG=0
-                  volumes:
-                    - ./app:/app:ro
-                  depends_on:
-                    manager_redis:
-                      condition: service_started
-                    manager_db:
-                      condition: service_healthy
-              
-                manager_supervisor:
-                  image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG:-latest}
-                  restart: always
-                  depends_on:
-                    manager_redis:
-                      condition: service_started
-                    manager_db:
-                      condition: service_healthy
-                  volumes:
-                    - ./app:/app:ro
-                    - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
-                    - ./docker/supervisor/log:/var/log/supervisor
-              
-                manager_php-cli:
-                  image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
-                  depends_on:
-                    manager_redis:
-                      condition: service_started
-                    manager_db:
-                      condition: service_healthy
-                  volumes:
-                    - ./app:/app:rw
-                  profiles:
-                    - cli
-              
-                manager_nginx:
-                  hostname: ${DOMAIN}
-                  image: nginx:1.25.4
-                  depends_on:
-                    - manager_php-fpm
-                  volumes:
-                    - ./app:/app:rw
-                    - ./docker/nginx/logs:/var/log/nginx:rw
-                    - ./docker/nginx/hosts:/etc/nginx/conf.d
-                  networks:
-                    default:
-                      ipv4_address: ${HOST_NGINX}
-              
-                manager_redis:
-                  image: redis:7.2.1-alpine
-                  restart: always
-                  volumes:
-                    - redis_data:/data
-              
-                manager_db:
-                  image: postgres:17-alpine
-                  restart: always
-                  environment:
-                    POSTGRES_USER: ${DB_USER}
-                    POSTGRES_PASSWORD: ${DB_PASSWORD}
-                    POSTGRES_DB: ${DB_NAME}
-                  volumes:
-                    - db_data:/var/lib/postgresql/data
-                  healthcheck:
-                    test: ["CMD", "pg_isready", "-q", "-d", "${DB_NAME}", "-U", "${DB_USER}"]
-                    timeout: 45s
-                    interval: 10s
-                    retries: 10
-              
-                elasticsearch:
-                  image: elasticsearch:9.0.1
-                  environment:
-                    - discovery.type=single-node
-                    - cluster.name=docker-cluster
-                    - network.host=0.0.0.0
-                    - bootstrap.memory_lock=true
-                    - xpack.security.enabled=false
-                  ulimits:
-                    memlock:
-                      soft: -1
-                      hard: -1
-                  deploy:
-                    resources:
-                      limits:
-                        memory: 4GB
-                  volumes:
-                    - elasticsearch_data:/usr/share/elasticsearch/data
-              
-              volumes:
-                db_data:
-                redis_data:
-                elasticsearch_data:
-              
-              networks:
-                default:
-                  driver: bridge
-                  ipam:
-                    config:
-                      - subnet: 172.20.0.0/16
-              EOF
-              
-              # Copy to project directory
-              cp /tmp/docker-compose.prod.yml /var/www/sites/1helper/docker-compose.prod.yml
               
               # Navigate to project directory
               cd /var/www/sites/1helper
