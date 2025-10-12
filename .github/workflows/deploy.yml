@@ -194,6 +194,15 @@ jobs:
               export IMAGE_NAME="${{ env.IMAGE_NAME }}"
               export IMAGE_TAG="latest"
               
+              # Check what's using port 80
+              echo "Checking port 80 usage:"
+              sudo netstat -tlnp | grep :80 || echo "Port 80 not in use"
+              
+              # Stop any existing nginx/apache services
+              sudo systemctl stop nginx 2>/dev/null || echo "nginx not running"
+              sudo systemctl stop apache2 2>/dev/null || echo "apache2 not running"
+              sudo systemctl stop httpd 2>/dev/null || echo "httpd not running"
+              
               # Copy docker-compose.prod.yml to server
               cat > /tmp/docker-compose.prod.yml << 'EOF'
               services:
@@ -308,6 +317,12 @@ jobs:
               
               # Start containers
               docker-compose -f docker-compose.prod.yml up -d
+              
+              # Wait for containers to be ready
+              sleep 10
+              
+              # Check container status
+              docker-compose -f docker-compose.prod.yml ps
               
               # Run migrations
               docker-compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
