@@ -68,7 +68,7 @@ WORKDIR /app
 COPY app /app
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Set proper permissions
 RUN chown -R www-data:www-data /app

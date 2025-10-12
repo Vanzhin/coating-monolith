@@ -19,7 +19,7 @@ COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Set proper permissions
 RUN chown -R root:root /app
