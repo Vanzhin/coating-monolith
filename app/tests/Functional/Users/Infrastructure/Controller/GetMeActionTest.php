@@ -13,34 +13,19 @@ class GetMeActionTest extends WebTestCase
 {
     private User $user;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Создаём пользователя программно
-        $this->user = new User(new Email('test@example.com'));
-        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        $this->user->setPassword('password123', $hasher);
-        
-        // Сохраняем в базу
-        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
-        $entityManager->persist($this->user);
-        $entityManager->flush();
-    }
-
-    protected function tearDown(): void
-    {
-        // Очищаем базу после теста
-        $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
-        $entityManager->remove($this->user);
-        $entityManager->flush();
-        
-        parent::tearDown();
-    }
-
     public function test_get_me_action(): void
     {
         $client = static::createClient();
+        
+        // Создаём пользователя после создания клиента
+        $this->user = new User(new Email('test@example.com'));
+        $hasher = $client->getContainer()->get(UserPasswordHasherInterface::class);
+        $this->user->setPassword('password123', $hasher);
+        
+        // Сохраняем в базу
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+        $entityManager->persist($this->user);
+        $entityManager->flush();
 
         $client->request('POST',
             '/api/auth/token/login',
@@ -66,5 +51,9 @@ class GetMeActionTest extends WebTestCase
         // assert
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertEquals($this->user->getEmail(), $data['data']['email']);
+        
+        // Очищаем базу
+        $entityManager->remove($this->user);
+        $entityManager->flush();
     }
 }
