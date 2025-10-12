@@ -9,3 +9,14 @@ RUN apk add --update zip unzip grep wget bash git openssh
 
 RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2 @composer
 RUN rm  -rf /tmp/* /var/cache/apk/*
+
+# Copy application code
+WORKDIR /app
+COPY ../../app /app
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Set proper permissions
+RUN chown -R root:root /app
+RUN chmod -R 755 /app

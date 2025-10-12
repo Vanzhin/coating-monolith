@@ -62,7 +62,18 @@ COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
 RUN mkdir -p /var/www/.composer && chown -R www-data /var/www/.composer
-#WORKDIR /app
+
+# Copy application code
+WORKDIR /app
+COPY ../../app /app
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Set proper permissions
+RUN chown -R www-data:www-data /app
+RUN chmod -R 755 /app
+
 # выполняю команду генерации закрытого и открытого ключей для JWT
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
