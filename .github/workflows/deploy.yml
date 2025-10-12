@@ -55,6 +55,23 @@ jobs:
         cache: 'npm'
         cache-dependency-path: app/package-lock.json
 
+    - name: Create .env file
+      run: |
+        cd app
+        cat > .env << 'EOF'
+        APP_ENV=dev
+        APP_SECRET=test_secret_key_for_ci_cd_pipeline
+        DATABASE_URL=postgresql://postgres:postgres@localhost:5432/coating_test
+        REDIS_URL=redis://localhost:6379
+        MAILER_DSN=null://null
+        JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+        JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+        JWT_PASSPHRASE=test_jwt_passphrase
+        APP_NAME="Покрытия-монолит"
+        DEFAULT_FROM_ADDR=noreply@test.com
+        DEFAULT_FROM_NAME="Покрытия-монолит"
+        EOF
+
     - name: Install Composer dependencies
       run: |
         cd app
@@ -74,9 +91,7 @@ jobs:
       run: |
         cd app
         cp .env .env.test
-        echo "APP_ENV=test" >> .env.test
-        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/coating_test" >> .env.test
-        echo "REDIS_URL=redis://localhost:6379" >> .env.test
+        sed -i 's/APP_ENV=dev/APP_ENV=test/' .env.test
 
     - name: Run PHP CS Fixer
       run: |
