@@ -182,15 +182,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-        - name: Copy files to server
-          uses: appleboy/scp-action@v0.1.7
-          with:
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.USERNAME }}
-            key: ${{ secrets.SSH_KEY }}
-            source: "docker-compose.prod.yml"
-            target: "/var/www/sites/1helper/"
-            
         - name: Deploy to production
           uses: appleboy/ssh-action@v1.0.0
           with:
@@ -200,6 +191,108 @@ jobs:
             script: |
               # Navigate to project directory
               cd /var/www/sites/1helper
+              
+              # Create docker-compose.prod.yml if it doesn't exist
+              if [ ! -f docker-compose.prod.yml ]; then
+                cat > docker-compose.prod.yml << 'EOF'
+              version: '3.8'
+              
+              services:
+                manager_php-fpm:
+                  image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
+                  environment:
+                    - APP_ENV=prod
+                    - APP_DEBUG=0
+                  volumes:
+                    - ./app:/app:ro
+                  depends_on:
+                    manager_redis:
+                      condition: service_started
+                    manager_db:
+                      condition: service_healthy
+              
+                manager_supervisor:
+                  image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG:-latest}
+                  restart: always
+                  depends_on:
+                    manager_redis:
+                      condition: service_started
+                    manager_db:
+                      condition: service_healthy
+                  volumes:
+                    - ./app:/app:ro
+                    - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
+                    - ./docker/supervisor/log:/var/log/supervisor
+              
+                manager_php-cli:
+                  image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
+                  command: php bin/console --no-interaction doctrine:migrations:migrate
+                  depends_on:
+                    manager_redis:
+                      condition: service_started
+                    manager_db:
+                      condition: service_healthy
+                  volumes:
+                    - ./app:/app:ro
+              
+                manager_nginx:
+                  image: nginx:1.25.4-alpine
+                  depends_on:
+                    - manager_php-fpm
+                  volumes:
+                    - ./app:/app:ro
+                    - ./docker/nginx/logs:/var/log/nginx:rw
+                    - ./docker/nginx/hosts:/etc/nginx/conf.d
+                  ports:
+                    - "80:80"
+                    - "443:443"
+              
+                manager_redis:
+                  image: redis:7.2.1-alpine
+                  restart: always
+                  volumes:
+                    - redis_data:/data
+              
+                manager_db:
+                  image: postgres:17-alpine
+                  restart: always
+                  environment:
+                    POSTGRES_USER: ${DB_USER}
+                    POSTGRES_PASSWORD: ${DB_PASSWORD}
+                    POSTGRES_DB: ${DB_NAME}
+                  volumes:
+                    - db_data:/var/lib/postgresql/data
+                  healthcheck:
+                    test: ["CMD", "pg_isready", "-q", "-d", "${DB_NAME}", "-U", "${DB_USER}"]
+                    timeout: 45s
+                    interval: 10s
+                    retries: 10
+              
+                elasticsearch:
+                  image: elasticsearch:9.0.1
+                  environment:
+                    - discovery.type=single-node
+                    - cluster.name=docker-cluster
+                    - network.host=0.0.0.0
+                    - bootstrap.memory_lock=true
+                    - xpack.security.enabled=false
+                  ulimits:
+                    memlock:
+                      soft: -1
+                      hard: -1
+                  deploy:
+                    resources:
+                      limits:
+                        memory: 4GB
+                  volumes:
+                    - elasticsearch_data:/usr/share/elasticsearch/data
+              
+              volumes:
+                db_data:
+                redis_data:
+                elasticsearch_data:
+              EOF
+              fi
               
               # Pull latest images
               docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm:latest
