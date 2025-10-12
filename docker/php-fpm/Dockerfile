@@ -65,7 +65,7 @@ RUN mkdir -p /var/www/.composer && chown -R www-data /var/www/.composer
 
 # Copy application code
 WORKDIR /app
-COPY ../../app /app
+COPY app /app
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction

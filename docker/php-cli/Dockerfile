@@ -12,7 +12,7 @@ RUN rm  -rf /tmp/* /var/cache/apk/*
 
 # Copy application code
 WORKDIR /app
-COPY ../../app /app
+COPY app /app
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
