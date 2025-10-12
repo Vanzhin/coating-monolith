@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Documents\Domain\Service;
 
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
-use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTO;
+use App\Proposals\Domain\Service\GeneralProposalInfoItemDataInterface;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 use App\Proposals\Domain\Factory\GeneralProposalInfoFactory;
 use App\Proposals\Domain\Factory\GeneralProposalInfoItemFactory;
@@ -53,19 +53,19 @@ final readonly class DocumentMaker
             $loss,
         );
 
-        /** @var GeneralProposalInfoItemDTO $coat */
+        /** @var GeneralProposalInfoItemDataInterface $coat */
         foreach ($coats as $coat) {
             $generalProposalInfo->addItem(
                 $this->generalProposalInfoItemFactory->create(
-                    $coat->coatId,
-                    $coat->coatNumber,
-                    $coat->coatPrice,
-                    $coat->coatDft,
-                    $coat->coatColor,
-                    $coat->thinnerPrice,
-                    $coat->thinnerConsumption,
+                    $coat->getCoatId(),
+                    $coat->getCoatNumber(),
+                    $coat->getCoatPrice(),
+                    $coat->getCoatDft(),
+                    $coat->getCoatColor(),
+                    $coat->getThinnerPrice(),
+                    $coat->getThinnerConsumption(),
                     $generalProposalInfo,
-                    $coat->loss
+                    $coat->getLoss()
                 )
             );
         }

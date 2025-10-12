@@ -6,8 +6,9 @@ namespace App\Proposals\Infrastructure\Adapter;
 
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
+use App\Proposals\Domain\Service\CoatingsServiceInterface;
 
-readonly class CoatingsAdapter
+readonly class CoatingsAdapter implements CoatingsServiceInterface
 {
     public function __construct(private CoatingsApiInterface $coatingsApi)
     {

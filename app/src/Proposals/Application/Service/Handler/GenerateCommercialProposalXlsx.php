@@ -7,7 +7,7 @@ namespace App\Proposals\Application\Service\Handler;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Domain\Aggregate\ProposalDocument\ProposalDocument;
-use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
+use App\Proposals\Domain\Service\CoatingsServiceInterface;
 use App\Shared\Domain\Service\AssertService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -29,8 +29,8 @@ class GenerateCommercialProposalXlsx
     private float $grandTotal = 0;
 
     public function __construct(
-        private readonly CoatingsAdapter $adapter,
-        private readonly string          $pathToDirectory,
+        private readonly CoatingsServiceInterface $coatingsService,
+        private readonly string                   $pathToDirectory,
     )
     {
     }
@@ -70,7 +70,7 @@ class GenerateCommercialProposalXlsx
                 if ($cell->getValue() === 'Материалы') {
                     /** @var GeneralProposalInfoItem $coat */
                     foreach ($document->getProposalInfo()->getCoats() as $coat) {
-                        $dto = $this->adapter->getCoating($coat->getCoatId())->coatingDTO;
+                        $dto = $this->coatingsService->getCoating($coat->getCoatId())->coatingDTO;
                         AssertService::notNull($dto, 'Одно из покрытий формы не найдено.');
                         $coatsTitleData[] = [$dto->title, '- ' . mb_substr($dto->description, 0, 100)];
 

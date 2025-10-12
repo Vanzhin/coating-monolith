@@ -5,13 +5,13 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateManufacturer;
 
-use App\Coatings\Infrastructure\Repository\ManufacturerRepository;
+use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 
 readonly class UpdateManufacturerCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private ManufacturerRepository $manufacturerRepository
+        private ManufacturerRepositoryInterface $manufacturerRepository
     )
     {
     }
