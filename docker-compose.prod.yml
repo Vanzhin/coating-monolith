@@ -51,6 +51,8 @@ services:
     working_dir: /app
     image: redis:7.2.1
     restart: always
+    volumes:
+      - redis_data:/data
 
   manager_db:
     image: postgres:17-alpine
@@ -65,6 +67,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
 
   elasticsearch:
