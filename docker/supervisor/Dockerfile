@@ -17,7 +17,16 @@ COPY app /app
 # Create production .env file
 RUN echo "APP_ENV=prod" > /app/.env && \
     echo "APP_DEBUG=0" >> /app/.env && \
-    echo "APP_SECRET=your-secret-key-here" >> /app/.env
+    echo "APP_SECRET=your-secret-key-here" >> /app/.env && \
+    echo "LOG_TELEGRAM_BOT_KEY=" >> /app/.env && \
+    echo "LOG_TELEGRAM_CHAT_ID=" >> /app/.env && \
+    echo "DB_HOST=manager_db" >> /app/.env && \
+    echo "DB_PORT=5432" >> /app/.env && \
+    echo "DB_NAME=coating" >> /app/.env && \
+    echo "DB_USER=postgres" >> /app/.env && \
+    echo "DB_PASSWORD=password" >> /app/.env && \
+    echo "REDIS_URL=redis://manager_redis:6379" >> /app/.env && \
+    echo "ELASTIC_DSN=http://app_elastic:9200" >> /app/.env
 
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
@@ -25,6 +34,10 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Create cache directory
+RUN mkdir -p /app/var/cache/prod && \
+    mkdir -p /app/var/log
 
 # Set proper permissions
 RUN chown -R root:root /app
