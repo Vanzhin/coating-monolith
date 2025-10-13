@@ -95,9 +95,9 @@ jobs:
         JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
         JWT_PUBLIC_KEY=${{ env.JWT_PUBLIC_KEY }}
         JWT_PASSPHRASE=${{ env.JWT_PASSPHRASE }}
-        APP_NAME=${{ env.APP_NAME }}
-        DEFAULT_FROM_ADDR=${{ env.DEFAULT_FROM_ADDR }}
-        DEFAULT_FROM_NAME=${{ env.DEFAULT_FROM_NAME }}
+        APP_NAME="${{ env.APP_NAME }}"
+        DEFAULT_FROM_ADDR="${{ env.DEFAULT_FROM_ADDR }}"
+        DEFAULT_FROM_NAME="${{ env.DEFAULT_FROM_NAME }}"
         LOG_TELEGRAM_BOT_KEY=${{ env.LOG_TELEGRAM_BOT_KEY }}
         LOG_TELEGRAM_CHANNEL=${{ env.LOG_TELEGRAM_CHANNEL }}
         ELASTIC_DSN=${{ env.ELASTIC_DSN }}
