@@ -3,28 +3,19 @@ services:
   manager_php-fpm:
     hostname: ${DOMAIN}
     image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
-    build:
-      context: docker/php-fpm
-      dockerfile: Dockerfile
     environment:
       - APP_ENV=prod
       - APP_DEBUG=0
-    volumes:
-      - ./app:/app:rw
     depends_on:
       manager_redis:
         condition: service_started
       manager_db:
         condition: service_healthy
-    working_dir: /app
 
   manager_supervisor:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG:-latest}
-    build:
-      context: docker/supervisor
-      dockerfile: Dockerfile
     restart: always
     depends_on:
       manager_redis:
@@ -32,36 +23,23 @@ services:
       manager_db:
         condition: service_healthy
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
-    volumes:
-      - ./app:/app:rw
-      - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
-      - ./docker/supervisor/log:/var/log/supervisor
 
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
-    build:
-      context: docker/php-cli
-      dockerfile: Dockerfile
     command: php bin/console --no-interaction doctrine:migrations:migrate
     depends_on:
       manager_redis:
         condition: service_started
       manager_db:
         condition: service_healthy
-    volumes:
-      - ./app:/app:rw
 
   manager_nginx:
     hostname: ${DOMAIN}
     image: nginx:1.25.4
     depends_on:
       - manager_php-fpm
-    volumes:
-      - ./app:/app:rw
-      - ./docker/nginx/logs:/var/log/nginx:rw
-      - ./docker/nginx/hosts:/etc/nginx/conf.d
     networks:
       default:
         ipv4_address: ${HOST_NGINX}
@@ -71,8 +49,6 @@ services:
     working_dir: /app
     image: redis:7.2.1
     restart: always
-    volumes:
-      - redis_data:/data
 
   manager_db:
     image: postgres:17-alpine
@@ -87,8 +63,6 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    volumes:
-      - db_data:/var/lib/postgresql/data
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
 
   elasticsearch:

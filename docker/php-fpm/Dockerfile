@@ -67,6 +67,11 @@ RUN mkdir -p /var/www/.composer && chown -R www-data /var/www/.composer
 WORKDIR /app
 COPY app /app
 
+# Create production .env file
+RUN echo "APP_ENV=prod" > /app/.env && \
+    echo "APP_DEBUG=0" >> /app/.env && \
+    echo "APP_SECRET=your-secret-key-here" >> /app/.env
+
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 

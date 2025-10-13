@@ -14,6 +14,11 @@ RUN rm  -rf /tmp/* /var/cache/apk/*
 WORKDIR /app
 COPY app /app
 
+# Create production .env file
+RUN echo "APP_ENV=prod" > /app/.env && \
+    echo "APP_DEBUG=0" >> /app/.env && \
+    echo "APP_SECRET=your-secret-key-here" >> /app/.env
+
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
