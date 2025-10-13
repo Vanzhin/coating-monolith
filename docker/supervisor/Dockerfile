@@ -77,5 +77,7 @@ RUN mkdir -p /var/log/supervisor
 RUN chown -R root:root /app
 RUN chmod -R 755 /app
 
-RUN echo user=root >>  /etc/supervisor/supervisord.conf
+# Configure supervisor to run as root (default)
+RUN echo "[supervisord]" >> /etc/supervisor/supervisord.conf && \
+    echo "user=root" >> /etc/supervisor/supervisord.conf
 CMD ["/usr/bin/supervisord"]
