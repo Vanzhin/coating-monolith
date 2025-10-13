@@ -69,6 +69,9 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 RUN mkdir -p /app/var/cache/prod && \
     mkdir -p /app/var/log
 
+# Create supervisor log directory
+RUN mkdir -p /var/log/supervisor
+
 # Set proper permissions
 RUN chown -R root:root /app
 RUN chmod -R 755 /app
