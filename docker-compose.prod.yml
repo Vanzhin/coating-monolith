@@ -6,6 +6,13 @@ services:
     environment:
       - APP_ENV=prod
       - APP_DEBUG=0
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
     depends_on:
       manager_redis:
         condition: service_started
@@ -16,6 +23,16 @@ services:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG:-latest}
+    environment:
+      - APP_ENV=prod
+      - APP_DEBUG=0
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
     restart: always
     depends_on:
       manager_redis:
@@ -28,6 +45,16 @@ services:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
+    environment:
+      - APP_ENV=prod
+      - APP_DEBUG=0
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
     command: php bin/console --no-interaction doctrine:migrations:migrate
     depends_on:
       manager_redis:
