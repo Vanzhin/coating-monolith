@@ -40,6 +40,8 @@ services:
     image: nginx:1.25.4
     depends_on:
       - manager_php-fpm
+    volumes:
+      - ./docker/nginx/hosts:/etc/nginx/conf.d
     networks:
       default:
         ipv4_address: ${HOST_NGINX}
