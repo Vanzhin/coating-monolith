@@ -1,9 +1,5 @@
 FROM php:8.3-fpm
 
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs
-
 #ARG timezone
 ARG INSTALL_XDEBUG=false
 ARG APP_SECRET
@@ -116,9 +112,6 @@ RUN echo "APP_ENV=prod" > /app/.env && \
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-
-# Install npm dependencies and build frontend
-RUN npm install && npm run build
 
 # Create cache directory
 RUN mkdir -p /app/var/cache/prod && \

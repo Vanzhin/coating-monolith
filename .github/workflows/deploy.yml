@@ -188,6 +188,21 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Setup Node.js for frontend build
+      if: matrix.service == 'php-fpm'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+
+    - name: Install Node dependencies and build frontend
+      if: matrix.service == 'php-fpm'
+      run: |
+        cd app
+        npm ci
+        npm run build
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
