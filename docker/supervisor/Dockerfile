@@ -73,6 +73,9 @@ RUN mkdir -p /app/var/cache/prod && \
 # Create supervisor log directory
 RUN mkdir -p /var/log/supervisor
 
+# Copy supervisor configuration
+COPY docker/supervisor/conf.d/php-worker.conf /etc/supervisor/conf.d/php-worker.conf
+
 # Set proper permissions
 RUN chown -R root:root /app
 RUN chmod -R 755 /app
