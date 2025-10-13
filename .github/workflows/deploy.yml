@@ -17,6 +17,8 @@ env:
     DB_NAME: ${{ vars.DB_NAME }}
     DB_USER: ${{ vars.DB_USER }}
     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+    DB_EXTERNAL_PORT: ${{ vars.DB_EXTERNAL_PORT }}
+    INSTALL_XDEBUG: ${{ vars.INSTALL_XDEBUG }}
     APP_NAME: ${{ vars.APP_NAME }}
     DEFAULT_FROM_ADDR: ${{ vars.DEFAULT_FROM_ADDR }}
     DEFAULT_FROM_NAME: ${{ vars.DEFAULT_FROM_NAME }}
@@ -28,7 +30,10 @@ env:
     LOG_TELEGRAM_CHANNEL: ${{ secrets.LOG_TELEGRAM_CHANNEL }}
     ELASTIC_DSN: ${{ vars.ELASTIC_DSN }}
     ELASTIC_USERNAME: ${{ vars.ELASTIC_USERNAME }}
-    ELASTIC_PASSWORD: ${{ vars.ELASTIC_PASSWORD }}
+    ELASTIC_PASSWORD: ${{ secrets.ELASTIC_PASSWORD }}
+    ELASTIC_AUTH_ENABLED: ${{ vars.ELASTIC_AUTH_ENABLED }}
+    ELASTIC_CONTAINER_NAME: ${{ vars.ELASTIC_CONTAINER_NAME }}
+    ELASTIC_PORT: ${{ vars.ELASTIC_PORT }}
     REDIS_HOST: ${{ vars.REDIS_HOST }}
     APP_SECRET: ${{ secrets.APP_SECRET }}
 
@@ -198,6 +203,27 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64
+        build-args: |
+          APP_SECRET=${{ env.APP_SECRET }}
+          APP_NAME=${{ env.APP_NAME }}
+          DEFAULT_FROM_ADDR=${{ env.DEFAULT_FROM_ADDR }}
+          DEFAULT_FROM_NAME=${{ env.DEFAULT_FROM_NAME }}
+          MAILER_DSN=${{ env.MAILER_DSN }}
+          JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
+          JWT_PUBLIC_KEY=${{ env.JWT_PUBLIC_KEY }}
+          JWT_PASSPHRASE=${{ env.JWT_PASSPHRASE }}
+          LOG_TELEGRAM_BOT_KEY=${{ env.LOG_TELEGRAM_BOT_KEY }}
+          LOG_TELEGRAM_CHANNEL=${{ env.LOG_TELEGRAM_CHANNEL }}
+          DB_HOST=${{ env.DB_HOST }}
+          DB_PORT=${{ env.DB_PORT }}
+          DB_NAME=${{ env.DB_NAME }}
+          DB_USER=${{ env.DB_USER }}
+          DB_PASSWORD=${{ env.DB_PASSWORD }}
+          REDIS_HOST=${{ env.REDIS_HOST }}
+          ELASTIC_DSN=${{ env.ELASTIC_DSN }}
+          ELASTIC_USERNAME=${{ env.ELASTIC_USERNAME }}
+          ELASTIC_PASSWORD=${{ env.ELASTIC_PASSWORD }}
+          INSTALL_XDEBUG=${{ env.INSTALL_XDEBUG }}
 
   deploy:
     needs: build-and-push
@@ -224,6 +250,8 @@ jobs:
               export DB_NAME="${{ env.DB_NAME }}"
               export DB_USER="${{ env.DB_USER }}"
               export DB_PASSWORD="${{ env.DB_PASSWORD }}"
+              export DB_EXTERNAL_PORT="${{ env.DB_EXTERNAL_PORT }}"
+              export INSTALL_XDEBUG="${{ env.INSTALL_XDEBUG }}"
               export APP_NAME="${{ env.APP_NAME }}"
               export DEFAULT_FROM_ADDR="${{ env.DEFAULT_FROM_ADDR }}"
               export DEFAULT_FROM_NAME="${{ env.DEFAULT_FROM_NAME }}"
@@ -236,6 +264,9 @@ jobs:
               export ELASTIC_DSN="${{ env.ELASTIC_DSN }}"
               export ELASTIC_USERNAME="${{ env.ELASTIC_USERNAME }}"
               export ELASTIC_PASSWORD="${{ env.ELASTIC_PASSWORD }}"
+              export ELASTIC_AUTH_ENABLED="${{ env.ELASTIC_AUTH_ENABLED }}"
+              export ELASTIC_CONTAINER_NAME="${{ env.ELASTIC_CONTAINER_NAME }}"
+              export ELASTIC_PORT="${{ env.ELASTIC_PORT }}"
               export REDIS_HOST="${{ env.REDIS_HOST }}"
               export APP_SECRET="${{ env.APP_SECRET }}"
               
