@@ -7,8 +7,30 @@ on:
     branches: [ main ]
 
 env:
-    REGISTRY: ghcr.io
-    IMAGE_NAME: vanzhin/coating-monolith
+    REGISTRY: ${{ vars.REGISTRY }}
+    IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+    DOMAIN: ${{ vars.DOMAIN }}
+    HOST_NGINX: ${{ vars.HOST_NGINX }}
+    NETWORK: ${{ vars.NETWORK }}
+    DB_HOST: ${{ vars.DB_HOST }}
+    DB_PORT: ${{ vars.DB_PORT }}
+    DB_NAME: ${{ vars.DB_NAME }}
+    DB_USER: ${{ vars.DB_USER }}
+    DB_PASSWORD: ${{ vars.DB_PASSWORD }}
+    APP_NAME: ${{ vars.APP_NAME }}
+    DEFAULT_FROM_ADDR: ${{ vars.DEFAULT_FROM_ADDR }}
+    DEFAULT_FROM_NAME: ${{ vars.DEFAULT_FROM_NAME }}
+    MAILER_DSN: ${{ vars.MAILER_DSN }}
+    JWT_SECRET_KEY: ${{ vars.JWT_SECRET_KEY }}
+    JWT_PUBLIC_KEY: ${{ vars.JWT_PUBLIC_KEY }}
+    JWT_PASSPHRASE: ${{ vars.JWT_PASSPHRASE }}
+    LOG_TELEGRAM_BOT_KEY: ${{ vars.LOG_TELEGRAM_BOT_KEY }}
+    LOG_TELEGRAM_CHANNEL: ${{ vars.LOG_TELEGRAM_CHANNEL }}
+    ELASTIC_DSN: ${{ vars.ELASTIC_DSN }}
+    ELASTIC_USERNAME: ${{ vars.ELASTIC_USERNAME }}
+    ELASTIC_PASSWORD: ${{ vars.ELASTIC_PASSWORD }}
+    REDIS_HOST: ${{ vars.REDIS_HOST }}
+    APP_SECRET: ${{ vars.APP_SECRET }}
 
 jobs:
   test:
@@ -194,9 +216,28 @@ jobs:
               export REGISTRY="${{ env.REGISTRY }}"
               export IMAGE_NAME="${{ env.IMAGE_NAME }}"
               export IMAGE_TAG="latest"
-              export DOMAIN="1helper.ru"
-              export HOST_NGINX="172.20.0.10"
-              export NETWORK="172.20.0.0/16"
+              export DOMAIN="${{ env.DOMAIN }}"
+              export HOST_NGINX="${{ env.HOST_NGINX }}"
+              export NETWORK="${{ env.NETWORK }}"
+              export DB_HOST="${{ env.DB_HOST }}"
+              export DB_PORT="${{ env.DB_PORT }}"
+              export DB_NAME="${{ env.DB_NAME }}"
+              export DB_USER="${{ env.DB_USER }}"
+              export DB_PASSWORD="${{ env.DB_PASSWORD }}"
+              export APP_NAME="${{ env.APP_NAME }}"
+              export DEFAULT_FROM_ADDR="${{ env.DEFAULT_FROM_ADDR }}"
+              export DEFAULT_FROM_NAME="${{ env.DEFAULT_FROM_NAME }}"
+              export MAILER_DSN="${{ env.MAILER_DSN }}"
+              export JWT_SECRET_KEY="${{ env.JWT_SECRET_KEY }}"
+              export JWT_PUBLIC_KEY="${{ env.JWT_PUBLIC_KEY }}"
+              export JWT_PASSPHRASE="${{ env.JWT_PASSPHRASE }}"
+              export LOG_TELEGRAM_BOT_KEY="${{ env.LOG_TELEGRAM_BOT_KEY }}"
+              export LOG_TELEGRAM_CHANNEL="${{ env.LOG_TELEGRAM_CHANNEL }}"
+              export ELASTIC_DSN="${{ env.ELASTIC_DSN }}"
+              export ELASTIC_USERNAME="${{ env.ELASTIC_USERNAME }}"
+              export ELASTIC_PASSWORD="${{ env.ELASTIC_PASSWORD }}"
+              export REDIS_HOST="${{ env.REDIS_HOST }}"
+              export APP_SECRET="${{ env.APP_SECRET }}"
               
               # Copy docker-compose.prod.yml from GitHub repository
               echo "Downloading docker-compose.prod.yml from repository..."

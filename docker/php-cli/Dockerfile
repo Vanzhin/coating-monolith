@@ -17,16 +17,25 @@ COPY app /app
 # Create production .env file
 RUN echo "APP_ENV=prod" > /app/.env && \
     echo "APP_DEBUG=0" >> /app/.env && \
-    echo "APP_SECRET=your-secret-key-here" >> /app/.env && \
-    echo "LOG_TELEGRAM_BOT_KEY=" >> /app/.env && \
-    echo "LOG_TELEGRAM_CHANNEL=" >> /app/.env && \
-    echo "DB_HOST=manager_db" >> /app/.env && \
-    echo "DB_PORT=5432" >> /app/.env && \
-    echo "DB_NAME=coating" >> /app/.env && \
-    echo "DB_USER=postgres" >> /app/.env && \
-    echo "DB_PASSWORD=password" >> /app/.env && \
-    echo "REDIS_URL=redis://manager_redis:6379" >> /app/.env && \
-    echo "ELASTIC_DSN=http://app_elastic:9200" >> /app/.env
+    echo "APP_SECRET=${APP_SECRET}" >> /app/.env && \
+    echo "APP_NAME=${APP_NAME}" >> /app/.env && \
+    echo "DEFAULT_FROM_ADDR=${DEFAULT_FROM_ADDR}" >> /app/.env && \
+    echo "DEFAULT_FROM_NAME=${DEFAULT_FROM_NAME}" >> /app/.env && \
+    echo "MAILER_DSN=${MAILER_DSN}" >> /app/.env && \
+    echo "JWT_SECRET_KEY=${JWT_SECRET_KEY}" >> /app/.env && \
+    echo "JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}" >> /app/.env && \
+    echo "JWT_PASSPHRASE=${JWT_PASSPHRASE}" >> /app/.env && \
+    echo "LOG_TELEGRAM_BOT_KEY=${LOG_TELEGRAM_BOT_KEY}" >> /app/.env && \
+    echo "LOG_TELEGRAM_CHANNEL=${LOG_TELEGRAM_CHANNEL}" >> /app/.env && \
+    echo "DB_HOST=${DB_HOST}" >> /app/.env && \
+    echo "DB_PORT=${DB_PORT}" >> /app/.env && \
+    echo "DB_NAME=${DB_NAME}" >> /app/.env && \
+    echo "DB_USER=${DB_USER}" >> /app/.env && \
+    echo "DB_PASSWORD=${DB_PASSWORD}" >> /app/.env && \
+    echo "REDIS_HOST=${REDIS_HOST}" >> /app/.env && \
+    echo "ELASTIC_DSN=${ELASTIC_DSN}" >> /app/.env && \
+    echo "ELASTIC_USERNAME=${ELASTIC_USERNAME}" >> /app/.env && \
+    echo "ELASTIC_PASSWORD=${ELASTIC_PASSWORD}" >> /app/.env
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
