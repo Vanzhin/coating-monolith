@@ -88,23 +88,19 @@ jobs:
         cd app
         cat > .env << 'EOF'
         APP_ENV=dev
-        APP_SECRET=test_secret_key_for_ci_cd_pipeline
+        APP_SECRET=${{ env.APP_SECRET }}
         DATABASE_URL=postgresql://postgres:postgres@localhost:5432/coating_test
         REDIS_URL=redis://localhost:6379
         MAILER_DSN=null://null
-        JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
-        JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
-        JWT_PASSPHRASE=test_jwt_passphrase
-        APP_NAME="Покрытия-монолит"
-        DEFAULT_FROM_ADDR=noreply@test.com
-        DEFAULT_FROM_NAME="Покрытия-монолит"
-        TELEGRAM_BOT_TOKEN=test_telegram_token
-        SMS_API_KEY=test_sms_api_key
-        SMS_API_URL=https://test-sms-provider.com/api/send
-        SMS_SENDER_NAME=TestApp
-        LOG_TELEGRAM_BOT_KEY=test_log_telegram_bot_key
-        LOG_TELEGRAM_CHANNEL=test_log_telegram_channel
-        ELASTIC_DSN=http://localhost:9200
+        JWT_SECRET_KEY=${{ env.JWT_SECRET_KEY }}
+        JWT_PUBLIC_KEY=${{ env.JWT_PUBLIC_KEY }}
+        JWT_PASSPHRASE=${{ env.JWT_PASSPHRASE }}
+        APP_NAME=${{ env.APP_NAME }}
+        DEFAULT_FROM_ADDR=${{ env.DEFAULT_FROM_ADDR }}
+        DEFAULT_FROM_NAME=${{ env.DEFAULT_FROM_NAME }}
+        LOG_TELEGRAM_BOT_KEY=${{ env.LOG_TELEGRAM_BOT_KEY }}
+        LOG_TELEGRAM_CHANNEL=${{ env.LOG_TELEGRAM_CHANNEL }}
+        ELASTIC_DSN=${{ env.ELASTIC_DSN }}
         EOF
 
     - name: Install Composer dependencies
