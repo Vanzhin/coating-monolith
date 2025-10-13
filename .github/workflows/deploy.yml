@@ -329,6 +329,29 @@ jobs:
               
               # Warm up cache using a temporary container
               docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:warmup --env=prod
+              
+              # Clean up unused Docker resources to save disk space
+              echo "Cleaning up unused Docker resources..."
+              
+              # Remove unused images (dangling images)
+              docker image prune -f
+              
+              # Remove unused containers
+              docker container prune -f
+              
+              # Remove unused networks
+              docker network prune -f
+              
+              # Remove unused volumes (be careful with this in production)
+              # docker volume prune -f
+              
+              # Show disk usage after cleanup
+              echo "Disk usage after cleanup:"
+              df -h /var/lib/docker
+              
+              # Show remaining images
+              echo "Remaining Docker images:"
+              docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
             envs: |
               REGISTRY=${{ env.REGISTRY }}
               IMAGE_NAME=${{ env.IMAGE_NAME }}
