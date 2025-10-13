@@ -104,6 +104,7 @@ RUN echo "APP_ENV=prod" > /app/.env && \
     echo "DB_NAME=${DB_NAME}" >> /app/.env && \
     echo "DB_USER=${DB_USER}" >> /app/.env && \
     echo "DB_PASSWORD=${DB_PASSWORD}" >> /app/.env && \
+    echo "DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" >> /app/.env && \
     echo "REDIS_HOST=${REDIS_HOST}" >> /app/.env && \
     echo "ELASTIC_DSN=${ELASTIC_DSN}" >> /app/.env && \
     echo "ELASTIC_USERNAME=${ELASTIC_USERNAME}" >> /app/.env && \
