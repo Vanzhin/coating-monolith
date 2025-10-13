@@ -310,6 +310,58 @@ jobs:
               # Check container status
               docker-compose -f docker-compose.prod.yml ps
               
+              # Verify all containers are running
+              echo "Verifying all containers are running..."
+              FAILED_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=exited" --filter "status=dead" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+              
+              if [ -n "$FAILED_CONTAINERS" ]; then
+                echo "❌ ERROR: Some containers failed to start:"
+                echo "$FAILED_CONTAINERS"
+                echo ""
+                echo "Container logs for failed containers:"
+                echo "$FAILED_CONTAINERS" | while read -r container_name status; do
+                  if [ -n "$container_name" ]; then
+                    echo "=== Logs for $container_name ==="
+                    docker logs "$container_name" --tail 50 || true
+                    echo ""
+                  fi
+                done
+                exit 1
+              fi
+              
+              # Check for containers in restarting state
+              RESTARTING_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=restarting" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+              
+              if [ -n "$RESTARTING_CONTAINERS" ]; then
+                echo "⚠️  WARNING: Some containers are restarting:"
+                echo "$RESTARTING_CONTAINERS"
+                echo ""
+                echo "Waiting additional 30 seconds for containers to stabilize..."
+                sleep 30
+                
+                # Check again after waiting
+                RESTARTING_CONTAINERS_AFTER=$(docker-compose -f docker-compose.prod.yml ps --filter "status=restarting" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+                
+                if [ -n "$RESTARTING_CONTAINERS_AFTER" ]; then
+                  echo "❌ ERROR: Containers still restarting after additional wait:"
+                  echo "$RESTARTING_CONTAINERS_AFTER"
+                  echo ""
+                  echo "Container logs for restarting containers:"
+                  echo "$RESTARTING_CONTAINERS_AFTER" | while read -r container_name status; do
+                    if [ -n "$container_name" ]; then
+                      echo "=== Logs for $container_name ==="
+                      docker logs "$container_name" --tail 50 || true
+                      echo ""
+                    fi
+                  done
+                  exit 1
+                fi
+              fi
+              
+              # Final status check
+              echo "✅ All containers are running successfully:"
+              docker-compose -f docker-compose.prod.yml ps
+              
               # Verify app directory and console file
               echo "Checking app directory structure:"
               ls -la /var/www/sites/1helper/app/ | head -10
@@ -329,6 +381,18 @@ jobs:
               
               # Warm up cache using a temporary container
               docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:warmup --env=prod
+              
+              # Final health check - verify all containers are still running after operations
+              echo "Performing final health check..."
+              FINAL_FAILED_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=exited" --filter "status=dead" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+              
+              if [ -n "$FINAL_FAILED_CONTAINERS" ]; then
+                echo "❌ ERROR: Some containers failed during deployment operations:"
+                echo "$FINAL_FAILED_CONTAINERS"
+                exit 1
+              fi
+              
+              echo "🎉 Deployment completed successfully! All containers are running."
               
               # Clean up unused Docker resources to save disk space
               echo "Cleaning up unused Docker resources..."
