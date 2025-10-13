@@ -90,9 +90,9 @@ COPY app /app
 RUN echo "APP_ENV=prod" > /app/.env && \
     echo "APP_DEBUG=0" >> /app/.env && \
     echo "APP_SECRET=${APP_SECRET}" >> /app/.env && \
-    echo "APP_NAME=${APP_NAME}" >> /app/.env && \
-    echo "DEFAULT_FROM_ADDR=${DEFAULT_FROM_ADDR}" >> /app/.env && \
-    echo "DEFAULT_FROM_NAME=${DEFAULT_FROM_NAME}" >> /app/.env && \
+    echo "APP_NAME=\"${APP_NAME}\"" >> /app/.env && \
+    echo "DEFAULT_FROM_ADDR=\"${DEFAULT_FROM_ADDR}\"" >> /app/.env && \
+    echo "DEFAULT_FROM_NAME=\"${DEFAULT_FROM_NAME}\"" >> /app/.env && \
     echo "MAILER_DSN=${MAILER_DSN}" >> /app/.env && \
     echo "JWT_SECRET_KEY=${JWT_SECRET_KEY}" >> /app/.env && \
     echo "JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}" >> /app/.env && \
