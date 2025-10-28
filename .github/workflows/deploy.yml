@@ -294,9 +294,7 @@ jobs:
               cd /var/www/sites/1helper
               
               # Load environment variables from .env file
-              set -a
-              source .env
-              set +a
+              export $(grep -v '^#' .env | grep -v '^\s*#' | xargs)
               
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
