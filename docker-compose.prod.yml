@@ -108,7 +108,7 @@ services:
     container_name: ${ELASTIC_CONTAINER_NAME}
     image: elasticsearch:9.0.1
     volumes:
-      - ./docker/elasticsearch/data:/usr/share/elasticsearch/data
+      - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
       - cluster.name=docker-cluster
@@ -125,8 +125,8 @@ services:
           memory: 4GB
 
 volumes:
-  redis_data:
   elasticsearch_data:
+  redis_data:
 
 networks:
   default:
