@@ -293,6 +293,11 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
+              # Load environment variables from .env file
+              set -a
+              source .env
+              set +a
+              
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-cli:latest
