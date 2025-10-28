@@ -3,6 +3,8 @@ services:
   manager_php-fpm:
     hostname: ${DOMAIN}
     image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
+    volumes:
+      - ./app:/app
     environment:
       - APP_ENV=prod
       - APP_DEBUG=0
