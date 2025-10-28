@@ -401,7 +401,20 @@ jobs:
               
               echo "🎉 Deployment completed successfully! All containers are running."
               
-              # Clean up only THIS project's old images to save disk space
+              # Clean up stopped containers from THIS project only
+              echo "Cleaning up stopped containers from this project..."
+              OLD_CONTAINERS=$(docker ps -a --filter "name=1helper" --filter "status=exited" --filter "status=created" --format "{{.ID}}" || true)
+              if [ -n "$OLD_CONTAINERS" ]; then
+                echo "Removing stopped containers:"
+                echo "$OLD_CONTAINERS"
+                echo "$OLD_CONTAINERS" | xargs docker rm -f || true
+              fi
+              
+              # Clean up unused networks (only for this project)
+              echo "Cleaning up unused networks for this project..."
+              docker network prune -f
+              
+              # Remove old/unused images for THIS project only
               echo "Cleaning up old images for this project only..."
               
               # Remove old images from this specific project (keep last 5 versions)
