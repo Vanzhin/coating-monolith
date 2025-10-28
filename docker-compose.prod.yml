@@ -100,6 +100,8 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - ${DB_EXTERNAL_PORT}:5432
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
 
   elasticsearch:
