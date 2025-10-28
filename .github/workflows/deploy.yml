@@ -414,6 +414,10 @@ jobs:
               echo "Cleaning up unused networks for this project..."
               docker network prune -f
               
+              # Remove dangling images (unused images)
+              echo "Cleaning up dangling images..."
+              docker image prune -f
+              
               # Remove old/unused images for THIS project only
               echo "Cleaning up old images for this project only..."
               
