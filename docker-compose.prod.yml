@@ -68,6 +68,8 @@ services:
     depends_on:
       - manager_php-fpm
     volumes:
+      - ./app:/app:ro
+      - ./docker/nginx/logs:/var/log/nginx:rw
       - ./docker/nginx/hosts:/etc/nginx/conf.d
     networks:
       default:

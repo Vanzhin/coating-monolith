@@ -188,21 +188,6 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Setup Node.js for frontend build
-      if: matrix.service == 'php-fpm'
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: app/package-lock.json
-
-    - name: Install Node dependencies and build frontend
-      if: matrix.service == 'php-fpm'
-      run: |
-        cd app
-        npm ci
-        npm run build
-
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
@@ -409,28 +394,32 @@ jobs:
               
               echo "🎉 Deployment completed successfully! All containers are running."
               
-              # Clean up unused Docker resources to save disk space
-              echo "Cleaning up unused Docker resources..."
+              # Clean up only THIS project's old images to save disk space
+              echo "Cleaning up old images for this project only..."
               
-              # Remove unused images (dangling images)
-              docker image prune -f
+              # Remove old images from this specific project (keep last 5 versions)
+              PROJECT_IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "${REGISTRY}/${IMAGE_NAME}" || true)
               
-              # Remove unused containers
-              docker container prune -f
+              if [ -n "$PROJECT_IMAGES" ]; then
+                echo "Found images for this project:"
+                echo "$PROJECT_IMAGES"
+                
+                # Get images with timestamp and sort by date, keep latest 5
+                docker images --format "{{.CreatedAt}}\t{{.Repository}}:{{.Tag}}" | \
+                  grep "${REGISTRY}/${IMAGE_NAME}" | \
+                  sort -r | \
+                  tail -n +6 | \
+                  awk '{print $2}' | \
+                  xargs -r docker rmi -f || true
+              fi
               
-              # Remove unused networks
-              docker network prune -f
-              
-              # Remove unused volumes (be careful with this in production)
-              # docker volume prune -f
-              
-              # Show disk usage after cleanup
-              echo "Disk usage after cleanup:"
+              # Show disk usage
+              echo "Disk usage:"
               df -h /var/lib/docker
               
-              # Show remaining images
-              echo "Remaining Docker images:"
-              docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+              # Show remaining images for this project
+              echo "Remaining images for this project:"
+              docker images | grep "${REGISTRY}/${IMAGE_NAME}" || echo "No images found for this project"
             envs: |
               REGISTRY=${{ env.REGISTRY }}
               IMAGE_NAME=${{ env.IMAGE_NAME }}
