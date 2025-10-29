@@ -83,7 +83,7 @@ services:
     image: redis:7.2.1
     restart: always
     volumes:
-      - redis_data:/data
+      -  ./docker/redis/data/:/data:rw
 
   manager_db:
     image: postgres:17-alpine
@@ -123,9 +123,6 @@ services:
       resources:
         limits:
           memory: 4GB
-
-volumes:
-  redis_data:
 
 networks:
   default:
