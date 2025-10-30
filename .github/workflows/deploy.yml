@@ -366,7 +366,7 @@ jobs:
               # Ensure /var/www/sites/1helper/.env exists for docker compose
               if [ ! -f /var/www/sites/1helper/.env ]; then
                 echo "Creating /var/www/sites/1helper/.env from workflow env vars..."
-                cat > /var/www/sites/1helper/.env <<EOF
+                cat > /var/www/sites/1helper/.env << 'EOF'
 DOMAIN=${DOMAIN}
 NETWORK=${NETWORK}
 
