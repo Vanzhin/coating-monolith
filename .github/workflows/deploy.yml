@@ -314,8 +314,9 @@ jobs:
               if ! git remote get-url origin >/dev/null 2>&1; then
                 git remote add origin https://github.com/${{ github.repository }}.git
               fi
-              echo "Fetching tags from origin..."
-              git fetch --all --tags origin
+              echo "Fetching from origin..."
+              git fetch --all --prune
+              git fetch origin --tags --prune
               echo "Resetting working tree..."
               git reset --hard
               echo "Checking out tag ${TAG_NAME}..."
