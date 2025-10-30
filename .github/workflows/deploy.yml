@@ -385,6 +385,23 @@ jobs:
                 } > /var/www/sites/1helper/.env
                 chmod 600 /var/www/sites/1helper/.env || true
               fi
+              
+              # Append missing required keys into existing .env (do not overwrite existing values)
+              cd /var/www/sites/1helper
+              ensure_kv() { k="$1"; v="$2"; grep -q "^${k}=" .env 2>/dev/null || echo "${k}=${v}" >> .env; }
+              ensure_kv REGISTRY "${REGISTRY}"
+              ensure_kv IMAGE_NAME "${IMAGE_NAME}"
+              ensure_kv DOMAIN "${DOMAIN}"
+              ensure_kv NETWORK "${NETWORK}"
+              ensure_kv DB_HOST "${DB_HOST:-manager_db}"
+              ensure_kv DB_PORT "${DB_PORT:-5432}"
+              ensure_kv DB_NAME "${DB_NAME}"
+              ensure_kv DB_USER "${DB_USER}"
+              ensure_kv DB_PASSWORD "${DB_PASSWORD}"
+              ensure_kv DB_EXTERNAL_PORT "${DB_EXTERNAL_PORT}"
+              ensure_kv ELASTIC_CONTAINER_NAME "${ELASTIC_CONTAINER_NAME}"
+              ensure_kv INSTALL_XDEBUG "${INSTALL_XDEBUG}"
+              ensure_kv REDIS_HOST "${REDIS_HOST:-manager_redis:6379}"
               echo "Syncing docker/ (non-critical)..."
               rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
               rm -rf "$TMP_DIR"
