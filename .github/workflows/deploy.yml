@@ -366,21 +366,21 @@ jobs:
               # Ensure /var/www/sites/1helper/.env exists for docker compose
               if [ ! -f /var/www/sites/1helper/.env ]; then
                 echo "Creating /var/www/sites/1helper/.env from workflow env vars..."
-                cat > /var/www/sites/1helper/.env << 'EOF'
-DOMAIN=${DOMAIN}
-NETWORK=${NETWORK}
-
-DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT}
-DB_NAME=${DB_NAME}
-DB_USER=${DB_USER}
-DB_PASSWORD=${DB_PASSWORD}
-DB_EXTERNAL_PORT=${DB_EXTERNAL_PORT}
-
-ELASTIC_CONTAINER_NAME=${ELASTIC_CONTAINER_NAME}
-INSTALL_XDEBUG=${INSTALL_XDEBUG}
-REDIS_HOST=${REDIS_HOST}
-EOF
+                {
+                  printf "DOMAIN=%s\n" "${DOMAIN}"
+                  printf "NETWORK=%s\n" "${NETWORK}"
+                  printf "\n"
+                  printf "DB_HOST=%s\n" "${DB_HOST}"
+                  printf "DB_PORT=%s\n" "${DB_PORT}"
+                  printf "DB_NAME=%s\n" "${DB_NAME}"
+                  printf "DB_USER=%s\n" "${DB_USER}"
+                  printf "DB_PASSWORD=%s\n" "${DB_PASSWORD}"
+                  printf "DB_EXTERNAL_PORT=%s\n" "${DB_EXTERNAL_PORT}"
+                  printf "\n"
+                  printf "ELASTIC_CONTAINER_NAME=%s\n" "${ELASTIC_CONTAINER_NAME}"
+                  printf "INSTALL_XDEBUG=%s\n" "${INSTALL_XDEBUG}"
+                  printf "REDIS_HOST=%s\n" "${REDIS_HOST}"
+                } > /var/www/sites/1helper/.env
                 chmod 600 /var/www/sites/1helper/.env || true
               fi
               echo "Syncing docker/ (non-critical)..."
