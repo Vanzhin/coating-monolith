@@ -367,6 +367,8 @@ jobs:
               if [ ! -f /var/www/sites/1helper/.env ]; then
                 echo "Creating /var/www/sites/1helper/.env from workflow env vars..."
                 {
+                  printf "REGISTRY=%s\n" "${REGISTRY}"
+                  printf "IMAGE_NAME=%s\n" "${IMAGE_NAME}"
                   printf "DOMAIN=%s\n" "${DOMAIN}"
                   printf "NETWORK=%s\n" "${NETWORK}"
                   printf "\n"
