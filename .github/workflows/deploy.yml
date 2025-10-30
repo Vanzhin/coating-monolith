@@ -238,6 +238,7 @@ jobs:
             username: ${{ secrets.USERNAME }}
             key: ${{ secrets.SSH_KEY }}
             script: |
+              set -euo pipefail
               # Set environment variables
               export REGISTRY="${{ env.REGISTRY }}"
               export IMAGE_NAME="${{ env.IMAGE_NAME }}"
@@ -304,10 +305,21 @@ jobs:
               
               # Ensure working copy matches the deployment tag
               echo "Syncing working copy to tag: ${TAG_NAME}"
-              git fetch --all --tags
-              # Reset any local changes (safe if no local edits are expected)
+              if [ ! -d .git ]; then
+                echo "No git repo found. Initializing..."
+                git init
+                git remote add origin https://github.com/${{ github.repository }}.git
+              fi
+              # Ensure origin exists and points to GitHub
+              if ! git remote get-url origin >/dev/null 2>&1; then
+                git remote add origin https://github.com/${{ github.repository }}.git
+              fi
+              echo "Fetching tags from origin..."
+              git fetch --all --tags origin
+              echo "Resetting working tree..."
               git reset --hard
-              git checkout --force "${TAG_NAME}"
+              echo "Checking out tag ${TAG_NAME}..."
+              git -c advice.detachedHead=false checkout --force "tags/${TAG_NAME}" || git -c advice.detachedHead=false checkout --force "${TAG_NAME}"
               
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
