@@ -310,6 +310,14 @@ jobs:
                 git init
                 git remote add origin https://github.com/${{ github.repository }}.git
               fi
+              # Backup local env files before any operations (to preserve server-specific secrets)
+              ENV_BACKUP_DIR=$(mktemp -d)
+              if compgen -G ".env*" > /dev/null; then
+                echo "Backing up existing .env* files to ${ENV_BACKUP_DIR}"
+                cp -a .env* "${ENV_BACKUP_DIR}/" || true
+              else
+                echo "No local .env* files to backup"
+              fi
               # Ensure origin exists and points to GitHub
               if ! git remote get-url origin >/dev/null 2>&1; then
                 git remote add origin https://github.com/${{ github.repository }}.git
@@ -346,6 +354,14 @@ jobs:
                 --exclude '.env' \
                 --exclude '.env.*' \
                 "$SRC_DIR/app/" /var/www/sites/1helper/app/
+              # Restore backed-up env files if they are missing after sync
+              if [ -d "${ENV_BACKUP_DIR}" ]; then
+                if compgen -G "${ENV_BACKUP_DIR}/.env*" > /dev/null; then
+                  echo "Restoring .env* files from backup"
+                  cp -a ${ENV_BACKUP_DIR}/.env* /var/www/sites/1helper/ 2>/dev/null || true
+                fi
+                rm -rf "${ENV_BACKUP_DIR}"
+              fi
               echo "Syncing docker/ (non-critical)..."
               rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
               rm -rf "$TMP_DIR"
