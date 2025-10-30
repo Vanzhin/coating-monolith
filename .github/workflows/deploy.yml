@@ -269,6 +269,8 @@ jobs:
               export ELASTIC_PORT="${{ env.ELASTIC_PORT }}"
               export REDIS_HOST="${{ env.REDIS_HOST }}"
               export APP_SECRET="${{ env.APP_SECRET }}"
+              # Current tag name from workflow ref
+              export TAG_NAME="${{ github.ref_name }}"
               
               # Copy docker-compose.prod.yml from GitHub repository
               echo "Downloading docker-compose.prod.yml from repository..."
@@ -299,6 +301,13 @@ jobs:
               
               # Load environment variables from .env file
               export $(grep -v '^#' .env | grep -v '^\s*#' | xargs)
+              
+              # Ensure working copy matches the deployment tag
+              echo "Syncing working copy to tag: ${TAG_NAME}"
+              git fetch --all --tags
+              # Reset any local changes (safe if no local edits are expected)
+              git reset --hard
+              git checkout --force "${TAG_NAME}"
               
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
