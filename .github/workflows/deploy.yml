@@ -341,8 +341,11 @@ jobs:
                 echo "❌ ERROR: Cannot determine extracted source directory" >&2
                 exit 1
               fi
-              echo "Syncing app/ from tarball to working dir (with delete)..."
-              rsync -a --delete "$SRC_DIR/app/" /var/www/sites/1helper/app/
+              echo "Syncing app/ from tarball to working dir (with delete, preserving local .env*)..."
+              rsync -a --delete \
+                --exclude '.env' \
+                --exclude '.env.*' \
+                "$SRC_DIR/app/" /var/www/sites/1helper/app/
               echo "Syncing docker/ (non-critical)..."
               rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
               rm -rf "$TMP_DIR"
