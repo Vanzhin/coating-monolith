@@ -362,6 +362,27 @@ jobs:
                 fi
                 rm -rf "${ENV_BACKUP_DIR}"
               fi
+
+              # Ensure /var/www/sites/1helper/.env exists for docker compose
+              if [ ! -f /var/www/sites/1helper/.env ]; then
+                echo "Creating /var/www/sites/1helper/.env from workflow env vars..."
+                cat > /var/www/sites/1helper/.env <<EOF
+DOMAIN=${DOMAIN}
+NETWORK=${NETWORK}
+
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT}
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+DB_EXTERNAL_PORT=${DB_EXTERNAL_PORT}
+
+ELASTIC_CONTAINER_NAME=${ELASTIC_CONTAINER_NAME}
+INSTALL_XDEBUG=${INSTALL_XDEBUG}
+REDIS_HOST=${REDIS_HOST}
+EOF
+                chmod 600 /var/www/sites/1helper/.env || true
+              fi
               echo "Syncing docker/ (non-critical)..."
               rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
               rm -rf "$TMP_DIR"
