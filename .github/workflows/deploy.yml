@@ -321,6 +321,8 @@ jobs:
               git reset --hard
               echo "Checking out tag ${TAG_NAME}..."
               git -c advice.detachedHead=false checkout --force "tags/${TAG_NAME}" || git -c advice.detachedHead=false checkout --force "${TAG_NAME}"
+              echo "Cleaning untracked files..."
+              git clean -fdx
               
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
