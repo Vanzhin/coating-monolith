@@ -315,14 +315,37 @@ jobs:
                 git remote add origin https://github.com/${{ github.repository }}.git
               fi
               echo "Fetching from origin..."
-              git fetch --all --prune
-              git fetch origin --tags --prune
-              echo "Resetting working tree..."
-              git reset --hard
-              echo "Checking out tag ${TAG_NAME}..."
-              git -c advice.detachedHead=false checkout --force "tags/${TAG_NAME}" || git -c advice.detachedHead=false checkout --force "${TAG_NAME}"
-              echo "Cleaning untracked files..."
-              git clean -fdx
+              git fetch --all --prune || true
+              git fetch origin --tags --prune || true
+              echo "Resetting working tree (best-effort)..."
+              git reset --hard || true
+              echo "Checking out tag ${TAG_NAME} (best-effort)..."
+              git -c advice.detachedHead=false checkout --force "tags/${TAG_NAME}" 2>/dev/null || git -c advice.detachedHead=false checkout --force "${TAG_NAME}" 2>/dev/null || true
+              echo "Cleaning untracked files (best-effort)..."
+              git clean -fdx || true
+
+              # Strong source of truth: download repo tarball for the tag and sync files
+              echo "Downloading repository tarball for tag ${TAG_NAME}..."
+              TMP_DIR=$(mktemp -d)
+              TARBALL="$TMP_DIR/repo.tar.gz"
+              curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                   -o "$TARBALL" \
+                   "https://codeload.github.com/${{ github.repository }}/tar.gz/refs/tags/${TAG_NAME}"
+              echo "Extracting tarball..."
+              tar -xzf "$TARBALL" -C "$TMP_DIR"
+              SRC_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "*-${TAG_NAME#v}" -o -name "*-${TAG_NAME}" | head -n1)
+              if [ -z "$SRC_DIR" ]; then
+                SRC_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d ! -path "$TMP_DIR" | head -n1)
+              fi
+              if [ -z "$SRC_DIR" ]; then
+                echo "❌ ERROR: Cannot determine extracted source directory" >&2
+                exit 1
+              fi
+              echo "Syncing app/ from tarball to working dir (with delete)..."
+              rsync -a --delete "$SRC_DIR/app/" /var/www/sites/1helper/app/
+              echo "Syncing docker/ (non-critical)..."
+              rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
+              rm -rf "$TMP_DIR"
               
               # Pull latest images
               docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
