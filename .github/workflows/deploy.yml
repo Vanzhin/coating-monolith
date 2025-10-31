@@ -88,26 +88,26 @@ jobs:
       - name: Deploy with zero downtime
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
 
-            # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными
+            # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными сети
             cat > .env << EOF
-            # Docker Compose Variables
-            NETWORK=coating-network
-            DOMAIN=localhost
-            HOST_NGINX=localhost
+            # Docker Compose Variables - ИСПРАВЛЕНО!
+            NETWORK=${{ vars.NETWORK }}
+            DOMAIN=${{ vars.DOMAIN }}
+            HOST_NGINX=${{ vars.HOST_NGINX }}
             DB_EXTERNAL_PORT=5432
             ELASTIC_CONTAINER_NAME=elasticsearch
 
-            # Registry and Image - ИСПРАВЛЕНО!
+            # Registry and Image
             REGISTRY=ghcr.io
             IMAGE_NAME=vanzhin/coating-monolith
-            TAG=${{ github.ref_name }}
-            
+            IMAGE_TAG=${{ github.ref_name }}
+
             # Database
             DB_NAME=${{ vars.DB_NAME }}
             DB_USER=${{ vars.DB_USER }}
@@ -142,25 +142,44 @@ jobs:
 
             echo "Deploying version: ${{ github.ref_name }}"
 
-            # 1. Останавливаем старые контейнеры
+            # 1. Удаляем старую сеть если есть проблемы
+            echo "Cleaning up old network..."
+            docker network rm 1helper_default 2>/dev/null || true
+
+            # 2. Останавливаем старые контейнеры
             echo "Stopping old containers..."
             docker compose -f docker-compose.prod.yml down
 
-            # 2. Принудительно pull новых образов
+            # 3. Принудительно pull новых образов
             echo "Pulling new images..."
             docker compose -f docker-compose.prod.yml pull
 
-            # 3. Запускаем новые контейнеры
+            # 4. Запускаем новые контейнеры
             echo "Starting new containers..."
             docker compose -f docker-compose.prod.yml up -d
 
-            # 4. Выполняем миграции
+            # 5. Ждем запуска контейнеров
+            echo "Waiting for containers to start..."
+            sleep 20
+
+            # 6. Проверяем статус контейнеров
+            echo "Checking container status..."
+            docker compose -f docker-compose.prod.yml ps
+
+            # 7. Выполняем миграции только если контейнер запущен
             echo "Running migrations..."
-            sleep 10
-            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            if docker compose -f docker-compose.prod.yml ps manager_php-cli | grep -q "Up"; then
+              docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            else
+              echo "WARNING: manager_php-cli is not running, skipping migrations"
+            fi
 
-            # 5. Прогрев кэша
+            # 8. Прогрев кэша только если контейнер запущен
             echo "Warming up cache..."
-            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
+            if docker compose -f docker-compose.prod.yml ps manager_php-cli | grep -q "Up"; then
+              docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
+            else
+              echo "WARNING: manager_php-cli is not running, skipping cache warmup"
+            fi
 
-            echo "Deployment completed successfully!"
+            echo "Deployment completed!"
