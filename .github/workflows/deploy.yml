@@ -75,6 +75,9 @@ jobs:
             ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
             ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
+            ELASTIC_AUTH_ENABLED=${{ vars.ELASTIC_AUTH_ENABLED }}
+            ELASTIC_CONTAINER_NAME=${{ vars.ELASTIC_CONTAINER_NAME }}
+            ELASTIC_PORT=${{ vars.ELASTIC_PORT }}
 
   seamless-deploy:
     runs-on: ubuntu-latest
