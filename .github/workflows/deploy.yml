@@ -300,256 +300,206 @@ jobs:
               # Navigate to project directory
               cd /var/www/sites/1helper
               
-              # Load environment variables from .env file
-              export $(grep -v '^#' .env | grep -v '^\s*#' | xargs)
-              
-              # Ensure working copy matches the deployment tag
-              echo "Syncing working copy to tag: ${TAG_NAME}"
-              if [ ! -d .git ]; then
-                echo "No git repo found. Initializing..."
-                git init
-                git remote add origin https://github.com/${{ github.repository }}.git
-              fi
-              # Backup local env files before any operations (to preserve server-specific secrets)
-              ENV_BACKUP_DIR=$(mktemp -d)
-              if compgen -G ".env*" > /dev/null; then
-                echo "Backing up existing .env* files to ${ENV_BACKUP_DIR}"
-                cp -a .env* "${ENV_BACKUP_DIR}/" || true
-              else
-                echo "No local .env* files to backup"
-              fi
-              # Ensure origin exists and points to GitHub
-              if ! git remote get-url origin >/dev/null 2>&1; then
-                git remote add origin https://github.com/${{ github.repository }}.git
-              fi
-              echo "Fetching from origin..."
-              git fetch --all --prune || true
-              git fetch origin --tags --prune || true
-              echo "Resetting working tree (best-effort)..."
-              git reset --hard || true
-              echo "Checking out tag ${TAG_NAME} (best-effort)..."
-              git -c advice.detachedHead=false checkout --force "tags/${TAG_NAME}" 2>/dev/null || git -c advice.detachedHead=false checkout --force "${TAG_NAME}" 2>/dev/null || true
-              echo "Cleaning untracked files (best-effort)..."
-              git clean -fdx || true
-
-              # Strong source of truth: download repo tarball for the tag and sync files
-              echo "Downloading repository tarball for tag ${TAG_NAME}..."
+              # Sync only required directories: docker/ and app/public/ (for nginx static files)
+              echo "Syncing required files for tag: ${TAG_NAME}"
               TMP_DIR=$(mktemp -d)
               TARBALL="$TMP_DIR/repo.tar.gz"
+              
+              # Download repository tarball for the tag
               curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                    -o "$TARBALL" \
                    "https://codeload.github.com/${{ github.repository }}/tar.gz/refs/tags/${TAG_NAME}"
-              echo "Extracting tarball..."
+              
+              # Extract tarball
               tar -xzf "$TARBALL" -C "$TMP_DIR"
               SRC_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "*-${TAG_NAME#v}" -o -name "*-${TAG_NAME}" | head -n1)
               if [ -z "$SRC_DIR" ]; then
                 SRC_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d ! -path "$TMP_DIR" | head -n1)
               fi
-              if [ -z "$SRC_DIR" ]; then
-                echo "❌ ERROR: Cannot determine extracted source directory" >&2
-                exit 1
+              
+              # Backup .env file before operations
+              if [ -f .env ]; then
+                cp .env .env.backup || true
               fi
-              echo "Syncing app/ from tarball to working dir (with delete, preserving local .env*)..."
-              rsync -a --delete \
-                --exclude '.env' \
-                --exclude '.env.*' \
-                "$SRC_DIR/app/" /var/www/sites/1helper/app/
-              # Restore backed-up env files if they are missing after sync
-              if [ -d "${ENV_BACKUP_DIR}" ]; then
-                if compgen -G "${ENV_BACKUP_DIR}/.env*" > /dev/null; then
-                  echo "Restoring .env* files from backup"
-                  cp -a ${ENV_BACKUP_DIR}/.env* /var/www/sites/1helper/ 2>/dev/null || true
+              
+              # Sync only docker/ directory (for nginx configs)
+              echo "Syncing docker/ directory..."
+              mkdir -p docker
+              rsync -a --delete "$SRC_DIR/docker/" docker/ || true
+              
+              # Sync only app/public/ directory (for nginx static files)
+              echo "Syncing app/public/ directory..."
+              mkdir -p app/public
+              rsync -a --delete "$SRC_DIR/app/public/" app/public/ || true
+              
+              # Sync .env.example if exists (from root or app/)
+              ENV_EXAMPLE_SRC=""
+              if [ -f "$SRC_DIR/.env.example" ]; then
+                ENV_EXAMPLE_SRC="$SRC_DIR/.env.example"
+              elif [ -f "$SRC_DIR/app/.env.example" ]; then
+                ENV_EXAMPLE_SRC="$SRC_DIR/app/.env.example"
+              fi
+              
+              if [ -n "$ENV_EXAMPLE_SRC" ]; then
+                echo "Syncing .env.example from repository..."
+                cp "$ENV_EXAMPLE_SRC" .env.example || true
+              fi
+              
+              # Clean up temporary directory
+              rm -rf "$TMP_DIR"
+              
+              # Create .env from .env.example template (if exists) or from scratch
+              if [ -f .env.example ]; then
+                echo "Creating .env from .env.example template..."
+                # Backup existing .env if exists
+                if [ -f .env ]; then
+                  cp .env .env.backup || true
                 fi
-                rm -rf "${ENV_BACKUP_DIR}"
-              fi
-
-              # Ensure /var/www/sites/1helper/.env exists for docker compose
-              if [ ! -f /var/www/sites/1helper/.env ]; then
-                echo "Creating /var/www/sites/1helper/.env from workflow env vars..."
+                
+                # Copy .env.example to .env
+                cp .env.example .env
+                
+                # Function to fill empty variables from workflow env
+                fill_env_var() {
+                  local key="$1"
+                  local value="$2"
+                  # Check if key exists in .env and value is empty
+                  if grep -q "^${key}=" .env; then
+                    # Get current value from .env
+                    local current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+                    # If current value is empty and workflow value is not empty, fill it
+                    if [ -z "$current_val" ] && [ -n "$value" ]; then
+                      # Escape value for sed
+                      local escaped_val=$(printf '%s\n' "$value" | sed 's/[[\.*^$()+?{|]/\\&/g')
+                      sed -i "s|^${key}=.*|${key}=${escaped_val}|" .env
+                    fi
+                  else
+                    # Key doesn't exist, append it
+                    if [ -n "$value" ]; then
+                      echo "${key}=${value}" >> .env
+                    fi
+                  fi
+                }
+                
+                # Fill empty variables from workflow environment
+                fill_env_var REGISTRY "${REGISTRY}"
+                fill_env_var IMAGE_NAME "${IMAGE_NAME}"
+                fill_env_var IMAGE_TAG "${IMAGE_TAG:-latest}"
+                fill_env_var DOMAIN "${DOMAIN}"
+                fill_env_var HOST_NGINX "${HOST_NGINX}"
+                fill_env_var NETWORK "${NETWORK}"
+                fill_env_var DB_HOST "${DB_HOST:-manager_db}"
+                fill_env_var DB_PORT "${DB_PORT:-5432}"
+                fill_env_var DB_NAME "${DB_NAME}"
+                fill_env_var DB_USER "${DB_USER}"
+                fill_env_var DB_PASSWORD "${DB_PASSWORD}"
+                fill_env_var DB_EXTERNAL_PORT "${DB_EXTERNAL_PORT}"
+                fill_env_var ELASTIC_CONTAINER_NAME "${ELASTIC_CONTAINER_NAME}"
+                fill_env_var INSTALL_XDEBUG "${INSTALL_XDEBUG}"
+                fill_env_var REDIS_HOST "${REDIS_HOST:-manager_redis:6379}"
+                
+                chmod 600 .env
+              else
+                # .env.example doesn't exist, create .env from scratch
+                echo ".env.example not found, creating .env from scratch..."
+                if [ -f .env ]; then
+                  cp .env .env.backup || true
+                fi
+                
                 {
                   printf "REGISTRY=%s\n" "${REGISTRY}"
                   printf "IMAGE_NAME=%s\n" "${IMAGE_NAME}"
+                  printf "IMAGE_TAG=%s\n" "${IMAGE_TAG:-latest}"
                   printf "DOMAIN=%s\n" "${DOMAIN}"
+                  printf "HOST_NGINX=%s\n" "${HOST_NGINX}"
                   printf "NETWORK=%s\n" "${NETWORK}"
-                  printf "\n"
-                  printf "DB_HOST=%s\n" "${DB_HOST}"
-                  printf "DB_PORT=%s\n" "${DB_PORT}"
+                  printf "DB_HOST=%s\n" "${DB_HOST:-manager_db}"
+                  printf "DB_PORT=%s\n" "${DB_PORT:-5432}"
                   printf "DB_NAME=%s\n" "${DB_NAME}"
                   printf "DB_USER=%s\n" "${DB_USER}"
                   printf "DB_PASSWORD=%s\n" "${DB_PASSWORD}"
                   printf "DB_EXTERNAL_PORT=%s\n" "${DB_EXTERNAL_PORT}"
-                  printf "\n"
                   printf "ELASTIC_CONTAINER_NAME=%s\n" "${ELASTIC_CONTAINER_NAME}"
                   printf "INSTALL_XDEBUG=%s\n" "${INSTALL_XDEBUG}"
-                  printf "REDIS_HOST=%s\n" "${REDIS_HOST}"
-                } > /var/www/sites/1helper/.env
-                chmod 600 /var/www/sites/1helper/.env || true
+                  printf "REDIS_HOST=%s\n" "${REDIS_HOST:-manager_redis:6379}"
+                } > .env
+                chmod 600 .env
               fi
               
-              # Append missing required keys into existing .env (do not overwrite existing values)
-              cd /var/www/sites/1helper
-              ensure_kv() { k="$1"; v="$2"; grep -q "^${k}=" .env 2>/dev/null || echo "${k}=${v}" >> .env; }
-              ensure_kv REGISTRY "${REGISTRY}"
-              ensure_kv IMAGE_NAME "${IMAGE_NAME}"
-              ensure_kv DOMAIN "${DOMAIN}"
-              ensure_kv NETWORK "${NETWORK}"
-              ensure_kv DB_HOST "${DB_HOST:-manager_db}"
-              ensure_kv DB_PORT "${DB_PORT:-5432}"
-              ensure_kv DB_NAME "${DB_NAME}"
-              ensure_kv DB_USER "${DB_USER}"
-              ensure_kv DB_PASSWORD "${DB_PASSWORD}"
-              ensure_kv DB_EXTERNAL_PORT "${DB_EXTERNAL_PORT}"
-              ensure_kv ELASTIC_CONTAINER_NAME "${ELASTIC_CONTAINER_NAME}"
-              ensure_kv INSTALL_XDEBUG "${INSTALL_XDEBUG}"
-              ensure_kv REDIS_HOST "${REDIS_HOST:-manager_redis:6379}"
-              echo "Syncing docker/ (non-critical)..."
-              rsync -a "$SRC_DIR/docker/" /var/www/sites/1helper/docker/ || true
-              rm -rf "$TMP_DIR"
+              # If .env.backup exists and we want to preserve some values, restore them
+              if [ -f .env.backup ]; then
+                echo "Merging values from .env.backup..."
+                # Function to preserve non-empty values from backup
+                while IFS='=' read -r key value || [ -n "$key" ]; do
+                  # Skip comments and empty lines
+                  [[ "$key" =~ ^#.*$ ]] && continue
+                  [[ -z "$key" ]] && continue
+                  
+                  # Get current value from .env
+                  if grep -q "^${key}=" .env; then
+                    local current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+                    # If current value is empty and backup value is not empty, use backup value
+                    if [ -z "$current_val" ] && [ -n "$value" ]; then
+                      local escaped_val=$(printf '%s\n' "$value" | sed 's/[[\.*^$()+?{|]/\\&/g')
+                      sed -i "s|^${key}=.*|${key}=${escaped_val}|" .env
+                    fi
+                  fi
+                done < .env.backup
+                
+                rm -f .env.backup
+              fi
               
-              # Pull latest images
-              docker pull ${REGISTRY}/${IMAGE_NAME}-php-fpm:latest
-              docker pull ${REGISTRY}/${IMAGE_NAME}-php-cli:latest
-              docker pull ${REGISTRY}/${IMAGE_NAME}-supervisor:latest
+              # Load environment variables from .env
+              export $(grep -v '^#' .env | grep -v '^\s*#' | xargs)
               
-              # Stop existing containers
-              docker-compose -f docker-compose.prod.yml down
+              # Pull latest images (similar to Ansible docker_login + docker compose pull)
+              echo "Pulling latest Docker images..."
+              docker compose -f docker-compose.prod.yml pull
               
-              # Start main containers (without php-cli)
-              docker-compose -f docker-compose.prod.yml up -d
+              # Start all containers (similar to Ansible docker compose up -d)
+              echo "Starting containers..."
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans
               
               # Wait for containers to be ready
               sleep 15
               
               # Check container status
-              docker-compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml ps
+              
+              # Run migrations (similar to Ansible update-db-from-dump)
+              echo "Running migrations..."
+              docker compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction || true
+              
+              # Clear and warm up cache
+              echo "Clearing and warming up cache..."
+              docker compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:clear --env=prod
+              docker compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:warmup --env=prod
+              
+              # Restart supervisor (similar to Ansible playbook)
+              echo "Restarting supervisor..."
+              docker compose -f docker-compose.prod.yml restart manager_supervisor || true
               
               # Verify all containers are running
-              echo "Verifying all containers are running..."
-              FAILED_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=exited" --filter "status=dead" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+              echo "Verifying containers status..."
+              FAILED_CONTAINERS=$(docker compose -f docker-compose.prod.yml ps --filter "status=exited" --filter "status=dead" --format "{{.Name}}" | grep -v "^$" || true)
               
               if [ -n "$FAILED_CONTAINERS" ]; then
-                echo "❌ ERROR: Some containers failed to start:"
+                echo "❌ ERROR: Some containers failed:"
                 echo "$FAILED_CONTAINERS"
-                echo ""
-                echo "Container logs for failed containers:"
-                echo "$FAILED_CONTAINERS" | while read -r container_name status; do
+                echo "$FAILED_CONTAINERS" | while read -r container_name; do
                   if [ -n "$container_name" ]; then
                     echo "=== Logs for $container_name ==="
                     docker logs "$container_name" --tail 50 || true
-                    echo ""
                   fi
                 done
                 exit 1
               fi
               
-              # Check for containers in restarting state
-              RESTARTING_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=restarting" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
+              echo "✅ Deployment completed successfully!"
               
-              if [ -n "$RESTARTING_CONTAINERS" ]; then
-                echo "⚠️  WARNING: Some containers are restarting:"
-                echo "$RESTARTING_CONTAINERS"
-                echo ""
-                echo "Waiting additional 30 seconds for containers to stabilize..."
-                sleep 30
-                
-                # Check again after waiting
-                RESTARTING_CONTAINERS_AFTER=$(docker-compose -f docker-compose.prod.yml ps --filter "status=restarting" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
-                
-                if [ -n "$RESTARTING_CONTAINERS_AFTER" ]; then
-                  echo "❌ ERROR: Containers still restarting after additional wait:"
-                  echo "$RESTARTING_CONTAINERS_AFTER"
-                  echo ""
-                  echo "Container logs for restarting containers:"
-                  echo "$RESTARTING_CONTAINERS_AFTER" | while read -r container_name status; do
-                    if [ -n "$container_name" ]; then
-                      echo "=== Logs for $container_name ==="
-                      docker logs "$container_name" --tail 50 || true
-                      echo ""
-                    fi
-                  done
-                  exit 1
-                fi
-              fi
-              
-              # Final status check
-              echo "✅ All containers are running successfully:"
-              docker-compose -f docker-compose.prod.yml ps
-              
-              # Verify app directory and console file
-              echo "Checking app directory structure:"
-              ls -la /var/www/sites/1helper/app/ | head -10
-              echo "Checking console file:"
-              ls -la /var/www/sites/1helper/app/bin/console || echo "Console file not found"
-              
-              # Run migrations using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
-              
-              # Fix cache directory permissions using container
-              echo "Fixing cache directory permissions using container:"
-              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli chown -R www-data:www-data /app/var/cache
-              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli chmod -R 775 /app/var/cache
-              
-              # Clear cache using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:clear --env=prod
-              
-              # Warm up cache using a temporary container
-              docker-compose -f docker-compose.prod.yml run --rm -w /app manager_php-cli php bin/console cache:warmup --env=prod
-              
-              # Final health check - verify all containers are still running after operations
-              echo "Performing final health check..."
-              FINAL_FAILED_CONTAINERS=$(docker-compose -f docker-compose.prod.yml ps --filter "status=exited" --filter "status=dead" --format "table {{.Name}}\t{{.Status}}" | grep -v "NAME" || true)
-              
-              if [ -n "$FINAL_FAILED_CONTAINERS" ]; then
-                echo "❌ ERROR: Some containers failed during deployment operations:"
-                echo "$FINAL_FAILED_CONTAINERS"
-                exit 1
-              fi
-              
-              echo "🎉 Deployment completed successfully! All containers are running."
-              
-              # Clean up stopped containers from THIS project only
-              echo "Cleaning up stopped containers from this project..."
-              OLD_CONTAINERS=$(docker ps -a --filter "name=1helper" --filter "status=exited" --filter "status=created" --format "{{.ID}}" || true)
-              if [ -n "$OLD_CONTAINERS" ]; then
-                echo "Removing stopped containers:"
-                echo "$OLD_CONTAINERS"
-                echo "$OLD_CONTAINERS" | xargs docker rm -f || true
-              fi
-              
-              # Clean up unused networks (only for this project)
-              echo "Cleaning up unused networks for this project..."
-              docker network prune -f
-              
-              # Remove dangling images (unused images)
-              echo "Cleaning up dangling images..."
-              docker image prune -f
-              
-              # Remove old/unused images for THIS project only
-              echo "Cleaning up old images for this project only..."
-              
-              # Remove old images from this specific project (keep last 5 versions)
-              PROJECT_IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "${REGISTRY}/${IMAGE_NAME}" || true)
-              
-              if [ -n "$PROJECT_IMAGES" ]; then
-                echo "Found images for this project:"
-                echo "$PROJECT_IMAGES"
-                
-                # Get images with timestamp and sort by date, keep latest 5
-                docker images --format "{{.CreatedAt}}\t{{.Repository}}:{{.Tag}}" | \
-                  grep "${REGISTRY}/${IMAGE_NAME}" | \
-                  sort -r | \
-                  tail -n +6 | \
-                  awk '{print $2}' | \
-                  xargs -r docker rmi -f || true
-              fi
-              
-              # Show disk usage
-              echo "Disk usage:"
-              df -h /var/lib/docker
-              
-              # Show remaining images for this project
-              echo "Remaining images for this project:"
-              docker images | grep "${REGISTRY}/${IMAGE_NAME}" || echo "No images found for this project"
+              # Prune containers (similar to Ansible docker system prune)
+              echo "Cleaning up unused containers and networks..."
+              docker system prune -f || true
             envs: |
               REGISTRY=${{ env.REGISTRY }}
               IMAGE_NAME=${{ env.IMAGE_NAME }}
