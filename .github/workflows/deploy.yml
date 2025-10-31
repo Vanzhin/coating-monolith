@@ -88,9 +88,9 @@ jobs:
       - name: Deploy with zero downtime
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
 
