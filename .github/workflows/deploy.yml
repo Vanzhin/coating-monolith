@@ -1,9 +1,9 @@
-name: Build and Push Docker Images
+name: Build and Deploy
 
 on:
   push:
     tags:
-      - 'v*'  # Запускается только при создании тега, начинающегося с 'v'
+      - 'v*'  # Только теги, начинающиеся с 'v'
 
 env:
   REGISTRY: ghcr.io
@@ -12,11 +12,12 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    if: startsWith(github.ref, 'refs/tags/v')
+
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       matrix:
         service: [php-fpm, php-cli, supervisor]
@@ -75,41 +76,83 @@ jobs:
             ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
 
-  deploy:
+  seamless-deploy:
     runs-on: ubuntu-latest
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to production
+      - name: Deploy with zero downtime
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}  # ← ДОБАВЛЕНО
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
             
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
-            # Use the specific tag that triggered the workflow
             export TAG="${{ github.ref_name }}"
-            echo "Deploying version: $TAG"
+            echo "Starting zero-downtime deployment of version: $TAG"
             
-            # Pull images with the specific tag
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            # 1. Pull new images in background
+            echo "Step 1: Pulling new images..."
+            docker compose -f docker-compose.prod.yml pull &
+            PULL_PID=$!
             
-            # Run migrations
-            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            # 2. Warm up phase - prepare everything while old version is running
+            echo "Step 2: Warm up phase..."
             
-            # Warmup cache
-            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
+            # Create temporary containers for warm up
+            docker compose -f docker-compose.prod.yml -p coating_temp create manager_php-cli
+            docker compose -f docker-compose.prod.yml -p coating_temp start manager_db manager_redis elasticsearch
+            
+            # Wait for database
+            timeout 60s bash -c 'until docker compose -f docker-compose.prod.yml -p coating_temp exec -T manager_db pg_isready -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }}; do sleep 2; done'
+            
+            # Run migrations on temporary container
+            docker compose -f docker-compose.prod.yml -p coating_temp run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            
+            # Warm up cache on temporary container
+            docker compose -f docker-compose.prod.yml -p coating_temp run --rm manager_php-cli php bin/console cache:warmup
+            
+            # Cleanup temporary containers
+            docker compose -f docker-compose.prod.yml -p coating_temp down
+            
+            # 3. Wait for image pull to complete
+            echo "Step 3: Waiting for image pull to complete..."
+            wait $PULL_PID
+            
+            # 4. Zero-downtime deployment with health checks
+            echo "Step 4: Starting rolling update..."
+            
+            # Update PHP-CLI first (non-critical service)
+            docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-cli
+            
+            # Update PHP-FPM with health check
+            docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-fpm
+            
+            # Wait for PHP-FPM to be ready
+            echo "Waiting for PHP-FPM to be ready..."
+            timeout 30s bash -c 'until docker compose -f docker-compose.prod.yml exec -T manager_php-fpm php -r "exit(0);"; do sleep 2; done'
+            
+            # Update Supervisor
+            docker compose -f docker-compose.prod.yml up -d --no-deps manager_supervisor
+            
+            # 5. Final checks and cleanup
+            echo "Step 5: Final checks..."
             
             # Health check
             echo "Performing health check..."
-            timeout 60s bash -c 'until curl -f http://localhost/health-check; do sleep 5; done'
-            echo "Deployment completed successfully!"
+            timeout 30s bash -c 'until curl -f http://localhost/health-check > /dev/null 2>&1; do sleep 2; done'
+            
+            # Remove old images
+            echo "Cleaning up old images..."
+            docker image prune -f
+            
+            echo "Zero-downtime deployment completed successfully!"
