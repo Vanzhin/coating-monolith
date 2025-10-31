@@ -94,17 +94,31 @@ jobs:
           script: |
             cd /var/www/sites/1helper
             
-            # Создаем/обновляем .env файл с переменными
+            # Создаем/обновляем .env файл со ВСЕМИ переменными
             cat > .env << EOF
+            # Docker Compose Variables
+            NETWORK=coating-network
+            DOMAIN=localhost
+            HOST_NGINX=localhost
+            DB_EXTERNAL_PORT=5432
+            ELASTIC_CONTAINER_NAME=elasticsearch
+            
+            # Registry and Image
             REGISTRY=ghcr.io
             IMAGE_NAME=vanzhin/coating-monolith
             TAG=${{ github.ref_name }}
+            
+            # Database
             DB_NAME=${{ vars.DB_NAME }}
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_HOST=manager_db
             DB_PORT=5432
+            
+            # Redis
             REDIS_HOST=manager_redis
+            
+            # Application
             INSTALL_XDEBUG=false
             APP_SECRET=${{ secrets.APP_SECRET }}
             APP_NAME=${{ vars.APP_NAME }}
@@ -116,13 +130,15 @@ jobs:
             JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
+            
+            # Elasticsearch
             ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
             ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
             EOF
             
             # Login to registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             export TAG="${{ github.ref_name }}"
             echo "Starting zero-downtime deployment of version: $TAG"
