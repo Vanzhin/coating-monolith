@@ -1,9 +1,10 @@
 name: Deploy to Production
 
 on:
-  push:
-    tags:
-      - '*'  # Запускается только при создании тега
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
 
 env:
   REGISTRY: ghcr.io
@@ -12,6 +13,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Деплоим только если build завершился успешно и это был тег
+    if: github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'refs/tags/')
     
     steps:
       - name: Checkout repository
@@ -22,7 +25,10 @@ jobs:
       - name: Extract tag name
         id: tag
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          # Для workflow_run события тег берется из head_branch
+          TAG_NAME=${{ github.event.workflow_run.head_branch }}
+          # Убираем префикс refs/tags/ если есть
+          TAG_NAME=${TAG_NAME#refs/tags/}
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "Deploying tag: ${TAG_NAME}"
       
