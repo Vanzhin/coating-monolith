@@ -66,12 +66,12 @@ jobs:
             JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
-            DB_HOST=${{ vars.DB_HOST || 'manager_db' }}
-            DB_PORT=${{ vars.DB_PORT || '5432' }}
+            DB_HOST=${{ vars.DB_HOST }}
+            DB_PORT=${{ vars.DB_PORT }}
             DB_NAME=${{ vars.DB_NAME }}
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            REDIS_HOST=${{ vars.REDIS_HOST || 'manager_redis' }}
+            REDIS_HOST=${{ vars.REDIS_HOST }}
             ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
             ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
@@ -85,6 +85,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Copy docker-compose.prod.yml from tag version
+        uses: appleboy/scp-action@v0.1.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/var/www/sites/1helper/"
+
       - name: Deploy to production
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -93,6 +102,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
+            
+            echo "=== Using docker-compose.prod.yml from tag: ${{ github.ref_name }} ==="
+            ls -la docker-compose.prod.yml
 
             # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными сети
             cat > .env << EOF
@@ -100,8 +112,8 @@ jobs:
             NETWORK=${{ vars.NETWORK }}
             DOMAIN=${{ vars.DOMAIN }}
             HOST_NGINX=${{ vars.HOST_NGINX }}
-            DB_EXTERNAL_PORT=5432
-            ELASTIC_CONTAINER_NAME=elasticsearch
+            DB_EXTERNAL_PORT=${{ vars.DB_EXTERNAL_PORT }}
+            ELASTIC_CONTAINER_NAME=${{ vars.ELASTIC_CONTAINER_NAME }}
 
             # Registry and Image
             REGISTRY=ghcr.io
@@ -112,8 +124,8 @@ jobs:
             DB_NAME=${{ vars.DB_NAME }}
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_HOST=manager_db
-            DB_PORT=5432
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
 
             # Redis
             REDIS_HOST=manager_redis
@@ -145,27 +157,29 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
 
+            # Ждем запуска и выполняем миграции
+            sleep 10
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
+
             echo "Deployment completed successfully!"
             
-            # ⬇️ ОЧИСТКА СТАРЫХ ОБРАЗОВ
-                      echo "=== Cleaning up old images ==="
+            # ОЧИСТКА СТАРЫХ ОБРАЗОВ
+            echo "=== Cleaning up old images ==="
 
-                      # Вариант A: Удаляем все vanzhin образы кроме текущего тега
-                      CURRENT_TAG="${{ github.ref_name }}"
-                      echo "Keeping images with tag: $CURRENT_TAG and latest"
+            # Удаляем все vanzhin образы кроме текущего тега
+            CURRENT_TAG="${{ github.ref_name }}"
+            echo "Keeping images with tag: $CURRENT_TAG and latest"
 
-                      docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
-                      while read id repo tag; do
-                        if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
-                          echo "Removing old image: $repo:$tag"
-                          docker rmi $id 2>/dev/null || echo "Could not remove $id"
-                        else
-                          echo "Keeping: $repo:$tag"
-                        fi
-                      done
+            docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
+            while read id repo tag; do
+              if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
+                echo "Removing old image: $repo:$tag"
+                docker rmi $id 2>/dev/null || echo "Could not remove $id"
+              else
+                echo "Keeping: $repo:$tag"
+              fi
+            done
 
-                      # Вариант B: Просто удаляем dangling образы (безопаснее)
-                      # docker image prune -f
-
-                      echo "Cleanup completed!"
-                      docker images | grep vanzhin
+            echo "Cleanup completed!"
+            docker images | grep vanzhin
