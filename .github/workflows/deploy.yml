@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [php-fpm, php-cli, supervisor]
+        service: [ php-fpm, php-cli, supervisor ]
 
     steps:
       - name: Checkout repository
@@ -146,3 +146,26 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d
 
             echo "Deployment completed successfully!"
+            
+            # ⬇️ ОЧИСТКА СТАРЫХ ОБРАЗОВ
+                      echo "=== Cleaning up old images ==="
+
+                      # Вариант A: Удаляем все vanzhin образы кроме текущего тега
+                      CURRENT_TAG="${{ github.ref_name }}"
+                      echo "Keeping images with tag: $CURRENT_TAG and latest"
+
+                      docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
+                      while read id repo tag; do
+                        if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
+                          echo "Removing old image: $repo:$tag"
+                          docker rmi $id 2>/dev/null || echo "Could not remove $id"
+                        else
+                          echo "Keeping: $repo:$tag"
+                        fi
+                      done
+
+                      # Вариант B: Просто удаляем dangling образы (безопаснее)
+                      # docker image prune -f
+
+                      echo "Cleanup completed!"
+                      docker images | grep vanzhin
