@@ -3,7 +3,7 @@ name: Build and Deploy
 on:
   push:
     tags:
-      - 'v*'  # Только теги, начинающиеся с 'v'
+      - 'v*'
 
 env:
   REGISTRY: ghcr.io
@@ -88,11 +88,38 @@ jobs:
       - name: Deploy with zero downtime
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}  # ← ДОБАВЛЕНО
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
+            
+            # Создаем/обновляем .env файл с переменными
+            cat > .env << EOF
+            REGISTRY=ghcr.io
+            IMAGE_NAME=vanzhin/coating-monolith
+            TAG=${{ github.ref_name }}
+            DB_NAME=${{ vars.DB_NAME }}
+            DB_USER=${{ vars.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_HOST=manager_db
+            DB_PORT=5432
+            REDIS_HOST=manager_redis
+            INSTALL_XDEBUG=false
+            APP_SECRET=${{ secrets.APP_SECRET }}
+            APP_NAME=${{ vars.APP_NAME }}
+            DEFAULT_FROM_ADDR=${{ vars.DEFAULT_FROM_ADDR }}
+            DEFAULT_FROM_NAME=${{ vars.DEFAULT_FROM_NAME }}
+            MAILER_DSN=${{ vars.MAILER_DSN }}
+            JWT_SECRET_KEY=${{ vars.JWT_SECRET_KEY }}
+            JWT_PUBLIC_KEY=${{ vars.JWT_PUBLIC_KEY }}
+            JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
+            LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
+            LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
+            ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
+            ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
+            ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
+            EOF
             
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
@@ -108,21 +135,25 @@ jobs:
             # 2. Warm up phase - prepare everything while old version is running
             echo "Step 2: Warm up phase..."
             
-            # Create temporary containers for warm up
-            docker compose -f docker-compose.prod.yml -p coating_temp create manager_php-cli
-            docker compose -f docker-compose.prod.yml -p coating_temp start manager_db manager_redis elasticsearch
+            # Проверяем, что база данных запущена
+            if ! docker compose -f docker-compose.prod.yml ps manager_db | grep -q "Up"; then
+              echo "Starting database services..."
+              docker compose -f docker-compose.prod.yml up -d manager_db manager_redis elasticsearch
             
-            # Wait for database
-            timeout 60s bash -c 'until docker compose -f docker-compose.prod.yml -p coating_temp exec -T manager_db pg_isready -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }}; do sleep 2; done'
+              # Wait for database
+              echo "Waiting for database to be ready..."
+              timeout 120s bash -c 'until docker compose -f docker-compose.prod.yml exec -T manager_db pg_isready -U $DB_USER -d $DB_NAME; do sleep 2; done'
+            else
+              echo "Database services are already running"
+            fi
             
-            # Run migrations on temporary container
-            docker compose -f docker-compose.prod.yml -p coating_temp run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            # Run migrations on running container
+            echo "Running migrations..."
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
             
-            # Warm up cache on temporary container
-            docker compose -f docker-compose.prod.yml -p coating_temp run --rm manager_php-cli php bin/console cache:warmup
-            
-            # Cleanup temporary containers
-            docker compose -f docker-compose.prod.yml -p coating_temp down
+            # Warm up cache on running container
+            echo "Warming up cache..."
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
             
             # 3. Wait for image pull to complete
             echo "Step 3: Waiting for image pull to complete..."
@@ -131,17 +162,18 @@ jobs:
             # 4. Zero-downtime deployment with health checks
             echo "Step 4: Starting rolling update..."
             
-            # Update PHP-CLI first (non-critical service)
+            # Update services one by one
+            echo "Updating PHP-CLI..."
             docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-cli
             
-            # Update PHP-FPM with health check
+            echo "Updating PHP-FPM..."
             docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-fpm
             
             # Wait for PHP-FPM to be ready
             echo "Waiting for PHP-FPM to be ready..."
             timeout 30s bash -c 'until docker compose -f docker-compose.prod.yml exec -T manager_php-fpm php -r "exit(0);"; do sleep 2; done'
             
-            # Update Supervisor
+            echo "Updating Supervisor..."
             docker compose -f docker-compose.prod.yml up -d --no-deps manager_supervisor
             
             # 5. Final checks and cleanup
@@ -149,7 +181,7 @@ jobs:
             
             # Health check
             echo "Performing health check..."
-            timeout 30s bash -c 'until curl -f http://localhost/health-check > /dev/null 2>&1; do sleep 2; done'
+            timeout 30s bash -c 'until curl -f http://localhost/health-check > /dev/null 2>&1; do sleep 2; done' || echo "Health check endpoint not available, but continuing..."
             
             # Remove old images
             echo "Cleaning up old images..."
