@@ -166,8 +166,22 @@ jobs:
           target: "/var/www/sites/1helper/"
           strip_components: 0
       
-      - name: Create Docker context for remote server
+      - name: Setup SSH for Docker context
         run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Добавляем сервер в known_hosts для избежания ошибки "Host key verification failed"
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          
+          # Создаем SSH config для Docker context
+          cat > ~/.ssh/config << EOF
+          Host ${{ secrets.SSH_HOST }}
+            StrictHostKeyChecking no
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          # Создаем Docker context
           docker context create remote --docker "host=ssh://${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" || true
           docker context use remote
       
@@ -192,40 +206,80 @@ jobs:
             git checkout ${{ steps.tag.outputs.tag }} || git checkout tags/${{ steps.tag.outputs.tag }} || echo "Tag not found, keeping current branch"
       
       - name: Pull latest Docker images
-        run: |
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env pull
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
+            docker compose -f docker-compose.prod.yml --env-file .env pull
       
       - name: Start containers
-        run: |
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans
       
       - name: Wait for containers to be ready
-        run: |
-          sleep 15
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            sleep 15
       
       - name: Clear and warm up cache
-        run: |
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:clear --env=prod
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:warmup --env=prod
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
+            docker compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:clear --env=prod
+            docker compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:warmup --env=prod
       
       - name: Restart supervisor
-        run: |
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env restart manager_supervisor || true
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
+            docker compose -f docker-compose.prod.yml --env-file .env restart manager_supervisor || true
       
       - name: Verify containers status
-        run: |
-          docker --context remote compose -f docker-compose.prod.yml --env-file .env ps
-          
-          # Check for failed containers
-          FAILED=$(docker --context remote compose -f docker-compose.prod.yml --env-file .env ps --filter "status=exited" --filter "status=dead" --format "{{.Name}}" || true)
-          if [ -n "$FAILED" ]; then
-            echo "❌ ERROR: Some containers failed:"
-            echo "$FAILED"
-            exit 1
-          fi
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
+            docker compose -f docker-compose.prod.yml --env-file .env ps
+            
+            # Check for failed containers
+            FAILED=$(docker compose -f docker-compose.prod.yml --env-file .env ps --filter "status=exited" --filter "status=dead" --format "{{.Name}}" 2>/dev/null || echo "")
+            if [ -n "$FAILED" ]; then
+              echo "❌ ERROR: Some containers failed:"
+              echo "$FAILED"
+              exit 1
+            fi
       
       - name: Cleanup
         if: always()
         run: |
-          rm -rf ~/.ssh
           docker context rm remote || true
