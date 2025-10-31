@@ -1,70 +1,36 @@
-name: Deploy to Production
+name: Build and Push Docker Images
 
 on:
-  workflow_run:
-    workflows: ["Build and Push Docker Images"]
-    types:
-      - completed
+  push:
+    tags:
+      - 'v*'  # Запускается только при создании тега, начинающегося с 'v'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: vanzhin/coating-monolith
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    
     permissions:
       contents: read
-      packages: read
-      id-token: write
-    # Деплоим только если build завершился успешно
-    # Проверку тега делаем в шаге извлечения тега
-    if: github.event.workflow_run.conclusion == 'success'
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [php-fpm, php-cli, supervisor]
+        include:
+          - service: php-fpm
+            context: ./docker/php-fpm
+          - service: php-cli
+            context: ./docker/php-cli
+          - service: supervisor
+            context: ./docker/supervisor
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.workflow_run.head_branch }}
-      
-      - name: Extract tag name
-        id: tag
-        run: |
-          # Для workflow_run события тег берем из head_branch или через git
-          TAG_NAME="${{ github.event.workflow_run.head_branch }}"
-          # Убираем префикс refs/tags/ если есть
-          TAG_NAME=${TAG_NAME#refs/tags/}
-          
-          # Если head_branch пустой или не тег, пробуем получить тег через git
-          if [ -z "$TAG_NAME" ] || [ "$TAG_NAME" == "null" ] || [ "$TAG_NAME" == "${{ github.event.workflow_run.head_branch }}" ]; then
-            # Получаем тег из head_sha
-            TAG_NAME=$(git describe --tags --exact-match "${{ github.event.workflow_run.head_sha }}" 2>/dev/null || echo "")
-            # Если не нашли точное совпадение, пробуем последний тег
-            if [ -z "$TAG_NAME" ]; then
-              TAG_NAME=$(git describe --tags "${{ github.event.workflow_run.head_sha }}" 2>/dev/null | cut -d'-' -f1 || echo "")
-            fi
-          fi
-          
-          # Проверяем, что это тег (начинается с v или цифры)
-          if [ -z "$TAG_NAME" ] || [ "$TAG_NAME" == "null" ]; then
-            echo "ERROR: Could not extract tag name from workflow_run event"
-            echo "head_branch: ${{ github.event.workflow_run.head_branch }}"
-            echo "head_sha: ${{ github.event.workflow_run.head_sha }}"
-            exit 1
-          fi
-          
-          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
-          echo "Deploying tag: ${TAG_NAME}"
-      
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-php-fpm
-          tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
       
       - name: Log in to Container Registry
         uses: docker/login-action@v3
@@ -73,194 +39,84 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create .env files from .env.example
-        run: |
-          # Function to set or update environment variable in a file
-          set_env_var() {
-            env_file="$1"
-            key="$2"
-            value="$3"
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=tag
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ./docker/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            INSTALL_XDEBUG=${{ vars.INSTALL_XDEBUG || 'false' }}
+            APP_SECRET=${{ secrets.APP_SECRET }}
+            APP_NAME=${{ vars.APP_NAME }}
+            DEFAULT_FROM_ADDR=${{ vars.DEFAULT_FROM_ADDR }}
+            DEFAULT_FROM_NAME=${{ vars.DEFAULT_FROM_NAME }}
+            MAILER_DSN=${{ vars.MAILER_DSN }}
+            JWT_SECRET_KEY=${{ vars.JWT_SECRET_KEY }}
+            JWT_PUBLIC_KEY=${{ vars.JWT_PUBLIC_KEY }}
+            JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
+            LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
+            LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
+            DB_HOST=${{ vars.DB_HOST || 'manager_db' }}
+            DB_PORT=${{ vars.DB_PORT || '5432' }}
+            DB_NAME=${{ vars.DB_NAME }}
+            DB_USER=${{ vars.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            REDIS_HOST=${{ vars.REDIS_HOST || 'manager_redis' }}
+            ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
+            ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
+            ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/sites/1helper
             
-            # Skip if value is empty
-            if [ -z "$value" ]; then
-              return 0
-            fi
+            # Login to registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
-            # Escape special characters in value for sed
-            escaped_value=$(printf '%s\n' "$value" | sed 's/[\/&]/\\&/g' | sed 's/[[\.*^$()+?{|]/\\&/g')
+            # Use the specific tag that triggered the workflow
+            export TAG="${{ github.ref_name }}"
+            echo "Deploying version: $TAG"
             
-            if grep -q "^${key}=" "$env_file" 2>/dev/null; then
-              # Key exists, update it
-              sed -i.tmp "s|^${key}=.*|${key}=${escaped_value}|" "$env_file" && rm -f "$env_file.tmp" 2>/dev/null || true
-            else
-              # Key doesn't exist, append it
-              echo "${key}=${value}" >> "$env_file"
-            fi
-          }
-          
-          # Create .env in root (for docker-compose)
-          if [ -f .env.example ]; then
-            echo "Creating .env from .env.example template (docker-compose)..."
-            cp .env.example .env
-          else
-            echo ".env.example not found, creating .env from scratch (docker-compose)..."
-            touch .env
-          fi
-          
-          # Set docker-compose variables
-          set_env_var .env REGISTRY "${{ env.REGISTRY }}"
-          set_env_var .env IMAGE_NAME "${{ env.IMAGE_NAME }}"
-          set_env_var .env IMAGE_TAG "${{ steps.tag.outputs.tag }}"
-          set_env_var .env DOMAIN "${{ vars.DOMAIN }}"
-          set_env_var .env HOST_NGINX "${{ vars.HOST_NGINX }}"
-          set_env_var .env NETWORK "${{ vars.NETWORK }}"
-          set_env_var .env DB_HOST "${{ vars.DB_HOST }}"
-          set_env_var .env DB_PORT "${{ vars.DB_PORT }}"
-          set_env_var .env DB_NAME "${{ vars.DB_NAME }}"
-          set_env_var .env DB_USER "${{ vars.DB_USER }}"
-          set_env_var .env DB_PASSWORD "${{ secrets.DB_PASSWORD }}"
-          set_env_var .env DB_EXTERNAL_PORT "${{ vars.DB_EXTERNAL_PORT }}"
-          set_env_var .env ELASTIC_CONTAINER_NAME "${{ vars.ELASTIC_CONTAINER_NAME }}"
-          set_env_var .env INSTALL_XDEBUG "${{ vars.INSTALL_XDEBUG }}"
-          set_env_var .env REDIS_HOST "${{ vars.REDIS_HOST }}"
-          chmod 600 .env
-          
-          # Create app/.env (for Symfony application)
-          mkdir -p app
-          if [ -f app/.env.example ]; then
-            echo "Creating app/.env from app/.env.example template (Symfony)..."
-            cp app/.env.example app/.env
-          else
-            echo "app/.env.example not found, creating app/.env from scratch (Symfony)..."
-            touch app/.env
-          fi
-          
-          # Set Symfony application variables (APP_SECRET, JWT keys, etc.)
-          set_env_var app/.env APP_ENV "prod"
-          set_env_var app/.env APP_DEBUG "0"
-          set_env_var app/.env APP_SECRET "${{ secrets.APP_SECRET }}"
-          set_env_var app/.env APP_NAME "${{ vars.APP_NAME }}"
-          set_env_var app/.env DEFAULT_FROM_ADDR "${{ vars.DEFAULT_FROM_ADDR }}"
-          set_env_var app/.env DEFAULT_FROM_NAME "${{ vars.DEFAULT_FROM_NAME }}"
-          set_env_var app/.env MAILER_DSN "${{ vars.MAILER_DSN }}"
-          set_env_var app/.env JWT_SECRET_KEY "${{ vars.JWT_SECRET_KEY }}"
-          set_env_var app/.env JWT_PUBLIC_KEY "${{ vars.JWT_PUBLIC_KEY }}"
-          set_env_var app/.env JWT_PASSPHRASE "${{ secrets.JWT_PASSPHRASE }}"
-          set_env_var app/.env LOG_TELEGRAM_BOT_KEY "${{ secrets.LOG_TELEGRAM_BOT_KEY }}"
-          set_env_var app/.env LOG_TELEGRAM_CHANNEL "${{ vars.LOG_TELEGRAM_CHANNEL }}"
-          set_env_var app/.env DATABASE_URL "postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.DB_NAME }}"
-          set_env_var app/.env REDIS_HOST "${{ vars.REDIS_HOST }}"
-          set_env_var app/.env ELASTIC_DSN "${{ vars.ELASTIC_DSN }}"
-          set_env_var app/.env ELASTIC_USERNAME "${{ vars.ELASTIC_USERNAME }}"
-          set_env_var app/.env ELASTIC_PASSWORD "${{ secrets.ELASTIC_PASSWORD }}"
-          chmod 600 app/.env
-      
-      - name: Copy .env files to server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          source: ".env,app/.env"
-          target: "/var/www/sites/1helper/"
-          strip_components: 0
-      
-      - name: Update repository and checkout tag on server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            # Делаем бэкап существующих .env файлов перед обновлением
-            if [ -f .env ]; then
-              cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
-            fi
-            if [ -f app/.env ]; then
-              cp app/.env app/.env.backup.$(date +%Y%m%d_%H%M%S)
-            fi
-            # Обновляем репозиторий и переключаемся на нужный тег
-            git fetch --all --tags
-            git checkout ${{ steps.tag.outputs.tag }} || git checkout tags/${{ steps.tag.outputs.tag }} || echo "Tag not found, keeping current branch"
-      
-      - name: Pull latest Docker images
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            docker compose -f docker-compose.prod.yml --env-file .env pull
-      
-      - name: Start containers
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            docker compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans
-      
-      - name: Wait for containers to be ready
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            sleep 15
-      
-      - name: Clear and warm up cache
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            docker compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:clear --env=prod
-            docker compose -f docker-compose.prod.yml --env-file .env run --rm manager_php-cli php bin/console cache:warmup --env=prod
-      
-      - name: Restart supervisor
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            docker compose -f docker-compose.prod.yml --env-file .env restart manager_supervisor || true
-      
-      - name: Verify containers status
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            cd /var/www/sites/1helper
-            docker compose -f docker-compose.prod.yml --env-file .env ps
+            # Pull images with the specific tag
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
             
-            # Check for failed containers
-            FAILED=$(docker compose -f docker-compose.prod.yml --env-file .env ps --filter "status=exited" --filter "status=dead" --format "{{.Name}}" 2>/dev/null || echo "")
-            if [ -n "$FAILED" ]; then
-              echo "❌ ERROR: Some containers failed:"
-              echo "$FAILED"
-              exit 1
-            fi
-      
-      - name: Cleanup
-        if: always()
-        run: |
-          echo "Deployment completed"
+            # Run migrations
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+            
+            # Warmup cache
+            docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
+            
+            # Health check
+            echo "Performing health check..."
+            timeout 60s bash -c 'until curl -f http://localhost/health-check; do sleep 5; done'
+            echo "Deployment completed successfully!"
