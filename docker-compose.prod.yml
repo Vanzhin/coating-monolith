@@ -3,7 +3,7 @@ services:
     hostname: ${DOMAIN}
     image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${TAG:-latest}
     volumes:
-      - ./app:/app:rw
+      - ./app/var:/app/var:rw
     depends_on:
       manager_redis:
         condition: service_started
@@ -23,7 +23,6 @@ services:
         condition: service_healthy
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
-      - ./app:/app:rw
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
 
@@ -37,8 +36,6 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
-    volumes:
-      - ./app:/app:rw
 
   manager_nginx:
     hostname: ${DOMAIN}
@@ -46,7 +43,7 @@ services:
     depends_on:
       - manager_php-fpm
     volumes:
-      - ./app:/app:rw
+      - ./app/public:/app/public:ro
       - ./docker/nginx/logs:/var/log/nginx:rw
       - ./docker/nginx/hosts:/etc/nginx/conf.d
     networks:
