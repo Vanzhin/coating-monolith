@@ -361,17 +361,16 @@ jobs:
                 
                 # Function to fill empty variables from workflow env
                 fill_env_var() {
-                  local key="$1"
-                  local value="$2"
+                  key="$1"
+                  value="$2"
                   # Check if key exists in .env and value is empty
-                  if grep -q "^${key}=" .env; then
+                  if grep -q "^${key}=" .env 2>/dev/null; then
                     # Get current value from .env
-                    local current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+                    current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
                     # If current value is empty and workflow value is not empty, fill it
                     if [ -z "$current_val" ] && [ -n "$value" ]; then
-                      # Escape value for sed
-                      local escaped_val=$(printf '%s\n' "$value" | sed 's/[[\.*^$()+?{|]/\\&/g')
-                      sed -i "s|^${key}=.*|${key}=${escaped_val}|" .env
+                      # Use awk for safer replacement (handles special characters better)
+                      awk -v key="$key" -v val="$value" 'BEGIN{FS=OFS="="} $1==key {$2=val} 1' .env > .env.tmp && mv .env.tmp .env
                     fi
                   else
                     # Key doesn't exist, append it
@@ -432,16 +431,24 @@ jobs:
                 # Function to preserve non-empty values from backup
                 while IFS='=' read -r key value || [ -n "$key" ]; do
                   # Skip comments and empty lines
-                  [[ "$key" =~ ^#.*$ ]] && continue
-                  [[ -z "$key" ]] && continue
+                  case "$key" in
+                    \#*) continue ;;
+                    "") continue ;;
+                    *) ;;
+                  esac
+                  
+                  # Skip if key is empty
+                  if [ -z "$key" ]; then
+                    continue
+                  fi
                   
                   # Get current value from .env
-                  if grep -q "^${key}=" .env; then
-                    local current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+                  if grep -q "^${key}=" .env 2>/dev/null; then
+                    current_val=$(grep "^${key}=" .env | cut -d'=' -f2- | sed 's/^"//;s/"$//')
                     # If current value is empty and backup value is not empty, use backup value
                     if [ -z "$current_val" ] && [ -n "$value" ]; then
-                      local escaped_val=$(printf '%s\n' "$value" | sed 's/[[\.*^$()+?{|]/\\&/g')
-                      sed -i "s|^${key}=.*|${key}=${escaped_val}|" .env
+                      # Use awk for safer replacement (handles special characters better)
+                      awk -v key="$key" -v val="$value" 'BEGIN{FS=OFS="="} $1==key {$2=val} 1' .env > .env.tmp && mv .env.tmp .env
                     fi
                   fi
                 done < .env.backup
