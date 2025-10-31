@@ -26,17 +26,6 @@ jobs:
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "Deploying tag: ${TAG_NAME}"
       
-      - name: Install SSH keys
-        run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_rsa
-      
-      - name: Create Docker context for remote server
-        run: |
-          docker context create remote --docker "host=ssh://${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
-      
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -54,121 +43,150 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Copy docker-compose.prod.yml and .env.example files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          source: "docker-compose.prod.yml"
+          target: "/tmp/"
+      - name: Copy .env.example to server
+        if: always()
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          source: ".env.example"
+          target: "/tmp/"
+        continue-on-error: true
+      - name: Copy app/.env.example to server
+        if: always()
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          source: "app/.env.example"
+          target: "/tmp/app.env.example"
+        continue-on-error: true
+      
+      - name: Create Docker context for remote server
         run: |
-          scp -i ~/.ssh/id_rsa docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/docker-compose.prod.yml
-          # Copy .env.example for docker-compose (root)
-          if [ -f .env.example ]; then
-            scp -i ~/.ssh/id_rsa .env.example ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/.env.example
-          fi
-          # Copy app/.env.example for Symfony application
-          if [ -f app/.env.example ]; then
-            scp -i ~/.ssh/id_rsa app/.env.example ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app.env.example
-          fi
+          docker context create remote --docker "host=ssh://${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" || true
+          docker context use remote
       
       - name: Setup .env files on server from .env.example
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << ENDSSH
-          cd /var/www/sites/1helper
-          
-          # Function to set or update environment variable in a file
-          set_env_var() {
-            env_file="\$1"
-            key="\$2"
-            value="\$3"
-            # Escape special characters in value
-            escaped_value=\$(printf '%s\n' "\$value" | sed 's/[[\.*^\\$()+?{|]/\\\\&/g')
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/sites/1helper
             
-            if grep -q "^\${key}=" "\$env_file" 2>/dev/null; then
-              # Key exists, update it (preserve existing non-empty value if new value is empty)
-              current_val=\$(grep "^\${key}=" "\$env_file" | cut -d'=' -f2- | sed 's/^"//;s/"\\$//')
-              if [ -z "\$current_val" ] && [ -n "\$value" ]; then
-                # Current value is empty and new value is not empty, update it
-                sed -i "s|^\${key}=.*|\${key}=\${escaped_value}|" "\$env_file"
-              elif [ -n "\$value" ]; then
-                # Both values exist, update with new value
-                sed -i "s|^\${key}=.*|\${key}=\${escaped_value}|" "\$env_file"
+            # Function to set or update environment variable in a file
+            set_env_var() {
+              env_file="$1"
+              key="$2"
+              value="$3"
+              # Escape special characters in value
+              escaped_value=$(printf '%s\n' "$value" | sed 's/[[\.*^\\$()+?{|]/\\\\&/g')
+              
+              if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+                # Key exists, update it (preserve existing non-empty value if new value is empty)
+                current_val=$(grep "^${key}=" "$env_file" | cut -d'=' -f2- | sed 's/^"//;s/"$//')
+                if [ -z "$current_val" ] && [ -n "$value" ]; then
+                  # Current value is empty and new value is not empty, update it
+                  sed -i "s|^${key}=.*|${key}=${escaped_value}|" "$env_file"
+                elif [ -n "$value" ]; then
+                  # Both values exist, update with new value
+                  sed -i "s|^${key}=.*|${key}=${escaped_value}|" "$env_file"
+                fi
+              else
+                # Key doesn't exist, append it
+                if [ -n "$value" ]; then
+                  echo "${key}=${escaped_value}" >> "$env_file"
+                fi
               fi
-            else
-              # Key doesn't exist, append it
-              if [ -n "\$value" ]; then
-                echo "\${key}=\${escaped_value}" >> "\$env_file"
-              fi
+            }
+            
+            # Create .env in root (for docker-compose)
+            if [ -f .env ]; then
+              cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
             fi
-          }
-          
-          # Create .env in root (for docker-compose)
-          if [ -f .env ]; then
-            cp .env .env.backup.\$(date +%Y%m%d_%H%M%S)
-          fi
-          
-          if [ -f /tmp/.env.example ]; then
-            echo "Creating .env from .env.example template (docker-compose)..."
-            cp /tmp/.env.example .env
-          else
-            echo ".env.example not found, creating .env from scratch (docker-compose)..."
-            touch .env
-          fi
-          
-          # Set docker-compose variables
-          set_env_var .env REGISTRY "${{ env.REGISTRY }}"
-          set_env_var .env IMAGE_NAME "${{ env.IMAGE_NAME }}"
-          set_env_var .env IMAGE_TAG "${{ steps.tag.outputs.tag }}"
-          set_env_var .env DOMAIN "${{ vars.DOMAIN }}"
-          set_env_var .env HOST_NGINX "${{ vars.HOST_NGINX }}"
-          set_env_var .env NETWORK "${{ vars.NETWORK }}"
-          set_env_var .env DB_HOST "${{ vars.DB_HOST }}"
-          set_env_var .env DB_PORT "${{ vars.DB_PORT }}"
-          set_env_var .env DB_NAME "${{ vars.DB_NAME }}"
-          set_env_var .env DB_USER "${{ vars.DB_USER }}"
-          set_env_var .env DB_PASSWORD "${{ secrets.DB_PASSWORD }}"
-          set_env_var .env DB_EXTERNAL_PORT "${{ vars.DB_EXTERNAL_PORT }}"
-          set_env_var .env ELASTIC_CONTAINER_NAME "${{ vars.ELASTIC_CONTAINER_NAME }}"
-          set_env_var .env INSTALL_XDEBUG "${{ vars.INSTALL_XDEBUG }}"
-          set_env_var .env REDIS_HOST "${{ vars.REDIS_HOST }}"
-          chmod 600 .env
-          
-          # Create app/.env (for Symfony application)
-          mkdir -p app
-          if [ -f app/.env ]; then
-            cp app/.env app/.env.backup.\$(date +%Y%m%d_%H%M%S)
-          fi
-          
-          if [ -f /tmp/app.env.example ]; then
-            echo "Creating app/.env from app/.env.example template (Symfony)..."
-            cp /tmp/app.env.example app/.env
-          else
-            echo "app/.env.example not found, creating app/.env from scratch (Symfony)..."
-            touch app/.env
-          fi
-          
-          # Set Symfony application variables (APP_SECRET, JWT keys, etc.)
-          set_env_var app/.env APP_ENV "prod"
-          set_env_var app/.env APP_DEBUG "0"
-          set_env_var app/.env APP_SECRET "${{ secrets.APP_SECRET }}"
-          set_env_var app/.env APP_NAME "${{ vars.APP_NAME }}"
-          set_env_var app/.env DEFAULT_FROM_ADDR "${{ vars.DEFAULT_FROM_ADDR }}"
-          set_env_var app/.env DEFAULT_FROM_NAME "${{ vars.DEFAULT_FROM_NAME }}"
-          set_env_var app/.env MAILER_DSN "${{ vars.MAILER_DSN }}"
-          set_env_var app/.env JWT_SECRET_KEY "${{ vars.JWT_SECRET_KEY }}"
-          set_env_var app/.env JWT_PUBLIC_KEY "${{ vars.JWT_PUBLIC_KEY }}"
-          set_env_var app/.env JWT_PASSPHRASE "${{ secrets.JWT_PASSPHRASE }}"
-          set_env_var app/.env LOG_TELEGRAM_BOT_KEY "${{ secrets.LOG_TELEGRAM_BOT_KEY }}"
-          set_env_var app/.env LOG_TELEGRAM_CHANNEL "${{ vars.LOG_TELEGRAM_CHANNEL }}"
-          set_env_var app/.env DATABASE_URL "postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.DB_NAME }}"
-          set_env_var app/.env REDIS_HOST "${{ vars.REDIS_HOST }}"
-          set_env_var app/.env ELASTIC_DSN "${{ vars.ELASTIC_DSN }}"
-          set_env_var app/.env ELASTIC_USERNAME "${{ vars.ELASTIC_USERNAME }}"
-          set_env_var app/.env ELASTIC_PASSWORD "${{ secrets.ELASTIC_PASSWORD }}"
-          chmod 600 app/.env
-          
-          # Copy docker-compose.prod.yml if needed
-          if [ ! -f docker-compose.prod.yml ] || ! cmp -s /tmp/docker-compose.prod.yml docker-compose.prod.yml; then
-            cp /tmp/docker-compose.prod.yml docker-compose.prod.yml
-          fi
-          
-          # Clean up temp files
-          rm -f /tmp/.env.example /tmp/app.env.example /tmp/docker-compose.prod.yml
-          ENDSSH
+            
+            if [ -f /tmp/.env.example ]; then
+              echo "Creating .env from .env.example template (docker-compose)..."
+              cp /tmp/.env.example .env
+            else
+              echo ".env.example not found, creating .env from scratch (docker-compose)..."
+              touch .env
+            fi
+            
+            # Set docker-compose variables
+            set_env_var .env REGISTRY "${{ env.REGISTRY }}"
+            set_env_var .env IMAGE_NAME "${{ env.IMAGE_NAME }}"
+            set_env_var .env IMAGE_TAG "${{ steps.tag.outputs.tag }}"
+            set_env_var .env DOMAIN "${{ vars.DOMAIN }}"
+            set_env_var .env HOST_NGINX "${{ vars.HOST_NGINX }}"
+            set_env_var .env NETWORK "${{ vars.NETWORK }}"
+            set_env_var .env DB_HOST "${{ vars.DB_HOST }}"
+            set_env_var .env DB_PORT "${{ vars.DB_PORT }}"
+            set_env_var .env DB_NAME "${{ vars.DB_NAME }}"
+            set_env_var .env DB_USER "${{ vars.DB_USER }}"
+            set_env_var .env DB_PASSWORD "${{ secrets.DB_PASSWORD }}"
+            set_env_var .env DB_EXTERNAL_PORT "${{ vars.DB_EXTERNAL_PORT }}"
+            set_env_var .env ELASTIC_CONTAINER_NAME "${{ vars.ELASTIC_CONTAINER_NAME }}"
+            set_env_var .env INSTALL_XDEBUG "${{ vars.INSTALL_XDEBUG }}"
+            set_env_var .env REDIS_HOST "${{ vars.REDIS_HOST }}"
+            chmod 600 .env
+            
+            # Create app/.env (for Symfony application)
+            mkdir -p app
+            if [ -f app/.env ]; then
+              cp app/.env app/.env.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+            
+            if [ -f /tmp/app.env.example ]; then
+              echo "Creating app/.env from app/.env.example template (Symfony)..."
+              cp /tmp/app.env.example app/.env
+            else
+              echo "app/.env.example not found, creating app/.env from scratch (Symfony)..."
+              touch app/.env
+            fi
+            
+            # Set Symfony application variables (APP_SECRET, JWT keys, etc.)
+            set_env_var app/.env APP_ENV "prod"
+            set_env_var app/.env APP_DEBUG "0"
+            set_env_var app/.env APP_SECRET "${{ secrets.APP_SECRET }}"
+            set_env_var app/.env APP_NAME "${{ vars.APP_NAME }}"
+            set_env_var app/.env DEFAULT_FROM_ADDR "${{ vars.DEFAULT_FROM_ADDR }}"
+            set_env_var app/.env DEFAULT_FROM_NAME "${{ vars.DEFAULT_FROM_NAME }}"
+            set_env_var app/.env MAILER_DSN "${{ vars.MAILER_DSN }}"
+            set_env_var app/.env JWT_SECRET_KEY "${{ vars.JWT_SECRET_KEY }}"
+            set_env_var app/.env JWT_PUBLIC_KEY "${{ vars.JWT_PUBLIC_KEY }}"
+            set_env_var app/.env JWT_PASSPHRASE "${{ secrets.JWT_PASSPHRASE }}"
+            set_env_var app/.env LOG_TELEGRAM_BOT_KEY "${{ secrets.LOG_TELEGRAM_BOT_KEY }}"
+            set_env_var app/.env LOG_TELEGRAM_CHANNEL "${{ vars.LOG_TELEGRAM_CHANNEL }}"
+            set_env_var app/.env DATABASE_URL "postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.DB_NAME }}"
+            set_env_var app/.env REDIS_HOST "${{ vars.REDIS_HOST }}"
+            set_env_var app/.env ELASTIC_DSN "${{ vars.ELASTIC_DSN }}"
+            set_env_var app/.env ELASTIC_USERNAME "${{ vars.ELASTIC_USERNAME }}"
+            set_env_var app/.env ELASTIC_PASSWORD "${{ secrets.ELASTIC_PASSWORD }}"
+            chmod 600 app/.env
+            
+            # Copy docker-compose.prod.yml if needed
+            if [ ! -f docker-compose.prod.yml ] || ! cmp -s /tmp/docker-compose.prod.yml docker-compose.prod.yml; then
+              cp /tmp/docker-compose.prod.yml docker-compose.prod.yml
+            fi
+            
+            # Clean up temp files
+            rm -f /tmp/.env.example /tmp/app.env.example /tmp/docker-compose.prod.yml
       
       - name: Pull latest Docker images
         run: |
