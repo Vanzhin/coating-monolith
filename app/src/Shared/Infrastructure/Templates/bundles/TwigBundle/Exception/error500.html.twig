@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Внутренняя ошибка сервера (500){% endblock %}
+
+{% block body %}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <h1 class="display-5 mb-3">Что-то пошло не так</h1>
+                <p class="text-muted mb-4">Код: 500 — {{ status_text }}</p>
+                <p class="mb-4">Мы уже разберёмся. Попробуйте вернуться на главную или немного позже.</p>
+                <a href="/" class="btn btn-primary">На главную</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+

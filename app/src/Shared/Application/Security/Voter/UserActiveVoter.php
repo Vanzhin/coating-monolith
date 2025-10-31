@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Application\Security\Voter;
 
-use App\Users\Domain\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -21,7 +20,8 @@ class UserActiveVoter extends Voter
     {
         $user = $token->getUser();
 
-        if (!$user instanceof User) {
+        // Используем duck typing вместо конкретного класса
+        if (!is_object($user) || !method_exists($user, 'isActive')) {
             return false;
         }
 

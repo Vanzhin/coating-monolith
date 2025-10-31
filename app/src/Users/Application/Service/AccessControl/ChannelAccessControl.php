@@ -6,7 +6,7 @@ namespace App\Users\Application\Service\AccessControl;
 
 use App\Shared\Application\Security\AuthChecker;
 use App\Shared\Domain\Security\Role;
-use App\Shared\Infrastructure\Security\AuthUserFetcher;
+use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use App\Users\Domain\Entity\Channel;
 
 /**
@@ -16,7 +16,7 @@ readonly class ChannelAccessControl
 {
     public function __construct(
         private AuthChecker $checker,
-        private AuthUserFetcher $fetcher,
+        private AuthUserFetcherInterface $fetcher,
     )
     {
     }

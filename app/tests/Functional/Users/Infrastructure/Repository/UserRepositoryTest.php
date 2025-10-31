@@ -2,34 +2,35 @@
 
 namespace App\Tests\Functional\Users\Infrastructure\Repository;
 
-use App\Tests\Resource\Fixtures\UserFixture;
 use App\Users\Domain\Entity\User;
+use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Factory\UserFactory;
+use App\Users\Domain\Service\UserPasswordHasherInterface;
 use App\Users\Infrastructure\Repository\UserRepository;
 use Faker\Factory;
 use Faker\Generator;
-use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
-use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class UserRepositoryTest extends WebTestCase
 {
     private UserRepository $repository;
     private Generator $faker;
-    private AbstractDatabaseTool $databaseTool;
     private UserFactory $userFactory;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->repository = static::getContainer()->get(UserRepository::class);
-        $this->userFactory = static::getContainer()->get(UserFactory::class);
+        $client = static::createClient();
+        $this->repository = $client->getContainer()->get(UserRepository::class);
+        $this->userFactory = $client->getContainer()->get(UserFactory::class);
         $this->faker = Factory::create();
-        $this->databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
     }
 
     public function test_user_added_successfully(): void
     {
+        $client = static::createClient();
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+        
         // arrange
         $email = $this->faker->email();
         $password = $this->faker->password();
@@ -41,19 +42,33 @@ class UserRepositoryTest extends WebTestCase
         // assert
         $existedUser = $this->repository->getByUlid($user->getUlid());
         $this->assertEquals($user->getUlid(), $existedUser->getUlid());
+        
+        // Очищаем базу
+        $entityManager->remove($user);
+        $entityManager->flush();
     }
 
     public function test_user_found_successfully(): void
     {
-        // arrange
-        $executor = $this->databaseTool->loadFixtures([UserFixture::class]);
-        /** @var User $user */
-        $user = $executor->getReferenceRepository()->getReference(UserFixture::REFERENCE);
+        $client = static::createClient();
+        $entityManager = $client->getContainer()->get('doctrine.orm.entity_manager');
+        
+        // arrange - создаём пользователя программно
+        $user = new User(new Email('test@example.com'));
+        $hasher = $client->getContainer()->get(UserPasswordHasherInterface::class);
+        $user->setPassword('password123', $hasher);
+        
+        $entityManager->persist($user);
+        $entityManager->flush();
 
         // act
         $existedUser = $this->repository->getByUlid($user->getUlid());
 
         // assert
         $this->assertEquals($user->getUlid(), $existedUser->getUlid());
+        
+        // Очищаем базу
+        $entityManager->remove($user);
+        $entityManager->flush();
     }
 }

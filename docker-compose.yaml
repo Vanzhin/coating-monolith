@@ -7,8 +7,6 @@ services:
       dockerfile: Dockerfile
       args:
         - INSTALL_XDEBUG=${INSTALL_XDEBUG}
-    ports:
-      - '9010:9010'
     volumes:
       - ./app:/app:rw
     depends_on:
@@ -60,9 +58,8 @@ services:
       - ./app:/app:rw
       - ./docker/nginx/logs:/var/log/nginx:rw
       - ./docker/nginx/hosts:/etc/nginx/conf.d
-    networks:
-      default:
-        ipv4_address: ${HOST_NGINX}
+    ports:
+      - "6878:6878"
 
   manager_redis:
     hostname: ${DOMAIN}

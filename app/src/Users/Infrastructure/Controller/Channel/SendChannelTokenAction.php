@@ -9,7 +9,7 @@ use App\Shared\Domain\Service\Mailer;
 use App\Users\Application\Service\AccessControl\ChannelAccessControl;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
-use App\Users\Domain\Service\TokenServiceInterface;
+use App\Shared\Domain\Service\TokenServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
