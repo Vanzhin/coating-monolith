@@ -93,8 +93,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/sites/1helper
-            
-            # Создаем/обновляем .env файл со ВСЕМИ переменными
+
+            # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными
             cat > .env << EOF
             # Docker Compose Variables
             NETWORK=coating-network
@@ -102,8 +102,8 @@ jobs:
             HOST_NGINX=localhost
             DB_EXTERNAL_PORT=5432
             ELASTIC_CONTAINER_NAME=elasticsearch
-            
-            # Registry and Image
+
+            # Registry and Image - ИСПРАВЛЕНО!
             REGISTRY=ghcr.io
             IMAGE_NAME=vanzhin/coating-monolith
             TAG=${{ github.ref_name }}
@@ -114,10 +114,10 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_HOST=manager_db
             DB_PORT=5432
-            
+
             # Redis
             REDIS_HOST=manager_redis
-            
+
             # Application
             INSTALL_XDEBUG=false
             APP_SECRET=${{ secrets.APP_SECRET }}
@@ -130,77 +130,37 @@ jobs:
             JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
-            
+
             # Elasticsearch
             ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
             ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
             ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
             EOF
-            
+
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            export TAG="${{ github.ref_name }}"
-            echo "Starting zero-downtime deployment of version: $TAG"
-            
-            # 1. Pull new images in background
-            echo "Step 1: Pulling new images..."
-            docker compose -f docker-compose.prod.yml pull &
-            PULL_PID=$!
-            
-            # 2. Warm up phase - prepare everything while old version is running
-            echo "Step 2: Warm up phase..."
-            
-            # Проверяем, что база данных запущена
-            if ! docker compose -f docker-compose.prod.yml ps manager_db | grep -q "Up"; then
-              echo "Starting database services..."
-              docker compose -f docker-compose.prod.yml up -d manager_db manager_redis elasticsearch
-            
-              # Wait for database
-              echo "Waiting for database to be ready..."
-              timeout 120s bash -c 'until docker compose -f docker-compose.prod.yml exec -T manager_db pg_isready -U $DB_USER -d $DB_NAME; do sleep 2; done'
-            else
-              echo "Database services are already running"
-            fi
-            
-            # Run migrations on running container
+
+            echo "Deploying version: ${{ github.ref_name }}"
+
+            # 1. Останавливаем старые контейнеры
+            echo "Stopping old containers..."
+            docker compose -f docker-compose.prod.yml down
+
+            # 2. Принудительно pull новых образов
+            echo "Pulling new images..."
+            docker compose -f docker-compose.prod.yml pull
+
+            # 3. Запускаем новые контейнеры
+            echo "Starting new containers..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            # 4. Выполняем миграции
             echo "Running migrations..."
+            sleep 10
             docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
-            
-            # Warm up cache on running container
+
+            # 5. Прогрев кэша
             echo "Warming up cache..."
             docker compose -f docker-compose.prod.yml exec -T manager_php-cli php bin/console cache:warmup
-            
-            # 3. Wait for image pull to complete
-            echo "Step 3: Waiting for image pull to complete..."
-            wait $PULL_PID
-            
-            # 4. Zero-downtime deployment with health checks
-            echo "Step 4: Starting rolling update..."
-            
-            # Update services one by one
-            echo "Updating PHP-CLI..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-cli
-            
-            echo "Updating PHP-FPM..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps manager_php-fpm
-            
-            # Wait for PHP-FPM to be ready
-            echo "Waiting for PHP-FPM to be ready..."
-            timeout 30s bash -c 'until docker compose -f docker-compose.prod.yml exec -T manager_php-fpm php -r "exit(0);"; do sleep 2; done'
-            
-            echo "Updating Supervisor..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps manager_supervisor
-            
-            # 5. Final checks and cleanup
-            echo "Step 5: Final checks..."
-            
-            # Health check
-            echo "Performing health check..."
-            timeout 30s bash -c 'until curl -f http://localhost/health-check > /dev/null 2>&1; do sleep 2; done' || echo "Health check endpoint not available, but continuing..."
-            
-            # Remove old images
-            echo "Cleaning up old images..."
-            docker image prune -f
-            
-            echo "Zero-downtime deployment completed successfully!"
+
+            echo "Deployment completed successfully!"

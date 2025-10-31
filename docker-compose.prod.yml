@@ -1,7 +1,7 @@
 services:
   manager_php-fpm:
     hostname: ${DOMAIN}
-    image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${TAG:-latest}
     volumes:
       - ./app:/app:rw
     depends_on:
@@ -14,7 +14,7 @@ services:
   manager_supervisor:
     hostname: ${DOMAIN}
     working_dir: /app
-    image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME}-supervisor:${TAG:-latest}
     restart: always
     depends_on:
       manager_redis:
@@ -30,7 +30,7 @@ services:
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
-    image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${TAG:-latest}
     command: bash -c "composer install && php bin/console --no-interaction doctrine:migrations:migrate"
     depends_on:
       manager_redis:
