@@ -131,7 +131,7 @@ jobs:
             DB_PORT=${{ secrets.DB_PORT }}
 
             # Redis
-            REDIS_HOST=manager_redis
+            REDIS_HOST=${{ vars.REDIS_HOST }}
 
             # Application
             INSTALL_XDEBUG=false

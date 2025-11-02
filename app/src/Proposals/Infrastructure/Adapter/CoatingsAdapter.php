@@ -44,9 +44,9 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
         
         return new CoatingsQueryResult(
             coatings: $coatings,
-            totalCount: $result->totalCount,
-            page: $result->page,
-            limit: $result->limit
+            totalCount: $result->pager->total_items,
+            page: $result->pager->page,
+            limit: $result->pager->perPage
         );
     }
 

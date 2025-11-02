@@ -59,10 +59,8 @@ services:
     tags:
       - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
 
-  Lexik\Bundle\JWTAuthenticationBundle\Services\KeyLoader\KeyLoaderInterface: '@Lexik\Bundle\JWTAuthenticationBundle\Services\KeyLoader\OpenSSLKeyLoader'
-
-  Lexik\Bundle\JWTAuthenticationBundle\Services\KeyLoader\OpenSSLKeyLoader:
-    $publicKey: '%env(resolve:JWT_PUBLIC_KEY)%'
+  # Alias for KeyLoaderInterface to use default RawKeyLoader
+  Lexik\Bundle\JWTAuthenticationBundle\Services\KeyLoader\KeyLoaderInterface: '@lexik_jwt_authentication.key_loader.raw'
 
   App\Shared\Domain\Service\RedisService:
     arguments:
@@ -99,6 +97,20 @@ services:
     arguments:
       - '%env(LOG_TELEGRAM_BOT_KEY)%'
       - '%env(LOG_TELEGRAM_CHANNEL)%'
+  
+  # Channel Notifiers
+  App\Shared\Infrastructure\Service\EmailNotifier:
+    arguments:
+      $mailer: '@App\Shared\Domain\Service\Mailer'
+  
+  App\Shared\Infrastructure\Service\TelegramNotifier:
+    arguments:
+      $botToken: '%env(LOG_TELEGRAM_BOT_KEY)%'
+  
+  App\Shared\Infrastructure\Service\NotifierFactory:
+    arguments:
+      $mailer: '@App\Shared\Domain\Service\Mailer'
+      $telegramBotToken: '%env(LOG_TELEGRAM_BOT_KEY)%'
 
   #Elastic_search
   Elastic\Elasticsearch\ClientInterface:

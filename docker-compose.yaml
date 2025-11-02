@@ -1,10 +1,9 @@
 services:
 
   manager_php-fpm:
-    hostname: ${DOMAIN}
     build:
-      context: docker/php-fpm
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/php-fpm/Dockerfile
       args:
         - INSTALL_XDEBUG=${INSTALL_XDEBUG}
     volumes:
@@ -17,11 +16,10 @@ services:
     working_dir: /app
 
   manager_supervisor:
-    hostname: ${DOMAIN}
     working_dir: /app
     build:
-      context: docker/supervisor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/supervisor/Dockerfile
     restart: always
     depends_on:
       manager_redis:
@@ -35,11 +33,10 @@ services:
       - ./docker/supervisor/log:/var/log/supervisor
 
   manager_php-cli:
-    hostname: ${DOMAIN}
     working_dir: /app
     build:
-      context: docker/php-cli
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/php-cli/Dockerfile
     command: bash -c "composer install && php bin/console --no-interaction doctrine:migrations:migrate"
     depends_on:
       manager_redis:
@@ -49,20 +46,30 @@ services:
     volumes:
       - ./app:/app:rw
 
+  # НОВЫЙ КОНТЕЙНЕР ДЛЯ NODE.JS
+  manager_node:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./app:/app:rw
+      - /app/node_modules  # named volume для node_modules чтобы не перезаписывать локально
+    environment:
+      - NODE_ENV=development
+    # Можно раскомментировать для автоматического запуска:
+    command: sh -c "npm install"
+
   manager_nginx:
-    hostname: ${DOMAIN}
     image: nginx:1.25.4
+    ports:
+      - "6878:6878"
     depends_on:
       - manager_php-fpm
     volumes:
       - ./app:/app:rw
       - ./docker/nginx/logs:/var/log/nginx:rw
       - ./docker/nginx/hosts:/etc/nginx/conf.d
-    ports:
-      - "6878:6878"
 
   manager_redis:
-    hostname: ${DOMAIN}
     working_dir: /app
     image: redis:7.2.1
     restart: always
@@ -91,9 +98,7 @@ services:
   elasticsearch:
     container_name: ${ELASTIC_CONTAINER_NAME}
     image: elasticsearch:9.0.1
-
     volumes:
-#      - ./docker/elasticsearch/config.yaml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./docker/elasticsearch/data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
@@ -111,8 +116,6 @@ services:
           memory: 4GB
     env_file: .env
 
-networks:
-  default:
-    ipam:
-      config:
-        - subnet: ${NETWORK}
+# Добавляем volume для node_modules
+volumes:
+  node_modules:
