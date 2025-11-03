@@ -77,6 +77,8 @@ RUN mkdir -p /app/var/cache/prod && \
 RUN chown -R www-data:www-data /app
 RUN chmod -R 755 /app
 
+RUN chmod -R 777 /app/var/log
+
 # выполняю команду генерации закрытого и открытого ключей для JWT
 COPY docker/php-fpm/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

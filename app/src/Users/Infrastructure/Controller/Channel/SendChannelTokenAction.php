@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Security\ResponseFormatter;
-use App\Shared\Domain\Service\Mailer;
+use App\Shared\Infrastructure\Service\NotifierFactory;
 use App\Users\Application\Service\AccessControl\ChannelAccessControl;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
-use App\Shared\Domain\Service\TokenServiceInterface;
+use App\Users\Domain\Service\TokenServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Annotation\Route;
 
 class SendChannelTokenAction extends AbstractController
@@ -24,7 +23,7 @@ class SendChannelTokenAction extends AbstractController
         private readonly ChannelRepositoryInterface $channelRepository,
         private readonly ChannelAccessControl $channelAccessControl,
         private readonly ResponseFormatter $responseFormatter,
-        private readonly Mailer $mailer,
+        private readonly NotifierFactory $factory,
     ) {
     }
 
@@ -88,7 +87,9 @@ class SendChannelTokenAction extends AbstractController
 
         try {
             $token = $this->tokenService->makeToken($channel);
-            $this->mailer->sendVerificationCode(new Address($channel->getValue()), $token->getToken(), $token->getRemainingTime()->i);
+            $notifier = $this->factory->create($channel->getType());
+
+            $notifier->sendVerificationCode($channel, $token->getToken(), $token->getRemainingTimeInSeconds());
             return $this->json(
                 $this->responseFormatter->formatSuccess(
                     'Код верификации отправлен!',

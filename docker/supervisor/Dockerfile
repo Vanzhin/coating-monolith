@@ -14,9 +14,6 @@ RUN rm  -rf /tmp/* /var/cache/apk/*
 WORKDIR /app
 COPY app /app
 
-# Create production .env file
-
-
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
@@ -33,6 +30,7 @@ RUN mkdir -p /var/log/supervisor
 
 # Copy supervisor configuration
 COPY docker/supervisor/conf.d/php-worker.conf /etc/supervisor/conf.d/php-worker.conf
+COPY docker/supervisor/conf.d/messenger-worker.conf /etc/supervisor/conf.d/messenger-worker.conf
 
 # Set proper permissions
 RUN chown -R root:root /app

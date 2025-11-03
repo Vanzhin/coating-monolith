@@ -1,0 +1,140 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} Создание канала{% endblock %}
+
+{% block body %}
+    <div class="container-fluid py-3">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+                <div class="form-verification">
+                    {# Единый блок для всех сообщений - flash и ошибок формы #}
+                    <div id="messages-container">
+                        {% for type, messages in app.flashes %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ type }} alert-dismissible fade show mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ message }}</span>
+                                        <button type="button" class="btn-close ms-auto"
+                                                data-bs-dismiss="alert"></button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+
+                        {# Отображение ошибок формы как flash-сообщений #}
+                        {% if form.vars.errors|length > 0 %}
+                            {% for error in form.vars.errors %}
+                                <div class="alert alert-danger alert-dismissible fade show mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ error.message }}</span>
+                                        <button type="button" class="btn-close ms-auto"
+                                                data-bs-dismiss="alert"></button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Отображение ошибок полей формы #}
+                        {% for child in form.children %}
+                            {% if child.vars.errors is defined and child.vars.errors|length > 0 %}
+                                {% for error in child.vars.errors %}
+                                    <div class="alert alert-danger alert-dismissible fade show mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <span>{{ error.message }}</span>
+                                            <button type="button" class="btn-close ms-auto"
+                                                    data-bs-dismiss="alert"></button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <h1 class="h3 mb-2">Создание канала</h1>
+                        <p class="text-muted">Добавьте новый канал для верификации</p>
+                    </div>
+
+                    {{ form_start(form, {
+                        'attr': {
+                            'class': 'needs-validation',
+                            'novalidate': true,
+                            'id': 'create-channel-form'
+                        },
+                        'action': path('app_user_channel_create')
+                    }) }}
+
+                    <div class="mb-3">
+                        <div class="form-floating">
+                            {{ form_widget(form.type, {
+                                'attr': {
+                                    'class': 'form-select' ~ (form.type.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                    'onchange': 'onChannelTypeChange(this)'
+                                }
+                            }) }}
+                            {{ form_label(form.type) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-floating">
+                            {{ form_widget(form.value, {
+                                'attr': {
+                                    'class': 'form-control' ~ (form.value.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                    'id': 'channel_value',
+                                    'placeholder': 'Введите значение канала'
+                                }
+                            }) }}
+                            {{ form_label(form.value) }}
+                        </div>
+                        <div class="form-text" id="channel-value-help">
+                            Выберите тип канала для подсказки
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg py-2">
+                            <i class="bi bi-plus-circle me-2"></i>Создать канал
+                        </button>
+                        <a href="{{ path('app_user_channel_verification') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Назад к верификации
+                        </a>
+                    </div>
+
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function onChannelTypeChange(select) {
+            const value = select.value;
+            const valueInput = document.getElementById('channel_value');
+            const helpText = document.getElementById('channel-value-help');
+            
+            if (value === 'email') {
+                valueInput.type = 'email';
+                valueInput.placeholder = 'example@domain.com';
+                helpText.textContent = 'Введите адрес электронной почты';
+            } else if (value === 'telegram') {
+                valueInput.type = 'text';
+                valueInput.placeholder = '@username или user_id';
+                helpText.textContent = 'Введите Telegram username (с @) или user_id';
+            } else {
+                valueInput.type = 'text';
+                valueInput.placeholder = 'Введите значение канала';
+                helpText.textContent = 'Выберите тип канала для подсказки';
+            }
+        }
+
+        // Инициализация при загрузке страницы для query параметров
+        document.addEventListener('DOMContentLoaded', function() {
+            const typeSelect = document.getElementById('channel_type');
+            if (typeSelect && typeSelect.value) {
+                onChannelTypeChange(typeSelect);
+            }
+        });
+    </script>
+{% endblock %}
+

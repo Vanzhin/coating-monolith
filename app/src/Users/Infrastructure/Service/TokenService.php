@@ -7,9 +7,9 @@ namespace App\Users\Infrastructure\Service;
 use App\Shared\Domain\Aggregate\VerificationSubjectInterface;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
-use App\Shared\Domain\Service\Token;
+use App\Users\Domain\Entity\Token;
 use App\Users\Domain\Repository\TokenRepositoryInterface;
-use App\Shared\Domain\Service\TokenServiceInterface;
+use App\Users\Domain\Service\TokenServiceInterface;
 use Random\RandomException;
 
 class TokenService implements TokenServiceInterface
@@ -48,15 +48,15 @@ class TokenService implements TokenServiceInterface
         $this->tokenRepository->removeBySubject($verifiable->getSubjectId());
     }
 
-    public function verifySubjectByTokenString(string $tokenString, VerificationSubjectInterface $subject): void
+    public function verifySubjectByTokenString(string $tokenString, VerificationSubjectInterface $verifiable): true
     {
         // Проверяем, что объект еще не верифицирован
-        if ($subject->isVerified()) {
+        if ($verifiable->isVerified()) {
             throw new AppException('Субъект уже верифицирован');
         }
 
         // Ищем токен для данного субъекта
-        $token = $this->tokenRepository->findBySubject($subject->getSubjectId());
+        $token = $this->tokenRepository->findBySubject($verifiable->getSubjectId());
 
         if ($token === null) {
             throw new AppException('Токен верификации не найден или истек');
@@ -64,7 +64,7 @@ class TokenService implements TokenServiceInterface
 
         // Проверяем валидность токена
         if (!$token->isValid()) {
-            $this->removeToken($subject);
+            $this->removeToken($verifiable);
             throw new AppException('Токен верификации истек');
         }
 
@@ -74,12 +74,14 @@ class TokenService implements TokenServiceInterface
         }
 
         // Проверяем, что токен принадлежит именно этому субъекту
-        if ($token->getSubjectId() !== $subject->getSubjectId()) {
+        if ($token->getSubjectId() !== $verifiable->getSubjectId()) {
             throw new AppException('Токен не соответствует субъекту верификации');
         }
 
         // Удаляем использованный токен
-        $this->removeToken($subject);
+        $this->removeToken($verifiable);
+
+        return true;
     }
 
     public function canCreateToken(VerificationSubjectInterface $verifiable): bool

@@ -19,14 +19,14 @@ class MessageBus implements ExternalMessageBusInterface
         $this->messageBus = $messageBus;
     }
 
-    #[\Override] public function executeMessages(MessageInterface ...$messages): void
+    public function executeMessages(MessageInterface ...$messages): void
     {
         foreach ($messages as $message) {
             $this->messageBus->dispatch($message);
         }
     }
 
-    #[\Override] public function execute(Envelope $envelope): void
+    public function execute(Envelope $envelope): void
     {
         $this->messageBus->dispatch($envelope);
     }

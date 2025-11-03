@@ -26,7 +26,7 @@ readonly class LoginLinkCreatedEventHandler implements EventHandlerInterface
     {
         $user = $this->userRepository->getByUlid($event->userId);
         if ($user) {
-            $hash = password_hash(random_bytes(10), PASSWORD_DEFAULT);
+            $hash = bin2hex(random_bytes(10));
             $this->redisService->add($hash, ['userUlid' => $user->getUlid()], 60 * 5);
             $this->mailer->sendLoginLinkEmail(
                 new Address($user->getEmail()->getValue(), 'Пользователь'),

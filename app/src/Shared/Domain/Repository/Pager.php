@@ -12,11 +12,10 @@ readonly class Pager
     public ?int $total_pages;
 
     public function __construct(
-        public int  $page,
-        public int  $perPage,
+        public int $page,
+        public int $perPage,
         public ?int $total_items = null
-    )
-    {
+    ) {
         $this->setTotalPages();
     }
 
@@ -25,7 +24,7 @@ readonly class Pager
         return new self(1, 0);
     }
 
-    public static function fromPage(?int $page, ?int $perPage): self
+    public static function fromPage(?int $page = null, ?int $perPage = null): self
     {
         return new self($page ?? self::DEFAULT_PAGE, $perPage ?? self::DEFAULT_LIMIT);
     }

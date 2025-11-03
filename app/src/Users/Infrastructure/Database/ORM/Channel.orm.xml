@@ -16,5 +16,8 @@
         </many-to-one>
         <field name="isVerified" column="is_verified" type="boolean"/>
         <field name="verifiedAt" column="verified_at" type="datetime_immutable" nullable="true"/>
+        <unique-constraints>
+            <unique-constraint fields="owner,type,value"/>
+        </unique-constraints>
     </entity>
 </doctrine-mapping>

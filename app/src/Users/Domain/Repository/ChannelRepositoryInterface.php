@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Repository;
 
+use App\Shared\Domain\Repository\PaginationResult;
 use App\Users\Domain\Entity\Channel;
 
 interface ChannelRepositoryInterface
@@ -13,4 +14,6 @@ interface ChannelRepositoryInterface
     public function remove(Channel $channel): void;
 
     public function findById(string $id): ?Channel;
+
+    public function findByFilter(ChannelFilter $filter): PaginationResult;
 }

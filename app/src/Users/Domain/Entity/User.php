@@ -104,6 +104,13 @@ class User extends Aggregate implements AuthUserInterface
         });
     }
 
+    public function getUnVerifiedChannels(): Collection
+    {
+        return $this->channels->filter(function (Channel $channel) {
+            return !$channel->isVerified();
+        });
+    }
+
     public function makeActiveInternally(): void
     {
         if ($this->getVerifiedChannels()->isEmpty()) {

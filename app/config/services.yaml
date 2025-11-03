@@ -38,6 +38,9 @@ services:
     App\Shared\Application\Event\EventHandlerInterface:
       tags:
         - { name: messenger.message_handler, bus: event.bus }
+    App\Shared\Application\Message\MessageHandlerInterface:
+      tags:
+        - { name: messenger.message_handler,  bus: message.bus }
 
     App\Shared\Domain\Specification\SpecificationInterface:
       public: true
@@ -97,20 +100,26 @@ services:
     arguments:
       - '%env(LOG_TELEGRAM_BOT_KEY)%'
       - '%env(LOG_TELEGRAM_CHANNEL)%'
-  
-  # Channel Notifiers
-  App\Shared\Infrastructure\Service\EmailNotifier:
+
+  # Telegram Notification
+  App\Notifications\Application\Service\Telegram\TelegramBotService:
     arguments:
-      $mailer: '@App\Shared\Domain\Service\Mailer'
-  
-  App\Shared\Infrastructure\Service\TelegramNotifier:
+      $webhookUrl: '%env(TELEGRAM_NOTIFICATION_BOT_WEBHOOK)%'
+      $commandPath: /app/src/Notifications/Application/Service/Telegram/Command
+      $secret: '%env(TELEGRAM_NOTIFICATION_BOT_SECRET)%'
+
+  Longman\TelegramBot\Telegram:
     arguments:
-      $botToken: '%env(LOG_TELEGRAM_BOT_KEY)%'
-  
-  App\Shared\Infrastructure\Service\NotifierFactory:
+      - '%env(TELEGRAM_NOTIFICATION_BOT_TOKEN)%'  # API ключ
+      - '%env(TELEGRAM_NOTIFICATION_BOT_USERNAME)%'  # Имя бота
+  # Telegram Notification
+
+
+  # Telegram Bot Webhook
+  App\Shared\Infrastructure\Controller\Telegram\TelegramWebhookController:
     arguments:
-      $mailer: '@App\Shared\Domain\Service\Mailer'
-      $telegramBotToken: '%env(LOG_TELEGRAM_BOT_KEY)%'
+      $telegramBotService: '@App\Notifications\Application\Service\Telegram\TelegramBotService'
+      $logger: '@logger'
 
   #Elastic_search
   Elastic\Elasticsearch\ClientInterface:
@@ -125,7 +134,7 @@ services:
     arguments:
       $whitelist: [ ]
       $blacklist: [ ]
-      $whitelistPatterns: [ '*@offire.ru' ]
+      $whitelistPatterns: [ '*@offire.ru', '*@1helper.ru' ]
       $blacklistPatterns: [ ]
       $whitelistEnabled: true
       $blacklistEnabled: false

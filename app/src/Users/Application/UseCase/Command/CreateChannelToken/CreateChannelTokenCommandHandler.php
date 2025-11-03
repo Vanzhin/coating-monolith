@@ -8,7 +8,7 @@ use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\AssertService;
 use App\Users\Application\DTO\TokenDTO;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
-use App\Shared\Domain\Service\TokenServiceInterface;
+use App\Users\Domain\Service\TokenServiceInterface;
 
 readonly class CreateChannelTokenCommandHandler implements CommandHandlerInterface
 {
