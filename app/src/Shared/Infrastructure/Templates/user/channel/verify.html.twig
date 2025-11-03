@@ -369,5 +369,18 @@ console.log( responseData, responseData.data?.cooldown_remaining)
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
+
+        /* Бледно-красная подсветка для ошибок */
+        .alert-danger,
+        .alert-error {
+            background-color: #fff5f5 !important;
+            border-color: #feb2b2 !important;
+            color: #c53030 !important;
+        }
+
+        .alert-danger .btn-close,
+        .alert-error .btn-close {
+            filter: brightness(0) saturate(100%) invert(23%) sepia(76%) saturate(4062%) hue-rotate(339deg) brightness(97%) contrast(88%) !important;
+        }
     </style>
 {% endblock %}

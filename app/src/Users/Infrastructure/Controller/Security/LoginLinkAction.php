@@ -36,7 +36,7 @@ class LoginLinkAction extends AbstractController
             }
 
             $this->eventBus->execute(new LoginLinkCreatedEvent($user->getUlid()));
-            $this->addFlash('register_success', 'Your registration has been passed successfully. Verification email is being sent.');
+            $this->addFlash('register_success', 'Регистрация прошла успешно. email со ссылкой отправлен.');
 
             return $this->render('security/login_link_sent.html.twig', compact('email'));
         }

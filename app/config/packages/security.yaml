@@ -51,13 +51,14 @@ security:
 #        always_remember_me: true
         signature_properties: [password]
 
-
   access_denied_url: /user/channel/verification
   access_control:
     - { path: ^/api/auth/token/login, roles: PUBLIC_ACCESS }
     - { path: ^/api/auth/token/refresh, roles: PUBLIC_ACCESS }
     - { path: ^/api/users/me,       roles: ACCESS_ACTIVE_USER}
-    - { path: ^/cabinet/*,       roles: ACCESS_ACTIVE_USER }
+    - { path: ^/cabinet, roles: IS_AUTHENTICATED }
+    - { path: ^/cabinet/*, roles: ACCESS_ACTIVE_USER }
+    - { path: ^/user/*, roles: IS_AUTHENTICATED }
 
 when@test:
   security:

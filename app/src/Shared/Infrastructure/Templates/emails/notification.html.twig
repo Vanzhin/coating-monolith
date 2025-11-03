@@ -1,7 +1,11 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Уведомление о вашем запросе на {{ app_name }} {% endblock %}
+{% block title %} Уведомление от {{ appName }} {% endblock %}
 {% block body %}
-    <p>Приветствуем Вас!</p>
-    <p>Информация о Вашем запросе отправлена администратору {{ app_name }}.</p>
-    <p>Спасибо за использование сервиса {{ app_name }}.</p>
+    <p style="font-size: 18px; color: #2D3748; margin-bottom: 16px;"><strong>Здравствуйте!</strong></p>
+    <div style="color: #4A5568; margin-bottom: 24px; line-height: 1.6;">
+        {{ message|nl2br|raw }}
+    </div>
+    <p style="color: #A0AEC0; font-size: 12px; margin-top: 32px; border-top: 1px solid #E2E8F0; padding-top: 16px;">
+        С уважением, команда {{ appName }}
+    </p>
 {% endblock %}

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Security\ResponseFormatter;
-use App\Shared\Infrastructure\Service\NotifierFactory;
+use App\Shared\Infrastructure\Service\ChannelNotifierService;
 use App\Users\Application\Service\AccessControl\ChannelAccessControl;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
@@ -23,7 +23,7 @@ class SendChannelTokenAction extends AbstractController
         private readonly ChannelRepositoryInterface $channelRepository,
         private readonly ChannelAccessControl $channelAccessControl,
         private readonly ResponseFormatter $responseFormatter,
-        private readonly NotifierFactory $factory,
+        private readonly ChannelNotifierService $channelNotifier,
     ) {
     }
 
@@ -87,9 +87,15 @@ class SendChannelTokenAction extends AbstractController
 
         try {
             $token = $this->tokenService->makeToken($channel);
-            $notifier = $this->factory->create($channel->getType());
 
-            $notifier->sendVerificationCode($channel, $token->getToken(), $token->getRemainingTimeInSeconds());
+            // Вычисляем время в минутах для отправки
+            $timeInSeconds = $token->getRemainingTimeInSeconds();
+            // Отправляем код верификации через единый сервис
+            $this->channelNotifier->sendVerificationCode(
+                $channel,
+                $token->getToken(),
+                (int)ceil($timeInSeconds / 60)
+            );
             return $this->json(
                 $this->responseFormatter->formatSuccess(
                     'Код верификации отправлен!',

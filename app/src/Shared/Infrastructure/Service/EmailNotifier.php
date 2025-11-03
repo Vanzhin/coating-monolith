@@ -13,6 +13,8 @@ use Symfony\Component\Mime\Address;
 
 readonly class EmailNotifier implements NotifierInterface
 {
+    private const NOTIFICATION_SUBJECT = 'Уведомление';
+
     public function __construct(private Mailer $mailer)
     {
     }
@@ -25,7 +27,20 @@ readonly class EmailNotifier implements NotifierInterface
         $this->mailer->sendVerificationCode(
             new Address($channel->getValue()),
             $code,
-            $timeToUse / 60
+            (int) ceil($timeToUse / 60)
+        );
+    }
+
+    public function notify(Channel $channel, string $message): void
+    {
+        if (!$this->isSupportedChannel($channel)) {
+            throw new AppException('Канал не поддерживается');
+        }
+
+        $this->mailer->sendMessage(
+            new Address($channel->getValue()),
+            self::NOTIFICATION_SUBJECT,
+            $message
         );
     }
 

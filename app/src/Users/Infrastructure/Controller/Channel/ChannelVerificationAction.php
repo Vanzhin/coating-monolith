@@ -47,7 +47,19 @@ class ChannelVerificationAction extends AbstractController
                 return $this->redirectToRoute('app_user_channel_verification');
             }
 
-            $form = $this->createForm(ChannelVerificationFormType::class, null, [
+            // Получаем первый неверифицированный канал для автоматического выбора
+            $unverifiedChannels = $user->getUnVerifiedChannels();
+            $firstChannel = $unverifiedChannels->isEmpty() ? null : $unverifiedChannels->first();
+
+            // Подготавливаем данные формы с выбранным первым каналом
+            $formData = null;
+            if ($firstChannel) {
+                $formData = [
+                    'channel' => $firstChannel,
+                ];
+            }
+
+            $form = $this->createForm(ChannelVerificationFormType::class, $formData, [
                 'user' => $user,
             ]);
 

@@ -32,10 +32,6 @@ class CreateChannelAction extends AbstractController
     {
         $user = $this->getUser();
 
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-
         if (!$user->isActive()) {
             return $this->redirectToRoute('app_user_channel_verification');
         }

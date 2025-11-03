@@ -8,8 +8,9 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\PasswordStrength;
+use Symfony\Component\Validator\Constraints\Regex;
 
 class RegistrationFormType extends AbstractType
 {
@@ -32,9 +33,18 @@ class RegistrationFormType extends AbstractType
                     new NotBlank([
                         'message' => 'Please enter a password',
                     ]),
-                    new PasswordStrength(
-                        minScore: 1
-                    ),
+                    new Length([
+                        'min' => 8,
+                        'minMessage' => 'Пароль должен содержать как минимум 8 символов',
+                    ]),
+                    new Regex([
+                        'pattern' => '/[A-ZА-Я]/u',
+                        'message' => 'Пароль должен содержать хотя бы одну заглавную букву',
+                    ]),
+                    new Regex([
+                        'pattern' => '/[0-9]/',
+                        'message' => 'Пароль должен содержать хотя бы одну цифру',
+                    ]),
                 ],
             ]);
     }

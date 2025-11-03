@@ -132,7 +132,7 @@ services:
   #Валидатор почты
   App\Users\Infrastructure\Service\Validation\EmailListValidator:
     arguments:
-      $whitelist: [ ]
+      $whitelist: [ 'nikolay.vanzhin@yandex.ru' ]
       $blacklist: [ ]
       $whitelistPatterns: [ '*@offire.ru', '*@1helper.ru' ]
       $blacklistPatterns: [ ]

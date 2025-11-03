@@ -53,4 +53,18 @@ class Mailer
             ]);
         $this->mailer->send($email);
     }
+
+    public function sendMessage(Address $to, string $subject, string $message): void
+    {
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->defaultFromEmail, $this->defaultFromName))
+            ->to($to)
+            ->subject($subject . ' | ' . $this->appName)
+            ->htmlTemplate('emails/notification.html.twig')
+            ->context([
+                'appName' => $this->appName,
+                'message' => $message,
+            ]);
+        $this->mailer->send($email);
+    }
 }

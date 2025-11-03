@@ -55,7 +55,7 @@ class RegistrationController extends AbstractController
             $user = $this->factory->create($email, $password);
             $this->userRepository->add($user);
 
-            $this->addFlash('register_success', 'Your registration has been passed successfully. Verification email is being sent.');
+            $this->addFlash('register_success', 'Регистрация прошла успешно.');
 
             return $this->userAuthenticator->authenticateUser(
                 $user,

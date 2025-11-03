@@ -42,7 +42,10 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
+        // Удаляем сохраненный target path после использования, чтобы избежать повторных редиректов
+        $session = $request->getSession();
+        if ($targetPath = $this->getTargetPath($session, $firewallName)) {
+            $this->removeTargetPath($session, $firewallName);
             return new RedirectResponse($targetPath);
         }
 
@@ -56,5 +59,28 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
     protected function getLoginUrl(Request $request): string
     {
         return $this->urlGenerator->generate(self::LOGIN_ROUTE);
+    }
+
+    /**
+     * Сохраняет исходный URL в сессии перед перенаправлением на страницу логина
+     */
+    public function start(Request $request, ?\Symfony\Component\Security\Core\Exception\AuthenticationException $authException = null): Response
+    {
+        // Сохраняем исходный путь запроса в сессию
+        // Используем полный URI для надежности
+        $targetPath = $request->getRequestUri();
+        
+        // Удаляем базовый URL, если он есть, чтобы получить относительный путь
+        $baseUrl = $request->getBaseUrl();
+        if ($baseUrl && str_starts_with($targetPath, $baseUrl)) {
+            $targetPath = substr($targetPath, strlen($baseUrl));
+        }
+        
+        // Убеждаемся, что сессия существует и не сохраняем путь логина
+        if ($request->hasSession() && $targetPath !== '/login') {
+            $this->saveTargetPath($request->getSession(), 'main', $targetPath);
+        }
+
+        return new RedirectResponse($this->getLoginUrl($request));
     }
 }

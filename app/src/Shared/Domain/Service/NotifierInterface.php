@@ -10,5 +10,7 @@ interface NotifierInterface
 {
     public function sendVerificationCode(Channel $channel, string $code, int $timeToUse): void;
 
+    public function notify(Channel $channel, string $message): void;
+
     public function isSupportedChannel(Channel $channel): bool;
 }
