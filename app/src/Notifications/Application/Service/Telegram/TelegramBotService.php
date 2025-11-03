@@ -99,16 +99,17 @@ final readonly class TelegramBotService
     {
         // Общие зависимости для всех команд
         $commonConfig = [
-            'logger' => $this->logger,
+//            'logger' => $this->logger,
         ];
 
         // Специфические зависимости для отдельных команд
         $specificConfigs = [
-            'start' => [
-                'messageBus' => $this->messageBus,
-                'channelRepository' => $this->channelRepository,
-                'telegramBotService' => $this,
-            ],
+//            'start' => [
+//                'messageBus' => $this->messageBus,
+//                'channelRepository' => $this->channelRepository,
+//                'telegramBotService' => $this,
+//                'queryBus' => $this,
+//            ],
         ];
 
         foreach ($this->telegram->getCommandsList() as $command) {

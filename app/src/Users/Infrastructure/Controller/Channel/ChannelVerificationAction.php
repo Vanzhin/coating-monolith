@@ -31,13 +31,14 @@ class ChannelVerificationAction extends AbstractController
     public function verification(Request $request): Response
     {
         try {
+            /** @var User $user */
             $user = $this->getUser();
 
             if (!$user) {
                 return $this->redirectToRoute('app_login');
             }
 
-            if ($user->isActive()) {
+            if ($user->isActive() && $user->getUnVerifiedChannels()->isEmpty()) {
                 return $this->redirectToRoute('app_cabinet');
             }
 

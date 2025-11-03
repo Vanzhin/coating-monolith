@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Application\UseCase\Query\CheckIsChannelVerified;
 
 use App\Shared\Application\Query\QueryHandlerInterface;
+use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelFilter;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 
@@ -19,14 +20,17 @@ readonly class CheckIsChannelVerifiedQueryHandler implements QueryHandlerInterfa
     {
         //todo сначала обратиться в редис, потом сюда
         $filter = new ChannelFilter();
-        $filter->value = $query->channelId;
+        $filter->value = $query->channelValue;
         $filter->type = $query->type;
         $result = $this->repository->findByFilter($filter);
 
-        if (!$result->items) {
+        /** @var Channel $channel */
+        $channel = current($result->items) ?? null;
+
+        if (!$channel) {
             return new CheckIsChannelVerifiedQueryResult(false);
         }
 
-        return new CheckIsChannelVerifiedQueryResult(true);
+        return new CheckIsChannelVerifiedQueryResult($channel->isVerified());
     }
 }

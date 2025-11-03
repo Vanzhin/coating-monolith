@@ -6,6 +6,7 @@ namespace App\Shared\Application\Security\Voter;
 
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class UserActiveVoter extends Voter
 {
@@ -18,10 +19,9 @@ class UserActiveVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, $subject, TokenInterface $token): bool
     {
-        $user = $token->getUser();
+        $user = $token->getUser();;
 
-        // Используем duck typing вместо конкретного класса
-        if (!is_object($user) || !method_exists($user, 'isActive')) {
+        if (!($user instanceof UserInterface) || !method_exists($user, 'isActive')) {
             return false;
         }
 
