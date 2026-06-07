@@ -14,6 +14,11 @@ class UuidService
         return Uuid::v4()->toRfc4122();
     }
 
+    public static function generateUuid(): Uuid
+    {
+        return Uuid::v7();
+    }
+
     public static function generateUlid(): string
     {
         return Ulid::generate();

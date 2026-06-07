@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace App\Coatings\Application\DTO\Coatings;
-
 
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
@@ -11,7 +10,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 
 class CoatingDTOTransformer
 {
-    public function fromEntity(Coating $entity): object
+    public function fromEntity(Coating $entity): CoatingDTO
     {
         $manufacturerDto = new ManufacturerDTO();
         $manufacturerDto->id = $entity->getManufacturer()->getId();
@@ -28,18 +27,23 @@ class CoatingDTOTransformer
             $coatingTagDtos[] = $coatingTagDto;
         }
 
+        $dftRange = $entity->getDftRange();
+
         $dto = new CoatingDTO();
         $dto->id = $entity->getId();
         $dto->title = $entity->getTitle();
         $dto->description = $entity->getDescription();
-        $dto->fullCure = $entity->getFullCure();
+        $dto->fullCure = $entity->getFullCure()->jsonSerialize();
         $dto->maxRecoatingInterval = $entity->getMaxRecoatingInterval();
         $dto->minRecoatingInterval = $entity->getMinRecoatingInterval();
-        $dto->dryToTouch = $entity->getDryToTouch();
+        $dto->dryToTouch = $entity->getDryToTouch()->jsonSerialize();
         $dto->applicationMinTemp = $entity->getApplicationMinTemp();
-        $dto->maxDft = $entity->getMaxDft();
-        $dto->minDft = $entity->getMinDft();
-        $dto->tdsDft = $entity->getTdsDft();
+        $dto->dftRange = [
+            'min' => (int) $dftRange->range->getMin(),
+            'max' => (int) $dftRange->range->getMax(),
+            'tds_dft' => $dftRange->tdsDft,
+            'type' => $dftRange->type->value,
+        ];
         $dto->massDensity = $entity->getMassDensity();
         $dto->volumeSolid = $entity->getVolumeSolid();
         $dto->pack = $entity->getPack();
@@ -64,5 +68,4 @@ class CoatingDTOTransformer
 
         return $coatingDTOs;
     }
-
 }

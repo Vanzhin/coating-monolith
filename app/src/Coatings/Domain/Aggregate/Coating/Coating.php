@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating;
 
@@ -8,94 +8,186 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
-use App\Shared\Domain\Service\UuidService;
+use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Uid\Uuid;
 
 class Coating extends Aggregate
 {
     public const PROTECTION_TYPE = 'CoatingProtectionType';
     public const COAT_TYPE = 'CoatingCoatType';
 
-    private readonly string $id;
+    public readonly Uuid $id;
     private string $title;
     private string $description;
     private int $volumeSolid;
     private float $massDensity;
-    private int $tdsDft;
-    private int $minDft;
-    private int $maxDft;
+    private DftRange $dftRange;
     private int $applicationMinTemp;
-    private float $dryToTouch;
+    private DryingTimeSeries $dryToTouch;
     private float $minRecoatingInterval;
-    private float $maxRecoatingInterval;
-    private float $fullCure;
+    private ?float $maxRecoatingInterval;
+    private DryingTimeSeries $fullCure;
     private Manufacturer $manufacturer;
     private CoatingSpecification $specification;
     private float $pack;
     private ?string $thinner;
 
-    /**
-     * @var Collection<CoatingTag>
-     */
+    /** @var Collection<CoatingTag> */
     private Collection $tags;
 
-
     public function __construct(
-        string               $title,
-        string               $description,
-        int                  $volumeSolid,
-        float                $massDensity,
-        int                  $tdsDft,
-        int                  $minDft,
-        int                  $maxDft,
-        int                  $applicationMinTemp,
-        float                $dryToTouch,
-        float                $minRecoatingInterval,
-        float                $maxRecoatingInterval,
-        float                $fullCure,
-        float                $pack,
-        ?string               $thinner,
-        Manufacturer         $manufacturer,
-        CoatingSpecification $specification
-    )
-    {
-        $this->id = UuidService::generate();
+        Uuid $id,
+        string $title,
+        string $description,
+        int $volumeSolid,
+        float $massDensity,
+        DftRange $dftRange,
+        int $applicationMinTemp,
+        DryingTimeSeries $dryToTouch,
+        float $minRecoatingInterval,
+        ?float $maxRecoatingInterval,
+        DryingTimeSeries $fullCure,
+        float $pack,
+        ?string $thinner,
+        Manufacturer $manufacturer,
+        CoatingSpecification $specification,
+    ) {
+        $this->id = $id;
         $this->tags = new ArrayCollection();
         $this->specification = $specification;
+
         $this->setTitle($title);
         $this->setDescription($description);
         $this->setVolumeSolid($volumeSolid);
         $this->setMassDensity($massDensity);
-        $this->setTdsDft($tdsDft);
-        $this->setMinDft($minDft);
-        $this->setMaxDft($maxDft);
+        $this->setDftRange($dftRange);
         $this->setApplicationMinTemp($applicationMinTemp);
         $this->setDryToTouch($dryToTouch);
-        $this->setMinRecoatingInterval($minRecoatingInterval);
-        $this->setMaxRecoatingInterval($maxRecoatingInterval);
+        $this->setRecoatingIntervalBounds($minRecoatingInterval, $maxRecoatingInterval);
         $this->setFullCure($fullCure);
         $this->setPack($pack);
         $this->setThinner($thinner);
-        $this->manufacturer = $manufacturer;
-
+        $this->setManufacturer($manufacturer);
     }
 
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
+    public function getId(): string { return $this->id->toRfc4122(); }
+
+    public function getTitle(): string { return $this->title; }
+
+    public function getDescription(): string { return $this->description; }
+
+    public function getVolumeSolid(): int { return $this->volumeSolid; }
+
+    public function getMassDensity(): float { return $this->massDensity; }
+
+    public function getDftRange(): DftRange { return $this->dftRange; }
+
+    public function getApplicationMinTemp(): int { return $this->applicationMinTemp; }
+
+    public function getDryToTouch(): DryingTimeSeries { return $this->dryToTouch; }
+
+    public function getMinRecoatingInterval(): float { return $this->minRecoatingInterval; }
+
+    public function getMaxRecoatingInterval(): ?float { return $this->maxRecoatingInterval; }
+
+    public function getFullCure(): DryingTimeSeries { return $this->fullCure; }
+
+    public function getManufacturer(): Manufacturer { return $this->manufacturer; }
+
+    public function getPack(): float { return $this->pack; }
+
+    public function getThinner(): ?string { return $this->thinner; }
+
+    public function getTags(): Collection { return $this->tags; }
 
     public function setTitle(string $title): void
     {
+        AssertService::maxLength($title, 100);
         $this->title = $title;
-        AssertService::maxLength($this->title, 100);
         $this->specification->uniqueTitleCoatingSpecification->satisfy($this);
     }
 
-    public function getId(): string
+    public function setDescription(string $description): void
     {
-        return $this->id;
+        AssertService::maxLength($description, 750);
+        $this->description = $description;
+    }
+
+    public function setVolumeSolid(int $volumeSolid): void
+    {
+        if ($volumeSolid < 1 || $volumeSolid > 100) {
+            throw new AppException('Сухой остаток (volumeSolid) должен быть в диапазоне 1..100.');
+        }
+        $this->volumeSolid = $volumeSolid;
+    }
+
+    public function setMassDensity(float $massDensity): void
+    {
+        AssertService::greaterThanEq($massDensity, 0);
+        $this->massDensity = $massDensity;
+    }
+
+    public function setDftRange(DftRange $dftRange): void
+    {
+        $this->dftRange = $dftRange;
+    }
+
+    public function setApplicationMinTemp(int $applicationMinTemp): void
+    {
+        $this->applicationMinTemp = $applicationMinTemp;
+    }
+
+    public function setDryToTouch(DryingTimeSeries $dryToTouch): void
+    {
+        $this->dryToTouch = $dryToTouch;
+    }
+
+    public function setFullCure(DryingTimeSeries $fullCure): void
+    {
+        $this->fullCure = $fullCure;
+    }
+
+    public function setPack(float $pack): void
+    {
+        if ($pack < 1 || $pack > 1000) {
+            throw new AppException('Упаковка (pack) должна быть в диапазоне 1..1000.');
+        }
+        $this->pack = $pack;
+    }
+
+    public function setThinner(?string $thinner): void
+    {
+        AssertService::maxLength($thinner, 100);
+        $this->thinner = $thinner;
+    }
+
+    public function setManufacturer(Manufacturer $manufacturer): void
+    {
+        $this->manufacturer = $manufacturer;
+    }
+
+    /**
+     * Атомарно задаёт пару (min, max). null в max означает, что верхней границы нет.
+     * Только так извне можно изменить интервал перекрытия — чтобы инвариант min <= max
+     * нельзя было нарушить временным промежуточным состоянием.
+     */
+    public function setRecoatingIntervalBounds(float $min, ?float $max): void
+    {
+        AssertService::greaterThanEq($min, 0);
+        if ($max !== null) {
+            AssertService::greaterThanEq($max, 0);
+            if ($min > $max) {
+                throw new AppException(sprintf(
+                    'Минимальный интервал перекрытия (%g) не может превышать максимальный (%g).',
+                    $min,
+                    $max,
+                ));
+            }
+        }
+        $this->minRecoatingInterval = $min;
+        $this->maxRecoatingInterval = $max;
     }
 
     public function addTag(CoatingTag $tag): void
@@ -105,175 +197,19 @@ class Coating extends Aggregate
         }
     }
 
-    public function getDescription(): string
+    public function removeTag(CoatingTag $tag): void
     {
-        return $this->description;
+        $this->tags->removeElement($tag);
     }
 
-    public function setDescription(string $description): void
+    /**
+     * @param CoatingTag[] $tags
+     */
+    public function replaceTags(array $tags): void
     {
-        $this->description = $description;
-        AssertService::maxLength($this->description, 750);
-    }
-
-    public function getVolumeSolid(): int
-    {
-        return $this->volumeSolid;
-    }
-
-    public function getMassDensity(): float
-    {
-        return $this->massDensity;
-    }
-
-    public function setMassDensity(float $massDensity): void
-    {
-        $this->massDensity = $massDensity;
-        AssertService::greaterThanEq($this->massDensity, 0);
-
-    }
-
-    public function getTdsDft(): int
-    {
-        return $this->tdsDft;
-    }
-
-    public function setTdsDft(int $tdsDft): void
-    {
-        $this->tdsDft = $tdsDft;
-        AssertService::greaterThanEq($this->tdsDft, 0);
-    }
-
-    public function getMinDft(): int
-    {
-        return $this->minDft;
-    }
-
-    public function setMinDft(int $minDft): void
-    {
-        $this->minDft = $minDft;
-        AssertService::greaterThanEq($this->minDft, 10);
-
-    }
-
-    public function getMaxDft(): int
-    {
-        return $this->maxDft;
-    }
-
-    public function setMaxDft(int $maxDft): void
-    {
-        $this->maxDft = $maxDft;
-        AssertService::lessThanEq($this->maxDft, 5000);
-    }
-
-    public function getApplicationMinTemp(): int
-    {
-        return $this->applicationMinTemp;
-    }
-
-    public function setApplicationMinTemp(int $applicationMinTemp): void
-    {
-        $this->applicationMinTemp = $applicationMinTemp;
-    }
-
-    public function getDryToTouch(): float
-    {
-        return $this->dryToTouch;
-    }
-
-    public function setDryToTouch(float $dryToTouch): void
-    {
-        $this->dryToTouch = $dryToTouch;
-        AssertService::greaterThanEq($this->dryToTouch, 0);
-
-    }
-
-    public function getMinRecoatingInterval(): float
-    {
-        return $this->minRecoatingInterval;
-    }
-
-    public function setMinRecoatingInterval(float $minRecoatingInterval): void
-    {
-        $this->minRecoatingInterval = $minRecoatingInterval;
-        AssertService::greaterThanEq($this->minRecoatingInterval, 0);
-
-    }
-
-    public function getMaxRecoatingInterval(): float
-    {
-        return $this->maxRecoatingInterval;
-    }
-
-    public function setMaxRecoatingInterval(float $maxRecoatingInterval): void
-    {
-        $this->maxRecoatingInterval = $maxRecoatingInterval;
-    }
-
-    public function getFullCure(): float
-    {
-        return $this->fullCure;
-    }
-
-    public function setFullCure(float $fullCure): void
-    {
-        $this->fullCure = $fullCure;
-        AssertService::greaterThanEq($this->fullCure, 0);
-
-    }
-
-
-    public function getTags(): Collection
-    {
-        return $this->tags;
-    }
-
-    public function setTags(Collection $tags): void
-    {
-        $this->tags = $tags;
-    }
-
-    public function setVolumeSolid(int $volumeSolid): void
-    {
-        $this->volumeSolid = $volumeSolid;
-        if ($volumeSolid < 1 || $volumeSolid > 100) {
-            throw new \Exception("Volume solid must be between 1 and 100");
+        $this->tags->clear();
+        foreach ($tags as $tag) {
+            $this->addTag($tag);
         }
-    }
-
-    public function getManufacturer(): Manufacturer
-    {
-        return $this->manufacturer;
-    }
-
-    public function setManufacturer(Manufacturer $manufacturer): void
-    {
-        $this->manufacturer = $manufacturer;
-    }
-
-    public function getPack(): float
-    {
-        return $this->pack;
-    }
-
-    public function setPack(float $pack): void
-    {
-        $this->pack = $pack;
-        if ($pack < 1 || $pack > 1000) {
-            throw new \Exception("Pack must be between 1 and 1000.");
-        }
-    }
-
-    public function getThinner(): ?string
-    {
-        return $this->thinner;
-    }
-
-    public function setThinner(?string $thinner): void
-    {
-        $this->thinner = $thinner;
-        AssertService::maxLength($this->thinner, 100);
-
     }
 }

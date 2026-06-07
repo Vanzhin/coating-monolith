@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\Coatings;
 
@@ -14,19 +14,25 @@ class CoatingDTO
     public string $description;
     public int $volumeSolid;
     public float $massDensity;
-    public int $tdsDft;
-    public int $minDft;
-    public int $maxDft;
+
+    /** @var array{min: int, max: int, tds_dft: int, type: string} */
+    public array $dftRange;
+
     public int $applicationMinTemp;
-    public float $dryToTouch;
+
+    /** @var list<array{temperature_at: int, time_in_minutes: float, is_calculated: bool}> */
+    public array $dryToTouch;
+
     public float $minRecoatingInterval;
-    public float $maxRecoatingInterval;
-    public float $fullCure;
+    public ?float $maxRecoatingInterval;
+
+    /** @var list<array{temperature_at: int, time_in_minutes: float, is_calculated: bool}> */
+    public array $fullCure;
+
     public float $pack;
     public ?string $thinner;
     public ManufacturerDTO $manufacturer;
-    /**
-     * @var CoatingTagDTO[]
-     */
+
+    /** @var CoatingTagDTO[] */
     public array $tags;
 }

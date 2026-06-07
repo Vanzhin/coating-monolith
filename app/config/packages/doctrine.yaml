@@ -8,6 +8,11 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+        types:
+            drying_time_series: App\Coatings\Infrastructure\Database\DBAL\DryingTimeSeriesType
+            dft_range: App\Coatings\Infrastructure\Database\DBAL\DftRangeType
+        mapping_types:
+            jsonb: json
     orm:
 #        auto_generate_proxy_classes: true
 #        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware

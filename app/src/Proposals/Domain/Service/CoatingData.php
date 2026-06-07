@@ -17,7 +17,7 @@ class CoatingData
         public readonly int $applicationMinTemp,
         public readonly float $dryToTouch,
         public readonly float $minRecoatingInterval,
-        public readonly float $maxRecoatingInterval,
+        public readonly ?float $maxRecoatingInterval,
         public readonly float $fullCure,
         public readonly float $pack,
         public readonly ?string $thinner

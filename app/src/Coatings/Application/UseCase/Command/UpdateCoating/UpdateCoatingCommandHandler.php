@@ -2,80 +2,115 @@
 
 declare(strict_types=1);
 
-
 namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
+use App\Coatings\Domain\Aggregate\Coating\DftRange;
+use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
 use App\Coatings\Domain\Service\CoatingTagFetcher;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\Aggregate\Enum\ThicknessType;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 
 readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private CoatingRepositoryInterface      $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingTagFetcher               $coatingTagFetcher
-    )
-    {
+        private CoatingTagFetcher               $coatingTagFetcher,
+    ) {
     }
 
     public function __invoke(UpdateCoatingCommand $command): UpdateCoatingCommandResult
     {
         $coating = $this->coatingRepository->findOneById($command->coatingId);
+        $dto = $command->coatingDTO;
 
-        if ($manufacturer = $command->coatingDTO->manufacturer) {
-            $coating->setManufacturer($this->manufacturerRepository->findOneById($manufacturer->id));
+        if ($dto->manufacturer) {
+            $coating->setManufacturer(
+                $this->manufacturerRepository->findOneById($dto->manufacturer->id),
+            );
         }
-        if ($command->coatingDTO->title) {
-            $coating->setTitle($command->coatingDTO->title);
-        }
-        if ($command->coatingDTO->description) {
-            $coating->setDescription($command->coatingDTO->description);
-        }
-        if ($command->coatingDTO->dryToTouch) {
-            $coating->setDryToTouch($command->coatingDTO->dryToTouch);
-        }
-        if ($command->coatingDTO->volumeSolid) {
-            $coating->setVolumeSolid($command->coatingDTO->volumeSolid);
-        }
-        if ($command->coatingDTO->massDensity) {
-            $coating->setMassDensity($command->coatingDTO->massDensity);
-        }
-        if ($command->coatingDTO->tdsDft) {
-            $coating->setTdsDft($command->coatingDTO->tdsDft);
-        }
-        if ($command->coatingDTO->minDft) {
-            $coating->setMinDft($command->coatingDTO->minDft);
-        }
-        if ($command->coatingDTO->maxDft) {
-            $coating->setMaxDft($command->coatingDTO->maxDft);
-        }
-        if ($command->coatingDTO->applicationMinTemp) {
-            $coating->setApplicationMinTemp($command->coatingDTO->applicationMinTemp);
-        }
-        if ($command->coatingDTO->minRecoatingInterval) {
-            $coating->setMinRecoatingInterval($command->coatingDTO->minRecoatingInterval);
-        }
-        if ($command->coatingDTO->maxRecoatingInterval) {
-            $coating->setMaxRecoatingInterval($command->coatingDTO->maxRecoatingInterval);
-        }
-        if ($command->coatingDTO->fullCure) {
-            $coating->setFullCure($command->coatingDTO->fullCure);
-        }
-        if ($command->coatingDTO->pack) {
-            $coating->setPack($command->coatingDTO->pack);
-        }
-        $coating->setThinner($command->coatingDTO->thinner ?? null);
 
-        if ($command->coatingDTO->tags) {
-            $coating->getTags()->clear();
-            foreach ($command->coatingDTO->tags as $coatingTagDTO) {
-                $coating->addTag($this->coatingTagFetcher->getRequiredTag($coatingTagDTO->id));
+        if ($dto->title) {
+            $coating->setTitle($dto->title);
+        }
+        if ($dto->description) {
+            $coating->setDescription($dto->description);
+        }
+
+        if (!empty($dto->dftRange)) {
+            $coating->setDftRange($this->buildDftRange($dto->dftRange));
+        }
+        if (!empty($dto->dryToTouch)) {
+            $coating->setDryToTouch($this->buildDryingTimeSeries($dto->dryToTouch));
+        }
+        if (!empty($dto->fullCure)) {
+            $coating->setFullCure($this->buildDryingTimeSeries($dto->fullCure));
+        }
+
+        if (!empty($dto->volumeSolid)) {
+            $coating->setVolumeSolid($dto->volumeSolid);
+        }
+        if (!empty($dto->massDensity)) {
+            $coating->setMassDensity($dto->massDensity);
+        }
+        if (isset($dto->applicationMinTemp)) {
+            $coating->setApplicationMinTemp($dto->applicationMinTemp);
+        }
+        if (!empty($dto->pack)) {
+            $coating->setPack($dto->pack);
+        }
+
+        if ($dto->minRecoatingInterval !== null) {
+            $coating->setRecoatingIntervalBounds(
+                $dto->minRecoatingInterval,
+                $dto->maxRecoatingInterval ?? null,
+            );
+        }
+
+        $coating->setThinner($dto->thinner ?? null);
+
+        if (!empty($dto->tags)) {
+            $tags = [];
+            foreach ($dto->tags as $coatingTagDTO) {
+                $tags[] = $this->coatingTagFetcher->getRequiredTag($coatingTagDTO->id);
             }
+            $coating->replaceTags($tags);
         }
+
         $this->coatingRepository->add($coating);
 
         return new UpdateCoatingCommandResult();
+    }
+
+    /**
+     * @param array{min: int, max: int, tds_dft: int, type: string} $raw
+     */
+    private function buildDftRange(array $raw): DftRange
+    {
+        return new DftRange(
+            new PositiveNumberRange((int) $raw['min'], (int) $raw['max']),
+            (int) $raw['tds_dft'],
+            ThicknessType::from($raw['type']),
+        );
+    }
+
+    /**
+     * @param list<array{temperature_at: int, time_in_minutes: float, is_calculated?: bool}> $points
+     */
+    private function buildDryingTimeSeries(array $points): DryingTimeSeries
+    {
+        $timePoints = array_map(
+            fn(array $point) => new TimeAtTemperature(
+                (int) $point['temperature_at'],
+                (float) $point['time_in_minutes'],
+            ),
+            $points,
+        );
+
+        return new DryingTimeSeries(...$timePoints);
     }
 }

@@ -1,15 +1,14 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Adapter;
 
-use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQueryResult as CoatingsGetCoatingQueryResult;
-use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult as CoatingsGetPagedCoatingsQueryResult;
-use App\Proposals\Domain\Service\CoatingsServiceInterface;
-use App\Proposals\Domain\Service\CoatingsQueryResult;
-use App\Proposals\Domain\Service\CoatingQueryResult;
+use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Proposals\Domain\Service\CoatingData;
+use App\Proposals\Domain\Service\CoatingQueryResult;
+use App\Proposals\Domain\Service\CoatingsQueryResult;
+use App\Proposals\Domain\Service\CoatingsServiceInterface;
 
 readonly class CoatingsAdapter implements CoatingsServiceInterface
 {
@@ -20,63 +19,61 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
     public function getPagedCoatings(): CoatingsQueryResult
     {
         $result = $this->coatingsApi->getPagedCoatings();
-        
-        $coatings = [];
-        foreach ($result->coatings as $coating) {
-            $coatings[] = new CoatingData(
-                id: $coating->id,
-                title: $coating->title,
-                description: $coating->description,
-                volumeSolid: $coating->volumeSolid,
-                massDensity: $coating->massDensity,
-                tdsDft: $coating->tdsDft,
-                minDft: $coating->minDft,
-                maxDft: $coating->maxDft,
-                applicationMinTemp: $coating->applicationMinTemp,
-                dryToTouch: $coating->dryToTouch,
-                minRecoatingInterval: $coating->minRecoatingInterval,
-                maxRecoatingInterval: $coating->maxRecoatingInterval,
-                fullCure: $coating->fullCure,
-                pack: $coating->pack,
-                thinner: $coating->thinner
-            );
-        }
-        
+
+        $coatings = array_map(
+            fn(CoatingDTO $coating) => $this->toCoatingData($coating),
+            $result->coatings,
+        );
+
         return new CoatingsQueryResult(
             coatings: $coatings,
             totalCount: $result->pager->total_items,
             page: $result->pager->page,
-            limit: $result->pager->perPage
+            limit: $result->pager->perPage,
         );
     }
 
     public function getCoating(string $id): CoatingQueryResult
     {
         $result = $this->coatingsApi->getCoating($id);
-        
+
         if (!$result->coatingDTO) {
             return new CoatingQueryResult(coatingData: null);
         }
-        
-        $coatingData = new CoatingData(
-            id: $result->coatingDTO->id,
-            title: $result->coatingDTO->title,
-            description: $result->coatingDTO->description,
-            volumeSolid: $result->coatingDTO->volumeSolid,
-            massDensity: $result->coatingDTO->massDensity,
-            tdsDft: $result->coatingDTO->tdsDft,
-            minDft: $result->coatingDTO->minDft,
-            maxDft: $result->coatingDTO->maxDft,
-            applicationMinTemp: $result->coatingDTO->applicationMinTemp,
-            dryToTouch: $result->coatingDTO->dryToTouch,
-            minRecoatingInterval: $result->coatingDTO->minRecoatingInterval,
-            maxRecoatingInterval: $result->coatingDTO->maxRecoatingInterval,
-            fullCure: $result->coatingDTO->fullCure,
-            pack: $result->coatingDTO->pack,
-            thinner: $result->coatingDTO->thinner
-        );
-        
-        return new CoatingQueryResult(coatingData: $coatingData);
+
+        return new CoatingQueryResult(coatingData: $this->toCoatingData($result->coatingDTO));
     }
 
+    /**
+     * Proposals использует плоскую CoatingData (скаляры). Извлекаем из VO-структур
+     * первую точку профиля (она же — точка при +20°C для одноточечных профилей).
+     */
+    private function toCoatingData(CoatingDTO $dto): CoatingData
+    {
+        return new CoatingData(
+            id: $dto->id,
+            title: $dto->title,
+            description: $dto->description,
+            volumeSolid: $dto->volumeSolid,
+            massDensity: $dto->massDensity,
+            tdsDft: (int) $dto->dftRange['tds_dft'],
+            minDft: (int) $dto->dftRange['min'],
+            maxDft: (int) $dto->dftRange['max'],
+            applicationMinTemp: $dto->applicationMinTemp,
+            dryToTouch: $this->firstPointMinutes($dto->dryToTouch),
+            minRecoatingInterval: $dto->minRecoatingInterval,
+            maxRecoatingInterval: $dto->maxRecoatingInterval,
+            fullCure: $this->firstPointMinutes($dto->fullCure),
+            pack: $dto->pack,
+            thinner: $dto->thinner,
+        );
+    }
+
+    /**
+     * @param list<array{time_in_minutes: float}> $points
+     */
+    private function firstPointMinutes(array $points): float
+    {
+        return isset($points[0]) ? (float) $points[0]['time_in_minutes'] : 0.0;
+    }
 }

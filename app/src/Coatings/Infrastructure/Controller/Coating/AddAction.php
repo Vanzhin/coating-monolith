@@ -43,7 +43,7 @@ class AddAction extends AbstractController
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
                 $inputData = $request->getPayload()->all();
-                $errors = $this->validator->validate($request->getPayload()->all(), $this->coatingMapper->getValidationCollectionCoating());
+                $errors = $this->validator->validate($inputData, $this->coatingMapper->getValidationCollectionCoating());
                 if ($errors) {
                     throw new \Exception(current($errors)->getFullMessage());
                 }

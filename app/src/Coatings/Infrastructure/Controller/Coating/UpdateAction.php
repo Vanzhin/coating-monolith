@@ -54,7 +54,7 @@ class UpdateAction extends AbstractController
 
                 $inputData = $request->getPayload()->all();
                 $inputData['id'] = $id;
-                $errors = $this->validator->validate($request->getPayload()->all(), $this->coatingMapper->getValidationCollectionCoating());
+                $errors = $this->validator->validate($inputData, $this->coatingMapper->getValidationCollectionCoating());
                 if ($errors) {
                     throw new \Exception(current($errors)->getFullMessage());
                 }
@@ -65,7 +65,7 @@ class UpdateAction extends AbstractController
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             }
-        } catch (\Exception|\Error $e) {
+        } catch (\Exception $e) {
             $error = $e->getMessage();
             return $this->render('admin/coating/coating/edit.html.twig', compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'));
         }

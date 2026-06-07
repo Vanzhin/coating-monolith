@@ -60,7 +60,7 @@
                             <label for="inputTdsDft" class="form-label">ТСП тех карты</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.tdsDft }}" name="tdsDft" id="inputTdsDft"
+                                <input type="number" value="{{ dto.dftRange.tds_dft }}" name="tdsDft" id="inputTdsDft"
                                        class="form-control"
                                        autocomplete="tdsDft" required autofocus placeholder="Укажите тсп..."
                                        min="10" max="9999"
@@ -71,7 +71,7 @@
                             <label for="inputMinDft" class="form-label">Мин ТСП</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.minDft }}" name="minDft" id="inputMinDft"
+                                <input type="number" value="{{ dto.dftRange.min }}" name="minDft" id="inputMinDft"
                                        class="form-control"
                                        autocomplete="minDft" required autofocus placeholder="Укажите мин тсп..."
                                        min="10" max="9999"
@@ -82,7 +82,7 @@
                             <label for="inputMaxDft" class="form-label">Макс ТСП</label>
                             <div class="input-group">
                                 <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.maxDft }}" name="maxDft" id="inputMaxDft"
+                                <input type="number" value="{{ dto.dftRange.max }}" name="maxDft" id="inputMaxDft"
                                        class="form-control"
                                        autocomplete="maxDft" required autofocus placeholder="Укажите макс тсп..."
                                        min="10" max="9999"
@@ -106,7 +106,7 @@
                             <label for="inputDryToTouch" class="form-label">Сухой на отлип</label>
                             <div class="input-group">
                                 <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ dto.dryToTouch }}" name="dryToTouch"
+                                <input type="number" value="{{ dto.dryToTouch[0].time_in_minutes }}" name="dryToTouch"
                                        id="inputDryToTouch"
                                        class="form-control"
                                        autocomplete="dryToTouch" required autofocus
@@ -135,8 +135,8 @@
                                 <input type="number" value="{{ dto.maxRecoatingInterval }}"
                                        name="maxRecoatingInterval"
                                        id="inputMaxRecoatingInterval" class="form-control"
-                                       autocomplete="maxRecoatingInterval" required autofocus
-                                       placeholder="Укажите макс инт перек..."
+                                       autocomplete="maxRecoatingInterval"
+                                       placeholder="Пусто = без верхней границы"
                                        min="0" max="1000" step="0.1"
                                 >
                             </div>
@@ -145,7 +145,7 @@
                             <label for="inputFullCure" class="form-label">Полное отверждение</label>
                             <div class="input-group">
                                 <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ dto.fullCure }}" name="fullCure"
+                                <input type="number" value="{{ dto.fullCure[0].time_in_minutes }}" name="fullCure"
                                        id="inputFullCure"
                                        class="form-control"
                                        autocomplete="fullCure" required autofocus
