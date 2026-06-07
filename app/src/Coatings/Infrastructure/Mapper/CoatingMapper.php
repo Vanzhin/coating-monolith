@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Mapper;
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -63,6 +64,7 @@ class CoatingMapper
         $dto->description = $inputData['description'] ?? null;
         $dto->volumeSolid = (int) $inputData['volumeSolid'];
         $dto->massDensity = (float) $inputData['massDensity'];
+        $dto->base = CoatingBase::from($inputData['base'])->value;
         $dto->dftRange = [
             'min' => (int) ($inputData['minDft'] ?? 0),
             'max' => (int) ($inputData['maxDft'] ?? 0),
@@ -122,7 +124,7 @@ class CoatingMapper
                 new Assert\Type('string'),
                 new Assert\Length([
                     'min' => 3,
-                    'max' => 750,
+                    'max' => 1500,
                     'maxMessage' => 'Описание не должно быть длиннее {{ limit }}.',
                     'minMessage' => 'Описание не должно быть короче {{ limit }}.',
                 ]),

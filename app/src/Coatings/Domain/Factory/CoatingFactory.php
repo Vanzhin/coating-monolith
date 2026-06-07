@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Factory;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
@@ -22,6 +23,7 @@ readonly class CoatingFactory
         string           $description,
         int              $volumeSolid,
         float            $massDensity,
+        CoatingBase      $base,
         DftRange         $dftRange,
         int              $applicationMinTemp,
         DryingTimeSeries $dryToTouch,
@@ -38,6 +40,7 @@ readonly class CoatingFactory
             $description,
             $volumeSolid,
             $massDensity,
+            $base,
             $dftRange,
             $applicationMinTemp,
             $dryToTouch,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Application\UseCase\Command\CreateCoating;
 
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
@@ -29,6 +30,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $dto->description,
             $dto->volumeSolid,
             $dto->massDensity,
+            CoatingBase::from($dto->base),
             $this->buildDftRange($dto),
             $dto->applicationMinTemp,
             $this->buildDryingTimeSeries($dto->dryToTouch),

@@ -9,6 +9,7 @@ use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTagsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Repository\CoatingTagsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
@@ -67,9 +68,9 @@ class UpdateAction extends AbstractController
             }
         } catch (\Exception $e) {
             $error = $e->getMessage();
-            return $this->render('admin/coating/coating/edit.html.twig', compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'));
+            return $this->render('admin/coating/coating/edit.html.twig', array_merge(compact('error', 'dto', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]));
         }
 
-        return $this->render('admin/coating/coating/edit.html.twig', compact('pagedManufacturers', 'pagedCoatingTags', 'dto'));
+        return $this->render('admin/coating/coating/edit.html.twig', array_merge(compact('pagedManufacturers', 'pagedCoatingTags', 'dto'), ['coatingBases' => CoatingBase::cases()]));
     }
 }

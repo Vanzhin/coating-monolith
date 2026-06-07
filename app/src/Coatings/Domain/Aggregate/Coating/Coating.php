@@ -23,6 +23,7 @@ class Coating extends Aggregate
     private string $description;
     private int $volumeSolid;
     private float $massDensity;
+    private CoatingBase $base;
     private DftRange $dftRange;
     private int $applicationMinTemp;
     private DryingTimeSeries $dryToTouch;
@@ -43,6 +44,7 @@ class Coating extends Aggregate
         string $description,
         int $volumeSolid,
         float $massDensity,
+        CoatingBase $base,
         DftRange $dftRange,
         int $applicationMinTemp,
         DryingTimeSeries $dryToTouch,
@@ -62,6 +64,7 @@ class Coating extends Aggregate
         $this->setDescription($description);
         $this->setVolumeSolid($volumeSolid);
         $this->setMassDensity($massDensity);
+        $this->setBase($base);
         $this->setDftRange($dftRange);
         $this->setApplicationMinTemp($applicationMinTemp);
         $this->setDryToTouch($dryToTouch);
@@ -81,6 +84,8 @@ class Coating extends Aggregate
     public function getVolumeSolid(): int { return $this->volumeSolid; }
 
     public function getMassDensity(): float { return $this->massDensity; }
+
+    public function getBase(): CoatingBase { return $this->base; }
 
     public function getDftRange(): DftRange { return $this->dftRange; }
 
@@ -111,7 +116,7 @@ class Coating extends Aggregate
 
     public function setDescription(string $description): void
     {
-        AssertService::maxLength($description, 750);
+        AssertService::maxLength($description, 1500);
         $this->description = $description;
     }
 
@@ -132,6 +137,11 @@ class Coating extends Aggregate
     public function setDftRange(DftRange $dftRange): void
     {
         $this->dftRange = $dftRange;
+    }
+
+    public function setBase(CoatingBase $base): void
+    {
+        $this->base = $base;
     }
 
     public function setApplicationMinTemp(int $applicationMinTemp): void
@@ -166,6 +176,18 @@ class Coating extends Aggregate
     public function setManufacturer(Manufacturer $manufacturer): void
     {
         $this->manufacturer = $manufacturer;
+    }
+
+    /** Можно ли это покрытие наносить поверх $primer (делегирует в основание). */
+    public function canBeAppliedOnTopOf(self $primer): bool
+    {
+        return $this->base->canBeAppliedOnTopOf($primer->base);
+    }
+
+    /** Можно ли поверх этого покрытия нанести $topCoat (делегирует в основание). */
+    public function canBecoveredBy(self $topCoat): bool
+    {
+        return $this->base->canBecoveredBy($topCoat->base);
     }
 
     /**

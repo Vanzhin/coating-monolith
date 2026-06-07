@@ -6,6 +6,7 @@ namespace App\Coatings\Application\DTO\Coatings;
 
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 
 class CoatingDTO
 {
@@ -14,6 +15,14 @@ class CoatingDTO
     public string $description;
     public int $volumeSolid;
     public float $massDensity;
+
+    /** ISO 12944-5 аббревиатура. */
+    public string $base;
+
+    public function baseEnum(): ?CoatingBase
+    {
+        return CoatingBase::tryFrom($this->base);
+    }
 
     /** @var array{min: int, max: int, tds_dft: int, type: string} */
     public array $dftRange;

@@ -1,24 +1,25 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Infrastructure\Search\CoatingFinder;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 class CoatingRepository extends ServiceEntityRepository implements CoatingRepositoryInterface
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly CoatingFinder $finder,
+    ) {
         parent::__construct($registry, Coating::class);
     }
-
 
     public function add(Coating $coating): void
     {
@@ -34,19 +35,12 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult
     {
-        $qb = $this->createQueryBuilder('cc');
-        $qb->orderBy('cc.title', 'ASC');
-        if ($filter->title) {
-            $qb->where($qb->expr()->like('LOWER(cc.title)', 'LOWER(:title)'))
-                ->setParameter('title', '%' . $filter->title . '%');
+        $result = $this->finder->fullText($filter);
+        if ($result->total === 0 && $filter->search !== null) {
+            return $this->finder->fuzzyTitle($filter);
         }
-        if ($filter->pager) {
-            $qb->setMaxResults($filter->pager->getLimit());
-            $qb->setFirstResult($filter->pager->getOffset());
-        }
-        $paginator = new Paginator($qb->getQuery());
 
-        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
+        return $result;
     }
 
     public function findOneById(string $id): ?Coating
@@ -57,6 +51,5 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
     public function findOneByTitle(string $title): ?Coating
     {
         return $this->findOneBy(['title' => $title]);
-
     }
 }

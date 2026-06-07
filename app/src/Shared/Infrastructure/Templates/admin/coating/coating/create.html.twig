@@ -29,7 +29,7 @@
                                       autocomplete="description"
                                       required placeholder="Укажите описание..."
                                       rows="3"
-                                      maxlength="750">{{ inputData.description }}</textarea>
+                                      maxlength="1500">{{ inputData.description }}</textarea>
                         </div>
                         <div class="col-sm-6">
                             <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
@@ -55,6 +55,17 @@
                                        min="0" max="100" step="0.01"
                                 >
                             </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="inputBase" class="form-label">Тип ЛКМ (основание)</label>
+                            <select class="form-select" id="inputBase" name="base" required>
+                                {% for b in coatingBases %}
+                                    <option value="{{ b.value }}"
+                                            {% if (inputData.base ?? 'EP') == b.value %} selected {% endif %}>
+                                        {{ b.title }} ({{ b.iso }}{% if b.gost|length > 0 %} / {{ b.gost|join(', ') }}{% endif %})
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-sm-4">
                             <label for="inputTdsDft" class="form-label">ТСП тех карты</label>

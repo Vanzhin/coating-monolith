@@ -45,6 +45,7 @@ class CoatingDTOTransformer
             'type' => $dftRange->type->value,
         ];
         $dto->massDensity = $entity->getMassDensity();
+        $dto->base = $entity->getBase()->value;
         $dto->volumeSolid = $entity->getVolumeSolid();
         $dto->pack = $entity->getPack();
         $dto->manufacturer = $manufacturerDto;

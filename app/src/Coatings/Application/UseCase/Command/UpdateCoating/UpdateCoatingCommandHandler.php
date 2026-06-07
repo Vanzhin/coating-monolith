@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
@@ -56,6 +57,9 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         }
         if (!empty($dto->massDensity)) {
             $coating->setMassDensity($dto->massDensity);
+        }
+        if (!empty($dto->base) && CoatingBase::tryFrom($dto->base) !== null) {
+            $coating->setBase(CoatingBase::from($dto->base));
         }
         if (isset($dto->applicationMinTemp)) {
             $coating->setApplicationMinTemp($dto->applicationMinTemp);

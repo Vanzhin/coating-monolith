@@ -1,5 +1,10 @@
 {#<div class="d-flex gap-2 mb-3">#}
-    <a href="{{ path(edit, {'id': id}) }}" type="button" class="btn btn-outline-primary">
+    {% if duplicate is defined %}
+        <a href="{{ path(duplicate, {'from': id}) }}" type="button" class="btn btn-outline-info" title="Дублировать">
+            <i class="bi bi-files"></i>
+        </a>
+    {% endif %}
+    <a href="{{ path(edit, {'id': id}) }}" type="button" class="btn btn-outline-primary" title="Редактировать">
         <i class="bi bi-pencil"></i>
     </a>
 {#    <a class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal"#}

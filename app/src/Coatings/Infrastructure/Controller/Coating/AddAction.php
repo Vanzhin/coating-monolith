@@ -1,13 +1,15 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
 use App\Coatings\Application\UseCase\Command\CreateCoating\CreateCoatingCommand;
+use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTagsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Repository\CoatingTagsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
@@ -28,18 +30,18 @@ class AddAction extends AbstractController
         private readonly QueryBusInterface   $queryBus,
         private readonly Validator           $validator,
         private readonly CoatingMapper       $coatingMapper,
-
-    )
-    {
+    ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $queryManufacturers = new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000)));
-        $pagedManufacturers = $this->queryBus->execute($queryManufacturers);
+        $pagedManufacturers = $this->queryBus->execute(
+            new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000))),
+        );
+        $pagedCoatingTags = $this->queryBus->execute(
+            new GetPagedCoatingTagsQuery(new CoatingTagsFilter(Pager::fromPage(1, 1000), null, Coating::COAT_TYPE, Coating::PROTECTION_TYPE)),
+        );
 
-        $queryTags = new GetPagedCoatingTagsQuery(new CoatingTagsFilter(Pager::fromPage(1, 1000), null, Coating::COAT_TYPE, Coating::PROTECTION_TYPE));
-        $pagedCoatingTags = $this->queryBus->execute($queryTags);
         if ($request->isMethod(Request::METHOD_POST)) {
             try {
                 $inputData = $request->getPayload()->all();
@@ -53,12 +55,30 @@ class AddAction extends AbstractController
                 $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
-            } catch (\Exception|\Error $e) {
+            } catch (\Exception | \Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/coating/create.html.twig', compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'));
+                return $this->render(
+                    'admin/coating/coating/create.html.twig',
+                    array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
+                );
             }
         }
 
-        return $this->render('admin/coating/coating/create.html.twig', compact('pagedManufacturers', 'pagedCoatingTags'));
+        // Дублирование: ?from={id} — берём существующее покрытие и наполняем форму его данными
+        $inputData = null;
+        $duplicateFrom = $request->query->get('from');
+        if ($duplicateFrom !== null) {
+            $source = $this->queryBus->execute(new GetCoatingQuery($duplicateFrom));
+            if ($source->coatingDTO !== null) {
+                $inputData = $this->coatingMapper->buildInputDataFromDto($source->coatingDTO);
+                unset($inputData['id']);
+                $inputData['title'] = $inputData['title'] . ' (копия)';
+            }
+        }
+
+        return $this->render(
+            'admin/coating/coating/create.html.twig',
+            array_merge(compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
+        );
     }
 }

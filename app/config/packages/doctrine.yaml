@@ -19,6 +19,14 @@ doctrine:
         auto_mapping: true
         default_entity_manager: default
         enable_lazy_ghost_objects: true
+        dql:
+            string_functions:
+                TS_MATCH: App\Coatings\Infrastructure\Database\DQL\TsMatch
+                TO_TSQUERY: App\Coatings\Infrastructure\Database\DQL\ToTsquery
+            numeric_functions:
+                TS_RANK_CD: App\Coatings\Infrastructure\Database\DQL\TsRankCd
+                WORD_SIMILARITY: App\Coatings\Infrastructure\Database\DQL\WordSimilarity
+                GREATEST: App\Coatings\Infrastructure\Database\DQL\Greatest
         mappings:
             Users:
                 type: xml
