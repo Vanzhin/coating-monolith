@@ -3,42 +3,46 @@
 {% block title %}{{ parent() }} | Добавление производителя{% endblock %}
 
 {% block content %}
-    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
-        <div class="d-flex flex-md-row align-items-center ">
-            <form method="post" action="{{ path('app_cabinet_coating_manufacturer_create') }}" class="form-signin w-100 m-auto">
-                {% if error %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5">
+        <form method="post" action="{{ path('app_cabinet_coating_manufacturer_create') }}" class="w-100">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
 
-                <h1 class="h3 mb-3 font-weight-normal">Добавление производителя</h1>
-                <div class="form-group">
-                    <label for="inputTitle">Название</label>
-                    <input type="text" value="{{ title }}" name="title" id="inputTitle" class="form-control"
-                           autocomplete="title" required autofocus placeholder="Укажите название..."
-                           minlength="3" maxlength="50"
-                    >
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Добавление производителя</h1>
+                <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Описание</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
+                            <input type="text" value="{{ title }}" name="title" id="inputTitle"
+                                   class="form-control" required autofocus minlength="3" maxlength="50"
+                                   placeholder="Укажите название...">
+                        </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Описание</label>
+                            <textarea name="description" id="inputDescription" class="form-control"
+                                      rows="4" maxlength="750" required
+                                      placeholder="Укажите описание...">{{ description }}</textarea>
+                            <div class="form-text">до 750 символов</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="inputDescription">Описание</label>
-                    <textarea type="text" name="description" id="inputDescription"
-                              class="form-control"
-                              autocomplete="description"
-                              required placeholder="Укажите описание..."
-                              rows="3"
-                              maxlength="750">{{ description }}</textarea>
-                    <input type="hidden" name="_csrf_token"
-                           value="{{ csrf_token('authenticate') }}"
-                    >
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-lg btn-primary mt-2" type="submit">
-                        Добавить
-                    </button>
-                </div>
+            </div>
 
-            </form>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-        </div>
-
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">Добавить</button>
+            </div>
+        </form>
     </div>
 {% endblock %}
