@@ -3,7 +3,7 @@
                   xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
-    <entity name="App\Users\Domain\Entity\RefreshToken">
+    <entity name="App\Users\Domain\Entity\RefreshToken" table="refresh_token">
     </entity>
 
 </doctrine-mapping>
