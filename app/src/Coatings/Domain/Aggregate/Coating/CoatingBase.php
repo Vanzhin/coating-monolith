@@ -86,7 +86,7 @@ enum CoatingBase: string
      */
     public function canBeAppliedOnTopOf(self $primer): bool
     {
-        return in_array($primer, $this->allowedSubstrates(), true);
+        return in_array($primer, $this->allowedPrimers(), true);
     }
 
     /**
@@ -105,18 +105,18 @@ enum CoatingBase: string
      *
      * @return list<self>
      */
-    private function allowedSubstrates(): array
+    private function allowedPrimers(): array
     {
         //todo записать совместимость
         return match ($this) {
-            self::AK => [self::AK],
-            self::AY => [self::AY],
+            self::AK => [self::AK, self::AY, self::EP, self::PUR],
+            self::AY => [self::AY, self::AK, self::EP, self::PUR, self::ESI],
             self::ESI => [self::ESI],
-            self::EP => [self::EP],
-            self::PUR => [self::PUR],
+            self::EP => [self::EP, self::PUR, self::ESI],
+            self::PUR => [self::EP, self::PUR, self::ESI],
             self::FEVE => [self::FEVE],
             self::PAS => [self::PAS],
-            self::PS => [self::PS],
+            self::PS => [self::PS, self::EP, self::PUR, self::ESI],
         };
     }
 }

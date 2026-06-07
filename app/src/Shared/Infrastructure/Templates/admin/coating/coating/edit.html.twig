@@ -3,246 +3,237 @@
 {% block title %}{{ parent() }} | Обновление покрытия{% endblock %}
 
 {% block content %}
-    <div class="col-lg-10 mx-auto p-4 py-md-5 ">
-        <div class="d-flex flex-md-row align-items-center ">
-            <form method="post" action="{{ path('app_cabinet_coating_coating_update',{id: dto.id}) }}"
-                  class="form-signin w-100 m-auto">
-                {% if error %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5">
+        <form method="post" action="{{ path('app_cabinet_coating_coating_update', {id: dto.id}) }}" class="w-100">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
 
-                <h1 class="h3 mb-3 font-weight-normal">Обновление покрытия</h1>
-                <div class="form-group">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Обновление покрытия</h1>
+                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            {# 1. Описание #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Описание</div>
+                <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-sm-6">
-                            <label for="inputTitle">Название</label>
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
                             <input type="text" value="{{ dto.title }}" name="title" id="inputTitle"
-                                   class="form-control"
-                                   autocomplete="title" required autofocus placeholder="Укажите название..."
-                                   minlength="3" maxlength="100"
-                            >
+                                   class="form-control" required autofocus minlength="3" maxlength="100"
+                                   placeholder="Укажите название...">
                         </div>
-                        <div class="col-sm-6">
-                            <label for="inputDescription">Описание</label>
-                            <textarea type="text" name="description" id="inputDescription"
-                                      class="form-control"
-                                      autocomplete="description"
-                                      required placeholder="Укажите описание..."
-                                      rows="3"
-                                      maxlength="1500">{{ dto.description }}</textarea>
+                        <div class="col-md-6">
+                            <label for="inputManufacturer" class="form-label">Производитель</label>
+                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
+                                <option value="">Укажите производителя...</option>
+                                {% for manufacturer in pagedManufacturers.manufacturers %}
+                                    <option value="{{ manufacturer.id }}"
+                                            {% if manufacturer.id == dto.manufacturer.id %} selected {% endif %}>
+                                        {{ manufacturer.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="col-sm-6">
-                            <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
-                            <div class="input-group">
-                                <span class="input-group-text">об. %</span>
-                                <input type="number" value="{{ dto.volumeSolid }}" name="volumeSolid"
-                                       id="inputVolumeSolid"
-                                       class="form-control"
-                                       autocomplete="volumeSolid" required autofocus
-                                       placeholder="Укажите сухой остаток..."
-                                       min="10" max="100"
-                                >
-                            </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Описание</label>
+                            <textarea name="description" id="inputDescription" class="form-control"
+                                      rows="4" maxlength="1500" required
+                                      placeholder="Укажите описание...">{{ dto.description }}</textarea>
+                            <div class="form-text">до 1500 символов</div>
                         </div>
-                        <div class="col-sm-6">
-                            <label for="inputMassDensity" class="form-label">Плотность</label>
-                            <div class="input-group">
-                                <span class="input-group-text">кг/л</span>
-                                <input type="number" value="{{ dto.massDensity }}" name="massDensity"
-                                       id="inputMassDensity"
-                                       class="form-control"
-                                       autocomplete="massDensity" required autofocus placeholder="Укажите плотность..."
-                                       min="0" max="100" step="0.01"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
+                    </div>
+                </div>
+            </div>
+
+            {# 2. Классификация #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Классификация</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
                             <label for="inputBase" class="form-label">Тип ЛКМ (основание)</label>
                             <select class="form-select" id="inputBase" name="base" required>
                                 {% for b in coatingBases %}
-                                    <option value="{{ b.value }}"
-                                            {% if dto.base == b.value %} selected {% endif %}>
+                                    <option value="{{ b.value }}" {% if dto.base == b.value %} selected {% endif %}>
                                         {{ b.title }} ({{ b.iso }}{% if b.gost|length > 0 %} / {{ b.gost|join(', ') }}{% endif %})
                                     </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-sm-4">
-                            <label for="inputTdsDft" class="form-label">ТСП тех карты</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.dftRange.tds_dft }}" name="tdsDft" id="inputTdsDft"
-                                       class="form-control"
-                                       autocomplete="tdsDft" required autofocus placeholder="Укажите тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <label for="inputMinDft" class="form-label">Мин ТСП</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.dftRange.min }}" name="minDft" id="inputMinDft"
-                                       class="form-control"
-                                       autocomplete="minDft" required autofocus placeholder="Укажите мин тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <label for="inputMaxDft" class="form-label">Макс ТСП</label>
-                            <div class="input-group">
-                                <span class="input-group-text">мкм</span>
-                                <input type="number" value="{{ dto.dftRange.max }}" name="maxDft" id="inputMaxDft"
-                                       class="form-control"
-                                       autocomplete="maxDft" required autofocus placeholder="Укажите макс тсп..."
-                                       min="10" max="9999"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputApplicationMinTemp" class="form-label">Мин Т нанесения</label>
-                            <div class="input-group">
-                                <span class="input-group-text">&deg;С</span>
-                                <input type="number" value="{{ dto.applicationMinTemp }}"
-                                       name="applicationMinTemp"
-                                       id="inputApplicationMinTemp" class="form-control"
-                                       autocomplete="applicationMinTemp" required autofocus
-                                       placeholder="Укажите мин Т ..."
-                                       min="-30" maxlength="50"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputDryToTouch" class="form-label">Сухой на отлип</label>
-                            <div class="input-group">
-                                <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ dto.dryToTouch[0].time_in_minutes }}" name="dryToTouch"
-                                       id="inputDryToTouch"
-                                       class="form-control"
-                                       autocomplete="dryToTouch" required autofocus
-                                       placeholder="Укажите 'сухой на отлип' ..."
-                                       min="0" max="100" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputMinRecoatingInterval" class="form-label">Мин инт перекр-я</label>
-                            <div class="input-group">
-                                <span class="input-group-text">чac</span>
-                                <input type="number" value="{{ dto.minRecoatingInterval }}"
-                                       name="minRecoatingInterval"
-                                       id="inputMinRecoatingInterval" class="form-control"
-                                       autocomplete="minRecoatingInterval" required autofocus
-                                       placeholder="Укажите мин инт перек..."
-                                       min="0" max="100" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputMaxRecoatingInterval" class="form-label">Макс инт перекр-я</label>
-                            <div class="input-group">
-                                <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ dto.maxRecoatingInterval }}"
-                                       name="maxRecoatingInterval"
-                                       id="inputMaxRecoatingInterval" class="form-control"
-                                       autocomplete="maxRecoatingInterval"
-                                       placeholder="Пусто = без верхней границы"
-                                       min="0" max="1000" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputFullCure" class="form-label">Полное отверждение</label>
-                            <div class="input-group">
-                                <span class="input-group-text">сутки</span>
-                                <input type="number" value="{{ dto.fullCure[0].time_in_minutes }}" name="fullCure"
-                                       id="inputFullCure"
-                                       class="form-control"
-                                       autocomplete="fullCure" required autofocus
-                                       placeholder="Укажите время полного отверждения..."
-                                       min="0" max="1000" step="0.1"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputPack" class="form-label">Упаковка</label>
-                            <div class="input-group">
-                                <span class="input-group-text">литр</span>
-                                <input type="number" value="{{ dto.pack }}" name="pack"
-                                       id="inputPack"
-                                       class="form-control"
-                                       autocomplete="pack" required autofocus
-                                       placeholder="Укажите упаковку..."
-                                       min="1" max="1000" step="0.01"
-                                >
-                            </div>
-                        </div>
-                        <div class="col-sm-3">
-                            <label for="inputThinner" class="form-label">Разбавитель</label>
-                            <div class="input-group">
-                                <input type="text" value="{{ dto.thinner }}" name="thinner"
-                                       id="inputThinner"
-                                       class="form-control"
-                                       autocomplete="thinner" autofocus
-                                       placeholder="Укажите разбавитель..."
-                                       maxlength="100"
-
-                                >
-                            </div>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="inputManufacturer" class="form-label">Производитель</label>
-                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
-                                <option value="">Укажите производителя...</option>
-                                {% for manufacturer in pagedManufacturers.manufacturers %}
-                                    <option {% if manufacturer.id == dto.manufacturer.id %} selected {% endif %}
-                                            value="{{ manufacturer.id }}">{{ manufacturer.title }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
                         <div class="col-md-6">
-                            <label for="inputCoatingProtectionType" class="form-label">Вид покрытия</label>
-                            {% for coatingProtectionType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingProtectionType') %}
-                                {% set tags = dto is null ? [] : dto.tags %}
-
+                            <div class="form-label">Вид покрытия</div>
+                            {% for tag in pagedCoatingTags.coatingTags|filter(t => t.type == 'CoatingProtectionType') %}
                                 <div class="form-check">
                                     <input name="tags[][id]" class="form-check-input" type="checkbox"
-                                           value="{{ coatingProtectionType.id }}" id="inputCoatingProtectionType"
-                                            {% if coatingProtectionType.id in tags|map(t=>t.id) %} checked {% endif %}>
-                                    <label class="form-check-label" for="inputCoatingProtectionType">
-                                        {{ coatingProtectionType.title|trans() }}
+                                           value="{{ tag.id }}" id="protectionType-{{ tag.id }}"
+                                            {% if tag.id in dto.tags|map(t => t.id) %} checked {% endif %}>
+                                    <label class="form-check-label" for="protectionType-{{ tag.id }}">
+                                        {{ tag.title|trans() }}
                                     </label>
                                 </div>
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="inputCoatingCoatType" class="form-label">Тип покрытия</label>
-                            {% for coatingCoatType in pagedCoatingTags.coatingTags|filter(tag => tag.type == 'CoatingCoatType') %}
-                                {% set tags = dto is null ? [] : dto.tags %}
+                            <div class="form-label">Тип покрытия</div>
+                            {% for tag in pagedCoatingTags.coatingTags|filter(t => t.type == 'CoatingCoatType') %}
                                 <div class="form-check">
                                     <input name="tags[][id]" class="form-check-input" type="checkbox"
-                                           value="{{ coatingCoatType.id }}" id="inputCoatingCoatType"
-                                            {% if coatingCoatType.id in tags|map(t=>t.id) %} checked {% endif %}>
-                                    <label class="form-check-label" for="inputCoatingCoatType">
-                                        {{ coatingCoatType.title|trans() }}
+                                           value="{{ tag.id }}" id="coatType-{{ tag.id }}"
+                                            {% if tag.id in dto.tags|map(t => t.id) %} checked {% endif %}>
+                                    <label class="form-check-label" for="coatType-{{ tag.id }}">
+                                        {{ tag.title|trans() }}
                                     </label>
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
-                    <input type="hidden" name="_csrf_token"
-                           value="{{ csrf_token('authenticate') }}"
-                    >
                 </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-lg btn-primary mt-2" type="submit">
-                        Обновить
-                    </button>
+            </div>
+
+            {# 3. Состав и упаковка #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Состав и упаковка</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.volumeSolid }}" name="volumeSolid"
+                                       id="inputVolumeSolid" class="form-control" required min="10" max="100">
+                                <span class="input-group-text">об. %</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputMassDensity" class="form-label">Плотность</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.massDensity }}" name="massDensity"
+                                       id="inputMassDensity" class="form-control" required
+                                       min="0" max="100" step="0.01">
+                                <span class="input-group-text">кг/л</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputPack" class="form-label">Упаковка</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.pack }}" name="pack"
+                                       id="inputPack" class="form-control" required
+                                       min="1" max="1000" step="0.01">
+                                <span class="input-group-text">л</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputThinner" class="form-label">Разбавитель</label>
+                            <input type="text" value="{{ dto.thinner }}" name="thinner" id="inputThinner"
+                                   class="form-control" maxlength="100" placeholder="Опционально">
+                        </div>
+                    </div>
                 </div>
-            </form>
+            </div>
 
-        </div>
+            {# 3. Толщина сухой плёнки (ТСП) #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">
+                    Толщина сухой плёнки (ТСП)
+                    <span class="text-muted fw-normal small ms-1">мкм</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="inputMinDft" class="form-label">Минимальная</label>
+                            <input type="number" value="{{ dto.dftRange.min }}" name="minDft" id="inputMinDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputTdsDft" class="form-label">Целевая (по тех. карте)</label>
+                            <input type="number" value="{{ dto.dftRange.tds_dft }}" name="tdsDft" id="inputTdsDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputMaxDft" class="form-label">Максимальная</label>
+                            <input type="number" value="{{ dto.dftRange.max }}" name="maxDft" id="inputMaxDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            {# 4. Нанесение и сушка #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Нанесение и сушка</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="inputApplicationMinTemp" class="form-label">Мин температура нанесения</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.applicationMinTemp }}" name="applicationMinTemp"
+                                       id="inputApplicationMinTemp" class="form-control"
+                                       required min="-30" max="50">
+                                <span class="input-group-text">°C</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputDryToTouch" class="form-label">Сухой на отлип</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.dryToTouch[0].time_in_minutes }}"
+                                       name="dryToTouch" id="inputDryToTouch" class="form-control"
+                                       required min="0" max="100" step="0.1">
+                                <span class="input-group-text">час</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputFullCure" class="form-label">Полное отверждение</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.fullCure[0].time_in_minutes }}"
+                                       name="fullCure" id="inputFullCure" class="form-control"
+                                       required min="0" max="1000" step="0.1">
+                                <span class="input-group-text">сутки</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 5. Интервал перекрытия #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Интервал перекрытия</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputMinRecoatingInterval" class="form-label">Минимальный</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.minRecoatingInterval }}"
+                                       name="minRecoatingInterval" id="inputMinRecoatingInterval"
+                                       class="form-control" required min="0" max="100" step="0.1">
+                                <span class="input-group-text">час</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputMaxRecoatingInterval" class="form-label">
+                                Максимальный
+                                <span class="text-muted small">(пусто = без ограничения)</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" value="{{ dto.maxRecoatingInterval }}"
+                                       name="maxRecoatingInterval" id="inputMaxRecoatingInterval"
+                                       class="form-control" min="0" max="1000" step="0.1">
+                                <span class="input-group-text">сутки</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">Сохранить</button>
+            </div>
+        </form>
     </div>
 {% endblock %}
