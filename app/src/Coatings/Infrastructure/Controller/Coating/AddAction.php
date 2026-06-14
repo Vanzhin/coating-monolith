@@ -16,7 +16,9 @@ use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Validation\Validator;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,7 +49,7 @@ class AddAction extends AbstractController
                 $inputData = $request->getPayload()->all();
                 $errors = $this->validator->validate($inputData, $this->coatingMapper->getValidationCollectionCoating());
                 if ($errors) {
-                    throw new \Exception(current($errors)->getFullMessage());
+                    throw new AppException(current($errors)->getFullMessage());
                 }
                 $dto = $this->coatingMapper->buildCoatingDtoFromInputData($inputData);
                 $command = new CreateCoatingCommand($dto);
@@ -55,10 +57,10 @@ class AddAction extends AbstractController
                 $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
-            } catch (\Exception | \Error $e) {
+            } catch (Exception $e) {
                 $error = $e->getMessage();
                 return $this->render(
-                    'admin/coating/coating/create.html.twig',
+                    'admin/coating/coating/form.html.twig',
                     array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
                 );
             }
@@ -77,7 +79,7 @@ class AddAction extends AbstractController
         }
 
         return $this->render(
-            'admin/coating/coating/create.html.twig',
+            'admin/coating/coating/form.html.twig',
             array_merge(compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
         );
     }

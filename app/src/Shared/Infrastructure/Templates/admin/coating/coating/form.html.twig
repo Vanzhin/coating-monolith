@@ -1,0 +1,418 @@
+{% extends '/cabinet/index.html.twig' %}
+{% from '/components/duration_input.html.twig' import duration_input %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление покрытия' : 'Добавление покрытия' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_coating_coating_update', {id: inputData.id})
+    : path('app_cabinet_coating_coating_create') %}
+{% set selectedTagIds = (inputData.tags ?? [])|map(t => t.id) %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="col-lg-10 mx-auto p-4 py-md-5">
+        <form method="post" action="{{ actionUrl }}" class="w-100" data-controller="coating-form">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            {# 1. Описание #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Описание</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
+                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
+                                   class="form-control" required autofocus minlength="3" maxlength="100"
+                                   placeholder="Укажите название...">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputManufacturer" class="form-label">Производитель</label>
+                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
+                                <option value="">Укажите производителя...</option>
+                                {% for manufacturer in pagedManufacturers.manufacturers %}
+                                    <option value="{{ manufacturer.id }}"
+                                            {% if manufacturer.id == inputData.manufacturer.id %} selected {% endif %}>
+                                        {{ manufacturer.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Описание</label>
+                            <textarea name="description" id="inputDescription" class="form-control"
+                                      rows="4" maxlength="1500" required
+                                      placeholder="Укажите описание...">{{ inputData.description }}</textarea>
+                            <div class="form-text">до 1500 символов</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 2. Классификация #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Классификация</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="inputBase" class="form-label">Тип ЛКМ (основание)</label>
+                            <select class="form-select" id="inputBase" name="base" required>
+                                {% for b in coatingBases %}
+                                    <option value="{{ b.value }}"
+                                            {% if (inputData.base ?? 'EP') == b.value %} selected {% endif %}>
+                                        {{ b.title }} ({{ b.iso }}{% if b.gost|length > 0 %} / {{ b.gost|join(', ') }}{% endif %})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-label">Вид покрытия</div>
+                            {% for tag in pagedCoatingTags.coatingTags|filter(t => t.type == 'CoatingProtectionType') %}
+                                <div class="form-check">
+                                    <input name="tags[][id]" class="form-check-input" type="checkbox"
+                                           value="{{ tag.id }}" id="protectionType-{{ tag.id }}"
+                                            {% if tag.id in selectedTagIds %} checked {% endif %}>
+                                    <label class="form-check-label" for="protectionType-{{ tag.id }}">
+                                        {{ tag.title|trans() }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-label">Тип покрытия</div>
+                            {% for tag in pagedCoatingTags.coatingTags|filter(t => t.type == 'CoatingCoatType') %}
+                                <div class="form-check">
+                                    <input name="tags[][id]" class="form-check-input" type="checkbox"
+                                           value="{{ tag.id }}" id="coatType-{{ tag.id }}"
+                                            {% if tag.id in selectedTagIds %} checked {% endif %}>
+                                    <label class="form-check-label" for="coatType-{{ tag.id }}">
+                                        {{ tag.title|trans() }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 3. Состав и упаковка #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Состав и упаковка</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ inputData.volumeSolid }}" name="volumeSolid"
+                                       id="inputVolumeSolid" class="form-control" required min="10" max="100">
+                                <span class="input-group-text">об. %</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputMassDensity" class="form-label">Плотность</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ inputData.massDensity }}" name="massDensity"
+                                       id="inputMassDensity" class="form-control" required
+                                       min="0" max="100" step="0.01">
+                                <span class="input-group-text">кг/л</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputPack" class="form-label">Упаковка</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ inputData.pack }}" name="pack"
+                                       id="inputPack" class="form-control" required
+                                       min="1" max="1000" step="0.01">
+                                <span class="input-group-text">л</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="inputThinner" class="form-label">Разбавитель</label>
+                            <input type="text" value="{{ inputData.thinner }}" name="thinner" id="inputThinner"
+                                   class="form-control" maxlength="100" placeholder="Опционально">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 4. Толщина сухой плёнки (ТСП) #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">
+                    Толщина сухой плёнки (ТСП)
+                    <span class="text-muted fw-normal small ms-1">мкм</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="inputMinDft" class="form-label">Минимальная</label>
+                            <input type="number" value="{{ inputData.minDft }}" name="minDft" id="inputMinDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputTdsDft" class="form-label">Целевая (по тех. карте)</label>
+                            <input type="number" value="{{ inputData.tdsDft }}" name="tdsDft" id="inputTdsDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="inputMaxDft" class="form-label">Максимальная</label>
+                            <input type="number" value="{{ inputData.maxDft }}" name="maxDft" id="inputMaxDft"
+                                   class="form-control" required min="10" max="9999">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 5. Нанесение #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Нанесение</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="inputApplicationMinTemp" class="form-label">Мин температура нанесения</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ inputData.applicationMinTemp }}" name="applicationMinTemp"
+                                       id="inputApplicationMinTemp" class="form-control"
+                                       required min="-30" max="50">
+                                <span class="input-group-text">°C</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# 6. Время высыхания — общая группа температурно-зависимых параметров.
+                  Каждая подсекция (dryToTouch / fullCure / recoatingInterval) редактируется
+                  по одному и тому же принципу: таблица точек «температура → длительность»
+                  + кнопка «Добавить точку» + модалка редактирования. Новые температурно-
+                  зависимые параметры добавляются сюда же по тому же шаблону. #}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Время высыхания</div>
+                <div class="card-body">
+
+                    {# ─── Сухой на отлип ─── #}
+                  <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Сухой на отлип</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-series="dryToTouch"
+                                data-action="click->coating-form#addRow">Добавить точку</button>
+                    </div>
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 160px;">Температура</th>
+                                <th>Время</th>
+                                <th style="width: 60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-series="dryToTouch">
+                            {% for i, row in inputData.dryToTouch ?? [{temperature_at: 20, days: 0, hours: 0, minutes: 0}] %}
+                                <tr>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="dryToTouch[{{ i }}][temperature_at]"
+                                                   value="{{ row.temperature_at ?? 20 }}"
+                                                   class="form-control"
+                                                   min="-50" max="100" required>
+                                            <span class="input-group-text">°C</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ duration_input('dryToTouch[' ~ i ~ ']', row, true, 'Сухой на отлип при +' ~ (row.temperature_at ?? 20) ~ '°C') }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-action="click->coating-form#removeRow"
+                                                title="Удалить точку">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                  </div>
+
+                    {# ─── Полное отверждение ─── #}
+                  <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Полное отверждение</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-series="fullCure"
+                                data-action="click->coating-form#addRow">Добавить точку</button>
+                    </div>
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 160px;">Температура</th>
+                                <th>Время</th>
+                                <th style="width: 60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-series="fullCure">
+                            {% for i, row in inputData.fullCure ?? [{temperature_at: 20, days: 0, hours: 0, minutes: 0}] %}
+                                <tr>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="fullCure[{{ i }}][temperature_at]"
+                                                   value="{{ row.temperature_at ?? 20 }}"
+                                                   class="form-control"
+                                                   min="-50" max="100" required>
+                                            <span class="input-group-text">°C</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ duration_input('fullCure[' ~ i ~ ']', row, true, 'Полное отверждение при +' ~ (row.temperature_at ?? 20) ~ '°C') }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-action="click->coating-form#removeRow"
+                                                title="Удалить точку">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                  </div>
+
+                    {# ─── Интервал перекрытия ─── визуально единый блок (Min + Max в одной таблице).
+                          Под капотом — две параллельные серии (minRecoatingInterval, maxRecoatingInterval),
+                          сшитые по индексу строки. Температура для max-серии хранится в скрытом mirror'е. #}
+                  <div class="border rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Интервал перекрытия</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-series="recoatingInterval"
+                                data-action="click->coating-form#addRow">Добавить точку</button>
+                    </div>
+                    <table class="table table-sm align-middle mb-1">
+                        <thead>
+                            <tr>
+                                <th style="width: 160px;">Температура</th>
+                                <th>Минимальный</th>
+                                <th>Максимальный</th>
+                                <th style="width: 60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-series="recoatingInterval">
+                            {% set minRows = inputData.minRecoatingInterval ?? [{temperature_at: 20, days: 0, hours: 0, minutes: 0}] %}
+                            {% set maxRows = inputData.maxRecoatingInterval ?? [] %}
+                            {% set rowCount = max(minRows|length, maxRows|length, 1) %}
+                            {% for i in 0..(rowCount - 1) %}
+                                {% set minRow = minRows[i] ?? {temperature_at: 20, days: 0, hours: 0, minutes: 0} %}
+                                {% set maxRow = maxRows[i] ?? {} %}
+                                {% set temp = minRow.temperature_at ?? maxRow.temperature_at ?? 20 %}
+                                <tr>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number"
+                                                   name="minRecoatingInterval[{{ i }}][temperature_at]"
+                                                   value="{{ temp }}"
+                                                   class="form-control"
+                                                   data-row="{{ i }}"
+                                                   data-action="input->coating-form#syncTemperature"
+                                                   min="-50" max="100" required>
+                                            <span class="input-group-text">°C</span>
+                                        </div>
+                                        {# зеркало температуры для max-серии #}
+                                        <input type="hidden" name="maxRecoatingInterval[{{ i }}][temperature_at]"
+                                               value="{{ temp }}" data-temp-mirror="{{ i }}">
+                                    </td>
+                                    <td>{{ duration_input('minRecoatingInterval[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
+                                    <td>{{ duration_input('maxRecoatingInterval[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-action="click->coating-form#removeRow"
+                                                title="Удалить точку">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="form-text">
+                        Пустые «Максимальные» во всех строках = без верхней границы.
+                    </div>
+                  </div>
+
+                </div>
+            </div>
+
+            {# ─── Общая модалка для редактирования длительности ─── #}
+            <div class="modal fade" id="durationModal" tabindex="-1" aria-hidden="true"
+                 data-coating-form-target="modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" data-coating-form-target="modalLabel">Длительность</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-2">
+                                <div class="col">
+                                    <label class="form-label small text-muted">Дни</label>
+                                    <input type="number" class="form-control" min="0" max="365" value="0"
+                                           data-coating-form-target="modalDays">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted">Часы</label>
+                                    <input type="number" class="form-control" min="0" max="23" value="0"
+                                           data-coating-form-target="modalHours">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted">Минуты</label>
+                                    <input type="number" class="form-control" min="0" max="59" value="0"
+                                           data-coating-form-target="modalMinutes">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link text-muted"
+                                        data-action="click->coating-form#clearDuration">Очистить</button>
+                                <button type="button" class="btn btn-primary"
+                                        data-action="click->coating-form#calculateDuration"
+                                        data-coating-form-target="calcBtn"
+                                        title="Рассчитать по соседним точкам"
+                                        disabled>
+                                    <i class="bi bi-calculator"></i> Рассчитать
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                                        title="Отмена" aria-label="Отмена">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                                <button type="button" class="btn btn-success"
+                                        data-action="click->coating-form#saveDuration"
+                                        title="Применить" aria-label="Применить">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

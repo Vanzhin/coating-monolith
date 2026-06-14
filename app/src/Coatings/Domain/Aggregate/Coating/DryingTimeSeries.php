@@ -1,39 +1,163 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating;
 
-use App\Shared\Domain\Aggregate\ValueObject\Series;
-use App\Shared\Domain\Aggregate\ValueObject\SeriesPoint;
 use App\Shared\Infrastructure\Exception\AppException;
+use Carbon\CarbonInterval;
 
-final readonly class DryingTimeSeries extends Series
+final readonly class DryingTimeSeries implements TimeSeries
 {
+    /** @var list<TimeAtTemperature> Отсортирован по возрастанию температуры */
+    public array $points;
+
+    /**
+     * @throws AppException
+     */
     public function __construct(TimeAtTemperature ...$points)
     {
-        parent::__construct(...$points);
+        $this->assertNotEmpty($points);
+
+        $sortedPoints = $this->sortPoints($points);
+
+        // Один проход для проверки дубликатов и физического правила
+        $this->validatePointsConsistency($sortedPoints);
+
+        $this->points = $sortedPoints;
     }
 
     /**
-     * При росте температуры время сушки не должно расти.
+     * Точка при заданной температуре. Если температура точно совпадает с одной
+     * из заданных точек — вернётся она; если находится между двумя — вернётся
+     * интерполированная точка с `isCalculated=true`. Если вне диапазона — null.
      */
-    protected function validate(): void
+    public function getPoint(int $temperatureAt): ?TimeAtTemperature
     {
-        $previous = null;
+        // Безопасное сравнение float/int с учетом неточностей плавающей точки
         foreach ($this->points as $point) {
-            if ($previous !== null && $point->timeInMinutes > $previous->timeInMinutes) {
-                throw new AppException(sprintf(
-                    'При %d°C время сушки %g мин не может быть больше, чем при %d°C — %g мин.',
-                    $point->temperatureAt, $point->timeInMinutes,
-                    $previous->temperatureAt, $previous->timeInMinutes,
-                ));
+            if ($point->temperatureAt === $temperatureAt) {
+                return $point;
             }
+        }
+
+        [$lower, $upper] = $this->findBoundingPoints($temperatureAt);
+        if ($lower === null || $upper === null) {
+            return null;
+        }
+
+        $interpolated = $this->linearInterpolate($temperatureAt, $lower, $upper);
+
+        return new TimeAtTemperature(
+            (int)round($temperatureAt),
+            (int)round($interpolated),
+            isCalculated: true,
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function jsonSerialize(): array
+    {
+        return $this->points;
+    }
+
+    /**
+     * @param TimeAtTemperature[] $points
+     * @throws AppException
+     */
+    private function assertNotEmpty(array $points): void
+    {
+        if (empty($points)) {
+            throw new AppException('Серия времени высыхания должна содержать хотя бы одну точку.');
+        }
+    }
+
+    /**
+     * @param TimeAtTemperature[] $points
+     * @return list<TimeAtTemperature>
+     */
+    private function sortPoints(array $points): array
+    {
+        usort($points, fn(TimeAtTemperature $a, TimeAtTemperature $b) => $a->temperatureAt <=> $b->temperatureAt);
+        return array_values($points);
+    }
+
+    /**
+     * Валидация всей серии за один проход (O(N))
+     * @param TimeAtTemperature[] $points
+     * @throws AppException
+     */
+    private function validatePointsConsistency(array $points): void
+    {
+        /** @var TimeAtTemperature|null $previous */
+        $previous = null;
+
+        foreach ($points as $point) {
+            if ($previous !== null) {
+                // 1. Так как массив отсортирован, дубликаты всегда будут стоять рядом
+                if ($point->temperatureAt === $previous->temperatureAt) {
+                    throw new AppException(
+                        sprintf(
+                            'Дублирующаяся температурная точка %d °C.',
+                            $point->temperatureAt,
+                        )
+                    );
+                }
+
+                // 2. Проверка физического правила: время сушки падает при росте температуры
+                if ($point->timeInMinutes > $previous->timeInMinutes) {
+                    throw new AppException(
+                        sprintf(
+                            'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
+                            $point->temperatureAt,
+                            $this->humanize($point->timeInMinutes),
+                            $previous->temperatureAt,
+                            $this->humanize($previous->timeInMinutes),
+                        )
+                    );
+                }
+            }
+
             $previous = $point;
         }
     }
 
-    protected function createPoint(int|float $key, int|float $value, bool $isCalculated): SeriesPoint
+    /**
+     * @return array{0: ?TimeAtTemperature, 1: ?TimeAtTemperature}
+     */
+    private function findBoundingPoints(int $key): array
     {
-        return new TimeAtTemperature((int) $key, (float) $value, $isCalculated);
+        $lower = null;
+        $upper = null;
+
+        foreach ($this->points as $point) {
+            if ($point->temperatureAt <= $key) {
+                $lower = $point;
+            }
+            if ($point->temperatureAt >= $key) {
+                $upper = $point;
+                break;
+            }
+        }
+
+        return [$lower, $upper];
+    }
+
+    private function linearInterpolate(int $key, TimeAtTemperature $lower, TimeAtTemperature $upper): int
+    {
+        if ($upper->temperatureAt === $lower->temperatureAt) {
+            return $lower->timeInMinutes;
+        }
+        $interpolated = $lower->timeInMinutes
+            + ($upper->timeInMinutes - $lower->timeInMinutes)
+            * ($key - $lower->temperatureAt)
+            / ($upper->temperatureAt - $lower->temperatureAt);
+
+        return (int)round($interpolated);
+    }
+
+    private function humanize(int $minutes): string
+    {
+        return CarbonInterval::minutes($minutes)->locale('ru')->cascade()->forHumans(['parts' => 2]);
     }
 }

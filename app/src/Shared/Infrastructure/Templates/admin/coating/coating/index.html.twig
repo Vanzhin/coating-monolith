@@ -187,9 +187,14 @@
                                             </thead>
                                             <tbody>
                                                 {% for point in coating.dryToTouch %}
-                                                    <tr>
+                                                    <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
                                                         <td>+{{ point.temperature_at }} °C</td>
-                                                        <td>{{ point.time_in_minutes }} мин</td>
+                                                        <td>
+                                                            {{ point.time_in_minutes|duration_minutes }}
+                                                            {% if point.is_calculated %}
+                                                                <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                                            {% endif %}
+                                                        </td>
                                                     </tr>
                                                 {% endfor %}
                                             </tbody>
@@ -205,33 +210,62 @@
                                             </thead>
                                             <tbody>
                                                 {% for point in coating.fullCure %}
-                                                    <tr>
+                                                    <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
                                                         <td>+{{ point.temperature_at }} °C</td>
-                                                        <td>{{ point.time_in_minutes }} мин</td>
+                                                        <td>
+                                                            {{ point.time_in_minutes|duration_minutes }}
+                                                            {% if point.is_calculated %}
+                                                                <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                                            {% endif %}
+                                                        </td>
                                                     </tr>
                                                 {% endfor %}
                                             </tbody>
                                         </table>
 
                                         <h6 class="mb-2 mt-1">Интервал перекрытия</h6>
+                                        {# Под капотом две независимые серии (min — обязательная, max — опциональная),
+                                           но визуально показываем их вместе: одна строка на температурную точку. #}
                                         <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-muted fw-normal" style="width: 30%;">Температура</th>
+                                                    <th class="text-muted fw-normal">Минимальный</th>
+                                                    <th class="text-muted fw-normal">Максимальный</th>
+                                                </tr>
+                                            </thead>
                                             <tbody>
-                                                <tr>
-                                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Минимальный</th>
-                                                    <td>{{ coating.minRecoatingInterval }} ч</td>
-                                                </tr>
-                                                <tr>
-                                                    <th scope="row" class="text-muted fw-normal">Максимальный</th>
-                                                    <td>
-                                                        {% if coating.maxRecoatingInterval %}
-                                                            {{ coating.maxRecoatingInterval }} ч
-                                                        {% else %}
-                                                            <span class="text-muted">без верхней границы</span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
+                                                {% set maxByTemp = {} %}
+                                                {% for p in coating.maxRecoatingInterval ?? [] %}
+                                                    {% set maxByTemp = maxByTemp|merge({(p.temperature_at): p}) %}
+                                                {% endfor %}
+                                                {% for point in coating.minRecoatingInterval %}
+                                                    {% set maxPoint = maxByTemp[point.temperature_at] ?? null %}
+                                                    <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
+                                                        <td>+{{ point.temperature_at }} °C</td>
+                                                        <td>
+                                                            {{ point.time_in_minutes|duration_minutes }}
+                                                            {% if point.is_calculated %}
+                                                                <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if maxPoint %}
+                                                                {{ maxPoint.time_in_minutes|duration_minutes }}
+                                                                {% if maxPoint.is_calculated %}
+                                                                    <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                <span class="text-muted">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
+                                        {% if coating.maxRecoatingInterval is null or coating.maxRecoatingInterval is empty %}
+                                            <p class="text-muted small mb-0 mt-2">Без верхней границы.</p>
+                                        {% endif %}
                                     </div>
                                     <div class="modal-footer">
                                         {% if canEdit %}

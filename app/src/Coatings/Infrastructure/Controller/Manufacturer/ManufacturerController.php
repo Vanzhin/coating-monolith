@@ -42,54 +42,55 @@ class ManufacturerController extends AbstractController
     #[Route(path: '', name: 'create')]
     public function create(Request $request): Response
     {
-        $error = null;
-        $title = null;
-        $description = null;
+        $inputData = [];
         if ($request->isMethod(Request::METHOD_POST)) {
+            $inputData = $request->getPayload()->all();
             try {
-                $title = $request->getPayload()->get('title');
-                $description = $request->getPayload()->get('description');
-                $command = new CreateManufacturerCommand($title, $description);
+                $command = new CreateManufacturerCommand($inputData['title'] ?? null, $inputData['description'] ?? null);
                 $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $title));
+                $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $inputData['title'] ?? ''));
 
-                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
+                return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
+                return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
             }
         }
 
-        return $this->render('admin/coating/manufacturer/create.html.twig', compact('error', 'title', 'description'));
+        return $this->render('admin/coating/manufacturer/form.html.twig', compact('inputData'));
     }
 
     #[Route(path: '/{id}/edit', name: 'update')]
     public function update(Request $request, string $id): Response
     {
-        $query = new GetManufacturerQuery($id);
-        $result = $this->queryBus->execute($query);
+        $result = $this->queryBus->execute(new GetManufacturerQuery($id));
         if (null === $result->manufacturer) {
             $this->addFlash('manufacturer_edited_error', sprintf('Производитель с идентификатором "%s" не найден.', $id));
-            return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
+            return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
         }
+
         if ($request->isMethod(Request::METHOD_POST)) {
+            $inputData = $request->getPayload()->all();
+            $inputData['id'] = $id;
             try {
-                $title = $request->getPayload()->get('title');
-                $description = $request->getPayload()->get('description');
-                $result->manufacturer->title = $title;
-                $result->manufacturer->description = $description;
-                $command = new UpdateManufacturerCommand($id, $result->manufacturer);
-                $result = $this->commandBus->execute($command);
-                $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $title));
+                $result->manufacturer->title = $inputData['title'] ?? null;
+                $result->manufacturer->description = $inputData['description'] ?? null;
+                $this->commandBus->execute(new UpdateManufacturerCommand($id, $result->manufacturer));
+                $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
-                return $this->render('admin/coating/manufacturer/edit.html.twig', compact('error', 'result'));
+                return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
             }
         }
 
-        return $this->render('admin/coating/manufacturer/edit.html.twig', compact( 'result'));
+        $inputData = [
+            'id' => $id,
+            'title' => $result->manufacturer->title,
+            'description' => $result->manufacturer->description,
+        ];
+        return $this->render('admin/coating/manufacturer/form.html.twig', compact('inputData'));
     }
 
     #[Route(path: '/{id}/delete', name: 'delete')]

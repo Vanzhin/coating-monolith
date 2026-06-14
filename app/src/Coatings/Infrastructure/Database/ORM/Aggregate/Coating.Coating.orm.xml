@@ -15,9 +15,9 @@
         <field name="dftRange" column="dft_range" type="dft_range"/>
         <field name="applicationMinTemp" column="application_min_temp" type="integer" length="3"/>
         <field name="dryToTouch" column="dry_to_touch" type="drying_time_series"/>
-        <field name="minRecoatingInterval" column="min_recoating_interval" type="float" length="5"/>
-        <field name="maxRecoatingInterval" column="max_recoating_interval" type="float" length="5" nullable="true"/>
         <field name="fullCure" column="full_cure" type="drying_time_series"/>
+        <field name="minRecoatingInterval" column="min_recoating_interval" type="drying_time_series"/>
+        <field name="maxRecoatingInterval" column="max_recoating_interval" type="drying_time_series" nullable="true"/>
         <field name="pack" column="pack" type="float" length="5"/>
         <field name="thinner" type="string" length="100" nullable="true"/>
         <many-to-many field="tags" target-entity="App\Coatings\Domain\Aggregate\Coating\CoatingTag">

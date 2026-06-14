@@ -1,0 +1,35 @@
+{# Кликабельный «дисплей-инпут» длительности.
+   value — ассоциативный массив с ключами days/hours/minutes.
+   На клик открывается общая модалка #durationModal (объявлена в form.html.twig),
+   подхватывает текущие значения из hidden-инпутов по data-target-name и пишет обратно
+   при сохранении (через Stimulus-контроллер `coating-form`).
+
+   Флаг is_calculated через эту форму не задаётся — он принадлежит логике домена
+   (Series::getPoint) и виден только при просмотре расчётных точек в превью.
+#}
+{% macro duration_input(name, value, required=false, label='Длительность') %}
+    {% set days = (value.days ?? 0) %}
+    {% set hours = (value.hours ?? 0) %}
+    {% set minutes = (value.minutes ?? 0) %}
+    {% set totalMinutes = days * 1440 + hours * 60 + minutes %}
+    {% set isEmpty = totalMinutes == 0 %}
+
+    <input type="hidden" name="{{ name }}[days]"    value="{{ days }}">
+    <input type="hidden" name="{{ name }}[hours]"   value="{{ hours }}">
+    <input type="hidden" name="{{ name }}[minutes]" value="{{ minutes }}">
+
+    <button type="button"
+            class="btn btn-sm duration-display-btn {{ isEmpty ? 'btn-outline-secondary text-muted' : 'btn-outline-primary' }}"
+            data-bs-toggle="modal"
+            data-bs-target="#durationModal"
+            data-target-name="{{ name }}"
+            data-target-label="{{ label }}"
+            data-required="{{ required ? '1' : '0' }}">
+        {% if isEmpty %}
+            <i class="bi bi-pencil"></i>
+            {{ required ? 'не задано' : 'без ограничения' }}
+        {% else %}
+            {{ totalMinutes|duration_minutes_short }}
+        {% endif %}
+    </button>
+{% endmacro %}

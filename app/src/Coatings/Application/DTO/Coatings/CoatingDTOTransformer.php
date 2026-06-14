@@ -7,6 +7,8 @@ namespace App\Coatings\Application\DTO\Coatings;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 
 class CoatingDTOTransformer
 {
@@ -28,22 +30,24 @@ class CoatingDTOTransformer
         }
 
         $dftRange = $entity->getDftRange();
+        $dftRangeDto = new DftRangeDTO();
+        $dftRangeDto->min = (int) $dftRange->range->getMin();
+        $dftRangeDto->max = (int) $dftRange->range->getMax();
+        $dftRangeDto->tds_dft = $dftRange->tdsDft;
+        $dftRangeDto->type = $dftRange->type->value;
 
         $dto = new CoatingDTO();
         $dto->id = $entity->getId();
         $dto->title = $entity->getTitle();
         $dto->description = $entity->getDescription();
-        $dto->fullCure = $entity->getFullCure()->jsonSerialize();
-        $dto->maxRecoatingInterval = $entity->getMaxRecoatingInterval();
-        $dto->minRecoatingInterval = $entity->getMinRecoatingInterval();
-        $dto->dryToTouch = $entity->getDryToTouch()->jsonSerialize();
+        $dto->dryToTouch = $this->pointsFromSeries($entity->getDryToTouch());
+        $dto->fullCure = $this->pointsFromSeries($entity->getFullCure());
+        $dto->minRecoatingInterval = $this->pointsFromSeries($entity->getMinRecoatingInterval());
+        $dto->maxRecoatingInterval = $entity->getMaxRecoatingInterval() !== null
+            ? $this->pointsFromSeries($entity->getMaxRecoatingInterval())
+            : null;
         $dto->applicationMinTemp = $entity->getApplicationMinTemp();
-        $dto->dftRange = [
-            'min' => (int) $dftRange->range->getMin(),
-            'max' => (int) $dftRange->range->getMax(),
-            'tds_dft' => $dftRange->tdsDft,
-            'type' => $dftRange->type->value,
-        ];
+        $dto->dftRange = $dftRangeDto;
         $dto->massDensity = $entity->getMassDensity();
         $dto->base = $entity->getBase()->value;
         $dto->volumeSolid = $entity->getVolumeSolid();
@@ -68,5 +72,17 @@ class CoatingDTOTransformer
         }
 
         return $coatingDTOs;
+    }
+
+    /** @return list<DryingTimePointDTO> */
+    private function pointsFromSeries(DryingTimeSeries $series): array
+    {
+        return array_map(function (TimeAtTemperature $p): DryingTimePointDTO {
+            $point = new DryingTimePointDTO();
+            $point->temperature_at = $p->temperatureAt;
+            $point->time_in_minutes = $p->timeInMinutes;
+            $point->is_calculated = $p->isCalculated;
+            return $point;
+        }, $series->points);
     }
 }

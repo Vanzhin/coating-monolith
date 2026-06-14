@@ -27,9 +27,9 @@ class Coating extends Aggregate
     private DftRange $dftRange;
     private int $applicationMinTemp;
     private DryingTimeSeries $dryToTouch;
-    private float $minRecoatingInterval;
-    private ?float $maxRecoatingInterval;
     private DryingTimeSeries $fullCure;
+    private DryingTimeSeries $minRecoatingInterval;
+    private ?DryingTimeSeries $maxRecoatingInterval;
     private Manufacturer $manufacturer;
     private CoatingSpecification $specification;
     private float $pack;
@@ -48,9 +48,9 @@ class Coating extends Aggregate
         DftRange $dftRange,
         int $applicationMinTemp,
         DryingTimeSeries $dryToTouch,
-        float $minRecoatingInterval,
-        ?float $maxRecoatingInterval,
         DryingTimeSeries $fullCure,
+        DryingTimeSeries $minRecoatingInterval,
+        ?DryingTimeSeries $maxRecoatingInterval,
         float $pack,
         ?string $thinner,
         Manufacturer $manufacturer,
@@ -68,8 +68,9 @@ class Coating extends Aggregate
         $this->setDftRange($dftRange);
         $this->setApplicationMinTemp($applicationMinTemp);
         $this->setDryToTouch($dryToTouch);
-        $this->setRecoatingIntervalBounds($minRecoatingInterval, $maxRecoatingInterval);
         $this->setFullCure($fullCure);
+        $this->setMinRecoatingInterval($minRecoatingInterval);
+        $this->setMaxRecoatingInterval($maxRecoatingInterval);
         $this->setPack($pack);
         $this->setThinner($thinner);
         $this->setManufacturer($manufacturer);
@@ -93,11 +94,11 @@ class Coating extends Aggregate
 
     public function getDryToTouch(): DryingTimeSeries { return $this->dryToTouch; }
 
-    public function getMinRecoatingInterval(): float { return $this->minRecoatingInterval; }
-
-    public function getMaxRecoatingInterval(): ?float { return $this->maxRecoatingInterval; }
-
     public function getFullCure(): DryingTimeSeries { return $this->fullCure; }
+
+    public function getMinRecoatingInterval(): DryingTimeSeries { return $this->minRecoatingInterval; }
+
+    public function getMaxRecoatingInterval(): ?DryingTimeSeries { return $this->maxRecoatingInterval; }
 
     public function getManufacturer(): Manufacturer { return $this->manufacturer; }
 
@@ -190,26 +191,14 @@ class Coating extends Aggregate
         return $this->base->canBecoveredBy($topCoat->base);
     }
 
-    /**
-     * Атомарно задаёт пару (min, max). null в max означает, что верхней границы нет.
-     * Только так извне можно изменить интервал перекрытия — чтобы инвариант min <= max
-     * нельзя было нарушить временным промежуточным состоянием.
-     */
-    public function setRecoatingIntervalBounds(float $min, ?float $max): void
+    public function setMinRecoatingInterval(DryingTimeSeries $minRecoatingInterval): void
     {
-        AssertService::greaterThanEq($min, 0);
-        if ($max !== null) {
-            AssertService::greaterThanEq($max, 0);
-            if ($min > $max) {
-                throw new AppException(sprintf(
-                    'Минимальный интервал перекрытия (%g) не может превышать максимальный (%g).',
-                    $min,
-                    $max,
-                ));
-            }
-        }
-        $this->minRecoatingInterval = $min;
-        $this->maxRecoatingInterval = $max;
+        $this->minRecoatingInterval = $minRecoatingInterval;
+    }
+
+    public function setMaxRecoatingInterval(?DryingTimeSeries $maxRecoatingInterval): void
+    {
+        $this->maxRecoatingInterval = $maxRecoatingInterval;
     }
 
     public function addTag(CoatingTag $tag): void

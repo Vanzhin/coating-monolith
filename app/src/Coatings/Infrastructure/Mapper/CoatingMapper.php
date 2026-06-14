@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Mapper;
 
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
+use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
+use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
@@ -13,10 +15,15 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingMapper
 {
-    /**
-     * Раскладывает DTO с VO-форматом обратно в плоский набор скаляров,
-     * который ожидают существующие формы (одна точка профиля при +20°C).
-     */
+    /** Имена всех температурно-зависимых полей-серий, которые форма редактирует одинаково. */
+    private const TEMPERATURE_SERIES_FIELDS = [
+        'dryToTouch',
+        'fullCure',
+        'minRecoatingInterval',
+        'maxRecoatingInterval',
+    ];
+
+    /** Раскладывает DTO в плоский набор для формы. */
     public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
@@ -27,27 +34,21 @@ class CoatingMapper
 
         $vars = get_object_vars($coatingDTO);
 
-        if (isset($vars['dftRange'])) {
-            $vars['minDft'] = $vars['dftRange']['min'];
-            $vars['maxDft'] = $vars['dftRange']['max'];
-            $vars['tdsDft'] = $vars['dftRange']['tds_dft'];
+        if (isset($vars['dftRange']) && $vars['dftRange'] instanceof DftRangeDTO) {
+            $vars['minDft'] = $vars['dftRange']->min;
+            $vars['maxDft'] = $vars['dftRange']->max;
+            $vars['tdsDft'] = $vars['dftRange']->tds_dft;
             unset($vars['dftRange']);
         }
 
-        foreach (['dryToTouch', 'fullCure'] as $key) {
-            if (isset($vars[$key]) && is_array($vars[$key])) {
-                $firstPoint = $vars[$key][0] ?? null;
-                $vars[$key] = $firstPoint !== null ? (float) $firstPoint['time_in_minutes'] : 0.0;
-            }
+        foreach (self::TEMPERATURE_SERIES_FIELDS as $field) {
+            $vars[$field] = $this->decomposeSeriesForForm($vars[$field] ?? null);
         }
 
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
     }
 
-    /**
-     * Собирает DTO с VO-форматом из плоских данных формы. Профили высыхания
-     * формируются как одна точка при +20°C (стандартная температура техкарт).
-     */
+    /** Собирает DTO из плоских данных формы. */
     public function buildCoatingDtoFromInputData(array $inputData): CoatingDTO
     {
         $manufacturer = new ManufacturerDTO();
@@ -65,19 +66,28 @@ class CoatingMapper
         $dto->volumeSolid = (int) $inputData['volumeSolid'];
         $dto->massDensity = (float) $inputData['massDensity'];
         $dto->base = CoatingBase::from($inputData['base'])->value;
-        $dto->dftRange = [
-            'min' => (int) ($inputData['minDft'] ?? 0),
-            'max' => (int) ($inputData['maxDft'] ?? 0),
-            'tds_dft' => (int) ($inputData['tdsDft'] ?? 0),
-            'type' => ThicknessType::MIC->value,
-        ];
+
+        $dftRange = new DftRangeDTO();
+        $dftRange->min = (int) ($inputData['minDft']);
+        $dftRange->max = (int) ($inputData['maxDft']);
+        $dftRange->tds_dft = (int) ($inputData['tdsDft']);
+        $dftRange->type = ThicknessType::MIC->value;
+        $dto->dftRange = $dftRange;
         $dto->applicationMinTemp = (int) $inputData['applicationMinTemp'];
-        $dto->dryToTouch = $this->buildSinglePointProfile((float) ($inputData['dryToTouch'] ?? 0));
-        $dto->minRecoatingInterval = (float) $inputData['minRecoatingInterval'];
-        $dto->maxRecoatingInterval = isset($inputData['maxRecoatingInterval']) && $inputData['maxRecoatingInterval'] !== ''
-            ? (float) $inputData['maxRecoatingInterval']
-            : null;
-        $dto->fullCure = $this->buildSinglePointProfile((float) ($inputData['fullCure'] ?? 0));
+
+        $dto->dryToTouch = $this->buildPointsFromInput($inputData['dryToTouch'] ?? []);
+        $dto->fullCure = $this->buildPointsFromInput($inputData['fullCure'] ?? []);
+        $dto->minRecoatingInterval = $this->buildPointsFromInput($inputData['minRecoatingInterval'] ?? []);
+        // max — необязателен. В комбинированном UI строки max идут параллельно min,
+        // но пустые (все длительности = 0) трактуются как «нет точки max при этой температуре».
+        // Если после отбрасывания пустых не осталось ни одной точки — серия max = null
+        // («без верхней границы»).
+        $maxRowsFilled = array_values(array_filter(
+            $inputData['maxRecoatingInterval'] ?? [],
+            fn(array $row) => $this->parseDurationInput($row) > 0,
+        ));
+        $dto->maxRecoatingInterval = $maxRowsFilled === [] ? null : $this->buildPointsFromInput($maxRowsFilled);
+
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
 
@@ -92,18 +102,22 @@ class CoatingMapper
         return $dto;
     }
 
-    /**
-     * @return list<array{temperature_at: int, time_in_minutes: float, is_calculated: bool}>
-     */
-    private function buildSinglePointProfile(float $minutes): array
+    public function parseDurationInput(array $raw): int
     {
-        return [
-            [
-                'temperature_at' => 20,
-                'time_in_minutes' => $minutes,
-                'is_calculated' => false,
-            ],
-        ];
+        $days    = (int) ($raw['days']    ?? 0);
+        $hours   = (int) ($raw['hours']   ?? 0);
+        $minutes = (int) ($raw['minutes'] ?? 0);
+        return $days * 24 * 60 + $hours * 60 + $minutes;
+    }
+
+    /** @return array{days: int, hours: int, minutes: int} */
+    public function decomposeDurationForForm(int $totalMinutes): array
+    {
+        $days = intdiv($totalMinutes, 24 * 60);
+        $rem = $totalMinutes - $days * 24 * 60;
+        $hours = intdiv($rem, 60);
+        $minutes = $rem - $hours * 60;
+        return ['days' => $days, 'hours' => $hours, 'minutes' => $minutes];
     }
 
     public function getValidationCollectionCoating(): Assert\Collection
@@ -113,8 +127,7 @@ class CoatingMapper
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
                 new Assert\Length([
-                    'min' => 3,
-                    'max' => 100,
+                    'min' => 3, 'max' => 100,
                     'maxMessage' => 'Название не должно быть длиннее {{ limit }}.',
                     'minMessage' => 'Название не должно быть короче {{ limit }}.',
                 ]),
@@ -123,8 +136,7 @@ class CoatingMapper
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
                 new Assert\Length([
-                    'min' => 3,
-                    'max' => 1500,
+                    'min' => 3, 'max' => 1500,
                     'maxMessage' => 'Описание не должно быть длиннее {{ limit }}.',
                     'minMessage' => 'Описание не должно быть короче {{ limit }}.',
                 ]),
@@ -132,115 +144,119 @@ class CoatingMapper
             'volumeSolid' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 10,
-                    'max' => 100,
-                    'notInRangeMessage' => 'Сухой остаток должен быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 10, 'max' => 100, 'notInRangeMessage' => 'Сухой остаток должен быть от {{ min }} до {{ max }}.']),
             ],
             'massDensity' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 0,
-                    'max' => 100,
-                    'notInRangeMessage' => 'Плотность должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 0, 'max' => 100, 'notInRangeMessage' => 'Плотность должна быть от {{ min }} до {{ max }}.']),
             ],
             'tdsDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 10,
-                    'max' => 9999,
-                    'notInRangeMessage' => 'ТСП тех карты должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'ТСП тех карты должна быть от {{ min }} до {{ max }}.']),
             ],
             'minDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 10,
-                    'max' => 9999,
-                    'notInRangeMessage' => 'Мин ТСП должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'Мин ТСП должна быть от {{ min }} до {{ max }}.']),
             ],
             'maxDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 10,
-                    'max' => 9999,
-                    'notInRangeMessage' => 'Макс ТСП должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'Макс ТСП должна быть от {{ min }} до {{ max }}.']),
             ],
             'applicationMinTemp' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => -30,
-                    'max' => 50,
-                    'notInRangeMessage' => 'Мин Т нанесения должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => -30, 'max' => 50, 'notInRangeMessage' => 'Мин Т нанесения должна быть от {{ min }} до {{ max }}.']),
             ],
-            'dryToTouch' => [
-                new Assert\NotBlank(),
-                new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 0,
-                    'max' => 100,
-                    'notInRangeMessage' => 'Время "сухой на отлип" должно быть в переделах от {{ min }} до {{ max }}.',
-                ]),
-            ],
-            'minRecoatingInterval' => [
-                new Assert\NotBlank(),
-                new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 0,
-                    'max' => 100,
-                    'notInRangeMessage' => 'Мин интервал перекрытия должен быть в переделах от {{ min }} до {{ max }}.',
-                ]),
-            ],
-            // maxRecoatingInterval — опциональное (null = «верхней границы нет»).
-            // Доменная проверка >= 0 живёт в Coating::setMaxRecoatingInterval, верхняя граница — HTML5 min/max на форме.
-'fullCure' => [
-                new Assert\NotBlank(),
-                new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 0,
-                    'max' => 1000,
-                    'notInRangeMessage' => 'Время полного отверждения должно быть в переделах от {{ min }} до {{ max }}.',
-                ]),
-            ],
+            'dryToTouch'           => $this->seriesFieldConstraints(required: true),
+            'fullCure'             => $this->seriesFieldConstraints(required: true),
+            'minRecoatingInterval' => $this->seriesFieldConstraints(required: true),
+            'maxRecoatingInterval' => $this->seriesFieldConstraints(required: false),
             'pack' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range([
-                    'min' => 1,
-                    'max' => 1000,
-                    'notInRangeMessage' => 'Упаковка должна быть в переделах от {{ min }} до {{ max }}.',
-                ]),
+                new Assert\Range(['min' => 1, 'max' => 1000, 'notInRangeMessage' => 'Упаковка должна быть от {{ min }} до {{ max }}.']),
             ],
             'manufacturer' => new Assert\Collection([
-                'id' => [
-                    new Assert\NotBlank(),
-                    new Assert\Uuid(),
-                ],
+                'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                 'title' => new Assert\Optional(new Assert\Type('string')),
                 'description' => new Assert\Optional(new Assert\Type('string')),
             ]),
             'tags' => new Assert\Optional([
-                new Assert\All(
-                    new Assert\Collection([
-                        'id' => [
-                            new Assert\NotBlank(),
-                            new Assert\Uuid(),
-                        ],
-                        'title' => new Assert\Optional(new Assert\Type('string')),
-                        'type' => new Assert\Optional(new Assert\Type('string')),
-                    ]),
-                ),
+                new Assert\All(new Assert\Collection([
+                    'id' => [new Assert\NotBlank(), new Assert\Uuid()],
+                    'title' => new Assert\Optional(new Assert\Type('string')),
+                    'type' => new Assert\Optional(new Assert\Type('string')),
+                ])),
             ]),
         ], allowExtraFields: true);
+    }
+
+    /**
+     * @param ?list<DryingTimePointDTO> $points null = «без верхней границы» (только для max-recoat)
+     * @return list<array<string, mixed>>
+     */
+    private function decomposeSeriesForForm(?array $points): array
+    {
+        if ($points === null) {
+            return [];
+        }
+        return array_map(
+            fn(DryingTimePointDTO $p) => array_merge(
+                $this->decomposeDurationForForm($p->time_in_minutes),
+                [
+                    'temperature_at' => $p->temperature_at,
+                    'time_in_minutes' => $p->time_in_minutes,
+                    'is_calculated' => $p->is_calculated,
+                ],
+            ),
+            $points,
+        );
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rawPoints
+     * @return list<DryingTimePointDTO>
+     */
+    private function buildPointsFromInput(array $rawPoints): array
+    {
+        return array_values(array_map(function (array $raw): DryingTimePointDTO {
+            $point = new DryingTimePointDTO();
+            $point->temperature_at = (int) ($raw['temperature_at'] ?? 20);
+            // Поддерживаем оба формата: новый {days, hours, minutes} и старый {time_in_minutes}.
+            $point->time_in_minutes = isset($raw['time_in_minutes'])
+                ? (int) $raw['time_in_minutes']
+                : $this->parseDurationInput($raw);
+            $point->is_calculated = (bool) ($raw['is_calculated'] ?? false);
+            return $point;
+        }, $rawPoints));
+    }
+
+    /**
+     * Валидация одной температурно-зависимой серии.
+     * required=true — поле обязательно (NotBlank); required=false — допускается пустой массив (нет точек).
+     */
+    private function seriesFieldConstraints(bool $required): array
+    {
+        $rowConstraint = new Assert\All([
+            new Assert\Collection([
+                'fields' => [
+                    'temperature_at'  => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                    'days'            => new Assert\Optional([new Assert\Type('numeric')]),
+                    'hours'           => new Assert\Optional([new Assert\Type('numeric')]),
+                    'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
+                    'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'is_calculated'   => new Assert\Optional(new Assert\Type('numeric')),
+                ],
+                'allowExtraFields' => true,
+            ]),
+        ]);
+
+        return $required
+            ? [new Assert\NotBlank(), $rowConstraint]
+            : [new Assert\Optional($rowConstraint)];
     }
 }

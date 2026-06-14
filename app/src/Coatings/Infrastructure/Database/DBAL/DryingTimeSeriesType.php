@@ -43,7 +43,8 @@ final class DryingTimeSeriesType extends JsonType
         $points = array_map(
             fn(array $row) => new TimeAtTemperature(
                 (int) $row['temperature_at'],
-                (float) $row['time_in_minutes'],
+                (int) $row['time_in_minutes'],
+                (bool) ($row['is_calculated'] ?? false),
             ),
             $rows,
         );

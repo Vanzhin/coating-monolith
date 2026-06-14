@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
+use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
+use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
@@ -42,7 +44,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->setDescription($dto->description);
         }
 
-        if (!empty($dto->dftRange)) {
+        if (isset($dto->dftRange)) {
             $coating->setDftRange($this->buildDftRange($dto->dftRange));
         }
         if (!empty($dto->dryToTouch)) {
@@ -68,12 +70,15 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->setPack($dto->pack);
         }
 
-        if ($dto->minRecoatingInterval !== null) {
-            $coating->setRecoatingIntervalBounds(
-                $dto->minRecoatingInterval,
-                $dto->maxRecoatingInterval ?? null,
-            );
+        if (!empty($dto->minRecoatingInterval)) {
+            $coating->setMinRecoatingInterval($this->buildDryingTimeSeries($dto->minRecoatingInterval));
         }
+        // maxRecoatingInterval=null означает «без верхней границы»; пустой массив трактуем так же.
+        $coating->setMaxRecoatingInterval(
+            empty($dto->maxRecoatingInterval)
+                ? null
+                : $this->buildDryingTimeSeries($dto->maxRecoatingInterval),
+        );
 
         $coating->setThinner($dto->thinner ?? null);
 
@@ -90,27 +95,24 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         return new UpdateCoatingCommandResult();
     }
 
-    /**
-     * @param array{min: int, max: int, tds_dft: int, type: string} $raw
-     */
-    private function buildDftRange(array $raw): DftRange
+    private function buildDftRange(DftRangeDTO $range): DftRange
     {
         return new DftRange(
-            new PositiveNumberRange((int) $raw['min'], (int) $raw['max']),
-            (int) $raw['tds_dft'],
-            ThicknessType::from($raw['type']),
+            new PositiveNumberRange($range->min, $range->max),
+            $range->tds_dft,
+            ThicknessType::from($range->type),
         );
     }
 
     /**
-     * @param list<array{temperature_at: int, time_in_minutes: float, is_calculated?: bool}> $points
+     * @param list<DryingTimePointDTO> $points
      */
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
         $timePoints = array_map(
-            fn(array $point) => new TimeAtTemperature(
-                (int) $point['temperature_at'],
-                (float) $point['time_in_minutes'],
+            fn(DryingTimePointDTO $point) => new TimeAtTemperature(
+                $point->temperature_at,
+                $point->time_in_minutes,
             ),
             $points,
         );

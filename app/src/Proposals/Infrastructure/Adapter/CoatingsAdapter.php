@@ -56,13 +56,15 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
             description: $dto->description,
             volumeSolid: $dto->volumeSolid,
             massDensity: $dto->massDensity,
-            tdsDft: (int) $dto->dftRange['tds_dft'],
-            minDft: (int) $dto->dftRange['min'],
-            maxDft: (int) $dto->dftRange['max'],
+            tdsDft: $dto->dftRange->tds_dft,
+            minDft: $dto->dftRange->min,
+            maxDft: $dto->dftRange->max,
             applicationMinTemp: $dto->applicationMinTemp,
             dryToTouch: $this->firstPointMinutes($dto->dryToTouch),
-            minRecoatingInterval: $dto->minRecoatingInterval,
-            maxRecoatingInterval: $dto->maxRecoatingInterval,
+            minRecoatingInterval: $this->firstPointMinutes($dto->minRecoatingInterval),
+            maxRecoatingInterval: $dto->maxRecoatingInterval !== null
+                ? $this->firstPointMinutes($dto->maxRecoatingInterval)
+                : null,
             fullCure: $this->firstPointMinutes($dto->fullCure),
             pack: $dto->pack,
             thinner: $dto->thinner,
@@ -70,10 +72,10 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
     }
 
     /**
-     * @param list<array{time_in_minutes: float}> $points
+     * @param list<\App\Coatings\Application\DTO\Coatings\DryingTimePointDTO> $points
      */
     private function firstPointMinutes(array $points): float
     {
-        return isset($points[0]) ? (float) $points[0]['time_in_minutes'] : 0.0;
+        return isset($points[0]) ? $points[0]->time_in_minutes : 0.0;
     }
 }

@@ -28,30 +28,32 @@ class DryingTimeSeriesTypeTest extends TestCase
     public function testSeriesIsSerializedToJsonWithSnakeCaseFields(): void
     {
         $series = new DryingTimeSeries(
-            new TimeAtTemperature(20, 10.0),
-            new TimeAtTemperature(30, 5.0),
+            new TimeAtTemperature(20, 10),
+            new TimeAtTemperature(30, 5),
         );
 
         $json = $this->type->convertToDatabaseValue($series, $this->platform);
 
         $this->assertSame(
-            '[{"temperature_at":20,"time_in_minutes":10.0,"is_calculated":false},'
-            . '{"temperature_at":30,"time_in_minutes":5.0,"is_calculated":false}]',
+            '[{"temperature_at":20,"time_in_minutes":10,"is_calculated":false},'
+            . '{"temperature_at":30,"time_in_minutes":5,"is_calculated":false}]',
             $json,
         );
     }
 
     public function testJsonIsDeserializedBackToSeries(): void
     {
-        $json = '[{"temperature_at":20,"time_in_minutes":10.0,"is_calculated":false},'
-            . '{"temperature_at":30,"time_in_minutes":5.0,"is_calculated":false}]';
+        $json = '[{"temperature_at":20,"time_in_minutes":10,"is_calculated":false},'
+            . '{"temperature_at":30,"time_in_minutes":5,"is_calculated":false}]';
 
         $series = $this->type->convertToPHPValue($json, $this->platform);
 
         $this->assertInstanceOf(DryingTimeSeries::class, $series);
         $this->assertCount(2, $series->points);
-        $this->assertSame([20, 30], array_keys($series->points));
-        $this->assertSame(10.0, $series->points[20]->getValue());
+        $this->assertSame(20, $series->points[0]->temperatureAt);
+        $this->assertSame(10, $series->points[0]->timeInMinutes);
+        $this->assertSame(30, $series->points[1]->temperatureAt);
+        $this->assertSame(5, $series->points[1]->timeInMinutes);
     }
 
     public function testNullRoundtrip(): void

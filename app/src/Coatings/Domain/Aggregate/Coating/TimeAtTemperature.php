@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating;
 
-use App\Shared\Domain\Aggregate\ValueObject\SeriesPoint;
 use App\Shared\Infrastructure\Exception\AppException;
+use Carbon\CarbonInterval;
+use JsonSerializable;
 
-final readonly class TimeAtTemperature implements SeriesPoint
+final readonly class TimeAtTemperature implements JsonSerializable
 {
     public function __construct(
         public int $temperatureAt,
-        public float $timeInMinutes,
+        public int $timeInMinutes,
         public bool $isCalculated = false,
     ) {
         if ($timeInMinutes < 0) {
@@ -19,11 +20,10 @@ final readonly class TimeAtTemperature implements SeriesPoint
         }
     }
 
-    public function getKey(): int { return $this->temperatureAt; }
-
-    public function getValue(): float { return $this->timeInMinutes; }
-
-    public function isCalculated(): bool { return $this->isCalculated; }
+    public function getInterval(): CarbonInterval
+    {
+        return CarbonInterval::minutes($this->timeInMinutes);
+    }
 
     public function jsonSerialize(): array
     {

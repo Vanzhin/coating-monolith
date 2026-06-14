@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Application\UseCase\Command\CreateCoating;
 
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
+use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
@@ -34,9 +35,11 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $this->buildDftRange($dto),
             $dto->applicationMinTemp,
             $this->buildDryingTimeSeries($dto->dryToTouch),
-            $dto->minRecoatingInterval,
-            $dto->maxRecoatingInterval,
             $this->buildDryingTimeSeries($dto->fullCure),
+            $this->buildDryingTimeSeries($dto->minRecoatingInterval),
+            $dto->maxRecoatingInterval !== null
+                ? $this->buildDryingTimeSeries($dto->maxRecoatingInterval)
+                : null,
             $dto->manufacturer->id,
             array_map(fn($tag) => $tag->id, $dto->tags),
             $dto->pack,
@@ -49,23 +52,22 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
     private function buildDftRange(CoatingDTO $dto): DftRange
     {
         $range = $dto->dftRange;
-
         return new DftRange(
-            new PositiveNumberRange((int) $range['min'], (int) $range['max']),
-            (int) $range['tds_dft'],
-            ThicknessType::from($range['type']),
+            new PositiveNumberRange($range->min, $range->max),
+            $range->tds_dft,
+            ThicknessType::from($range->type),
         );
     }
 
     /**
-     * @param list<array{temperature_at: int, time_in_minutes: float, is_calculated?: bool}> $points
+     * @param list<DryingTimePointDTO> $points
      */
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
         $timePoints = array_map(
-            fn(array $point) => new TimeAtTemperature(
-                (int) $point['temperature_at'],
-                (float) $point['time_in_minutes'],
+            fn(DryingTimePointDTO $point) => new TimeAtTemperature(
+                $point->temperature_at,
+                $point->time_in_minutes,
             ),
             $points,
         );
