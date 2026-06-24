@@ -1,9 +1,28 @@
 {% extends '/cabinet/index.html.twig' %}
+{% import 'admin/coating/coating/_recoating_pair_table.html.twig' as pairTable %}
 
 {% block title %}{{ parent() }} | Сравнение покрытий{% endblock %}
 
 {% block content %}
-    <div class="container-fluid p-4">
+    {% set fieldLabels = {
+        'title':                  'Название',
+        'manufacturer.title':     'Производитель',
+        'base':                   'Тип ЛКМ (ISO)',
+        'volumeSolid':            'Сухой остаток, %',
+        'massDensity':            'Плотность, кг/л',
+        'pack':                   'Упаковка, л',
+        'thinner':                'Разбавитель',
+        'applicationMinTemp':     'Мин Т нанесения, °C',
+        'dftRange.min':           'Мин ТСП, мкм',
+        'dftRange.max':           'Макс ТСП, мкм',
+        'dftRange.tds_dft':       'Целевая ТСП, мкм',
+        'dryToTouch':             'Сухой на отлип',
+        'fullCure':               'Полное отверждение',
+        'minRecoatingInterval':   'Интервал перекрытия — минимальный',
+        'maxRecoatingInterval':   'Интервал перекрытия — максимальный',
+    } %}
+
+    <div class="container-fluid p-4" data-controller="compare-filter">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">Сравнение покрытий ({{ subjects|length }})</h1>
             <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
@@ -11,26 +30,95 @@
             </a>
         </div>
 
-        {# TODO Task 5: полный рендер таблицы со всеми форматтерами и сайдбаром-фильтром #}
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Поле</th>
-                    {% for subject in subjects %}
-                        <th>{{ subject.title }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in comparison.rows %}
-                    <tr {% if row.isDifferent %}class="table-warning"{% endif %}>
-                        <th>{{ row.field }}</th>
-                        {% for value in row.values %}
-                            <td>{{ value is iterable ? '[...]' : value }}</td>
+        <div class="row g-3">
+            {# Сайдбар: чекбоксы видимых полей. Логика toggle — Stimulus в Task 7. #}
+            <aside class="col-lg-3">
+                <div class="card">
+                    <div class="card-header fw-semibold small">Видимые поля</div>
+                    <ul class="list-group list-group-flush">
+                        {% for field in fields %}
+                            <li class="list-group-item py-1">
+                                <label class="form-check d-flex align-items-center gap-2 mb-0">
+                                    <input type="checkbox" class="form-check-input m-0"
+                                           data-compare-filter-target="checkbox"
+                                           data-field="{{ field }}" checked>
+                                    <span class="small">{{ fieldLabels[field] ?? field }}</span>
+                                </label>
+                            </li>
                         {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="col-lg-9">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Поле</th>
+                                {% for subject in subjects %}
+                                    <th>
+                                        <div class="fw-semibold">{{ subject.title }}</div>
+                                        <div class="text-muted small">{{ subject.manufacturer.title }}</div>
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in comparison.rows %}
+                                <tr data-compare-filter-target="row" data-field="{{ row.field }}"
+                                    {% if row.isDifferent %}class="table-warning"{% endif %}>
+                                    <th scope="row">{{ fieldLabels[row.field] ?? row.field }}</th>
+                                    {% for value in row.values %}
+                                        <td>{{ _self.format_value(row.field, value) }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
     </div>
 {% endblock %}
+
+{# Per-field форматтер. Знает про специфические DTO-типы. #}
+{% macro format_value(field, value) %}
+    {% if value is null %}
+        <span class="text-muted">—</span>
+    {% elseif field == 'dryToTouch' or field == 'fullCure' %}
+        {% if value is empty %}
+            <span class="text-muted">—</span>
+        {% else %}
+            <ul class="list-unstyled mb-0 small">
+                {% for p in value %}
+                    <li>+{{ p.temperature_at }} °C — {{ p.time_in_minutes|duration_minutes }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% elseif field == 'minRecoatingInterval' or field == 'maxRecoatingInterval' %}
+        {% if value is null %}
+            <span class="text-muted">Без верхней границы</span>
+        {% else %}
+            {{ _self.render_tree(value) }}
+        {% endif %}
+    {% else %}
+        {{ value }}
+    {% endif %}
+{% endmacro %}
+
+{# Рекурсивный рендер дерева перекрытия: root + env + base. #}
+{% macro render_tree(tree) %}
+    {% import 'admin/coating/coating/_recoating_pair_table.html.twig' as pairTable %}
+    {% set envLabels = {atmospheric: 'Атмосферная', immersion: 'Погружение', special: 'Спец среды'} %}
+
+    {{ pairTable.render('Общее', tree.default, []) }}
+
+    {% for envKey, envNode in (tree.branches ?? {}) %}
+        {% set envLabel = envLabels[envKey] ?? envKey %}
+        {{ pairTable.render(envLabel, envNode.default, []) }}
+        {% for baseKey, baseNode in (envNode.branches ?? {}) %}
+            {{ pairTable.render(envLabel ~ ' → ' ~ baseKey|upper, baseNode.default, []) }}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}
