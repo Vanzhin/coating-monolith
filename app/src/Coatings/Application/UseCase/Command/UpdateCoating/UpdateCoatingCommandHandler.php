@@ -6,6 +6,7 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
+use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
@@ -16,6 +17,7 @@ use App\Coatings\Domain\Service\CoatingTagFetcher;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Infrastructure\Exception\AppException;
 
 readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 {
@@ -23,6 +25,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         private CoatingRepositoryInterface      $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
         private CoatingTagFetcher               $coatingTagFetcher,
+        private RecoatingTreeBuilder            $treeBuilder,
     ) {
     }
 
@@ -70,14 +73,15 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->setPack($dto->pack);
         }
 
-        if (!empty($dto->minRecoatingInterval)) {
-            $coating->setMinRecoatingInterval($this->buildDryingTimeSeries($dto->minRecoatingInterval));
-        }
-        // maxRecoatingInterval=null означает «без верхней границы»; пустой массив трактуем так же.
+        $minTree = $this->treeBuilder->build($dto->minRecoatingInterval)
+            ?? throw new AppException('Минимальный интервал перекрытия обязателен.');
+        $coating->setMinRecoatingInterval($minTree);
+
+        // maxRecoatingInterval=null означает «без верхней границы».
         $coating->setMaxRecoatingInterval(
-            empty($dto->maxRecoatingInterval)
-                ? null
-                : $this->buildDryingTimeSeries($dto->maxRecoatingInterval),
+            $dto->maxRecoatingInterval !== null
+                ? $this->treeBuilder->build($dto->maxRecoatingInterval)
+                : null,
         );
 
         $coating->setThinner($dto->thinner ?? null);
@@ -104,19 +108,12 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         );
     }
 
-    /**
-     * @param list<DryingTimePointDTO> $points
-     */
+    /** @param list<DryingTimePointDTO> $points */
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
-        $timePoints = array_map(
-            fn(DryingTimePointDTO $point) => new TimeAtTemperature(
-                $point->temperature_at,
-                $point->time_in_minutes,
-            ),
+        return new DryingTimeSeries(...array_map(
+            fn(DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
             $points,
-        );
-
-        return new DryingTimeSeries(...$timePoints);
+        ));
     }
 }

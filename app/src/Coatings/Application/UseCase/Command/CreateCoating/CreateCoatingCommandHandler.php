@@ -6,6 +6,7 @@ namespace App\Coatings\Application\UseCase\Command\CreateCoating;
 
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
+use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
@@ -14,11 +15,13 @@ use App\Coatings\Domain\Service\CoatingMaker;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Infrastructure\Exception\AppException;
 
 readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private CoatingMaker $coatingMaker,
+        private RecoatingTreeBuilder $treeBuilder,
     ) {
     }
 
@@ -36,9 +39,10 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $dto->applicationMinTemp,
             $this->buildDryingTimeSeries($dto->dryToTouch),
             $this->buildDryingTimeSeries($dto->fullCure),
-            $this->buildDryingTimeSeries($dto->minRecoatingInterval),
+            $this->treeBuilder->build($dto->minRecoatingInterval)
+                ?? throw new AppException('Минимальный интервал перекрытия обязателен.'),
             $dto->maxRecoatingInterval !== null
-                ? $this->buildDryingTimeSeries($dto->maxRecoatingInterval)
+                ? $this->treeBuilder->build($dto->maxRecoatingInterval)
                 : null,
             $dto->manufacturer->id,
             array_map(fn($tag) => $tag->id, $dto->tags),
@@ -59,19 +63,12 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
         );
     }
 
-    /**
-     * @param list<DryingTimePointDTO> $points
-     */
+    /** @param list<DryingTimePointDTO> $points */
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
-        $timePoints = array_map(
-            fn(DryingTimePointDTO $point) => new TimeAtTemperature(
-                $point->temperature_at,
-                $point->time_in_minutes,
-            ),
+        return new DryingTimeSeries(...array_map(
+            fn(DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
             $points,
-        );
-
-        return new DryingTimeSeries(...$timePoints);
+        ));
     }
 }

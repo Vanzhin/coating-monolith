@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
@@ -37,8 +38,8 @@ final readonly class CoatingMaker
         int               $applicationMinTemp,
         DryingTimeSeries  $dryToTouch,
         DryingTimeSeries  $fullCure,
-        DryingTimeSeries  $minRecoatingInterval,
-        ?DryingTimeSeries $maxRecoatingInterval,
+        RecoatingIntervalTree  $minRecoatingInterval,
+        ?RecoatingIntervalTree $maxRecoatingInterval,
         string            $manufacturerId,
         array             $coatingTagIds,
         float             $pack,

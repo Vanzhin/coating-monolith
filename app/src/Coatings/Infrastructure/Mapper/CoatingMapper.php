@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Mapper;
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
+use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
@@ -15,14 +16,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingMapper
 {
-    /** Имена всех температурно-зависимых полей-серий, которые форма редактирует одинаково. */
-    private const TEMPERATURE_SERIES_FIELDS = [
-        'dryToTouch',
-        'fullCure',
-        'minRecoatingInterval',
-        'maxRecoatingInterval',
-    ];
-
     /** Раскладывает DTO в плоский набор для формы. */
     public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
     {
@@ -41,9 +34,10 @@ class CoatingMapper
             unset($vars['dftRange']);
         }
 
-        foreach (self::TEMPERATURE_SERIES_FIELDS as $field) {
-            $vars[$field] = $this->decomposeSeriesForForm($vars[$field] ?? null);
-        }
+        $vars['dryToTouch'] = $this->decomposeSeriesForForm($vars['dryToTouch'] ?? null);
+        $vars['fullCure']   = $this->decomposeSeriesForForm($vars['fullCure'] ?? null);
+        $vars['minRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['minRecoatingInterval'] ?? null);
+        $vars['maxRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['maxRecoatingInterval'] ?? null);
 
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
     }
@@ -77,16 +71,13 @@ class CoatingMapper
 
         $dto->dryToTouch = $this->buildPointsFromInput($inputData['dryToTouch'] ?? []);
         $dto->fullCure = $this->buildPointsFromInput($inputData['fullCure'] ?? []);
-        $dto->minRecoatingInterval = $this->buildPointsFromInput($inputData['minRecoatingInterval'] ?? []);
-        // max — необязателен. В комбинированном UI строки max идут параллельно min,
-        // но пустые (все длительности = 0) трактуются как «нет точки max при этой температуре».
-        // Если после отбрасывания пустых не осталось ни одной точки — серия max = null
-        // («без верхней границы»).
-        $maxRowsFilled = array_values(array_filter(
-            $inputData['maxRecoatingInterval'] ?? [],
-            fn(array $row) => $this->parseDurationInput($row) > 0,
-        ));
-        $dto->maxRecoatingInterval = $maxRowsFilled === [] ? null : $this->buildPointsFromInput($maxRowsFilled);
+        // min: пустые точки доходят до домена и отвергаются TimeAtTemperature (positive-duration инвариант).
+        $dto->minRecoatingInterval = $this->buildTreeDtoFromInput($inputData['minRecoatingInterval'] ?? []);
+        // max: 0-длительность в форме означает «без верхней границы при этой температуре» — отбрасываем
+        // явно перед маппингом, чтобы домен не отверг такие точки как невалидные.
+        $maxRaw = $this->dropZeroDurationPointsRecursively($inputData['maxRecoatingInterval'] ?? []);
+        $maxNode = $this->buildTreeDtoFromInput($maxRaw);
+        $dto->maxRecoatingInterval = $this->isTreeDtoEffectivelyEmpty($maxNode) ? null : $maxNode;
 
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
@@ -173,8 +164,10 @@ class CoatingMapper
             ],
             'dryToTouch'           => $this->seriesFieldConstraints(required: true),
             'fullCure'             => $this->seriesFieldConstraints(required: true),
-            'minRecoatingInterval' => $this->seriesFieldConstraints(required: true),
-            'maxRecoatingInterval' => $this->seriesFieldConstraints(required: false),
+            // min обязателен на структурном уровне; content-валидация (хотя бы одна точка > 0)
+            // живёт в домене (TimeAtTemperature) и долетает до пользователя через AppException → banner.
+            'minRecoatingInterval' => $this->recoatingNodeConstraints(required: true),
+            'maxRecoatingInterval' => $this->recoatingNodeConstraints(required: false),
             'pack' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
@@ -193,6 +186,114 @@ class CoatingMapper
                 ])),
             ]),
         ], allowExtraFields: true);
+    }
+
+    /**
+     * Рекурсивно строит RecoatingIntervalTreeDTO из nested-array формы.
+     * Чистый shape→DTO маппинг без бизнес-фильтрации (валидация — в домене через RecoatingTreeBuilder).
+     */
+    private function buildTreeDtoFromInput(array $raw): RecoatingIntervalTreeDTO
+    {
+        $node = new RecoatingIntervalTreeDTO();
+        $node->default = $this->buildPointsFromInput($raw['default']['points'] ?? []);
+        foreach ($raw['branches'] ?? [] as $key => $childRaw) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
+            $node->branches[$key] = $this->buildTreeDtoFromInput((array) $childRaw);
+        }
+        return $node;
+    }
+
+    /**
+     * Рекурсивно отбрасывает из nested-array точки с нулевой длительностью.
+     * Применяется только к max-серии: «без ограничения» в форме = 0/0/0, в домене — отсутствие точки.
+     */
+    private function dropZeroDurationPointsRecursively(array $raw): array
+    {
+        if (isset($raw['default']['points']) && is_array($raw['default']['points'])) {
+            $raw['default']['points'] = array_values(array_filter(
+                $raw['default']['points'],
+                fn(array $row) => $this->parseDurationInput($row) > 0,
+            ));
+        }
+        if (isset($raw['branches']) && is_array($raw['branches'])) {
+            foreach ($raw['branches'] as $key => $childRaw) {
+                $raw['branches'][$key] = $this->dropZeroDurationPointsRecursively((array) $childRaw);
+            }
+        }
+        return $raw;
+    }
+
+    /** Узел считается пустым, если у него нет default-точек и нет (рекурсивно) непустых веток. */
+    private function isTreeDtoEffectivelyEmpty(RecoatingIntervalTreeDTO $node): bool
+    {
+        if ($node->default !== []) {
+            return false;
+        }
+        foreach ($node->branches as $child) {
+            if (!$this->isTreeDtoEffectivelyEmpty($child)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Декомпозит RecoatingIntervalTreeDTO в nested-array для шаблона. NULL → пустой узел. */
+    private function decomposeTreeDtoForForm(?RecoatingIntervalTreeDTO $node): array
+    {
+        if ($node === null) {
+            return ['default' => ['points' => []], 'branches' => []];
+        }
+        $branches = [];
+        foreach ($node->branches as $key => $child) {
+            $branches[$key] = $this->decomposeTreeDtoForForm($child);
+        }
+        return [
+            'default'  => ['points' => $this->decomposeSeriesForForm($node->default)],
+            'branches' => $branches,
+        ];
+    }
+
+    /**
+     * Структурная валидация одного узла дерева recoating-интервалов.
+     * Допускает рекурсивную форму `{default:{points:[...]}, branches:{<key>: <same>}}`.
+     * Проверка ключей сред/оснований и физических правил — на уровне домена.
+     */
+    private function recoatingNodeConstraints(bool $required): Assert\Collection|Assert\Optional
+    {
+        $nodeShape = new Assert\Collection([
+            'fields' => [
+                'default' => new Assert\Optional([
+                    new Assert\Collection([
+                        'fields' => [
+                            'points' => new Assert\Optional($this->pointsListConstraint()),
+                        ],
+                        'allowExtraFields' => true,
+                    ]),
+                ]),
+                'branches' => new Assert\Optional([new Assert\Type('array')]),
+            ],
+            'allowExtraFields' => true,
+        ]);
+        return $required ? $nodeShape : new Assert\Optional([$nodeShape]);
+    }
+
+    private function pointsListConstraint(): Assert\All
+    {
+        return new Assert\All([
+            new Assert\Collection([
+                'fields' => [
+                    'temperature_at'  => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                    'days'            => new Assert\Optional([new Assert\Type('numeric')]),
+                    'hours'           => new Assert\Optional([new Assert\Type('numeric')]),
+                    'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
+                    'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'is_calculated'   => new Assert\Optional([new Assert\Type('numeric')]),
+                ],
+                'allowExtraFields' => true,
+            ]),
+        ]);
     }
 
     /**

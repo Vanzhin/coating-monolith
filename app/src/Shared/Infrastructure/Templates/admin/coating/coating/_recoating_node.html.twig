@@ -1,0 +1,212 @@
+{# Параметры:
+    - minNode (массив {default: {points: [...]}, branches: {...}}) — обязательно
+    - maxNode (то же) — обязательно
+    - level — 'root' | 'env' | 'base'
+    - path — список ключей от корня до текущего узла, пустой для корня
+    - envLabels — карта env-ключей в русские подписи (передаётся снаружи)
+    - availableEnvKeys — список env-ключей, доступных к добавлению (только для root)
+    - availableBaseKeys — список base-ключей, доступных к добавлению (только для env)
+#}
+{% from '/components/duration_input.html.twig' import duration_input %}
+
+{% set isRoot = level == 'root' %}
+{% set isEnv  = level == 'env' %}
+{% set isBase = level == 'base' %}
+
+{% set minPrefix = 'minRecoatingInterval' %}
+{% set maxPrefix = 'maxRecoatingInterval' %}
+{% for key in path %}
+    {% set minPrefix = minPrefix ~ '[branches][' ~ key ~ ']' %}
+    {% set maxPrefix = maxPrefix ~ '[branches][' ~ key ~ ']' %}
+{% endfor %}
+{% set minPrefix = minPrefix ~ '[default][points]' %}
+{% set maxPrefix = maxPrefix ~ '[default][points]' %}
+
+{% set minPoints = minNode.default.points ?? [] %}
+{% set maxPoints = maxNode.default.points ?? [] %}
+{% set rowCount = max(minPoints|length, maxPoints|length, 1) %}
+
+{% set nodeId = (path|length > 0 ? path|join('-') : 'root') %}
+
+{# Корень: контейнер с вкладками. Среды-вкладки внутри. #}
+{% if isRoot %}
+<div class="border rounded p-3"
+     data-recoating-root
+     data-available-bases="{{ availableBaseKeys|json_encode|e('html_attr') }}">
+    <ul class="nav nav-tabs mb-3" role="tablist" data-recoating-tabs>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab"
+                    data-bs-target="#recoating-pane-root" type="button" role="tab">
+                Общее
+            </button>
+        </li>
+        {# Итерация по union ключей min+max, чтобы env-ветви из max (без min) тоже отрисовались. #}
+        {% set envBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
+        {% for envKey in envBranchKeys|keys %}
+            <li class="nav-item d-flex align-items-center" role="presentation" data-env-tab="{{ envKey }}">
+                <button class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#recoating-pane-{{ envKey }}" type="button" role="tab">
+                    {{ envLabels[envKey] ?? envKey }}
+                </button>
+                <button type="button" class="btn-close btn-close-sm ms-1 me-2"
+                        data-action="click->coating-form#removeEnv"
+                        data-coating-form-env-param="{{ envKey }}"
+                        aria-label="Удалить ветку"></button>
+            </li>
+        {% endfor %}
+        <li class="nav-item dropdown ms-auto" data-recoating-add-env>
+            <button class="nav-link dropdown-toggle text-success" data-bs-toggle="dropdown"
+                    type="button" aria-expanded="false">
+                + Среда
+            </button>
+            <ul class="dropdown-menu">
+                {% for envKey in availableEnvKeys %}
+                    <li{% if envKey in envBranchKeys|keys %} style="display: none;"{% endif %}>
+                        <button type="button" class="dropdown-item"
+                                data-action="click->coating-form#addEnv"
+                                data-coating-form-env-param="{{ envKey }}"
+                                data-env-option="{{ envKey }}">
+                            {{ envLabels[envKey] ?? envKey }}
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="recoating-pane-root" role="tabpanel">
+            {% include 'admin/coating/coating/_recoating_node.html.twig' with {
+                minNode: minNode,
+                maxNode: maxNode,
+                level: 'env',
+                path: [],
+                envLabels: envLabels,
+                showEnvControls: false,
+                availableBaseKeys: availableBaseKeys,
+            } only %}
+        </div>
+        {% for envKey in envBranchKeys|keys %}
+            {% set envMinNode = (minNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
+            {% set envMaxNode = (maxNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
+            <div class="tab-pane fade" id="recoating-pane-{{ envKey }}" role="tabpanel">
+                {% include 'admin/coating/coating/_recoating_node.html.twig' with {
+                    minNode: envMinNode,
+                    maxNode: envMaxNode,
+                    level: 'env',
+                    path: [envKey],
+                    envLabels: envLabels,
+                    showEnvControls: true,
+                    availableBaseKeys: availableBaseKeys,
+                } only %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{# Уровни env и base — одинаковая таблица серии + (для env) список base-правил. #}
+{% else %}
+<div class="{% if isBase %}border-start ps-3 mt-3{% endif %}" data-recoating-node="{{ nodeId }}">
+    {% if isBase %}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Основа: {{ path|last }}</h6>
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    data-action="click->coating-form#removeBase"
+                    data-coating-form-env-param="{{ path[0] }}"
+                    data-coating-form-base-param="{{ path|last }}">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    {% endif %}
+
+    <table class="table table-sm align-middle mb-1">
+        <thead>
+            <tr>
+                <th style="width: 160px;">Температура</th>
+                <th>Минимальный</th>
+                <th>Максимальный</th>
+                <th style="width: 60px;"></th>
+            </tr>
+        </thead>
+        <tbody data-series="recoating-{{ nodeId }}"
+               data-min-prefix="{{ minPrefix }}"
+               data-max-prefix="{{ maxPrefix }}">
+            {% for i in 0..(rowCount - 1) %}
+                {% set minRow = minPoints[i] ?? {temperature_at: 20, days: 0, hours: 0, minutes: 0} %}
+                {% set maxRow = maxPoints[i] ?? {} %}
+                {% set temp = minRow.temperature_at ?? maxRow.temperature_at ?? 20 %}
+                <tr>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input type="number"
+                                   name="{{ minPrefix }}[{{ i }}][temperature_at]"
+                                   value="{{ temp }}"
+                                   class="form-control"
+                                   data-row="{{ nodeId }}-{{ i }}"
+                                   data-action="input->coating-form#syncTemperature"
+                                   min="-50" max="100" required>
+                            <span class="input-group-text">°C</span>
+                        </div>
+                        <input type="hidden" name="{{ maxPrefix }}[{{ i }}][temperature_at]"
+                               value="{{ temp }}" data-temp-mirror="{{ nodeId }}-{{ i }}">
+                    </td>
+                    <td>{{ duration_input(minPrefix ~ '[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
+                    <td>{{ duration_input(maxPrefix ~ '[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                data-action="click->coating-form#removeRow"
+                                title="Удалить точку">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-action="click->coating-form#addRow"
+                data-coating-form-tbody-param="recoating-{{ nodeId }}">
+            + Точка
+        </button>
+
+        {% if isEnv and (showEnvControls ?? true) %}
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-success dropdown-toggle"
+                        data-bs-toggle="dropdown" type="button">
+                    + Правило для основы ЛКМ
+                </button>
+                <ul class="dropdown-menu">
+                    {% for baseKey in availableBaseKeys %}
+                        <li>
+                            <button type="button" class="dropdown-item"
+                                    data-action="click->coating-form#addBase"
+                                    data-coating-form-env-param="{{ path[0] }}"
+                                    data-coating-form-base-param="{{ baseKey }}">
+                                {{ baseKey }}
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if isEnv and path|length > 0 %}
+        {# Union ключей min+max, чтобы base-ветви из max (без min) тоже отрисовались. #}
+        {% set baseBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
+        {% for baseKey in baseBranchKeys|keys %}
+            {% set baseMinNode = (minNode.branches ?? {})[baseKey] ?? {default: {points: []}, branches: {}} %}
+            {% set baseMaxNode = (maxNode.branches ?? {})[baseKey] ?? {default: {points: []}, branches: {}} %}
+            {% include 'admin/coating/coating/_recoating_node.html.twig' with {
+                minNode: baseMinNode,
+                maxNode: baseMaxNode,
+                level: 'base',
+                path: path|merge([baseKey]),
+                envLabels: envLabels,
+                availableBaseKeys: [],
+            } only %}
+        {% endfor %}
+    {% endif %}
+</div>
+{% endif %}

@@ -14,7 +14,9 @@
 
 {% block content %}
     <div class="col-lg-10 mx-auto p-4 py-md-5">
-        <form method="post" action="{{ actionUrl }}" class="w-100" data-controller="coating-form">
+        <form method="post" action="{{ actionUrl }}" class="w-100"
+              data-controller="coating-form"
+              data-action="submit->coating-form#validateBeforeSubmit">
             {% if error %}
                 <div class="alert alert-danger">{{ error }}</div>
             {% endif %}
@@ -286,66 +288,28 @@
 
                   </div>
 
-                    {# ─── Интервал перекрытия ─── визуально единый блок (Min + Max в одной таблице).
-                          Под капотом — две параллельные серии (minRecoatingInterval, maxRecoatingInterval),
-                          сшитые по индексу строки. Температура для max-серии хранится в скрытом mirror'е. #}
-                  <div class="border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">Интервал перекрытия</h6>
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                data-series="recoatingInterval"
-                                data-action="click->coating-form#addRow">Добавить точку</button>
-                    </div>
-                    <table class="table table-sm align-middle mb-1">
-                        <thead>
-                            <tr>
-                                <th style="width: 160px;">Температура</th>
-                                <th>Минимальный</th>
-                                <th>Максимальный</th>
-                                <th style="width: 60px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody data-series="recoatingInterval">
-                            {% set minRows = inputData.minRecoatingInterval ?? [{temperature_at: 20, days: 0, hours: 0, minutes: 0}] %}
-                            {% set maxRows = inputData.maxRecoatingInterval ?? [] %}
-                            {% set rowCount = max(minRows|length, maxRows|length, 1) %}
-                            {% for i in 0..(rowCount - 1) %}
-                                {% set minRow = minRows[i] ?? {temperature_at: 20, days: 0, hours: 0, minutes: 0} %}
-                                {% set maxRow = maxRows[i] ?? {} %}
-                                {% set temp = minRow.temperature_at ?? maxRow.temperature_at ?? 20 %}
-                                <tr>
-                                    <td>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number"
-                                                   name="minRecoatingInterval[{{ i }}][temperature_at]"
-                                                   value="{{ temp }}"
-                                                   class="form-control"
-                                                   data-row="{{ i }}"
-                                                   data-action="input->coating-form#syncTemperature"
-                                                   min="-50" max="100" required>
-                                            <span class="input-group-text">°C</span>
-                                        </div>
-                                        {# зеркало температуры для max-серии #}
-                                        <input type="hidden" name="maxRecoatingInterval[{{ i }}][temperature_at]"
-                                               value="{{ temp }}" data-temp-mirror="{{ i }}">
-                                    </td>
-                                    <td>{{ duration_input('minRecoatingInterval[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
-                                    <td>{{ duration_input('maxRecoatingInterval[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                                data-action="click->coating-form#removeRow"
-                                                title="Удалить точку">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <div class="form-text">
-                        Пустые «Максимальные» во всех строках = без верхней границы.
-                    </div>
-                  </div>
+                    {# ─── Интервал перекрытия (дерево: общее → среда → основа ЛКМ) ─── #}
+                    {% set envLabels = {
+                        atmospheric: 'Атмосферная',
+                        immersion:   'Погружение',
+                        special:     'Спец среды',
+                    } %}
+                    {% set defaultRecoatingNode = {default: {points: [{temperature_at: 20, days: 0, hours: 0, minutes: 0}]}, branches: {}} %}
+                    {% set minRecoatingNode = inputData.minRecoatingInterval ?? defaultRecoatingNode %}
+                    {% set maxRecoatingNode = inputData.maxRecoatingInterval ?? {default: {points: []}, branches: {}} %}
+                    {% set usedEnvKeys = (minRecoatingNode.branches ?? {})|keys %}
+                    {% set availableEnvKeys = ['atmospheric', 'immersion', 'special'] %}
+                    {% set availableBaseKeys = coatingBases|map(b => b.value|lower) %}
+
+                    {% include 'admin/coating/coating/_recoating_node.html.twig' with {
+                        minNode: minRecoatingNode,
+                        maxNode: maxRecoatingNode,
+                        level: 'root',
+                        path: [],
+                        envLabels: envLabels,
+                        availableEnvKeys: availableEnvKeys,
+                        availableBaseKeys: availableBaseKeys,
+                    } only %}
 
                 </div>
             </div>

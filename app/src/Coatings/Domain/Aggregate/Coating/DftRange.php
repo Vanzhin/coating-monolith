@@ -8,7 +8,7 @@ use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Infrastructure\Exception\AppException;
 
-class DftRange
+class DftRange implements \JsonSerializable
 {
     public function __construct(
         public PositiveNumberRange $range,
@@ -26,4 +26,22 @@ class DftRange
         }
     }
 
+    public function jsonSerialize(): array
+    {
+        return [
+            'min'     => $this->range->getMin(),
+            'max'     => $this->range->getMax(),
+            'tds_dft' => $this->tdsDft,
+            'type'    => $this->type->value,
+        ];
+    }
+
+    public static function fromArray(array $raw): self
+    {
+        return new self(
+            new PositiveNumberRange((int) $raw['min'], (int) $raw['max']),
+            (int) $raw['tds_dft'],
+            ThicknessType::from($raw['type']),
+        );
+    }
 }

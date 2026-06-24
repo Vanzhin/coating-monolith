@@ -235,11 +235,12 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {# Сводный вид показывает только root-default; env/base-правила видны в редакторе. #}
                                                 {% set maxByTemp = {} %}
-                                                {% for p in coating.maxRecoatingInterval ?? [] %}
+                                                {% for p in coating.maxRecoatingInterval ? coating.maxRecoatingInterval.default : [] %}
                                                     {% set maxByTemp = maxByTemp|merge({(p.temperature_at): p}) %}
                                                 {% endfor %}
-                                                {% for point in coating.minRecoatingInterval %}
+                                                {% for point in coating.minRecoatingInterval.default %}
                                                     {% set maxPoint = maxByTemp[point.temperature_at] ?? null %}
                                                     <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
                                                         <td>+{{ point.temperature_at }} °C</td>
@@ -263,7 +264,7 @@
                                                 {% endfor %}
                                             </tbody>
                                         </table>
-                                        {% if coating.maxRecoatingInterval is null or coating.maxRecoatingInterval is empty %}
+                                        {% if coating.maxRecoatingInterval is null or coating.maxRecoatingInterval.default is empty %}
                                             <p class="text-muted small mb-0 mt-2">Без верхней границы.</p>
                                         {% endif %}
                                     </div>

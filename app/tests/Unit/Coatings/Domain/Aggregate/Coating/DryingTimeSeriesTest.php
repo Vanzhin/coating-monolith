@@ -130,4 +130,37 @@ class DryingTimeSeriesTest extends TestCase
             json_decode(json_encode($series), true),
         );
     }
+
+    public function testFromArrayRoundTripsSerialization(): void
+    {
+        $original = new DryingTimeSeries(
+            new TimeAtTemperature(20, 10, isCalculated: true),
+            new TimeAtTemperature(30, 5),
+        );
+
+        $raw = json_decode(json_encode($original), true);
+        $restored = DryingTimeSeries::fromArray($raw);
+
+        $this->assertSame(
+            json_decode(json_encode($original), true),
+            json_decode(json_encode($restored), true),
+        );
+    }
+
+    public function testFromArrayPreservesIsCalculatedFlag(): void
+    {
+        $raw = [
+            ['temperature_at' => 20, 'time_in_minutes' => 10, 'is_calculated' => false],
+            ['temperature_at' => 25, 'time_in_minutes' => 8,  'is_calculated' => true],
+            ['temperature_at' => 30, 'time_in_minutes' => 5,  'is_calculated' => false],
+        ];
+
+        $series = DryingTimeSeries::fromArray($raw);
+
+        $this->assertCount(3, $series->points);
+        $this->assertSame(20, $series->points[0]->temperatureAt);
+        $this->assertFalse($series->points[0]->isCalculated);
+        $this->assertSame(25, $series->points[1]->temperatureAt);
+        $this->assertTrue($series->points[1]->isCalculated);
+    }
 }

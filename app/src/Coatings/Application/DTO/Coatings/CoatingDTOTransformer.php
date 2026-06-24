@@ -8,6 +8,7 @@ use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 
 class CoatingDTOTransformer
@@ -42,9 +43,9 @@ class CoatingDTOTransformer
         $dto->description = $entity->getDescription();
         $dto->dryToTouch = $this->pointsFromSeries($entity->getDryToTouch());
         $dto->fullCure = $this->pointsFromSeries($entity->getFullCure());
-        $dto->minRecoatingInterval = $this->pointsFromSeries($entity->getMinRecoatingInterval());
+        $dto->minRecoatingInterval = $this->treeDtoFromTree($entity->getMinRecoatingInterval());
         $dto->maxRecoatingInterval = $entity->getMaxRecoatingInterval() !== null
-            ? $this->pointsFromSeries($entity->getMaxRecoatingInterval())
+            ? $this->treeDtoFromTree($entity->getMaxRecoatingInterval())
             : null;
         $dto->applicationMinTemp = $entity->getApplicationMinTemp();
         $dto->dftRange = $dftRangeDto;
@@ -72,6 +73,16 @@ class CoatingDTOTransformer
         }
 
         return $coatingDTOs;
+    }
+
+    private function treeDtoFromTree(RecoatingIntervalTree $tree): RecoatingIntervalTreeDTO
+    {
+        $dto = new RecoatingIntervalTreeDTO();
+        $dto->default = $this->pointsFromSeries($tree->default);
+        foreach ($tree->getChildren() as $key => $child) {
+            $dto->branches[$key] = $this->treeDtoFromTree($child);
+        }
+        return $dto;
     }
 
     /** @return list<DryingTimePointDTO> */

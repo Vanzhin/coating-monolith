@@ -62,6 +62,26 @@ final readonly class DryingTimeSeries implements TimeSeries
     }
 
     /**
+     * Обратная сборка из плоского массива точек (формат jsonSerialize()).
+     *
+     * @param list<array<string, mixed>> $rows
+     * @throws AppException
+     */
+    public static function fromArray(array $rows): self
+    {
+        $points = array_map(
+            fn(array $row): TimeAtTemperature => new TimeAtTemperature(
+                (int) $row['temperature_at'],
+                (int) $row['time_in_minutes'],
+                (bool) ($row['is_calculated'] ?? false),
+            ),
+            $rows,
+        );
+
+        return new self(...$points);
+    }
+
+    /**
      * @param TimeAtTemperature[] $points
      * @throws AppException
      */

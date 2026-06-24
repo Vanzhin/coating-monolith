@@ -28,11 +28,9 @@ class CoatingDTO
     /** @var list<DryingTimePointDTO> */
     public array $fullCure;
 
-    /** @var list<DryingTimePointDTO> */
-    public array $minRecoatingInterval;
+    public RecoatingIntervalTreeDTO $minRecoatingInterval;
 
-    /** @var ?list<DryingTimePointDTO> null = «без верхней границы». */
-    public ?array $maxRecoatingInterval = null;
+    public ?RecoatingIntervalTreeDTO $maxRecoatingInterval = null;
 
     public float $pack;
     public ?string $thinner;

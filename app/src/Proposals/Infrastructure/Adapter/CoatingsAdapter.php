@@ -61,9 +61,9 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
             maxDft: $dto->dftRange->max,
             applicationMinTemp: $dto->applicationMinTemp,
             dryToTouch: $this->firstPointMinutes($dto->dryToTouch),
-            minRecoatingInterval: $this->firstPointMinutes($dto->minRecoatingInterval),
+            minRecoatingInterval: $this->firstPointMinutes($dto->minRecoatingInterval->default),
             maxRecoatingInterval: $dto->maxRecoatingInterval !== null
-                ? $this->firstPointMinutes($dto->maxRecoatingInterval)
+                ? $this->firstPointMinutes($dto->maxRecoatingInterval->default)
                 : null,
             fullCure: $this->firstPointMinutes($dto->fullCure),
             pack: $dto->pack,

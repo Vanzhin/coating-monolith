@@ -68,7 +68,7 @@ class InterpolateAction extends AbstractController
             ));
         }
 
-        return new JsonResponse(['minutes' => $result->getValue()]);
+        return new JsonResponse(['minutes' => $result->timeInMinutes]);
     }
 
     private function errorResponse(string $message): JsonResponse

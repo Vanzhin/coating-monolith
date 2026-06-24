@@ -15,8 +15,11 @@ final readonly class TimeAtTemperature implements JsonSerializable
         public int $timeInMinutes,
         public bool $isCalculated = false,
     ) {
-        if ($timeInMinutes < 0) {
-            throw new AppException('Время не может быть отрицательным.');
+        if ($timeInMinutes <= 0) {
+            throw new AppException(sprintf(
+                'Длительность при +%d °C должна быть положительной.',
+                $temperatureAt,
+            ));
         }
     }
 
