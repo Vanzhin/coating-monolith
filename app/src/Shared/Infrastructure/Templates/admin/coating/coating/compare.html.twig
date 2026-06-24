@@ -1,0 +1,36 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Сравнение покрытий{% endblock %}
+
+{% block content %}
+    <div class="container-fluid p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">Сравнение покрытий ({{ subjects|length }})</h1>
+            <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> К списку
+            </a>
+        </div>
+
+        {# TODO Task 5: полный рендер таблицы со всеми форматтерами и сайдбаром-фильтром #}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Поле</th>
+                    {% for subject in subjects %}
+                        <th>{{ subject.title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in comparison.rows %}
+                    <tr {% if row.isDifferent %}class="table-warning"{% endif %}>
+                        <th>{{ row.field }}</th>
+                        {% for value in row.values %}
+                            <td>{{ value is iterable ? '[...]' : value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
