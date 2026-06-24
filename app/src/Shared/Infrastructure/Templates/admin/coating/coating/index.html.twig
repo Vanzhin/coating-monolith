@@ -50,6 +50,11 @@
 
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
+    {# Карта {key_lower => "Русское название (ISO)"} для подписей base-узлов в модалке покрытия. #}
+    {% set baseLabels = {} %}
+    {% for b in coatingBases ?? [] %}
+        {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
+    {% endfor %}
 
     <div class="col-lg-10 mx-auto p-4 py-md-5">
         <div class="d-flex flex-md-row align-items-center justify-content-between mb-3">
@@ -289,7 +294,7 @@
                                             {% for baseKey in baseBranches|keys %}
                                                 {% set baseMin = envMin ? (envMin.branches ?? {})[baseKey] ?? null : null %}
                                                 {% set baseMax = envMax ? (envMax.branches ?? {})[baseKey] ?? null : null %}
-                                                {{ _self.recoating_pair_table(envLabel ~ ' → ' ~ baseKey|upper, baseMin ? baseMin.default : [], baseMax ? baseMax.default : []) }}
+                                                {{ _self.recoating_pair_table(envLabel ~ ' → ' ~ (baseLabels[baseKey] ?? baseKey|upper), baseMin ? baseMin.default : [], baseMax ? baseMax.default : []) }}
                                             {% endfor %}
                                         {% endfor %}
 

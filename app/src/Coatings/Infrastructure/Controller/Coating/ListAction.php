@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Controller\Coating;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -57,6 +58,7 @@ class ListAction extends AbstractController
             'manufacturers' => $manufacturersResult->manufacturers,
             'result' => $result,
             'error' => $error,
+            'coatingBases' => CoatingBase::cases(),
         ]);
     }
 }

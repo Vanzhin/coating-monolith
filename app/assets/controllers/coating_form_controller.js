@@ -279,13 +279,14 @@ export default class extends Controller {
         const maxPrefix = `maxRecoatingInterval[branches][${envKey}][branches][${baseKey}][default][points]`;
         const nodeId = `${envKey}-${baseKey}`;
         const rowHTML = this._pairedRecoatingRow(minPrefix, maxPrefix, nodeId, 0);
+        const baseLabel = this._baseLabelsFromRoot()[baseKey] || baseKey;
 
         const block = document.createElement('div');
         block.className = 'border-start ps-3 mt-3';
         block.setAttribute('data-recoating-node', nodeId);
         block.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">Основа: ${baseKey}</h6>
+                <h6 class="mb-0">Основа: ${baseLabel}</h6>
                 <button type="button" class="btn btn-sm btn-outline-danger"
                         data-action="click->coating-form#removeBase"
                         data-coating-form-env-param="${envKey}"
@@ -503,12 +504,12 @@ export default class extends Controller {
         const maxPrefix = `maxRecoatingInterval[branches][${envKey}][default][points]`;
         const nodeId = envKey;
         const rowHTML = this._pairedRecoatingRow(minPrefix, maxPrefix, nodeId, 0);
-        const availableBases = this._availableBaseKeysFromRoot();
-        const baseItems = availableBases.map(b => `
+        const baseLabels = this._baseLabelsFromRoot();
+        const baseItems = Object.entries(baseLabels).map(([key, label]) => `
             <li><button type="button" class="dropdown-item"
                         data-action="click->coating-form#addBase"
                         data-coating-form-env-param="${envKey}"
-                        data-coating-form-base-param="${b}">${b}</button></li>
+                        data-coating-form-base-param="${key}">${label}</button></li>
         `).join('');
         const baseDropdown = `
             <div class="dropdown">
@@ -540,16 +541,16 @@ export default class extends Controller {
             </div>`;
     }
 
-    /** Собирает список известных ключей оснований из DOM (из стабильного элемента root). */
-    _availableBaseKeysFromRoot() {
+    /** Карта {key_lower: "Русское название (ISO)"} оснований из data-атрибута root. */
+    _baseLabelsFromRoot() {
         const root = this.element.querySelector('[data-recoating-root]');
         const raw = root?.dataset.availableBases;
-        if (!raw) return [];
+        if (!raw) return {};
         try {
             const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [];
+            return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
         } catch {
-            return [];
+            return {};
         }
     }
 }

@@ -5,7 +5,7 @@
     - path — список ключей от корня до текущего узла, пустой для корня
     - envLabels — карта env-ключей в русские подписи (передаётся снаружи)
     - availableEnvKeys — список env-ключей, доступных к добавлению (только для root)
-    - availableBaseKeys — список base-ключей, доступных к добавлению (только для env)
+    - baseLabels — карта base-ключей (lower-ASCII) в русские названия CoatingBase->title()
 #}
 {% from '/components/duration_input.html.twig' import duration_input %}
 
@@ -32,7 +32,7 @@
 {% if isRoot %}
 <div class="border rounded p-3"
      data-recoating-root
-     data-available-bases="{{ availableBaseKeys|json_encode|e('html_attr') }}">
+     data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
     <ul class="nav nav-tabs mb-3" role="tablist" data-recoating-tabs>
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab"
@@ -83,7 +83,7 @@
                 path: [],
                 envLabels: envLabels,
                 showEnvControls: false,
-                availableBaseKeys: availableBaseKeys,
+                baseLabels: baseLabels,
             } only %}
         </div>
         {% for envKey in envBranchKeys|keys %}
@@ -97,7 +97,7 @@
                     path: [envKey],
                     envLabels: envLabels,
                     showEnvControls: true,
-                    availableBaseKeys: availableBaseKeys,
+                    baseLabels: baseLabels,
                 } only %}
             </div>
         {% endfor %}
@@ -109,7 +109,7 @@
 <div class="{% if isBase %}border-start ps-3 mt-3{% endif %}" data-recoating-node="{{ nodeId }}">
     {% if isBase %}
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">Основа: {{ path|last }}</h6>
+            <h6 class="mb-0">Основа: {{ baseLabels[path|last] ?? path|last }}</h6>
             <button type="button" class="btn btn-sm btn-outline-danger"
                     data-action="click->coating-form#removeBase"
                     data-coating-form-env-param="{{ path[0] }}"
@@ -177,13 +177,13 @@
                     + Правило для основы ЛКМ
                 </button>
                 <ul class="dropdown-menu">
-                    {% for baseKey in availableBaseKeys %}
+                    {% for baseKey, baseLabel in baseLabels %}
                         <li>
                             <button type="button" class="dropdown-item"
                                     data-action="click->coating-form#addBase"
                                     data-coating-form-env-param="{{ path[0] }}"
                                     data-coating-form-base-param="{{ baseKey }}">
-                                {{ baseKey }}
+                                {{ baseLabel }}
                             </button>
                         </li>
                     {% endfor %}
@@ -204,7 +204,7 @@
                 level: 'base',
                 path: path|merge([baseKey]),
                 envLabels: envLabels,
-                availableBaseKeys: [],
+                baseLabels: baseLabels,
             } only %}
         {% endfor %}
     {% endif %}

@@ -301,7 +301,11 @@
                     {% set maxRecoatingNode = inputData.maxRecoatingInterval ?? {default: {points: []}, branches: {}} %}
                     {% set usedEnvKeys = (minRecoatingNode.branches ?? {})|keys %}
                     {% set availableEnvKeys = ['atmospheric', 'immersion', 'special'] %}
-                    {% set availableBaseKeys = coatingBases|map(b => b.value|lower) %}
+                    {# baseLabels: {key_lower => "Русское название (ISO)"} — для отображения; ключи остаются ASCII. #}
+                    {% set baseLabels = {} %}
+                    {% for b in coatingBases %}
+                        {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
+                    {% endfor %}
 
                     {% include 'admin/coating/coating/_recoating_node.html.twig' with {
                         minNode: minRecoatingNode,
@@ -310,7 +314,7 @@
                         path: [],
                         envLabels: envLabels,
                         availableEnvKeys: availableEnvKeys,
-                        availableBaseKeys: availableBaseKeys,
+                        baseLabels: baseLabels,
                     } only %}
 
                 </div>
