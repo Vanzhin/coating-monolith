@@ -11,7 +11,11 @@
         {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
     {% endfor %}
 
-    <div class="col-lg-10 mx-auto p-4 py-md-5">
+    <div class="col-lg-10 mx-auto p-4 py-md-5"
+         data-controller="compare-tray"
+         data-compare-tray-storage-key-value="compare:Coating"
+         data-compare-tray-compare-url-value="{{ path('app_cabinet_coating_coating_compare') }}"
+         data-compare-tray-max-value="4">
         <div class="d-flex flex-md-row align-items-center justify-content-between mb-3">
             <h2 class="text-body-emphasis mb-0">Покрытия</h2>
             {% if canEdit %}
@@ -93,6 +97,15 @@
                                    style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                                     {{ coating.description }}
                                 </p>
+                            </div>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        data-compare-id="{{ coating.id }}"
+                                        data-action="click->compare-tray#add"
+                                        data-compare-tray-id-param="{{ coating.id }}"
+                                        title="Добавить в сравнение">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
                             </div>
                             {% if canEdit %}
                                 <div class="d-flex gap-2 flex-shrink-0">
@@ -279,6 +292,25 @@
             {% else %}
                 {% include 'components/empty.html.twig' %}
             {% endif %}
+        </div>
+
+        <div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 d-none"
+             style="z-index: 1080;"
+             data-compare-tray-target="bar">
+            <div class="card shadow">
+                <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
+                    <span class="small">К сравнению: <strong data-compare-tray-target="count">0</strong></span>
+                    <button type="button" class="btn btn-sm btn-primary"
+                            data-action="click->compare-tray#open"
+                            data-compare-tray-target="openBtn" disabled>
+                        Сравнить
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->compare-tray#clear">
+                        Очистить
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
