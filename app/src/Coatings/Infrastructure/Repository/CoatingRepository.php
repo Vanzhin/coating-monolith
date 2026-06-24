@@ -52,4 +52,23 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
     {
         return $this->findOneBy(['title' => $title]);
     }
+
+    public function findByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        /** @var array<string, Coating> $byId */
+        $byId = [];
+        foreach ($this->findBy(['id' => $ids]) as $coating) {
+            $byId[$coating->getId()] = $coating;
+        }
+        $ordered = [];
+        foreach ($ids as $id) {
+            if (isset($byId[$id])) {
+                $ordered[] = $byId[$id];
+            }
+        }
+        return $ordered;
+    }
 }

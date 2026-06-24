@@ -20,4 +20,10 @@ interface CoatingRepositoryInterface
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult;
 
+    /**
+     * @param list<string> $ids
+     * @return list<Coating> возвращает в том же порядке, что и $ids; отсутствующие id просто опущены
+     */
+    public function findByIds(array $ids): array;
+
 }
