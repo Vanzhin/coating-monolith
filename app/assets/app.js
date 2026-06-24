@@ -9,5 +9,6 @@ import './bootstrap.js';
 // any CSS you import will output into a single css file (app.css in this case)
 import './styles/app.css';
 
-require('bootstrap')
-// import './bootstrap';
+// inline-скрипты в шаблонах зовут глобальный bootstrap.* (Tooltip/Modal/Offcanvas/Alert/Collapse) —
+// пробрасываем модуль в window, иначе ReferenceError: bootstrap is not defined.
+window.bootstrap = require('bootstrap');

@@ -13,9 +13,11 @@
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
 {% block content %}
-    <div class="col-lg-10 mx-auto p-4 py-md-5">
+    {# data-controller на обёртке, а не на <form>, чтобы #durationModal был соседом формы (а не её
+       потомком) — иначе скрытые number-инпуты модалки участвуют в HTML5-валидации формы и роняют
+       submit с «An invalid form control with name='' is not focusable». #}
+    <div class="col-lg-10 mx-auto p-4 py-md-5" data-controller="coating-form">
         <form method="post" action="{{ actionUrl }}" class="w-100"
-              data-controller="coating-form"
               data-action="submit->coating-form#validateBeforeSubmit">
             {% if error %}
                 <div class="alert alert-danger">{{ error }}</div>
@@ -314,63 +316,6 @@
                 </div>
             </div>
 
-            {# ─── Общая модалка для редактирования длительности ─── #}
-            <div class="modal fade" id="durationModal" tabindex="-1" aria-hidden="true"
-                 data-coating-form-target="modal">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" data-coating-form-target="modalLabel">Длительность</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row g-2">
-                                <div class="col">
-                                    <label class="form-label small text-muted">Дни</label>
-                                    <input type="number" class="form-control" min="0" max="365" value="0"
-                                           data-coating-form-target="modalDays">
-                                </div>
-                                <div class="col">
-                                    <label class="form-label small text-muted">Часы</label>
-                                    <input type="number" class="form-control" min="0" max="23" value="0"
-                                           data-coating-form-target="modalHours">
-                                </div>
-                                <div class="col">
-                                    <label class="form-label small text-muted">Минуты</label>
-                                    <input type="number" class="form-control" min="0" max="59" value="0"
-                                           data-coating-form-target="modalMinutes">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer justify-content-between">
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-link text-muted"
-                                        data-action="click->coating-form#clearDuration">Очистить</button>
-                                <button type="button" class="btn btn-primary"
-                                        data-action="click->coating-form#calculateDuration"
-                                        data-coating-form-target="calcBtn"
-                                        title="Рассчитать по соседним точкам"
-                                        disabled>
-                                    <i class="bi bi-calculator"></i> Рассчитать
-                                </button>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
-                                        title="Отмена" aria-label="Отмена">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                                <button type="button" class="btn btn-success"
-                                        data-action="click->coating-form#saveDuration"
-                                        title="Применить" aria-label="Применить">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
             <div class="d-flex justify-content-end gap-2">
@@ -378,5 +323,61 @@
                 <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
             </div>
         </form>
+
+        {# ─── Общая модалка для редактирования длительности (вне <form>, см. комментарий выше) ─── #}
+        <div class="modal fade" id="durationModal" tabindex="-1" aria-hidden="true"
+             data-coating-form-target="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" data-coating-form-target="modalLabel">Длительность</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-2">
+                            <div class="col">
+                                <label class="form-label small text-muted">Дни</label>
+                                <input type="number" class="form-control" min="0" max="365" value="0"
+                                       data-coating-form-target="modalDays">
+                            </div>
+                            <div class="col">
+                                <label class="form-label small text-muted">Часы</label>
+                                <input type="number" class="form-control" min="0" max="23" value="0"
+                                       data-coating-form-target="modalHours">
+                            </div>
+                            <div class="col">
+                                <label class="form-label small text-muted">Минуты</label>
+                                <input type="number" class="form-control" min="0" max="59" value="0"
+                                       data-coating-form-target="modalMinutes">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-link text-muted"
+                                    data-action="click->coating-form#clearDuration">Очистить</button>
+                            <button type="button" class="btn btn-primary"
+                                    data-action="click->coating-form#calculateDuration"
+                                    data-coating-form-target="calcBtn"
+                                    title="Рассчитать по соседним точкам"
+                                    disabled>
+                                <i class="bi bi-calculator"></i> Рассчитать
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                                    title="Отмена" aria-label="Отмена">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                            <button type="button" class="btn btn-success"
+                                    data-action="click->coating-form#saveDuration"
+                                    title="Применить" aria-label="Применить">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
