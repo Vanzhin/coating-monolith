@@ -40,18 +40,18 @@ services:
     volumes:
       - ./app:/app:rw
 
-  manager_nginx:
-    hostname: ${DOMAIN}
-    image: nginx:1.25.4
-    depends_on:
-      - manager_php-fpm
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
     volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./app/public:/app/public:ro
-      - ./docker/nginx/logs:/var/log/nginx:rw
-      - ./docker/nginx/hosts:/etc/nginx/conf.d
-    networks:
-      default:
-        ipv4_address: ${HOST_NGINX}
+      - caddy_data:/data
+    depends_on:
+      manager_php-fpm:
+        condition: service_started
 
   manager_redis:
     hostname: ${DOMAIN}
@@ -77,32 +77,8 @@ services:
     volumes:
       - ./docker/db/data:/var/lib/postgresql/data
     ports:
-      - ${DB_EXTERNAL_PORT}:5432
+      - 127.0.0.1:${DB_EXTERNAL_PORT}:5432
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
 
-  elasticsearch:
-    container_name: ${ELASTIC_CONTAINER_NAME}
-    image: elasticsearch:9.0.1
-    volumes:
-      - ./docker/elasticsearch/data:/usr/share/elasticsearch/data
-    environment:
-      - discovery.type=single-node
-      - cluster.name=docker-cluster
-      - network.host=0.0.0.0
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    deploy:
-      resources:
-        limits:
-          memory: 4GB
-    env_file: .env
-
-networks:
-  default:
-    ipam:
-      config:
-        - subnet: ${NETWORK}
+volumes:
+  caddy_data:
