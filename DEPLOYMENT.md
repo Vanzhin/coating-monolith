@@ -1,185 +1,105 @@
-# 🚀 Deployment Guide
+# Deployment
 
-## GitHub Actions Deployment
+Production-инстанс приложения работает на single-VPS через docker-compose, с двухуровневым Caddy:
+host Caddy (apt, держит TLS + 80/443) → project Caddy (Docker, HTTP-only) → php-fpm.
 
-### 1. Настройка GitHub Secrets
+## Поток деплоя
 
-В настройках репозитория (`Settings` → `Secrets and variables` → `Actions`) добавьте:
+1. Локально: `git tag v0.X.Y && git push origin v0.X.Y`.
+2. GitHub Actions (`.github/workflows/deploy.yml`):
+   - матрица собирает три образа `php-fpm`, `php-cli`, `supervisor` → `ghcr.io/vanzhin/coating-monolith-<service>:<tag>`;
+   - SCP'ит `docker-compose.prod.yml` на сервер в `/var/www/sites/1helper/`;
+   - SSH'ом генерит на сервере `.env` из GitHub Secrets/Variables;
+   - `docker compose pull && docker compose up -d`;
+   - `docker compose exec manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction`;
+   - `docker compose exec manager_php-cli php bin/console cache:warmup`;
+   - чистит старые образы.
 
-#### Обязательные секреты:
-- `HOST` - IP адрес или домен сервера
-- `USERNAME` - пользователь для SSH подключения
-- `SSH_KEY` - приватный SSH ключ для подключения к серверу
+После успешного workflow приложение доступно на `https://1helper.ru`.
 
-#### Опциональные секреты:
-- `TELEGRAM_BOT_TOKEN` - токен Telegram бота
-- `SMS_API_KEY` - API ключ SMS провайдера
-- `MAILER_PASSWORD` - пароль для SMTP
+## Что должно быть настроено заранее (one-time)
 
-### 2. Настройка сервера
+См. `docs/superpowers/plans/2026-06-25-deploy-server.md`, Task 6 — там пошагово описан provisioning VPS:
+- deploy-юзер с SSH-ключом, заблокированный root по SSH;
+- Docker Engine + compose plugin из apt-репо Docker;
+- host Caddy (apt) + `/etc/caddy/Caddyfile`;
+- UFW (22/80/443);
+- директория `/var/www/sites/1helper/`, склонированный репо, заполненный `.env`.
 
-#### Установка Docker и Docker Compose:
-```bash
-# Ubuntu/Debian
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-sudo usermod -aG docker $USER
+## GitHub Secrets / Variables
 
-# Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-```
+### Secrets
+- `SSH_HOST` — IP нового VPS.
+- `SSH_USER` — `deploy`.
+- `SSH_KEY` — приватный SSH-ключ deploy-юзера.
+- `APP_SECRET` — Symfony app secret.
+- `DB_PASSWORD`, `DB_HOST`, `DB_PORT` (последние два используются Symfony внутри контейнера).
+- `JWT_PASSPHRASE` — для JWT-бандла.
+- `LOG_TELEGRAM_BOT_KEY` — если используется Telegram-логгер.
 
-#### Создание директории проекта:
-```bash
-mkdir -p /var/www/sites/1helper
-cd /var/www/sites/1helper
-```
+### Variables
+- `DOMAIN` — `1helper.ru`.
+- `DB_USER`, `DB_NAME`, `DB_EXTERNAL_PORT` — параметры Postgres.
+- `REDIS_HOST` — `manager_redis`.
+- `APP_NAME`, `DEFAULT_FROM_ADDR`, `DEFAULT_FROM_NAME`, `MAILER_DSN`.
+- `JWT_SECRET_KEY`, `JWT_PUBLIC_KEY` — публичные ключи JWT.
+- `LOG_TELEGRAM_CHANNEL`.
 
-#### Клонирование репозитория:
-```bash
-git clone https://github.com/Vanzhin/coating-monolith.git .
-```
+`HOST_NGINX`, `NETWORK`, любые `ELASTIC_*` — больше не нужны, можно удалить.
 
-#### Настройка переменных окружения:
-```bash
-cp .env.prod.example .env.prod
-nano .env.prod  # Заполните необходимые переменные
-```
+## Мониторинг и оперативка
 
-### 3. Настройка SSL (опционально)
-
-#### Установка Certbot:
-```bash
-sudo apt update
-sudo apt install certbot python3-certbot-nginx
-```
-
-#### Получение SSL сертификата:
-```bash
-sudo certbot --nginx -d yourdomain.com
-```
-
-### 4. Автоматический деплой
-
-#### Push в main ветку:
-```bash
-git add .
-git commit -m "Deploy to production"
-git push origin main
-```
-
-GitHub Actions автоматически:
-1. Запустит тесты
-2. Соберет Docker образы
-3. Загрузит их в GitHub Container Registry
-4. Развернет на сервере
-
-### 5. Ручной деплой
-
-#### На сервере:
+### Проверка статуса
 ```bash
 cd /var/www/sites/1helper
-./deploy.sh
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f --tail=100
 ```
 
-## Структура деплоя
+### Логи отдельных сервисов
+```bash
+docker compose -f docker-compose.prod.yml logs caddy --tail=200
+docker compose -f docker-compose.prod.yml logs manager_php-fpm --tail=200
+docker compose -f docker-compose.prod.yml logs manager_db --tail=200
+```
 
-### GitHub Actions Workflows:
+### Host Caddy
+```bash
+systemctl status caddy
+journalctl -u caddy -n 100 -f
+```
 
-1. **`.github/workflows/deploy.yml`** - Основной workflow:
-   - Тестирование
-   - Сборка и загрузка образов
-   - Деплой на сервер
+### Подключение к БД
+```bash
+docker compose -f docker-compose.prod.yml exec manager_db psql -U $DB_USER -d $DB_NAME
+```
 
-2. **`.github/workflows/docker-build.yml`** - Сборка Docker образов:
-   - PHP-FPM
-   - PHP-CLI
-   - Supervisor
+### Ручной migrate / cache:clear
+```bash
+docker compose -f docker-compose.prod.yml exec manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
+docker compose -f docker-compose.prod.yml exec manager_php-cli php bin/console cache:clear --env=prod
+```
 
-### Docker конфигурация:
+## Откат
 
-1. **`Dockerfile`** - Основной образ приложения
-2. **`docker-compose.prod.yml`** - Production конфигурация
-3. **`deploy.sh`** - Скрипт ручного деплоя
-
-## Мониторинг
-
-### Проверка статуса:
+Реестр образов GHCR хранит все теги. Чтобы откатиться:
 ```bash
 cd /var/www/sites/1helper
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs -f
+export IMAGE_TAG=v0.X.Y-1  # предыдущий рабочий тег
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-### Просмотр логов:
+## Backup БД (ручной)
 ```bash
-# Логи приложения
-docker-compose -f docker-compose.prod.yml logs manager_php-fpm
-
-# Логи базы данных
-docker-compose -f docker-compose.prod.yml logs manager_db
-
-# Логи Nginx
-docker-compose -f docker-compose.prod.yml logs manager_nginx
+docker compose -f docker-compose.prod.yml exec manager_db pg_dump -U $DB_USER $DB_NAME \
+    > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
-## Откат (Rollback)
-
-### Откат к предыдущей версии:
-```bash
-# Получить список образов
-docker images | grep Vanzhin/coating-monolith
-
-# Остановить текущие контейнеры
-docker-compose -f docker-compose.prod.yml down
-
-# Запустить с предыдущим образом
-export IMAGE_TAG=previous-tag
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-## Troubleshooting
-
-### Проблемы с базой данных:
-```bash
-# Проверка подключения
-docker-compose -f docker-compose.prod.yml exec manager_db psql -U coating_user -d coating_prod
-
-# Сброс миграций
-docker-compose -f docker-compose.prod.yml exec manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction --force
-```
-
-### Проблемы с кэшем:
-```bash
-# Очистка кэша
-docker-compose -f docker-compose.prod.yml exec manager_php-cli php bin/console cache:clear --env=prod
-
-# Прогрев кэша
-docker-compose -f docker-compose.prod.yml exec manager_php-cli php bin/console cache:warmup --env=prod
-```
-
-### Проблемы с правами:
-```bash
-# Исправление прав
-sudo chown -R www-data:www-data /var/www/sites/1helper/app/var
-sudo chmod -R 755 /var/www/sites/1helper/app/var
-```
+> Регулярные автоматические бэкапы — отдельная задача, в этот план не входит.
 
 ## Безопасность
 
-### Рекомендации:
-1. Используйте сильные пароли для базы данных
-2. Настройте firewall (откройте только порты 80, 443, 22)
-3. Регулярно обновляйте Docker образы
-4. Используйте HTTPS в продакшене
-5. Настройте мониторинг и алерты
-
-### Backup:
-```bash
-# Backup базы данных
-docker-compose -f docker-compose.prod.yml exec manager_db pg_dump -U coating_user coating_prod > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# Backup файлов
-tar -czf files_backup_$(date +%Y%m%d_%H%M%S).tar.gz app/public/uploads/
-```
+- UFW открывает только 22/80/443. Postgres (`127.0.0.1:5432`) и Redis недоступны снаружи.
+- TLS-сертификат держит host Caddy в `/var/lib/caddy/.local/share/caddy/`, авто-обновление встроено.
+- Root по SSH заблокирован, заходим как `deploy` по ключу.
