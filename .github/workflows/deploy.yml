@@ -72,12 +72,6 @@ jobs:
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             REDIS_HOST=${{ vars.REDIS_HOST }}
-            ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
-            ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
-            ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
-            ELASTIC_AUTH_ENABLED=${{ vars.ELASTIC_AUTH_ENABLED }}
-            ELASTIC_CONTAINER_NAME=${{ vars.ELASTIC_CONTAINER_NAME }}
-            ELASTIC_PORT=${{ vars.ELASTIC_PORT }}
 
   seamless-deploy:
     runs-on: ubuntu-latest
@@ -112,11 +106,8 @@ jobs:
             # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными сети
             cat > .env << EOF
             # Docker Compose Variables - ИСПРАВЛЕНО!
-            NETWORK=${{ vars.NETWORK }}
             DOMAIN=${{ vars.DOMAIN }}
-            HOST_NGINX=${{ vars.HOST_NGINX }}
             DB_EXTERNAL_PORT=${{ vars.DB_EXTERNAL_PORT }}
-            ELASTIC_CONTAINER_NAME=${{ vars.ELASTIC_CONTAINER_NAME }}
 
             # Registry and Image
             REGISTRY=ghcr.io
@@ -145,11 +136,6 @@ jobs:
             JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
-
-            # Elasticsearch
-            ELASTIC_DSN=${{ vars.ELASTIC_DSN }}
-            ELASTIC_USERNAME=${{ vars.ELASTIC_USERNAME }}
-            ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
             EOF
 
             # Login to registry
