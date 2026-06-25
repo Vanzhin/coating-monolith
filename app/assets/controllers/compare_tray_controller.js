@@ -24,33 +24,30 @@ export default class extends Controller {
         if (this._onStorage) window.removeEventListener('storage', this._onStorage);
     }
 
-    add(event) {
-        const id = event.params.id;
+    toggle(event) {
+        const cb = event.target;
+        const id = cb.dataset.compareId;
         if (!id) return;
-        const ids = this._read();
-        if (ids.includes(id)) return;
-        if (ids.length >= this.maxValue) {
-            alert(`Можно сравнить максимум ${this.maxValue} покрытия.`);
-            return;
-        }
-        ids.push(id);
-        this._write(ids);
-        this._reflectButton(id, true);
-    }
 
-    remove(event) {
-        const id = event.params.id;
-        if (!id) return;
-        const ids = this._read().filter(x => x !== id);
+        const ids = this._read();
+        if (cb.checked) {
+            if (ids.includes(id)) return;
+            if (ids.length >= this.maxValue) {
+                cb.checked = false;
+                alert(`Можно сравнить максимум ${this.maxValue} покрытия.`);
+                return;
+            }
+            ids.push(id);
+        } else {
+            const i = ids.indexOf(id);
+            if (i === -1) return;
+            ids.splice(i, 1);
+        }
         this._write(ids);
-        this._reflectButton(id, false);
     }
 
     clear() {
         this._write([]);
-        this.element.querySelectorAll('[data-compare-id]').forEach(btn => {
-            this._reflectButton(btn.dataset.compareId, false);
-        });
     }
 
     open() {
@@ -67,22 +64,9 @@ export default class extends Controller {
         if (this.hasCountTarget) this.countTarget.textContent = String(ids.length);
         if (this.hasBarTarget) this.barTarget.classList.toggle('d-none', ids.length === 0);
         if (this.hasOpenBtnTarget) this.openBtnTarget.disabled = ids.length < 2;
-        // Отметить уже добавленные кнопки.
-        this.element.querySelectorAll('[data-compare-id]').forEach(btn => {
-            this._reflectButton(btn.dataset.compareId, ids.includes(btn.dataset.compareId));
+        this.element.querySelectorAll('[data-compare-id]').forEach(cb => {
+            cb.checked = ids.includes(cb.dataset.compareId);
         });
-    }
-
-    _reflectButton(id, isInTray) {
-        const btn = this.element.querySelector(`[data-compare-id="${id}"]`);
-        if (!btn) return;
-        btn.classList.toggle('btn-success', isInTray);
-        btn.classList.toggle('btn-outline-success', !isInTray);
-        btn.innerHTML = isInTray ? '<i class="bi bi-check2"></i>' : '<i class="bi bi-plus-lg"></i>';
-        btn.title = isInTray ? 'Убрать из сравнения' : 'Добавить в сравнение';
-        btn.dataset.action = isInTray
-            ? 'click->compare-tray#remove'
-            : 'click->compare-tray#add';
     }
 
     _read() {
