@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: docker/php-fpm/Dockerfile
       args:
-        - INSTALL_XDEBUG=${INSTALL_XDEBUG}
+        - INSTALL_XDEBUG=${INSTALL_XDEBUG:-true}
     volumes:
       - ./app:/app:rw
     depends_on:
@@ -46,28 +46,18 @@ services:
     volumes:
       - ./app:/app:rw
 
-  # НОВЫЙ КОНТЕЙНЕР ДЛЯ NODE.JS
-  manager_node:
-    image: node:18-alpine
-    working_dir: /app
-    volumes:
-      - ./app:/app:rw
-      - /app/node_modules  # named volume для node_modules чтобы не перезаписывать локально
-    environment:
-      - NODE_ENV=development
-    # Можно раскомментировать для автоматического запуска:
-    command: sh -c "npm install"
-
-  manager_nginx:
-    image: nginx:1.25.4
+  caddy:
+    image: caddy:2-alpine
+    restart: always
     ports:
-      - "6878:6878"
-    depends_on:
-      - manager_php-fpm
+      - "8080:80"
     volumes:
-      - ./app:/app:rw
-      - ./docker/nginx/logs:/var/log/nginx:rw
-      - ./docker/nginx/hosts:/etc/nginx/conf.d
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./app/public:/app/public:ro
+      - caddy_data:/data
+    depends_on:
+      manager_php-fpm:
+        condition: service_started
 
   manager_redis:
     working_dir: /app
@@ -95,27 +85,5 @@ services:
       - ${DB_EXTERNAL_PORT}:5432
     command: [ "postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/lib/postgresql/data/pg_log", "-c", "log_filename=postgresql.log", "-c", "log_statement=all" ]
 
-  elasticsearch:
-    container_name: ${ELASTIC_CONTAINER_NAME}
-    image: elasticsearch:9.0.1
-    volumes:
-      - ./docker/elasticsearch/data:/usr/share/elasticsearch/data
-    environment:
-      - discovery.type=single-node
-      - cluster.name=docker-cluster
-      - network.host=0.0.0.0
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    deploy:
-      resources:
-        limits:
-          memory: 4GB
-    env_file: .env
-
-# Добавляем volume для node_modules
 volumes:
-  node_modules:
+  caddy_data:

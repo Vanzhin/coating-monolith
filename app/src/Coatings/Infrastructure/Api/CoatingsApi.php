@@ -21,7 +21,7 @@ class CoatingsApi implements CoatingsApiInterface
 
     public function getPagedCoatings(): GetPagedCoatingsQueryResult
     {
-        return $this->queryInteractor->getPagedCoatings(new CoatingsFilter(null, Pager::fromPage(1, 1000)));
+        return $this->queryInteractor->getPagedCoatings(new CoatingsFilter(pager: Pager::fromPage(1, 1000)));
     }
 
     public function getCoating(string $id): GetCoatingQueryResult
