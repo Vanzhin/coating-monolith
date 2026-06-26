@@ -170,10 +170,11 @@ jobs:
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Полная перезагрузка
-            docker compose -f docker-compose.prod.yml down
+            # Тянем новые образы ПОКА старые контейнеры обслуживают трафик,
+            # затем up -d пересоздаёт только сервисы с изменённым image-хэшем
+            # (stock caddy/postgres/redis не трогаются).
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Ждем запуска и выполняем миграции
             sleep 10
