@@ -85,7 +85,7 @@ docker compose -f docker-compose.prod.yml exec manager_php-cli php bin/console c
 Реестр образов GHCR хранит все теги. Чтобы откатиться:
 ```bash
 cd /var/www/sites/1helper
-export IMAGE_TAG=v0.X.Y-1  # предыдущий рабочий тег
+export TAG=v0.X.Y-1  # предыдущий рабочий тег
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```

@@ -112,7 +112,7 @@ jobs:
             # Registry and Image
             REGISTRY=ghcr.io
             IMAGE_NAME=vanzhin/coating-monolith
-            IMAGE_TAG=${{ github.ref_name }}
+            TAG=${{ github.ref_name }}
 
             # Database
             DB_NAME=${{ vars.DB_NAME }}

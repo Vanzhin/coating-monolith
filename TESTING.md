@@ -9,16 +9,13 @@
 - `REGISTRY` = `ghcr.io`
 - `IMAGE_NAME` = `vanzhin/coating-monolith`
 - `DOMAIN` = `1helper.ru`
-- `HOST_NGINX` = `172.16.111.10`
-- `NETWORK` = `172.16.111.0/28`
 - `DB_HOST` = `manager_db`
 - `DB_PORT` = `5432`
-- `DB_NAME` = `database_app`
-- `DB_USER` = `root`
-- `DB_EXTERNAL_PORT` = `8001`
-- `ELASTIC_CONTAINER_NAME` = `app_elastic`
+- `DB_NAME` = `coating`
+- `DB_USER` = `coating`
+- `DB_EXTERNAL_PORT` = `5432`
 - `INSTALL_XDEBUG` = `false`
-- `REDIS_HOST` = `manager_redis:6379`
+- `REDIS_HOST` = `manager_redis`
 - `APP_NAME` = (ваше значение)
 - `DEFAULT_FROM_ADDR` = (ваше значение)
 - `DEFAULT_FROM_NAME` = (ваше значение)
@@ -26,21 +23,18 @@
 - `JWT_SECRET_KEY` = (ваше значение)
 - `JWT_PUBLIC_KEY` = (ваше значение)
 - `LOG_TELEGRAM_CHANNEL` = (ваше значение)
-- `ELASTIC_DSN` = (ваше значение)
-- `ELASTIC_USERNAME` = (ваше значение)
 
 ### 1.2 Проверка GitHub Secrets
 Убедитесь, что все секреты настроены в **Settings → Secrets and variables → Actions → Secrets**:
 
 **Обязательные секреты:**
-- `SSH_PRIVATE_KEY` - приватный SSH-ключ для подключения к серверу
 - `SSH_HOST` - хост сервера (например, `vm-3de9a8a3.netangels.ru`)
-- `SSH_USER` - пользователь SSH (например, `root`)
+- `SSH_USER` - пользователь SSH (например, `deploy`)
+- `SSH_KEY` - приватный SSH-ключ для подключения к серверу
 - `DB_PASSWORD` - пароль базы данных
 - `APP_SECRET` - секретный ключ Symfony
 - `JWT_PASSPHRASE` - парольная фраза для JWT
 - `LOG_TELEGRAM_BOT_KEY` - ключ Telegram бота
-- `ELASTIC_PASSWORD` - пароль Elasticsearch (если используется)
 
 ### 1.3 Проверка .env.example файлов
 Убедитесь, что существуют:
@@ -87,7 +81,6 @@ docker compose version
 
 # Проверьте, что папки для данных существуют
 ls -la docker/db/data/
-ls -la docker/elasticsearch/data/
 ```
 
 ### 3.2 Первый тестовый деплой
@@ -108,7 +101,7 @@ cd /var/www/sites/1helper
 ls -la .env app/.env
 
 # Проверьте содержимое .env (docker-compose)
-cat .env | grep -E "^REGISTRY|^IMAGE_NAME|^IMAGE_TAG"
+cat .env | grep -E "^REGISTRY|^IMAGE_NAME|^TAG"
 
 # Проверьте содержимое app/.env (Symfony)
 cat app/.env | grep -E "^APP_ENV|^APP_SECRET|^DATABASE_URL"
@@ -118,7 +111,7 @@ docker compose -f docker-compose.prod.yml ps
 
 # Проверьте логи
 docker compose -f docker-compose.prod.yml logs --tail=50 manager_php-fpm
-docker compose -f docker-compose.prod.yml logs --tail=50 manager_nginx
+docker compose -f docker-compose.prod.yml logs --tail=50 caddy
 
 # Проверьте, что сайт работает
 curl -I http://1helper.ru/
@@ -140,8 +133,8 @@ curl -I http://1helper.ru/
 ```bash
 cd /var/www/sites/1helper
 
-# Обновите IMAGE_TAG в .env
-sed -i 's/IMAGE_TAG=.*/IMAGE_TAG=v1.0.0-previous/' .env
+# Обновите TAG в .env
+sed -i 's/TAG=.*/TAG=v1.0.0-previous/' .env
 
 # Перезапустите контейнеры
 docker compose -f docker-compose.prod.yml pull
