@@ -13,6 +13,7 @@ use App\Users\Application\UseCase\Command\VerifyChannel\VerifyChannelCommand;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Entity\User;
+use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,8 +24,10 @@ class ChannelVerificationAction extends AbstractController
 {
     use ExceptionHelperTrait;
 
-    public function __construct(private readonly CommandBusInterface $commandBus)
-    {
+    public function __construct(
+        private readonly CommandBusInterface $commandBus,
+        private readonly ChannelRepositoryInterface $channelRepository,
+    ) {
     }
 
     #[Route('user/channel/verification', name: 'app_user_channel_verification')]
@@ -40,7 +43,15 @@ class ChannelVerificationAction extends AbstractController
             return $this->redirectToRoute('app_cabinet');
         }
 
-        if ($user->getChannels()->isEmpty()) {
+        // ВАЖНО: спрашиваем у репозитория, а не у $user->getChannels(). Symfony Security
+        // держит User в session с stale-коллекцией channels — после первого создания
+        // на следующем запросе коллекция всё ещё может быть пустой → дубликат → unique violation.
+        $emailChannel = $this->channelRepository->findOneByOwnerTypeValue(
+            $user->getId(),
+            ChannelType::EMAIL->value,
+            $user->getEmail()->getValue(),
+        );
+        if ($emailChannel === null) {
             $this->createChannel($user);
             return $this->redirectToRoute('app_user_channel_verification');
         }

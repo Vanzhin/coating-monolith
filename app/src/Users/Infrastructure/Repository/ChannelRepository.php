@@ -36,6 +36,20 @@ class ChannelRepository extends ServiceEntityRepository implements ChannelReposi
         return $this->find($id);
     }
 
+    public function findOneByOwnerTypeValue(string $ownerId, string $type, string $value): ?Channel
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('IDENTITY(c.owner) = :ownerId')
+            ->andWhere('c.type = :type')
+            ->andWhere('c.value = :value')
+            ->setParameter('ownerId', $ownerId)
+            ->setParameter('type', $type)
+            ->setParameter('value', $value)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function findByFilter(ChannelFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('uc');
