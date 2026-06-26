@@ -65,14 +65,23 @@ final class ChannelVerificationGateTest extends WebTestCase
         self::assertResponseRedirects('/user/channel/verification');
     }
 
-    public function testInactiveUserCanAccessVerificationPage(): void
+    public function testGateDoesNotRedirectAwayFromVerificationPage(): void
     {
+        // Цель теста — проверить именно ChannelVerificationGate (whitelist), а не
+        // ChannelVerificationAction. Гейт ОБЯЗАН НЕ редиректить inactive юзера на
+        // /user/channel/verification — иначе бесконечный цикл. Что отрисует контроллер
+        // (форма / 500 на duplicate-channel) — тут не важно, у него свои тесты.
         $user = $this->createUser(active: false);
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/user/channel/verification');
 
-        self::assertResponseIsSuccessful();
+        $location = $this->client->getResponse()->headers->get('Location');
+        self::assertNotSame(
+            '/user/channel/verification',
+            $location,
+            'Gate must not redirect inactive user TO the verification page when already on it.'
+        );
     }
 
     public function testActiveUserCanAccessProtectedRoute(): void

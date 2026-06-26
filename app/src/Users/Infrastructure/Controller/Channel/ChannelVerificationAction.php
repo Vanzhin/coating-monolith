@@ -30,56 +30,50 @@ class ChannelVerificationAction extends AbstractController
     #[Route('user/channel/verification', name: 'app_user_channel_verification')]
     public function verification(Request $request): Response
     {
-        try {
-            /** @var User $user */
-            $user = $this->getUser();
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
 
-            if (!$user) {
-                return $this->redirectToRoute('app_login');
-            }
+        if ($user->isActive() && $user->getUnVerifiedChannels()->isEmpty()) {
+            return $this->redirectToRoute('app_cabinet');
+        }
 
-            if ($user->isActive() && $user->getUnVerifiedChannels()->isEmpty()) {
-                return $this->redirectToRoute('app_cabinet');
-            }
+        if ($user->getChannels()->isEmpty()) {
+            $this->createChannel($user);
+            return $this->redirectToRoute('app_user_channel_verification');
+        }
 
-            if ($user->getChannels()->isEmpty()) {
-                $this->createChannel($user);
-                return $this->redirectToRoute('app_user_channel_verification');
-            }
+        $unverifiedChannels = $user->getUnVerifiedChannels();
+        $firstChannel = $unverifiedChannels->isEmpty() ? null : $unverifiedChannels->first();
+        $formData = $firstChannel !== null ? ['channel' => $firstChannel] : null;
 
-            // Получаем первый неверифицированный канал для автоматического выбора
-            $unverifiedChannels = $user->getUnVerifiedChannels();
-            $firstChannel = $unverifiedChannels->isEmpty() ? null : $unverifiedChannels->first();
+        $form = $this->createForm(ChannelVerificationFormType::class, $formData, [
+            'user' => $user,
+        ]);
+        $form->handleRequest($request);
 
-            // Подготавливаем данные формы с выбранным первым каналом
-            $formData = null;
-            if ($firstChannel) {
-                $formData = [
-                    'channel' => $firstChannel,
-                ];
-            }
-
-            $form = $this->createForm(ChannelVerificationFormType::class, $formData, [
-                'user' => $user,
-            ]);
-
-            $form->handleRequest($request);
-            if ($form->isSubmitted() && $form->isValid()) {
-                $data = $form->getData();
-                $token = $data['token'];
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Узкий try: ловим доменный AppException ровно над verify-командой.
+            // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx
+            // с реальным сообщением вместо «Undefined $form».
+            try {
                 /** @var Channel $channel */
-                $channel = $data['channel'];
-                $command = new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token);
-                $this->commandBus->execute($command);
+                $channel = $form->get('channel')->getData();
+                $token = $form->get('token')->getData();
+                $this->commandBus->execute(
+                    new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
+                );
 
                 $this->addFlash('success', 'Канал успешно верифицирован!');
                 $this->addFlash('success', 'Аккаунт успешно активирован!');
                 return $this->redirectToRoute('app_cabinet');
+            } catch (\Exception $e) {
+                $this->addFlash('error', $this->getOriginalExceptionMessage($e));
+                // Падаем в render формы с показом flash-ошибки.
             }
-        } catch (\Exception $e) {
-            $this->addFlash('error', $this->getOriginalExceptionMessage($e));
         }
-
 
         return $this->render('user/channel/verify.html.twig', [
             'verificationForm' => $form->createView(),
