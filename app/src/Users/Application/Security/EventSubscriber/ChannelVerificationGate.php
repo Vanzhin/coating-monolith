@@ -37,9 +37,9 @@ final class ChannelVerificationGate implements EventSubscriberInterface
         'app_logout',
         'app_sign_up',
         'app_login_link',
-        'app_login_link_process',
+        'app_login_by_link',
         'app_user_channel_verification',
-        'app_user_channel_send_token',
+        'app_user_channel_verification_send_token',
         'app_user_channel_create',
     ];
 

@@ -19,9 +19,9 @@ class CoatingDTO
     /** ISO 12944-5 аббревиатура. */
     public string $base;
 
-    public function getBaseEnum(): CoatingBase
+    public function getBaseEnum(): ?CoatingBase
     {
-        return CoatingBase::from($this->base);
+        return CoatingBase::tryFrom($this->base);
     }
 
     public DftRangeDTO $dftRange;
