@@ -103,37 +103,62 @@ jobs:
             echo "=== Using docker-compose.prod.yml from tag: ${{ github.ref_name }} ==="
             ls -la docker-compose.prod.yml
 
-            # Создаем/обновляем .env файл с ПРАВИЛЬНЫМИ переменными сети
-            cat > .env << EOF
-            # Docker Compose Variables - ИСПРАВЛЕНО!
-            DOMAIN=${{ vars.DOMAIN }}
-            DB_EXTERNAL_PORT=${{ vars.DB_EXTERNAL_PORT }}
+            # Два .env: root для docker-compose interpolation, app/.env для Symfony runtime.
+            # <<'EOF' (quoted heredoc) — bash на сервере НЕ раскрывает $X,
+            # поэтому Symfony-Dotenv-формулы (MAILER_DSN, DATABASE_URL, DEFAULT_FROM_NAME)
+            # уходят в файл буквально, а резолвятся уже Symfony при старте.
+            # GHA ${{ vars.* }} / ${{ secrets.* }} раскрываются ДО отправки скрипта.
 
-            # Registry and Image
+            # 1) Root .env — только то, что нужно docker-compose.prod.yml для ${X} подстановок.
+            cat > .env << 'EOF'
+            DOMAIN=${{ vars.DOMAIN }}
             REGISTRY=ghcr.io
             IMAGE_NAME=vanzhin/coating-monolith
             TAG=${{ github.ref_name }}
-
-            # Database
             DB_NAME=${{ vars.DB_NAME }}
+            DB_USER=${{ vars.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_EXTERNAL_PORT=${{ vars.DB_EXTERNAL_PORT }}
+            EOF
+
+            # 2) app/.env — то, что Symfony читает при старте (внутрь контейнера через bind-mount ./app:/app).
+            cat > app/.env << 'EOF'
+            # Framework
+            APP_ENV=prod
+            APP_SECRET=${{ secrets.APP_SECRET }}
+            APP_NAME=${{ vars.APP_NAME }}
+
+            # Database (Doctrine читает DATABASE_URL; placeholders резолвит Symfony Dotenv)
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_HOST=${{ secrets.DB_HOST }}
             DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ vars.DB_NAME }}
+            DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?serverVersion=17&charset=utf8
 
             # Redis
             REDIS_HOST=${{ vars.REDIS_HOST }}
 
-            # Application
-            INSTALL_XDEBUG=false
-            APP_SECRET=${{ secrets.APP_SECRET }}
-            APP_NAME=${{ vars.APP_NAME }}
-            DEFAULT_FROM_ADDR=${{ vars.DEFAULT_FROM_ADDR }}
-            DEFAULT_FROM_NAME=${{ vars.DEFAULT_FROM_NAME }}
-            MAILER_DSN=${{ vars.MAILER_DSN }}
+            # Messenger (использует Doctrine-транспорт; auto_setup=0 — миграции уже прогнаны)
+            MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
+
+            # JWT
             JWT_SECRET_KEY=${{ vars.JWT_SECRET_KEY }}
             JWT_PUBLIC_KEY=${{ vars.JWT_PUBLIC_KEY }}
             JWT_PASSPHRASE=${{ secrets.JWT_PASSPHRASE }}
+
+            # Mailer
+            SMTP_HOST=${{ vars.SMTP_HOST }}
+            SMTP_USERNAME=${{ vars.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_ENCRYPTION=${{ vars.SMTP_ENCRYPTION }}
+            DEFAULT_FROM_ADDR=${{ vars.DEFAULT_FROM_ADDR }}
+            DEFAULT_FROM_NAME="${{ vars.DEFAULT_FROM_NAME }}"
+            INFO_ADMIN_EMAIL=${{ vars.INFO_ADMIN_EMAIL }}
+            MAILER_DSN=smtp://${SMTP_USERNAME}:${SMTP_PASSWORD}@${SMTP_HOST}:${SMTP_PORT}
+
+            # Telegram logging
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
             EOF
