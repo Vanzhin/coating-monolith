@@ -79,18 +79,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose.prod.yml from tag version
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/var/www/sites/1helper/"
-
       - name: Deploy to production
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -98,10 +86,18 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -euo pipefail
             cd /var/www/sites/1helper
-            
-            echo "=== Using docker-compose.prod.yml from tag: ${{ github.ref_name }} ==="
-            ls -la docker-compose.prod.yml
+
+            # Синхронизируем рабочее дерево сервера с тегом (даёт актуальные
+            # docker-compose.prod.yml, infra/Caddyfile, package.json/lockfile, app-код).
+            # Гитайгноренные пути (.env*, app/config/jwt/*.pem, vendor/, node_modules/,
+            # public/build/, app/var/) reset не трогает.
+            git fetch --all --tags --prune
+            git reset --hard ${{ github.ref_name }}
+            git clean -fd -e .env -e app/.env -e app/config/jwt -e app/var -e app/vendor -e app/node_modules -e app/public/build
+
+            echo "=== Deploying tag ${{ github.ref_name }} (HEAD $(git rev-parse --short HEAD)) ==="
 
             # Два .env: root для docker-compose interpolation, app/.env для Symfony runtime.
             # <<'EOF' (quoted heredoc) — bash на сервере НЕ раскрывает $X,
@@ -162,6 +158,14 @@ jobs:
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
             EOF
+
+            # Webpack assets (host'овый node/yarn — установлен один раз на provisioning).
+            # Yarn install использует git config insteadOf для https-clone'ов
+            # (так как deploy-юзер не имеет SSH-доступа к github.com).
+            cd app
+            yarn install --frozen-lockfile
+            yarn build
+            cd ..
 
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
