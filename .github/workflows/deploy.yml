@@ -157,6 +157,12 @@ jobs:
             # Telegram logging
             LOG_TELEGRAM_BOT_KEY=${{ secrets.LOG_TELEGRAM_BOT_KEY }}
             LOG_TELEGRAM_CHANNEL=${{ vars.LOG_TELEGRAM_CHANNEL }}
+
+            # Telegram notification bot (используется ChannelNotifierService для отправки кодов)
+            TELEGRAM_NOTIFICATION_BOT_TOKEN=${{ secrets.TELEGRAM_NOTIFICATION_BOT_TOKEN }}
+            TELEGRAM_NOTIFICATION_BOT_USERNAME=${{ vars.TELEGRAM_NOTIFICATION_BOT_USERNAME }}
+            TELEGRAM_NOTIFICATION_BOT_WEBHOOK=${{ vars.TELEGRAM_NOTIFICATION_BOT_WEBHOOK }}
+            TELEGRAM_NOTIFICATION_BOT_SECRET=${{ secrets.TELEGRAM_NOTIFICATION_BOT_SECRET }}
             EOF
 
             # Webpack assets (host'овый node/yarn — установлен один раз на provisioning).
