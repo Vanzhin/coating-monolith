@@ -5,3 +5,6 @@ services:
     resource: '%kernel.project_dir%/tests/Resource/Fixtures/*'
     tags:
       - { "name": 'doctrine.fixture.orm' }
+
+  App\Coatings\Infrastructure\Search\CoatingTagFinder:
+    public: true

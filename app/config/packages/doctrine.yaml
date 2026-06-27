@@ -24,6 +24,7 @@ doctrine:
             string_functions:
                 TS_MATCH: App\Coatings\Infrastructure\Database\DQL\TsMatch
                 TO_TSQUERY: App\Coatings\Infrastructure\Database\DQL\ToTsquery
+                TO_TSVECTOR: App\Coatings\Infrastructure\Database\DQL\ToTsvector
             numeric_functions:
                 TS_RANK_CD: App\Coatings\Infrastructure\Database\DQL\TsRankCd
                 WORD_SIMILARITY: App\Coatings\Infrastructure\Database\DQL\WordSimilarity

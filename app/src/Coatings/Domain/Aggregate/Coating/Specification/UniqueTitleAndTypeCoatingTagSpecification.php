@@ -18,7 +18,7 @@ class UniqueTitleAndTypeCoatingTagSpecification implements SpecificationInterfac
     public function satisfy(CoatingTag $coatingTag): void
     {
         $exist = $this->coatingTagRepository->findOneByTitleAndType($coatingTag->getTitle(), $coatingTag->getType());
-        if ($exist->getId() !== $coatingTag->getId()) {
+        if ($exist !== null && $exist->getId() !== $coatingTag->getId()) {
             AssertService::null(
                 $exist,
                 sprintf('Тэг "%s" уже существует для типа "%s".',

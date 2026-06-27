@@ -17,7 +17,7 @@ class CoatingTag extends Aggregate
 
     private readonly string $id;
     private string $title;
-    private ?string $type;
+    private ?string $type = null;
 
     /**
      * @var Collection<Coating>
@@ -34,7 +34,7 @@ class CoatingTag extends Aggregate
         $this->specification = $specification;
         $this->coatings = new ArrayCollection();
         $this->setTitle($title);
-        $this->setType($title);
+        $this->setType($type);
     }
 
     public function getId(): string
