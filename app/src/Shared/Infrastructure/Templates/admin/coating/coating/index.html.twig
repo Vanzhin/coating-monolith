@@ -99,10 +99,17 @@
                                  data-bs-toggle="modal"
                                  data-bs-target="#coatingPreview-{{ coating.id }}">
                                 <h6 class="mb-1 fw-semibold text-truncate">{{ coating.title }}</h6>
-                                <p class="mb-0 small text-muted"
+                                <p class="mb-1 small text-muted"
                                    style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                                     {{ coating.description }}
                                 </p>
+                                {% if coating.tags|length > 0 %}
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for tag in coating.tags %}
+                                            <span class="badge text-bg-light border fw-normal">{{ tag.title }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                             {% if canEdit %}
                                 <div class="d-flex gap-2 flex-shrink-0">
