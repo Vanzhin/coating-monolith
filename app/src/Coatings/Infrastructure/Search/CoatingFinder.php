@@ -34,7 +34,7 @@ final class CoatingFinder
         $this->applyFacets($qb, $filter);
         $this->applyPaging($qb, $filter->pager);
 
-        return $this->paginate($qb, false);
+        return $this->paginate($qb);
     }
 
     public function fuzzyTitle(CoatingsFilter $filter): PaginationResult
@@ -55,7 +55,7 @@ final class CoatingFinder
 
         $this->applyFacets($qb, $filter);
 
-        return $this->paginate($qb, false);
+        return $this->paginate($qb);
     }
 
     private function applyFtsClause(QueryBuilder $qb, CoatingsFilter $filter): void
@@ -111,8 +111,9 @@ final class CoatingFinder
     private function coatingQueryBuilder(): QueryBuilder
     {
         return $this->em->createQueryBuilder()
-            ->select('cc')
-            ->from(Coating::class, 'cc');
+            ->select('cc', 't')
+            ->from(Coating::class, 'cc')
+            ->leftJoin('cc.tags', 't');
     }
 
     private function applyPaging(QueryBuilder $qb, ?Pager $pager): void
@@ -124,9 +125,14 @@ final class CoatingFinder
         $qb->setFirstResult($pager->getOffset());
     }
 
-    private function paginate(QueryBuilder $qb, bool $fetchJoinCollection = false): PaginationResult
+    /**
+     * fetchJoinCollection=true: Paginator делает 2-фазный план
+     * (DISTINCT id-subquery + data-query с join'ами), это правильно
+     * считает LIMIT/OFFSET при leftJoin на to-many tags.
+     */
+    private function paginate(QueryBuilder $qb): PaginationResult
     {
-        $paginator = new Paginator($qb->getQuery(), $fetchJoinCollection);
+        $paginator = new Paginator($qb->getQuery(), true);
 
         return new PaginationResult(
             iterator_to_array($paginator->getIterator()),
