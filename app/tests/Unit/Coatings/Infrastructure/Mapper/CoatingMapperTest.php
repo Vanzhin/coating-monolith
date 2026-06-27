@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Infrastructure\Mapper;
 
+use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use PHPUnit\Framework\TestCase;
@@ -117,6 +118,99 @@ final class CoatingMapperTest extends TestCase
         $this->assertNull($dto->maxRecoatingInterval);
     }
 
+    public function testBuildsUnlimitedFromKindAttribute(): void
+    {
+        $mapper = $this->makeMapper();
+        $input = $this->minimalInput([
+            'maxRecoatingInterval' => [
+                'default' => ['points' => [[
+                    'temperature_at' => 20,
+                    'kind' => 'unlimited',
+                    'days' => 0, 'hours' => 0, 'minutes' => 0,
+                ]]],
+                'branches' => [],
+            ],
+        ]);
+
+        $dto = $mapper->buildCoatingDtoFromInputData($input);
+
+        $this->assertNotNull($dto->maxRecoatingInterval);
+        $this->assertCount(1, $dto->maxRecoatingInterval->default);
+        $this->assertSame(0, $dto->maxRecoatingInterval->default[0]->time_in_minutes);
+    }
+
+    public function testBuildsUnknownFromKindAttribute(): void
+    {
+        $mapper = $this->makeMapper();
+        $input = $this->minimalInput([
+            'maxRecoatingInterval' => [
+                'default' => ['points' => [[
+                    'temperature_at' => 20,
+                    'kind' => 'unknown',
+                    'days' => 0, 'hours' => 0, 'minutes' => 0,
+                ]]],
+                'branches' => [],
+            ],
+        ]);
+
+        $dto = $mapper->buildCoatingDtoFromInputData($input);
+
+        $this->assertNotNull($dto->maxRecoatingInterval);
+        $this->assertCount(1, $dto->maxRecoatingInterval->default);
+        $this->assertNull($dto->maxRecoatingInterval->default[0]->time_in_minutes);
+    }
+
+    public function testLegacyZeroDurationBecomesUnknown(): void
+    {
+        // Без явного kind: дни/часы/минуты все 0 → точка имеет time_in_minutes = null.
+        // Это безопасный дефолт для старых форм: «юзер ничего не ввёл, не подменяем на unlimited».
+        $mapper = $this->makeMapper();
+        $input = $this->minimalInput([
+            'maxRecoatingInterval' => [
+                'default' => ['points' => [[
+                    'temperature_at' => 20,
+                    'days' => 0, 'hours' => 0, 'minutes' => 0,
+                ]]],
+                'branches' => [],
+            ],
+        ]);
+
+        $dto = $mapper->buildCoatingDtoFromInputData($input);
+
+        $this->assertNotNull($dto->maxRecoatingInterval);
+        $this->assertCount(1, $dto->maxRecoatingInterval->default);
+        $this->assertNull($dto->maxRecoatingInterval->default[0]->time_in_minutes);
+    }
+
+    public function testDecomposeAddsKindForFormRoundtrip(): void
+    {
+        $mapper = $this->makeMapper();
+
+        // Серия из трёх точек разных kind.
+        $duration = new DryingTimePointDTO();
+        $duration->temperature_at = 10;
+        $duration->time_in_minutes = 720;
+
+        $unlimited = new DryingTimePointDTO();
+        $unlimited->temperature_at = 20;
+        $unlimited->time_in_minutes = 0;
+
+        $unknown = new DryingTimePointDTO();
+        $unknown->temperature_at = 30;
+        $unknown->time_in_minutes = null;
+
+        $decomposeMethod = new \ReflectionMethod($mapper, 'decomposeSeriesForForm');
+        $decomposeMethod->setAccessible(true);
+        $form = $decomposeMethod->invoke($mapper, [$duration, $unlimited, $unknown]);
+
+        $this->assertSame('duration', $form[0]['kind']);
+        $this->assertSame('unlimited', $form[1]['kind']);
+        $this->assertSame('unknown', $form[2]['kind']);
+        $this->assertSame(720, $form[0]['time_in_minutes']);
+        $this->assertSame(0, $form[1]['time_in_minutes']);
+        $this->assertNull($form[2]['time_in_minutes']);
+    }
+
     /** @param array<string, mixed> $overrides */
     private function validInput(array $overrides): array
     {
@@ -132,5 +226,27 @@ final class CoatingMapperTest extends TestCase
             'manufacturer' => ['id' => '00000000-0000-0000-0000-000000000001'],
             'tags' => [],
         ], $overrides);
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function minimalInput(array $overrides): array
+    {
+        return array_merge([
+            'title' => 'Test', 'description' => 'Test desc',
+            'volumeSolid' => 50, 'massDensity' => 1.2,
+            'base' => 'EP',
+            'minDft' => 80, 'maxDft' => 150, 'tdsDft' => 100,
+            'applicationMinTemp' => 5,
+            'dryToTouch' => [['temperature_at' => 20, 'days' => 0, 'hours' => 1, 'minutes' => 0]],
+            'fullCure'   => [['temperature_at' => 20, 'days' => 1, 'hours' => 0, 'minutes' => 0]],
+            'pack' => 1.0, 'thinner' => null,
+            'manufacturer' => ['id' => '00000000-0000-0000-0000-000000000001'],
+            'tags' => [],
+        ], $overrides);
+    }
+
+    private function makeMapper(): CoatingMapper
+    {
+        return new CoatingMapper();
     }
 }

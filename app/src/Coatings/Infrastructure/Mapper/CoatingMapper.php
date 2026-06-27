@@ -73,10 +73,9 @@ class CoatingMapper
         $dto->fullCure = $this->buildPointsFromInput($inputData['fullCure'] ?? []);
         // min: пустые точки доходят до домена и отвергаются TimeAtTemperature (positive-duration инвариант).
         $dto->minRecoatingInterval = $this->buildTreeDtoFromInput($inputData['minRecoatingInterval'] ?? []);
-        // max: 0-длительность в форме означает «без верхней границы при этой температуре» — отбрасываем
-        // явно перед маппингом, чтобы домен не отверг такие точки как невалидные.
-        $maxRaw = $this->dropZeroDurationPointsRecursively($inputData['maxRecoatingInterval'] ?? []);
-        $maxNode = $this->buildTreeDtoFromInput($maxRaw);
+        // max: точки несут kind = duration/unlimited/unknown. Mapper передаёт всё в домен без фильтрации;
+        // domain различает три состояния через ?int $timeInMinutes.
+        $maxNode = $this->buildTreeDtoFromInput($inputData['maxRecoatingInterval'] ?? []);
         $dto->maxRecoatingInterval = $this->isTreeDtoEffectivelyEmpty($maxNode) ? null : $maxNode;
 
         $dto->manufacturer = $manufacturer;
@@ -205,26 +204,6 @@ class CoatingMapper
         return $node;
     }
 
-    /**
-     * Рекурсивно отбрасывает из nested-array точки с нулевой длительностью.
-     * Применяется только к max-серии: «без ограничения» в форме = 0/0/0, в домене — отсутствие точки.
-     */
-    private function dropZeroDurationPointsRecursively(array $raw): array
-    {
-        if (isset($raw['default']['points']) && is_array($raw['default']['points'])) {
-            $raw['default']['points'] = array_values(array_filter(
-                $raw['default']['points'],
-                fn(array $row) => $this->parseDurationInput($row) > 0,
-            ));
-        }
-        if (isset($raw['branches']) && is_array($raw['branches'])) {
-            foreach ($raw['branches'] as $key => $childRaw) {
-                $raw['branches'][$key] = $this->dropZeroDurationPointsRecursively((array) $childRaw);
-            }
-        }
-        return $raw;
-    }
-
     /** Узел считается пустым, если у него нет default-точек и нет (рекурсивно) непустых веток. */
     private function isTreeDtoEffectivelyEmpty(RecoatingIntervalTreeDTO $node): bool
     {
@@ -297,7 +276,7 @@ class CoatingMapper
     }
 
     /**
-     * @param ?list<DryingTimePointDTO> $points null = «без верхней границы» (только для max-recoat)
+     * @param ?list<DryingTimePointDTO> $points null = весь max-tree отсутствует (старая семантика).
      * @return list<array<string, mixed>>
      */
     private function decomposeSeriesForForm(?array $points): array
@@ -307,15 +286,27 @@ class CoatingMapper
         }
         return array_map(
             fn(DryingTimePointDTO $p) => array_merge(
-                $this->decomposeDurationForForm($p->time_in_minutes),
+                $this->decomposeDurationForForm($p->time_in_minutes ?? 0),
                 [
                     'temperature_at' => $p->temperature_at,
                     'time_in_minutes' => $p->time_in_minutes,
                     'is_calculated' => $p->is_calculated,
+                    'kind' => $this->kindForMinutes($p->time_in_minutes),
                 ],
             ),
             $points,
         );
+    }
+
+    private function kindForMinutes(?int $minutes): string
+    {
+        if ($minutes === null) {
+            return 'unknown';
+        }
+        if ($minutes === 0) {
+            return 'unlimited';
+        }
+        return 'duration';
     }
 
     /**
@@ -327,13 +318,37 @@ class CoatingMapper
         return array_values(array_map(function (array $raw): DryingTimePointDTO {
             $point = new DryingTimePointDTO();
             $point->temperature_at = (int) ($raw['temperature_at'] ?? 20);
-            // Поддерживаем оба формата: новый {days, hours, minutes} и старый {time_in_minutes}.
-            $point->time_in_minutes = isset($raw['time_in_minutes'])
-                ? (int) $raw['time_in_minutes']
-                : $this->parseDurationInput($raw);
+            $point->time_in_minutes = $this->resolveTimeInMinutes($raw);
             $point->is_calculated = (bool) ($raw['is_calculated'] ?? false);
             return $point;
         }, $rawPoints));
+    }
+
+    /**
+     * Резолвит time_in_minutes из формы с учётом kind:
+     *  - kind = 'duration' → парсим days/hours/minutes; 0 → null (юзер не ввёл).
+     *  - kind = 'unlimited' → 0.
+     *  - kind = 'unknown' → null.
+     *  - kind отсутствует (legacy / старый формат): парсим как duration; 0 → null.
+     */
+    private function resolveTimeInMinutes(array $raw): ?int
+    {
+        $kind = $raw['kind'] ?? null;
+
+        if ($kind === 'unlimited') {
+            return 0;
+        }
+        if ($kind === 'unknown') {
+            return null;
+        }
+
+        // duration (явный или legacy)
+        if (isset($raw['time_in_minutes']) && $raw['time_in_minutes'] !== '') {
+            $value = (int) $raw['time_in_minutes'];
+            return $value === 0 ? null : $value;
+        }
+        $value = $this->parseDurationInput($raw);
+        return $value === 0 ? null : $value;
     }
 
     /**
@@ -351,6 +366,7 @@ class CoatingMapper
                     'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
                     'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
                     'is_calculated'   => new Assert\Optional(new Assert\Type('numeric')),
+                    'kind'            => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
                 ],
                 'allowExtraFields' => true,
             ]),
