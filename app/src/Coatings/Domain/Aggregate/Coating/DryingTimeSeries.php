@@ -72,13 +72,18 @@ final readonly class DryingTimeSeries implements TimeSeries
         $points = array_map(
             fn(array $row): TimeAtTemperature => new TimeAtTemperature(
                 (int) $row['temperature_at'],
-                (int) $row['time_in_minutes'],
+                array_key_exists('time_in_minutes', $row) ? self::asNullableInt($row['time_in_minutes']) : null,
                 (bool) ($row['is_calculated'] ?? false),
             ),
             $rows,
         );
 
         return new self(...$points);
+    }
+
+    private static function asNullableInt(mixed $v): ?int
+    {
+        return $v === null ? null : (int) $v;
     }
 
     /**
@@ -111,31 +116,33 @@ final readonly class DryingTimeSeries implements TimeSeries
     {
         /** @var TimeAtTemperature|null $previous */
         $previous = null;
+        /** @var TimeAtTemperature|null $previousDuration */
+        $previousDuration = null;
 
         foreach ($points as $point) {
             if ($previous !== null) {
-                // 1. Так как массив отсортирован, дубликаты всегда будут стоять рядом
+                // 1. Дубликат температуры запрещён для любых kind'ов.
                 if ($point->temperatureAt === $previous->temperatureAt) {
-                    throw new AppException(
-                        sprintf(
-                            'Дублирующаяся температурная точка %d °C.',
-                            $point->temperatureAt,
-                        )
-                    );
+                    throw new AppException(sprintf(
+                        'Дублирующаяся температурная точка %d °C.',
+                        $point->temperatureAt,
+                    ));
                 }
+            }
 
-                // 2. Проверка физического правила: время сушки падает при росте температуры
-                if ($point->timeInMinutes > $previous->timeInMinutes) {
-                    throw new AppException(
-                        sprintf(
-                            'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
-                            $point->temperatureAt,
-                            $this->humanize($point->timeInMinutes),
-                            $previous->temperatureAt,
-                            $this->humanize($previous->timeInMinutes),
-                        )
-                    );
+            // 2. Физ-правило применяем ТОЛЬКО среди Duration-точек.
+            // Unlimited (0) и Unknown (null) — пропускаем при сравнении.
+            if ($point->timeInMinutes !== null && $point->timeInMinutes > 0) {
+                if ($previousDuration !== null && $point->timeInMinutes > $previousDuration->timeInMinutes) {
+                    throw new AppException(sprintf(
+                        'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
+                        $point->temperatureAt,
+                        $this->humanize($point->timeInMinutes),
+                        $previousDuration->temperatureAt,
+                        $this->humanize($previousDuration->timeInMinutes),
+                    ));
                 }
+                $previousDuration = $point;
             }
 
             $previous = $point;
@@ -151,6 +158,11 @@ final readonly class DryingTimeSeries implements TimeSeries
         $upper = null;
 
         foreach ($this->points as $point) {
+            // Для интерполяции учитываем только Duration-точки.
+            // Unlimited (0) и Unknown (null) — пропускаем: между ними и Duration интерполировать нельзя.
+            if ($point->timeInMinutes === null || $point->timeInMinutes === 0) {
+                continue;
+            }
             if ($point->temperatureAt <= $key) {
                 $lower = $point;
             }
