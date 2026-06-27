@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
+use App\Coatings\Domain\Aggregate\Coating\CoatingTagSearch;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -50,8 +51,9 @@ final class CoatingTagFinder
         }
 
         $qb = $this->coatingTagQueryBuilder();
-        $qb->andWhere("TS_MATCH(TO_TSVECTOR(:lang, t.title), TO_TSQUERY(:lang, :tsquery)) = TRUE")
-            ->addSelect("TS_RANK_CD(TO_TSVECTOR(:lang, t.title), TO_TSQUERY(:lang, :tsquery)) AS HIDDEN fts_rank")
+        $qb->innerJoin(CoatingTagSearch::class, 's', 'WITH', 's.tagId = t.id')
+            ->andWhere('TS_MATCH(s.searchVector, TO_TSQUERY(:lang, :tsquery)) = TRUE')
+            ->addSelect('TS_RANK_CD(s.searchVector, TO_TSQUERY(:lang, :tsquery)) AS HIDDEN fts_rank')
             ->orderBy('fts_rank', 'DESC')
             ->setMaxResults($limit)
             ->setParameter('lang', self::FTS_LANG)

@@ -76,6 +76,30 @@ final class CoatingTagFinderTest extends KernelTestCase
         self::assertSame([], $this->finder->suggest('', CoatingTag::TYPE_GENERAL));
     }
 
+    public function testSuggestFindsSuperByPrefixSupe(): void
+    {
+        // Чистим leftover из интерактивной отладки в shared dev/test БД,
+        // вместе с pivot-связями (иначе FK violation).
+        $conn = $this->em->getConnection();
+        $conn->executeStatement(
+            "DELETE FROM coatings_coating_coating_tag WHERE tag_id IN (SELECT id FROM coatings_coating_tag WHERE title = 'супер')"
+        );
+        $conn->executeStatement(
+            "DELETE FROM coatings_coating_tag WHERE title = 'супер'"
+        );
+
+        $this->makeTag('супер', CoatingTag::TYPE_GENERAL);
+
+        // Острый кейс: «супе» русским стеммером сводится к лексеме «суп»
+        // (-е — типовое падежное окончание). Indexed «супер» → лексема «супер».
+        // Префикс-tsquery 'суп:*' должен матчить лексему «супер»; если стеммер
+        // ведёт себя иначе — поймает fuzzy-fallback (WORD_SIMILARITY).
+        $result = $this->finder->suggest('супе', CoatingTag::TYPE_GENERAL);
+
+        $titles = array_map(fn(CoatingTag $t) => $t->getTitle(), $result);
+        self::assertContains('супер', $titles);
+    }
+
     public function testSuggestRespectsLimit(): void
     {
         for ($i = 0; $i < 5; $i++) {
