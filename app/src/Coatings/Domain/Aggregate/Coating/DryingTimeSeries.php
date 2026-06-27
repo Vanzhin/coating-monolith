@@ -81,11 +81,6 @@ final readonly class DryingTimeSeries implements TimeSeries
         return new self(...$points);
     }
 
-    private static function asNullableInt(mixed $v): ?int
-    {
-        return $v === null ? null : (int)$v;
-    }
-
     /**
      * @param TimeAtTemperature[] $points
      * @throws AppException
