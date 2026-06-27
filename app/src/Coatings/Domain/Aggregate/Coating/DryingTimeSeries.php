@@ -71,9 +71,9 @@ final readonly class DryingTimeSeries implements TimeSeries
     {
         $points = array_map(
             fn(array $row): TimeAtTemperature => new TimeAtTemperature(
-                (int) $row['temperature_at'],
-                array_key_exists('time_in_minutes', $row) ? self::asNullableInt($row['time_in_minutes']) : null,
-                (bool) ($row['is_calculated'] ?? false),
+                (int)$row['temperature_at'],
+                is_numeric($row['time_in_minutes']) ? (int)$row['time_in_minutes'] : null,
+                (bool)($row['is_calculated'] ?? false),
             ),
             $rows,
         );
@@ -83,7 +83,7 @@ final readonly class DryingTimeSeries implements TimeSeries
 
     private static function asNullableInt(mixed $v): ?int
     {
-        return $v === null ? null : (int) $v;
+        return $v === null ? null : (int)$v;
     }
 
     /**
@@ -123,10 +123,12 @@ final readonly class DryingTimeSeries implements TimeSeries
             if ($previous !== null) {
                 // 1. Дубликат температуры запрещён для любых kind'ов.
                 if ($point->temperatureAt === $previous->temperatureAt) {
-                    throw new AppException(sprintf(
-                        'Дублирующаяся температурная точка %d °C.',
-                        $point->temperatureAt,
-                    ));
+                    throw new AppException(
+                        sprintf(
+                            'Дублирующаяся температурная точка %d °C.',
+                            $point->temperatureAt,
+                        )
+                    );
                 }
             }
 
@@ -134,13 +136,15 @@ final readonly class DryingTimeSeries implements TimeSeries
             // Unlimited (0) и Unknown (null) — пропускаем при сравнении.
             if ($point->timeInMinutes !== null && $point->timeInMinutes > 0) {
                 if ($previousDuration !== null && $point->timeInMinutes > $previousDuration->timeInMinutes) {
-                    throw new AppException(sprintf(
-                        'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
-                        $point->temperatureAt,
-                        $this->humanize($point->timeInMinutes),
-                        $previousDuration->temperatureAt,
-                        $this->humanize($previousDuration->timeInMinutes),
-                    ));
+                    throw new AppException(
+                        sprintf(
+                            'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
+                            $point->temperatureAt,
+                            $this->humanize($point->timeInMinutes),
+                            $previousDuration->temperatureAt,
+                            $this->humanize($previousDuration->timeInMinutes),
+                        )
+                    );
                 }
                 $previousDuration = $point;
             }
