@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Aggregate\Coating;
@@ -8,21 +9,26 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Carbon\CarbonInterval;
 use PHPUnit\Framework\TestCase;
 
-class TimeAtTemperatureTest extends TestCase
+final class TimeAtTemperatureTest extends TestCase
 {
-    public function testValidConstruction(): void
+    public function testDurationPoint(): void
     {
         $point = new TimeAtTemperature(20, 10);
-
         $this->assertSame(20, $point->temperatureAt);
         $this->assertSame(10, $point->timeInMinutes);
         $this->assertFalse($point->isCalculated);
     }
 
-    public function testTimeInMinutesIsInt(): void
+    public function testUnlimitedPointIsZeroMinutes(): void
     {
-        $point = new TimeAtTemperature(20, 10);
-        $this->assertSame(10, $point->timeInMinutes);
+        $point = new TimeAtTemperature(20, 0);
+        $this->assertSame(0, $point->timeInMinutes);
+    }
+
+    public function testUnknownPointIsNullMinutes(): void
+    {
+        $point = new TimeAtTemperature(20, null);
+        $this->assertNull($point->timeInMinutes);
     }
 
     public function testNegativeMinutesThrow(): void
@@ -43,7 +49,7 @@ class TimeAtTemperatureTest extends TestCase
         $this->assertTrue($point->isCalculated);
     }
 
-    public function testGetIntervalReturnsCarbonInterval(): void
+    public function testGetIntervalForDurationReturnsCarbonInterval(): void
     {
         $point = new TimeAtTemperature(20, 150);
         $interval = $point->getInterval();
@@ -51,11 +57,41 @@ class TimeAtTemperatureTest extends TestCase
         $this->assertSame(150.0, $interval->totalMinutes);
     }
 
-    public function testJsonSerializeKeepsIntMinutes(): void
+    public function testGetIntervalForUnlimitedReturnsNull(): void
+    {
+        $point = new TimeAtTemperature(20, 0);
+        $this->assertNull($point->getInterval());
+    }
+
+    public function testGetIntervalForUnknownReturnsNull(): void
+    {
+        $point = new TimeAtTemperature(20, null);
+        $this->assertNull($point->getInterval());
+    }
+
+    public function testJsonSerializeKeepsDurationMinutes(): void
     {
         $point = new TimeAtTemperature(20, 10);
         $this->assertSame(
             ['temperature_at' => 20, 'time_in_minutes' => 10, 'is_calculated' => false],
+            $point->jsonSerialize(),
+        );
+    }
+
+    public function testJsonSerializeKeepsUnlimitedAsZero(): void
+    {
+        $point = new TimeAtTemperature(20, 0);
+        $this->assertSame(
+            ['temperature_at' => 20, 'time_in_minutes' => 0, 'is_calculated' => false],
+            $point->jsonSerialize(),
+        );
+    }
+
+    public function testJsonSerializeKeepsUnknownAsNull(): void
+    {
+        $point = new TimeAtTemperature(20, null);
+        $this->assertSame(
+            ['temperature_at' => 20, 'time_in_minutes' => null, 'is_calculated' => false],
             $point->jsonSerialize(),
         );
     }

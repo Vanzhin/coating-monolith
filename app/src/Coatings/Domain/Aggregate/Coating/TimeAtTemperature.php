@@ -8,23 +8,36 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Carbon\CarbonInterval;
 use JsonSerializable;
 
+/**
+ * Точка серии «температура → длительность».
+ *
+ * Семантика timeInMinutes:
+ *  - > 0 → реальная длительность в минутах.
+ *  - 0   → «без ограничения» (явно введено производителем).
+ *  - null → «нет данных» (производитель не указал).
+ *
+ * Конструктор отвергает только отрицательные значения. null/0 — валидны.
+ */
 final readonly class TimeAtTemperature implements JsonSerializable
 {
     public function __construct(
         public int $temperatureAt,
-        public int $timeInMinutes,
+        public ?int $timeInMinutes,
         public bool $isCalculated = false,
     ) {
-        if ($timeInMinutes <= 0) {
+        if ($timeInMinutes !== null && $timeInMinutes < 0) {
             throw new AppException(sprintf(
-                'Длительность при +%d °C должна быть положительной.',
+                'Длительность при +%d °C не может быть отрицательной.',
                 $temperatureAt,
             ));
         }
     }
 
-    public function getInterval(): CarbonInterval
+    public function getInterval(): ?CarbonInterval
     {
+        if ($this->timeInMinutes === null || $this->timeInMinutes === 0) {
+            return null;
+        }
         return CarbonInterval::minutes($this->timeInMinutes);
     }
 
