@@ -39,7 +39,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $dto->applicationMinTemp,
             $this->buildDryingTimeSeries($dto->dryToTouch),
             $this->buildDryingTimeSeries($dto->fullCure),
-            $this->treeBuilder->build($dto->minRecoatingInterval)
+            $this->treeBuilder->buildMinTree($dto->minRecoatingInterval)
                 ?? throw new AppException('Минимальный интервал перекрытия обязателен.'),
             $dto->maxRecoatingInterval !== null
                 ? $this->treeBuilder->build($dto->maxRecoatingInterval)

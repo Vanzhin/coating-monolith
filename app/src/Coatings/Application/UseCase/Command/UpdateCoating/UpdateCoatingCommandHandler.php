@@ -73,7 +73,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->setPack($dto->pack);
         }
 
-        $minTree = $this->treeBuilder->build($dto->minRecoatingInterval)
+        $minTree = $this->treeBuilder->buildMinTree($dto->minRecoatingInterval)
             ?? throw new AppException('Минимальный интервал перекрытия обязателен.');
         $coating->setMinRecoatingInterval($minTree);
 

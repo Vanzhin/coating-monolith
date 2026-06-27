@@ -27,7 +27,7 @@
                             <td>+{{ point.temperature_at }} °C</td>
                             <td>
                                 {% if point.time_in_minutes is null %}
-                                    <span class="text-muted">— нет данных</span>
+                                    <span class="text-muted">— не указано производителем</span>
                                 {% elseif point.time_in_minutes == 0 %}
                                     <span class="text-muted"><i class="bi bi-infinity"></i> без ограничения</span>
                                 {% else %}
@@ -41,7 +41,7 @@
                                 {% if maxPoint is null %}
                                     <span class="text-muted">—</span>
                                 {% elseif maxPoint.time_in_minutes is null %}
-                                    <span class="text-muted">— нет данных</span>
+                                    <span class="text-muted">— не указано производителем</span>
                                 {% elseif maxPoint.time_in_minutes == 0 %}
                                     <span class="text-muted"><i class="bi bi-infinity"></i> без ограничения</span>
                                 {% else %}

@@ -71,7 +71,7 @@ class CoatingMapper
 
         $dto->dryToTouch = $this->buildPointsFromInput($inputData['dryToTouch'] ?? []);
         $dto->fullCure = $this->buildPointsFromInput($inputData['fullCure'] ?? []);
-        // min: пустые точки доходят до домена и отвергаются TimeAtTemperature (positive-duration инвариант).
+        // min: точки валидируются в RecoatingTreeBuilder::buildMinTree — каждая обязана иметь duration > 0, иначе AppException.
         $dto->minRecoatingInterval = $this->buildTreeDtoFromInput($inputData['minRecoatingInterval'] ?? []);
         // max: точки несут kind = duration/unlimited/unknown. Mapper передаёт всё в домен без фильтрации;
         // domain различает три состояния через ?int $timeInMinutes.
@@ -269,6 +269,7 @@ class CoatingMapper
                     'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
                     'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
                     'is_calculated'   => new Assert\Optional([new Assert\Type('numeric')]),
+                    'kind'            => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
                 ],
                 'allowExtraFields' => true,
             ]),

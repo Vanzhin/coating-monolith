@@ -522,11 +522,14 @@ export default class extends Controller {
                 <input type="hidden" name="${base}[days]" value="0">
                 <input type="hidden" name="${base}[hours]" value="0">
                 <input type="hidden" name="${base}[minutes]" value="0">
+                <input type="hidden" name="${base}[kind]" value="duration">
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${base}"
                         data-target-label="${label} при +${temp}°C"
-                        data-required="1">
+                        data-required="1"
+                        data-allow-unlimited="0"
+                        data-current-kind="duration">
                     <i class="bi bi-pencil"></i> не задано
                 </button>
             </td>
@@ -558,11 +561,14 @@ export default class extends Controller {
                 <input type="hidden" name="${minBase}[days]" value="0">
                 <input type="hidden" name="${minBase}[hours]" value="0">
                 <input type="hidden" name="${minBase}[minutes]" value="0">
+                <input type="hidden" name="${minBase}[kind]" value="duration">
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${minBase}"
                         data-target-label="Минимальный интервал перекрытия при +${temp}°C"
-                        data-required="1">
+                        data-required="1"
+                        data-allow-unlimited="0"
+                        data-current-kind="duration">
                     <i class="bi bi-pencil"></i> не задано
                 </button>
             </td>
@@ -570,11 +576,14 @@ export default class extends Controller {
                 <input type="hidden" name="${maxBase}[days]" value="0">
                 <input type="hidden" name="${maxBase}[hours]" value="0">
                 <input type="hidden" name="${maxBase}[minutes]" value="0">
+                <input type="hidden" name="${maxBase}[kind]" value="unlimited">
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${maxBase}"
                         data-target-label="Максимальный интервал перекрытия при +${temp}°C"
-                        data-required="0">
+                        data-required="0"
+                        data-allow-unlimited="1"
+                        data-current-kind="unlimited">
                     <i class="bi bi-pencil"></i> без ограничения
                 </button>
             </td>

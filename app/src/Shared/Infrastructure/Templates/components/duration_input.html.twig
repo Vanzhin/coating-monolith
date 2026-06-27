@@ -23,15 +23,15 @@
     {% set kind = value.kind|default(null) %}
     {% if kind is null %}
         {% if value.time_in_minutes is defined and value.time_in_minutes is null %}
-            {% set kind = 'unknown' %}
+            {% set kind = required ? 'duration' : 'unknown' %}
         {% elseif value.time_in_minutes is defined and value.time_in_minutes == 0 %}
-            {% set kind = required ? 'unknown' : 'unlimited' %}
+            {% set kind = required ? 'duration' : 'unlimited' %}
         {% else %}
             {% set total = days * 1440 + hours * 60 + minutes %}
             {% if total > 0 %}
                 {% set kind = 'duration' %}
             {% else %}
-                {% set kind = required ? 'unknown' : 'unlimited' %}
+                {% set kind = required ? 'duration' : 'unlimited' %}
             {% endif %}
         {% endif %}
     {% endif %}

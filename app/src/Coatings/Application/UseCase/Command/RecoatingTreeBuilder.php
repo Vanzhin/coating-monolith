@@ -21,9 +21,23 @@ final readonly class RecoatingTreeBuilder
 {
     public function build(RecoatingIntervalTreeDTO $node, string $key = 'default'): ?RecoatingIntervalTree
     {
+        return $this->buildNode($node, $key, false);
+    }
+
+    /**
+     * Сборка min-дерева с дополнительной валидацией: каждая точка обязана иметь
+     * timeInMinutes > 0 (duration). unknown / unlimited не допускаются.
+     */
+    public function buildMinTree(RecoatingIntervalTreeDTO $node, string $key = 'default'): ?RecoatingIntervalTree
+    {
+        return $this->buildNode($node, $key, true);
+    }
+
+    private function buildNode(RecoatingIntervalTreeDTO $node, string $key, bool $requireDuration): ?RecoatingIntervalTree
+    {
         $children = [];
         foreach ($node->branches as $childKey => $childDto) {
-            $childTree = $this->build($childDto, (string) $childKey);
+            $childTree = $this->buildNode($childDto, (string) $childKey, $requireDuration);
             if ($childTree !== null) {
                 $children[] = $childTree;
             }
@@ -45,6 +59,17 @@ final readonly class RecoatingTreeBuilder
                 implode(', ', $childLabels),
                 $nodeLabel,
             ));
+        }
+
+        if ($requireDuration) {
+            foreach ($node->default as $point) {
+                if (!($point->time_in_minutes > 0)) {
+                    throw new AppException(sprintf(
+                        'Минимальный интервал перекрытия при +%d°C не может быть пустым или без ограничения. Введите длительность.',
+                        $point->temperature_at,
+                    ));
+                }
+            }
         }
 
         return new RecoatingIntervalTree($this->buildSeries($node->default), $key, ...$children);
