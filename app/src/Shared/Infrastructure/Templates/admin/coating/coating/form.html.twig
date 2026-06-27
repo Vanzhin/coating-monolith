@@ -338,21 +338,42 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row g-2">
-                            <div class="col">
-                                <label class="form-label small text-muted">Дни</label>
-                                <input type="number" class="form-control" min="0" max="365" value="0"
-                                       data-coating-form-target="modalDays">
+                        <div class="mb-3" data-coating-form-target="kindGroup">
+                            <div class="btn-group w-100" role="group" aria-label="Тип значения">
+                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-duration"
+                                       value="duration" data-coating-form-target="kindRadio"
+                                       data-action="change->coating-form#onKindChange">
+                                <label class="btn btn-outline-primary" for="durationModalKind-duration">Длительность</label>
+
+                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unlimited"
+                                       value="unlimited" data-coating-form-target="kindRadio"
+                                       data-action="change->coating-form#onKindChange">
+                                <label class="btn btn-outline-secondary" for="durationModalKind-unlimited" data-coating-form-target="kindUnlimitedLabel">Без ограничения</label>
+
+                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unknown"
+                                       value="unknown" data-coating-form-target="kindRadio"
+                                       data-action="change->coating-form#onKindChange">
+                                <label class="btn btn-outline-secondary" for="durationModalKind-unknown" data-coating-form-target="kindUnknownLabel">Нет данных</label>
                             </div>
-                            <div class="col">
-                                <label class="form-label small text-muted">Часы</label>
-                                <input type="number" class="form-control" min="0" max="23" value="0"
-                                       data-coating-form-target="modalHours">
-                            </div>
-                            <div class="col">
-                                <label class="form-label small text-muted">Минуты</label>
-                                <input type="number" class="form-control" min="0" max="59" value="0"
-                                       data-coating-form-target="modalMinutes">
+                        </div>
+
+                        <div data-coating-form-target="durationFields">
+                            <div class="row g-2">
+                                <div class="col">
+                                    <label class="form-label small text-muted">Дни</label>
+                                    <input type="number" class="form-control" min="0" max="365" value="0"
+                                           data-coating-form-target="modalDays">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted">Часы</label>
+                                    <input type="number" class="form-control" min="0" max="23" value="0"
+                                           data-coating-form-target="modalHours">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted">Минуты</label>
+                                    <input type="number" class="form-control" min="0" max="59" value="0"
+                                           data-coating-form-target="modalMinutes">
+                                </div>
                             </div>
                         </div>
                     </div>

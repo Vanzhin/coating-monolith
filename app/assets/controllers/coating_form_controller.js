@@ -14,44 +14,103 @@ export default class extends Controller {
         'modal', 'modalLabel',
         'modalDays', 'modalHours', 'modalMinutes',
         'calcBtn',
+        'kindGroup', 'kindRadio', 'kindUnlimitedLabel', 'kindUnknownLabel', 'durationFields',
     ];
 
     connect() {
         this.currentName = null;
-        if (this.hasModalTarget) {
-            this._onShow = this._handleModalShow.bind(this);
-            this.modalTarget.addEventListener('show.bs.modal', this._onShow);
+        const modalEl = document.getElementById('durationModal');
+        if (modalEl) {
+            this._onShow = this.onShowDurationModal.bind(this);
+            modalEl.addEventListener('show.bs.modal', this._onShow);
         }
     }
 
     disconnect() {
-        if (this.hasModalTarget && this._onShow) {
-            this.modalTarget.removeEventListener('show.bs.modal', this._onShow);
+        const modalEl = document.getElementById('durationModal');
+        if (modalEl && this._onShow) {
+            modalEl.removeEventListener('show.bs.modal', this._onShow);
         }
     }
 
     // --- Модалка ---
 
-    _handleModalShow(event) {
-        const btn = event.relatedTarget;
-        this.currentName = btn.getAttribute('data-target-name');
+    onShowDurationModal(event) {
+        const button = event.relatedTarget;
+        if (!button) return;
+        this.currentName = button.dataset.targetName;
+        const required = button.dataset.required === '1';
+        const allowUnlimited = button.dataset.allowUnlimited === '1';
+        const currentKind = button.dataset.currentKind || 'duration';
 
-        const tr = btn.closest('tr');
+        const tr = button.closest('tr');
         const tempInput = tr?.querySelector('input[name$="[temperature_at]"]');
-        const labelTpl = btn.getAttribute('data-target-label') || 'Длительность';
+        const labelTpl = button.getAttribute('data-target-label') || 'Длительность';
         this.modalLabelTarget.textContent = tempInput
             ? labelTpl.replace(/\+-?\d+\s*°C/, '+' + tempInput.value + ' °C')
             : labelTpl;
 
-        this.modalDaysTarget.value    = this._hidden(this.currentName, 'days')?.value    || 0;
-        this.modalHoursTarget.value   = this._hidden(this.currentName, 'hours')?.value   || 0;
-        this.modalMinutesTarget.value = this._hidden(this.currentName, 'minutes')?.value || 0;
+        // Скрываем недоступные radio для данного контекста.
+        if (this.hasKindUnlimitedLabelTarget) {
+            this.kindUnlimitedLabelTarget.style.display = allowUnlimited ? '' : 'none';
+            this.kindUnlimitedLabelTarget.previousElementSibling.style.display = allowUnlimited ? '' : 'none';
+        }
+        if (this.hasKindUnknownLabelTarget) {
+            // Для required (min/сушка) скрываем «нет данных» — должно быть введено duration.
+            const showUnknown = !required;
+            this.kindUnknownLabelTarget.style.display = showUnknown ? '' : 'none';
+            this.kindUnknownLabelTarget.previousElementSibling.style.display = showUnknown ? '' : 'none';
+        }
+
+        // Подсветить текущий kind.
+        const safeKind = (currentKind === 'unlimited' && allowUnlimited)
+            || (currentKind === 'unknown' && !required)
+            || currentKind === 'duration'
+            ? currentKind
+            : 'duration';
+
+        this.kindRadioTargets.forEach(r => {
+            r.checked = r.value === safeKind;
+        });
+
+        // Подгрузить значения days/hours/minutes из текущей строки.
+        this.modalDaysTarget.value    = this._readHidden(this.currentName, 'days');
+        this.modalHoursTarget.value   = this._readHidden(this.currentName, 'hours');
+        this.modalMinutesTarget.value = this._readHidden(this.currentName, 'minutes');
 
         if (this.hasCalcBtnTarget) {
             this.calcBtnTarget.disabled = tr
                 ? this._gatherSiblingPoints(tr).length < 2
                 : true;
         }
+
+        this._applyKindVisibility(safeKind);
+    }
+
+    onKindChange() {
+        const kind = this._currentRadioKind();
+        this._applyKindVisibility(kind);
+        if (kind !== 'duration') {
+            this.modalDaysTarget.value = 0;
+            this.modalHoursTarget.value = 0;
+            this.modalMinutesTarget.value = 0;
+        }
+    }
+
+    _applyKindVisibility(kind) {
+        if (this.hasDurationFieldsTarget) {
+            this.durationFieldsTarget.style.display = kind === 'duration' ? '' : 'none';
+        }
+    }
+
+    _currentRadioKind() {
+        const checked = this.kindRadioTargets.find(r => r.checked);
+        return checked ? checked.value : 'duration';
+    }
+
+    _readHidden(name, key) {
+        const el = this.element.querySelector(`input[type="hidden"][name="${name}[${key}]"]`);
+        return el ? el.value : 0;
     }
 
     /** Синхронизирует температуру в hidden-mirror строки (для парных серий). */
@@ -64,12 +123,29 @@ export default class extends Controller {
 
     saveDuration() {
         if (!this.currentName) return;
-        this._hidden(this.currentName, 'days').value    = this._intVal(this.modalDaysTarget);
-        this._hidden(this.currentName, 'hours').value   = this._intVal(this.modalHoursTarget);
-        this._hidden(this.currentName, 'minutes').value = this._intVal(this.modalMinutesTarget);
+
+        const kind = this._currentRadioKind();
+        const isDuration = kind === 'duration';
+
+        this._hidden(this.currentName, 'days').value    = isDuration ? this._intVal(this.modalDaysTarget) : 0;
+        this._hidden(this.currentName, 'hours').value   = isDuration ? this._intVal(this.modalHoursTarget) : 0;
+        this._hidden(this.currentName, 'minutes').value = isDuration ? this._intVal(this.modalMinutesTarget) : 0;
+
+        // Хидден поле [kind] должно существовать (создаётся макросом). Если нет — создаём.
+        let kindHidden = this._hidden(this.currentName, 'kind');
+        if (!kindHidden) {
+            kindHidden = document.createElement('input');
+            kindHidden.type = 'hidden';
+            kindHidden.name = `${this.currentName}[kind]`;
+            this.element.querySelector(`button[data-target-name="${this.currentName}"]`)?.parentElement?.appendChild(kindHidden);
+        }
+        kindHidden.value = kind;
 
         const btn = this.element.querySelector(`button[data-target-name="${this.currentName}"]`);
-        if (btn) this._refreshButton(btn);
+        if (btn) {
+            btn.dataset.currentKind = kind;
+            this._refreshButton(btn);
+        }
 
         Modal.getOrCreateInstance(this.modalTarget).hide();
     }
@@ -377,21 +453,34 @@ export default class extends Controller {
     }
 
     _refreshButton(btn) {
-        const name = btn.getAttribute('data-target-name');
-        const required = btn.getAttribute('data-required') === '1';
-        const d = parseInt(this._hidden(name, 'days')?.value   || 0, 10);
-        const h = parseInt(this._hidden(name, 'hours')?.value  || 0, 10);
-        const m = parseInt(this._hidden(name, 'minutes')?.value || 0, 10);
-        const total = d * 1440 + h * 60 + m;
+        const kind = btn.dataset.currentKind || 'duration';
+        btn.classList.toggle('btn-outline-primary', kind === 'duration');
+        btn.classList.toggle('btn-outline-secondary', kind !== 'duration');
+        btn.classList.toggle('text-muted', kind !== 'duration');
 
-        btn.classList.remove('btn-outline-secondary', 'text-muted', 'btn-outline-primary');
-        if (total === 0) {
-            btn.classList.add('btn-outline-secondary', 'text-muted');
-            btn.innerHTML = '<i class="bi bi-pencil"></i> ' + (required ? 'не задано' : 'без ограничения');
+        if (kind === 'duration') {
+            const d = parseInt(this._readHidden(btn.dataset.targetName, 'days'), 10) || 0;
+            const h = parseInt(this._readHidden(btn.dataset.targetName, 'hours'), 10) || 0;
+            const m = parseInt(this._readHidden(btn.dataset.targetName, 'minutes'), 10) || 0;
+            const totalMin = d * 1440 + h * 60 + m;
+            btn.innerHTML = this._formatMinutesShort(totalMin);
+        } else if (kind === 'unlimited') {
+            btn.innerHTML = '<i class="bi bi-infinity"></i> без ограничения';
         } else {
-            btn.classList.add('btn-outline-primary');
-            btn.innerHTML = this._format(total);
+            btn.innerHTML = '<i class="bi bi-pencil"></i> нет данных';
         }
+    }
+
+    _formatMinutesShort(totalMinutes) {
+        if (totalMinutes <= 0) return '0 мин';
+        const d = Math.floor(totalMinutes / 1440);
+        const h = Math.floor((totalMinutes - d * 1440) / 60);
+        const m = totalMinutes - d * 1440 - h * 60;
+        const parts = [];
+        if (d) parts.push(`${d} д`);
+        if (h) parts.push(`${h} ч`);
+        if (m) parts.push(`${m} мин`);
+        return parts.length ? parts.join(' ') : '0 мин';
     }
 
     _format(totalMinutes) {
