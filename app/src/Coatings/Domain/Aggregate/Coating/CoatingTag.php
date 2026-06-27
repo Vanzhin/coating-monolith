@@ -13,6 +13,8 @@ use Doctrine\Common\Collections\Collection;
 
 class CoatingTag extends Aggregate
 {
+    public const TYPE_GENERAL = 'general';
+
     private readonly string $id;
     private string $title;
     private ?string $type;

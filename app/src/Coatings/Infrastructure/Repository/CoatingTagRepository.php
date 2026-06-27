@@ -21,7 +21,8 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
 
     public function add(CoatingTag $coatingTag): void
     {
-        // TODO: Implement add() method.
+        $this->getEntityManager()->persist($coatingTag);
+        $this->getEntityManager()->flush();
     }
 
     public function findByTitle(string $title): PaginationResult
@@ -41,7 +42,7 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
 
     public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag
     {
-        // TODO: Implement findOneByTitleAndType() method.
+        return $this->findOneBy(['title' => $title, 'type' => $type]);
     }
 
     public function findByFilter(CoatingTagsFilter $filter): PaginationResult
