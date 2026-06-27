@@ -230,4 +230,110 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
             'atmospheric default should be 3 h (180 min)',
         );
     }
+
+    public function testSubmittingMaxTreeWithRootUnknownAndChildrenSetIsAccepted(): void
+    {
+        // Сценарий из жалобы пользователя:
+        //  - root.max: для +35°C → нет данных (unknown)
+        //  - immersion.default.max: для +20°C → 12 дней (duration)
+        //  - immersion.esi.default.max: для +20°C → 10 дней (duration)
+        // До фикса (mapper выкидывал 0/0/0) builder падал на пустом root.default + children.
+        // После — все точки с kind сохраняются как unknown/duration; домен принимает.
+        $this->client->request('POST', "/cabinet/coating/coating/{$this->coatingId}/edit", [
+            'title' => 'Updated Coating',
+            'description' => 'Updated description.',
+            'volumeSolid' => 50,
+            'massDensity' => 1.5,
+            'base' => 'EP',
+            'minDft' => 80,
+            'maxDft' => 150,
+            'tdsDft' => 100,
+            'applicationMinTemp' => 5,
+            'pack' => 1.0,
+            'dryToTouch' => [
+                ['temperature_at' => 20, 'kind' => 'duration', 'days' => 0, 'hours' => 1, 'minutes' => 0],
+            ],
+            'fullCure' => [
+                ['temperature_at' => 20, 'kind' => 'duration', 'days' => 1, 'hours' => 0, 'minutes' => 0],
+            ],
+            'manufacturer' => ['id' => $this->manufacturerId],
+            'minRecoatingInterval' => [
+                'default' => ['points' => [
+                    ['temperature_at' => 35, 'kind' => 'duration', 'days' => 0, 'hours' => 2, 'minutes' => 0],
+                ]],
+                'branches' => [
+                    'immersion' => [
+                        'default' => ['points' => [
+                            ['temperature_at' => 20, 'kind' => 'duration', 'days' => 0, 'hours' => 20, 'minutes' => 0],
+                        ]],
+                        'branches' => [
+                            'esi' => [
+                                'default' => ['points' => [
+                                    ['temperature_at' => 20, 'kind' => 'duration', 'days' => 5, 'hours' => 2, 'minutes' => 0],
+                                ]],
+                                'branches' => [],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'maxRecoatingInterval' => [
+                'default' => ['points' => [
+                    // unknown: производитель не указал верхнюю границу для общего случая
+                    ['temperature_at' => 35, 'kind' => 'unknown', 'days' => 0, 'hours' => 0, 'minutes' => 0],
+                ]],
+                'branches' => [
+                    'immersion' => [
+                        'default' => ['points' => [
+                            ['temperature_at' => 20, 'kind' => 'duration', 'days' => 12, 'hours' => 0, 'minutes' => 0],
+                        ]],
+                        'branches' => [
+                            'esi' => [
+                                'default' => ['points' => [
+                                    ['temperature_at' => 20, 'kind' => 'duration', 'days' => 10, 'hours' => 0, 'minutes' => 0],
+                                ]],
+                                'branches' => [],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertResponseRedirects(
+            null,
+            null,
+            'Expected redirect after successful POST; got: ' . $this->client->getResponse()->getContent(),
+        );
+
+        // Reload и проверка состояния
+        $container = $this->client->getContainer();
+        $repoEm = $container->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $repoEm->clear();
+
+        /** @var \App\Coatings\Domain\Repository\CoatingRepositoryInterface $repo */
+        $repo = $container->get(\App\Coatings\Domain\Repository\CoatingRepositoryInterface::class);
+        $coating = $repo->findOneById($this->coatingId);
+        $this->assertNotNull($coating);
+
+        $maxTree = $coating->getMaxRecoatingInterval();
+        $this->assertNotNull($maxTree, 'max-tree должен быть сохранён (не null), несмотря на root unknown');
+
+        // root.default.points[0] должна быть unknown (time_in_minutes = null)
+        $rootDefault = $maxTree->default;
+        $this->assertCount(1, $rootDefault->points);
+        $this->assertNull($rootDefault->points[0]->timeInMinutes, 'root.max@+35°C должно быть null (unknown)');
+
+        // immersion.default.points[0] должна быть duration 12 дней = 17280 минут
+        $immersionNode = $maxTree->findNode('immersion');
+        $this->assertNotNull($immersionNode);
+        $this->assertSame(17280, $immersionNode->default->points[0]->timeInMinutes);
+
+        // immersion.esi.default.points[0] = 10 дней = 14400 минут
+        $esiNode = $maxTree->findNode('immersion', 'ep');
+        // ESI ключ может зависеть от case-normalize; пробуем оба варианта
+        $esiNode = $maxTree->findNode('immersion', 'esi') ?? $maxTree->findNode('immersion', 'ESI');
+        $this->assertNotNull($esiNode, 'esi branch должен существовать');
+        $this->assertSame(14400, $esiNode->default->points[0]->timeInMinutes);
+    }
 }
