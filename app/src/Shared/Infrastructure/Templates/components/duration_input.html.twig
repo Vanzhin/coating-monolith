@@ -14,7 +14,7 @@
    Открывает общую модалку #durationModal (объявлена в form.html.twig). Stimulus-контроллер
    coating-form подхватывает kind через data-kind / data-allow-unlimited и переключает inputs.
 #}
-{% macro duration_input(name, value, required=false, label='Длительность', allow_unlimited=false) %}
+{% macro duration_input(name, value, required=false, label='Значение', allow_unlimited=false) %}
     {% set days = (value.days ?? 0) %}
     {% set hours = (value.hours ?? 0) %}
     {% set minutes = (value.minutes ?? 0) %}
