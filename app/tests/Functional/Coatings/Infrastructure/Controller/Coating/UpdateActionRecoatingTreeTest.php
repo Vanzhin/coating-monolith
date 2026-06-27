@@ -330,7 +330,6 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $this->assertSame(17280, $immersionNode->default->points[0]->timeInMinutes);
 
         // immersion.esi.default.points[0] = 10 дней = 14400 минут
-        $esiNode = $maxTree->findNode('immersion', 'ep');
         // ESI ключ может зависеть от case-normalize; пробуем оба варианта
         $esiNode = $maxTree->findNode('immersion', 'esi') ?? $maxTree->findNode('immersion', 'ESI');
         $this->assertNotNull($esiNode, 'esi branch должен существовать');
