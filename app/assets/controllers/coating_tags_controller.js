@@ -30,6 +30,7 @@ export default class extends Controller {
                 maxItems: 10,
                 closeOnSelect: true,
                 searchKeys: ['value'],
+                appendTarget: this.element.parentNode,
             },
             templates: {
                 dropdownItemNoMatch: (data) => this._noMatchTemplate(data),
@@ -46,7 +47,9 @@ export default class extends Controller {
 
         this.tagify.on('input', this._onInput.bind(this));
         this.tagify.on('change', this._renderHiddenInputs.bind(this));
-        this.tagify.DOM.scope.addEventListener('click', this._onDropdownClick.bind(this));
+
+        this._onDropdownClick = this._onDropdownClick.bind(this);
+        document.body.addEventListener('click', this._onDropdownClick);
 
         this._renderHiddenInputs();
     }
@@ -57,6 +60,9 @@ export default class extends Controller {
         }
         if (this._debounceTimer) {
             clearTimeout(this._debounceTimer);
+        }
+        if (this._onDropdownClick) {
+            document.body.removeEventListener('click', this._onDropdownClick);
         }
     }
 
@@ -136,11 +142,11 @@ export default class extends Controller {
 
         // Создаём по одному hidden на каждый chip.
         const values = this.tagify.value || [];
-        values.forEach((v, i) => {
+        values.forEach(v => {
             if (!v.id) return;
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = `tags[${i}][id]`;
+            input.name = 'tags[][id]';
             input.value = v.id;
             input.className = 'coating-tag-hidden';
             formGroup.appendChild(input);

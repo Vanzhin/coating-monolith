@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
+use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\UpdateCoating\UpdateCoatingCommand;
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTagsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Repository\CoatingTagsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
@@ -27,10 +27,11 @@ use Symfony\Component\Routing\Annotation\Route;
 class UpdateAction extends AbstractController
 {
     public function __construct(
-        private readonly QueryBusInterface   $queryBus,
-        private readonly CommandBusInterface $commandBus,
-        private readonly Validator           $validator,
-        private readonly CoatingMapper       $coatingMapper,
+        private readonly QueryBusInterface      $queryBus,
+        private readonly CommandBusInterface    $commandBus,
+        private readonly Validator              $validator,
+        private readonly CoatingMapper          $coatingMapper,
+        private readonly GeneralTagsJsonHydrator $hydrator,
     )
     {
     }
@@ -69,7 +70,7 @@ class UpdateAction extends AbstractController
                     compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'),
                     [
                         'coatingBases' => CoatingBase::cases(),
-                        'existingTagsJson' => $this->buildExistingTagsJson($inputData['tags'] ?? []),
+                        'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? []),
                     ],
                 ));
             }
@@ -80,30 +81,9 @@ class UpdateAction extends AbstractController
             compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'),
             [
                 'coatingBases' => CoatingBase::cases(),
-                'existingTagsJson' => $this->buildExistingTagsJson($coating->coatingDTO->tags),
+                'existingTagsJson' => $this->hydrator->hydrateAsJson($coating->coatingDTO->tags),
             ],
         ));
     }
 
-    /**
-     * Builds JSON array of existing general tags from the DTO tags.
-     *
-     * @param array<mixed> $tags
-     */
-    private function buildExistingTagsJson(array $tags): string
-    {
-        $generalTags = array_filter($tags, static function (mixed $t): bool {
-            $type = is_object($t) ? $t->type : ($t['type'] ?? null);
-            return $type === CoatingTag::TYPE_GENERAL;
-        });
-
-        $mapped = array_values(array_map(static function (mixed $t): array {
-            if (is_object($t)) {
-                return ['id' => $t->id, 'title' => $t->title];
-            }
-            return ['id' => $t['id'] ?? '', 'title' => $t['title'] ?? ''];
-        }, $generalTags));
-
-        return json_encode($mapped, JSON_UNESCAPED_UNICODE);
-    }
 }

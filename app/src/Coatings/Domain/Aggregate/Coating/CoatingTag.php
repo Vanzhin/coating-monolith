@@ -27,7 +27,7 @@ class CoatingTag extends Aggregate
     public function __construct(
         string                  $title,
         CoatingTagSpecification $specification,
-        string                  $type = null,
+        ?string                 $type = null,
     )
     {
         $this->id = UuidService::generate();
@@ -35,6 +35,7 @@ class CoatingTag extends Aggregate
         $this->coatings = new ArrayCollection();
         $this->setTitle($title);
         $this->setType($type);
+        $this->specification->titleAndTypeCoatingTagSpecification->satisfy($this);
     }
 
     public function getId(): string
@@ -56,14 +57,12 @@ class CoatingTag extends Aggregate
     {
         $this->title = $title;
         AssertService::maxLength($this->title, 100);
-        $this->checkTitleAndType();
     }
 
     public function setType(?string $type): void
     {
         $this->type = $type;
         AssertService::maxLength($this->type, 100);
-        $this->checkTitleAndType();
     }
 
     public function addCoating(Coating $coating): void
@@ -71,12 +70,6 @@ class CoatingTag extends Aggregate
         if (!$this->coatings->contains($coating)) {
             $this->coatings->add($coating);
         }
-    }
-
-    private function checkTitleAndType(): void
-    {
-        AssertService::maxLength($this->title, 100);
-        $this->specification->titleAndTypeCoatingTagSpecification->satisfy($this);
     }
 
 }
