@@ -26,19 +26,29 @@
                         <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
                             <td>+{{ point.temperature_at }} °C</td>
                             <td>
-                                {{ point.time_in_minutes|duration_minutes }}
-                                {% if point.is_calculated %}
-                                    <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                {% if point.time_in_minutes is null %}
+                                    <span class="text-muted">— нет данных</span>
+                                {% elseif point.time_in_minutes == 0 %}
+                                    <span class="text-muted"><i class="bi bi-infinity"></i> без ограничения</span>
+                                {% else %}
+                                    {{ point.time_in_minutes|duration_minutes }}
+                                    {% if point.is_calculated %}
+                                        <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td>
-                                {% if maxPoint %}
+                                {% if maxPoint is null %}
+                                    <span class="text-muted">—</span>
+                                {% elseif maxPoint.time_in_minutes is null %}
+                                    <span class="text-muted">— нет данных</span>
+                                {% elseif maxPoint.time_in_minutes == 0 %}
+                                    <span class="text-muted"><i class="bi bi-infinity"></i> без ограничения</span>
+                                {% else %}
                                     {{ maxPoint.time_in_minutes|duration_minutes }}
                                     {% if maxPoint.is_calculated %}
                                         <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
                                     {% endif %}
-                                {% else %}
-                                    <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
                         </tr>

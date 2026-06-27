@@ -85,7 +85,7 @@
 {# Per-field форматтер. Знает про специфические DTO-типы. #}
 {% macro format_value(field, value) %}
     {% if field == 'maxRecoatingInterval' and value is null %}
-        <span class="text-muted">Без верхней границы</span>
+        <span class="text-muted">— нет данных по всему покрытию</span>
     {% elseif value is null %}
         <span class="text-muted">—</span>
     {% elseif field == 'dryToTouch' or field == 'fullCure' %}
