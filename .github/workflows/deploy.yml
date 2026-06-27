@@ -165,13 +165,20 @@ jobs:
             TELEGRAM_NOTIFICATION_BOT_SECRET=${{ secrets.TELEGRAM_NOTIFICATION_BOT_SECRET }}
             EOF
 
-            # Webpack assets (host'овый node/yarn — установлен один раз на provisioning).
-            # Yarn install использует git config insteadOf для https-clone'ов
-            # (так как deploy-юзер не имеет SSH-доступа к github.com).
-            cd app
-            yarn install --frozen-lockfile
-            yarn build
-            cd ..
+            # Webpack assets — собираем в одноразовом node:22-alpine контейнере.
+            # Это снимает зависимость от host'овой версии Node (Tagify 4.37+
+            # требует Node ≥22, host обычно старее) и делает сборку
+            # воспроизводимой через одинаковый pinned image.
+            # --user "$(id -u):$(id -g)" сохраняет ownership деплой-пользователя
+            # на host'е (иначе node_modules/public/build окажутся root-owned).
+            # HOME=/tmp — yarn пишет туда свой cache, а не лезет в /root.
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              -e HOME=/tmp \
+              -v "$(pwd)/app:/app" \
+              -w /app \
+              node:22-alpine \
+              sh -c "yarn install --frozen-lockfile && yarn build"
 
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
