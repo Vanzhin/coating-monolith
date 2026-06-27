@@ -10,6 +10,7 @@ use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTa
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Repository\CoatingTagsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
@@ -61,7 +62,10 @@ class AddAction extends AbstractController
                 $error = $e->getMessage();
                 return $this->render(
                     'admin/coating/coating/form.html.twig',
-                    array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
+                    array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), [
+                        'coatingBases' => CoatingBase::cases(),
+                        'existingTagsJson' => $this->buildExistingTagsJson($inputData['tags'] ?? []),
+                    ]),
                 );
             }
         }
@@ -80,7 +84,34 @@ class AddAction extends AbstractController
 
         return $this->render(
             'admin/coating/coating/form.html.twig',
-            array_merge(compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'), ['coatingBases' => CoatingBase::cases()]),
+            array_merge(compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'), [
+                'coatingBases' => CoatingBase::cases(),
+                'existingTagsJson' => $this->buildExistingTagsJson(($inputData['tags'] ?? [])),
+            ]),
         );
+    }
+
+    /**
+     * Builds JSON array of existing general tags from the input data tags array.
+     * Input tags array may be either CoatingTagDTO objects (from DTO transformer)
+     * or raw arrays with 'id' and 'title' keys (from POST input data).
+     *
+     * @param array<mixed> $tags
+     */
+    private function buildExistingTagsJson(array $tags): string
+    {
+        $generalTags = array_filter($tags, static function (mixed $t): bool {
+            $type = is_object($t) ? $t->type : ($t['type'] ?? null);
+            return $type === CoatingTag::TYPE_GENERAL;
+        });
+
+        $mapped = array_values(array_map(static function (mixed $t): array {
+            if (is_object($t)) {
+                return ['id' => $t->id, 'title' => $t->title];
+            }
+            return ['id' => $t['id'] ?? '', 'title' => $t['title'] ?? ''];
+        }, $generalTags));
+
+        return json_encode($mapped, JSON_UNESCAPED_UNICODE);
     }
 }

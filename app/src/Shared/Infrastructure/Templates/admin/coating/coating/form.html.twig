@@ -106,6 +106,17 @@
                                 </div>
                             {% endfor %}
                         </div>
+                        <div class="col-12" data-coating-tags-group>
+                            <label class="form-label">Теги</label>
+                            <input type="text"
+                                   data-controller="coating-tags"
+                                   data-coating-tags-existing-value="{{ existingTagsJson|default('[]') }}"
+                                   data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_tag_suggest') }}"
+                                   data-coating-tags-create-url-value="{{ path('app_cabinet_coating_coating_tag_create') }}"
+                                   class="form-control"
+                                   placeholder="Начните вводить тег...">
+                            <div class="form-text">Привязанные general-теги. Начните вводить — autocomplete покажет похожие; если ничего не найдено — кликните «Создать "..."».</div>
+                        </div>
                     </div>
                 </div>
             </div>

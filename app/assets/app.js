@@ -8,6 +8,7 @@ import './bootstrap.js';
 
 // any CSS you import will output into a single css file (app.css in this case)
 import './styles/app.css';
+import '@yaireo/tagify/dist/tagify.css';
 
 // inline-скрипты в шаблонах зовут глобальный bootstrap.* (Tooltip/Modal/Offcanvas/Alert/Collapse) —
 // пробрасываем модуль в window, иначе ReferenceError: bootstrap is not defined.
