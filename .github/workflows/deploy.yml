@@ -166,19 +166,32 @@ jobs:
             EOF
 
             # Webpack assets — собираем в одноразовом node:22-alpine контейнере.
-            # Это снимает зависимость от host'овой версии Node (Tagify 4.37+
-            # требует Node ≥22, host обычно старее) и делает сборку
-            # воспроизводимой через одинаковый pinned image.
-            # --user "$(id -u):$(id -g)" сохраняет ownership деплой-пользователя
-            # на host'е (иначе node_modules/public/build окажутся root-owned).
-            # HOME=/tmp — yarn пишет туда свой cache, а не лезет в /root.
+            # Снимает зависимость от host'овой версии Node (Tagify 4.37+ требует
+            # Node ≥22) и делает сборку воспроизводимой через pinned image.
+            #
+            # В yarn.lock одна git-зависимость (@symfony/stimulus-bridge) с URL
+            # 'git+ssh://git@github.com/...'. У деплой-юзера нет SSH-доступа к
+            # github.com, поэтому ставим `git` через apk и через `git config
+            # insteadOf` переписываем ssh-URL'ы на https-эквиваленты — так же,
+            # как это делал host'овый global git config до этого изменения.
+            #
+            # Контейнер бежит root'ом (apk требует root) → в конце chown'им
+            # node_modules + public/build на деплой-юзера, иначе следующий
+            # деплой не сможет их перезаписать.
             docker run --rm \
-              --user "$(id -u):$(id -g)" \
               -e HOME=/tmp \
               -v "$(pwd)/app:/app" \
               -w /app \
               node:22-alpine \
-              sh -c "yarn install --frozen-lockfile && yarn build"
+              sh -c "
+                set -e
+                apk add --no-cache git
+                git config --global --add url.'https://github.com/'.insteadOf 'ssh://git@github.com/'
+                git config --global --add url.'https://github.com/'.insteadOf 'git@github.com:'
+                yarn install --frozen-lockfile
+                yarn build
+                chown -R $(id -u):$(id -g) node_modules public/build
+              "
 
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
