@@ -150,8 +150,8 @@
                         <input type="hidden" name="{{ maxPrefix }}[{{ i }}][temperature_at]"
                                value="{{ temp }}" data-temp-mirror="{{ nodeId }}-{{ i }}">
                     </td>
-                    <td>{{ duration_input(minPrefix ~ '[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
-                    <td>{{ duration_input(maxPrefix ~ '[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C') }}</td>
+                    <td>{{ duration_input(minPrefix ~ '[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C', false) }}</td>
+                    <td>{{ duration_input(maxPrefix ~ '[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C', true) }}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-sm btn-outline-danger"
                                 data-action="click->coating-form#removeRow"

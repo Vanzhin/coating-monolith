@@ -232,7 +232,7 @@
                                             <span class="input-group-text">°C</span>
                                         </div>
                                     </td>
-                                    <td>{{ duration_input('dryToTouch[' ~ i ~ ']', row, true, 'Сухой на отлип при +' ~ (row.temperature_at ?? 20) ~ '°C') }}</td>
+                                    <td>{{ duration_input('dryToTouch[' ~ i ~ ']', row, true, 'Сухой на отлип при +' ~ (row.temperature_at ?? 20) ~ '°C', false) }}</td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                 data-action="click->coating-form#removeRow"
@@ -275,7 +275,7 @@
                                             <span class="input-group-text">°C</span>
                                         </div>
                                     </td>
-                                    <td>{{ duration_input('fullCure[' ~ i ~ ']', row, true, 'Полное отверждение при +' ~ (row.temperature_at ?? 20) ~ '°C') }}</td>
+                                    <td>{{ duration_input('fullCure[' ~ i ~ ']', row, true, 'Полное отверждение при +' ~ (row.temperature_at ?? 20) ~ '°C', false) }}</td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                 data-action="click->coating-form#removeRow"

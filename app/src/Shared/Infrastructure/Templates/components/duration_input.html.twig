@@ -1,35 +1,63 @@
 {# Кликабельный «дисплей-инпут» длительности.
-   value — ассоциативный массив с ключами days/hours/minutes.
-   На клик открывается общая модалка #durationModal (объявлена в form.html.twig),
-   подхватывает текущие значения из hidden-инпутов по data-target-name и пишет обратно
-   при сохранении (через Stimulus-контроллер `coating-form`).
+   Параметры:
+     name — префикс name= для hidden inputs.
+     value — ассоциативный массив с ключами days/hours/minutes/kind/time_in_minutes.
+       Семантика kind:
+         'duration'  → введена длительность (days/hours/minutes > 0).
+         'unlimited' → производитель явно сказал «без ограничения». time_in_minutes = 0.
+         'unknown'   → производитель не указал. time_in_minutes = null.
+         (если ключ kind отсутствует — определяем по time_in_minutes / days+hours+minutes).
+     required — для min-серий и сушек, в модалке не показываем «без ограничения» и «нет данных».
+     label — подпись модалки.
+     allow_unlimited — true для max-recoating; false — для min-recoating и сушек.
 
-   Флаг is_calculated через эту форму не задаётся — он принадлежит логике домена
-   (Series::getPoint) и виден только при просмотре расчётных точек в превью.
+   Открывает общую модалку #durationModal (объявлена в form.html.twig). Stimulus-контроллер
+   coating-form подхватывает kind через data-kind / data-allow-unlimited и переключает inputs.
 #}
-{% macro duration_input(name, value, required=false, label='Длительность') %}
+{% macro duration_input(name, value, required=false, label='Длительность', allow_unlimited=false) %}
     {% set days = (value.days ?? 0) %}
     {% set hours = (value.hours ?? 0) %}
     {% set minutes = (value.minutes ?? 0) %}
-    {% set totalMinutes = days * 1440 + hours * 60 + minutes %}
-    {% set isEmpty = totalMinutes == 0 %}
 
-    <input type="hidden" name="{{ name }}[days]"    value="{{ days }}">
-    <input type="hidden" name="{{ name }}[hours]"   value="{{ hours }}">
-    <input type="hidden" name="{{ name }}[minutes]" value="{{ minutes }}">
+    {# Resolve kind: явный из value либо по эвристике для legacy-данных. #}
+    {% set kind = value.kind|default(null) %}
+    {% if kind is null %}
+        {% if value.time_in_minutes is defined and value.time_in_minutes is null %}
+            {% set kind = 'unknown' %}
+        {% elseif value.time_in_minutes is defined and value.time_in_minutes == 0 %}
+            {% set kind = required ? 'unknown' : 'unlimited' %}
+        {% else %}
+            {% set total = days * 1440 + hours * 60 + minutes %}
+            {% if total > 0 %}
+                {% set kind = 'duration' %}
+            {% else %}
+                {% set kind = required ? 'unknown' : 'unlimited' %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+
+    <input type="hidden" name="{{ name }}[days]"    value="{{ kind == 'duration' ? days : 0 }}">
+    <input type="hidden" name="{{ name }}[hours]"   value="{{ kind == 'duration' ? hours : 0 }}">
+    <input type="hidden" name="{{ name }}[minutes]" value="{{ kind == 'duration' ? minutes : 0 }}">
+    <input type="hidden" name="{{ name }}[kind]"    value="{{ kind }}">
+
+    {% set totalMinutes = days * 1440 + hours * 60 + minutes %}
 
     <button type="button"
-            class="btn btn-sm duration-display-btn {{ isEmpty ? 'btn-outline-secondary text-muted' : 'btn-outline-primary' }}"
+            class="btn btn-sm duration-display-btn {{ kind == 'duration' ? 'btn-outline-primary' : 'btn-outline-secondary text-muted' }}"
             data-bs-toggle="modal"
             data-bs-target="#durationModal"
             data-target-name="{{ name }}"
             data-target-label="{{ label }}"
-            data-required="{{ required ? '1' : '0' }}">
-        {% if isEmpty %}
-            <i class="bi bi-pencil"></i>
-            {{ required ? 'не задано' : 'без ограничения' }}
-        {% else %}
+            data-required="{{ required ? '1' : '0' }}"
+            data-allow-unlimited="{{ allow_unlimited ? '1' : '0' }}"
+            data-current-kind="{{ kind }}">
+        {% if kind == 'duration' %}
             {{ totalMinutes|duration_minutes_short }}
+        {% elseif kind == 'unlimited' %}
+            <i class="bi bi-infinity"></i> без ограничения
+        {% else %}
+            <i class="bi bi-pencil"></i> нет данных
         {% endif %}
     </button>
 {% endmacro %}
