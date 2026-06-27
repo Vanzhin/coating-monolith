@@ -187,7 +187,19 @@ jobs:
             # manager_php-cli — run-to-completion (его command делает composer install + migrate и выходит),
             # поэтому используем `run --rm` для одноразовых консольных команд, а не `exec`.
             docker compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console doctrine:migrations:migrate --no-interaction
-            docker compose -f docker-compose.prod.yml run --rm manager_php-cli php bin/console cache:warmup
+
+            # КРИТИЧНО: bind-mount ./app:/app шадовит запечённый в образ var/cache.
+            # Хостовый app/var/cache/prod хранит DI-снапшот предыдущего релиза
+            # (ContainerXxx/getXxxService.php с старыми сигнатурами конструкторов).
+            # cache:warmup сам по себе НЕ удаляет stale-файлы — только дописывает
+            # недостающие. Поэтому сначала чистим, потом warmup.
+            # Финальный chown — php-fpm бежит www-data, manager_php-cli пишет
+            # cache root'ом → без этого monolog/twig/whatever не пишут.
+            docker compose -f docker-compose.prod.yml run --rm manager_php-cli sh -c "
+              rm -rf var/cache/prod/* &&
+              php bin/console cache:warmup --env=prod --no-debug &&
+              chown -R www-data:www-data var/cache var/log
+            "
 
             echo "Deployment completed successfully!"
             
