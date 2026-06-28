@@ -449,12 +449,13 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Автоматическое скрытие flash-toast'ов через 5 секунд.
-        // Раньше селектор был '.alert' (слишком широкий) — закрывал и
-        // inline-алерты (ошибки формы, empty-state «Ничего не найдено»),
-        // которые должны жить до явного dismiss пользователем.
-        const flashAlerts = document.querySelectorAll('.flash-messages .alert');
-        flashAlerts.forEach(alert => {
+        // Автоматическое скрытие flash-toast'ов через 5 секунд — ТОЛЬКО для
+        // success'ов. Warning / danger / info остаются до явного dismiss:
+        // ошибки и предупреждения требуют внимания (например, impersonator-
+        // алерт должен висеть всё время сессии), success — подтверждение
+        // успешного действия, его можно сворачивать.
+        const flashAutoClose = document.querySelectorAll('.flash-messages .alert-success');
+        flashAutoClose.forEach(alert => {
             setTimeout(() => {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
