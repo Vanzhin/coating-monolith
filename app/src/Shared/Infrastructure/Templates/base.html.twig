@@ -449,18 +449,21 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Автоматическое скрытие flash-toast'ов через 5 секунд — ТОЛЬКО для
-        // success'ов. Warning / danger / info остаются до явного dismiss:
-        // ошибки и предупреждения требуют внимания (например, impersonator-
-        // алерт должен висеть всё время сессии), success — подтверждение
-        // успешного действия, его можно сворачивать.
-        const flashAutoClose = document.querySelectorAll('.flash-messages .alert-success');
-        flashAutoClose.forEach(alert => {
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }, 5000);
-        });
+        // Автоматическое скрытие flash-toast'ов: success'ы — 5 сек (короткое
+        // подтверждение), warning/danger/info — 10 сек (нужно успеть прочитать,
+        // но пропадают сами). Inline-алерты (не в .flash-messages) остаются
+        // до явного dismiss — это контентные сообщения (empty-state, ошибки
+        // формы), а не toast'ы.
+        const closeAfter = (selector, delay) => {
+            document.querySelectorAll(selector).forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, delay);
+            });
+        };
+        closeAfter('.flash-messages .alert-success', 5000);
+        closeAfter('.flash-messages .alert:not(.alert-success)', 10000);
 
         // Инициализация tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
