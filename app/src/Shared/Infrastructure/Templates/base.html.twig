@@ -449,9 +449,12 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Автоматическое скрытие alert'ов через 5 секунд
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
+        // Автоматическое скрытие flash-toast'ов через 5 секунд.
+        // Раньше селектор был '.alert' (слишком широкий) — закрывал и
+        // inline-алерты (ошибки формы, empty-state «Ничего не найдено»),
+        // которые должны жить до явного dismiss пользователем.
+        const flashAlerts = document.querySelectorAll('.flash-messages .alert');
+        flashAlerts.forEach(alert => {
             setTimeout(() => {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
