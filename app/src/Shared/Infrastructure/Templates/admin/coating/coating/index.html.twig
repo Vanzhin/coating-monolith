@@ -300,13 +300,19 @@
                 {% if search %}
                     {# Специфичное сообщение для поискового empty-state: показываем
                        исходный запрос + подсказку. На multi-word fuzzy не отрабатывает
-                       по дизайну (см. CoatingRepository::findByFilter, Option C). #}
-                    <div class="alert alert-info text-center mt-3" role="status">
-                        <i class="bi bi-search me-1"></i>
-                        Ничего не найдено по запросу «<strong>{{ search }}</strong>».
-                        <div class="small text-muted mt-1">
+                       по дизайну (см. CoatingRepository::findByFilter, Option C).
+                       Плашка не исчезает автоматически (см. base.html.twig auto-dismiss
+                       сужен до .flash-messages .alert). #}
+                    <div class="alert alert-warning text-center mt-3 py-4 shadow-sm" role="status">
+                        <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
+                        <h5 class="alert-heading mb-2">Ничего не найдено</h5>
+                        <p class="mb-2">
+                            По запросу «<strong>{{ search }}</strong>» совпадений нет.
+                        </p>
+                        <p class="small text-muted mb-0">
+                            Каждое слово должно встретиться в названии, описании или тегах.
                             Попробуйте сократить запрос или использовать другие слова.
-                        </div>
+                        </p>
                     </div>
                 {% else %}
                     {% include 'components/empty.html.twig' %}
