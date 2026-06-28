@@ -112,7 +112,10 @@
                                 {% endif %}
                             </div>
                             {% if canEdit %}
-                                <div class="d-flex gap-2 flex-shrink-0">
+                                {# На <md кнопки выстраиваются в столбик (≈38px шириной
+                                   вместо ≈130px рядом) — высвобождает место под title+
+                                   description+chips на iPhone SE (375px). #}
+                                <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
                                     {% include '/components/edit_delete.html.twig'
                                         with {
                                         'edit': 'app_cabinet_coating_coating_update',

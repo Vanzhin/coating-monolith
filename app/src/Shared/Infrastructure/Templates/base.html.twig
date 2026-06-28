@@ -31,7 +31,10 @@
         }
 
         body {
+            /* fallback для <iOS 15.4 / <Chrome 108; dvh учитывает iOS Safari
+               address-bar (без него контент скачет при show/hide URL-бара). */
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
         }
@@ -162,8 +165,9 @@
 
         .back-to-top {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            /* safe-area-inset-* — отступ от iOS home-bar / notch на iPhone X+. */
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            right: calc(20px + env(safe-area-inset-right, 0px));
             z-index: 1000;
             display: none;
             width: 40px;
@@ -172,6 +176,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* Touch-target ≥44px (Apple HIG, WCAG 2.5.5 AA) для duration-кнопок
+           на mobile. На desktop остаётся btn-sm — там mouse-pointer. */
+        @media (max-width: 767.98px) {
+            .duration-display-btn {
+                min-height: 44px;
+            }
         }
 
         .user-avatar {
