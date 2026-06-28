@@ -31,8 +31,10 @@
         </div>
 
         <div class="row g-3">
-            {# Сайдбар: чекбоксы видимых полей. Логика toggle — Stimulus в Task 7. #}
-            <aside class="col-lg-3">
+            {# Сайдбар: чекбоксы видимых полей. Логика toggle — Stimulus в Task 7.
+               На <lg сайдбар уходит ПОД таблицу (order-2), чтобы пользователь
+               сразу видел сравнение и не скроллил через 15 чекбоксов. #}
+            <aside class="col-lg-3 order-2 order-lg-1">
                 <div class="card">
                     <div class="card-header fw-semibold small">Видимые поля</div>
                     <ul class="list-group list-group-flush">
@@ -50,7 +52,7 @@
                 </div>
             </aside>
 
-            <main class="col-lg-9">
+            <main class="col-lg-9 order-1 order-lg-2">
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">

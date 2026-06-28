@@ -33,7 +33,7 @@
 <div class="border rounded p-3"
      data-recoating-root
      data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
-    <ul class="nav nav-tabs mb-3" role="tablist" data-recoating-tabs>
+    <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" role="tablist" data-recoating-tabs>
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab"
                     data-bs-target="#recoating-pane-root" type="button" role="tab">
@@ -119,6 +119,7 @@
         </div>
     {% endif %}
 
+    <div class="table-responsive">
     <table class="table table-sm align-middle mb-1">
         <thead>
             <tr>
@@ -163,6 +164,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-sm btn-outline-secondary"
                 data-action="click->coating-form#addRow"

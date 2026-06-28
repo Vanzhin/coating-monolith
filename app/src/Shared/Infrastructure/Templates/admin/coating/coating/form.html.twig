@@ -350,7 +350,9 @@
                     </div>
                     <div class="modal-body">
                         <div class="mb-3" data-coating-form-target="kindGroup">
-                            <div class="btn-group w-100" role="group" aria-label="Тип значения">
+                            {# btn-group-sm + сокращённые лейблы на <sm чтобы три кнопки помещались
+                               в модалку на iPhone SE (375px). На sm+ показываем полные тексты. #}
+                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Тип значения">
                                 <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-duration"
                                        value="duration" data-coating-form-target="kindRadio"
                                        data-action="change->coating-form#onKindChange">
@@ -359,12 +361,18 @@
                                 <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unlimited"
                                        value="unlimited" data-coating-form-target="kindRadio"
                                        data-action="change->coating-form#onKindChange">
-                                <label class="btn btn-outline-secondary" for="durationModalKind-unlimited" data-coating-form-target="kindUnlimitedLabel">Без ограничения</label>
+                                <label class="btn btn-outline-secondary" for="durationModalKind-unlimited"
+                                       data-coating-form-target="kindUnlimitedLabel"
+                                       title="Без ограничения">
+                                    <span class="d-sm-none">Без огр.</span>
+                                    <span class="d-none d-sm-inline">Без ограничения</span>
+                                </label>
 
                                 <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unknown"
                                        value="unknown" data-coating-form-target="kindRadio"
                                        data-action="change->coating-form#onKindChange">
-                                <label class="btn btn-outline-secondary" for="durationModalKind-unknown" data-coating-form-target="kindUnknownLabel">Нет данных</label>
+                                <label class="btn btn-outline-secondary" for="durationModalKind-unknown"
+                                       data-coating-form-target="kindUnknownLabel">Нет данных</label>
                             </div>
                         </div>
 
