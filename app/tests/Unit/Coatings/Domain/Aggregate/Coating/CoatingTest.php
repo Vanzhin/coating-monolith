@@ -265,6 +265,43 @@ final class CoatingTest extends TestCase
         );
     }
 
+    public function testWideningRangeBeforeAddingHigherPointSucceeds(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+
+        // Сценарий: пользователь расширяет диапазон ДО того как добавить
+        // более горячие точки. Это ключевое для UpdateCoatingCommandHandler
+        // — temperature-границы должны устанавливаться раньше series-сеттеров.
+        $coating->setDryingMaxTemp(80);
+        $coating->setMinRecoatingInterval(
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(75, 60))),
+        );
+
+        $this->assertSame(80, $coating->getDryingMaxTemp());
+    }
+
+    public function testAddingHigherPointBeforeWideningRangeThrows(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+
+        // Обратный порядок ломается — это документация для будущих рефакторов
+        // UpdateCoatingCommandHandler: НЕ ставить series раньше temperature-границ.
+        $this->expectException(AppException::class);
+        $coating->setMinRecoatingInterval(
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(75, 60))),
+        );
+    }
+
     public function testRejectsRecoatingNestedBranchPointOutsideRange(): void
     {
         $this->expectException(AppException::class);

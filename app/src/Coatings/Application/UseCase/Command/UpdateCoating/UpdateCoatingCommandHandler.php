@@ -50,6 +50,24 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         if (isset($dto->dftRange)) {
             $coating->setDftRange($this->buildDftRange($dto->dftRange));
         }
+
+        // Температурные границы ДО любых series-сеттеров. Если пользователь
+        // расширяет диапазон (например max 50→80) И добавляет точку 75°C —
+        // series-сеттер validate'нул бы 75 против ещё СТАРОГО max=50 и бросил
+        // AppException до того как dryingMaxTemp успеет обновиться.
+        // dryingMaxTemp перед applicationMinTemp — расширяем «потолок» прежде
+        // чем двигать «пол» (см. setApplicationMinTemp validate).
+        // Edge-case: narrowing-with-fixed-points (max 50→40 при существующих
+        // точках 50°C, которые в этом же UPDATE двигаются в 40°C) — здесь
+        // setDryingMaxTemp(40) всё равно бросит на старых точках. Это редкий
+        // сценарий, фикс — два сохранения (сначала точки, потом узить границу).
+        if (isset($dto->dryingMaxTemp)) {
+            $coating->setDryingMaxTemp($dto->dryingMaxTemp);
+        }
+        if (isset($dto->applicationMinTemp)) {
+            $coating->setApplicationMinTemp($dto->applicationMinTemp);
+        }
+
         if (!empty($dto->dryToTouch)) {
             $coating->setDryToTouch($this->buildDryingTimeSeries($dto->dryToTouch));
         }
@@ -65,15 +83,6 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         }
         if (!empty($dto->base) && CoatingBase::tryFrom($dto->base) !== null) {
             $coating->setBase(CoatingBase::from($dto->base));
-        }
-        // dryingMaxTemp ДО applicationMinTemp — расширяем «потолок» прежде чем
-        // двигать «пол», иначе при app_min >= текущего drying_max validate бросит
-        // на промежуточном состоянии до того как dryingMaxTemp обновится.
-        if (isset($dto->dryingMaxTemp)) {
-            $coating->setDryingMaxTemp($dto->dryingMaxTemp);
-        }
-        if (isset($dto->applicationMinTemp)) {
-            $coating->setApplicationMinTemp($dto->applicationMinTemp);
         }
         if (!empty($dto->pack)) {
             $coating->setPack($dto->pack);
