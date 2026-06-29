@@ -16,6 +16,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
 final class CoatingTest extends TestCase
@@ -218,9 +219,75 @@ final class CoatingTest extends TestCase
         );
     }
 
+    public function testDefaultsDryingMaxTempTo50(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $this->assertSame(50, $coating->getDryingMaxTemp());
+    }
+
+    public function testRejectsApplicationMinGreaterOrEqualToDryingMax(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/строго меньше/');
+        $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+            applicationMinTemp: 60,
+            dryingMaxTemp: 50,
+        );
+    }
+
+    public function testRejectsDryToTouchPointBelowApplicationMin(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
+        $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+            applicationMinTemp: 10,
+            dryingMaxTemp: 50,
+            dryToTouch: new DryingTimeSeries(new TimeAtTemperature(5, 60)), // 5 < 10
+        );
+    }
+
+    public function testRejectsRecoatingTreePointAboveDryingMax(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
+        $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(80, 60))), // 80 > 50
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+    }
+
+    public function testRejectsRecoatingNestedBranchPointOutsideRange(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
+        $childBranch = new RecoatingIntervalTree(
+            new DryingTimeSeries(new TimeAtTemperature(70, 60)), // вложенная точка > 50
+            'atmospheric',
+        );
+        $tree = new RecoatingIntervalTree(
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            'default',
+            $childBranch,
+        );
+        $this->makeCoating(min: $tree, max: null, applicationMinTemp: 5, dryingMaxTemp: 50);
+    }
+
     private function makeCoating(
         RecoatingIntervalTree $min,
         ?RecoatingIntervalTree $max,
+        int $applicationMinTemp = 5,
+        int $dryingMaxTemp = 50,
+        ?DryingTimeSeries $dryToTouch = null,
+        ?DryingTimeSeries $fullCure = null,
     ): Coating {
         $manufacturer = $this->createMock(Manufacturer::class);
         $manufacturer->method('getId')->willReturn('00000000-0000-0000-0000-000000000001');
@@ -237,15 +304,16 @@ final class CoatingTest extends TestCase
             1.2,
             CoatingBase::EP,
             new DftRange(new PositiveNumberRange(80, 150), 100, ThicknessType::MIC),
-            5,
-            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
-            new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
+            $applicationMinTemp,
+            $dryToTouch ?? new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            $fullCure ?? new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
             $min,
             $max,
             1.0,
             null,
             $manufacturer,
             $spec,
+            $dryingMaxTemp,
         );
     }
 }

@@ -66,6 +66,12 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         if (!empty($dto->base) && CoatingBase::tryFrom($dto->base) !== null) {
             $coating->setBase(CoatingBase::from($dto->base));
         }
+        // dryingMaxTemp ДО applicationMinTemp — расширяем «потолок» прежде чем
+        // двигать «пол», иначе при app_min >= текущего drying_max validate бросит
+        // на промежуточном состоянии до того как dryingMaxTemp обновится.
+        if (isset($dto->dryingMaxTemp)) {
+            $coating->setDryingMaxTemp($dto->dryingMaxTemp);
+        }
         if (isset($dto->applicationMinTemp)) {
             $coating->setApplicationMinTemp($dto->applicationMinTemp);
         }

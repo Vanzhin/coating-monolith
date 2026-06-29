@@ -32,6 +32,7 @@ final class CompareAction extends AbstractController
         'pack',
         'thinner',
         'applicationMinTemp',
+        'dryingMaxTemp',
         'dftRange.min',
         'dftRange.max',
         'dftRange.tds_dft',

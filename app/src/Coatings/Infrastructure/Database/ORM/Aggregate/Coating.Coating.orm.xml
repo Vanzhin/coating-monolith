@@ -15,6 +15,7 @@
                enum-type="App\Coatings\Domain\Aggregate\Coating\CoatingBase"/>
         <field name="dftRange" column="dft_range" type="dft_range"/>
         <field name="applicationMinTemp" column="application_min_temp" type="integer" length="3"/>
+        <field name="dryingMaxTemp" column="drying_max_temp" type="integer" length="3"/>
         <field name="dryToTouch" column="dry_to_touch" type="drying_time_series">
             <options>
                 <option name="jsonb">true</option>

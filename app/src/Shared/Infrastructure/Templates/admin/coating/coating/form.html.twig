@@ -202,6 +202,16 @@
                                 <span class="input-group-text">°C</span>
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <label for="inputDryingMaxTemp" class="form-label">Макс температура сушки</label>
+                            <div class="input-group">
+                                <input type="number" value="{{ inputData.dryingMaxTemp|default(50) }}" name="dryingMaxTemp"
+                                       id="inputDryingMaxTemp" class="form-control"
+                                       required min="0" max="250">
+                                <span class="input-group-text">°C</span>
+                            </div>
+                            <div class="form-text">Все точки сушки/перекрытия должны быть в [мин нанесения, макс сушки].</div>
+                        </div>
                     </div>
                 </div>
             </div>

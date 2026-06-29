@@ -68,6 +68,9 @@ class CoatingMapper
         $dftRange->type = ThicknessType::MIC->value;
         $dto->dftRange = $dftRange;
         $dto->applicationMinTemp = (int) $inputData['applicationMinTemp'];
+        $dto->dryingMaxTemp = isset($inputData['dryingMaxTemp']) && $inputData['dryingMaxTemp'] !== ''
+            ? (int) $inputData['dryingMaxTemp']
+            : 50;
 
         $dto->dryToTouch = $this->buildPointsFromInput($inputData['dryToTouch'] ?? []);
         $dto->fullCure = $this->buildPointsFromInput($inputData['fullCure'] ?? []);
@@ -161,6 +164,10 @@ class CoatingMapper
                 new Assert\Type('numeric'),
                 new Assert\Range(['min' => -30, 'max' => 50, 'notInRangeMessage' => 'Мин Т нанесения должна быть от {{ min }} до {{ max }}.']),
             ],
+            'dryingMaxTemp' => new Assert\Optional([
+                new Assert\Type('numeric'),
+                new Assert\Range(['min' => 0, 'max' => 250, 'notInRangeMessage' => 'Макс Т сушки должна быть от {{ min }} до {{ max }}.']),
+            ]),
             'dryToTouch'           => $this->seriesFieldConstraints(required: true),
             'fullCure'             => $this->seriesFieldConstraints(required: true),
             // min обязателен на структурном уровне; content-валидация (хотя бы одна точка > 0)

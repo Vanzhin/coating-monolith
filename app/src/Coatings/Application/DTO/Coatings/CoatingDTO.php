@@ -28,6 +28,9 @@ class CoatingDTO
 
     public int $applicationMinTemp;
 
+    /** Верхняя граница рабочего температурного диапазона. По умолчанию 50 °C. */
+    public int $dryingMaxTemp = 50;
+
     /** @var list<DryingTimePointDTO> */
     public array $dryToTouch;
 

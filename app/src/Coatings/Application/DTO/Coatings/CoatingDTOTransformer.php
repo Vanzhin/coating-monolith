@@ -48,6 +48,7 @@ class CoatingDTOTransformer
             ? $this->treeDtoFromTree($entity->getMaxRecoatingInterval())
             : null;
         $dto->applicationMinTemp = $entity->getApplicationMinTemp();
+        $dto->dryingMaxTemp = $entity->getDryingMaxTemp();
         $dto->dftRange = $dftRangeDto;
         $dto->massDensity = $entity->getMassDensity();
         $dto->base = $entity->getBase()->value;

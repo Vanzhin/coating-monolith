@@ -26,6 +26,8 @@ class Coating extends Aggregate
     private CoatingBase $base;
     private DftRange $dftRange;
     private int $applicationMinTemp;
+    /** Верхняя граница рабочего температурного диапазона (точки сушки/перекрытия должны быть ≤). */
+    private int $dryingMaxTemp = 50;
     private DryingTimeSeries $dryToTouch;
     private DryingTimeSeries $fullCure;
     private RecoatingIntervalTree $minRecoatingInterval;
@@ -55,6 +57,7 @@ class Coating extends Aggregate
         ?string $thinner,
         Manufacturer $manufacturer,
         CoatingSpecification $specification,
+        int $dryingMaxTemp = 50,
     ) {
         $this->id = $id;
         $this->tags = new ArrayCollection();
@@ -66,6 +69,9 @@ class Coating extends Aggregate
         $this->setMassDensity($massDensity);
         $this->setBase($base);
         $this->setDftRange($dftRange);
+        // dryingMaxTemp ДО applicationMinTemp — иначе если applicationMinTemp >= default 50,
+        // validateTemperatureRange бросит до того как dryingMaxTemp получит реальное значение.
+        $this->setDryingMaxTemp($dryingMaxTemp);
         $this->setApplicationMinTemp($applicationMinTemp);
         $this->setDryToTouch($dryToTouch);
         $this->setFullCure($fullCure);
@@ -91,6 +97,8 @@ class Coating extends Aggregate
     public function getDftRange(): DftRange { return $this->dftRange; }
 
     public function getApplicationMinTemp(): int { return $this->applicationMinTemp; }
+
+    public function getDryingMaxTemp(): int { return $this->dryingMaxTemp; }
 
     public function getDryToTouch(): DryingTimeSeries { return $this->dryToTouch; }
 
@@ -148,16 +156,25 @@ class Coating extends Aggregate
     public function setApplicationMinTemp(int $applicationMinTemp): void
     {
         $this->applicationMinTemp = $applicationMinTemp;
+        $this->validateTemperatureRange();
+    }
+
+    public function setDryingMaxTemp(int $dryingMaxTemp): void
+    {
+        $this->dryingMaxTemp = $dryingMaxTemp;
+        $this->validateTemperatureRange();
     }
 
     public function setDryToTouch(DryingTimeSeries $dryToTouch): void
     {
         $this->dryToTouch = $dryToTouch;
+        $this->validateTemperatureRange();
     }
 
     public function setFullCure(DryingTimeSeries $fullCure): void
     {
         $this->fullCure = $fullCure;
+        $this->validateTemperatureRange();
     }
 
     public function setPack(float $pack): void
@@ -216,6 +233,7 @@ class Coating extends Aggregate
     {
         (new CoatingRecoatingTreeValidator())->validate($minRecoatingInterval);
         $this->minRecoatingInterval = $minRecoatingInterval;
+        $this->validateTemperatureRange();
     }
 
     public function setMaxRecoatingInterval(?RecoatingIntervalTree $maxRecoatingInterval): void
@@ -224,6 +242,76 @@ class Coating extends Aggregate
             (new CoatingRecoatingTreeValidator())->validate($maxRecoatingInterval);
         }
         $this->maxRecoatingInterval = $maxRecoatingInterval;
+        $this->validateTemperatureRange();
+    }
+
+    /**
+     * Доменный инвариант температурного диапазона:
+     *  1) applicationMinTemp < dryingMaxTemp (строго);
+     *  2) каждая TimeAtTemperature точка во всех seriях лежит в [min, max].
+     *
+     * Вызывается из сеттеров обоих границ и из сеттеров всех 4 серий
+     * (dryToTouch, fullCure, min/maxRecoatingInterval).
+     * isset()-guard для applicationMinTemp — он set'ится позже dryingMaxTemp
+     * в конструкторе, поэтому validate может вызваться когда ещё не все
+     * поля проинициализированы.
+     */
+    private function validateTemperatureRange(): void
+    {
+        if (!isset($this->applicationMinTemp)) {
+            return;
+        }
+        if ($this->applicationMinTemp >= $this->dryingMaxTemp) {
+            throw new AppException(sprintf(
+                'Минимальная температура нанесения (%+d °C) должна быть строго меньше максимальной температуры сушки (%+d °C).',
+                $this->applicationMinTemp,
+                $this->dryingMaxTemp,
+            ));
+        }
+        foreach ($this->collectAllSeries() as $label => $series) {
+            foreach ($series->points as $point) {
+                $t = $point->temperatureAt;
+                if ($t < $this->applicationMinTemp || $t > $this->dryingMaxTemp) {
+                    throw new AppException(sprintf(
+                        'Температура %+d °C (%s) вне допустимого диапазона %+d..%+d °C.',
+                        $t,
+                        $label,
+                        $this->applicationMinTemp,
+                        $this->dryingMaxTemp,
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * @return \Generator<string, DryingTimeSeries>
+     */
+    private function collectAllSeries(): \Generator
+    {
+        if (isset($this->dryToTouch)) {
+            yield 'сухой на отлип' => $this->dryToTouch;
+        }
+        if (isset($this->fullCure)) {
+            yield 'полное отверждение' => $this->fullCure;
+        }
+        if (isset($this->minRecoatingInterval)) {
+            yield from $this->walkRecoatingTree($this->minRecoatingInterval, 'мин. интервал перекрытия');
+        }
+        if (isset($this->maxRecoatingInterval) && $this->maxRecoatingInterval !== null) {
+            yield from $this->walkRecoatingTree($this->maxRecoatingInterval, 'макс. интервал перекрытия');
+        }
+    }
+
+    /**
+     * @return \Generator<string, DryingTimeSeries>
+     */
+    private function walkRecoatingTree(RecoatingIntervalTree $tree, string $prefix): \Generator
+    {
+        yield $prefix => $tree->default;
+        foreach ($tree->getChildren() as $key => $child) {
+            yield from $this->walkRecoatingTree($child, $prefix . ' → ' . $key);
+        }
     }
 
     /* --- БИЗНЕС-ЛОГИКА РАСЧЕТА ИНТЕРВАЛОВ (СТРОГАЯ ТИПИЗАЦИЯ) --- */

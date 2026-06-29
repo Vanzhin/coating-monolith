@@ -44,6 +44,7 @@ final readonly class CoatingMaker
         array             $coatingTagIds,
         float             $pack,
         ?string           $thinner,
+        int               $dryingMaxTemp = 50,
     ): Coating {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
 
@@ -64,6 +65,7 @@ final readonly class CoatingMaker
             $thinner,
             $manufacturer,
             $this->coatingSpecification,
+            $dryingMaxTemp,
         );
 
         foreach ($coatingTagIds as $coatingTagId) {
