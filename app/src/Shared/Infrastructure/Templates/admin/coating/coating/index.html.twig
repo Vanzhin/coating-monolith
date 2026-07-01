@@ -35,44 +35,98 @@
                 <button type="submit" class="btn btn-primary">Найти</button>
             </div>
 
+            {# Счётчик активных фасетов + инициатор раскрытия панели. #}
+            {% set activeFacetsCount = selectedManufacturerIds.count
+                + (appMinTempPreset ? 1 : 0)
+                + (volumeSolidPreset ? 1 : 0) %}
+
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <button class="btn btn-outline-secondary btn-sm" type="button"
                         data-bs-toggle="collapse"
                         data-bs-target="#advancedFilter"
-                        aria-expanded="{{ selectedManufacturerIds.count > 0 ? 'true' : 'false' }}"
+                        aria-expanded="{{ activeFacetsCount > 0 ? 'true' : 'false' }}"
                         aria-controls="advancedFilter">
                     <i class="bi bi-funnel"></i> Расширенный поиск
-                    {% if selectedManufacturerIds.count > 0 %}
-                        <span class="badge bg-primary ms-1">{{ selectedManufacturerIds.count }}</span>
+                    {% if activeFacetsCount > 0 %}
+                        <span class="badge bg-primary ms-1">{{ activeFacetsCount }}</span>
                     {% endif %}
                 </button>
 
-                {% if search or selectedManufacturerIds.count > 0 %}
+                {% if search or activeFacetsCount > 0 %}
                     <a href="{{ path('app_cabinet_coating_coating_list') }}" class="text-muted small">
                         Сбросить
                     </a>
                 {% endif %}
             </div>
 
-            <div class="collapse {% if selectedManufacturerIds.count > 0 %} show {% endif %}" id="advancedFilter">
+            <div class="collapse {% if activeFacetsCount > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
-                    <label class="form-label">Производитель</label>
-                    <div class="row">
-                        {% for m in manufacturers %}
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input type="checkbox"
-                                           class="form-check-input"
-                                           name="manufacturerIds[]"
-                                           value="{{ m.id }}"
-                                           id="manufacturer-{{ m.id }}"
-                                           {% if m.id in selectedManufacturerIds.list %} checked {% endif %}>
-                                    <label class="form-check-label" for="manufacturer-{{ m.id }}">
-                                        {{ m.title }}
+                    <div class="row g-4">
+                        {# Пресет-чипы для температуры. Радио + Bootstrap btn-check —
+                           можно выбрать ровно один пресет. Пустой radio (name="…Preset"
+                           value="") = сброс фасета: submit без Preset-параметра. #}
+                        <div class="col-lg-6">
+                            <label class="form-label fw-semibold">Мин температура нанесения</label>
+                            <div class="d-flex flex-wrap gap-1">
+                                <input type="radio" class="btn-check" name="appMinTempPreset"
+                                       id="appMinTempPreset-none" value=""
+                                       {% if appMinTempPreset is null %}checked{% endif %}
+                                       onchange="this.form.submit()">
+                                <label class="btn btn-sm btn-outline-secondary" for="appMinTempPreset-none">Любая</label>
+
+                                {% for key, p in appMinTempPresets %}
+                                    <input type="radio" class="btn-check" name="appMinTempPreset"
+                                           id="appMinTempPreset-{{ key }}" value="{{ key }}"
+                                           {% if appMinTempPreset == key %}checked{% endif %}
+                                           onchange="this.form.submit()">
+                                    <label class="btn btn-sm btn-outline-primary" for="appMinTempPreset-{{ key }}">
+                                        {{ p.label }}
                                     </label>
-                                </div>
+                                {% endfor %}
                             </div>
-                        {% endfor %}
+                        </div>
+
+                        <div class="col-lg-6">
+                            <label class="form-label fw-semibold">Сухой остаток</label>
+                            <div class="d-flex flex-wrap gap-1">
+                                <input type="radio" class="btn-check" name="volumeSolidPreset"
+                                       id="volumeSolidPreset-none" value=""
+                                       {% if volumeSolidPreset is null %}checked{% endif %}
+                                       onchange="this.form.submit()">
+                                <label class="btn btn-sm btn-outline-secondary" for="volumeSolidPreset-none">Любой</label>
+
+                                {% for key, p in volumeSolidPresets %}
+                                    <input type="radio" class="btn-check" name="volumeSolidPreset"
+                                           id="volumeSolidPreset-{{ key }}" value="{{ key }}"
+                                           {% if volumeSolidPreset == key %}checked{% endif %}
+                                           onchange="this.form.submit()">
+                                    <label class="btn btn-sm btn-outline-primary" for="volumeSolidPreset-{{ key }}">
+                                        {{ p.label }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Производитель</label>
+                            <div class="row">
+                                {% for m in manufacturers %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input type="checkbox"
+                                                   class="form-check-input"
+                                                   name="manufacturerIds[]"
+                                                   value="{{ m.id }}"
+                                                   id="manufacturer-{{ m.id }}"
+                                                   {% if m.id in selectedManufacturerIds.list %} checked {% endif %}>
+                                            <label class="form-check-label" for="manufacturer-{{ m.id }}">
+                                                {{ m.title }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

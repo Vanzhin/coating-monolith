@@ -9,6 +9,7 @@ use App\Coatings\Domain\Aggregate\Coating\CoatingSearch;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\PaginationResult;
+use App\Shared\Domain\Repository\RangeFilter;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -82,6 +83,8 @@ final class CoatingFinder
     private function applyFacets(QueryBuilder $qb, CoatingsFilter $filter): void
     {
         $this->applyManufacturerFacet($qb, $filter);
+        $this->applyRangeFacet($qb, 'applicationMinTemp', 'appMinTemp', $filter->applicationMinTemp);
+        $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
     }
 
     private function applyManufacturerFacet(QueryBuilder $qb, CoatingsFilter $filter): void
@@ -91,6 +94,26 @@ final class CoatingFinder
         }
         $qb->andWhere('cc.manufacturer IN (:manufacturerIds)')
             ->setParameter('manufacturerIds', $filter->manufacturerIds->getList());
+    }
+
+    /**
+     * Числовой range-фасет "От..До" (обе границы включительно, обе опциональные).
+     * $entityField — имя поля в Doctrine-сущности; $paramPrefix — префикс имени
+     * параметра, чтобы не коллидировать с другими range-фасетами в одном запросе.
+     */
+    private function applyRangeFacet(QueryBuilder $qb, string $entityField, string $paramPrefix, ?RangeFilter $range): void
+    {
+        if ($range === null) {
+            return;
+        }
+        if ($range->from !== null) {
+            $qb->andWhere("cc.$entityField >= :{$paramPrefix}From")
+                ->setParameter("{$paramPrefix}From", $range->from);
+        }
+        if ($range->to !== null) {
+            $qb->andWhere("cc.$entityField <= :{$paramPrefix}To")
+                ->setParameter("{$paramPrefix}To", $range->to);
+        }
     }
 
     /**

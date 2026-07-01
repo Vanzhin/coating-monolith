@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Repository;
 
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Infrastructure\Exception\AppException;
 
 readonly class CoatingsFilter
@@ -26,6 +27,8 @@ readonly class CoatingsFilter
         ?string $search = null,
         public StringCollection $manufacturerIds = new StringCollection(),
         ?Pager $pager = null,
+        public ?RangeFilter $applicationMinTemp = null,
+        public ?RangeFilter $volumeSolid = null,
     ) {
         $this->search = $this->normalizeSearch($search);
         $this->pager = $pager;
