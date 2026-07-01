@@ -35,10 +35,12 @@
                 <button type="submit" class="btn btn-primary">Найти</button>
             </div>
 
-            {# Счётчик активных фасетов + инициатор раскрытия панели. #}
+            {# Range-фасет активен, если хоть одна граница задана. #}
+            {% set appMinTempActive = appMinTempFrom is not null or appMinTempTo is not null %}
+            {% set volumeSolidActive = volumeSolidFrom is not null or volumeSolidTo is not null %}
             {% set activeFacetsCount = selectedManufacturerIds.count
-                + (appMinTempPreset ? 1 : 0)
-                + (volumeSolidPreset ? 1 : 0) %}
+                + (appMinTempActive ? 1 : 0)
+                + (volumeSolidActive ? 1 : 0) %}
 
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <button class="btn btn-outline-secondary btn-sm" type="button"
@@ -61,71 +63,83 @@
 
             <div class="collapse {% if activeFacetsCount > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
-                    <div class="row g-4">
-                        {# Пресет-чипы для температуры. Радио + Bootstrap btn-check —
-                           можно выбрать ровно один пресет. Пустой radio (name="…Preset"
-                           value="") = сброс фасета: submit без Preset-параметра. #}
-                        <div class="col-lg-6">
-                            <label class="form-label fw-semibold">Мин температура нанесения</label>
-                            <div class="d-flex flex-wrap gap-1">
-                                <input type="radio" class="btn-check" name="appMinTempPreset"
-                                       id="appMinTempPreset-none" value=""
-                                       {% if appMinTempPreset is null %}checked{% endif %}
-                                       onchange="this.form.submit()">
-                                <label class="btn btn-sm btn-outline-secondary" for="appMinTempPreset-none">Любая</label>
-
-                                {% for key, p in appMinTempPresets %}
-                                    <input type="radio" class="btn-check" name="appMinTempPreset"
-                                           id="appMinTempPreset-{{ key }}" value="{{ key }}"
-                                           {% if appMinTempPreset == key %}checked{% endif %}
-                                           onchange="this.form.submit()">
-                                    <label class="btn btn-sm btn-outline-primary" for="appMinTempPreset-{{ key }}">
-                                        {{ p.label }}
-                                    </label>
-                                {% endfor %}
-                            </div>
+                    {# === Мин температура нанесения — слайдер + пресеты === #}
+                    <div class="pb-3 mb-3 border-bottom"
+                         data-controller="range-filter"
+                         data-range-filter-min-value="{{ appMinTempBounds.min }}"
+                         data-range-filter-max-value="{{ appMinTempBounds.max }}">
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <label class="form-label fw-semibold mb-0">Мин температура нанесения</label>
+                            <span class="text-muted small">°C</span>
                         </div>
 
-                        <div class="col-lg-6">
-                            <label class="form-label fw-semibold">Сухой остаток</label>
-                            <div class="d-flex flex-wrap gap-1">
-                                <input type="radio" class="btn-check" name="volumeSolidPreset"
-                                       id="volumeSolidPreset-none" value=""
-                                       {% if volumeSolidPreset is null %}checked{% endif %}
-                                       onchange="this.form.submit()">
-                                <label class="btn btn-sm btn-outline-secondary" for="volumeSolidPreset-none">Любой</label>
+                        <div class="px-2 pt-4 pb-2" data-range-filter-target="slider"></div>
+                        <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}"
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}"
+                               data-range-filter-target="toInput">
 
-                                {% for key, p in volumeSolidPresets %}
-                                    <input type="radio" class="btn-check" name="volumeSolidPreset"
-                                           id="volumeSolidPreset-{{ key }}" value="{{ key }}"
-                                           {% if volumeSolidPreset == key %}checked{% endif %}
-                                           onchange="this.form.submit()">
-                                    <label class="btn btn-sm btn-outline-primary" for="volumeSolidPreset-{{ key }}">
-                                        {{ p.label }}
-                                    </label>
-                                {% endfor %}
-                            </div>
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            <button type="button" class="btn btn-sm {% if not appMinTempActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+                                    data-action="click->range-filter#reset">Любая</button>
+                            {% for p in appMinTempPresets %}
+                                {% set active = appMinTempFrom == p.from and appMinTempTo == p.to %}
+                                <button type="button"
+                                        class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# === Сухой остаток — чипы без слайдера === #}
+                    <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <label class="form-label fw-semibold mb-0">Сухой остаток</label>
+                            <span class="text-muted small">% об.</span>
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Производитель</label>
-                            <div class="row">
-                                {% for m in manufacturers %}
-                                    <div class="col-md-6">
-                                        <div class="form-check">
-                                            <input type="checkbox"
-                                                   class="form-check-input"
-                                                   name="manufacturerIds[]"
-                                                   value="{{ m.id }}"
-                                                   id="manufacturer-{{ m.id }}"
-                                                   {% if m.id in selectedManufacturerIds.list %} checked {% endif %}>
-                                            <label class="form-check-label" for="manufacturer-{{ m.id }}">
-                                                {{ m.title }}
-                                            </label>
-                                        </div>
+                        <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}"
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="volumeSolidTo" value="{{ volumeSolidTo }}"
+                               data-range-filter-target="toInput">
+
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="btn btn-sm {% if not volumeSolidActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+                                    data-action="click->range-filter#reset">Любой</button>
+                            {% for p in volumeSolidPresets %}
+                                {% set active = volumeSolidFrom == p.from and volumeSolidTo == p.to %}
+                                <button type="button"
+                                        class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# === Производитель — чекбоксы === #}
+                    <div>
+                        <label class="form-label fw-semibold mb-2">Производитель</label>
+                        <div class="row">
+                            {% for m in manufacturers %}
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               class="form-check-input"
+                                               name="manufacturerIds[]"
+                                               value="{{ m.id }}"
+                                               id="manufacturer-{{ m.id }}"
+                                               {% if m.id in selectedManufacturerIds.list %} checked {% endif %}>
+                                        <label class="form-check-label" for="manufacturer-{{ m.id }}">
+                                            {{ m.title }}
+                                        </label>
                                     </div>
-                                {% endfor %}
-                            </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>

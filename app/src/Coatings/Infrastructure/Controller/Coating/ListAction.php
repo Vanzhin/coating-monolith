@@ -24,18 +24,17 @@ use Symfony\Component\Routing\Annotation\Route;
 class ListAction extends AbstractController
 {
     /**
-     * Пресеты диапазонов — типовые сценарии одним кликом. Ключи попадают
-     * в query-параметр `appMinTempPreset` / `volumeSolidPreset`, backend
-     * маппит в границы RangeFilter'а. Порядок задаёт порядок чипов в UI.
-     * Пары {label, from, to} — label используется в шаблоне.
+     * Пресеты диапазонов — типовые сценарии одной кнопкой. UI-only: чип
+     * ставит слайдер в bounds пресета и submit'ит форму с явными from/to.
+     * Никакого «preset key» в query-параметрах — backend принимает голые
+     * from/to, и пресеты — просто visual shortcut'ы.
      *
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const APP_MIN_TEMP_PRESETS = [
-        'frost'    => ['label' => 'Морозное (≤ 0)',   'from' => -30, 'to' => 0],
-        'cold'     => ['label' => 'Прохлада (5–15)',   'from' => 5,   'to' => 15],
-        'standard' => ['label' => 'Стандарт (10–25)',  'from' => 10,  'to' => 25],
-        'warm'     => ['label' => 'Тепло (20–50)',     'from' => 20,  'to' => 50],
+        'winter'   => ['label' => 'Зимнее',      'from' => -30, 'to' => 5],
+        'standard' => ['label' => 'Стандартное', 'from' => 5,   'to' => 25],
+        'summer'   => ['label' => 'Летнее',      'from' => 25,  'to' => 50],
     ];
 
     /**
@@ -46,6 +45,9 @@ class ListAction extends AbstractController
         'medium' => ['label' => 'Средний (40–70 %)',  'from' => 40, 'to' => 70],
         'high'   => ['label' => 'Высокий (≥ 70 %)',   'from' => 70, 'to' => 100],
     ];
+
+    private const APP_MIN_TEMP_BOUNDS  = ['min' => -30, 'max' => 50];
+    private const VOLUME_SOLID_BOUNDS  = ['min' => 10,  'max' => 100];
 
     public function __construct(
         private readonly QueryBusInterface $queryBus,
@@ -60,11 +62,10 @@ class ListAction extends AbstractController
         $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $pager = Pager::fromPage($page, $limit);
 
-        $appMinTempPreset  = $this->presetKey($request->query->get('appMinTempPreset'), self::APP_MIN_TEMP_PRESETS);
-        $volumeSolidPreset = $this->presetKey($request->query->get('volumeSolidPreset'), self::VOLUME_SOLID_PRESETS);
-
-        $appMinTempRange  = $this->presetToRange($appMinTempPreset, self::APP_MIN_TEMP_PRESETS);
-        $volumeSolidRange = $this->presetToRange($volumeSolidPreset, self::VOLUME_SOLID_PRESETS);
+        $appMinTempFrom  = $this->nullableInt($request->query->get('appMinTempFrom'));
+        $appMinTempTo    = $this->nullableInt($request->query->get('appMinTempTo'));
+        $volumeSolidFrom = $this->nullableInt($request->query->get('volumeSolidFrom'));
+        $volumeSolidTo   = $this->nullableInt($request->query->get('volumeSolidTo'));
 
         $manufacturersResult = $this->queryBus->execute(
             new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000))),
@@ -76,8 +77,8 @@ class ListAction extends AbstractController
                 search: $search,
                 manufacturerIds: $manufacturerIds,
                 pager: $pager,
-                applicationMinTemp: $appMinTempRange,
-                volumeSolid: $volumeSolidRange,
+                applicationMinTemp: RangeFilter::tryFromNullable($appMinTempFrom, $appMinTempTo),
+                volumeSolid: RangeFilter::tryFromNullable($volumeSolidFrom, $volumeSolidTo),
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
         } catch (AppException $e) {
@@ -94,26 +95,20 @@ class ListAction extends AbstractController
             'coatingBases' => CoatingBase::cases(),
             'appMinTempPresets'   => self::APP_MIN_TEMP_PRESETS,
             'volumeSolidPresets'  => self::VOLUME_SOLID_PRESETS,
-            'appMinTempPreset'    => $appMinTempPreset,
-            'volumeSolidPreset'   => $volumeSolidPreset,
+            'appMinTempBounds'    => self::APP_MIN_TEMP_BOUNDS,
+            'volumeSolidBounds'   => self::VOLUME_SOLID_BOUNDS,
+            'appMinTempFrom'   => $appMinTempFrom,
+            'appMinTempTo'     => $appMinTempTo,
+            'volumeSolidFrom'  => $volumeSolidFrom,
+            'volumeSolidTo'    => $volumeSolidTo,
         ]);
     }
 
-    /** Возвращает ключ пресета только если он есть в whitelist, иначе null. */
-    private function presetKey(?string $raw, array $presets): ?string
+    private function nullableInt(?string $raw): ?int
     {
-        if ($raw === null || $raw === '' || !isset($presets[$raw])) {
+        if ($raw === null || trim($raw) === '') {
             return null;
         }
-        return $raw;
-    }
-
-    private function presetToRange(?string $key, array $presets): ?RangeFilter
-    {
-        if ($key === null) {
-            return null;
-        }
-        $p = $presets[$key];
-        return new RangeFilter($p['from'], $p['to']);
+        return (int) $raw;
     }
 }
