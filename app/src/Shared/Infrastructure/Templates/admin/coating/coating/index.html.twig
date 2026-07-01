@@ -267,79 +267,47 @@
                                             </tbody>
                                         </table>
 
-                                        <h6 class="mb-2 mt-1">Сухой на отлип</h6>
-                                        <table class="table table-sm mb-4">
-                                            <thead>
+                                        {# ==== Время высыхания — matrix (см. CoatingTimeMatrixBuilder) ==== #}
+                                        {% set matrix = coating_time_matrix(coating) %}
+                                        <h6 class="mb-2 mt-1">Время высыхания</h6>
+                                        <div class="table-responsive">
+                                        <table class="table table-sm table-bordered align-middle mb-2">
+                                            <thead class="table-light">
                                                 <tr>
-                                                    <th class="text-muted fw-normal" style="width: 60%;">Температура</th>
-                                                    <th class="text-muted fw-normal">Время</th>
+                                                    <th class="text-muted fw-normal">Температура поверхности</th>
+                                                    {% for t in matrix.columns %}
+                                                        <th class="text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
+                                                    {% endfor %}
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for point in coating.dryToTouch %}
-                                                    <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
-                                                        <td>+{{ point.temperature_at }} °C</td>
-                                                        <td>
-                                                            {{ point.time_in_minutes|duration_minutes }}
-                                                            {% if point.is_calculated %}
-                                                                <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
-                                                            {% endif %}
-                                                        </td>
+                                                {% for row in matrix.rows %}
+                                                    <tr>
+                                                        <th scope="row" class="fw-normal">{{ row.label }}</th>
+                                                        {% for t in matrix.columns %}
+                                                            {% set cell = row.values[t] %}
+                                                            <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
+                                                                {% if cell.minutes is null %}
+                                                                    <span class="text-muted">—</span>
+                                                                {% elseif cell.minutes == 0 %}
+                                                                    <i class="bi bi-infinity" title="без ограничения"></i>
+                                                                {% else %}
+                                                                    {{ cell.minutes|duration_minutes_short }}
+                                                                {% endif %}
+                                                            </td>
+                                                        {% endfor %}
                                                     </tr>
                                                 {% endfor %}
                                             </tbody>
                                         </table>
-
-                                        <h6 class="mb-2 mt-1">Полное отверждение</h6>
-                                        <table class="table table-sm mb-4">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-muted fw-normal" style="width: 60%;">Температура</th>
-                                                    <th class="text-muted fw-normal">Время</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for point in coating.fullCure %}
-                                                    <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
-                                                        <td>+{{ point.temperature_at }} °C</td>
-                                                        <td>
-                                                            {{ point.time_in_minutes|duration_minutes }}
-                                                            {% if point.is_calculated %}
-                                                                <span class="badge text-bg-warning ms-1" title="Расчётное значение">расчёт</span>
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-
-                                        <h6 class="mb-2 mt-1">Интервал перекрытия</h6>
-                                        {# Дерево: root → env → base. Каждый узел — отдельная таблица min/max, спарованная по температуре. #}
-                                        {% set envLabels = {atmospheric: 'Атмосферная', immersion: 'Погружение', special: 'Спец среды'} %}
-                                        {% set rootMin = coating.minRecoatingInterval %}
-                                        {% set rootMax = coating.maxRecoatingInterval %}
-
-                                        {{ pairTable.render('Общее', rootMin.default, rootMax ? rootMax.default : []) }}
-
-                                        {% set envBranches = (rootMin.branches ?? {})|merge(rootMax ? rootMax.branches : {}) %}
-                                        {% for envKey in envBranches|keys %}
-                                            {% set envMin = (rootMin.branches ?? {})[envKey] ?? null %}
-                                            {% set envMax = rootMax ? (rootMax.branches ?? {})[envKey] ?? null : null %}
-                                            {% set envLabel = envLabels[envKey] ?? envKey %}
-
-                                            {{ pairTable.render(envLabel, envMin ? envMin.default : [], envMax ? envMax.default : []) }}
-
-                                            {% set baseBranches = (envMin ? envMin.branches : {})|merge(envMax ? envMax.branches : {}) %}
-                                            {% for baseKey in baseBranches|keys %}
-                                                {% set baseMin = envMin ? (envMin.branches ?? {})[baseKey] ?? null : null %}
-                                                {% set baseMax = envMax ? (envMax.branches ?? {})[baseKey] ?? null : null %}
-                                                {{ pairTable.render(envLabel ~ ' → ' ~ (baseLabels[baseKey] ?? baseKey|upper), baseMin ? baseMin.default : [], baseMax ? baseMax.default : []) }}
-                                            {% endfor %}
-                                        {% endfor %}
-
-                                        {% if rootMax is null %}
-                                            <p class="text-muted small mb-0 mt-2">— верхняя граница интервала перекрытия не задана.</p>
-                                        {% endif %}
+                                        </div>
+                                        <p class="text-muted small mb-0">
+                                            Курсивом — рассчитанные интерполяцией значения.
+                                            «—» — данные отсутствуют или вне определённого диапазона.
+                                            {% if coating.maxRecoatingInterval is null %}
+                                                Верхняя граница интервала перекрытия не задана.
+                                            {% endif %}
+                                        </p>
                                     </div>
                                     <div class="modal-footer">
                                         {% if canEdit %}
