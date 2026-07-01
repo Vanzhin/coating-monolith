@@ -36,10 +36,9 @@ final class CompareAction extends AbstractController
         'dftRange.min',
         'dftRange.max',
         'dftRange.tds_dft',
-        'dryToTouch',
-        'fullCure',
-        'minRecoatingInterval',
-        'maxRecoatingInterval',
+        // Time-related поля (dryToTouch, fullCure, min/maxRecoatingInterval)
+        // выведены в отдельную matrix-секцию ниже compare-таблицы —
+        // per-subject таблица «Время высыхания», как в preview-модалке.
     ];
 
     public function __construct(
