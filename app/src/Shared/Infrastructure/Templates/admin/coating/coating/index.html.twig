@@ -63,23 +63,19 @@
 
             <div class="collapse {% if activeFacetsCount > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
-                    {# === Мин температура нанесения — слайдер + пресеты === #}
-                    <div class="pb-3 mb-3 border-bottom"
-                         data-controller="range-filter"
-                         data-range-filter-min-value="{{ appMinTempBounds.min }}"
-                         data-range-filter-max-value="{{ appMinTempBounds.max }}">
+                    {# === Мин температура нанесения — чипы-пресеты === #}
+                    <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
                         <div class="d-flex justify-content-between align-items-baseline mb-2">
                             <label class="form-label fw-semibold mb-0">Мин температура нанесения</label>
                             <span class="text-muted small">°C</span>
                         </div>
 
-                        <div class="px-2 pt-4 pb-2" data-range-filter-target="slider"></div>
                         <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}"
                                data-range-filter-target="fromInput">
                         <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}"
                                data-range-filter-target="toInput">
 
-                        <div class="d-flex flex-wrap gap-1 mt-2">
+                        <div class="d-flex flex-wrap gap-1">
                             <button type="button" class="btn btn-sm {% if not appMinTempActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
                                     data-action="click->range-filter#reset">Любая</button>
                             {% for p in appMinTempPresets %}

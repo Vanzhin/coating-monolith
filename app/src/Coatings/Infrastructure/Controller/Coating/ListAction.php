@@ -32,9 +32,9 @@ class ListAction extends AbstractController
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const APP_MIN_TEMP_PRESETS = [
-        'winter'   => ['label' => 'Зимнее',      'from' => -30, 'to' => 5],
-        'standard' => ['label' => 'Стандартное', 'from' => 5,   'to' => 25],
-        'summer'   => ['label' => 'Летнее',      'from' => 25,  'to' => 50],
+        'winter'   => ['label' => 'Зимнее (ниже -5)',    'from' => -30, 'to' => -5],
+        'standard' => ['label' => 'Стандартное (-5..+5)', 'from' => -5,  'to' => 5],
+        'summer'   => ['label' => 'Летнее (более +5)',   'from' => 5,   'to' => 50],
     ];
 
     /**
@@ -45,9 +45,6 @@ class ListAction extends AbstractController
         'medium' => ['label' => 'Средний (40–70 %)',  'from' => 40, 'to' => 70],
         'high'   => ['label' => 'Высокий (≥ 70 %)',   'from' => 70, 'to' => 100],
     ];
-
-    private const APP_MIN_TEMP_BOUNDS  = ['min' => -30, 'max' => 50];
-    private const VOLUME_SOLID_BOUNDS  = ['min' => 10,  'max' => 100];
 
     public function __construct(
         private readonly QueryBusInterface $queryBus,
@@ -95,8 +92,6 @@ class ListAction extends AbstractController
             'coatingBases' => CoatingBase::cases(),
             'appMinTempPresets'   => self::APP_MIN_TEMP_PRESETS,
             'volumeSolidPresets'  => self::VOLUME_SOLID_PRESETS,
-            'appMinTempBounds'    => self::APP_MIN_TEMP_BOUNDS,
-            'volumeSolidBounds'   => self::VOLUME_SOLID_BOUNDS,
             'appMinTempFrom'   => $appMinTempFrom,
             'appMinTempTo'     => $appMinTempTo,
             'volumeSolidFrom'  => $volumeSolidFrom,
