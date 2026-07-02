@@ -12,67 +12,45 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingTimeMatrixBuilderTest extends TestCase
 {
-    public function testColumnsStepBy10PlusReference23(): void
+    public function testColumnsStepBy10FromMinToMax(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-10, 50));
 
-        // -10, 0, 10, 20, 30, 40, 50 + 23 (лабораторная), отсортировано.
-        self::assertSame([-10, 0, 10, 20, 23, 30, 40, 50], $matrix['columns']);
+        // -10, 0, 10, 20, 30, 40, 50 — все совпадают с шагом; 0 и 20 обязательные,
+        // но они уже там.
+        self::assertSame([-10, 0, 10, 20, 30, 40, 50], $matrix['columns']);
     }
 
-    public function testColumnsAppendMaxWhenStepDoesNotAlign(): void
+    public function testColumnsAddMandatoryTempsBetweenStep(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-5, 45));
 
-        // -5, 5, 15, 25, 35, 45 + 23 → отсортировано.
-        self::assertSame([-5, 5, 15, 23, 25, 35, 45], $matrix['columns']);
+        // step: -5, 5, 15, 25, 35, 45. Обязательные 0 и 20 в диапазоне → вставляются.
+        self::assertSame([-5, 0, 5, 15, 20, 25, 35, 45], $matrix['columns']);
     }
 
     public function testColumnsAppendMaxWhenGapAtEnd(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-10, 47));
 
-        // -10, 0, 10, 20, 30, 40, 47 + 23 (в диапазоне).
-        self::assertSame([-10, 0, 10, 20, 23, 30, 40, 47], $matrix['columns']);
+        // step: -10, 0, 10, 20, 30, 40 + max 47. 0 и 20 уже там.
+        self::assertSame([-10, 0, 10, 20, 30, 40, 47], $matrix['columns']);
     }
 
-    public function testReferenceTempSkippedWhenOutsideRange(): void
+    public function testMandatoryTempsSkippedWhenOutsideRange(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(30, 50));
 
-        // 23 вне [30, 50] — не добавляется.
+        // 0 и 20 вне [30, 50] — не добавляются.
         self::assertSame([30, 40, 50], $matrix['columns']);
     }
 
-    public function testDefinedPointTemperatureAlwaysPresentInColumns(): void
+    public function testOnlyOneMandatoryInRange(): void
     {
-        // Регрессия: app_min=5, step-10 даёт [5,15,25,35,45,50]+23 = [5,15,23,25,35,45,50].
-        // Точка на 20 без этого фикса потерялась бы между 15 и 23 → секция скипалась
-        // как «all empty».
-        $coating = $this->coating(5, 50, dryToTouch: [$this->point(20, 60)]);
-        $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
+        $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(10, 30));
 
-        self::assertContains(20, $matrix['columns']);
-        self::assertSame(60, $matrix['rows'][0]['values'][20]['minutes']);
-    }
-
-    public function testDefinedPointOutsideRangeIsIgnored(): void
-    {
-        // Точка на 60 при drying_max=50 не должна расширять колонки за max.
-        // (Такой сценарий сам по себе нарушает инвариант домена, но builder
-        // работает с DTO и должен быть defensive.)
-        $coating = $this->coating(0, 50, dryToTouch: [$this->point(60, 30)]);
-        $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
-
-        self::assertNotContains(60, $matrix['columns']);
-    }
-
-    public function testReferenceTempNotDuplicatedIfStepAlignsWithIt(): void
-    {
-        // Если max = 23, шаг попадает: 3, 13, 23. 23 уже там.
-        $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(3, 23));
-
-        self::assertSame([3, 13, 23], $matrix['columns']);
+        // step: 10, 20, 30. 0 вне диапазона; 20 уже там.
+        self::assertSame([10, 20, 30], $matrix['columns']);
     }
 
     public function testExactPointGivesRawValue(): void

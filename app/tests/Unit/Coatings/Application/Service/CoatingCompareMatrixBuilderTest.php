@@ -20,8 +20,8 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
 
         $sections = $this->builder()->build([$a, $b]);
 
-        // a: 0,10,20  b: 10,20,23,30  → union: 0,10,20,23,30
-        self::assertSame([0, 10, 20, 23, 30], $sections[0]['columns']);
+        // a: 0,10,20  b: 10,20,30 (0 вне диапазона у b) → union: 0,10,20,30.
+        self::assertSame([0, 10, 20, 30], $sections[0]['columns']);
     }
 
     public function testDiffColumnDetectedWhenValuesMismatch(): void

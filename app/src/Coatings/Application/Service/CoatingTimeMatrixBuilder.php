@@ -32,12 +32,12 @@ final class CoatingTimeMatrixBuilder
     private const STEP = 10;
 
     /**
-     * Стандартная лабораторная температура — 23 °C. Всегда попадает в матрицу,
-     * если укладывается в [applicationMinTemp, dryingMaxTemp], даже когда шаг
-     * с ней не бьётся. Мотивация — в тех-паспортах (например, Литамастик 190 Ст)
-     * жизнеспособность и опорные точки всегда фиксируются при 23 °C.
+     * Обязательные точки колонок, если укладываются в [applicationMinTemp,
+     * dryingMaxTemp]. Даже когда шаг step-10 с ними не бьётся — 0°C и 20°C
+     * добавляются: 0 — граница мороза, 20 — типовая комнатная. Все
+     * пользователи ждут увидеть эти отметки в тех-паспорте.
      */
-    private const REFERENCE_TEMP = 23;
+    private const MANDATORY_TEMPS = [0, 20];
 
     private const ENV_LABELS = [
         'atmospheric' => 'атмосферная эксплуатация',
@@ -53,11 +53,7 @@ final class CoatingTimeMatrixBuilder
      */
     public function build(CoatingDTO $coating): array
     {
-        $columns = $this->computeColumns(
-            $coating->applicationMinTemp,
-            $coating->dryingMaxTemp,
-            $this->collectDefinedTemperatures($coating),
-        );
+        $columns = $this->computeColumns($coating->applicationMinTemp, $coating->dryingMaxTemp);
         $rows = [];
 
         if ($coating->dryToTouch !== []) {
@@ -75,13 +71,8 @@ final class CoatingTimeMatrixBuilder
         return ['columns' => $columns, 'rows' => $rows];
     }
 
-    /**
-     * @param list<int> $definedTemps температуры из реально введённых точек — они
-     *                                 обязаны попасть в колонки, иначе данные пользователя
-     *                                 «потеряются» между step-10 засечками.
-     * @return list<int>
-     */
-    private function computeColumns(int $min, int $max, array $definedTemps = []): array
+    /** @return list<int> */
+    private function computeColumns(int $min, int $max): array
     {
         $columns = [];
         for ($t = $min; $t <= $max; $t += self::STEP) {
@@ -90,49 +81,13 @@ final class CoatingTimeMatrixBuilder
         if ($columns === [] || end($columns) !== $max) {
             $columns[] = $max;
         }
-        if (self::REFERENCE_TEMP >= $min && self::REFERENCE_TEMP <= $max) {
-            $columns[] = self::REFERENCE_TEMP;
-        }
-        foreach ($definedTemps as $t) {
+        foreach (self::MANDATORY_TEMPS as $t) {
             if ($t >= $min && $t <= $max) {
                 $columns[] = $t;
             }
         }
         sort($columns);
         return array_values(array_unique($columns));
-    }
-
-    /**
-     * Обходит все series покрытия (dryToTouch, fullCure и всё дерево
-     * min/maxRecoatingInterval рекурсивно) и собирает уникальные температуры точек.
-     *
-     * @return list<int>
-     */
-    private function collectDefinedTemperatures(CoatingDTO $coating): array
-    {
-        $temps = [];
-        foreach ($coating->dryToTouch as $p) {
-            $temps[$p->temperature_at] = true;
-        }
-        foreach ($coating->fullCure as $p) {
-            $temps[$p->temperature_at] = true;
-        }
-        $this->collectTreeTemperatures($coating->minRecoatingInterval, $temps);
-        if ($coating->maxRecoatingInterval !== null) {
-            $this->collectTreeTemperatures($coating->maxRecoatingInterval, $temps);
-        }
-        return array_keys($temps);
-    }
-
-    /** @param array<int, true> $temps */
-    private function collectTreeTemperatures(RecoatingIntervalTreeDTO $tree, array &$temps): void
-    {
-        foreach ($tree->default as $p) {
-            $temps[$p->temperature_at] = true;
-        }
-        foreach ($tree->branches as $branch) {
-            $this->collectTreeTemperatures($branch, $temps);
-        }
     }
 
     /**
