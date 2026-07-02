@@ -11,7 +11,7 @@
         {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
     {% endfor %}
 
-    <div class="col-lg-10 mx-auto p-4 py-md-5"
+    <div class="col-lg-10 mx-auto p-2 p-md-4 py-md-5"
          data-controller="compare-tray"
          data-compare-tray-storage-key-value="compare:Coating"
          data-compare-tray-compare-url-value="{{ path('app_cabinet_coating_coating_compare') }}"
@@ -150,9 +150,8 @@
             {% if result.coatings %}
                 <div class="list-group w-100 shadow-sm rounded">
                     {% for coating in result.coatings %}
-                        <div class="list-group-item d-flex align-items-center gap-3 px-3 py-3"
-                             style="min-height: 88px;">
-                            <div class="form-check flex-shrink-0 m-0">
+                        <div class="list-group-item d-flex align-items-start gap-2 gap-md-3 px-2 px-md-3 py-3">
+                            <div class="form-check flex-shrink-0 m-0 mt-1">
                                 <input type="checkbox" class="form-check-input m-0"
                                        data-compare-id="{{ coating.id }}"
                                        data-action="change->compare-tray#toggle"
@@ -162,7 +161,9 @@
                                  style="cursor: pointer;"
                                  data-bs-toggle="modal"
                                  data-bs-target="#coatingPreview-{{ coating.id }}">
-                                <h6 class="mb-1 fw-semibold text-truncate">{{ coating.title }}</h6>
+                                {# text-wrap + word-break: title переносится на 2 строки
+                                   вместо уродливого truncate'a на mobile. #}
+                                <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
                                 <p class="mb-1 small text-muted"
                                    style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                                     {{ coating.description }}
