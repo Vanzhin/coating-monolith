@@ -201,13 +201,15 @@
             {% if result.coatings %}
                 {# Infinite scroll: первая страница уже отрендерена server-side, следующие
                    догружаются Stimulus-контроллером через ?page=N&partial=1 и вставляются
-                   перед sentinel'ом. Не-JS fallback — обычный page-based pager внизу. #}
-                <div class="list-group w-100 shadow-sm rounded"
-                     data-controller="infinite-list"
+                   в конец cards-target. Sentinel (IntersectionObserver) и кнопка
+                   «Показать ещё» ОБЯЗАНЫ быть потомками data-controller-элемента,
+                   иначе targets Stimulus'а не резолвятся. #}
+                {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
+                <div data-controller="infinite-list"
                      data-infinite-list-next-page-value="2"
-                     data-infinite-list-total-pages-value="{{ (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') }}"
+                     data-infinite-list-total-pages-value="{{ totalPages }}"
                      data-infinite-list-base-url-value="{{ path('app_cabinet_coating_coating_list', app.request.query.all|filter(v => v is not null)) }}">
-                    <div data-infinite-list-target="cards">
+                    <div class="list-group w-100 shadow-sm rounded" data-infinite-list-target="cards">
                         {% include 'admin/coating/coating/_coating_cards_batch.html.twig' with {
                             coatings: result.coatings,
                             canEdit: canEdit,
@@ -215,23 +217,17 @@
                             baseLabels: baseLabels,
                         } only %}
                     </div>
-                    <div data-infinite-list-target="sentinel" class="d-none"></div>
+                    <div data-infinite-list-target="sentinel" style="height: 1px;"></div>
+                    {% if totalPages > 1 %}
+                        <div class="text-center mt-3" data-infinite-list-target="loadMoreWrapper">
+                            <button type="button" class="btn btn-outline-secondary"
+                                    data-infinite-list-target="button"
+                                    data-action="click->infinite-list#loadNext">
+                                <span data-infinite-list-target="buttonLabel">Показать ещё</span>
+                            </button>
+                        </div>
+                    {% endif %}
                 </div>
-                {# Кнопка «Показать ещё» — та же семантика что и sentinel, но для тех,
-                   кто предпочитает управлять руками. IntersectionObserver под ней
-                   срабатывает автоматически при скролле. #}
-                {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
-                {% if totalPages > 1 %}
-                    <div class="text-center mt-3"
-                         data-controller="infinite-list-visibility"
-                         data-infinite-list-target="loadMoreWrapper">
-                        <button type="button" class="btn btn-outline-secondary"
-                                data-infinite-list-target="button"
-                                data-action="click->infinite-list#loadNext">
-                            <span data-infinite-list-target="buttonLabel">Показать ещё</span>
-                        </button>
-                    </div>
-                {% endif %}
 
                 {# Fallback: обычный pager для случая когда JS выключен или Stimulus
                    не поднялся. При работающем JS контроллер скрывает его. #}

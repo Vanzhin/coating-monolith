@@ -12,7 +12,7 @@ import { Controller } from '@hotwired/stimulus';
  * manufacturerIds и т.д.). Мы только добавляем &page=N&partial=1.
  */
 export default class extends Controller {
-    static targets = ['cards', 'sentinel', 'button', 'buttonLabel'];
+    static targets = ['cards', 'sentinel', 'button', 'buttonLabel', 'loadMoreWrapper'];
 
     static values = {
         nextPage:    Number,   // страница которую загружать следующей (2 при старте)
@@ -94,8 +94,8 @@ export default class extends Controller {
     _done() {
         // Больше страниц нет — прячем кнопку и отключаем observer.
         if (this._observer) this._observer.disconnect();
-        if (this.hasButtonTarget) {
-            this.buttonTarget.closest('div[data-infinite-list-target="loadMoreWrapper"], .text-center')?.classList.add('d-none');
+        if (this.hasLoadMoreWrapperTarget) {
+            this.loadMoreWrapperTarget.classList.add('d-none');
         }
     }
 }
