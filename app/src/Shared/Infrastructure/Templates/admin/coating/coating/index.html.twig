@@ -40,12 +40,14 @@
                 {% for tag in selectedTags %}
                     {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
                     {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
-                    <span class="input-group-text bg-body-tertiary py-1">
-                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal me-2">{{ tag.title }}</span>
-                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
-                           class="btn-close btn-close-sm"
-                           title="Убрать «{{ tag.title }}» из фильтра"
-                           aria-label="Убрать из фильтра"></a>
+                    <span class="input-group-text bg-body-tertiary p-1">
+                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal d-inline-flex align-items-center gap-1">
+                            {{ tag.title }}
+                            <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                               class="btn-close btn-close-white btn-close-sm"
+                               title="Убрать «{{ tag.title }}» из фильтра"
+                               aria-label="Убрать из фильтра"></a>
+                        </span>
                     </span>
                     <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
                 {% endfor %}
@@ -59,16 +61,19 @@
             {# Range-фасет активен, если хоть одна граница задана. #}
             {% set appMinTempActive = appMinTempFrom is not null or appMinTempTo is not null %}
             {% set volumeSolidActive = volumeSolidFrom is not null or volumeSolidTo is not null %}
-            {% set activeFacetsCount = selectedManufacturerIds.count
+            {# Фасеты внутри advanced-панели — определяют auto-open панели после reload'a.
+               Теги живут в строке поиска отдельно и НЕ триггерят открытие. #}
+            {% set advancedPanelActive = selectedManufacturerIds.count
                 + (appMinTempActive ? 1 : 0)
-                + (volumeSolidActive ? 1 : 0)
-                + selectedTags|length %}
+                + (volumeSolidActive ? 1 : 0) %}
+            {# Общий счётчик — для badge и сброса, включает теги. #}
+            {% set activeFacetsCount = advancedPanelActive + selectedTags|length %}
 
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <button class="btn btn-outline-secondary btn-sm" type="button"
                         data-bs-toggle="collapse"
                         data-bs-target="#advancedFilter"
-                        aria-expanded="{{ activeFacetsCount > 0 ? 'true' : 'false' }}"
+                        aria-expanded="{{ advancedPanelActive > 0 ? 'true' : 'false' }}"
                         aria-controls="advancedFilter">
                     <i class="bi bi-funnel"></i> Расширенный поиск
                     {% if activeFacetsCount > 0 %}
@@ -83,7 +88,7 @@
                 {% endif %}
             </div>
 
-            <div class="collapse {% if activeFacetsCount > 0 %} show {% endif %}" id="advancedFilter">
+            <div class="collapse {% if advancedPanelActive > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
                     {# === Мин температура нанесения — чипы-пресеты === #}
                     <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
