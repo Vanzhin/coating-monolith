@@ -96,11 +96,11 @@
 
             <div class="collapse {% if advancedPanelActive > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
-                    {# === Активные теги — дублируем чипы из строки поиска сюда,
-                       чтобы фильтр был виден и здесь. × работает одинаково. === #}
+                    {# === Теги — дублируем чипы из строки поиска сюда, чтобы
+                       фильтр был виден и здесь. × работает одинаково. === #}
                     {% if selectedTags|length > 0 %}
                         <div class="pb-3 mb-3 border-bottom">
-                            <label class="form-label fw-semibold mb-2">Активные теги</label>
+                            <label class="form-label fw-semibold mb-2">Теги</label>
                             <div class="d-flex flex-wrap gap-1">
                                 {% for tag in selectedTags %}
                                     {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
