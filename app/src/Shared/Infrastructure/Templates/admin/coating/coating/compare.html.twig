@@ -76,36 +76,44 @@
                     </table>
                 </div>
 
-                {# ==== Время высыхания — per-subject matrix (тот же CoatingTimeMatrixBuilder,
-                       что в preview-модалке). Колонки у каждого покрытия свои
-                       (зависят от app_min..drying_max), поэтому таблицы стекаются
-                       вертикально с card-заголовком. ==== #}
+                {# ==== Время высыхания — per-interval сравнение.
+                       Одна таблица на каждый интервал (Сухой на отлип / Полное отверждение /
+                       Мин перекрытия / Макс перекрытия + env → base ветки). Строки =
+                       purchases, колонки = union температур всех subject'ов. Столбцы,
+                       где значения различаются между subject'ами, подсвечены table-warning
+                       (per-cell diff, а не whole-object). ==== #}
                 <h2 class="h4 mt-5 mb-3">Время высыхания</h2>
-                {% for subject in subjects %}
-                    {% set matrix = coating_time_matrix(subject) %}
+                {% set compareMatrix = coating_compare_matrix(subjects) %}
+                {% for section in compareMatrix %}
                     <div class="card mb-3">
-                        <div class="card-header py-2">
-                            <div class="fw-semibold">{{ subject.title }}</div>
-                            <div class="text-muted small">{{ subject.manufacturer.title }}</div>
+                        <div class="card-header py-2 fw-semibold">
+                            {{ section.label }}
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                             <table class="table table-sm table-bordered align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="text-muted fw-normal">Температура поверхности</th>
-                                        {% for t in matrix.columns %}
-                                            <th class="text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
+                                        <th class="text-muted fw-normal">Покрытие</th>
+                                        {% for t in section.columns %}
+                                            <th class="text-center text-nowrap {% if section.diffColumns[t] is defined %}table-warning{% endif %}">
+                                                {{ t > 0 ? '+' ~ t : t }} °C
+                                            </th>
                                         {% endfor %}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for row in matrix.rows %}
+                                    {% for row in section.rows %}
                                         <tr>
-                                            <th scope="row" class="fw-normal">{{ row.label }}</th>
-                                            {% for t in matrix.columns %}
+                                            <th scope="row" class="fw-normal">
+                                                {{ row.subject.title }}
+                                                <span class="text-muted small d-block">{{ row.subject.manufacturer.title }}</span>
+                                            </th>
+                                            {% for t in section.columns %}
                                                 {% set cell = row.values[t] %}
-                                                <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
+                                                <td class="text-center text-nowrap
+                                                    {% if section.diffColumns[t] is defined %}table-warning{% endif %}
+                                                    {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
                                                     {% if cell.minutes is null %}
                                                         <span class="text-muted">—</span>
                                                     {% elseif cell.minutes == 0 %}
@@ -122,10 +130,12 @@
                             </div>
                         </div>
                     </div>
+                {% else %}
+                    <p class="text-muted">Нет данных по времени высыхания у сравниваемых покрытий.</p>
                 {% endfor %}
                 <p class="text-muted small">
-                    Курсивом — рассчитанные интерполяцией значения.
-                    «—» — данные отсутствуют или вне определённого диапазона.
+                    Жёлтым выделены столбцы, где значения различаются между покрытиями.
+                    Курсив — рассчитано интерполяцией. «—» — вне диапазона / нет данных.
                 </p>
             </main>
         </div>

@@ -7,6 +7,7 @@ namespace App\Coatings\Application\Service;
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 
 /**
  * Собирает matrix-таблицу времени высыхания для preview-модалки покрытия
@@ -97,12 +98,33 @@ final class CoatingTimeMatrixBuilder
         if ($tree->default !== []) {
             $rows[] = $this->rowFromSeries($baseLabel, $tree->default, $columns);
         }
-        foreach (self::ENV_LABELS as $key => $envLabel) {
-            $branch = $tree->branches[$key] ?? null;
-            if ($branch !== null && $branch->default !== []) {
-                $rows[] = $this->rowFromSeries("{$baseLabel}, {$envLabel}", $branch->default, $columns);
+        foreach (self::ENV_LABELS as $envKey => $envLabel) {
+            $envBranch = $tree->branches[$envKey] ?? null;
+            if ($envBranch === null) {
+                continue;
+            }
+            if ($envBranch->default !== []) {
+                $rows[] = $this->rowFromSeries("{$baseLabel}, {$envLabel}", $envBranch->default, $columns);
+            }
+            foreach ($envBranch->branches as $baseKey => $baseBranch) {
+                if ($baseBranch->default === []) {
+                    continue;
+                }
+                $baseTitle = $this->baseTitle((string) $baseKey);
+                $rows[] = $this->rowFromSeries(
+                    "{$baseLabel}, {$envLabel} → {$baseTitle}",
+                    $baseBranch->default,
+                    $columns,
+                );
             }
         }
+    }
+
+    /** Русское название базы ЛКМ по её нормализованному (lower-case) ключу дерева. */
+    private function baseTitle(string $baseKey): string
+    {
+        $enum = CoatingBase::tryFrom(strtoupper($baseKey));
+        return $enum?->title() ?? strtoupper($baseKey);
     }
 
     /**
