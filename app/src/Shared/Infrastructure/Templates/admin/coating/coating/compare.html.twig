@@ -7,18 +7,18 @@
    редиректит на compare?ids=… или /list если осталось < 2 покрытия. #}
 {% macro subject_head(subject) %}
     <div class="d-flex align-items-start gap-2">
+        <div class="flex-grow-1">
+            <div class="fw-semibold">{{ subject.title }}</div>
+            <div class="text-muted small">{{ subject.manufacturer.title }}</div>
+        </div>
         <button type="button"
-                class="btn-close btn-close-sm mt-1"
+                class="btn-close btn-close-sm mt-1 flex-shrink-0"
                 data-controller="compare-remove"
                 data-compare-remove-id-value="{{ subject.id }}"
                 data-compare-remove-list-url-value="{{ path('app_cabinet_coating_coating_list') }}"
                 data-action="click->compare-remove#remove"
                 title="Убрать «{{ subject.title }}» из сравнения"
                 aria-label="Убрать из сравнения"></button>
-        <div>
-            <div class="fw-semibold">{{ subject.title }}</div>
-            <div class="text-muted small">{{ subject.manufacturer.title }}</div>
-        </div>
     </div>
 {% endmacro %}
 
