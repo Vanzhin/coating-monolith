@@ -44,6 +44,29 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([30, 40, 50], $matrix['columns']);
     }
 
+    public function testDefinedPointTemperatureAlwaysPresentInColumns(): void
+    {
+        // Регрессия: app_min=5, step-10 даёт [5,15,25,35,45,50]+23 = [5,15,23,25,35,45,50].
+        // Точка на 20 без этого фикса потерялась бы между 15 и 23 → секция скипалась
+        // как «all empty».
+        $coating = $this->coating(5, 50, dryToTouch: [$this->point(20, 60)]);
+        $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
+
+        self::assertContains(20, $matrix['columns']);
+        self::assertSame(60, $matrix['rows'][0]['values'][20]['minutes']);
+    }
+
+    public function testDefinedPointOutsideRangeIsIgnored(): void
+    {
+        // Точка на 60 при drying_max=50 не должна расширять колонки за max.
+        // (Такой сценарий сам по себе нарушает инвариант домена, но builder
+        // работает с DTO и должен быть defensive.)
+        $coating = $this->coating(0, 50, dryToTouch: [$this->point(60, 30)]);
+        $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
+
+        self::assertNotContains(60, $matrix['columns']);
+    }
+
     public function testReferenceTempNotDuplicatedIfStepAlignsWithIt(): void
     {
         // Если max = 23, шаг попадает: 3, 13, 23. 23 уже там.
