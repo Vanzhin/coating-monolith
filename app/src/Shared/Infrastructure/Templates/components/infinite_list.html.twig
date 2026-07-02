@@ -1,0 +1,67 @@
+{# Переиспользуемая infinite-scroll обёртка.
+   Работает в паре с assets/controllers/infinite_list_controller.js.
+
+   Параметры (все, кроме умолчаний, обязательные):
+     items_template : string
+         Путь до Twig-шаблона, который рендерит один batch (for-loop по items).
+         Тот же шаблон дёргает backend в режиме ?partial=1.
+     items_params : map
+         Kwargs для items_template (обычно {items: <первая страница>}).
+     total_pages : int
+         Сколько всего страниц по текущему фильтру. Догрузка стопается когда
+         next_page > total_pages.
+     base_url : string
+         Полный URL к текущему списку (с сохранёнными query-фильтрами). Stimulus
+         сам добавит &page=N&partial=1.
+
+   Опциональные:
+     start_page   : int    = 2                                 первая страница на догрузку.
+     wrapper_class: string = 'list-group w-100 shadow-sm rounded' классы обёртки над items.
+     more_label   : string = 'Показать ещё'                     текст кнопки.
+#}
+{% set start_page = start_page|default(2) %}
+{% set wrapper_class = wrapper_class|default('list-group w-100 shadow-sm rounded') %}
+{% set more_label = more_label|default('Показать ещё') %}
+
+{# Плавное появление новых batches. Класс добавляется JS'ом контроллера
+   на каждый вставленный корневой node (Cards + modals). Модалки в display:none
+   всё равно невидимы — анимация не флиркает. #}
+<style>
+    @keyframes infiniteListAppear {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0);  }
+    }
+    .infinite-list-appear {
+        animation: infiniteListAppear 0.28s ease-out both;
+    }
+    @keyframes infiniteListHide {
+        from { opacity: 1; transform: translateY(0);  }
+        to   { opacity: 0; transform: translateY(-4px); }
+    }
+    .infinite-list-hide {
+        animation: infiniteListHide 0.25s ease-out forwards;
+    }
+</style>
+
+<div data-controller="infinite-list"
+     data-infinite-list-next-page-value="{{ start_page }}"
+     data-infinite-list-total-pages-value="{{ total_pages }}"
+     data-infinite-list-base-url-value="{{ base_url }}">
+    <div class="{{ wrapper_class }}" data-infinite-list-target="cards">
+        {% include items_template with items_params only %}
+    </div>
+    <div data-infinite-list-target="sentinel" style="height: 1px;"></div>
+    {% if total_pages >= start_page %}
+        <div class="text-center mt-3" data-infinite-list-target="loadMoreWrapper">
+            <button type="button" class="btn btn-outline-secondary"
+                    data-infinite-list-target="button"
+                    data-action="click->infinite-list#loadNext">
+                <span class="spinner-border spinner-border-sm me-1 d-none"
+                      data-infinite-list-target="spinner"
+                      role="status"
+                      aria-hidden="true"></span>
+                <span data-infinite-list-target="buttonLabel">{{ more_label }}</span>
+            </button>
+        </div>
+    {% endif %}
+</div>

@@ -1,27 +1,31 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Догружает следующие страницы списка покрытий вместо page-based pager'a.
- *  - IntersectionObserver на sentinel-элементе автоматически стреляет,
- *    когда он появляется в viewport (юзер прокрутил до низа).
- *  - Кнопка «Показать ещё» дублирует то же действие для тех кто хочет
- *    кликать руками.
+ * Reusable infinite-scroll контроллер. Работает в паре с partial'ом
+ * templates/components/infinite_list.html.twig — там же и CSS-анимация
+ * плавного появления.
  *
- * Backend отдаёт голый partial по URL с флагом ?partial=1. Всё что нужно
- * серверу для URL — уже собрано в baseUrl (сохраняет search, tagIds,
- * manufacturerIds и т.д.). Мы только добавляем &page=N&partial=1.
+ *  - IntersectionObserver на sentinel — авто-догрузка при подходе к концу.
+ *  - Кнопка «Показать ещё» — ручной триггер той же процедуры. Внутри кнопки
+ *    Bootstrap-спиннер, показывается на время in-flight запроса.
+ *  - Backend должен отдавать голый partial по URL с ?partial=1.
+ *    Всё что нужно серверу для фильтров — уже в baseUrl.
  */
 export default class extends Controller {
-    static targets = ['cards', 'sentinel', 'button', 'buttonLabel', 'loadMoreWrapper'];
+    static targets = ['cards', 'sentinel', 'button', 'buttonLabel', 'spinner', 'loadMoreWrapper'];
 
     static values = {
-        nextPage:    Number,   // страница которую загружать следующей (2 при старте)
-        totalPages:  Number,   // сколько всего страниц по текущему фильтру
-        baseUrl:     String,   // /cabinet/coating/coating/list?search=X&tagIds[]=Y  (уже с ? или &)
+        nextPage:   Number,   // страница на следующую догрузку (обычно 2)
+        totalPages: Number,   // сколько всего страниц по текущему фильтру
+        baseUrl:    String,   // URL со всеми текущими filter-params (Stimulus добавляет &page=N&partial=1)
     };
 
     connect() {
         this._loading = false;
+        this._originalLabel = this.hasButtonLabelTarget
+            ? this.buttonLabelTarget.textContent.trim()
+            : 'Показать ещё';
+
         if (this._hasMore()) {
             this._observer = new IntersectionObserver(
                 (entries) => {
@@ -29,7 +33,7 @@ export default class extends Controller {
                         if (e.isIntersecting) this.loadNext();
                     }
                 },
-                { rootMargin: '200px' },  // старт до того как sentinel окажется на экране
+                { rootMargin: '200px' },
             );
             this._observer.observe(this.sentinelTarget);
         } else {
@@ -44,27 +48,29 @@ export default class extends Controller {
     async loadNext() {
         if (this._loading || !this._hasMore()) return;
         this._loading = true;
-        this._setButtonLoading(true);
+        this._setLoading(true);
 
         const url = this._urlForPage(this.nextPageValue);
         try {
             const resp = await fetch(url, { headers: { 'Accept': 'text/html' } });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const html = await resp.text();
-            const trimmed = html.trim();
-            if (trimmed !== '') {
-                this.cardsTarget.insertAdjacentHTML('beforeend', trimmed);
-            }
-            this.nextPageValue = this.nextPageValue + 1;
+            const html = (await resp.text()).trim();
 
-            if (!this._hasMore()) {
+            if (html === '') {
+                // Backend ничего не отдал — данных больше нет, независимо от totalPages
+                // (счёт мог устареть между рендером первой страницы и догрузкой).
                 this._done();
+                return;
             }
+
+            this._appendBatch(html);
+            this.nextPageValue = this.nextPageValue + 1;
+            if (!this._hasMore()) this._done();
         } catch (err) {
-            this._setButtonError();
+            this._setError();
         } finally {
             this._loading = false;
-            if (this._hasMore()) this._setButtonLoading(false);
+            if (this._hasMore()) this._setLoading(false);
         }
     }
 
@@ -77,25 +83,45 @@ export default class extends Controller {
         return `${this.baseUrlValue}${sep}page=${page}&partial=1`;
     }
 
-    _setButtonLoading(loading) {
-        if (!this.hasButtonTarget) return;
-        this.buttonTarget.disabled = loading;
+    /**
+     * Вставляет HTML-batch через DocumentFragment, каждому корневому элементу
+     * навешивает класс .infinite-list-appear — CSS-анимация из partial'a
+     * даёт плавное появление.
+     */
+    _appendBatch(html) {
+        const fragment = document.createRange().createContextualFragment(html);
+        for (const node of fragment.children) {
+            if (node.nodeType === 1) {
+                node.classList.add('infinite-list-appear');
+            }
+        }
+        this.cardsTarget.appendChild(fragment);
+    }
+
+    _setLoading(loading) {
+        if (this.hasButtonTarget) this.buttonTarget.disabled = loading;
+        if (this.hasSpinnerTarget) this.spinnerTarget.classList.toggle('d-none', !loading);
         if (this.hasButtonLabelTarget) {
-            this.buttonLabelTarget.textContent = loading ? 'Загружаем…' : 'Показать ещё';
+            this.buttonLabelTarget.textContent = loading ? 'Загружаем…' : this._originalLabel;
         }
     }
 
-    _setButtonError() {
+    _setError() {
         if (this.hasButtonLabelTarget) {
             this.buttonLabelTarget.textContent = 'Ошибка — попробуйте ещё раз';
         }
+        if (this.hasSpinnerTarget) this.spinnerTarget.classList.add('d-none');
     }
 
     _done() {
-        // Больше страниц нет — прячем кнопку и отключаем observer.
         if (this._observer) this._observer.disconnect();
         if (this.hasLoadMoreWrapperTarget) {
-            this.loadMoreWrapperTarget.classList.add('d-none');
+            // Плавное исчезновение — CSS animation задаёт fade-out, потом d-none
+            // окончательно убирает из потока.
+            this.loadMoreWrapperTarget.classList.add('infinite-list-hide');
+            setTimeout(() => {
+                this.loadMoreWrapperTarget.classList.add('d-none');
+            }, 260);
         }
     }
 }

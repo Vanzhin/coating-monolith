@@ -199,35 +199,24 @@
            вертикальный отступ сверху для дыхания. #}
         <div class="mt-3">
             {% if result.coatings %}
-                {# Infinite scroll: первая страница уже отрендерена server-side, следующие
-                   догружаются Stimulus-контроллером через ?page=N&partial=1 и вставляются
-                   в конец cards-target. Sentinel (IntersectionObserver) и кнопка
-                   «Показать ещё» ОБЯЗАНЫ быть потомками data-controller-элемента,
-                   иначе targets Stimulus'а не резолвятся. #}
+                {# Infinite scroll через общий components/infinite_list.html.twig
+                   partial + assets/controllers/infinite_list_controller.js. base_url
+                   фильтруется от page/partial — Stimulus сам их добавит для догрузки.
+                   Deep-link ?page=N всё равно работает (server-side render'ит нужную страницу),
+                   но сам base_url для fetch-а ими не загрязняется. #}
                 {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
-                <div data-controller="infinite-list"
-                     data-infinite-list-next-page-value="2"
-                     data-infinite-list-total-pages-value="{{ totalPages }}"
-                     data-infinite-list-base-url-value="{{ path('app_cabinet_coating_coating_list', app.request.query.all|filter(v => v is not null)) }}">
-                    <div class="list-group w-100 shadow-sm rounded" data-infinite-list-target="cards">
-                        {% include 'admin/coating/coating/_coating_cards_batch.html.twig' with {
-                            coatings: result.coatings,
-                            canEdit: canEdit,
-                            selectedTagIdList: selectedTagIdList,
-                            baseLabels: baseLabels,
-                        } only %}
-                    </div>
-                    <div data-infinite-list-target="sentinel" style="height: 1px;"></div>
-                    {% if totalPages > 1 %}
-                        <div class="text-center mt-3" data-infinite-list-target="loadMoreWrapper">
-                            <button type="button" class="btn btn-outline-secondary"
-                                    data-infinite-list-target="button"
-                                    data-action="click->infinite-list#loadNext">
-                                <span data-infinite-list-target="buttonLabel">Показать ещё</span>
-                            </button>
-                        </div>
-                    {% endif %}
-                </div>
+                {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
+                {% include 'components/infinite_list.html.twig' with {
+                    items_template: 'admin/coating/coating/_coating_cards_batch.html.twig',
+                    items_params: {
+                        coatings: result.coatings,
+                        canEdit: canEdit,
+                        selectedTagIdList: selectedTagIdList,
+                        baseLabels: baseLabels,
+                    },
+                    total_pages: totalPages,
+                    base_url: path('app_cabinet_coating_coating_list', baseQuery),
+                } only %}
 
                 {# Fallback: обычный pager для случая когда JS выключен или Stimulus
                    не поднялся. При работающем JS контроллер скрывает его. #}
