@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
+use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTOTransformer;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -48,6 +50,8 @@ class ListAction extends AbstractController
 
     public function __construct(
         private readonly QueryBusInterface $queryBus,
+        private readonly CoatingTagRepositoryInterface $coatingTagRepository,
+        private readonly CoatingTagDTOTransformer $coatingTagDTOTransformer,
     ) {
     }
 
@@ -55,6 +59,7 @@ class ListAction extends AbstractController
     {
         $search = $request->query->get('search');
         $manufacturerIds = new StringCollection(...$request->query->all('manufacturerIds'));
+        $tagIds = new StringCollection(...$request->query->all('tagIds'));
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
         $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $pager = Pager::fromPage($page, $limit);
@@ -68,6 +73,13 @@ class ListAction extends AbstractController
             new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000))),
         );
 
+        // Загружаем выбранные теги как DTO (id + title + type) — шаблону нужны
+        // title'ы для чипов, а из URL приходят только id. Если id несуществующий —
+        // просто выпадает (findByIds его дропает).
+        $selectedTags = $this->coatingTagDTOTransformer->fromEntityList(
+            $this->coatingTagRepository->findByIds($tagIds),
+        );
+
         $error = null;
         try {
             $filter = new CoatingsFilter(
@@ -76,6 +88,7 @@ class ListAction extends AbstractController
                 pager: $pager,
                 applicationMinTemp: RangeFilter::tryFromNullable($appMinTempFrom, $appMinTempTo),
                 volumeSolid: RangeFilter::tryFromNullable($volumeSolidFrom, $volumeSolidTo),
+                tagIds: $tagIds,
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
         } catch (AppException $e) {
@@ -86,6 +99,9 @@ class ListAction extends AbstractController
         return $this->render('admin/coating/coating/index.html.twig', [
             'search' => $search ?? '',
             'selectedManufacturerIds' => $manufacturerIds,
+            // list<CoatingTagDTO> с id+title+type; id'ы для URL-toggle
+            // читаются через |map(t => t.id) в шаблоне.
+            'selectedTags' => $selectedTags,
             'manufacturers' => $manufacturersResult->manufacturers,
             'result' => $result,
             'error' => $error,

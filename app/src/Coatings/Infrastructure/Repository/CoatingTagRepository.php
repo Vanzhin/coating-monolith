@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Repository;
 use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingTagsFilter;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -38,6 +39,14 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
     public function findOneById(string $id): ?CoatingTag
     {
         return $this->findOneBy(['id' => $id]);
+    }
+
+    public function findByIds(StringCollection $ids): array
+    {
+        if ($ids->count() === 0) {
+            return [];
+        }
+        return $this->findBy(['id' => $ids->getList()]);
     }
 
     public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag

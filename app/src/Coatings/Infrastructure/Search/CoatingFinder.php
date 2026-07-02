@@ -85,6 +85,29 @@ final class CoatingFinder
         $this->applyManufacturerFacet($qb, $filter);
         $this->applyRangeFacet($qb, 'applicationMinTemp', 'appMinTemp', $filter->applicationMinTemp);
         $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
+        $this->applyTagFacet($qb, $filter);
+    }
+
+    /**
+     * AND-семантика: покрытие обязано иметь ВСЕ выбранные теги. Реализуется
+     * через отдельный EXISTS-подзапрос на каждый tag id — GROUP BY подход
+     * конфликтует с уже существующим addSelect('t') из fetchJoinCollection
+     * (Postgres требует не-агрегируемые колонки в GROUP BY).
+     */
+    private function applyTagFacet(QueryBuilder $qb, CoatingsFilter $filter): void
+    {
+        if ($filter->tagIds->count() === 0) {
+            return;
+        }
+        foreach ($filter->tagIds->getList() as $i => $tagId) {
+            $paramName = "filterTagId{$i}";
+            $qb->andWhere(sprintf(
+                'EXISTS (SELECT 1 FROM %s fc%d INNER JOIN fc%d.tags ft%d WHERE fc%d = cc AND ft%d.id = :%s)',
+                Coating::class,
+                $i, $i, $i, $i, $i,
+                $paramName,
+            ))->setParameter($paramName, $tagId);
+        }
     }
 
     private function applyManufacturerFacet(QueryBuilder $qb, CoatingsFilter $filter): void

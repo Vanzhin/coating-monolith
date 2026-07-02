@@ -5,6 +5,7 @@
 
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
+    {% set selectedTagIdList = selectedTagIds.list %}
     {# Карта {key_lower => "Русское название (ISO)"} для подписей base-узлов в модалке покрытия. #}
     {% set baseLabels = {} %}
     {% for b in coatingBases ?? [] %}
@@ -26,8 +27,28 @@
             {% endif %}
         </div>
 
+        {# id'ы активных tag-фильтров, вытаскиваются из DTO-массива один раз для
+           переиспользования в разных местах (проверки on/off, вычисление
+           toggle-url'ов). #}
+        {% set selectedTagIdList = selectedTags|map(t => t.id) %}
+
         <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}" class="mb-3">
             <div class="input-group input-group-lg mb-3">
+                {# Активные tag-чипы левее text-input'а. Клик по × убирает тег
+                   из URL и submit'ит (навигация через <a href>). Скрытые hidden
+                   input'ы дублируют tagIds для form-GET submit. #}
+                {% for tag in selectedTags %}
+                    {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
+                    {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
+                    <span class="input-group-text bg-body-tertiary py-1">
+                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal me-2">{{ tag.title }}</span>
+                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                           class="btn-close btn-close-sm"
+                           title="Убрать «{{ tag.title }}» из фильтра"
+                           aria-label="Убрать из фильтра"></a>
+                    </span>
+                    <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
+                {% endfor %}
                 <input type="search" name="search" value="{{ search }}"
                        class="form-control"
                        placeholder="По названию и описанию (3-50 символов)"
@@ -40,7 +61,8 @@
             {% set volumeSolidActive = volumeSolidFrom is not null or volumeSolidTo is not null %}
             {% set activeFacetsCount = selectedManufacturerIds.count
                 + (appMinTempActive ? 1 : 0)
-                + (volumeSolidActive ? 1 : 0) %}
+                + (volumeSolidActive ? 1 : 0)
+                + selectedTags|length %}
 
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <button class="btn btn-outline-secondary btn-sm" type="button"
@@ -172,9 +194,22 @@
                                     {{ coating.description }}
                                 </p>
                                 {% if coating.tags|length > 0 %}
-                                    <div class="d-flex flex-wrap gap-1">
+                                    <div class="d-flex flex-wrap gap-1" onclick="event.stopPropagation()">
                                         {% for tag in coating.tags %}
-                                            <span class="badge text-bg-light border fw-normal">{{ tag.title }}</span>
+                                            {# Клик toggle'ит tag id в URL: если уже активен — убираем,
+                                               иначе добавляем. onclick.stopPropagation чтобы клик не
+                                               открывал preview-modal родительского flex-grow div'а. #}
+                                            {% set isActive = tag.id in selectedTagIdList %}
+                                            {% set newTagIds = isActive
+                                                ? selectedTagIdList|filter(id => id != tag.id)
+                                                : selectedTagIdList|merge([tag.id]) %}
+                                            {% set q = app.request.query.all|merge({tagIds: newTagIds, page: null})|filter(v => v is not null) %}
+                                            <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                               class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-dark{% endif %} fw-normal text-decoration-none"
+                                               title="{{ isActive ? 'Убрать «' ~ tag.title ~ '» из фильтра' : 'Отфильтровать по «' ~ tag.title ~ '»' }}">
+                                                {{ tag.title }}
+                                                {%- if isActive %} ×{% endif -%}
+                                            </a>
                                         {% endfor %}
                                     </div>
                                 {% endif %}
@@ -213,9 +248,9 @@
                                     </div>
                                     <div class="modal-body">
                                         {% if coating.tags|length > 0 %}
-                                            <div class="mb-3">
+                                            <div class="mb-3 d-flex flex-wrap gap-1">
                                                 {% for tag in coating.tags %}
-                                                    <span class="badge text-bg-light border me-1">{{ tag.title }}</span>
+                                                    <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
                                                 {% endfor %}
                                             </div>
                                         {% endif %}

@@ -29,6 +29,7 @@ readonly class CoatingsFilter
         ?Pager $pager = null,
         public ?RangeFilter $applicationMinTemp = null,
         public ?RangeFilter $volumeSolid = null,
+        public StringCollection $tagIds = new StringCollection(),
     ) {
         $this->search = $this->normalizeSearch($search);
         $this->pager = $pager;
