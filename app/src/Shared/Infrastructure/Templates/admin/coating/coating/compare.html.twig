@@ -2,6 +2,28 @@
 
 {% block title %}{{ parent() }} | Сравнение покрытий{% endblock %}
 
+{# Заголовок subject'а с крестиком «убрать из сравнения» перед названием.
+   Stimulus-контроллер compare-remove читает id, удаляет из URL и localStorage,
+   редиректит на compare?ids=… или /list если осталось < 2 покрытия. #}
+{% macro subject_head(subject) %}
+    <div class="d-flex align-items-start gap-1">
+        <button type="button"
+                class="btn btn-sm btn-outline-danger border-0 p-0 lh-1 mt-1"
+                data-controller="compare-remove"
+                data-compare-remove-id-value="{{ subject.id }}"
+                data-compare-remove-list-url-value="{{ path('app_cabinet_coating_coating_list') }}"
+                data-action="click->compare-remove#remove"
+                title="Убрать «{{ subject.title }}» из сравнения"
+                aria-label="Убрать из сравнения">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div>
+            <div class="fw-semibold">{{ subject.title }}</div>
+            <div class="text-muted small">{{ subject.manufacturer.title }}</div>
+        </div>
+    </div>
+{% endmacro %}
+
 {% block content %}
     {% set fieldLabels = {
         'title':                  'Название',
@@ -55,10 +77,7 @@
                             <tr>
                                 <th style="width: 20%;">Поле</th>
                                 {% for subject in subjects %}
-                                    <th>
-                                        <div class="fw-semibold">{{ subject.title }}</div>
-                                        <div class="text-muted small">{{ subject.manufacturer.title }}</div>
-                                    </th>
+                                    <th>{{ _self.subject_head(subject) }}</th>
                                 {% endfor %}
                             </tr>
                         </thead>
@@ -106,8 +125,7 @@
                                     {% for row in section.rows %}
                                         <tr>
                                             <th scope="row" class="fw-normal">
-                                                {{ row.subject.title }}
-                                                <span class="text-muted small d-block">{{ row.subject.manufacturer.title }}</span>
+                                                {{ _self.subject_head(row.subject) }}
                                             </th>
                                             {% for t in section.columns %}
                                                 {% set cell = row.values[t] %}
