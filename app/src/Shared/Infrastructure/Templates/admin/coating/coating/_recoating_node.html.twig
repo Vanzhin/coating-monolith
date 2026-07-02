@@ -110,12 +110,12 @@
     {% if isBase %}
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="mb-0">Основа: {{ baseLabels[path|last] ?? path|last }}</h6>
-            <button type="button" class="btn btn-sm btn-outline-danger"
+            <button type="button" class="btn-close btn-close-sm"
                     data-action="click->coating-form#removeBase"
                     data-coating-form-env-param="{{ path[0] }}"
-                    data-coating-form-base-param="{{ path|last }}">
-                <i class="bi bi-x-lg"></i>
-            </button>
+                    data-coating-form-base-param="{{ path|last }}"
+                    title="Удалить правило для основы"
+                    aria-label="Удалить правило для основы"></button>
         </div>
     {% endif %}
 

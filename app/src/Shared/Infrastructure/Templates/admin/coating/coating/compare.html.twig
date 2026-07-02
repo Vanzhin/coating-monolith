@@ -6,17 +6,15 @@
    Stimulus-контроллер compare-remove читает id, удаляет из URL и localStorage,
    редиректит на compare?ids=… или /list если осталось < 2 покрытия. #}
 {% macro subject_head(subject) %}
-    <div class="d-flex align-items-start gap-1">
+    <div class="d-flex align-items-start gap-2">
         <button type="button"
-                class="btn btn-sm btn-outline-danger border-0 p-0 lh-1 mt-1"
+                class="btn-close btn-close-sm mt-1"
                 data-controller="compare-remove"
                 data-compare-remove-id-value="{{ subject.id }}"
                 data-compare-remove-list-url-value="{{ path('app_cabinet_coating_coating_list') }}"
                 data-action="click->compare-remove#remove"
                 title="Убрать «{{ subject.title }}» из сравнения"
-                aria-label="Убрать из сравнения">
-            <i class="bi bi-x-lg"></i>
-        </button>
+                aria-label="Убрать из сравнения"></button>
         <div>
             <div class="fw-semibold">{{ subject.title }}</div>
             <div class="text-muted small">{{ subject.manufacturer.title }}</div>
