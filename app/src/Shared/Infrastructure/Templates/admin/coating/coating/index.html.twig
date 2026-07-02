@@ -3,6 +3,18 @@
 
 {% block title %}{{ parent() }} | Покрытия{% endblock %}
 
+{# Chip активного tag-фильтра с × для удаления. Рендерится в двух местах:
+   input-group строки поиска и «Активные теги» секция расширенной панели. #}
+{% macro tag_removal_chip(tag, removeUrl) %}
+    <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal d-inline-flex align-items-center gap-1">
+        {{ tag.title }}
+        <a href="{{ removeUrl }}"
+           class="btn-close btn-close-white btn-close-sm"
+           title="Убрать «{{ tag.title }}» из фильтра"
+           aria-label="Убрать из фильтра"></a>
+    </span>
+{% endmacro %}
+
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
     {% set selectedTagIdList = selectedTagIds.list %}
@@ -41,13 +53,7 @@
                     {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
                     {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
                     <span class="input-group-text bg-body-tertiary p-1">
-                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal d-inline-flex align-items-center gap-1">
-                            {{ tag.title }}
-                            <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
-                               class="btn-close btn-close-white btn-close-sm"
-                               title="Убрать «{{ tag.title }}» из фильтра"
-                               aria-label="Убрать из фильтра"></a>
-                        </span>
+                        {{ _self.tag_removal_chip(tag, path('app_cabinet_coating_coating_list', q)) }}
                     </span>
                     <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
                 {% endfor %}
@@ -90,6 +96,21 @@
 
             <div class="collapse {% if advancedPanelActive > 0 %} show {% endif %}" id="advancedFilter">
                 <div class="card card-body">
+                    {# === Активные теги — дублируем чипы из строки поиска сюда,
+                       чтобы фильтр был виден и здесь. × работает одинаково. === #}
+                    {% if selectedTags|length > 0 %}
+                        <div class="pb-3 mb-3 border-bottom">
+                            <label class="form-label fw-semibold mb-2">Активные теги</label>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for tag in selectedTags %}
+                                    {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
+                                    {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
+                                    {{ _self.tag_removal_chip(tag, path('app_cabinet_coating_coating_list', q)) }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
                     {# === Мин температура нанесения — чипы-пресеты === #}
                     <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
                         <div class="d-flex justify-content-between align-items-baseline mb-2">
