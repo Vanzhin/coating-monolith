@@ -1,18 +1,18 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Reusable infinite-scroll контроллер. Работает в паре с partial'ом
+ * Reusable «загрузить ещё» контроллер списка. Работает в паре с partial'ом
  * templates/components/infinite_list.html.twig — там же и CSS-анимация
  * плавного появления.
  *
- *  - IntersectionObserver на sentinel — авто-догрузка при подходе к концу.
- *  - Кнопка «Показать ещё» — ручной триггер той же процедуры. Внутри кнопки
- *    Bootstrap-спиннер, показывается на время in-flight запроса.
- *  - Backend должен отдавать голый partial по URL с ?partial=1.
- *    Всё что нужно серверу для фильтров — уже в baseUrl.
+ * Только по клику на кнопку (не auto-scroll). Внутри кнопки Bootstrap-
+ * спиннер, показывается на время in-flight запроса.
+ *
+ * Backend должен отдавать голый partial по URL с ?partial=1. Все нужные
+ * фильтры уже в baseUrl.
  */
 export default class extends Controller {
-    static targets = ['cards', 'sentinel', 'button', 'buttonLabel', 'spinner', 'loadMoreWrapper'];
+    static targets = ['cards', 'button', 'buttonLabel', 'spinner', 'loadMoreWrapper'];
 
     static values = {
         nextPage:   Number,   // страница на следующую догрузку (обычно 2)
@@ -26,23 +26,7 @@ export default class extends Controller {
             ? this.buttonLabelTarget.textContent.trim()
             : 'Показать ещё';
 
-        if (this._hasMore()) {
-            this._observer = new IntersectionObserver(
-                (entries) => {
-                    for (const e of entries) {
-                        if (e.isIntersecting) this.loadNext();
-                    }
-                },
-                { rootMargin: '200px' },
-            );
-            this._observer.observe(this.sentinelTarget);
-        } else {
-            this._done();
-        }
-    }
-
-    disconnect() {
-        if (this._observer) this._observer.disconnect();
+        if (!this._hasMore()) this._done();
     }
 
     async loadNext() {
@@ -114,7 +98,6 @@ export default class extends Controller {
     }
 
     _done() {
-        if (this._observer) this._observer.disconnect();
         if (this.hasLoadMoreWrapperTarget) {
             // Плавное исчезновение — CSS animation задаёт fade-out, потом d-none
             // окончательно убирает из потока.

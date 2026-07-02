@@ -50,7 +50,6 @@
     <div class="{{ wrapper_class }}" data-infinite-list-target="cards">
         {% include items_template with items_params only %}
     </div>
-    <div data-infinite-list-target="sentinel" style="height: 1px;"></div>
     {% if total_pages >= start_page %}
         <div class="text-center mt-3" data-infinite-list-target="loadMoreWrapper">
             <button type="button" class="btn btn-outline-secondary"
