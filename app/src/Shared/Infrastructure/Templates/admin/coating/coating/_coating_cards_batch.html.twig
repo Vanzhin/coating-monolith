@@ -19,17 +19,22 @@
                    data-action="change->compare-tray#toggle"
                    aria-label="Добавить к сравнению">
         </div>
-        <div class="flex-grow-1 overflow-hidden"
-             style="cursor: pointer;"
-             data-bs-toggle="modal"
-             data-bs-target="#coatingPreview-{{ coating.id }}">
-            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
-            <p class="mb-1 small text-muted"
-               style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
-                {{ coating.description }}
-            </p>
+        <div class="flex-grow-1 overflow-hidden">
+            {# Модалку-триггер вешаем ТОЛЬКО на title+description, не на всю
+               обёртку. Иначе клик по tag-ссылке пузырьком триггерит модалку
+               (stopPropagation на inline onclick был fragile из-за event
+               delegation в Bootstrap 5). #}
+            <div style="cursor: pointer;"
+                 data-bs-toggle="modal"
+                 data-bs-target="#coatingPreview-{{ coating.id }}">
+                <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
+                <p class="mb-1 small text-muted"
+                   style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                    {{ coating.description }}
+                </p>
+            </div>
             {% if coating.tags|length > 0 %}
-                <div class="d-flex flex-wrap gap-1" onclick="event.stopPropagation()">
+                <div class="d-flex flex-wrap gap-1">
                     {% for tag in coating.tags %}
                         {% set isActive = tag.id in selectedTagIdList %}
                         {% set newTagIds = isActive

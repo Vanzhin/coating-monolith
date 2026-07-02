@@ -9,6 +9,13 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
+      # manager_php-cli — one-shot init: composer install + migrations +
+      # cache:warmup + chown var/cache. php-fpm стартует ТОЛЬКО когда
+      # init'ит завершился 0-кодом, иначе поднялся бы на stale DI-cache
+      # (bind-mount ./app:/app подменяет запечённый в образ var/cache
+      # хостовой директорией предыдущего релиза).
+      manager_php-cli:
+        condition: service_completed_successfully
     working_dir: /app
 
   manager_supervisor:
@@ -21,17 +28,34 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
+      manager_php-cli:
+        condition: service_completed_successfully
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
       - ./app:/app:rw
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
 
+  # Init-контейнер: composer install → миграции → wipe stale cache → warmup →
+  # chown var/cache и var/log на www-data (php-fpm бежит именно этим юзером).
+  # Каждая цепочка через && — любая ошибка обрывает старт всей системы, а не
+  # запускает контейнеры молча на broken state. Дублирующиеся ContainerXxx.php
+  # от предыдущего релиза очищаются здесь ЖЕ, а не в pipeline деплоя — так race
+  # conditions между шагами исключены by design (см. depends_on выше).
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${TAG:-latest}
-    command: bash -c "composer install && php bin/console --no-interaction doctrine:migrations:migrate"
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        composer install --no-dev --no-interaction --no-scripts
+        rm -rf var/cache/prod/*
+        php bin/console --no-interaction doctrine:migrations:migrate
+        php bin/console cache:warmup --env=prod --no-debug
+        chown -R www-data:www-data var/cache var/log
     depends_on:
       manager_redis:
         condition: service_started
