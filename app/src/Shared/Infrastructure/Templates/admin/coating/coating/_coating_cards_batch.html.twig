@@ -1,0 +1,191 @@
+{# Батч карточек покрытий + их preview-модалок.
+   Используется:
+   - основным шаблоном index.html.twig для первой страницы;
+   - ListAction в режиме ?partial=1 для догрузки следующих страниц через
+     infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот
+     partial без layout'a.
+
+   Обязательные переменные:
+     coatings          — list<CoatingDTO>
+     canEdit           — bool
+     selectedTagIdList — list<string>  (id уже активных tag-фильтров)
+     baseLabels        — map<lower_iso, "Русское (ISO)"> для preview-модалки
+#}
+{% for coating in coatings %}
+    <div class="list-group-item d-flex align-items-start gap-2 gap-md-3 px-2 px-md-3 py-3">
+        <div class="form-check flex-shrink-0 m-0 mt-1">
+            <input type="checkbox" class="form-check-input m-0"
+                   data-compare-id="{{ coating.id }}"
+                   data-action="change->compare-tray#toggle"
+                   aria-label="Добавить к сравнению">
+        </div>
+        <div class="flex-grow-1 overflow-hidden"
+             style="cursor: pointer;"
+             data-bs-toggle="modal"
+             data-bs-target="#coatingPreview-{{ coating.id }}">
+            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
+            <p class="mb-1 small text-muted"
+               style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                {{ coating.description }}
+            </p>
+            {% if coating.tags|length > 0 %}
+                <div class="d-flex flex-wrap gap-1" onclick="event.stopPropagation()">
+                    {% for tag in coating.tags %}
+                        {% set isActive = tag.id in selectedTagIdList %}
+                        {% set newTagIds = isActive
+                            ? selectedTagIdList|filter(id => id != tag.id)
+                            : selectedTagIdList|merge([tag.id]) %}
+                        {% set q = app.request.query.all|merge({tagIds: newTagIds, page: null})|filter(v => v is not null) %}
+                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-dark{% endif %} fw-normal text-decoration-none"
+                           title="{{ isActive ? 'Убрать «' ~ tag.title ~ '» из фильтра' : 'Отфильтровать по «' ~ tag.title ~ '»' }}">
+                            {{ tag.title }}
+                            {%- if isActive %} ×{% endif -%}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% if canEdit %}
+            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                {% include '/components/edit_delete.html.twig'
+                    with {
+                    'edit': 'app_cabinet_coating_coating_update',
+                    'delete':'app_cabinet_coating_coating_delete',
+                    'duplicate': 'app_cabinet_coating_coating_create',
+                    'id': coating.id,
+                    'title': coating.title,
+                    'name': "покрытие"
+                } %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="modal fade" id="coatingPreview-{{ coating.id }}" tabindex="-1"
+         aria-labelledby="coatingPreviewLabel-{{ coating.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title mb-0" id="coatingPreviewLabel-{{ coating.id }}">
+                            {{ coating.title }}
+                        </h5>
+                        <small class="text-muted">{{ coating.manufacturer.title }}</small>
+                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    {% if coating.tags|length > 0 %}
+                        <div class="mb-3 d-flex flex-wrap gap-1">
+                            {% for tag in coating.tags %}
+                                <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if coating.description %}
+                        <p class="text-body-secondary mb-4">{{ coating.description }}</p>
+                    {% endif %}
+
+                    <h6 class="mb-2 mt-1">Основные характеристики</h6>
+                    <table class="table table-sm mb-4">
+                        <tbody>
+                            {% set baseEnum = coating.baseEnum %}
+                            {% if baseEnum %}
+                                <tr>
+                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ (основание)</th>
+                                    <td>
+                                        {{ baseEnum.title }}
+                                        <span class="text-muted">
+                                            ({{ baseEnum.iso }}{% if baseEnum.gost|length > 0 %} / {{ baseEnum.gost|join(', ') }}{% endif %})
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            <tr>
+                                <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток</th>
+                                <td>{{ coating.volumeSolid }} об. %</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-muted fw-normal">Плотность</th>
+                                <td>{{ coating.massDensity }} кг/л</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки</th>
+                                <td>
+                                    {{ coating.dftRange.min }}–{{ coating.dftRange.max }} мкм
+                                    <span class="text-muted">(целевая {{ coating.dftRange.tds_dft }})</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-muted fw-normal">Рабочий диапазон температур</th>
+                                <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }} °C</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-muted fw-normal">Упаковка</th>
+                                <td>{{ coating.pack }} л</td>
+                            </tr>
+                            {% if coating.thinner %}
+                                <tr>
+                                    <th scope="row" class="text-muted fw-normal">Разбавитель</th>
+                                    <td>{{ coating.thinner }}</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+
+                    {% set matrix = coating_time_matrix(coating) %}
+                    <h6 class="mb-2 mt-1">Время высыхания</h6>
+                    <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-2">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-muted fw-normal">Температура поверхности</th>
+                                {% for t in matrix.columns %}
+                                    <th class="text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in matrix.rows %}
+                                <tr>
+                                    <th scope="row" class="fw-normal">{{ row.label }}</th>
+                                    {% for t in matrix.columns %}
+                                        {% set cell = row.values[t] %}
+                                        <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
+                                            {% if cell.minutes is null %}
+                                                <span class="text-muted">—</span>
+                                            {% elseif cell.minutes == 0 %}
+                                                <i class="bi bi-infinity" title="без ограничения"></i>
+                                            {% else %}
+                                                {{ cell.minutes|duration_minutes_short }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Курсивом — рассчитанные интерполяцией значения.
+                        «—» — данные отсутствуют или вне определённого диапазона.
+                        {% if coating.maxRecoatingInterval is null %}
+                            Верхняя граница интервала перекрытия не задана.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    {% if canEdit %}
+                        <a href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Редактировать
+                        </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}

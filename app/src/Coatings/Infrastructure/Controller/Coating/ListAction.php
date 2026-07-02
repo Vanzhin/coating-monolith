@@ -96,6 +96,18 @@ class ListAction extends AbstractController
             $result = new GetPagedCoatingsQueryResult([], $pager);
         }
 
+        // Infinite scroll: если это AJAX-догрузка next-page, отдаём голый
+        // partial с карточками (без layout'a, header'a, поисковой формы и т.д.).
+        // Stimulus infinite-list-контроллер парсит HTML и append'ит в DOM.
+        if ((bool) $request->query->get('partial', false)) {
+            return $this->render('admin/coating/coating/_coating_cards_batch.html.twig', [
+                'coatings' => $result->coatings,
+                'canEdit' => $this->isGranted('ROLE_ADMIN'),
+                'selectedTagIdList' => $tagIds->getList(),
+                'baseLabels' => [],
+            ]);
+        }
+
         return $this->render('admin/coating/coating/index.html.twig', [
             'search' => $search ?? '',
             'selectedManufacturerIds' => $manufacturerIds,
