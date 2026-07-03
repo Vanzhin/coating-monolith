@@ -6,6 +6,20 @@
     <meta name="description" content="{{ app_name }} - профессиональная платформа для управления документами и покрытиями">
     <title>{% block title %}{{ app_name }} | {% endblock %}</title>
 
+    {# FOUC-safe theme init — ставим data-bs-theme на <html> ДО того как браузер
+       начнёт применять Bootstrap CSS, чтобы не «моргнуть» светлой темой при
+       загрузке. Bootstrap 5.3+ читает атрибут и применяет соответствующие
+       CSS-переменные (--bs-body-bg / --bs-body-color / border-color / etc). #}
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('theme');
+                var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', theme);
+            } catch (e) { /* localStorage может быть заблокирован — оставляем дефолт */ }
+        })();
+    </script>
+
     {# Favicon и манифест #}
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('icons/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('icons/favicon-32x32.png') }}">
@@ -52,8 +66,8 @@
         }
 
         .blog-header-logo {
-            font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-            font-size: 2.25rem;
+            font-family: inherit;
+            font-size: 1.25rem;
             text-decoration: none;
         }
 
@@ -170,25 +184,30 @@
             padding: 0;
         }
 
-        .list-group-item {
+        /* Стили пунктов меню — ТОЛЬКО внутри #mainMenu, чтобы не перекрывать
+           .list-group-item на карточках покрытий/производителей (там дефолтный
+           Bootstrap hover нужен и корректно работает в тёмной теме через
+           --bs-list-group-*-* переменные). */
+        #mainMenu .list-group-item {
             border: none;
             border-radius: 0;
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f8f9fa;
+            border-bottom: 1px solid var(--bs-border-color);
+            background: transparent;
         }
 
-        .list-group-item:hover {
-            background-color: #f8f9fa;
+        #mainMenu .list-group-item:hover {
+            background-color: var(--bs-tertiary-bg);
         }
 
-        .list-group-item i {
+        #mainMenu .list-group-item i {
             width: 20px;
         }
 
-        /* Секция пользователя в мобильном меню */
+        /* Секция пользователя в мобильном меню — тоже theme-aware. */
         .user-section {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            background-color: var(--bs-tertiary-bg);
+            border-bottom: 1px solid var(--bs-border-color);
         }
 
         .user-info {
@@ -198,6 +217,97 @@
         .user-email {
             font-weight: 500;
             color: #495057;
+        }
+
+        /* === GitHub-inspired refresh ===
+           Системный шрифт-стек (нативный на каждой ОС), плотная типографика,
+           мягкие границы, больше воздуха в карточках/list-item'ах. Работает
+           поверх Bootstrap: не заменяет базовые классы, только уточняет.
+
+           Тёмная тема — через встроенный Bootstrap 5.3 механизм
+           `data-bs-theme="dark"` на <html> (см. FOUC-safe init script в head). */
+        body {
+            /* Office-style стек: Calibri на Windows (Office-default), Segoe UI
+               fallback там же; на macOS — системный SF Pro / Helvetica Neue;
+               на Linux — Ubuntu / DejaVu. Всё нативно, без внешних загрузок. */
+            font-family: Calibri, "Segoe UI", -apple-system, BlinkMacSystemFont,
+                         "Helvetica Neue", "Noto Sans", Arial, sans-serif,
+                         "Apple Color Emoji", "Segoe UI Emoji";
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+            font-weight: 600;
+            line-height: 1.25;
+            letter-spacing: -0.005em;
+        }
+
+        /* Логотип — не Playfair, а тот же системный шрифт что и body: плотный
+           weight и tight letter-spacing вместо декоративной засечки. */
+        .blog-header-logo {
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        /* Шапка — использует CSS-переменные Bootstrap, чтобы автоматически
+           переключаться со светлой на тёмную. */
+        .blog-header {
+            background: var(--bs-body-bg);
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        /* Больше воздуха в списках-карточках, мягкая граница. */
+        .list-group {
+            border-radius: 8px;
+            --bs-list-group-border-color: var(--bs-border-color);
+        }
+        .list-group-item {
+            padding: 1rem 1.25rem;
+            transition: background-color 0.15s ease;
+        }
+        /* Hover-выделение карточек: --bs-secondary-bg даёт видимый контраст
+           в обеих темах (#e9ecef в светлой, #343a40 в тёмной) и не ломает
+           читаемость текста (цвет тела не меняем). */
+        .list-group-item:hover {
+            background-color: var(--bs-secondary-bg);
+        }
+
+        .card {
+            border-radius: 8px;
+            border-color: var(--bs-border-color);
+        }
+
+        /* Flash-сообщения — прозрачнее, чтобы не выбивались из тёмной темы. */
+        .flash-messages {
+            background-color: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+        }
+        .flash-messages .alert {
+            background-color: var(--bs-body-bg);
+            border-color: var(--bs-border-color);
+        }
+
+        /* Модалка / offcanvas в тёмной теме получают правильные фон/бордер
+           через встроенный Bootstrap 5.3 — доп. правки не нужны. */
+
+        /* Кнопка переключения темы: одинаковый размер с .menu-toggle. */
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle .bi { font-size: 1.1rem; }
+        @media (max-width: 576px) {
+            .theme-toggle { width: 36px; height: 36px; }
         }
     </style>
 </head>
@@ -219,15 +329,22 @@
 
                 {# Центральная колонка - логотип #}
                 <div class="col-4 text-center">
-                    <a class="blog-header-logo text-dark" href="{{ path('app_homepage') }}">
+                    <a class="blog-header-logo text-body text-decoration-none" href="{{ path('app_homepage') }}">
                         {{ app_name }}
                     </a>
                 </div>
 
-                {# Правая колонка — пустая для баланса с левой (hamburger).
-                   Все пункты пользователя (Кабинет / Выйти / Войти) живут в
-                   `#mainMenu` offcanvas'e, здесь дублировать не нужно. #}
-                <div class="col-4"></div>
+                {# Правая колонка — переключатель темы. Пункты пользователя
+                   (Кабинет / Выйти / Войти) живут в `#mainMenu` offcanvas'e. #}
+                <div class="col-4 d-flex justify-content-end align-items-center">
+                    <button type="button"
+                            class="btn btn-outline-secondary theme-toggle shadow-sm"
+                            id="themeToggle"
+                            aria-label="Переключить тему">
+                        <i class="bi bi-sun-fill" data-theme-icon="light"></i>
+                        <i class="bi bi-moon-stars-fill d-none" data-theme-icon="dark"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -378,6 +495,25 @@
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Переключение темы — актуальная тема на <html data-bs-theme=...>
+        // выставляется FOUC-safe скриптом в <head>. Здесь только синхронизируем
+        // иконку и обрабатываем клик.
+        const themeToggleBtn = document.getElementById('themeToggle');
+        if (themeToggleBtn) {
+            const syncIcon = () => {
+                const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+                themeToggleBtn.querySelector('[data-theme-icon="light"]').classList.toggle('d-none', isDark);
+                themeToggleBtn.querySelector('[data-theme-icon="dark"]').classList.toggle('d-none', !isDark);
+            };
+            syncIcon();
+            themeToggleBtn.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-bs-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                syncIcon();
+            });
+        }
 
         // Закрытие меню при клике на ссылку — иначе пользователь выбрал раздел
         // и остался с открытым offcanvas'ом, приходится закрывать вручную.
