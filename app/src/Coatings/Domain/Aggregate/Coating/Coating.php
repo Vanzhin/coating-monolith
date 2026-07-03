@@ -37,6 +37,13 @@ class Coating extends Aggregate
     private float $pack;
     private ?string $thinner;
 
+    /**
+     * Температурные пределы эксплуатации в условиях сухого тепла / погружения.
+     * Оба nullable: null = данных нет / погружение не применимо.
+     */
+    private ?ThermalExposureLimits $dryHeatExposure = null;
+    private ?ThermalExposureLimits $immersionExposure = null;
+
     /** @var Collection<CoatingTag> */
     private Collection $tags;
 
@@ -99,6 +106,20 @@ class Coating extends Aggregate
     public function getApplicationMinTemp(): int { return $this->applicationMinTemp; }
 
     public function getDryingMaxTemp(): int { return $this->dryingMaxTemp; }
+
+    public function getDryHeatExposure(): ?ThermalExposureLimits { return $this->dryHeatExposure; }
+
+    public function getImmersionExposure(): ?ThermalExposureLimits { return $this->immersionExposure; }
+
+    public function setDryHeatExposure(?ThermalExposureLimits $limits): void
+    {
+        $this->dryHeatExposure = $limits;
+    }
+
+    public function setImmersionExposure(?ThermalExposureLimits $limits): void
+    {
+        $this->immersionExposure = $limits;
+    }
 
     public function getDryToTouch(): DryingTimeSeries { return $this->dryToTouch; }
 

@@ -9,9 +9,12 @@ use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQuer
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
+use App\Coatings\Domain\Repository\ThermalExposureQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
@@ -69,6 +72,18 @@ class ListAction extends AbstractController
         $volumeSolidFrom = $this->nullableInt($request->query->get('volumeSolidFrom'));
         $volumeSolidTo   = $this->nullableInt($request->query->get('volumeSolidTo'));
 
+        // Температура эксплуатации: одно число + среда (сухое/погружение) +
+        // галка «включая пик». Все три параметра прикреплены к одному фасету:
+        // temp без env бессмыслен, env без temp — тоже. Если temp пустой,
+        // ThermalExposureQuery не создаётся вообще (фасет не применяется).
+        $thermTemp = $this->nullableInt($request->query->get('thermTemp'));
+        $thermEnvRaw = $request->query->get('thermEnv');
+        $thermEnv = is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null;
+        $thermIncludingPeak = (bool) $request->query->get('thermPeak');
+
+        $sortRaw = $request->query->get('sort');
+        $sort = (is_string($sortRaw) ? CoatingSort::tryFrom($sortRaw) : null) ?? CoatingSort::DEFAULT;
+
         $manufacturersResult = $this->queryBus->execute(
             new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000))),
         );
@@ -89,6 +104,10 @@ class ListAction extends AbstractController
                 applicationMinTemp: RangeFilter::tryFromNullable($appMinTempFrom, $appMinTempTo),
                 volumeSolid: RangeFilter::tryFromNullable($volumeSolidFrom, $volumeSolidTo),
                 tagIds: $tagIds,
+                thermalExposure: $thermTemp !== null && $thermEnv !== null
+                    ? new ThermalExposureQuery($thermTemp, $thermEnv, $thermIncludingPeak)
+                    : null,
+                sort: $sort,
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
         } catch (AppException $e) {
@@ -124,6 +143,11 @@ class ListAction extends AbstractController
             'appMinTempTo'     => $appMinTempTo,
             'volumeSolidFrom'  => $volumeSolidFrom,
             'volumeSolidTo'    => $volumeSolidTo,
+            'thermTemp'         => $thermTemp,
+            'thermEnv'          => $thermEnv?->value,
+            'thermIncludingPeak' => $thermIncludingPeak,
+            'sort'              => $sort,
+            'sortOptions'       => CoatingSort::cases(),
         ]);
     }
 

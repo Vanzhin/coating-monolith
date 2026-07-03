@@ -45,6 +45,12 @@ class CoatingDTO
     public ?string $thinner;
     public ManufacturerDTO $manufacturer;
 
+    /** Температурные пределы эксплуатации: сухое тепло и погружение. Оба null'ятся,
+     *  если данные не задокументированы (для immersion — если материал не рассчитан
+     *  на погружение). Формат: {continuous_min, continuous_max, peak_max?, peak_duration_minutes?}. */
+    public ?ThermalExposureLimitsDTO $dryHeatExposure = null;
+    public ?ThermalExposureLimitsDTO $immersionExposure = null;
+
     /** @var CoatingTagDTO[] */
     public array $tags;
 }

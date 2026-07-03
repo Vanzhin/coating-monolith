@@ -216,7 +216,92 @@
                 </div>
             </div>
 
-            {# 6. Время высыхания — общая группа температурно-зависимых параметров.
+            {# 6. Температурные пределы эксплуатации — сухое тепло и погружение.
+                  Оба блока опциональные: если continuous_min/max пустые, VO не создаётся.
+                  Все инварианты (min<max, peak>continuous_max, duration>0 только при peak)
+                  проверяются в ThermalExposureLimits::__construct → AppException → форма. #}
+            {% set dryHeat = inputData.dryHeatExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
+            {% set immersion = inputData.immersionExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Пределы эксплуатации</div>
+                <div class="card-body">
+
+                    {# ─── Сухое тепло ─── #}
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2">Сухое тепло</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Мин, °C</label>
+                                <input type="number" name="dryHeatExposure[continuous_min]"
+                                       value="{{ dryHeat.continuous_min }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="напр. -20">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Макс, °C</label>
+                                <input type="number" name="dryHeatExposure[continuous_max]"
+                                       value="{{ dryHeat.continuous_max }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="напр. 120">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Пиковая, °C</label>
+                                <input type="number" name="dryHeatExposure[peak_max]"
+                                       value="{{ dryHeat.peak_max }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="опционально">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Длительность пика, мин</label>
+                                <input type="number" name="dryHeatExposure[peak_duration_minutes]"
+                                       value="{{ dryHeat.peak_duration_minutes }}"
+                                       class="form-control" min="1" max="1440"
+                                       placeholder="по умолчанию 60">
+                            </div>
+                        </div>
+                        <div class="form-text">Оставьте все поля пустыми, если данных нет. Мин и Макс обязательны в паре; пик — опционально.</div>
+                    </div>
+
+                    {# ─── Погружение ─── #}
+                    <div class="border rounded p-3">
+                        <h6 class="mb-2">Погружение</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Мин, °C</label>
+                                <input type="number" name="immersionExposure[continuous_min]"
+                                       value="{{ immersion.continuous_min }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="напр. 0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Макс, °C</label>
+                                <input type="number" name="immersionExposure[continuous_max]"
+                                       value="{{ immersion.continuous_max }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="напр. 60">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Пиковая, °C</label>
+                                <input type="number" name="immersionExposure[peak_max]"
+                                       value="{{ immersion.peak_max }}"
+                                       class="form-control" min="-100" max="500"
+                                       placeholder="опционально">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Длительность пика, мин</label>
+                                <input type="number" name="immersionExposure[peak_duration_minutes]"
+                                       value="{{ immersion.peak_duration_minutes }}"
+                                       class="form-control" min="1" max="1440"
+                                       placeholder="по умолчанию 60">
+                            </div>
+                        </div>
+                        <div class="form-text">Оставьте пустым, если материал не рассчитан на погружение.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            {# 7. Время высыхания — общая группа температурно-зависимых параметров.
                   Каждая подсекция (dryToTouch / fullCure / recoatingInterval) редактируется
                   по одному и тому же принципу: таблица точек «температура → длительность»
                   + кнопка «Добавить точку» + модалка редактирования. Новые температурно-

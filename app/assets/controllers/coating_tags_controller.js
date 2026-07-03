@@ -23,6 +23,13 @@ export default class extends Controller {
         existing: { type: Array, default: [] },
         suggestUrl: { type: String, default: '/cabinet/coating/coating-tag/suggest' },
         createUrl: { type: String, default: '/cabinet/coating/coating-tag' },
+        // Shape hidden-input'ов. Дефолт — вложенный `tags[][id]` для формы покрытия
+        // (парсится в POST-теле как список объектов). Для страницы поиска нужен плоский
+        // `tagIds[]` — переопределяется через data-coating-tags-hidden-input-name-value.
+        hiddenInputName: { type: String, default: 'tags[][id]' },
+        // На странице поиска — только выбор существующих. Создание тега — только
+        // при создании/редактировании покрытия.
+        allowCreate: { type: Boolean, default: true },
     };
 
     connect() {
@@ -121,15 +128,28 @@ export default class extends Controller {
             searchBy: query,
         }));
 
-        const exactMatch = items.some(
-            t => (t.value || '').toLocaleLowerCase() === trimmed.toLocaleLowerCase()
-        );
-        if (!exactMatch) {
+        if (this.allowCreateValue) {
+            const exactMatch = items.some(
+                t => (t.value || '').toLocaleLowerCase() === trimmed.toLocaleLowerCase()
+            );
+            if (!exactMatch) {
+                items.push({
+                    value: query,
+                    mappedValue: `+ Создать «${trimmed}»`,
+                    searchBy: query,
+                    __create: true,
+                });
+            }
+        }
+
+        // Ничего не нашли и создание отключено — показываем явный empty-state,
+        // иначе dropdown залипает на предыдущем «Идёт поиск…».
+        if (items.length === 0) {
             items.push({
                 value: query,
-                mappedValue: `+ Создать «${trimmed}»`,
+                mappedValue: 'Ничего не найдено',
                 searchBy: query,
-                __create: true,
+                __empty: true,
             });
         }
 
@@ -141,12 +161,20 @@ export default class extends Controller {
         const tagData = e.detail.data;
         const tagElm = e.detail.tag;
 
-        if (tagData.__loading) {
+        if (tagData.__loading || tagData.__empty) {
             this.tagify.removeTags(tagElm);
             return;
         }
 
         if (tagData.id) {
+            return;
+        }
+
+        // Тег без id и allowCreate=false — вход только через suggest (существующие).
+        // Если пользователь как-то попал сюда (например, ручной ввод + Enter, что мы
+        // и так отключаем addTagOn=[]) — молча удаляем.
+        if (!this.allowCreateValue) {
+            this.tagify.removeTags(tagElm);
             return;
         }
 
@@ -193,7 +221,7 @@ export default class extends Controller {
             if (!v.id) return;
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = 'tags[][id]';
+            input.name = this.hiddenInputNameValue;
             input.value = v.id;
             input.className = 'coating-tag-hidden';
             formGroup.appendChild(input);

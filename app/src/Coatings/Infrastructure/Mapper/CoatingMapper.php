@@ -8,10 +8,12 @@ use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
+use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingMapper
@@ -38,6 +40,9 @@ class CoatingMapper
         $vars['fullCure']   = $this->decomposeSeriesForForm($vars['fullCure'] ?? null);
         $vars['minRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['minRecoatingInterval'] ?? null);
         $vars['maxRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['maxRecoatingInterval'] ?? null);
+
+        $vars['dryHeatExposure']   = $this->decomposeExposureForForm($coatingDTO->dryHeatExposure);
+        $vars['immersionExposure'] = $this->decomposeExposureForForm($coatingDTO->immersionExposure);
 
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
     }
@@ -83,6 +88,9 @@ class CoatingMapper
 
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
+
+        $dto->dryHeatExposure   = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
+        $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
 
         $tags = [];
         foreach ($inputData['tags'] ?? [] as $tag) {
@@ -191,7 +199,85 @@ class CoatingMapper
                     'type' => new Assert\Optional(new Assert\Type('string')),
                 ])),
             ]),
+            // Температурные пределы валидируются не через Assert (тот бы выдавал
+            // тех-сообщения типа "[dryHeatExposure][continuous_min] должно быть numeric"
+            // при пустой строке), а через buildExposureFromInput → AppException с
+            // человеческой формулировкой и явным указанием секции.
+            'dryHeatExposure'   => new Assert\Optional([new Assert\Type('array')]),
+            'immersionExposure' => new Assert\Optional([new Assert\Type('array')]),
         ], allowExtraFields: true);
+    }
+
+    /**
+     * Собирает ThermalExposureLimitsDTO из плоских полей формы. Все 4 поля
+     * независимо-опциональные:
+     *  - ВСЕ поля пустые → null (пределы не задокументированы, при UPDATE
+     *    существующая запись затирается — тоже null).
+     *  - хотя бы одно поле заполнено → строим DTO с null'ами на месте пустых.
+     *
+     * Валидность каждого значения проверяется структурно (целое число), а
+     * попарные и содержательные инварианты (min<max, peak>max, duration>0) —
+     * в ThermalExposureLimits::__construct.
+     */
+    private function buildExposureFromInput(array $raw, string $sectionLabel): ?ThermalExposureLimitsDTO
+    {
+        $min     = $this->trimOrEmpty($raw['continuous_min'] ?? '');
+        $max     = $this->trimOrEmpty($raw['continuous_max'] ?? '');
+        $peakMax = $this->trimOrEmpty($raw['peak_max'] ?? '');
+        $peakDur = $this->trimOrEmpty($raw['peak_duration_minutes'] ?? '');
+
+        if ($min === '' && $max === '' && $peakMax === '' && $peakDur === '') {
+            return null;
+        }
+
+        if ($min !== '' && !$this->looksLikeInt($min)) {
+            throw new AppException(sprintf('Секция «%s»: минимальная температура должна быть целым числом.', $sectionLabel));
+        }
+        if ($max !== '' && !$this->looksLikeInt($max)) {
+            throw new AppException(sprintf('Секция «%s»: максимальная температура должна быть целым числом.', $sectionLabel));
+        }
+        if ($peakMax !== '' && !$this->looksLikeInt($peakMax)) {
+            throw new AppException(sprintf('Секция «%s»: пиковая температура должна быть целым числом.', $sectionLabel));
+        }
+        if ($peakDur !== '' && !$this->looksLikeInt($peakDur)) {
+            throw new AppException(sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel));
+        }
+
+        $dto = new ThermalExposureLimitsDTO();
+        $dto->continuous_min = $min !== ''     ? (int) $min     : null;
+        $dto->continuous_max = $max !== ''     ? (int) $max     : null;
+        $dto->peak_max = $peakMax !== ''       ? (int) $peakMax : null;
+        $dto->peak_duration_minutes = $peakDur !== '' ? (int) $peakDur : null;
+        return $dto;
+    }
+
+    private function trimOrEmpty(mixed $v): string
+    {
+        return is_string($v) ? trim($v) : (string) $v;
+    }
+
+    private function looksLikeInt(string $v): bool
+    {
+        return (bool) preg_match('/^-?\d+$/', $v);
+    }
+
+    /** Раскладывает ThermalExposureLimitsDTO в плоский набор для формы (или пустой массив). */
+    private function decomposeExposureForForm(?ThermalExposureLimitsDTO $dto): array
+    {
+        if ($dto === null) {
+            return [
+                'continuous_min'        => '',
+                'continuous_max'        => '',
+                'peak_max'              => '',
+                'peak_duration_minutes' => '',
+            ];
+        }
+        return [
+            'continuous_min'        => $dto->continuous_min,
+            'continuous_max'        => $dto->continuous_max,
+            'peak_max'              => $dto->peak_max ?? '',
+            'peak_duration_minutes' => $dto->peak_duration_minutes ?? '',
+        ];
     }
 
     /**

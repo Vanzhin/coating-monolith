@@ -6,7 +6,10 @@ namespace App\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingSearch;
+use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
+use App\Coatings\Domain\Repository\ThermalExposureQuery;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Domain\Repository\RangeFilter;
@@ -33,6 +36,7 @@ final class CoatingFinder
         $qb = $this->coatingQueryBuilder();
         $this->applyFtsClause($qb, $filter);
         $this->applyFacets($qb, $filter);
+        $this->applyUserSort($qb, $filter->sort);
         $this->applyPaging($qb, $filter->pager);
 
         return $this->paginate($qb);
@@ -55,8 +59,31 @@ final class CoatingFinder
             ->setParameter('threshold', self::FUZZY_SIMILARITY_THRESHOLD);
 
         $this->applyFacets($qb, $filter);
+        $this->applyUserSort($qb, $filter->sort);
 
         return $this->paginate($qb);
+    }
+
+    /**
+     * Пользовательская сортировка. DEFAULT — не трогаем ORDER BY, оставляем
+     * тот, что уже поставил applyFtsClause / fuzzyTitle (rank или title).
+     * Иные значения — перекрывают дефолт целиком.
+     */
+    private function applyUserSort(QueryBuilder $qb, CoatingSort $sort): void
+    {
+        if ($sort === CoatingSort::DEFAULT) {
+            return;
+        }
+
+        match ($sort) {
+            CoatingSort::TITLE_ASC        => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'ASC'),
+            CoatingSort::TITLE_DESC       => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'DESC'),
+            CoatingSort::MANUFACTURER_ASC => $qb->resetDQLPart('orderBy')
+                ->leftJoin('cc.manufacturer', 'sortMf')
+                ->orderBy('sortMf.title', 'ASC')
+                ->addOrderBy('cc.title', 'ASC'),
+            default                       => null,
+        };
     }
 
     private function applyFtsClause(QueryBuilder $qb, CoatingsFilter $filter): void
@@ -86,6 +113,44 @@ final class CoatingFinder
         $this->applyRangeFacet($qb, 'applicationMinTemp', 'appMinTemp', $filter->applicationMinTemp);
         $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
         $this->applyTagFacet($qb, $filter);
+        $this->applyThermalExposureFacet($qb, $filter->thermalExposure);
+    }
+
+    /**
+     * Фасет «покрытие держит T °C в среде E». Семантика зеркалит
+     * ThermalExposureLimits::covers: NULL-граница = «не задокументировано» =
+     * без ограничения в эту сторону (иначе покрытия с одной документированной
+     * границей были бы бесполезны в поиске).
+     *
+     * Покрытия без ThermalExposureLimits в нужной среде вообще (колонка NULL)
+     * НЕ попадают в выборку — данных нет, о материале ничего не известно.
+     */
+    private function applyThermalExposureFacet(QueryBuilder $qb, ?ThermalExposureQuery $q): void
+    {
+        if ($q === null) {
+            return;
+        }
+
+        $entityField = match ($q->environment) {
+            ThermalEnvironment::DRY_HEAT  => 'cc.dryHeatExposure',
+            ThermalEnvironment::IMMERSION => 'cc.immersionExposure',
+        };
+
+        $qb->andWhere("$entityField IS NOT NULL")
+            ->andWhere("(JSONB_GET_INT($entityField, 'continuous_min') IS NULL OR JSONB_GET_INT($entityField, 'continuous_min') <= :thermTemp)");
+
+        if ($q->includingPeak) {
+            // Верхняя эффективная граница: peak_max ?? continuous_max. Если оба NULL —
+            // ограничения сверху нет вообще.
+            $qb->andWhere(
+                "(COALESCE(JSONB_GET_INT($entityField, 'peak_max'), JSONB_GET_INT($entityField, 'continuous_max')) IS NULL " .
+                "OR COALESCE(JSONB_GET_INT($entityField, 'peak_max'), JSONB_GET_INT($entityField, 'continuous_max')) >= :thermTemp)"
+            );
+        } else {
+            $qb->andWhere("(JSONB_GET_INT($entityField, 'continuous_max') IS NULL OR JSONB_GET_INT($entityField, 'continuous_max') >= :thermTemp)");
+        }
+
+        $qb->setParameter('thermTemp', $q->temperature);
     }
 
     /**

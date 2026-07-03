@@ -12,6 +12,7 @@ doctrine:
             drying_time_series: App\Coatings\Infrastructure\Database\DBAL\DryingTimeSeriesType
             dft_range: App\Coatings\Infrastructure\Database\DBAL\DftRangeType
             recoating_interval_tree: App\Coatings\Infrastructure\Database\DBAL\RecoatingIntervalTreeType
+            thermal_exposure_limits: App\Coatings\Infrastructure\Database\DBAL\ThermalExposureLimitsType
         mapping_types:
             jsonb: json
     orm:
@@ -29,6 +30,7 @@ doctrine:
                 TS_RANK_CD: App\Coatings\Infrastructure\Database\DQL\TsRankCd
                 WORD_SIMILARITY: App\Coatings\Infrastructure\Database\DQL\WordSimilarity
                 GREATEST: App\Coatings\Infrastructure\Database\DQL\Greatest
+                JSONB_GET_INT: App\Coatings\Infrastructure\Database\DQL\JsonbGetInt
         mappings:
             Users:
                 type: xml

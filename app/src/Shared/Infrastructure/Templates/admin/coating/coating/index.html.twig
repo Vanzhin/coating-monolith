@@ -15,6 +15,7 @@
     </span>
 {% endmacro %}
 
+
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
     {% set selectedTagIdList = selectedTagIds.list %}
@@ -46,17 +47,11 @@
 
         <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}" class="mb-3">
             <div class="input-group input-group-lg mb-3">
-                {# Активные tag-чипы левее text-input'а. Клик по × убирает тег
-                   из URL и submit'ит (навигация через <a href>). Скрытые hidden
-                   input'ы дублируют tagIds для form-GET submit. #}
-                {% for tag in selectedTags %}
-                    {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
-                    {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
-                    <span class="input-group-text bg-body-tertiary p-1">
-                        {{ _self.tag_removal_chip(tag, path('app_cabinet_coating_coating_list', q)) }}
-                    </span>
-                    <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
-                {% endfor %}
+                {# Строка поиска — только текст. Активные фасеты (производитель /
+                   ranges / thermal / теги) в chip-row показаны как value-чипы-ссылки,
+                   не как form-input'ы. Чтобы они не терялись при сабмите этой
+                   формы (через search-input, apply-кнопки в dropdown'ах пустых
+                   фасетов, range-preset auto-submit) — рендерим их как hidden ниже. #}
                 <input type="search" name="search" value="{{ search }}"
                        class="form-control"
                        placeholder="По названию и описанию (3-50 символов)"
@@ -64,72 +59,350 @@
                 <button type="submit" class="btn btn-primary">Найти</button>
             </div>
 
-            {# Range-фасет активен, если хоть одна граница задана. #}
+            {# Preserve-state: hidden input'ы активных фасетов, чтобы submit формы
+               не сбрасывал их. Рендерим только для активных — у пустых свои
+               dropdown'ы с form-контролами. #}
+            {% for id in selectedManufacturerIds.list %}
+                <input type="hidden" name="manufacturerIds[]" value="{{ id }}">
+            {% endfor %}
+            {% if appMinTempFrom is not null %}
+                <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}">
+            {% endif %}
+            {% if appMinTempTo is not null %}
+                <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}">
+            {% endif %}
+            {% if volumeSolidFrom is not null %}
+                <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}">
+            {% endif %}
+            {% if volumeSolidTo is not null %}
+                <input type="hidden" name="volumeSolidTo" value="{{ volumeSolidTo }}">
+            {% endif %}
+            {% if thermTemp is not null %}
+                <input type="hidden" name="thermTemp" value="{{ thermTemp }}">
+            {% endif %}
+            {% if thermEnv %}
+                <input type="hidden" name="thermEnv" value="{{ thermEnv }}">
+            {% endif %}
+            {% if thermIncludingPeak %}
+                <input type="hidden" name="thermPeak" value="1">
+            {% endif %}
+            {% for tag in selectedTags %}
+                <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
+            {% endfor %}
+            {% if sort != constant('App\\Coatings\\Domain\\Repository\\CoatingSort::DEFAULT') %}
+                <input type="hidden" name="sort" value="{{ sort.value }}">
+            {% endif %}
+
+
+            {# Активные состояния фасетов: используются в лейблах и стилях dropdown-чипов. #}
             {% set appMinTempActive = appMinTempFrom is not null or appMinTempTo is not null %}
             {% set volumeSolidActive = volumeSolidFrom is not null or volumeSolidTo is not null %}
-            {# Фасеты внутри advanced-панели — определяют auto-open панели после reload'a.
-               Теги живут в строке поиска отдельно и НЕ триггерят открытие. #}
-            {% set advancedPanelActive = selectedManufacturerIds.count
+            {% set thermalActive = thermTemp is not null and thermEnv %}
+            {% set activeFacetsCount = selectedManufacturerIds.count
                 + (appMinTempActive ? 1 : 0)
-                + (volumeSolidActive ? 1 : 0) %}
-            {# Общий счётчик — для badge и сброса, включает теги. #}
-            {% set activeFacetsCount = advancedPanelActive + selectedTags|length %}
+                + (volumeSolidActive ? 1 : 0)
+                + (thermalActive ? 1 : 0)
+                + selectedTags|length %}
 
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <button class="btn btn-outline-secondary btn-sm" type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#advancedFilter"
-                        aria-expanded="{{ advancedPanelActive > 0 ? 'true' : 'false' }}"
-                        aria-controls="advancedFilter">
-                    <i class="bi bi-funnel"></i> Расширенный поиск
+            {# === Горизонтальный ряд chip-dropdown'ов ===
+                 Порядок: «Все фильтры» первой, затем per-фасет чипы.
+                 Каждый facet-чип:
+                   - Пустое состояние: `[Label ▾]` (btn-outline-secondary + dropdown).
+                   - Активное состояние: `[Label: значения ▾][×]` — btn-group из
+                     двух кнопок primary. Левая (dropdown) — редактировать. Правая
+                     (×) — reset только этого фасета через URL.
+                 `data-bs-auto-close="outside"` — не закрывать dropdown при
+                 клике по чекбоксу/input'у внутри. #}
+
+            {# Компактные строки-summary для активных фасетов (обрезаем длинные списки). #}
+            {% set mfNames = manufacturers|filter(m => m.id in selectedManufacturerIds.list)|map(m => m.title) %}
+            {% set mfSummary = mfNames|length > 0 ? mfNames|join(', ') : null %}
+            {% set appMinSummary = appMinTempActive
+                ? (appMinTempFrom is not null and appMinTempTo is not null ? appMinTempFrom ~ '…' ~ appMinTempTo ~ '°C'
+                   : (appMinTempFrom is not null ? '≥ ' ~ appMinTempFrom ~ '°C' : '≤ ' ~ appMinTempTo ~ '°C'))
+                : null %}
+            {% set vsSummary = volumeSolidActive
+                ? (volumeSolidFrom is not null and volumeSolidTo is not null ? volumeSolidFrom ~ '…' ~ volumeSolidTo ~ '%'
+                   : (volumeSolidFrom is not null ? '≥ ' ~ volumeSolidFrom ~ '%' : '≤ ' ~ volumeSolidTo ~ '%'))
+                : null %}
+            {% set thSummary = thermalActive
+                ? thermTemp ~ '°C ' ~ (thermEnv == 'immersion' ? 'погр.' : 'сух.') ~ (thermIncludingPeak ? ' +пик' : '')
+                : null %}
+            {% set tagSummary = selectedTags|length > 0 ? selectedTags|map(t => t.title)|join(', ') : null %}
+
+            {# Reset-URL'ы каждого фасета — для × кнопок. #}
+            {% set mfResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({manufacturerIds: [], page: null})|filter(v => v is not null)) %}
+            {% set appMinResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({appMinTempFrom: null, appMinTempTo: null, page: null})|filter(v => v is not null)) %}
+            {% set vsResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({volumeSolidFrom: null, volumeSolidTo: null, page: null})|filter(v => v is not null)) %}
+            {% set thResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null)) %}
+            {% set tagResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({tagIds: [], page: null})|filter(v => v is not null)) %}
+
+            {# === Chip-row: transform-pattern ===
+                 - Фасет пуст → `[Фасет ▾]` chip-dropdown для выбора.
+                 - Фасет активен → chip-dropdown ПРОПАДАЕТ, вместо него value-чип(ы).
+                   Multi (производитель / теги): по одному чипу на значение.
+                   Single (range / thermal): один сводный чип.
+                 - × на value-чипе снимает это значение; когда снимут последнее —
+                   pустой chip-dropdown возвращается сам собой (следующий рендер).
+                 - Добавить второе значение в multi после первого — через offcanvas
+                   «Все фильтры» (там все секции + Tagify + сохраняется выбор). #}
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+
+                {# --- Все фильтры (offcanvas) — ВСЕГДА первая --- #}
+                <button type="button"
+                        class="btn btn-sm {{ activeFacetsCount > 0 ? 'btn-primary' : 'btn-outline-secondary' }} position-relative"
+                        data-bs-toggle="offcanvas" data-bs-target="#allFiltersOffcanvas"
+                        aria-controls="allFiltersOffcanvas">
+                    <i class="bi bi-sliders"></i> Все фильтры
                     {% if activeFacetsCount > 0 %}
-                        <span class="badge bg-primary ms-1">{{ activeFacetsCount }}</span>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size: 0.65rem;">
+                            {{ activeFacetsCount }}
+                        </span>
                     {% endif %}
                 </button>
 
+                {# --- Производитель (multi) --- #}
+                {% if selectedManufacturerIds.count == 0 %}
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Производитель
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 260px; max-height: 400px; overflow-y: auto;">
+                            {% for m in manufacturers %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="manufacturerIds[]" value="{{ m.id }}"
+                                           id="mf-{{ m.id }}">
+                                    <label class="form-check-label" for="mf-{{ m.id }}">{{ m.title }}</label>
+                                </div>
+                            {% endfor %}
+                            <hr class="my-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                        </div>
+                    </div>
+                {% else %}
+                    {% for m in manufacturers|filter(m => m.id in selectedManufacturerIds.list) %}
+                        {% set idsAfterRemove = selectedManufacturerIds.list|filter(id => id != m.id) %}
+                        {% set removeUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({manufacturerIds: idsAfterRemove, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать «{{ m.title }}» из фильтра">
+                            {{ m.title }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% endif %}
+
+                {# --- Мин Т нанесения (single, range-пресеты) --- #}
+                {% if not appMinTempActive %}
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Мин Т нанесения
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 260px;" data-controller="range-filter">
+                            <input type="hidden" name="appMinTempFrom" value=""
+                                   data-range-filter-target="fromInput">
+                            <input type="hidden" name="appMinTempTo" value=""
+                                   data-range-filter-target="toInput">
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-sm btn-secondary"
+                                        data-action="click->range-filter#reset">Любая</button>
+                                {% for p in appMinTempPresets %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            data-action="click->range-filter#preset"
+                                            data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                        {{ p.label }}
+                                    </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ appMinResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Мин Т нанесения: {{ appMinSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Сухой остаток (single) --- #}
+                {% if not volumeSolidActive %}
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Сухой остаток
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 260px;" data-controller="range-filter">
+                            <input type="hidden" name="volumeSolidFrom" value=""
+                                   data-range-filter-target="fromInput">
+                            <input type="hidden" name="volumeSolidTo" value=""
+                                   data-range-filter-target="toInput">
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-sm btn-secondary"
+                                        data-action="click->range-filter#reset">Любой</button>
+                                {% for p in volumeSolidPresets %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            data-action="click->range-filter#preset"
+                                            data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                        {{ p.label }}
+                                    </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ vsResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Сухой остаток: {{ vsSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Температура эксплуатации (single) --- #}
+                {% if not thermalActive %}
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Температура эксплуатации
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 320px;">
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Температура, °C</label>
+                                <input type="number" name="thermTemp" value=""
+                                       class="form-control form-control-sm"
+                                       min="-100" max="500" step="5" placeholder="напр. 90">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Среда</label>
+                                <select name="thermEnv" class="form-select form-select-sm">
+                                    <option value="dry_heat" selected>Сухое тепло</option>
+                                    <option value="immersion">Погружение</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="thermPeakDd" name="thermPeak" value="1">
+                                <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ thResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Работает при {{ thSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Теги (multi) ---
+                     Выбор тегов — ТОЛЬКО в шторке «Все фильтры» (там Tagify-поиск и
+                     не мешает outside-close bootstrap-dropdown'а). В chip-row выводятся
+                     только индивидуальные chip'ы уже выбранных тегов — цвет по типу,
+                     × убирает конкретный тег. #}
+                {% set selectedTagsJson = selectedTags|map(t => {id: t.id, title: t.title})|json_encode %}
+                {% for tag in selectedTags %}
+                    {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
+                    {% set removeUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null)) %}
+                    <a href="{{ removeUrl }}"
+                       class="btn btn-sm btn-{{ tag.type|tag_bootstrap_color }} d-inline-flex align-items-center gap-1"
+                       title="Убрать «{{ tag.title }}» из фильтра">
+                        {{ tag.title }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endfor %}
+
+                {# --- Сбросить всё --- #}
                 {% if search or activeFacetsCount > 0 %}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="text-muted small">
-                        Сбросить
+                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="ms-auto text-muted small text-decoration-none">
+                        <i class="bi bi-arrow-counterclockwise"></i> Сбросить всё
                     </a>
                 {% endif %}
             </div>
+        </form>
 
-            <div class="collapse {% if advancedPanelActive > 0 %} show {% endif %}" id="advancedFilter">
-                <div class="card card-body">
-                    {# === Теги — дублируем чипы из строки поиска сюда, чтобы
-                       фильтр был виден и здесь. × работает одинаково. === #}
-                    {% if selectedTags|length > 0 %}
+        {# === Offcanvas «Все фильтры» ===
+             Отдельная форма (не вложена в основную) — те же имена полей, что и у чип-
+             dropdown'ов, но браузер сериализует ту форму, кнопку submit которой нажал
+             пользователь. Search сохраняем hidden, чтобы не потерять при apply. #}
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="allFiltersOffcanvas" aria-labelledby="allFiltersOffcanvasLabel">
+            <div class="offcanvas-header border-bottom">
+                <h5 class="offcanvas-title" id="allFiltersOffcanvasLabel">
+                    Фильтры
+                    {% if activeFacetsCount > 0 %}
+                        <span class="badge text-bg-primary ms-1">{{ activeFacetsCount }}</span>
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+            </div>
+
+            <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
+                  id="allFiltersForm" class="offcanvas-body d-flex flex-column p-0">
+                {# Не терять текстовый поиск при submit шторки. #}
+                {% if search %}<input type="hidden" name="search" value="{{ search }}">{% endif %}
+
+                <div class="flex-grow-1 overflow-auto p-3">
+                    {# Активные фильтры сверху шторки — как у mvideo, для мгновенного обзора. #}
+                    {% if activeFacetsCount > 0 %}
                         <div class="pb-3 mb-3 border-bottom">
-                            <label class="form-label fw-semibold mb-2">Теги</label>
+                            <div class="small text-muted mb-2">Активные фильтры</div>
                             <div class="d-flex flex-wrap gap-1">
                                 {% for tag in selectedTags %}
                                     {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
                                     {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
                                     {{ _self.tag_removal_chip(tag, path('app_cabinet_coating_coating_list', q)) }}
                                 {% endfor %}
+                                {% for m in manufacturers|filter(m => m.id in selectedManufacturerIds.list) %}
+                                    {% set mfIdsAfterRemove = selectedManufacturerIds.list|filter(id => id != m.id) %}
+                                    {% set q = app.request.query.all|merge({manufacturerIds: mfIdsAfterRemove, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        {{ m.title }}
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endfor %}
+                                {% if appMinTempActive %}
+                                    {% set q = app.request.query.all|merge({appMinTempFrom: null, appMinTempTo: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Мин Т: {{ appMinTempFrom is not null ? appMinTempFrom : '−∞' }}…{{ appMinTempTo is not null ? appMinTempTo : '+∞' }} °C
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if volumeSolidActive %}
+                                    {% set q = app.request.query.all|merge({volumeSolidFrom: null, volumeSolidTo: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Сухой остаток: {{ volumeSolidFrom is not null ? volumeSolidFrom : '−∞' }}…{{ volumeSolidTo is not null ? volumeSolidTo : '+∞' }} %
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if thermalActive %}
+                                    {% set q = app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Работает при {{ thermTemp }} °C ({{ thermEnv == 'immersion' ? 'погр.' : 'сух.' }}{{ thermIncludingPeak ? ' +пик' : '' }})
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
 
-                    {# === Мин температура нанесения — чипы-пресеты === #}
+                    {# === Секция: Мин Т нанесения === #}
                     <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
-                        <div class="d-flex justify-content-between align-items-baseline mb-2">
-                            <label class="form-label fw-semibold mb-0">Мин температура нанесения</label>
-                            <span class="text-muted small">°C</span>
-                        </div>
-
+                        <h6 class="fw-semibold mb-2">Мин температура нанесения <span class="text-muted small fw-normal">°C</span></h6>
                         <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}"
                                data-range-filter-target="fromInput">
                         <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}"
                                data-range-filter-target="toInput">
-
                         <div class="d-flex flex-wrap gap-1">
                             <button type="button" class="btn btn-sm {% if not appMinTempActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
                                     data-action="click->range-filter#reset">Любая</button>
                             {% for p in appMinTempPresets %}
                                 {% set active = appMinTempFrom == p.from and appMinTempTo == p.to %}
-                                <button type="button"
-                                        class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                <button type="button" class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
                                         data-action="click->range-filter#preset"
                                         data-from="{{ p.from }}" data-to="{{ p.to }}">
                                     {{ p.label }}
@@ -138,25 +411,19 @@
                         </div>
                     </div>
 
-                    {# === Сухой остаток — чипы без слайдера === #}
+                    {# === Секция: Сухой остаток === #}
                     <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
-                        <div class="d-flex justify-content-between align-items-baseline mb-2">
-                            <label class="form-label fw-semibold mb-0">Сухой остаток</label>
-                            <span class="text-muted small">% об.</span>
-                        </div>
-
+                        <h6 class="fw-semibold mb-2">Сухой остаток <span class="text-muted small fw-normal">% об.</span></h6>
                         <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}"
                                data-range-filter-target="fromInput">
                         <input type="hidden" name="volumeSolidTo" value="{{ volumeSolidTo }}"
                                data-range-filter-target="toInput">
-
                         <div class="d-flex flex-wrap gap-1">
                             <button type="button" class="btn btn-sm {% if not volumeSolidActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
                                     data-action="click->range-filter#reset">Любой</button>
                             {% for p in volumeSolidPresets %}
                                 {% set active = volumeSolidFrom == p.from and volumeSolidTo == p.to %}
-                                <button type="button"
-                                        class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                <button type="button" class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
                                         data-action="click->range-filter#preset"
                                         data-from="{{ p.from }}" data-to="{{ p.to }}">
                                     {{ p.label }}
@@ -165,30 +432,82 @@
                         </div>
                     </div>
 
-                    {# === Производитель — чекбоксы === #}
-                    <div>
-                        <label class="form-label fw-semibold mb-2">Производитель</label>
-                        <div class="row">
+                    {# === Секция: Температура эксплуатации === #}
+                    <div class="pb-3 mb-3 border-bottom">
+                        <h6 class="fw-semibold mb-2">Температура эксплуатации</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">°C</label>
+                                <input type="number" name="thermTemp" value="{{ thermTemp }}"
+                                       class="form-control form-control-sm"
+                                       min="-100" max="500" step="5" placeholder="напр. 90">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Среда</label>
+                                {% set thermEnvEffective = thermEnv ?: 'dry_heat' %}
+                                <select name="thermEnv" class="form-select form-select-sm">
+                                    <option value="dry_heat" {% if thermEnvEffective == 'dry_heat' %}selected{% endif %}>Сухое тепло</option>
+                                    <option value="immersion" {% if thermEnvEffective == 'immersion' %}selected{% endif %}>Погружение</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           id="thermPeakOff" name="thermPeak" value="1"
+                                           {% if thermIncludingPeak %}checked{% endif %}>
+                                    <label class="form-check-label small" for="thermPeakOff">Включая пиковые нагрузки</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# === Секция: Производитель === #}
+                    <div class="pb-3 mb-3 border-bottom">
+                        <h6 class="fw-semibold mb-2">Производитель</h6>
+                        <div class="row g-1">
                             {% for m in manufacturers %}
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <div class="form-check">
-                                        <input type="checkbox"
-                                               class="form-check-input"
-                                               name="manufacturerIds[]"
-                                               value="{{ m.id }}"
-                                               id="manufacturer-{{ m.id }}"
-                                               {% if m.id in selectedManufacturerIds.list %} checked {% endif %}>
-                                        <label class="form-check-label" for="manufacturer-{{ m.id }}">
-                                            {{ m.title }}
-                                        </label>
+                                        <input type="checkbox" class="form-check-input"
+                                               name="manufacturerIds[]" value="{{ m.id }}"
+                                               id="mfOff-{{ m.id }}"
+                                               {% if m.id in selectedManufacturerIds.list %}checked{% endif %}>
+                                        <label class="form-check-label" for="mfOff-{{ m.id }}">{{ m.title }}</label>
                                     </div>
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
+
+                    {# === Секция: Теги ===
+                         Отдельный Tagify-инстанс со своим data-coating-tags-group scope,
+                         hidden-input'ы пишутся здесь и подхватываются только этой формой
+                         (шторки), не пересекаясь с другим Tagify в chip-row (в другой форме). #}
+                    <div class="pb-3 mb-3" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Теги</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="{{ selectedTagsJson }}"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_tag_suggest') }}"
+                               data-coating-tags-create-url-value="{{ path('app_cabinet_coating_coating_tag_create') }}"
+                               data-coating-tags-hidden-input-name-value="tagIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить тег...">
+                    </div>
                 </div>
-            </div>
-        </form>
+
+                {# Sticky footer со сбросом всех и apply. #}
+                <div class="border-top p-3 d-flex gap-2 bg-body">
+                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary flex-fill">
+                        Сбросить всё
+                    </a>
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        Показать
+                    </button>
+                </div>
+            </form>
+        </div>
 
         {% if error %}
             <div class="alert alert-warning" role="alert">{{ error }}</div>
@@ -198,6 +517,40 @@
            отступов (иначе card ширины уже, чем input) и минимальный
            вертикальный отступ сверху для дыхания. #}
         <div class="mt-3">
+            {# Строка счётчика + сортировки над списком. Показываем только когда
+               есть результаты — на пустой странице лишний UI мешает empty-state'у.
+               Sort в отдельном <form>: submit по change, hidden-параметры несут
+               текущие фасеты (иначе смена сортировки сбросила бы поиск). #}
+            {% if result.coatings %}
+                <div class="d-flex justify-content-between align-items-center mb-2 small">
+                    <span class="text-muted">Найдено: <strong>{{ result.pager.total_items }}</strong></span>
+                    <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
+                          class="d-flex align-items-center gap-2 mb-0"
+                          data-controller="submit-on-change">
+                        {# Все текущие query-параметры кроме sort и page — как hidden'ы,
+                           чтобы change сортировки НЕ терял поиск и фасеты. #}
+                        {% for key, value in app.request.query.all|filter((v, k) => k != 'sort' and k != 'page') %}
+                            {% if value is iterable %}
+                                {% for v in value %}
+                                    <input type="hidden" name="{{ key }}[]" value="{{ v }}">
+                                {% endfor %}
+                            {% else %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        <label for="sortSelect" class="text-muted mb-0">Сортировка:</label>
+                        <select id="sortSelect" name="sort"
+                                class="form-select form-select-sm w-auto"
+                                data-action="change->submit-on-change#submit">
+                            {% for opt in sortOptions %}
+                                <option value="{{ opt.value }}" {% if sort == opt %}selected{% endif %}>{{ opt.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">OK</button></noscript>
+                    </form>
+                </div>
+            {% endif %}
+
             {% if result.coatings %}
                 {# Infinite scroll через общий components/infinite_list.html.twig
                    partial + assets/controllers/infinite_list_controller.js. base_url

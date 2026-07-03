@@ -9,6 +9,7 @@ use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 
 class CoatingDTOTransformer
@@ -56,8 +57,23 @@ class CoatingDTOTransformer
         $dto->pack = $entity->getPack();
         $dto->manufacturer = $manufacturerDto;
         $dto->thinner = $entity->getThinner();
+        $dto->dryHeatExposure = $this->exposureDto($entity->getDryHeatExposure());
+        $dto->immersionExposure = $this->exposureDto($entity->getImmersionExposure());
         $dto->tags = $coatingTagDtos;
 
+        return $dto;
+    }
+
+    private function exposureDto(?ThermalExposureLimits $limits): ?ThermalExposureLimitsDTO
+    {
+        if ($limits === null) {
+            return null;
+        }
+        $dto = new ThermalExposureLimitsDTO();
+        $dto->continuous_min = $limits->continuousMin;
+        $dto->continuous_max = $limits->continuousMax;
+        $dto->peak_max = $limits->peakMax;
+        $dto->peak_duration_minutes = $limits->peakDurationMinutes;
         return $dto;
     }
 

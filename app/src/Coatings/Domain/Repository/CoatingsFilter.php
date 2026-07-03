@@ -30,6 +30,8 @@ readonly class CoatingsFilter
         public ?RangeFilter $applicationMinTemp = null,
         public ?RangeFilter $volumeSolid = null,
         public StringCollection $tagIds = new StringCollection(),
+        public ?ThermalExposureQuery $thermalExposure = null,
+        public CoatingSort $sort = CoatingSort::DEFAULT,
     ) {
         $this->search = $this->normalizeSearch($search);
         $this->pager = $pager;

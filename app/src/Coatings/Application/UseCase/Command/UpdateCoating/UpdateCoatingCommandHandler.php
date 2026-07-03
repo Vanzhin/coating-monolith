@@ -6,10 +6,12 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
+use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
@@ -109,9 +111,25 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->replaceTags($tags);
         }
 
+        $coating->setDryHeatExposure($this->buildExposure($dto->dryHeatExposure));
+        $coating->setImmersionExposure($this->buildExposure($dto->immersionExposure));
+
         $this->coatingRepository->add($coating);
 
         return new UpdateCoatingCommandResult();
+    }
+
+    private function buildExposure(?ThermalExposureLimitsDTO $dto): ?ThermalExposureLimits
+    {
+        if ($dto === null) {
+            return null;
+        }
+        return new ThermalExposureLimits(
+            $dto->continuous_min,
+            $dto->continuous_max,
+            $dto->peak_max,
+            $dto->peak_duration_minutes,
+        );
     }
 
     private function buildDftRange(DftRangeDTO $range): DftRange

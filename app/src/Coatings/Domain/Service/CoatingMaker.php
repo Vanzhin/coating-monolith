@@ -10,6 +10,7 @@ use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
 use App\Shared\Domain\Service\UuidService;
@@ -45,6 +46,8 @@ final readonly class CoatingMaker
         float             $pack,
         ?string           $thinner,
         int               $dryingMaxTemp = 50,
+        ?ThermalExposureLimits $dryHeatExposure = null,
+        ?ThermalExposureLimits $immersionExposure = null,
     ): Coating {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
 
@@ -71,6 +74,11 @@ final readonly class CoatingMaker
         foreach ($coatingTagIds as $coatingTagId) {
             $coating->addTag($this->coatingTagFetcher->getRequiredTag($coatingTagId));
         }
+
+        // Температурные пределы эксплуатации выставляются ДО add(): repo.add
+        // делает flush, после него сеттеры не персистятся без нового flush'a.
+        $coating->setDryHeatExposure($dryHeatExposure);
+        $coating->setImmersionExposure($immersionExposure);
 
         $this->coatingRepository->add($coating);
 
