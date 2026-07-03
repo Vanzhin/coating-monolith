@@ -36,12 +36,18 @@ services:
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
 
-  # Init-контейнер: composer install → миграции → wipe stale cache → warmup →
-  # chown var/cache и var/log на www-data (php-fpm бежит именно этим юзером).
-  # Каждая цепочка через && — любая ошибка обрывает старт всей системы, а не
-  # запускает контейнеры молча на broken state. Дублирующиеся ContainerXxx.php
-  # от предыдущего релиза очищаются здесь ЖЕ, а не в pipeline деплоя — так race
-  # conditions между шагами исключены by design (см. depends_on выше).
+  # Init-контейнер (one-shot): единственное место, где что-то ПИШЕТ в /app как root.
+  # После него php-fpm/supervisor стартуют как www-data и никогда не касаются
+  # cache/log как root — это исключает permission-denied в runtime'e.
+  #
+  # Шаги: composer → полный wipe var/cache/prod (rm -rf на директорию — включает
+  # dot-files) → migrations → JWT-keypair (перенесено из entrypoint php-fpm, где
+  # выполнялось как root и портило права после init-chown'а) → cache:warmup →
+  # выставление прав с setgid-битом на директориях, чтобы новые файлы,
+  # создаваемые www-data в runtime, наследовали группу www-data.
+  #
+  # set -e гарантирует остановку всей цепочки при первой ошибке — depends_on
+  # `service_completed_successfully` не пустит php-fpm/supervisor до успешного 0.
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
@@ -52,10 +58,16 @@ services:
       - |
         set -e
         composer install --no-dev --no-interaction --no-scripts
-        rm -rf var/cache/prod/*
+        rm -rf var/cache/prod
+        mkdir -p var/cache/prod var/log
         php bin/console --no-interaction doctrine:migrations:migrate
+        php bin/console --no-interaction lexik:jwt:generate-keypair --skip-if-exists
         php bin/console cache:warmup --env=prod --no-debug
-        chown -R www-data:www-data var/cache var/log
+        chown -R www-data:www-data var/cache var/log config/jwt
+        # setgid на директориях — новые файлы наследуют группу www-data;
+        # 2775 = rwxrwsr-x (owner+group=rw, world=r).
+        find var/cache var/log -type d -exec chmod 2775 {} +
+        find var/cache var/log -type f -exec chmod 664 {} +
     depends_on:
       manager_redis:
         condition: service_started
