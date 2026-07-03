@@ -21,17 +21,6 @@
     </style>
 {% endblock %}
 
-{# Chip активного tag-фильтра с × для удаления. Рендерится в двух местах:
-   input-group строки поиска и «Активные теги» секция расширенной панели. #}
-{% macro tag_removal_chip(tag, removeUrl) %}
-    <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal d-inline-flex align-items-center gap-1">
-        {{ tag.title }}
-        <a href="{{ removeUrl }}"
-           class="btn-close btn-close-white btn-close-sm"
-           title="Убрать «{{ tag.title }}» из фильтра"
-           aria-label="Убрать из фильтра"></a>
-    </span>
-{% endmacro %}
 
 
 {% block content %}
@@ -402,7 +391,16 @@
                                 {% for tag in selectedTags %}
                                     {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
                                     {% set q = app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null) %}
-                                    {{ _self.tag_removal_chip(tag, path('app_cabinet_coating_coating_list', q)) }}
+                                    {# Инлайн чипа (не macro): _self внутри embed'а
+                                       ссылается на partial'у components/list_page.html.twig,
+                                       где макроса нет. #}
+                                    <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal d-inline-flex align-items-center gap-1">
+                                        {{ tag.title }}
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm"
+                                           title="Убрать «{{ tag.title }}» из фильтра"
+                                           aria-label="Убрать из фильтра"></a>
+                                    </span>
                                 {% endfor %}
                                 {% for m in manufacturers|filter(m => m.id in selectedManufacturerIds.list) %}
                                     {% set mfIdsAfterRemove = selectedManufacturerIds.list|filter(id => id != m.id) %}
