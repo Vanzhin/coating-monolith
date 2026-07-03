@@ -7,8 +7,7 @@
     {{ parent() }}
     <style>
         /* Scrollable часть chip-row на мобильной: горизонтальный скролл без
-           видимого скроллбара, dropdown'ы всё ещё раскрываются (visible overflow
-           только по вертикали Bootstrap-Popper позиционирует). */
+           видимого скроллбара, dropdown'ы всё ещё раскрываются. */
         @media (max-width: 767.98px) {
             .chip-scroll {
                 overflow-x: auto;
@@ -17,6 +16,20 @@
                 -webkit-overflow-scrolling: touch;
             }
             .chip-scroll::-webkit-scrollbar { display: none; }
+        }
+        /* На десктопе делаем pinned+scroll обёртки «прозрачными» (display: contents)
+           — их дети становятся прямыми потомками .chip-row и оборачиваются одной
+           цепочкой в flex-wrap. Иначе scroll-блок оборачивается внутри себя,
+           а pinned-блок центрируется вертикально относительно него — визуально
+           первые два чипа оказываются посередине обёрнутого второго блока. */
+        @media (min-width: 768px) {
+            .chip-row {
+                flex-wrap: wrap;
+            }
+            .chip-row-pinned,
+            .chip-scroll {
+                display: contents;
+            }
         }
     </style>
 {% endblock %}
@@ -152,8 +165,8 @@
                остаются фиксированно слева (только иконки, без слов), остальные
                chip'ы скроллятся горизонтально в правом блоке. На md+ обычный
                flex-wrap с полными текстами. #}
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div class="d-flex gap-2 flex-shrink-0">
+            <div class="d-flex align-items-center gap-2 mb-3 chip-row">
+                <div class="d-flex gap-2 flex-shrink-0 chip-row-pinned">
 
                 {# --- Сортировка — самая первая chip'а (mvideo-style).
                      Не dropdown в стиле фасета, а <a href>-ссылки со sort=… в URL;
@@ -336,28 +349,16 @@
                     </a>
                 {% endif %}
 
-                {# --- Теги (multi) ---
-                     Выбор тегов — ТОЛЬКО в шторке «Все фильтры» (там Tagify-поиск и
-                     не мешает outside-close bootstrap-dropdown'а). В chip-row выводятся
-                     только индивидуальные chip'ы уже выбранных тегов — цвет по типу,
-                     × убирает конкретный тег. #}
+                {# Теги (multi) полностью в шторке «Все фильтры» — в chip-row
+                   их не показываем, чтобы не засорять горизонтальный ряд.
+                   Активные теги видны в offcanvas'e (секция «Активные фильтры»
+                   сверху + Tagify-input для редактирования). Счётчик активных
+                   тегов идёт в общий badge chip'а «Все фильтры». #}
                 {% set selectedTagsJson = selectedTags|map(t => {id: t.id, title: t.title})|json_encode %}
-                {% for tag in selectedTags %}
-                    {% set idsAfterRemove = selectedTagIdList|filter(id => id != tag.id) %}
-                    {% set removeUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({tagIds: idsAfterRemove, page: null})|filter(v => v is not null)) %}
-                    <a href="{{ removeUrl }}"
-                       class="btn btn-sm btn-{{ tag.type|tag_bootstrap_color }} d-inline-flex align-items-center gap-1"
-                       title="Убрать «{{ tag.title }}» из фильтра">
-                        {{ tag.title }} <i class="bi bi-x-lg"></i>
-                    </a>
-                {% endfor %}
 
-                {# --- Сбросить всё --- #}
-                {% if search or activeFacetsCount > 0 %}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="ms-auto text-muted small text-decoration-none flex-shrink-0">
-                        <i class="bi bi-arrow-counterclockwise"></i><span class="d-none d-md-inline"> Сбросить всё</span>
-                    </a>
-                {% endif %}
+                {# «Сбросить всё» вынесен в шторку «Все фильтры» (footer offcanvas'а)
+                   — чтобы в chip-row не было лишней текстовой ссылки, не участвующей
+                   в паттерне chip'ов. #}
                 </div>{# /.chip-scroll #}
             </div>{# /.chip-row #}
         </form>
