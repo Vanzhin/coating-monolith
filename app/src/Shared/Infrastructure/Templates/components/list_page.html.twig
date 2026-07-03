@@ -1,0 +1,46 @@
+{# Общая layout-обёртка для admin-list-страниц (покрытия, производители, etc).
+   Задаёт: контейнер-центрирование, отступы, page-header (title + кнопка «+»),
+   слоты для содержимого до/после списка.
+
+   Использование через include с параметрами:
+       {% embed 'components/list_page.html.twig' with {
+           title: 'Производители',
+           create_route: 'app_cabinet_..._create',
+           can_edit: canEdit,
+           is_empty: result.manufacturers is empty,
+       } %}
+           {% block above_list %}...поиск/фильтры...{% endblock %}
+           {% block list_content %}...список карточек...{% endblock %}
+           {% block below_list %}...пейджер...{% endblock %}
+       {% endembed %}
+
+   Пустая выборка: если is_empty=true, вместо блока list_content показывается
+   components/empty.html.twig (вызывающий может переопределить block empty_state).
+#}
+{# После удаления sidebar'a контент растягиваем шире: col-xxl-10 ≈ 1440px+,
+   col-xl-11 ≈ 1200-1440px — на широких экранах читаемая ширина, но не «в упор
+   к краям». На <xl колонки не действуют — берём всю ширину container-fluid. #}
+<div class="col-xl-11 col-xxl-10 mx-auto p-2 p-md-4 py-md-5">
+    <div class="d-flex flex-md-row align-items-center justify-content-between mb-3">
+        <h2 class="text-body-emphasis mb-0">{{ title }}</h2>
+        {% if can_edit and create_route %}
+            <a href="{{ path(create_route) }}"
+               class="btn btn-outline-success" title="Добавить">
+                <i class="bi bi-plus-lg"></i>
+            </a>
+        {% endif %}
+    </div>
+
+    {% block above_list %}{% endblock %}
+
+    <div class="mt-3">
+        {% if is_empty %}
+            {% block empty_state %}
+                {% include 'components/empty.html.twig' %}
+            {% endblock %}
+        {% else %}
+            {% block list_content %}{% endblock %}
+            {% block below_list %}{% endblock %}
+        {% endif %}
+    </div>
+</div>

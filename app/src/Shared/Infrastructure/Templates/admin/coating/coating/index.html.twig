@@ -3,6 +3,24 @@
 
 {% block title %}{{ parent() }} | Покрытия{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        /* Scrollable часть chip-row на мобильной: горизонтальный скролл без
+           видимого скроллбара, dropdown'ы всё ещё раскрываются (visible overflow
+           только по вертикали Bootstrap-Popper позиционирует). */
+        @media (max-width: 767.98px) {
+            .chip-scroll {
+                overflow-x: auto;
+                overflow-y: visible;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+            .chip-scroll::-webkit-scrollbar { display: none; }
+        }
+    </style>
+{% endblock %}
+
 {# Chip активного tag-фильтра с × для удаления. Рендерится в двух местах:
    input-group строки поиска и «Активные теги» секция расширенной панели. #}
 {% macro tag_removal_chip(tag, removeUrl) %}
@@ -25,26 +43,21 @@
         {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
     {% endfor %}
 
-    <div class="col-lg-10 mx-auto p-2 p-md-4 py-md-5"
-         data-controller="compare-tray"
+    {# id'ы активных tag-фильтров — раз собрать для переиспользования (проверки
+       on/off, toggle-url'ы, empty-state chip-row'а внутри offcanvas'a). #}
+    {% set selectedTagIdList = selectedTags|map(t => t.id) %}
+
+    <div data-controller="compare-tray"
          data-compare-tray-storage-key-value="compare:Coating"
          data-compare-tray-compare-url-value="{{ path('app_cabinet_coating_coating_compare') }}"
          data-compare-tray-max-value="4">
-        <div class="d-flex flex-md-row align-items-center justify-content-between mb-3">
-            <h2 class="text-body-emphasis mb-0">Покрытия</h2>
-            {% if canEdit %}
-                <a href="{{ path('app_cabinet_coating_coating_create') }}"
-                   class="btn btn-outline-success" title="Добавить">
-                    <i class="bi bi-plus-lg"></i>
-                </a>
-            {% endif %}
-        </div>
-
-        {# id'ы активных tag-фильтров, вытаскиваются из DTO-массива один раз для
-           переиспользования в разных местах (проверки on/off, вычисление
-           toggle-url'ов). #}
-        {% set selectedTagIdList = selectedTags|map(t => t.id) %}
-
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Покрытия',
+        create_route: 'app_cabinet_coating_coating_create',
+        can_edit: canEdit,
+        is_empty: result.coatings is empty,
+    } %}
+    {% block above_list %}
         <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}" class="mb-3">
             <div class="input-group input-group-lg mb-3">
                 {# Строка поиска — только текст. Активные фасеты (производитель /
@@ -146,20 +159,58 @@
                    pустой chip-dropdown возвращается сам собой (следующий рендер).
                  - Добавить второе значение в multi после первого — через offcanvas
                    «Все фильтры» (там все секции + Tagify + сохраняется выбор). #}
-            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            {# Chip-row: mvideo-mobile-pattern. На мобильной (<md) sort+all-filters
+               остаются фиксированно слева (только иконки, без слов), остальные
+               chip'ы скроллятся горизонтально в правом блоке. На md+ обычный
+               flex-wrap с полными текстами. #}
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="d-flex gap-2 flex-shrink-0">
 
-                {# --- Все фильтры (offcanvas) — ВСЕГДА первая --- #}
+                {# --- Сортировка — самая первая chip'а (mvideo-style).
+                     Не dropdown в стиле фасета, а <a href>-ссылки со sort=… в URL;
+                     активное значение — не DEFAULT (primary), иначе outline-secondary.
+                     Смена на DEFAULT удаляет sort из URL (короткий query). #}
+                {% set defaultSort = constant('App\\Coatings\\Domain\\Repository\\CoatingSort::DEFAULT') %}
+                {% set sortActive = sort != defaultSort %}
+                <div class="dropdown">
+                    <button type="button"
+                            class="btn btn-sm {{ sortActive ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Сортировка">
+                        <i class="bi bi-sort-down"></i><span class="d-none d-md-inline"> {{ sortActive ? sort.label : 'Сортировка' }}</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for opt in sortOptions %}
+                            {% set q = opt == defaultSort
+                                ? app.request.query.all|merge({sort: null, page: null})|filter(v => v is not null)
+                                : app.request.query.all|merge({sort: opt.value, page: null})|filter(v => v is not null) %}
+                            <li>
+                                <a class="dropdown-item {% if sort == opt %}active{% endif %}"
+                                   href="{{ path('app_cabinet_coating_coating_list', q) }}">
+                                    {{ opt.label }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {# --- Все фильтры (offcanvas) --- #}
                 <button type="button"
                         class="btn btn-sm {{ activeFacetsCount > 0 ? 'btn-primary' : 'btn-outline-secondary' }} position-relative"
                         data-bs-toggle="offcanvas" data-bs-target="#allFiltersOffcanvas"
-                        aria-controls="allFiltersOffcanvas">
-                    <i class="bi bi-sliders"></i> Все фильтры
+                        aria-controls="allFiltersOffcanvas"
+                        aria-label="Все фильтры">
+                    <i class="bi bi-sliders"></i><span class="d-none d-md-inline"> Все фильтры</span>
                     {% if activeFacetsCount > 0 %}
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size: 0.65rem;">
                             {{ activeFacetsCount }}
                         </span>
                     {% endif %}
                 </button>
+                </div>
+
+                {# Скроллируемая часть: остальные chip'ы. На md+ — обычный flex-wrap. #}
+                <div class="d-flex align-items-center gap-2 flex-nowrap flex-md-wrap chip-scroll flex-grow-1">
 
                 {# --- Производитель (multi) --- #}
                 {% if selectedManufacturerIds.count == 0 %}
@@ -314,11 +365,12 @@
 
                 {# --- Сбросить всё --- #}
                 {% if search or activeFacetsCount > 0 %}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="ms-auto text-muted small text-decoration-none">
-                        <i class="bi bi-arrow-counterclockwise"></i> Сбросить всё
+                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="ms-auto text-muted small text-decoration-none flex-shrink-0">
+                        <i class="bi bi-arrow-counterclockwise"></i><span class="d-none d-md-inline"> Сбросить всё</span>
                     </a>
                 {% endif %}
-            </div>
+                </div>{# /.chip-scroll #}
+            </div>{# /.chip-row #}
         </form>
 
         {# === Offcanvas «Все фильтры» ===
@@ -512,47 +564,15 @@
         {% if error %}
             <div class="alert alert-warning" role="alert">{{ error }}</div>
         {% endif %}
+    {% endblock %}
 
-        {# Список и пейджер идут наравне с формой поиска: без горизонтальных
-           отступов (иначе card ширины уже, чем input) и минимальный
-           вертикальный отступ сверху для дыхания. #}
-        <div class="mt-3">
-            {# Строка счётчика + сортировки над списком. Показываем только когда
-               есть результаты — на пустой странице лишний UI мешает empty-state'у.
-               Sort в отдельном <form>: submit по change, hidden-параметры несут
-               текущие фасеты (иначе смена сортировки сбросила бы поиск). #}
-            {% if result.coatings %}
-                <div class="d-flex justify-content-between align-items-center mb-2 small">
-                    <span class="text-muted">Найдено: <strong>{{ result.pager.total_items }}</strong></span>
-                    <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
-                          class="d-flex align-items-center gap-2 mb-0"
-                          data-controller="submit-on-change">
-                        {# Все текущие query-параметры кроме sort и page — как hidden'ы,
-                           чтобы change сортировки НЕ терял поиск и фасеты. #}
-                        {% for key, value in app.request.query.all|filter((v, k) => k != 'sort' and k != 'page') %}
-                            {% if value is iterable %}
-                                {% for v in value %}
-                                    <input type="hidden" name="{{ key }}[]" value="{{ v }}">
-                                {% endfor %}
-                            {% else %}
-                                <input type="hidden" name="{{ key }}" value="{{ value }}">
-                            {% endif %}
-                        {% endfor %}
-                        <label for="sortSelect" class="text-muted mb-0">Сортировка:</label>
-                        <select id="sortSelect" name="sort"
-                                class="form-select form-select-sm w-auto"
-                                data-action="change->submit-on-change#submit">
-                            {% for opt in sortOptions %}
-                                <option value="{{ opt.value }}" {% if sort == opt %}selected{% endif %}>{{ opt.label }}</option>
-                            {% endfor %}
-                        </select>
-                        <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">OK</button></noscript>
-                    </form>
-                </div>
-            {% endif %}
+    {% block list_content %}
+        {# Счётчик над списком. Сортировка переехала в chip-row выше. #}
+        <div class="mb-2 small text-muted">
+            Найдено: <strong>{{ result.pager.total_items }}</strong>
+        </div>
 
-            {% if result.coatings %}
-                {# Infinite scroll через общий components/infinite_list.html.twig
+        {# Infinite scroll через общий components/infinite_list.html.twig
                    partial + assets/controllers/infinite_list_controller.js. base_url
                    фильтруется от page/partial — Stimulus сам их добавит для догрузки.
                    Deep-link ?page=N всё равно работает (server-side render'ит нужную страницу),
@@ -580,29 +600,31 @@
                 {% if canEdit %}
                     {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_coating_coating_delete'} %}
                 {% endif %}
-            {% else %}
-                {% if search %}
-                    {# Специфичное сообщение для поискового empty-state: показываем
-                       исходный запрос + подсказку. На multi-word fuzzy не отрабатывает
-                       по дизайну (см. CoatingRepository::findByFilter, Option C).
-                       Плашка не исчезает автоматически (см. base.html.twig auto-dismiss
-                       сужен до .flash-messages .alert). #}
-                    <div class="alert alert-warning text-center mt-3 py-4 shadow-sm" role="status">
-                        <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
-                        <h5 class="alert-heading mb-2">Ничего не найдено</h5>
-                        <p class="mb-2">
-                            По запросу «<strong>{{ search }}</strong>» совпадений нет.
-                        </p>
-                        <p class="small text-muted mb-0">
-                            Каждое слово должно встретиться в названии, описании или тегах.
-                            Попробуйте сократить запрос или использовать другие слова.
-                        </p>
-                    </div>
-                {% else %}
-                    {% include 'components/empty.html.twig' %}
-                {% endif %}
-            {% endif %}
-        </div>
+    {% endblock %}
+
+    {% block empty_state %}
+        {% if search %}
+            {# Специфичное сообщение для поискового empty-state: показываем
+               исходный запрос + подсказку. На multi-word fuzzy не отрабатывает
+               по дизайну (см. CoatingRepository::findByFilter, Option C).
+               Плашка не исчезает автоматически (см. base.html.twig auto-dismiss
+               сужен до .flash-messages .alert). #}
+            <div class="alert alert-warning text-center mt-3 py-4 shadow-sm" role="status">
+                <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
+                <h5 class="alert-heading mb-2">Ничего не найдено</h5>
+                <p class="mb-2">
+                    По запросу «<strong>{{ search }}</strong>» совпадений нет.
+                </p>
+                <p class="small text-muted mb-0">
+                    Каждое слово должно встретиться в названии, описании или тегах.
+                    Попробуйте сократить запрос или использовать другие слова.
+                </p>
+            </div>
+        {% else %}
+            {% include 'components/empty.html.twig' %}
+        {% endif %}
+    {% endblock %}
+    {% endembed %}
 
         <div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 d-none"
              style="z-index: 1080;"

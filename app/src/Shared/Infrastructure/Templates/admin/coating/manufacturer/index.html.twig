@@ -5,87 +5,82 @@
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
 
-    <div class="col-lg-10 mx-auto p-4 py-md-5">
-        <div class="d-flex flex-md-row align-items-center justify-content-between mb-3">
-            <h2 class="text-body-emphasis mb-0">Производители</h2>
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Производители',
+        create_route: 'app_cabinet_coating_manufacturer_create',
+        can_edit: canEdit,
+        is_empty: result.manufacturers is empty,
+    } %}
+        {% block list_content %}
+            <div class="list-group w-100 shadow-sm rounded">
+                {% for manufacturer in result.manufacturers %}
+                    {# Card карточки — единый визуал с покрытиями:
+                       список-item с двумя колонками (контент + действия), клик по
+                       title/description открывает preview-модалку. #}
+                    <div class="list-group-item d-flex align-items-start gap-2 gap-md-3 px-2 px-md-3 py-3">
+                        <div class="flex-grow-1 overflow-hidden"
+                             style="cursor: pointer;"
+                             data-bs-toggle="modal"
+                             data-bs-target="#manufacturerPreview-{{ manufacturer.id }}">
+                            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ manufacturer.title }}</h6>
+                            <p class="mb-0 small text-muted"
+                               style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                                {{ manufacturer.description }}
+                            </p>
+                        </div>
+                        {% if canEdit %}
+                            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                                {% include '/components/edit_delete.html.twig' with {
+                                    'edit': 'app_cabinet_coating_manufacturer_update',
+                                    'delete':'app_cabinet_coating_manufacturer_delete',
+                                    'id': manufacturer.id,
+                                    'title': manufacturer.title,
+                                    'name': "производителя"
+                                } %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="modal fade" id="manufacturerPreview-{{ manufacturer.id }}" tabindex="-1"
+                         aria-labelledby="manufacturerPreviewLabel-{{ manufacturer.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title mb-0" id="manufacturerPreviewLabel-{{ manufacturer.id }}">
+                                        {{ manufacturer.title }}
+                                    </h5>
+                                    <button type="button" class="btn-close"
+                                            data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                </div>
+                                <div class="modal-body">
+                                    {% if manufacturer.description %}
+                                        <p class="text-body-secondary mb-0">{{ manufacturer.description }}</p>
+                                    {% else %}
+                                        <p class="text-muted mb-0">Без описания</p>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    {% if canEdit %}
+                                        <a href="{{ path('app_cabinet_coating_manufacturer_update', {id: manufacturer.id}) }}"
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Редактировать
+                                        </a>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
             {% if canEdit %}
-                <a href="{{ path('app_cabinet_coating_manufacturer_create') }}"
-                   class="btn btn-outline-success" title="Добавить">
-                    <i class="bi bi-plus-lg"></i>
-                </a>
+                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_coating_manufacturer_delete'} %}
             {% endif %}
-        </div>
+        {% endblock %}
 
-        <div class="flex-column flex-md-row p-4 gap-4 py-md-5 align-items-center">
-            {% if result.manufacturers %}
-                <div class="list-group w-100 shadow-sm rounded">
-                    {% for manufacturer in result.manufacturers %}
-                        <div class="list-group-item d-flex align-items-center gap-3 px-3 py-3"
-                             style="min-height: 72px;">
-                            <div class="flex-grow-1 overflow-hidden"
-                                 style="cursor: pointer;"
-                                 data-bs-toggle="modal"
-                                 data-bs-target="#manufacturerPreview-{{ manufacturer.id }}">
-                                <h6 class="mb-1 fw-semibold text-truncate">{{ manufacturer.title }}</h6>
-                                <p class="mb-0 small text-muted"
-                                   style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
-                                    {{ manufacturer.description }}
-                                </p>
-                            </div>
-                            {% if canEdit %}
-                                <div class="d-flex gap-2 flex-shrink-0">
-                                    {% include '/components/edit_delete.html.twig'
-                                        with {
-                                        'edit': 'app_cabinet_coating_manufacturer_update',
-                                        'delete':'app_cabinet_coating_manufacturer_delete',
-                                        'id': manufacturer.id,
-                                        'title': manufacturer.title,
-                                        'name': "производителя"
-                                    } %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="modal fade" id="manufacturerPreview-{{ manufacturer.id }}" tabindex="-1"
-                             aria-labelledby="manufacturerPreviewLabel-{{ manufacturer.id }}" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title mb-0" id="manufacturerPreviewLabel-{{ manufacturer.id }}">
-                                            {{ manufacturer.title }}
-                                        </h5>
-                                        <button type="button" class="btn-close"
-                                                data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        {% if manufacturer.description %}
-                                            <p class="text-body-secondary mb-0">{{ manufacturer.description }}</p>
-                                        {% else %}
-                                            <p class="text-muted mb-0">Без описания</p>
-                                        {% endif %}
-                                    </div>
-                                    <div class="modal-footer">
-                                        {% if canEdit %}
-                                            <a href="{{ path('app_cabinet_coating_manufacturer_update', {id: manufacturer.id}) }}"
-                                               class="btn btn-outline-primary">
-                                                <i class="bi bi-pencil"></i> Редактировать
-                                            </a>
-                                        {% endif %}
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                {% if canEdit %}
-                    {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_coating_manufacturer_delete'} %}
-                {% endif %}
-
-                {% include 'components/pager.html.twig' with {'pager': result.pager} %}
-            {% else %}
-                {% include 'components/empty.html.twig' %}
-            {% endif %}
-        </div>
-    </div>
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
 {% endblock %}
