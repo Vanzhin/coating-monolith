@@ -6,16 +6,28 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        /* Scrollable часть chip-row на мобильной: горизонтальный скролл без
-           видимого скроллбара, dropdown'ы всё ещё раскрываются. */
+        /* Scrollable часть chip-row на мобильной: только горизонтальный скролл.
+           На <md сами chip-dropdown'ы desktop-версии скрыты (fieldset
+           .chip-desktop-panel имеет d-none d-md-inline-block), а на их месте
+           стоят mobile chip-кнопки, открывающие offcanvas-bottom. Поэтому
+           overflow-y на chip-scroll можно ставить hidden без страха
+           клиппинга меню — меню здесь просто нет. touch-action: pan-x
+           дополнительно гарантирует, что touch-жест уводит только по X. */
         @media (max-width: 767.98px) {
             .chip-scroll {
                 overflow-x: auto;
-                overflow-y: visible;
+                overflow-y: hidden;
+                touch-action: pan-x;
                 scrollbar-width: none;
                 -webkit-overflow-scrolling: touch;
             }
             .chip-scroll::-webkit-scrollbar { display: none; }
+        }
+        /* Единая фиксированная ширина desktop chip-dropdown'ов — иначе контент
+           разных фильтров растягивал меню на разную ширину. */
+        .chip-desktop-panel .dropdown-menu {
+            min-width: 280px;
+            max-width: 280px;
         }
         /* На десктопе делаем pinned+scroll обёртки «прозрачными» (display: contents)
            — их дети становятся прямыми потомками .chip-row и оборачиваются одной
@@ -31,6 +43,41 @@
                 display: contents;
             }
         }
+        /* Offcanvas-bottom для chip-фильтров — авто-высота под контент,
+           но не выше половины экрана. Bootstrap по умолчанию ставит 30vh —
+           для 15-строчного списка производителей мало. Скругляем верхние
+           углы (bottom-sheet-паттерн, как у мвидео). */
+        @media (max-width: 767.98px) {
+            .offcanvas-bottom.d-md-none {
+                height: auto;
+                max-height: 60vh;
+                border-top-left-radius: 1rem;
+                border-top-right-radius: 1rem;
+            }
+        }
+        /* Chip'ы в chip-row: одинаковая высота у pinned- и scroll-стороны.
+           На мобильной pinned-кнопки содержат только иконку (span d-none),
+           а scroll-кнопки — текст; из-за разных line-box'ов при некоторых
+           font stacks кнопки могут визуально различаться по высоте.
+           Явные line-height + white-space гарантируют одинаковый рендер. */
+        .chip-row .btn.btn-sm {
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+        /* Теги в карточке покрытия — горизонтальный скролл в одну строку.
+           Иначе при большом количестве тегов ряд оборачивается на несколько
+           строк и «дышит» по высоте, ломая консистентность списка. Скроллбар
+           скрыт (touch-scroll на мобильном + shift+wheel на десктопе); теги
+           внутри не переносятся по слову (white-space:nowrap на badge). */
+        .coating-tags-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+        }
+        .coating-tags-scroll::-webkit-scrollbar { display: none; }
+        .coating-tags-scroll .badge { white-space: nowrap; }
     </style>
 {% endblock %}
 
@@ -216,24 +263,36 @@
 
                 {# --- Производитель (multi) --- #}
                 {% if selectedManufacturerIds.count == 0 %}
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            Производитель
-                        </button>
-                        <div class="dropdown-menu p-3" style="min-width: 260px; max-height: 400px; overflow-y: auto;">
-                            {% for m in manufacturers %}
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input"
-                                           name="manufacturerIds[]" value="{{ m.id }}"
-                                           id="mf-{{ m.id }}">
-                                    <label class="form-check-label" for="mf-{{ m.id }}">{{ m.title }}</label>
-                                </div>
-                            {% endfor %}
-                            <hr class="my-2">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                    {# Desktop: chip-dropdown (Popper). На <md скрыт fieldset'ом
+                       и переключается через JS в disabled — иначе hidden/checkbox'ы
+                       из невидимой desktop-версии тоже уходили бы в submit. #}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Производитель
+                            </button>
+                            <div class="dropdown-menu p-3" style="max-height: 400px; overflow-y: auto;">
+                                {% for m in manufacturers %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="manufacturerIds[]" value="{{ m.id }}"
+                                               id="mf-{{ m.id }}">
+                                        <label class="form-check-label" for="mf-{{ m.id }}">{{ m.title }}</label>
+                                    </div>
+                                {% endfor %}
+                                <hr class="my-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                            </div>
                         </div>
-                    </div>
+                    </fieldset>
+                    {# Mobile: chip-кнопка, открывающая offcanvas-bottom (mvideo-style).
+                       Разметка offcanvas'а лежит ниже, перед </form>. #}
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterMfg"
+                            aria-controls="chipFilterMfg">
+                        Производитель
+                    </button>
                 {% else %}
                     {% for m in manufacturers|filter(m => m.id in selectedManufacturerIds.list) %}
                         {% set idsAfterRemove = selectedManufacturerIds.list|filter(id => id != m.id) %}
@@ -248,29 +307,36 @@
 
                 {# --- Мин Т нанесения (single, range-пресеты) --- #}
                 {% if not appMinTempActive %}
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            Мин Т нанесения
-                        </button>
-                        <div class="dropdown-menu p-3" style="min-width: 260px;" data-controller="range-filter">
-                            <input type="hidden" name="appMinTempFrom" value=""
-                                   data-range-filter-target="fromInput">
-                            <input type="hidden" name="appMinTempTo" value=""
-                                   data-range-filter-target="toInput">
-                            <div class="d-flex flex-wrap gap-1">
-                                <button type="button" class="btn btn-sm btn-secondary"
-                                        data-action="click->range-filter#reset">Любая</button>
-                                {% for p in appMinTempPresets %}
-                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                            data-action="click->range-filter#preset"
-                                            data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                        {{ p.label }}
-                                    </button>
-                                {% endfor %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Мин Т нанесения
+                            </button>
+                            <div class="dropdown-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="appMinTempFrom" value=""
+                                       data-range-filter-target="fromInput">
+                                <input type="hidden" name="appMinTempTo" value=""
+                                       data-range-filter-target="toInput">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset">Любая</button>
+                                    {% for p in appMinTempPresets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppMin"
+                            aria-controls="chipFilterAppMin">
+                        Мин Т нанесения
+                    </button>
                 {% else %}
                     <a href="{{ appMinResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
@@ -281,29 +347,36 @@
 
                 {# --- Сухой остаток (single) --- #}
                 {% if not volumeSolidActive %}
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            Сухой остаток
-                        </button>
-                        <div class="dropdown-menu p-3" style="min-width: 260px;" data-controller="range-filter">
-                            <input type="hidden" name="volumeSolidFrom" value=""
-                                   data-range-filter-target="fromInput">
-                            <input type="hidden" name="volumeSolidTo" value=""
-                                   data-range-filter-target="toInput">
-                            <div class="d-flex flex-wrap gap-1">
-                                <button type="button" class="btn btn-sm btn-secondary"
-                                        data-action="click->range-filter#reset">Любой</button>
-                                {% for p in volumeSolidPresets %}
-                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                            data-action="click->range-filter#preset"
-                                            data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                        {{ p.label }}
-                                    </button>
-                                {% endfor %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Сухой остаток
+                            </button>
+                            <div class="dropdown-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="volumeSolidFrom" value=""
+                                       data-range-filter-target="fromInput">
+                                <input type="hidden" name="volumeSolidTo" value=""
+                                       data-range-filter-target="toInput">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset">Любой</button>
+                                    {% for p in volumeSolidPresets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterVolumeSolid"
+                            aria-controls="chipFilterVolumeSolid">
+                        Сухой остаток
+                    </button>
                 {% else %}
                     <a href="{{ vsResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
@@ -314,33 +387,40 @@
 
                 {# --- Температура эксплуатации (single) --- #}
                 {% if not thermalActive %}
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            Температура эксплуатации
-                        </button>
-                        <div class="dropdown-menu p-3" style="min-width: 320px;">
-                            <div class="mb-2">
-                                <label class="form-label small text-muted mb-1">Температура, °C</label>
-                                <input type="number" name="thermTemp" value=""
-                                       class="form-control form-control-sm"
-                                       min="-100" max="500" step="5" placeholder="напр. 90">
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Температура эксплуатации
+                            </button>
+                            <div class="dropdown-menu p-3">
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Температура, °C</label>
+                                    <input type="number" name="thermTemp" value=""
+                                           class="form-control form-control-sm"
+                                           min="-100" max="500" step="5" placeholder="напр. 90">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Среда</label>
+                                    <select name="thermEnv" class="form-select form-select-sm">
+                                        <option value="dry_heat" selected>Сухое тепло</option>
+                                        <option value="immersion">Погружение</option>
+                                    </select>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input"
+                                           id="thermPeakDd" name="thermPeak" value="1">
+                                    <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
                             </div>
-                            <div class="mb-2">
-                                <label class="form-label small text-muted mb-1">Среда</label>
-                                <select name="thermEnv" class="form-select form-select-sm">
-                                    <option value="dry_heat" selected>Сухое тепло</option>
-                                    <option value="immersion">Погружение</option>
-                                </select>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="thermPeakDd" name="thermPeak" value="1">
-                                <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
                         </div>
-                    </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterThermal"
+                            aria-controls="chipFilterThermal">
+                        Температура эксплуатации
+                    </button>
                 {% else %}
                     <a href="{{ thResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
@@ -361,6 +441,127 @@
                    в паттерне chip'ов. #}
                 </div>{# /.chip-scroll #}
             </div>{# /.chip-row #}
+
+            {# === Mobile chip-offcanvas'ы ===
+                 Отдельная шторка снизу под каждый chip-фильтр (mvideo-паттерн).
+                 Все живут внутри outer form → инпуты уходят в submit этой формы.
+                 На >=md весь блок скрыт классом d-md-none И fieldset'ом
+                 chip-mobile-panel (JS выставит disabled для инактивной стороны,
+                 чтобы hidden'ы/checkbox'ы неактивного viewport'a не смешивались
+                 с активными при form.submit()). #}
+            {% if selectedManufacturerIds.count == 0 %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterMfg" aria-labelledby="chipFilterMfgLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterMfgLabel">Производитель</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-0 m-0" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1">
+                            {% for m in manufacturers %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="manufacturerIds[]" value="{{ m.id }}"
+                                           id="mfMob-{{ m.id }}">
+                                    <label class="form-check-label" for="mfMob-{{ m.id }}">{{ m.title }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="border-top p-3 bg-body">
+                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not appMinTempActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterAppMin" aria-labelledby="chipFilterAppMinLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterAppMinLabel">Мин Т нанесения</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="appMinTempFrom" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="appMinTempTo" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любая</button>
+                            {% for p in appMinTempPresets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not volumeSolidActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterVolumeSolid" aria-labelledby="chipFilterVolumeSolidLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterVolumeSolidLabel">Сухой остаток</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="volumeSolidFrom" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="volumeSolidTo" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любой</button>
+                            {% for p in volumeSolidPresets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not thermalActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterThermal" aria-labelledby="chipFilterThermalLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterThermalLabel">Температура эксплуатации</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-0 m-0" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1">
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Температура, °C</label>
+                                <input type="number" name="thermTemp" value=""
+                                       class="form-control form-control-sm"
+                                       min="-100" max="500" step="5" placeholder="напр. 90">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Среда</label>
+                                <select name="thermEnv" class="form-select form-select-sm">
+                                    <option value="dry_heat" selected>Сухое тепло</option>
+                                    <option value="immersion">Погружение</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="thermPeakMob" name="thermPeak" value="1">
+                                <label class="form-check-label small" for="thermPeakMob">Включая пиковые нагрузки</label>
+                            </div>
+                        </div>
+                        <div class="border-top p-3 bg-body">
+                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
         </form>
 
         {# === Offcanvas «Все фильтры» ===
@@ -644,4 +845,55 @@
             </div>
         </div>
     </div>
+
+    {# Chip-фильтры: адаптивная логика desktop-dropdown vs mobile-offcanvas.
+
+       1) Desktop Popper-конфиг для chip-dropdown'ов внутри chip-desktop-panel:
+          preventOverflow.boundary = col-обёртка из list_page.html.twig
+          (родитель формы). Ширина совпадает со списком, altAxis: true
+          удерживает меню в этой ширине — иначе крайний правый chip-dropdown
+          (или новые фильтры при добавлении) вылезал за правый край списка.
+
+       2) Viewport-adaptive disabled на fieldset'ах.
+          Инпуты из невидимого viewport'a (например, mobile offcanvas при
+          десктопной ширине) физически остаются в form. Если бы они были
+          enabled, browser отправлял бы их значения при submit — а для
+          hidden'ов range-фильтра и thermTemp это значит, что пустой mobile
+          input перезатирает установленный desktop-ом.
+          Решение: mediaMatch (min-width: 768px) → disabled на fieldset'ах
+          противоположного viewport'a. Disabled fieldset выключает все его
+          input'ы (и submit-кнопки) для form-submit'а. #}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Desktop Popper: удержание в границе col-обёртки.
+            document.querySelectorAll('.chip-desktop-panel [data-bs-toggle="dropdown"]').forEach(el => {
+                const boundary = el.closest('form')?.parentElement ?? document.body;
+                bootstrap.Dropdown.getInstance(el)?.dispose();
+                new bootstrap.Dropdown(el, {
+                    popperConfig: (defaultConfig) => ({
+                        ...defaultConfig,
+                        modifiers: [
+                            ...defaultConfig.modifiers.filter(m => m.name !== 'preventOverflow'),
+                            {
+                                name: 'preventOverflow',
+                                options: { boundary, altAxis: true, padding: 8 },
+                            },
+                        ],
+                    }),
+                });
+            });
+
+            // Viewport-adaptive disable для фильтр-fieldset'ов.
+            const mq = window.matchMedia('(min-width: 768px)');
+            const desktopPanels = document.querySelectorAll('.chip-desktop-panel');
+            const mobilePanels = document.querySelectorAll('.chip-mobile-panel');
+            const apply = () => {
+                const isDesktop = mq.matches;
+                desktopPanels.forEach(f => { f.disabled = !isDesktop; });
+                mobilePanels.forEach(f => { f.disabled = isDesktop; });
+            };
+            apply();
+            mq.addEventListener('change', apply);
+        });
+    </script>
 {% endblock %}

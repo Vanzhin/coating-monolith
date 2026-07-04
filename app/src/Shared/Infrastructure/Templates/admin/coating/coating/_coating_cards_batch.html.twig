@@ -34,7 +34,10 @@
                 </p>
             </div>
             {% if coating.tags|length > 0 %}
-                <div class="d-flex flex-wrap gap-1">
+                {# Теги в одну строку с горизонтальным скроллом. При большом
+                   количестве тегов не растягивают карточку по высоте — CSS
+                   для .coating-tags-scroll лежит в index.html.twig. #}
+                <div class="d-flex flex-nowrap gap-1 coating-tags-scroll">
                     {% for tag in coating.tags %}
                         {% set isActive = tag.id in selectedTagIdList %}
                         {% set newTagIds = isActive
@@ -42,7 +45,7 @@
                             : selectedTagIdList|merge([tag.id]) %}
                         {% set q = app.request.query.all|merge({tagIds: newTagIds, page: null})|filter(v => v is not null) %}
                         <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
-                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-dark{% endif %} fw-normal text-decoration-none"
+                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-dark{% endif %} fw-normal text-decoration-none flex-shrink-0"
                            title="{{ isActive ? 'Убрать «' ~ tag.title ~ '» из фильтра' : 'Отфильтровать по «' ~ tag.title ~ '»' }}">
                             {{ tag.title }}
                             {%- if isActive %} ×{% endif -%}
