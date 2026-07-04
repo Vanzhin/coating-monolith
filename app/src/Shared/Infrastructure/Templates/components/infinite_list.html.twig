@@ -16,11 +16,11 @@
 
    Опциональные:
      start_page   : int    = 2                                 первая страница на догрузку.
-     wrapper_class: string = 'list-group w-100 shadow-sm rounded' классы обёртки над items.
+     wrapper_class: string = 'd-flex flex-column gap-2'         классы обёртки над items.
      more_label   : string = 'Показать ещё'                     текст кнопки.
 #}
 {% set start_page = start_page|default(2) %}
-{% set wrapper_class = wrapper_class|default('list-group w-100 shadow-sm rounded') %}
+{% set wrapper_class = wrapper_class|default('d-flex flex-column gap-2') %}
 {% set more_label = more_label|default('Показать ещё') %}
 
 {# Плавное появление новых batches. Класс добавляется JS'ом контроллера

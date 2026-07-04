@@ -6,53 +6,59 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        /* Scrollable часть chip-row на мобильной: только горизонтальный скролл.
-           На <md сами chip-dropdown'ы desktop-версии скрыты (fieldset
-           .chip-desktop-panel имеет d-none d-md-inline-block), а на их месте
-           стоят mobile chip-кнопки, открывающие offcanvas-bottom. Поэтому
-           overflow-y на chip-scroll можно ставить hidden без страха
-           клиппинга меню — меню здесь просто нет. touch-action: pan-x
-           дополнительно гарантирует, что touch-жест уводит только по X. */
-        @media (max-width: 767.98px) {
-            .chip-scroll {
-                overflow-x: auto;
-                overflow-y: hidden;
-                touch-action: pan-x;
-                scrollbar-width: none;
-                -webkit-overflow-scrolling: touch;
-            }
-            .chip-scroll::-webkit-scrollbar { display: none; }
+        /* Scrollable часть chip-row: строго один ряд + горизонтальный скролл.
+           Единое поведение на mobile и desktop — pinned-часть (Сортировка +
+           Все фильтры) слева фиксирована, а chip-scroll справа берёт
+           оставшуюся ширину и скроллится горизонтально, если фильтров больше
+           чем помещается. touch-action: pan-x на мобильном ограничивает
+           touch-жест только по X. Скроллбар скрыт, вместо него — fade
+           справа через mask-image; при упоре скролла в правый край
+           контроллер scroll-fade вешает класс .scroll-fade-at-end, mask
+           убирается, чтобы последний чип не «затемнялся».
+           overflow: hidden на другой оси нужен, чтобы chip-scroll не
+           начинал случайно скроллиться по вертикали при touch.
+           dropdown'ы chip-desktop-panel'ей клипятся этим overflow'ом —
+           но у них Popper с strategy: 'fixed' (см. script ниже), меню
+           через position: fixed вылетает из overflow-контейнера. */
+        .chip-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            /* min-width: 0 обязателен — по спеке flex-item с overflow-x должен
+               иметь implicit min-inline-size = 0, но Safari и некоторые версии
+               Chrome оставляют min-content и chip-scroll не даёт себя сжать
+               меньше суммы чипов. Без этого при активации нескольких длинных
+               чипов ("Мин Т нанесения: -5..+5 °C ×" и т.п.) chip-scroll просто
+               растягивает chip-row и весь ряд уезжает за границы контейнера
+               вместо того чтобы скроллиться внутри себя. */
+            min-width: 0;
+            touch-action: pan-x;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
+        .chip-scroll::-webkit-scrollbar { display: none; }
+        /* Не даём чипам в chip-scroll ужиматься. По умолчанию flex-item имеет
+           flex-shrink: 1 — при перенасыщении ряда элементы сжимаются меньше
+           естественной ширины и их контент (текст кнопки, содержимое
+           active-чипа) вылезает и «наезжает» на соседа. С flex-shrink: 0
+           элементы держат свою ширину; лишние — уходят вправо и доступны
+           через горизонтальный скролл. */
+        .chip-scroll > * { flex-shrink: 0; }
         /* Единая фиксированная ширина desktop chip-dropdown'ов — иначе контент
-           разных фильтров растягивал меню на разную ширину. */
-        .chip-desktop-panel .dropdown-menu {
+           разных фильтров растягивал меню на разную ширину. Селектор на самом
+           .chip-desktop-menu (не через ancestor), потому что на show меню
+           переносится в document.body — иерархия ancestor'ов теряется. */
+        .chip-desktop-menu {
             min-width: 280px;
             max-width: 280px;
         }
-        /* На десктопе делаем pinned+scroll обёртки «прозрачными» (display: contents)
-           — их дети становятся прямыми потомками .chip-row и оборачиваются одной
-           цепочкой в flex-wrap. Иначе scroll-блок оборачивается внутри себя,
-           а pinned-блок центрируется вертикально относительно него — визуально
-           первые два чипа оказываются посередине обёрнутого второго блока. */
-        @media (min-width: 768px) {
-            .chip-row {
-                flex-wrap: wrap;
-            }
-            .chip-row-pinned,
-            .chip-scroll {
-                display: contents;
-            }
-        }
         /* Offcanvas-bottom для chip-фильтров — авто-высота под контент,
            но не выше половины экрана. Bootstrap по умолчанию ставит 30vh —
-           для 15-строчного списка производителей мало. Скругляем верхние
-           углы (bottom-sheet-паттерн, как у мвидео). */
+           для 15-строчного списка производителей мало. Скругление верхних
+           углов уже в base.html.twig для .offcanvas-bottom вообще. */
         @media (max-width: 767.98px) {
             .offcanvas-bottom.d-md-none {
                 height: auto;
                 max-height: 60vh;
-                border-top-left-radius: 1rem;
-                border-top-right-radius: 1rem;
             }
         }
         /* Chip'ы в chip-row: одинаковая высота у pinned- и scroll-стороны.
@@ -64,17 +70,46 @@
             line-height: 1.5;
             white-space: nowrap;
         }
+        /* Описание в карточке покрытия — обрезаем по -webkit-line-clamp.
+           На мобильной 3 строки — вписывается в высоту колонки из 3
+           стакнутых кнопок действий справа (~120px), заполняет пустое
+           место рядом с ними, но не растит саму карточку. На >=md кнопки
+           идут в строку, карточка становится ниже — там 2 строк достаточно,
+           чтобы список не «дышал» по высоте. */
+        .coating-card-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 0.25rem;
+        }
+        @media (min-width: 768px) {
+            .coating-card-desc {
+                -webkit-line-clamp: 2;
+            }
+        }
         /* Теги в карточке покрытия — горизонтальный скролл в одну строку.
            Иначе при большом количестве тегов ряд оборачивается на несколько
            строк и «дышит» по высоте, ломая консистентность списка. Скроллбар
            скрыт (touch-scroll на мобильном + shift+wheel на десктопе); теги
-           внутри не переносятся по слову (white-space:nowrap на badge). */
+           внутри не переносятся по слову (white-space:nowrap на badge).
+           mask-image даёт fade-затухание последних ~32px — визуальный намёк,
+           что справа есть ещё контент. Когда скролл упирается в правый край
+           (или контента вообще меньше ширины контейнера) — Stimulus-контроллер
+           scroll-fade вешает класс .scroll-fade-at-end, и mask убирается,
+           чтобы последний тег не подкрашивался. */
         .coating-tags-scroll {
             overflow-x: auto;
             overflow-y: hidden;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             touch-action: pan-x;
+            -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
+                    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
+        }
+        .coating-tags-scroll.scroll-fade-at-end {
+            -webkit-mask-image: none;
+                    mask-image: none;
         }
         .coating-tags-scroll::-webkit-scrollbar { display: none; }
         .coating-tags-scroll .badge { white-space: nowrap; }
@@ -107,7 +142,8 @@
         is_empty: result.coatings is empty,
     } %}
     {% block above_list %}
-        <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}" class="mb-3">
+        <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
+              id="coatingListForm" class="mb-3">
             <div class="input-group input-group-lg mb-3">
                 {# Строка поиска — только текст. Активные фасеты (производитель /
                    ranges / thermal / теги) в chip-row показаны как value-чипы-ссылки,
@@ -258,8 +294,8 @@
                 </button>
                 </div>
 
-                {# Скроллируемая часть: остальные chip'ы. На md+ — обычный flex-wrap. #}
-                <div class="d-flex align-items-center gap-2 flex-nowrap flex-md-wrap chip-scroll flex-grow-1">
+                {# Скроллируемая часть: остальные chip'ы. #}
+                <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
 
                 {# --- Производитель (multi) --- #}
                 {% if selectedManufacturerIds.count == 0 %}
@@ -272,17 +308,17 @@
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                 Производитель
                             </button>
-                            <div class="dropdown-menu p-3" style="max-height: 400px; overflow-y: auto;">
+                            <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
                                 {% for m in manufacturers %}
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input"
                                                name="manufacturerIds[]" value="{{ m.id }}"
-                                               id="mf-{{ m.id }}">
+                                               id="mf-{{ m.id }}" form="coatingListForm">
                                         <label class="form-check-label" for="mf-{{ m.id }}">{{ m.title }}</label>
                                     </div>
                                 {% endfor %}
                                 <hr class="my-2">
-                                <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                                <button type="submit" class="btn btn-sm btn-primary w-100" form="coatingListForm">Применить</button>
                             </div>
                         </div>
                     </fieldset>
@@ -313,18 +349,18 @@
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                 Мин Т нанесения
                             </button>
-                            <div class="dropdown-menu p-3" data-controller="range-filter">
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
                                 <input type="hidden" name="appMinTempFrom" value=""
-                                       data-range-filter-target="fromInput">
+                                       data-range-filter-target="fromInput" form="coatingListForm">
                                 <input type="hidden" name="appMinTempTo" value=""
-                                       data-range-filter-target="toInput">
+                                       data-range-filter-target="toInput" form="coatingListForm">
                                 <div class="d-flex flex-wrap gap-1">
                                     <button type="button" class="btn btn-sm btn-secondary"
-                                            data-action="click->range-filter#reset">Любая</button>
+                                            data-action="click->range-filter#reset" form="coatingListForm">Любая</button>
                                     {% for p in appMinTempPresets %}
                                         <button type="button" class="btn btn-sm btn-outline-primary"
                                                 data-action="click->range-filter#preset"
-                                                data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="coatingListForm">
                                             {{ p.label }}
                                         </button>
                                     {% endfor %}
@@ -353,18 +389,18 @@
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                 Сухой остаток
                             </button>
-                            <div class="dropdown-menu p-3" data-controller="range-filter">
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
                                 <input type="hidden" name="volumeSolidFrom" value=""
-                                       data-range-filter-target="fromInput">
+                                       data-range-filter-target="fromInput" form="coatingListForm">
                                 <input type="hidden" name="volumeSolidTo" value=""
-                                       data-range-filter-target="toInput">
+                                       data-range-filter-target="toInput" form="coatingListForm">
                                 <div class="d-flex flex-wrap gap-1">
                                     <button type="button" class="btn btn-sm btn-secondary"
-                                            data-action="click->range-filter#reset">Любой</button>
+                                            data-action="click->range-filter#reset" form="coatingListForm">Любой</button>
                                     {% for p in volumeSolidPresets %}
                                         <button type="button" class="btn btn-sm btn-outline-primary"
                                                 data-action="click->range-filter#preset"
-                                                data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="coatingListForm">
                                             {{ p.label }}
                                         </button>
                                     {% endfor %}
@@ -393,26 +429,26 @@
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                 Температура эксплуатации
                             </button>
-                            <div class="dropdown-menu p-3">
+                            <div class="dropdown-menu chip-desktop-menu p-3">
                                 <div class="mb-2">
                                     <label class="form-label small text-muted mb-1">Температура, °C</label>
                                     <input type="number" name="thermTemp" value=""
                                            class="form-control form-control-sm"
-                                           min="-100" max="500" step="5" placeholder="напр. 90">
+                                           min="-100" max="500" step="5" placeholder="напр. 90" form="coatingListForm">
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small text-muted mb-1">Среда</label>
-                                    <select name="thermEnv" class="form-select form-select-sm">
+                                    <select name="thermEnv" class="form-select form-select-sm" form="coatingListForm">
                                         <option value="dry_heat" selected>Сухое тепло</option>
                                         <option value="immersion">Погружение</option>
                                     </select>
                                 </div>
                                 <div class="form-check mb-2">
                                     <input type="checkbox" class="form-check-input"
-                                           id="thermPeakDd" name="thermPeak" value="1">
+                                           id="thermPeakDd" name="thermPeak" value="1" form="coatingListForm">
                                     <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
                                 </div>
-                                <button type="submit" class="btn btn-sm btn-primary w-100">Применить</button>
+                                <button type="submit" class="btn btn-sm btn-primary w-100" form="coatingListForm">Применить</button>
                             </div>
                         </div>
                     </fieldset>
@@ -456,8 +492,8 @@
                         <h6 class="offcanvas-title mb-0" id="chipFilterMfgLabel">Производитель</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-0 m-0" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1">
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
                             {% for m in manufacturers %}
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input"
@@ -467,9 +503,7 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="border-top p-3 bg-body">
-                            <button type="submit" class="btn btn-primary w-100">Применить</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
                     </fieldset>
                 </div>
             {% endif %}
@@ -486,7 +520,7 @@
                                data-range-filter-target="fromInput">
                         <input type="hidden" name="appMinTempTo" value=""
                                data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
                             <button type="button" class="btn btn-sm btn-secondary"
                                     data-action="click->range-filter#reset">Любая</button>
                             {% for p in appMinTempPresets %}
@@ -513,7 +547,7 @@
                                data-range-filter-target="fromInput">
                         <input type="hidden" name="volumeSolidTo" value=""
                                data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
                             <button type="button" class="btn btn-sm btn-secondary"
                                     data-action="click->range-filter#reset">Любой</button>
                             {% for p in volumeSolidPresets %}
@@ -535,8 +569,8 @@
                         <h6 class="offcanvas-title mb-0" id="chipFilterThermalLabel">Температура эксплуатации</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-0 m-0" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1">
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Температура, °C</label>
                                 <input type="number" name="thermTemp" value=""
@@ -556,9 +590,7 @@
                                 <label class="form-check-label small" for="thermPeakMob">Включая пиковые нагрузки</label>
                             </div>
                         </div>
-                        <div class="border-top p-3 bg-body">
-                            <button type="submit" class="btn btn-primary w-100">Применить</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
                     </fieldset>
                 </div>
             {% endif %}
@@ -587,7 +619,7 @@
                 <div class="flex-grow-1 overflow-auto p-3">
                     {# Активные фильтры сверху шторки — как у mvideo, для мгновенного обзора. #}
                     {% if activeFacetsCount > 0 %}
-                        <div class="pb-3 mb-3 border-bottom">
+                        <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
                             <div class="small text-muted mb-2">Активные фильтры</div>
                             <div class="d-flex flex-wrap gap-1">
                                 {% for tag in selectedTags %}
@@ -643,7 +675,7 @@
                     {% endif %}
 
                     {# === Секция: Мин Т нанесения === #}
-                    <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="range-filter">
                         <h6 class="fw-semibold mb-2">Мин температура нанесения <span class="text-muted small fw-normal">°C</span></h6>
                         <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}"
                                data-range-filter-target="fromInput">
@@ -664,7 +696,7 @@
                     </div>
 
                     {# === Секция: Сухой остаток === #}
-                    <div class="pb-3 mb-3 border-bottom" data-controller="range-filter">
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="range-filter">
                         <h6 class="fw-semibold mb-2">Сухой остаток <span class="text-muted small fw-normal">% об.</span></h6>
                         <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}"
                                data-range-filter-target="fromInput">
@@ -685,7 +717,7 @@
                     </div>
 
                     {# === Секция: Температура эксплуатации === #}
-                    <div class="pb-3 mb-3 border-bottom">
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Температура эксплуатации</h6>
                         <div class="row g-2">
                             <div class="col-6">
@@ -714,7 +746,7 @@
                     </div>
 
                     {# === Секция: Производитель === #}
-                    <div class="pb-3 mb-3 border-bottom">
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Производитель</h6>
                         <div class="row g-1">
                             {% for m in manufacturers %}
@@ -735,7 +767,7 @@
                          Отдельный Tagify-инстанс со своим data-coating-tags-group scope,
                          hidden-input'ы пишутся здесь и подхватываются только этой формой
                          (шторки), не пересекаясь с другим Tagify в chip-row (в другой форме). #}
-                    <div class="pb-3 mb-3" data-coating-tags-group>
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Теги</h6>
                         <input type="text"
                                data-controller="coating-tags"
@@ -848,11 +880,23 @@
 
     {# Chip-фильтры: адаптивная логика desktop-dropdown vs mobile-offcanvas.
 
-       1) Desktop Popper-конфиг для chip-dropdown'ов внутри chip-desktop-panel:
-          preventOverflow.boundary = col-обёртка из list_page.html.twig
-          (родитель формы). Ширина совпадает со списком, altAxis: true
-          удерживает меню в этой ширине — иначе крайний правый chip-dropdown
-          (или новые фильтры при добавлении) вылезал за правый край списка.
+       1) Portal desktop chip-dropdown'ов в document.body.
+          Chip-scroll на всех viewport'ах имеет overflow: hidden (для
+          horizontal-only скролла). Из-за этого dropdown-menu, находясь
+          в chip-scroll как descendant, клипится overflow'ом. Раньше я
+          боролся через strategy: 'fixed' + подкрут boundary/altAxis/tether/
+          padding — но эта связка была очень хрупкая и ломалась каждый
+          раз, когда менялся layout (col-обёртки, padding и т.п.).
+          Решение — physically выносить меню в <body> на show и возвращать
+          обратно на hide. Тогда меню не имеет ancestor'ов с overflow /
+          containing block, Popper с дефолтным конфигом (только flip
+          отключён) позиционирует его относительно viewport'а через
+          reference (кнопку). Никаких boundary-параметров вообще не нужно —
+          layout может меняться как угодно, Popper'у всё равно.
+
+          Инпуты и submit-кнопки внутри menu имеют form="coatingListForm",
+          поэтому даже находясь в <body> они остаются участниками формы
+          и корректно submit'ятся.
 
        2) Viewport-adaptive disabled на fieldset'ах.
           Инпуты из невидимого viewport'a (например, mobile offcanvas при
@@ -865,21 +909,30 @@
           input'ы (и submit-кнопки) для form-submit'а. #}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Desktop Popper: удержание в границе col-обёртки.
+            // Desktop chip-dropdown'ы: инициализация + portal-логика.
             document.querySelectorAll('.chip-desktop-panel [data-bs-toggle="dropdown"]').forEach(el => {
-                const boundary = el.closest('form')?.parentElement ?? document.body;
                 bootstrap.Dropdown.getInstance(el)?.dispose();
-                new bootstrap.Dropdown(el, {
+                const dropdown = new bootstrap.Dropdown(el, {
                     popperConfig: (defaultConfig) => ({
                         ...defaultConfig,
                         modifiers: [
-                            ...defaultConfig.modifiers.filter(m => m.name !== 'preventOverflow'),
-                            {
-                                name: 'preventOverflow',
-                                options: { boundary, altAxis: true, padding: 8 },
-                            },
+                            ...defaultConfig.modifiers.filter(m => m.name !== 'flip'),
+                            { name: 'flip', enabled: false },
                         ],
                     }),
+                });
+
+                // Portal: на show переносим .dropdown-menu в <body>, на hide
+                // возвращаем в исходное место. Bootstrap хранит ссылку на меню
+                // в dropdown._menu, поэтому перемещение не разрывает связь;
+                // Popper пересчитывает position от reference'а автоматически.
+                const menu = dropdown._menu;
+                const originalParent = menu.parentElement;
+                el.addEventListener('show.bs.dropdown', () => {
+                    document.body.appendChild(menu);
+                });
+                el.addEventListener('hidden.bs.dropdown', () => {
+                    originalParent.appendChild(menu);
                 });
             });
 

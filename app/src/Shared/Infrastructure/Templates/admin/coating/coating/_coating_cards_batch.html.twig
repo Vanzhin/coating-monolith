@@ -12,7 +12,10 @@
      baseLabels        — map<lower_iso, "Русское (ISO)"> для preview-модалки
 #}
 {% for coating in coatings %}
-    <div class="list-group-item d-flex align-items-start gap-2 gap-md-3 px-2 px-md-3 py-3">
+    {# Карточка покрытия — bg-body поверх тертиарного контейнера (см. list_page.html.twig),
+       чтобы был контраст между «зоной» и «элементом внутри неё». Раньше был
+       list-group-item с бортиками — новый паттерн через p-3 rounded-3. #}
+    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
         <div class="form-check flex-shrink-0 m-0 mt-1">
             <input type="checkbox" class="form-check-input m-0"
                    data-compare-id="{{ coating.id }}"
@@ -28,16 +31,19 @@
                  data-bs-toggle="modal"
                  data-bs-target="#coatingPreview-{{ coating.id }}">
                 <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
-                <p class="mb-1 small text-muted"
-                   style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                <p class="mb-1 small text-muted coating-card-desc">
                     {{ coating.description }}
                 </p>
             </div>
             {% if coating.tags|length > 0 %}
                 {# Теги в одну строку с горизонтальным скроллом. При большом
                    количестве тегов не растягивают карточку по высоте — CSS
-                   для .coating-tags-scroll лежит в index.html.twig. #}
-                <div class="d-flex flex-nowrap gap-1 coating-tags-scroll">
+                   для .coating-tags-scroll лежит в index.html.twig.
+                   data-controller="scroll-fade" — общий Stimulus-контроллер,
+                   выставляет классы .scroll-fade-at-start/-at-end, чтобы
+                   CSS убирал fade-градиент когда скролл упёрся в край. #}
+                <div class="d-flex flex-nowrap gap-1 coating-tags-scroll"
+                     data-controller="scroll-fade">
                     {% for tag in coating.tags %}
                         {% set isActive = tag.id in selectedTagIdList %}
                         {% set newTagIds = isActive

@@ -14,17 +14,23 @@ export default class extends Controller {
         const btn = event.currentTarget;
         this.fromInputTarget.value = btn.dataset.from ?? '';
         this.toInputTarget.value = btn.dataset.to ?? '';
-        this._submit();
+        this._submitVia(btn);
     }
 
-    reset() {
+    reset(event) {
         this.fromInputTarget.value = '';
         this.toInputTarget.value = '';
-        this._submit();
+        this._submitVia(event.currentTarget);
     }
 
-    _submit() {
-        const form = this.element.closest('form');
+    /**
+     * Ищем форму сначала через button.form (учитывает HTML5-атрибут
+     * form="formId" — актуально, когда меню перенесено в document.body
+     * portal'ом и уже не имеет form-ancestor'а в DOM), потом fallback на
+     * closest ancestor.
+     */
+    _submitVia(btn) {
+        const form = btn.form || this.element.closest('form');
         if (form) form.submit();
     }
 }
