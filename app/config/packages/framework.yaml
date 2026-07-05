@@ -8,6 +8,10 @@ framework:
 
     # Note that the session will be started ONLY if you read or write from it.
     session:
+        # Сессии в Redis (см. services.yaml → RedisSessionHandler). Иначе PHP
+        # писал бы в /tmp контейнера, который стирается при пересоздании
+        # php-fpm при каждом деплое → все пользователи вылетают.
+        handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
         cookie_secure: 'auto'  # Автоматически включает HTTPS, если запрос через него
         cookie_samesite: 'lax'
 

@@ -77,6 +77,16 @@ services:
       - 'redis://%env(resolve:REDIS_HOST)%'
       - { retry_interval: 2, timeout: 10 }
 
+  # Session handler — храним PHP-сессии в Redis, а не в файловой системе
+  # контейнера. Без этого /tmp внутри php-fpm стирался при каждом
+  # docker-compose up (пересоздание контейнера) — все залогиненные вылетали
+  # после деплоя. Redis — отдельный сервис со своим volume'ом, переживает
+  # пересоздание php-fpm без потери сессий.
+  Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
+    arguments:
+      - '@app.service_redis_provider'
+      - { prefix: 'sess_', ttl: 2592000 }  # 30 дней
+
   App\Shared\Domain\Service\Mailer:
     arguments:
       $appName: '%app.name%'
