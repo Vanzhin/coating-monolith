@@ -597,15 +597,15 @@ export default class extends Controller {
                 <input type="hidden" name="${maxBase}[days]" value="0">
                 <input type="hidden" name="${maxBase}[hours]" value="0">
                 <input type="hidden" name="${maxBase}[minutes]" value="0">
-                <input type="hidden" name="${maxBase}[kind]" value="unlimited">
+                <input type="hidden" name="${maxBase}[kind]" value="unknown">
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${maxBase}"
                         data-target-label="Максимальный интервал перекрытия при ${tempSigned}°C"
                         data-required="0"
                         data-allow-unlimited="1"
-                        data-current-kind="unlimited">
-                    <i class="bi bi-pencil"></i> без ограничения
+                        data-current-kind="unknown">
+                    <i class="bi bi-pencil"></i> нет данных
                 </button>
             </td>
             <td class="text-center">
