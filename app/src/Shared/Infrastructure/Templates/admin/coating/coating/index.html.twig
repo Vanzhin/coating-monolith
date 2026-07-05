@@ -113,6 +113,16 @@
         }
         .coating-tags-scroll::-webkit-scrollbar { display: none; }
         .coating-tags-scroll .badge { white-space: nowrap; }
+        /* Одинаковая высота карточек в списке. Без min-height карточки скачут
+           по высоте: у одних 1-строчное описание, у других — 2-3 (clamp),
+           плюс у части нет тегов вообще. min-height подтягивает короткие
+           до высоты «средней заполненной» карточки; более длинные (мобильная
+           колонка действий из 3 стакнутых кнопок) остаются в своей естественной
+           высоте. Значение подобрано под контент desktop-верстки:
+           title(~1.5rem) + desc-2-lines(~2.6rem) + tags(~1.5rem) + p-3(2rem). */
+        .coating-card {
+            min-height: 8rem;
+        }
     </style>
 {% endblock %}
 
@@ -799,8 +809,10 @@
     {% endblock %}
 
     {% block list_content %}
-        {# Счётчик над списком. Сортировка переехала в chip-row выше. #}
-        <div class="mb-2 small text-muted">
+        {# Счётчик над списком. Сортировка переехала в chip-row выше.
+           Оформлен как inline-«pill» в тертиарном фоне — общий стиль тертиарных
+           карточек, но компактный, чтобы не занимать много места над списком. #}
+        <div class="d-inline-block p-2 px-3 mb-3 rounded-3 bg-body-tertiary small">
             Найдено: <strong>{{ result.pager.total_items }}</strong>
         </div>
 
@@ -839,15 +851,15 @@
             {# Специфичное сообщение для поискового empty-state: показываем
                исходный запрос + подсказку. На multi-word fuzzy не отрабатывает
                по дизайну (см. CoatingRepository::findByFilter, Option C).
-               Плашка не исчезает автоматически (см. base.html.twig auto-dismiss
-               сужен до .flash-messages .alert). #}
-            <div class="alert alert-warning text-center mt-3 py-4 shadow-sm" role="status">
-                <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
-                <h5 class="alert-heading mb-2">Ничего не найдено</h5>
+               Тертиарная карточка в общем стиле (раньше был alert alert-warning
+               с shadow — не совпадало с остальными тертиарными зонами). #}
+            <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
+                <i class="bi bi-search fs-1 d-block mb-2 text-body-secondary"></i>
+                <h5 class="fw-semibold mb-2">Ничего не найдено</h5>
                 <p class="mb-2">
                     По запросу «<strong>{{ search }}</strong>» совпадений нет.
                 </p>
-                <p class="small text-muted mb-0">
+                <p class="small text-body-secondary mb-0">
                     Каждое слово должно встретиться в названии, описании или тегах.
                     Попробуйте сократить запрос или использовать другие слова.
                 </p>
@@ -858,22 +870,23 @@
     {% endblock %}
     {% endembed %}
 
+        {# Floating tray «К сравнению». Общий стиль: bg-body + rounded-3 + shadow
+           вместо старого .card chrome. Shadow нужен, чтобы плашка визуально
+           отлипала от контента списка (она поверх). #}
         <div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 d-none"
              style="z-index: 1080;"
              data-compare-tray-target="bar">
-            <div class="card shadow">
-                <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
-                    <span class="small">К сравнению: <strong data-compare-tray-target="count">0</strong></span>
-                    <button type="button" class="btn btn-sm btn-primary"
-                            data-action="click->compare-tray#open"
-                            data-compare-tray-target="openBtn" disabled>
-                        Сравнить
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->compare-tray#clear">
-                        Очистить
-                    </button>
-                </div>
+            <div class="p-2 px-3 rounded-3 bg-body shadow d-flex align-items-center gap-3">
+                <span class="small">К сравнению: <strong data-compare-tray-target="count">0</strong></span>
+                <button type="button" class="btn btn-sm btn-primary"
+                        data-action="click->compare-tray#open"
+                        data-compare-tray-target="openBtn" disabled>
+                    Сравнить
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-action="click->compare-tray#clear">
+                    Очистить
+                </button>
             </div>
         </div>
     </div>

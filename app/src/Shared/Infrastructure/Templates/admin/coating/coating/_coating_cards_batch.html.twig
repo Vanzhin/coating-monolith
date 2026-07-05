@@ -14,8 +14,10 @@
 {% for coating in coatings %}
     {# Карточка покрытия — bg-body поверх тертиарного контейнера (см. list_page.html.twig),
        чтобы был контраст между «зоной» и «элементом внутри неё». Раньше был
-       list-group-item с бортиками — новый паттерн через p-3 rounded-3. #}
-    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
+       list-group-item с бортиками — новый паттерн через p-3 rounded-3.
+       coating-card — фиксирует одинаковую min-height (см. index.html.twig),
+       чтобы карточки с коротким описанием / без тегов не «подскакивали». #}
+    <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
         <div class="form-check flex-shrink-0 m-0 mt-1">
             <input type="checkbox" class="form-check-input m-0"
                    data-compare-id="{{ coating.id }}"

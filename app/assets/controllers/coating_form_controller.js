@@ -46,8 +46,14 @@ export default class extends Controller {
         const tr = button.closest('tr');
         const tempInput = tr?.querySelector('input[name$="[temperature_at]"]');
         const labelTpl = button.getAttribute('data-target-label') || 'Длительность';
-        this.modalLabelTarget.textContent = tempInput
-            ? labelTpl.replace(/\+-?\d+\s*°C/, '+' + tempInput.value + ' °C')
+        // Знак «+» ставим только для положительных температур, иначе получается
+        // «+-20 °C». Регэксп ловит текущее значение в шаблоне (со знаком или без)
+        // и заменяет на новое с корректным знаком.
+        const tempSigned = tempInput
+            ? (parseInt(tempInput.value, 10) > 0 ? '+' + tempInput.value : tempInput.value)
+            : null;
+        this.modalLabelTarget.textContent = tempSigned !== null
+            ? labelTpl.replace(/[+-]?\d+\s*°C/, tempSigned + ' °C')
             : labelTpl;
 
         // Скрываем недоступные radio для данного контекста.
@@ -211,7 +217,8 @@ export default class extends Controller {
                 const m = parseInt(tr.querySelector(`input[type=hidden][name^="${minPrefix}["][name$="[minutes]"]`)?.value || 0, 10);
                 if (d * 1440 + h * 60 + m > 0) continue;
                 const temp = tr.querySelector(`input[name^="${minPrefix}["][name$="[temperature_at]"]`)?.value ?? '?';
-                emptyTemps.push(`+${temp}°C`);
+                const tempSigned = parseInt(temp, 10) > 0 ? `+${temp}` : `${temp}`;
+                emptyTemps.push(`${tempSigned}°C`);
             }
         }
         if (emptyTemps.length > 0) {
@@ -522,6 +529,7 @@ export default class extends Controller {
         };
         const label = labels[series] || series;
         const base = `${series}[${i}]`;
+        const tempSigned = temp > 0 ? `+${temp}` : `${temp}`;
         return `
             <td>
                 <div class="input-group input-group-sm">
@@ -538,7 +546,7 @@ export default class extends Controller {
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${base}"
-                        data-target-label="${label} при +${temp}°C"
+                        data-target-label="${label} при ${tempSigned}°C"
                         data-required="1"
                         data-allow-unlimited="0"
                         data-current-kind="duration">
@@ -558,6 +566,7 @@ export default class extends Controller {
         const minBase = `${minPrefix}[${i}]`;
         const maxBase = `${maxPrefix}[${i}]`;
         const rowId = `${nodeId}-${i}`;
+        const tempSigned = temp > 0 ? `+${temp}` : `${temp}`;
         return `
             <td>
                 <div class="input-group input-group-sm">
@@ -577,7 +586,7 @@ export default class extends Controller {
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${minBase}"
-                        data-target-label="Минимальный интервал перекрытия при +${temp}°C"
+                        data-target-label="Минимальный интервал перекрытия при ${tempSigned}°C"
                         data-required="1"
                         data-allow-unlimited="0"
                         data-current-kind="duration">
@@ -592,7 +601,7 @@ export default class extends Controller {
                 <button type="button" class="btn btn-sm duration-display-btn btn-outline-secondary text-muted"
                         data-bs-toggle="modal" data-bs-target="#durationModal"
                         data-target-name="${maxBase}"
-                        data-target-label="Максимальный интервал перекрытия при +${temp}°C"
+                        data-target-label="Максимальный интервал перекрытия при ${tempSigned}°C"
                         data-required="0"
                         data-allow-unlimited="1"
                         data-current-kind="unlimited">
