@@ -19,7 +19,11 @@
     {% set hours = (value.hours ?? 0) %}
     {% set minutes = (value.minutes ?? 0) %}
 
-    {# Resolve kind: явный из value либо по эвристике для legacy-данных. #}
+    {# Resolve kind: явный из value либо по эвристике для legacy-данных.
+       Для новой пустой строки (нет time_in_minutes, нет длительности) дефолт —
+       'unknown' («нет данных»), не 'unlimited'. Пользователь должен явно выбрать
+       «без ограничения», если это правда так; иначе первый показ форма ставит
+       ему галочку «без ограничения» без его ведома. #}
     {% set kind = value.kind|default(null) %}
     {% if kind is null %}
         {% if value.time_in_minutes is defined and value.time_in_minutes is null %}
@@ -31,7 +35,7 @@
             {% if total > 0 %}
                 {% set kind = 'duration' %}
             {% else %}
-                {% set kind = required ? 'duration' : 'unlimited' %}
+                {% set kind = required ? 'duration' : 'unknown' %}
             {% endif %}
         {% endif %}
     {% endif %}
