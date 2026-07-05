@@ -32,6 +32,10 @@ readonly class CoatingsFilter
         public StringCollection $tagIds = new StringCollection(),
         public ?ThermalExposureQuery $thermalExposure = null,
         public CoatingSort $sort = CoatingSort::DEFAULT,
+        // Тип связующего (ISO 12944-5): 'AK', 'AY', 'ESI', 'EP', 'PUR', 'FEVE', 'PAS', 'PS'.
+        // Multi-value OR-семантика: покрытие подходит, если его base в этом списке.
+        // Пустая коллекция — фасет не применяется.
+        public StringCollection $baseValues = new StringCollection(),
     ) {
         $this->search = $this->normalizeSearch($search);
         $this->pager = $pager;

@@ -197,6 +197,9 @@
             {% for tag in selectedTags %}
                 <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
             {% endfor %}
+            {% for baseValue in selectedBaseValues.list %}
+                <input type="hidden" name="baseValues[]" value="{{ baseValue }}">
+            {% endfor %}
             {% if sort != constant('App\\Coatings\\Domain\\Repository\\CoatingSort::DEFAULT') %}
                 <input type="hidden" name="sort" value="{{ sort.value }}">
             {% endif %}
@@ -210,7 +213,8 @@
                 + (appMinTempActive ? 1 : 0)
                 + (volumeSolidActive ? 1 : 0)
                 + (thermalActive ? 1 : 0)
-                + selectedTags|length %}
+                + selectedTags|length
+                + selectedBaseValues.count %}
 
             {# === Горизонтальный ряд chip-dropdown'ов ===
                  Порядок: «Все фильтры» первой, затем per-фасет чипы.
@@ -244,6 +248,7 @@
             {% set vsResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({volumeSolidFrom: null, volumeSolidTo: null, page: null})|filter(v => v is not null)) %}
             {% set thResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null)) %}
             {% set tagResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({tagIds: [], page: null})|filter(v => v is not null)) %}
+            {% set baseResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({baseValues: [], page: null})|filter(v => v is not null)) %}
 
             {# === Chip-row: transform-pattern ===
                  - Фасет пуст → `[Фасет ▾]` chip-dropdown для выбора.
@@ -307,39 +312,13 @@
                 {# Скроллируемая часть: остальные chip'ы. #}
                 <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
 
-                {# --- Производитель (multi) --- #}
-                {% if selectedManufacturerIds.count == 0 %}
-                    {# Desktop: chip-dropdown (Popper). На <md скрыт fieldset'ом
-                       и переключается через JS в disabled — иначе hidden/checkbox'ы
-                       из невидимой desktop-версии тоже уходили бы в submit. #}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Производитель
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
-                                {% for m in manufacturers %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input"
-                                               name="manufacturerIds[]" value="{{ m.id }}"
-                                               id="mf-{{ m.id }}" form="coatingListForm">
-                                        <label class="form-check-label" for="mf-{{ m.id }}">{{ m.title }}</label>
-                                    </div>
-                                {% endfor %}
-                                <hr class="my-2">
-                                <button type="submit" class="btn btn-sm btn-primary w-100" form="coatingListForm">Применить</button>
-                            </div>
-                        </div>
-                    </fieldset>
-                    {# Mobile: chip-кнопка, открывающая offcanvas-bottom (mvideo-style).
-                       Разметка offcanvas'а лежит ниже, перед </form>. #}
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterMfg"
-                            aria-controls="chipFilterMfg">
-                        Производитель
-                    </button>
-                {% else %}
+                {# --- Производитель (multi) — скрыт из chip-row.
+                     Доступ через шторку «Все фильтры» (секция «Производитель»).
+                     Активные производители видны там же + через chip-фасет
+                     «Активные фильтры» в шапке шторки. Значения сохраняются в
+                     форме через hidden manufacturerIds[] (см. блок preserve
+                     выше в этой форме) и через селекторы шторки. #}
+                {% if selectedManufacturerIds.count > 0 %}
                     {% for m in manufacturers|filter(m => m.id in selectedManufacturerIds.list) %}
                         {% set idsAfterRemove = selectedManufacturerIds.list|filter(id => id != m.id) %}
                         {% set removeUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({manufacturerIds: idsAfterRemove, page: null})|filter(v => v is not null)) %}
@@ -475,6 +454,47 @@
                     </a>
                 {% endif %}
 
+                {# --- Тип связующего (multi) --- #}
+                {% if selectedBaseValues.count == 0 %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Тип связующего
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
+                                {% for b in coatingBases %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="baseValues[]" value="{{ b.value }}"
+                                               id="base-{{ b.value }}" form="coatingListForm">
+                                        <label class="form-check-label" for="base-{{ b.value }}">
+                                            {{ b.title }} <span class="text-muted small">({{ b.value }})</span>
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                                <hr class="my-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100" form="coatingListForm">Применить</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterBase"
+                            aria-controls="chipFilterBase">
+                        Тип связующего
+                    </button>
+                {% else %}
+                    {% for b in coatingBases|filter(b => b.value in selectedBaseValues.list) %}
+                        {% set valsAfterRemove = selectedBaseValues.list|filter(v => v != b.value) %}
+                        {% set removeUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({baseValues: valsAfterRemove, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать «{{ b.title }}» из фильтра">
+                            {{ b.title }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% endif %}
+
                 {# Теги (multi) полностью в шторке «Все фильтры» — в chip-row
                    их не показываем, чтобы не засорять горизонтальный ряд.
                    Активные теги видны в offcanvas'e (секция «Активные фильтры»
@@ -495,28 +515,8 @@
                  chip-mobile-panel (JS выставит disabled для инактивной стороны,
                  чтобы hidden'ы/checkbox'ы неактивного viewport'a не смешивались
                  с активными при form.submit()). #}
-            {% if selectedManufacturerIds.count == 0 %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterMfg" aria-labelledby="chipFilterMfgLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterMfgLabel">Производитель</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for m in manufacturers %}
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input"
-                                           name="manufacturerIds[]" value="{{ m.id }}"
-                                           id="mfMob-{{ m.id }}">
-                                    <label class="form-check-label" for="mfMob-{{ m.id }}">{{ m.title }}</label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
+            {# chipFilterMfg offcanvas удалён вместе с trigger'ом «Производитель»
+               в chip-row — фильтр производителя теперь только в шторке «Все фильтры». #}
 
             {% if not appMinTempActive %}
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
@@ -568,6 +568,31 @@
                                 </button>
                             {% endfor %}
                         </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if selectedBaseValues.count == 0 %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterBase" aria-labelledby="chipFilterBaseLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterBaseLabel">Тип связующего</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for b in coatingBases %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="baseValues[]" value="{{ b.value }}"
+                                           id="baseMob-{{ b.value }}">
+                                    <label class="form-check-label" for="baseMob-{{ b.value }}">
+                                        {{ b.title }} <span class="text-muted small">({{ b.value }})</span>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
                     </fieldset>
                 </div>
             {% endif %}
@@ -651,6 +676,16 @@
                                     {% set q = app.request.query.all|merge({manufacturerIds: mfIdsAfterRemove, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
                                         {{ m.title }}
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endfor %}
+                                {% for b in coatingBases|filter(b => b.value in selectedBaseValues.list) %}
+                                    {% set valsAfterRemove = selectedBaseValues.list|filter(v => v != b.value) %}
+                                    {% set q = app.request.query.all|merge({baseValues: valsAfterRemove, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        {{ b.title }}
                                         <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
                                            class="btn-close btn-close-white btn-close-sm ms-1"
                                            aria-label="Убрать"></a>
@@ -752,6 +787,26 @@
                                     <label class="form-check-label small" for="thermPeakOff">Включая пиковые нагрузки</label>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {# === Секция: Тип связующего === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Тип связующего</h6>
+                        <div class="row g-1">
+                            {% for b in coatingBases %}
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="baseValues[]" value="{{ b.value }}"
+                                               id="baseOff-{{ b.value }}"
+                                               {% if b.value in selectedBaseValues.list %}checked{% endif %}>
+                                        <label class="form-check-label" for="baseOff-{{ b.value }}">
+                                            {{ b.title }} <span class="text-muted small">({{ b.value }})</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
 

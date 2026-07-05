@@ -63,6 +63,14 @@ class ListAction extends AbstractController
         $search = $request->query->get('search');
         $manufacturerIds = new StringCollection(...$request->query->all('manufacturerIds'));
         $tagIds = new StringCollection(...$request->query->all('tagIds'));
+        // baseValues[] из URL: валидируем через CoatingBase::tryFrom, отсеиваем
+        // мусор. Дедуп через array_unique — юзер может кликнуть один и тот же
+        // чекбокс дважды в разных местах шторки.
+        $baseValuesRaw = array_values(array_filter(
+            $request->query->all('baseValues'),
+            static fn($v): bool => is_string($v) && CoatingBase::tryFrom($v) !== null,
+        ));
+        $baseValues = new StringCollection(...array_unique($baseValuesRaw));
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
         $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $pager = Pager::fromPage($page, $limit);
@@ -108,6 +116,7 @@ class ListAction extends AbstractController
                     ? new ThermalExposureQuery($thermTemp, $thermEnv, $thermIncludingPeak)
                     : null,
                 sort: $sort,
+                baseValues: $baseValues,
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
         } catch (AppException $e) {
@@ -133,6 +142,7 @@ class ListAction extends AbstractController
             // list<CoatingTagDTO> с id+title+type; id'ы для URL-toggle
             // читаются через |map(t => t.id) в шаблоне.
             'selectedTags' => $selectedTags,
+            'selectedBaseValues' => $baseValues,
             'manufacturers' => $manufacturersResult->manufacturers,
             'result' => $result,
             'error' => $error,

@@ -114,6 +114,21 @@ final class CoatingFinder
         $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
         $this->applyTagFacet($qb, $filter);
         $this->applyThermalExposureFacet($qb, $filter->thermalExposure);
+        $this->applyBaseFacet($qb, $filter);
+    }
+
+    /**
+     * Фасет «тип связующего». Multi-value OR: покрытие подходит, если его base
+     * в переданном списке. Значения — ISO-коды CoatingBase (валидируются в
+     * контроллере, сюда попадают только валидные).
+     */
+    private function applyBaseFacet(QueryBuilder $qb, CoatingsFilter $filter): void
+    {
+        if ($filter->baseValues->count() === 0) {
+            return;
+        }
+        $qb->andWhere('cc.base IN (:baseValues)')
+            ->setParameter('baseValues', $filter->baseValues->getList());
     }
 
     /**
