@@ -16,7 +16,7 @@
     {# data-controller на обёртке, а не на <form>, чтобы #durationModal был соседом формы (а не её
        потомком) — иначе скрытые number-инпуты модалки участвуют в HTML5-валидации формы и роняют
        submit с «An invalid form control with name='' is not focusable». #}
-    <div class="col-lg-10 mx-auto p-4 py-md-5" data-controller="coating-form">
+    <div class="p-2 p-md-3" data-controller="coating-form">
         <form method="post" action="{{ actionUrl }}" class="w-100"
               data-action="submit->coating-form#validateBeforeSubmit">
             {% if error %}
@@ -31,44 +31,41 @@
             </div>
 
             {# 1. Описание #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Описание</div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="inputTitle" class="form-label">Название</label>
-                            <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
-                                   class="form-control" required autofocus minlength="3" maxlength="100"
-                                   placeholder="Укажите название...">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="inputManufacturer" class="form-label">Производитель</label>
-                            <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
-                                <option value="">Укажите производителя...</option>
-                                {% for manufacturer in pagedManufacturers.manufacturers %}
-                                    <option value="{{ manufacturer.id }}"
-                                            {% if manufacturer.id == inputData.manufacturer.id %} selected {% endif %}>
-                                        {{ manufacturer.title }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label for="inputDescription" class="form-label">Описание</label>
-                            <textarea name="description" id="inputDescription" class="form-control"
-                                      rows="3" maxlength="1500" required
-                                      placeholder="Укажите описание...">{{ inputData.description }}</textarea>
-                            <div class="form-text">до 1500 символов</div>
-                        </div>
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Описание</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="inputTitle" class="form-label">Название</label>
+                        <input type="text" value="{{ inputData.title }}" name="title" id="inputTitle"
+                               class="form-control" required autofocus minlength="3" maxlength="100"
+                               placeholder="Укажите название...">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="inputManufacturer" class="form-label">Производитель</label>
+                        <select class="form-select" id="inputManufacturer" name="manufacturer[id]" required>
+                            <option value="">Укажите производителя...</option>
+                            {% for manufacturer in pagedManufacturers.manufacturers %}
+                                <option value="{{ manufacturer.id }}"
+                                        {% if manufacturer.id == inputData.manufacturer.id %} selected {% endif %}>
+                                    {{ manufacturer.title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputDescription" class="form-label">Описание</label>
+                        <textarea name="description" id="inputDescription" class="form-control"
+                                  rows="3" maxlength="1500" required
+                                  placeholder="Укажите описание...">{{ inputData.description }}</textarea>
+                        <div class="form-text">до 1500 символов</div>
                     </div>
                 </div>
             </div>
 
             {# 2. Классификация #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Классификация</div>
-                <div class="card-body">
-                    <div class="row g-3">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Классификация</h6>
+                <div class="row g-3">
                         <div class="col-12">
                             <label for="inputBase" class="form-label">Тип ЛКМ (основание)</label>
                             <select class="form-select" id="inputBase" name="base" required>
@@ -118,14 +115,12 @@
                             <div class="form-text">Привязанные general-теги. Начните вводить — autocomplete покажет похожие; если ничего не найдено — кликните «Создать "..."».</div>
                         </div>
                     </div>
-                </div>
             </div>
 
             {# 3. Состав и упаковка #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Состав и упаковка</div>
-                <div class="card-body">
-                    <div class="row g-3">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Состав и упаковка</h6>
+                <div class="row g-3">
                         <div class="col-md-3">
                             <label for="inputVolumeSolid" class="form-label">Сухой остаток</label>
                             <div class="input-group">
@@ -158,17 +153,15 @@
                                    class="form-control" maxlength="100" placeholder="Опционально">
                         </div>
                     </div>
-                </div>
             </div>
 
             {# 4. Толщина сухой плёнки (ТСП) #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">
                     Толщина сухой плёнки (ТСП)
                     <span class="text-muted fw-normal small ms-1">мкм</span>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
+                </h6>
+                <div class="row g-3">
                         <div class="col-md-4">
                             <label for="inputMinDft" class="form-label">Минимальная</label>
                             <input type="number" value="{{ inputData.minDft }}" name="minDft" id="inputMinDft"
@@ -185,14 +178,12 @@
                                    class="form-control" required min="10" max="9999">
                         </div>
                     </div>
-                </div>
             </div>
 
             {# 5. Нанесение #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Нанесение</div>
-                <div class="card-body">
-                    <div class="row g-3">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Нанесение</h6>
+                <div class="row g-3">
                         <div class="col-md-4">
                             <label for="inputApplicationMinTemp" class="form-label">Мин температура нанесения</label>
                             <div class="input-group">
@@ -213,7 +204,6 @@
                             <div class="form-text">Все точки сушки/перекрытия должны быть в [мин нанесения, макс сушки].</div>
                         </div>
                     </div>
-                </div>
             </div>
 
             {# 6. Температурные пределы эксплуатации — сухое тепло и погружение.
@@ -222,12 +212,11 @@
                   проверяются в ThermalExposureLimits::__construct → AppException → форма. #}
             {% set dryHeat = inputData.dryHeatExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
             {% set immersion = inputData.immersionExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Пределы эксплуатации</div>
-                <div class="card-body">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Пределы эксплуатации</h6>
 
                     {# ─── Сухое тепло ─── #}
-                    <div class="border rounded p-3 mb-3">
+                    <div class="p-3 mb-3 rounded-3 bg-body">
                         <h6 class="mb-2">Сухое тепло</h6>
                         <div class="row g-3">
                             <div class="col-md-3">
@@ -263,7 +252,7 @@
                     </div>
 
                     {# ─── Погружение ─── #}
-                    <div class="border rounded p-3">
+                    <div class="p-3 rounded-3 bg-body">
                         <h6 class="mb-2">Погружение</h6>
                         <div class="row g-3">
                             <div class="col-md-3">
@@ -297,8 +286,6 @@
                         </div>
                         <div class="form-text">Оставьте пустым, если материал не рассчитан на погружение.</div>
                     </div>
-
-                </div>
             </div>
 
             {# 7. Время высыхания — общая группа температурно-зависимых параметров.
@@ -306,12 +293,11 @@
                   по одному и тому же принципу: таблица точек «температура → длительность»
                   + кнопка «Добавить точку» + модалка редактирования. Новые температурно-
                   зависимые параметры добавляются сюда же по тому же шаблону. #}
-            <div class="card mb-3">
-                <div class="card-header fw-semibold">Время высыхания</div>
-                <div class="card-body">
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Время высыхания</h6>
 
                     {# ─── Сухой на отлип ─── #}
-                  <div class="border rounded p-3 mb-3">
+                  <div class="p-3 mb-3 rounded-3 bg-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="mb-0">Сухой на отлип</h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -354,7 +340,7 @@
                   </div>
 
                     {# ─── Полное отверждение ─── #}
-                  <div class="border rounded p-3 mb-3">
+                  <div class="p-3 mb-3 rounded-3 bg-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="mb-0">Полное отверждение</h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -422,8 +408,6 @@
                         availableEnvKeys: availableEnvKeys,
                         baseLabels: baseLabels,
                     } only %}
-
-                </div>
             </div>
 
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">

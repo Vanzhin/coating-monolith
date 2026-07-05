@@ -30,10 +30,10 @@
 
 {# Корень: контейнер с вкладками. Среды-вкладки внутри. #}
 {% if isRoot %}
-<div class="border rounded p-3"
+<div class="p-3 rounded-3 bg-body"
      data-recoating-root
      data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
-    <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" role="tablist" data-recoating-tabs>
+    <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist" data-recoating-tabs>
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab"
                     data-bs-target="#recoating-pane-root" type="button" role="tab">
@@ -54,8 +54,9 @@
                         aria-label="Удалить ветку"></button>
             </li>
         {% endfor %}
-        <li class="nav-item dropdown ms-auto" data-recoating-add-env>
-            <button class="nav-link dropdown-toggle text-success" data-bs-toggle="dropdown"
+        <li class="nav-item dropdown ms-auto" data-recoating-add-env
+            data-controller="dropdown-portal">
+            <button class="nav-link dropdown-toggle text-body-secondary" data-bs-toggle="dropdown"
                     type="button" aria-expanded="false">
                 + Среда
             </button>

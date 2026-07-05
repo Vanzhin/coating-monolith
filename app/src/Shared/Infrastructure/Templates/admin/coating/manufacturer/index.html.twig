@@ -12,12 +12,12 @@
         is_empty: result.manufacturers is empty,
     } %}
         {% block list_content %}
-            <div class="list-group w-100 shadow-sm rounded">
+            <div class="d-flex flex-column gap-2">
                 {% for manufacturer in result.manufacturers %}
                     {# Card карточки — единый визуал с покрытиями:
-                       список-item с двумя колонками (контент + действия), клик по
-                       title/description открывает preview-модалку. #}
-                    <div class="list-group-item d-flex align-items-start gap-2 gap-md-3 px-2 px-md-3 py-3">
+                       tertiary-контейнер (Group 3 в list_page) + bg-body карточки внутри
+                       (см. также _coating_cards_batch.html.twig). #}
+                    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
                         <div class="flex-grow-1 overflow-hidden"
                              style="cursor: pointer;"
                              data-bs-toggle="modal"
