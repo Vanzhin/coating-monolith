@@ -13,7 +13,7 @@
                 {% set maxByTemp = maxByTemp|merge({(p.temperature_at): p}) %}
             {% endfor %}
             <div class="table-responsive">
-            <table class="table table-sm mb-0">
+            <table class="table table-sm align-middle mb-0 table-rows">
                 <thead>
                     <tr>
                         <th class="text-muted fw-normal" style="width: 30%;">Температура</th>
@@ -25,7 +25,7 @@
                     {% for point in minPoints %}
                         {% set maxPoint = maxByTemp[point.temperature_at] ?? null %}
                         <tr {% if point.is_calculated %}class="table-warning"{% endif %}>
-                            <td>+{{ point.temperature_at }} °C</td>
+                            <td>{{ point.temperature_at > 0 ? '+' ~ point.temperature_at : point.temperature_at }} °C</td>
                             <td>
                                 {% if point.time_in_minutes is null %}
                                     <span class="text-muted">— не указано производителем</span>

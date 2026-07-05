@@ -30,8 +30,7 @@
 
 {# Корень: контейнер с вкладками. Среды-вкладки внутри. #}
 {% if isRoot %}
-<div class="p-3 rounded-3 bg-body"
-     data-recoating-root
+<div data-recoating-root
      data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
     <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist" data-recoating-tabs>
         <li class="nav-item" role="presentation">
@@ -121,12 +120,12 @@
     {% endif %}
 
     <div class="table-responsive">
-    <table class="table table-sm align-middle mb-1">
+    <table class="table table-sm align-middle mb-0 table-rows">
         <thead>
             <tr>
-                <th style="width: 160px;">Температура</th>
-                <th>Минимальный</th>
-                <th>Максимальный</th>
+                <th class="text-muted fw-normal" style="width: 160px;">Температура</th>
+                <th class="text-muted fw-normal">Минимальный</th>
+                <th class="text-muted fw-normal">Максимальный</th>
                 <th style="width: 60px;"></th>
             </tr>
         </thead>
@@ -152,8 +151,9 @@
                         <input type="hidden" name="{{ maxPrefix }}[{{ i }}][temperature_at]"
                                value="{{ temp }}" data-temp-mirror="{{ nodeId }}-{{ i }}">
                     </td>
-                    <td>{{ duration_input(minPrefix ~ '[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при +' ~ temp ~ '°C', false) }}</td>
-                    <td>{{ duration_input(maxPrefix ~ '[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при +' ~ temp ~ '°C', true) }}</td>
+                    {% set tempSigned = temp > 0 ? '+' ~ temp : temp %}
+                    <td>{{ duration_input(minPrefix ~ '[' ~ i ~ ']', minRow, true, 'Минимальный интервал перекрытия при ' ~ tempSigned ~ ' °C', false) }}</td>
+                    <td>{{ duration_input(maxPrefix ~ '[' ~ i ~ ']', maxRow, false, 'Максимальный интервал перекрытия при ' ~ tempSigned ~ ' °C', true) }}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-sm btn-outline-danger"
                                 data-action="click->coating-form#removeRow"

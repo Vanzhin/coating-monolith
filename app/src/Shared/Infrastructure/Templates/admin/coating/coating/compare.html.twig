@@ -38,8 +38,8 @@
         'dftRange.tds_dft':       'Целевая ТСП, мкм',
     } %}
 
-    <div class="container-fluid p-4" data-controller="compare-filter">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="p-2 p-md-3" data-controller="compare-filter">
+        <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-body-tertiary">
             <h1 class="h3 mb-0">Сравнение покрытий ({{ subjects|length }})</h1>
             <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> К списку
@@ -51,31 +51,30 @@
                На <lg сайдбар уходит ПОД таблицу (order-2), чтобы пользователь
                сразу видел сравнение и не скроллил через 15 чекбоксов. #}
             <aside class="col-lg-3 order-2 order-lg-1">
-                <div class="card">
-                    <div class="card-header fw-semibold small">Видимые поля</div>
-                    <ul class="list-group list-group-flush">
+                <div class="p-3 rounded-3 bg-body-tertiary">
+                    <h6 class="fw-semibold mb-3">Видимые поля</h6>
+                    <div class="d-flex flex-column gap-2">
                         {% for field in fields %}
-                            <li class="list-group-item py-1">
-                                <label class="form-check d-flex align-items-center gap-2 mb-0">
-                                    <input type="checkbox" class="form-check-input m-0"
-                                           data-compare-filter-target="checkbox"
-                                           data-field="{{ field }}" checked>
-                                    <span class="small">{{ fieldLabels[field] ?? field }}</span>
-                                </label>
-                            </li>
+                            <label class="form-check d-flex align-items-center gap-2 mb-0">
+                                <input type="checkbox" class="form-check-input m-0"
+                                       data-compare-filter-target="checkbox"
+                                       data-field="{{ field }}" checked>
+                                <span class="small">{{ fieldLabels[field] ?? field }}</span>
+                            </label>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
             </aside>
 
             <main class="col-lg-9 order-1 order-lg-2">
+                <div class="p-3 rounded-3 bg-body-tertiary">
                 <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                        <thead class="table-light">
+                    <table class="table table-sm align-middle mb-0 table-rows">
+                        <thead>
                             <tr>
-                                <th style="width: 20%;">Поле</th>
+                                <th class="text-muted fw-normal" style="width: 20%;">Поле</th>
                                 {% for subject in subjects %}
-                                    <th>{{ _self.subject_head(subject) }}</th>
+                                    <th class="text-muted fw-normal">{{ _self.subject_head(subject) }}</th>
                                 {% endfor %}
                             </tr>
                         </thead>
@@ -92,6 +91,7 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
 
                 {# ==== Время высыхания — per-interval сравнение.
                        Одна таблица на каждый интервал (Сухой на отлип / Полное отверждение /
@@ -99,17 +99,14 @@
                        purchases, колонки = union температур всех subject'ов. Столбцы,
                        где значения различаются между subject'ами, подсвечены table-warning
                        (per-cell diff, а не whole-object). ==== #}
-                <h2 class="h4 mt-5 mb-3">Время высыхания</h2>
+                <h2 class="h4 mt-4 mb-3">Время высыхания</h2>
                 {% set compareMatrix = coating_compare_matrix(subjects) %}
                 {% for section in compareMatrix %}
-                    <div class="card mb-3">
-                        <div class="card-header py-2 fw-semibold">
-                            {{ section.label }}
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                            <table class="table table-sm table-bordered align-middle mb-0">
-                                <thead class="table-light">
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-3">{{ section.label }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0 table-rows">
+                                <thead>
                                     <tr>
                                         <th class="text-muted fw-normal">Покрытие</th>
                                         {% for t in section.columns %}
@@ -143,7 +140,6 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
-                            </div>
                         </div>
                     </div>
                 {% else %}

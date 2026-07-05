@@ -182,6 +182,46 @@
             padding: 0;
         }
 
+        /* Таблицы, где каждая строка — визуально отдельная «карточка».
+           Используется в compare (сравнение полей/времени высыхания) и в
+           edit-форме покрытия (точки drying/recoating). Каждый tr получает
+           фон bg-body поверх тертиарного контейнера + скругление уголков
+           на первой/последней td'шке. Промежутки между строками — через
+           border-spacing (требует border-collapse: separate).
+           table-warning-строки (различающиеся значения в compare) сохраняют
+           свой оттенок через каскад --bs-table-bg-state → fallback bg-body. */
+        .table-rows {
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+            margin-bottom: -0.5rem; /* компенсируем последний gap-spacing */
+        }
+        .table-rows > thead > tr > th,
+        .table-rows > thead > tr > td {
+            border: 0;
+            padding-top: 0;
+            padding-bottom: 0.25rem;
+            background: transparent;
+        }
+        .table-rows > tbody > tr > td,
+        .table-rows > tbody > tr > th {
+            border: 0;
+            /* --bs-table-bg — по дефолту равна body-bg (задано на .table),
+               а .table-warning на tr/td её переопределяет в #fff3cd. Читаем
+               именно эту переменную (не -state), иначе жёлтая подсветка
+               «различающихся» строк/ячеек compare пропадает. */
+            background: var(--bs-table-bg, var(--bs-body-bg));
+        }
+        .table-rows > tbody > tr > td:first-child,
+        .table-rows > tbody > tr > th:first-child {
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+        .table-rows > tbody > tr > td:last-child,
+        .table-rows > tbody > tr > th:last-child {
+            border-top-right-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+
         /* Скругление шторок с той стороны, куда они «прилипают» к экрану:
            slide-in-слева → правые углы, slide-in-справа → левые углы,
            slide-in-снизу → верхние. overflow: hidden — чтобы контент

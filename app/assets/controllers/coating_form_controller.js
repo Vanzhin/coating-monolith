@@ -370,17 +370,19 @@ export default class extends Controller {
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            <table class="table table-sm align-middle mb-1">
+            <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0 table-rows">
                 <thead><tr>
-                    <th style="width: 160px;">Температура</th>
-                    <th>Минимальный</th>
-                    <th>Максимальный</th>
+                    <th class="text-muted fw-normal" style="width: 160px;">Температура</th>
+                    <th class="text-muted fw-normal">Минимальный</th>
+                    <th class="text-muted fw-normal">Максимальный</th>
                     <th style="width: 60px;"></th>
                 </tr></thead>
                 <tbody data-series="recoating-${nodeId}" data-min-prefix="${minPrefix}" data-max-prefix="${maxPrefix}">
                     <tr>${rowHTML}</tr>
                 </tbody>
             </table>
+            </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary"
                         data-action="click->coating-form#addRow"
@@ -619,17 +621,19 @@ export default class extends Controller {
             </div>`;
         return `
             <div data-recoating-node="${nodeId}">
-                <table class="table table-sm align-middle mb-1">
+                <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0 table-rows">
                     <thead><tr>
-                        <th style="width: 160px;">Температура</th>
-                        <th>Минимальный</th>
-                        <th>Максимальный</th>
+                        <th class="text-muted fw-normal" style="width: 160px;">Температура</th>
+                        <th class="text-muted fw-normal">Минимальный</th>
+                        <th class="text-muted fw-normal">Максимальный</th>
                         <th style="width: 60px;"></th>
                     </tr></thead>
                     <tbody data-series="recoating-${nodeId}" data-min-prefix="${minPrefix}" data-max-prefix="${maxPrefix}">
                         <tr>${rowHTML}</tr>
                     </tbody>
                 </table>
+                </div>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary"
                             data-action="click->coating-form#addRow"
