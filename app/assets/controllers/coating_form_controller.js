@@ -284,16 +284,23 @@ export default class extends Controller {
 
         // Создать tab-кнопку (структура совпадает с Twig: close — sibling nav-link).
         const tabLi = document.createElement('li');
-        tabLi.className = 'nav-item d-flex align-items-center';
+        tabLi.className = 'nav-item';
         tabLi.setAttribute('role', 'presentation');
         tabLi.setAttribute('data-env-tab', envKey);
         tabLi.innerHTML = `
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recoating-pane-${envKey}"
-                    type="button" role="tab">${label}</button>
-            <button type="button" class="btn-close btn-close-sm ms-1 me-2"
-                    data-action="click->coating-form#removeEnv"
-                    data-coating-form-env-param="${envKey}"
-                    aria-label="Удалить ветку"></button>`;
+            <button class="nav-link d-inline-flex align-items-center gap-2"
+                    data-bs-toggle="tab" data-bs-target="#recoating-pane-${envKey}"
+                    type="button" role="tab">
+                <span>${label}</span>
+                <span role="button" tabindex="0"
+                      class="text-body-secondary d-inline-flex align-items-center"
+                      data-action="click->coating-form#removeEnv"
+                      data-coating-form-env-param="${envKey}"
+                      title="Удалить ветку"
+                      aria-label="Удалить ветку">
+                    <i class="bi bi-x-lg"></i>
+                </span>
+            </button>`;
         const addEnvLi = root.querySelector('[data-recoating-add-env]');
         tabsUl.insertBefore(tabLi, addEnvLi);
 
@@ -358,17 +365,20 @@ export default class extends Controller {
         const baseLabel = this._baseLabelsFromRoot()[baseKey] || baseKey;
 
         const block = document.createElement('div');
-        block.className = 'border-start ps-3 mt-3';
+        // Тертиарная карточка + reset --table-rows-cell-bg на body-bg,
+        // чтобы строки таблицы были белыми на сером фоне вложенной карточки.
+        block.className = 'p-3 mt-3 rounded-3 bg-body-tertiary';
+        block.setAttribute('style', '--table-rows-cell-bg: var(--bs-body-bg);');
         block.setAttribute('data-recoating-node', nodeId);
         block.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">Основа: ${baseLabel}</h6>
-                <button type="button" class="btn btn-sm btn-outline-danger"
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-semibold mb-0">Основа: ${baseLabel}</h6>
+                <button type="button" class="btn-close"
                         data-action="click->coating-form#removeBase"
                         data-coating-form-env-param="${envKey}"
-                        data-coating-form-base-param="${baseKey}">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                        data-coating-form-base-param="${baseKey}"
+                        title="Удалить правило для основы"
+                        aria-label="Удалить правило для основы"></button>
             </div>
             <div class="table-responsive">
             <table class="table table-sm align-middle mb-0 table-rows">

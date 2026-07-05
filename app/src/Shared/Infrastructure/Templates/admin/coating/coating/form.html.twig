@@ -288,22 +288,28 @@
                     </div>
             </div>
 
-            {# 7. Время высыхания — общая группа температурно-зависимых параметров.
+            {# 7. Время отверждения — общая группа температурно-зависимых параметров.
                   Каждая подсекция (dryToTouch / fullCure / recoatingInterval) редактируется
                   по одному и тому же принципу: таблица точек «температура → длительность»
-                  + кнопка «Добавить точку» + модалка редактирования. Новые температурно-
-                  зависимые параметры добавляются сюда же по тому же шаблону. #}
+                  + кнопка «Добавить точку» + модалка редактирования. Внешняя тертиарная
+                  карточка группирует всё, каждая подсекция — белая карточка (bg-body).
+                  Внутри белой карточки строки таблицы (table-rows) сливались бы с фоном —
+                  поэтому переопределяем --table-rows-cell-bg на тертиарный, чтобы список
+                  точек визуально выделялся серым внутри белой обёртки. Использовать
+                  --bs-table-bg нельзя: Bootstrap перезаписывает её на .table и наш
+                  override с родителя не доходит до ячеек. #}
             <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                <h6 class="fw-semibold mb-3">Время высыхания</h6>
+                <h6 class="fw-semibold mb-3">Время отверждения</h6>
 
-                    {# ─── Сухой на отлип ─── #}
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">Сухой на отлип</h6>
+                {# ─── Сухой на отлип — белая подсекция ─── #}
+                <div class="p-3 mb-3 rounded-3 bg-body" style="--table-rows-cell-bg: var(--bs-tertiary-bg);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">Сухой на отлип</h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 data-series="dryToTouch"
                                 data-action="click->coating-form#addRow">Добавить точку</button>
                     </div>
+                    <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0 table-rows">
                         <thead>
                             <tr>
@@ -337,17 +343,18 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
+                </div>
 
-                  </div>
-
-                    {# ─── Полное отверждение ─── #}
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">Полное отверждение</h6>
+                {# ─── Полное отверждение — белая подсекция ─── #}
+                <div class="p-3 mb-3 rounded-3 bg-body" style="--table-rows-cell-bg: var(--bs-tertiary-bg);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">Полное отверждение</h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 data-series="fullCure"
                                 data-action="click->coating-form#addRow">Добавить точку</button>
                     </div>
+                    <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0 table-rows">
                         <thead>
                             <tr>
@@ -381,26 +388,29 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
+                </div>
 
-                  </div>
+                {# ─── Интервал перекрытия (дерево: общее → среда → основа ЛКМ) ─── #}
+                {% set envLabels = {
+                    atmospheric: 'Атмосферная',
+                    immersion:   'Погружение',
+                    special:     'Спец среды',
+                } %}
+                {% set defaultRecoatingNode = {default: {points: [{temperature_at: 20, days: 0, hours: 0, minutes: 0}]}, branches: {}} %}
+                {% set minRecoatingNode = inputData.minRecoatingInterval ?? defaultRecoatingNode %}
+                {% set maxRecoatingNode = inputData.maxRecoatingInterval ?? {default: {points: []}, branches: {}} %}
+                {% set usedEnvKeys = (minRecoatingNode.branches ?? {})|keys %}
+                {% set availableEnvKeys = ['atmospheric', 'immersion', 'special'] %}
+                {# baseLabels: {key_lower => "Русское название (ISO)"} — для отображения; ключи остаются ASCII. #}
+                {% set baseLabels = {} %}
+                {% for b in coatingBases %}
+                    {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
+                {% endfor %}
 
-                    {# ─── Интервал перекрытия (дерево: общее → среда → основа ЛКМ) ─── #}
-                    {% set envLabels = {
-                        atmospheric: 'Атмосферная',
-                        immersion:   'Погружение',
-                        special:     'Спец среды',
-                    } %}
-                    {% set defaultRecoatingNode = {default: {points: [{temperature_at: 20, days: 0, hours: 0, minutes: 0}]}, branches: {}} %}
-                    {% set minRecoatingNode = inputData.minRecoatingInterval ?? defaultRecoatingNode %}
-                    {% set maxRecoatingNode = inputData.maxRecoatingInterval ?? {default: {points: []}, branches: {}} %}
-                    {% set usedEnvKeys = (minRecoatingNode.branches ?? {})|keys %}
-                    {% set availableEnvKeys = ['atmospheric', 'immersion', 'special'] %}
-                    {# baseLabels: {key_lower => "Русское название (ISO)"} — для отображения; ключи остаются ASCII. #}
-                    {% set baseLabels = {} %}
-                    {% for b in coatingBases %}
-                        {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
-                    {% endfor %}
-
+                {# ─── Интервал перекрытия — белая подсекция ─── #}
+                <div class="p-3 rounded-3 bg-body" style="--table-rows-cell-bg: var(--bs-tertiary-bg);">
+                    <h6 class="fw-semibold mb-3">Интервал перекрытия</h6>
                     {% include 'admin/coating/coating/_recoating_node.html.twig' with {
                         minNode: minRecoatingNode,
                         maxNode: maxRecoatingNode,
@@ -410,6 +420,7 @@
                         availableEnvKeys: availableEnvKeys,
                         baseLabels: baseLabels,
                     } only %}
+                </div>
             </div>
 
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">

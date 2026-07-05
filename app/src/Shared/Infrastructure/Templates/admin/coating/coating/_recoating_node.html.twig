@@ -32,7 +32,12 @@
 {% if isRoot %}
 <div data-recoating-root
      data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
-    <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist" data-recoating-tabs>
+    {# nav-pills со сброшенным primary-цветом активной вкладки на серый:
+       переопределяем встроенные bootstrap-переменные, чтобы активная вкладка
+       была тёмной на светло-сером (общий стиль проекта, без «глубокого» синего). #}
+    <ul class="nav nav-pills mb-3 flex-nowrap overflow-x-auto overflow-y-hidden"
+        style="--bs-nav-pills-link-active-bg: var(--bs-secondary-bg); --bs-nav-pills-link-active-color: var(--bs-body-color);"
+        role="tablist" data-recoating-tabs>
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab"
                     data-bs-target="#recoating-pane-root" type="button" role="tab">
@@ -42,15 +47,23 @@
         {# Итерация по union ключей min+max, чтобы env-ветви из max (без min) тоже отрисовались. #}
         {% set envBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
         {% for envKey in envBranchKeys|keys %}
-            <li class="nav-item d-flex align-items-center" role="presentation" data-env-tab="{{ envKey }}">
-                <button class="nav-link" data-bs-toggle="tab"
+            {# Крестик — span[role=button] внутри .nav-link (не <button>-в-<button>).
+               Клик на нём вызывает removeEnv, который делает event.stopPropagation()
+               и не даёт Bootstrap Tab переключиться на удаляемую вкладку. #}
+            <li class="nav-item" role="presentation" data-env-tab="{{ envKey }}">
+                <button class="nav-link d-inline-flex align-items-center gap-2"
+                        data-bs-toggle="tab"
                         data-bs-target="#recoating-pane-{{ envKey }}" type="button" role="tab">
-                    {{ envLabels[envKey] ?? envKey }}
+                    <span>{{ envLabels[envKey] ?? envKey }}</span>
+                    <span role="button" tabindex="0"
+                          class="text-body-secondary d-inline-flex align-items-center"
+                          data-action="click->coating-form#removeEnv"
+                          data-coating-form-env-param="{{ envKey }}"
+                          title="Удалить ветку"
+                          aria-label="Удалить ветку">
+                        <i class="bi bi-x-lg"></i>
+                    </span>
                 </button>
-                <button type="button" class="btn-close btn-close-sm ms-1 me-2"
-                        data-action="click->coating-form#removeEnv"
-                        data-coating-form-env-param="{{ envKey }}"
-                        aria-label="Удалить ветку"></button>
             </li>
         {% endfor %}
         <li class="nav-item dropdown ms-auto" data-recoating-add-env
@@ -104,13 +117,19 @@
     </div>
 </div>
 
-{# Уровни env и base — одинаковая таблица серии + (для env) список base-правил. #}
+{# Уровни env и base — одинаковая таблица серии + (для env) список base-правил.
+   isBase — вложенное правило по основе ЛКМ, обёрнуто в тертиарную карточку,
+   чтобы визуально отличаться от родительской белой env-подсекции. Внутри
+   переопределяем --table-rows-cell-bg обратно на body-bg, чтобы строки таблицы
+   были белыми на тертиарном фоне карточки (иначе всё бы стало серо-на-сером). #}
 {% else %}
-<div class="{% if isBase %}border-start ps-3 mt-3{% endif %}" data-recoating-node="{{ nodeId }}">
+<div class="{% if isBase %}p-3 mt-3 rounded-3 bg-body-tertiary{% endif %}"
+     {% if isBase %}style="--table-rows-cell-bg: var(--bs-body-bg);"{% endif %}
+     data-recoating-node="{{ nodeId }}">
     {% if isBase %}
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">Основа: {{ baseLabels[path|last] ?? path|last }}</h6>
-            <button type="button" class="btn-close btn-close-sm"
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-semibold mb-0">Основа: {{ baseLabels[path|last] ?? path|last }}</h6>
+            <button type="button" class="btn-close"
                     data-action="click->coating-form#removeBase"
                     data-coating-form-env-param="{{ path[0] }}"
                     data-coating-form-base-param="{{ path|last }}"

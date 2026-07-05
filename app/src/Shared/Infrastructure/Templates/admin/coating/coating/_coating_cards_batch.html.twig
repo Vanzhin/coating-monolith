@@ -90,97 +90,106 @@
                             data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                    {% if coating.tags|length > 0 %}
-                        <div class="mb-3 d-flex flex-wrap gap-1">
-                            {% for tag in coating.tags %}
-                                <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
-                            {% endfor %}
+                    {% if coating.tags|length > 0 or coating.description %}
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                            {% if coating.tags|length > 0 %}
+                                <div class="{% if coating.description %}mb-3 {% endif %}d-flex flex-wrap gap-1">
+                                    {% for tag in coating.tags %}
+                                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if coating.description %}
+                                <p class="text-body-secondary mb-0">{{ coating.description }}</p>
+                            {% endif %}
                         </div>
                     {% endif %}
 
-                    {% if coating.description %}
-                        <p class="text-body-secondary mb-4">{{ coating.description }}</p>
-                    {% endif %}
-
-                    <h6 class="mb-2 mt-1">Основные характеристики</h6>
-                    <table class="table table-sm mb-4">
-                        <tbody>
-                            {% set baseEnum = coating.baseEnum %}
-                            {% if baseEnum %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-3">Основные характеристики</h6>
+                        <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 table-rows">
+                            <tbody>
+                                {% set baseEnum = coating.baseEnum %}
+                                {% if baseEnum %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ (основание)</th>
+                                        <td>
+                                            {{ baseEnum.title }}
+                                            <span class="text-muted">
+                                                ({{ baseEnum.iso }}{% if baseEnum.gost|length > 0 %} / {{ baseEnum.gost|join(', ') }}{% endif %})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ (основание)</th>
+                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток</th>
+                                    <td>{{ coating.volumeSolid }} об. %</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" class="text-muted fw-normal">Плотность</th>
+                                    <td>{{ coating.massDensity }} кг/л</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки</th>
                                     <td>
-                                        {{ baseEnum.title }}
-                                        <span class="text-muted">
-                                            ({{ baseEnum.iso }}{% if baseEnum.gost|length > 0 %} / {{ baseEnum.gost|join(', ') }}{% endif %})
-                                        </span>
+                                        {{ coating.dftRange.min }}–{{ coating.dftRange.max }} мкм
+                                        <span class="text-muted">(целевая {{ coating.dftRange.tds_dft }})</span>
                                     </td>
                                 </tr>
-                            {% endif %}
-                            <tr>
-                                <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток</th>
-                                <td>{{ coating.volumeSolid }} об. %</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" class="text-muted fw-normal">Плотность</th>
-                                <td>{{ coating.massDensity }} кг/л</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки</th>
-                                <td>
-                                    {{ coating.dftRange.min }}–{{ coating.dftRange.max }} мкм
-                                    <span class="text-muted">(целевая {{ coating.dftRange.tds_dft }})</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row" class="text-muted fw-normal">Рабочий диапазон температур</th>
-                                <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }} °C</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" class="text-muted fw-normal">Упаковка</th>
-                                <td>{{ coating.pack }} л</td>
-                            </tr>
-                            {% if coating.thinner %}
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal">Разбавитель</th>
-                                    <td>{{ coating.thinner }}</td>
+                                    <th scope="row" class="text-muted fw-normal">Рабочий диапазон температур</th>
+                                    <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }} °C</td>
                                 </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                                <tr>
+                                    <th scope="row" class="text-muted fw-normal">Упаковка</th>
+                                    <td>{{ coating.pack }} л</td>
+                                </tr>
+                                {% if coating.thinner %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal">Разбавитель</th>
+                                        <td>{{ coating.thinner }}</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
 
                     {% set matrix = coating_time_matrix(coating) %}
-                    <h6 class="mb-2 mt-1">Время высыхания</h6>
-                    <div class="table-responsive">
-                    <table class="table table-sm table-bordered align-middle mb-2">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="text-muted fw-normal">Температура поверхности</th>
-                                {% for t in matrix.columns %}
-                                    <th class="text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in matrix.rows %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-3">Время высыхания</h6>
+                        <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 table-rows">
+                            <thead>
                                 <tr>
-                                    <th scope="row" class="fw-normal">{{ row.label }}</th>
+                                    <th class="text-muted fw-normal">Температура поверхности</th>
                                     {% for t in matrix.columns %}
-                                        {% set cell = row.values[t] %}
-                                        <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
-                                            {% if cell.minutes is null %}
-                                                <span class="text-muted">—</span>
-                                            {% elseif cell.minutes == 0 %}
-                                                <i class="bi bi-infinity" title="без ограничения"></i>
-                                            {% else %}
-                                                {{ cell.minutes|duration_minutes_short }}
-                                            {% endif %}
-                                        </td>
+                                        <th class="text-muted fw-normal text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
                                     {% endfor %}
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {% for row in matrix.rows %}
+                                    <tr>
+                                        <th scope="row" class="fw-normal">{{ row.label }}</th>
+                                        {% for t in matrix.columns %}
+                                            {% set cell = row.values[t] %}
+                                            <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
+                                                {% if cell.minutes is null %}
+                                                    <span class="text-muted">—</span>
+                                                {% elseif cell.minutes == 0 %}
+                                                    <i class="bi bi-infinity" title="без ограничения"></i>
+                                                {% else %}
+                                                    {{ cell.minutes|duration_minutes_short }}
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                     <p class="text-muted small mb-0">
                         Курсивом — рассчитанные интерполяцией значения.

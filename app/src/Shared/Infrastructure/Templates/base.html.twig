@@ -205,11 +205,15 @@
         .table-rows > tbody > tr > td,
         .table-rows > tbody > tr > th {
             border: 0;
-            /* --bs-table-bg — по дефолту равна body-bg (задано на .table),
-               а .table-warning на tr/td её переопределяет в #fff3cd. Читаем
-               именно эту переменную (не -state), иначе жёлтая подсветка
-               «различающихся» строк/ячеек compare пропадает. */
-            background: var(--bs-table-bg, var(--bs-body-bg));
+            /* Приоритет:
+               1. --table-rows-cell-bg — наш собственный override с родителя
+                  (Bootstrap его не трогает, поэтому каскадирует внутрь .table
+                  без перезаписи). Используется, когда обёртка сама bg-body
+                  и строки-«карточки» должны быть серыми на белом фоне.
+               2. --bs-table-bg — стандартная переменная Bootstrap (равна
+                  body-bg на .table, переопределяется .table-warning в #fff3cd
+                  для подсветки «различающихся» ячеек compare). */
+            background: var(--table-rows-cell-bg, var(--bs-table-bg, var(--bs-body-bg)));
         }
         .table-rows > tbody > tr > td:first-child,
         .table-rows > tbody > tr > th:first-child {
