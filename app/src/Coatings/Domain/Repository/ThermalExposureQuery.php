@@ -16,8 +16,8 @@ use App\Shared\Infrastructure\Exception\AppException;
 final readonly class ThermalExposureQuery
 {
     /** Разумные границы ввода, чтобы отсечь мусор. */
-    private const MIN_TEMPERATURE = -100;
-    private const MAX_TEMPERATURE = 500;
+    private const MIN_TEMPERATURE = -200;
+    private const MAX_TEMPERATURE = 1000;
 
     public function __construct(
         public int $temperature,
