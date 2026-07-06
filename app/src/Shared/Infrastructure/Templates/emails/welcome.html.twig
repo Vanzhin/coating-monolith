@@ -1,13 +1,12 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Welcome to {{ app_name }} {% endblock %}
-{% block body %}
-    <p>Хеллоу, дорогой {{ user.name }}!</p>
-    <p>Это тестовое письмо, которое отсылается после регистрации пользователя.</p>
-    <p class="button">
-        <a class="text-no-decoration text-cornflowerblue" href="{{ url('app_homepage') }}">на сайт</a>
-    </p>
-    <p class="button">
-        <a class="text-no-decoration text-cornflowerblue" href="{{ url('app_account') }}">мой профиль</a>
-    </p>
 
+{% block title %}Добро пожаловать в {{ app_name }}{% endblock %}
+
+{% block body %}
+    <p>Здравствуйте, <strong>{{ user.name }}</strong>!</p>
+    <p>Регистрация в {{ app_name }} прошла успешно.</p>
+    <p>
+        <a class="btn" href="{{ url('app_homepage') }}">На сайт</a>
+        <a class="btn btn-secondary" href="{{ url('app_account') }}">Мой профиль</a>
+    </p>
 {% endblock %}

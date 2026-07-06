@@ -1,12 +1,11 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Зарегистрирована новая компания на портале {{ app_name }} {% endblock %}
-{% block body %}
-    <p>Приветствуем Вас, {{ user.profile.firstName?? 'Пользователь' }}!</p>
-    <p>Добро пожаловать на портал {{ app_name }}.
-        Это письмо отправлено автоматически на почту администратора Компании.
-    </p>
-    <p class="button">
-        <a class="text-no-decoration text-cornflowerblue" href="{{ loginLink }}">Войти</a>
-    </p>
 
+{% block title %}Регистрация компании на {{ app_name }}{% endblock %}
+
+{% block body %}
+    <p>Здравствуйте, <strong>{{ user.profile.firstName ?? 'Пользователь' }}</strong>!</p>
+    <p>
+        Добро пожаловать в {{ app_name }}. Это письмо отправлено автоматически на почту администратора компании.
+    </p>
+    <p><a class="btn" href="{{ loginLink }}">Войти</a></p>
 {% endblock %}

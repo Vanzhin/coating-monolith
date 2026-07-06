@@ -1,49 +1,27 @@
 {% apply inline_css(source('@styles/email/email.css')) %}
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{% block title %}{% endblock %}</title>
-
-        <title>Welcome to {{ app_name }}</title>
-    </head>
-    <body>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+</head>
+<body>
     <div class="container">
-        
-            {% block header %}
-                <div class="inline">
+        <div class="header">
+            <a class="brand" href="{{ app.request.server.get('CORS_ALLOW_ORIGIN') }}">{{ app_name }}</a>
+        </div>
 
-                    <h1 class="text-grey">
-                        <a class="text-no-decoration text-blue flex-center" href="{{ app.request.server.get('CORS_ALLOW_ORIGIN') }}"
-                        title="Перейти на сайт">
-                            <span>
-                                {{ app_name }}
-                            </span>
-                        </a>
+        <div class="body">
+            {% block body %}{% endblock %}
+        </div>
 
-                    </h1>
-{#                    <h3>{{ "now"|date("d M Y") }}</h3>#}
-                </div>
+        <div class="footer">
+            {% block footer %}
+                © {{ 'now'|date('Y') }} {{ app_name }} · Автоматическое письмо, не отвечайте на него.
             {% endblock %}
-            <main class="container">
-                {% block body %}
-
-                {% endblock %}
-            </main>
-{#            {% block footer %}#}
-{#                <footer class="inline">#}
-{#                    <p>Blog template built for <a href="https://getbootstrap.com/">Bootstrap</a> by <a#}
-{#                                href="https://twitter.com/mdo">@mdo</a>.</p>#}
-{#                    <p>#}
-{#                        <a href="#">Back to top</a>#}
-{#                    </p>#}
-{#                </footer>#}
-{#            {% endblock %}#}
-        
-
+        </div>
     </div>
-
-    </body>
-    </html>
+</body>
+</html>
 {% endapply %}

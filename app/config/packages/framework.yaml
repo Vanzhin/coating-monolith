@@ -15,6 +15,22 @@ framework:
         cookie_secure: 'auto'  # Автоматически включает HTTPS, если запрос через него
         cookie_samesite: 'lax'
 
+    # Rate limiter для чувствительных эндпоинтов. Хранилище — cache.app (Redis
+    # у нас на бою, значит и лимиты живут в Redis, а не в памяти php-fpm воркера).
+    rate_limiter:
+        # Login-link по email: не даём одному ящику получать больше 3 писем в час.
+        # Основная защита от спама конкретному пользователю через форму «войти по ссылке».
+        login_link_per_email:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '1 hour'
+        # Login-link по IP: тормозим bot'ов, гоняющих форму пачкой (в т.ч. чтобы
+        # прощупывать email enumeration через тайминги).
+        login_link_per_ip:
+            policy: 'sliding_window'
+            limit: 30
+            interval: '1 hour'
+
     #esi: true
     #fragments: true
 when@prod:

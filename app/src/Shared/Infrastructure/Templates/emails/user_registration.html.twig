@@ -1,23 +1,25 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Регистрация на платформе {{ app_name }} {% endblock %}
+
+{% block title %}Регистрация в {{ app_name }}{% endblock %}
+
 {% block body %}
-    <p>Здравствуйте,<b> {{ user.profile.fullName?? user.login }}!</b></p>
+    <p>Здравствуйте, <strong>{{ user.profile.fullName ?? user.login }}</strong>!</p>
     {% if user.company %}
-        <p>Сообщаем о том, что Вы от компании {{ user.company.title }} зачислены на проверку знаний на платформе {{ app_name }}.</p>
+        <p>Вы от компании {{ user.company.title }} зачислены на проверку знаний в {{ app_name }}.</p>
     {% else %}
-        <p>Сообщаем о том, что Вы зарегистрировались на платформе {{ app_name }}.</p>
+        <p>Регистрация в {{ app_name }} прошла успешно.</p>
     {% endif %}
-    <p><b>Данные для входа:</b></p>
-    <p><b>Логин:</b> {{ user.login }}</p>
-    <p><b>Пароль:</b> {{ user.plainPass ?? 'Скрыт' }}</p>
+
+    <p><strong>Данные для входа:</strong></p>
+    <ul class="data-list">
+        <li><strong>Логин:</strong> {{ user.login }}</li>
+        <li><strong>Пароль:</strong> {{ user.plainPass ?? 'скрыт' }}</li>
+    </ul>
+
+    <p class="warning">Не передавайте логин и пароль третьим лицам.</p>
+
     <p>
-        <span class="text-red">ВАЖНО!</span>
-        Обеспечьте безопасность логина и пароля и не передавайте доступ третьим лицам.
-    </p>
-    <p class="button">
-        <a class="text-no-decoration text-blue" href="{{ path }}">Перейти в личный кабинет</a>
-    </p>
-    <p class="button">
-        <a class="text-no-decoration text-blue" href="https://t.me/AmuletTest_support_bot" target="_blank">Обратиться в техподдержку</a>
+        <a class="btn" href="{{ path }}">Перейти в личный кабинет</a>
+        <a class="btn btn-secondary" href="https://t.me/AmuletTest_support_bot" target="_blank">Техподдержка</a>
     </p>
 {% endblock %}

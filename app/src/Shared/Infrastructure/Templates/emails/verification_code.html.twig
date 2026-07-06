@@ -1,23 +1,17 @@
 {% extends 'emails/base.html.twig' %}
 
-{% block title %}Ваш код верификации для входа в {{ app_name }}{% endblock %}
+{% block title %}Код подтверждения для входа в {{ app_name }}{% endblock %}
 
 {% block body %}
-    <p style="font-size: 18px; color: #2D3748; margin-bottom: 8px;"><strong>Здравствуйте!</strong></p>
-    <p style="color: #4A5568; margin-bottom: 24px;">Для завершения входа используйте ваш временный код доступа:</p>
+    <p><strong>Здравствуйте!</strong></p>
+    <p>Для завершения входа введите ваш временный код доступа:</p>
 
-    <div style="text-align: center; margin: 32px 0;">
-        <div style="display: inline-block; background: #F7FAFC; border: 2px dashed #E2E8F0; border-radius: 12px; padding: 20px 32px;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2B6CB0;">{{ code }}</span>
-        </div>
+    <div class="code-box">
+        <span class="code">{{ code }}</span>
     </div>
 
-    <p style="color: #718096; font-size: 14px; margin-bottom: 24px;">
-        ⏱ Код действителен в течение <strong>{{ time_to_use }}</strong> минут<br>
-        🔒 Никому не передавайте этот код
+    <p class="muted">
+        Код действителен <strong>{{ time_to_use }}</strong> минут. Никому его не передавайте.
     </p>
-
-    <p style="color: #A0AEC0; font-size: 12px; margin-top: 32px; border-top: 1px solid #E2E8F0; padding-top: 16px;">
-        Если вы не запрашивали вход, просто проигнорируйте это письмо.
-    </p>
+    <p class="muted">Если вы не запрашивали вход, просто проигнорируйте это письмо.</p>
 {% endblock %}

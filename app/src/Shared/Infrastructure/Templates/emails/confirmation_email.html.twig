@@ -1,17 +1,16 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Email confirmation from {{ app_name }} {% endblock %}
+
+{% block title %}Подтверждение почты — {{ app_name }}{% endblock %}
+
 {% block body %}
-    <p>Хеллоу, дорогой {{ user.name }}!</p>
-
+    <p>Здравствуйте, <strong>{{ user.name }}</strong>!</p>
+    <p>Подтвердите ваш email, перейдя по ссылке ниже:</p>
+    <p><a class="btn" href="{{ signedUrl|raw }}">Подтвердить email</a></p>
+    <p class="muted">
+        Ссылка действительна {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
+    </p>
     <p>
-        Please confirm your email address by clicking the following link: <br><br>
-        <a href="{{ signedUrl|raw }}">Confirm my Email</a>.
-        This link will expire in {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
-    </p>    <p class="button">
-        <a class="text-no-decoration text-cornflowerblue" href="{{ url('app_homepage') }}">на сайт</a>
+        <a class="btn btn-secondary" href="{{ url('app_homepage') }}">На сайт</a>
+        <a class="btn btn-secondary" href="{{ url('app_account') }}">Мой профиль</a>
     </p>
-    <p class="button">
-        <a class="text-no-decoration text-cornflowerblue" href="{{ url('app_account') }}">мой профиль</a>
-    </p>
-
 {% endblock %}

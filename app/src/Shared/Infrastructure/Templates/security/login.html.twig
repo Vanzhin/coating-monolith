@@ -1,50 +1,58 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ parent() }} Вход{% endblock %}
+{% block title %}{{ parent() }} · Вход{% endblock %}
+
+{# Неавторизованные страницы — только форма без хедера/футера. #}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block body %}
-    <div class="container d-flex my-4 justify-content-center ">
-        <form method="post" action="{{ path('app_login') }}" class="form-signin m-auto">
-            {% if error %}
-                <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-            {% endif %}
+    <div class="container-fluid p-3">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                {% if app.user %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary text-center">
+                        Вы вошли как <strong>{{ app.user.userIdentifier }}</strong>.
+                        <a href="{{ path('app_logout') }}">Выйти</a>
+                    </div>
+                {% endif %}
 
-            {% if app.user %}
-                <div class="mb-3">
-                    You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
+                <div class="p-4 rounded-3 bg-body-tertiary">
+                    <h1 class="h4 fw-semibold mb-3 text-center">Вход</h1>
+
+                    {% if error %}
+                        <div class="alert alert-danger">
+                            {{ error.messageKey|trans(error.messageData, 'security') }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{{ path('app_login') }}">
+                        <div class="form-floating mb-2">
+                            <input type="email" value="{{ last_username }}" name="email" id="inputEmail"
+                                   class="form-control" autocomplete="email"
+                                   required autofocus placeholder="you@example.com">
+                            <label for="inputEmail">Email</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="password" name="password" id="inputPassword"
+                                   class="form-control" autocomplete="current-password"
+                                   required placeholder="Пароль">
+                            <label for="inputPassword">Пароль</label>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                        <button class="btn btn-primary w-100" type="submit">Войти</button>
+                    </form>
+
+                    <hr class="my-3">
+
+                    <div class="small text-body-secondary d-flex flex-column gap-1">
+                        <div>Впервые на сайте? <a href="{{ path('app_sign_up') }}">Регистрация</a></div>
+                        <div>Забыли пароль? <a href="{{ path('app_login_link') }}">Вход по ссылке</a></div>
+                    </div>
                 </div>
-            {% else %}
-
-            {% endif %}
-            <h1 class="h3 mb-3 font-weight-normal">Вход</h1>
-            <div class="form-floating my-1">
-                <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control"
-                autocomplete="email" required autofocus placeholder="Укажите почту...">
-                <label for="inputEmail">Email</label>
             </div>
-            <div class="form-floating my-1">
-                <input type="password" name="password" id="inputPassword" class="form-control"
-                autocomplete="current-password" required placeholder="Введите пароль...">
-                <label for="inputPassword">Пароль</label>
-            </div>
-
-
-            <input type="hidden" name="_csrf_token"
-                   value="{{ csrf_token('authenticate') }}"
-            >
-            <div class="d-flex justify-content-between align-items-center">
-                <button class="btn btn-lg btn-primary mt-2" type="submit">
-                    Вперед
-                </button>
-                <div class="m-1">
-                    Впервые на сайте? <a href="{{ path('app_sign_up') }}">Регистрация</a>
-                </div>
-                <div class="m-1">
-                    Вход по ссылке <a href="{{ path('app_login_link') }}">Перейти</a>
-                </div>
-            </div>
-
-        </form>
-
+        </div>
     </div>
 {% endblock %}

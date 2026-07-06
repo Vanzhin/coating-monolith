@@ -1,17 +1,13 @@
 {% extends 'emails/base.html.twig' %}
-{% block title %} Запрос на регистрацию компании на {{ app_name }} {% endblock %}
+
+{% block title %}Запрос на регистрацию компании — {{ app_name }}{% endblock %}
+
 {% block body %}
     <p>Здравствуйте, администратор!</p>
-    <p>Сформирован новый запрос на регистрацию компании.
-        Это письмо отправлено автоматически на указанную почту администратора портала {{ app_name }}.
-    </p>
-    <p>
-        <b>Данные: </b>
-    <ul id="navigation">
+    <p>Сформирован новый запрос на регистрацию компании. Данные:</p>
+    <ul class="data-list">
         {% for key, item in context %}
-            <li><b>{{ key }} : </b> {{ item | default('Не указано') }}</li>
+            <li><strong>{{ key }}:</strong> {{ item|default('не указано') }}</li>
         {% endfor %}
     </ul>
-    </p>
-
 {% endblock %}
