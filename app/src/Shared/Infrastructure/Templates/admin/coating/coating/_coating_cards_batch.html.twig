@@ -106,6 +106,31 @@
                         </div>
                     {% endif %}
 
+                    {# Форматирование ThermalExposureLimits: continuous_min…continuous_max
+                       (обе границы включительно, null-граница = «не задокументировано»),
+                       + опциональный «пик X °C, N мин». Показываем только если у нас
+                       есть хоть одно значение — null-DTO пропускаем. #}
+                    {% macro thermalRange(exposure) %}
+                        {% if exposure %}
+                            {% set cMin = exposure.continuous_min %}
+                            {% set cMax = exposure.continuous_max %}
+                            {% if cMin is not null and cMax is not null %}
+                                {{ cMin > 0 ? '+' ~ cMin : cMin }} … {{ cMax > 0 ? '+' ~ cMax : cMax }}
+                            {% elseif cMax is not null %}
+                                ≤ {{ cMax > 0 ? '+' ~ cMax : cMax }}
+                            {% elseif cMin is not null %}
+                                ≥ {{ cMin > 0 ? '+' ~ cMin : cMin }}
+                            {% endif %}
+                            {% if exposure.peak_max is not null %}
+                                <span class="text-muted small">
+                                    (пик до {{ exposure.peak_max > 0 ? '+' ~ exposure.peak_max : exposure.peak_max }}
+                                    {%- if exposure.peak_duration_minutes %}, {{ exposure.peak_duration_minutes }} мин{% endif -%}
+                                    )
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    {% endmacro %}
+
                     <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-3">Основные характеристики</h6>
                         <div class="table-responsive">
@@ -114,7 +139,7 @@
                                 {% set baseEnum = coating.baseEnum %}
                                 {% if baseEnum %}
                                     <tr>
-                                        <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ (основание)</th>
+                                        <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ</th>
                                         <td>
                                             {{ baseEnum.title }}
                                             <span class="text-muted">
@@ -124,27 +149,39 @@
                                     </tr>
                                 {% endif %}
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток</th>
-                                    <td>{{ coating.volumeSolid }} об. %</td>
+                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток, об. %</th>
+                                    <td>{{ coating.volumeSolid }}</td>
                                 </tr>
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal">Плотность</th>
-                                    <td>{{ coating.massDensity }} кг/л</td>
+                                    <th scope="row" class="text-muted fw-normal">Плотность, кг/л</th>
+                                    <td>{{ coating.massDensity }}</td>
                                 </tr>
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки</th>
+                                    <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки, мкм</th>
                                     <td>
-                                        {{ coating.dftRange.min }}–{{ coating.dftRange.max }} мкм
+                                        {{ coating.dftRange.min }}–{{ coating.dftRange.max }}
                                         <span class="text-muted">(целевая {{ coating.dftRange.tds_dft }})</span>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal">Рабочий диапазон температур</th>
-                                    <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }} °C</td>
+                                    <th scope="row" class="text-muted fw-normal">Диапазон нанесения, °C</th>
+                                    <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }}</td>
                                 </tr>
+                                {% if coating.dryHeatExposure %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal">Эксплуатация в сухом тепле, °C</th>
+                                        <td>{{ _self.thermalRange(coating.dryHeatExposure) }}</td>
+                                    </tr>
+                                {% endif %}
+                                {% if coating.immersionExposure %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal">Эксплуатация в погружении, °C</th>
+                                        <td>{{ _self.thermalRange(coating.immersionExposure) }}</td>
+                                    </tr>
+                                {% endif %}
                                 <tr>
-                                    <th scope="row" class="text-muted fw-normal">Упаковка</th>
-                                    <td>{{ coating.pack }} л</td>
+                                    <th scope="row" class="text-muted fw-normal">Упаковка, л</th>
+                                    <td>{{ coating.pack }}</td>
                                 </tr>
                                 {% if coating.thinner %}
                                     <tr>
