@@ -53,7 +53,7 @@
                             : selectedTagIdList|merge([tag.id]) %}
                         {% set q = app.request.query.all|merge({tagIds: newTagIds, page: null})|filter(v => v is not null) %}
                         <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
-                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-dark{% endif %} fw-normal text-decoration-none flex-shrink-0"
+                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-body-emphasis{% endif %} fw-normal text-decoration-none flex-shrink-0"
                            title="{{ isActive ? 'Убрать «' ~ tag.title ~ '» из фильтра' : 'Отфильтровать по «' ~ tag.title ~ '»' }}">
                             {{ tag.title }}
                             {%- if isActive %} ×{% endif -%}
