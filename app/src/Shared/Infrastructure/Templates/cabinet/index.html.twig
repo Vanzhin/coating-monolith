@@ -29,8 +29,189 @@
                     </div>
                 {% endif %}
 
-                <div class="content-area">
-                    <h3>Здесь будут данные для пользователя - Тест1</h3>
+                {# Хедер кабинета — тертиарная карточка с приветствием и ролью. #}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <h1 class="h3 mb-1">Личный кабинет</h1>
+                    <p class="text-body-secondary mb-0">
+                        {% if app.user %}{{ app.user.email }}{% endif %}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <span class="badge text-bg-secondary ms-1">Администратор</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <h5 class="fw-semibold mb-3 mt-4">Возможности системы</h5>
+
+                <div class="row g-3">
+                    {# ─── Каталог покрытий ─── #}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 bg-body-tertiary h-100 d-flex flex-column">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-grid me-1"></i> Каталог покрытий
+                            </h6>
+                            <ul class="small ps-3 mb-3">
+                                <li>Поиск по названию, описанию и тегам (с автокоррекцией опечаток для однословных запросов).</li>
+                                <li>Фильтры-чипы: сортировка, тип связующего, температура нанесения / эксплуатации, сухой остаток.</li>
+                                <li>Шторка «Все фильтры» с производителями и тегами.</li>
+                                <li>Быстрый просмотр — характеристики покрытия и таблица времени высыхания.</li>
+                            </ul>
+                            <a href="{{ path('app_cabinet_coating_coating_list') }}"
+                               class="btn btn-sm btn-outline-primary mt-auto align-self-start">
+                                Открыть <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    {# ─── Сравнение ─── #}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 bg-body-tertiary h-100 d-flex flex-column">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-arrow-left-right me-1"></i> Сравнение покрытий
+                            </h6>
+                            <ul class="small ps-3 mb-0">
+                                <li>Чекбокс на карточке добавляет покрытие в трей внизу страницы.</li>
+                                <li>До 4 покрытий одновременно.</li>
+                                <li>«Сравнить» открывает таблицу с общими характеристиками и per-cell diff по времени высыхания.</li>
+                                <li>Жёлтым выделены столбцы, где значения различаются между покрытиями.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {# ─── Управление (админ) ─── #}
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 bg-body-tertiary h-100 d-flex flex-column">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-tools me-1"></i> Управление
+                                <span class="badge text-bg-secondary ms-1">Админ</span>
+                            </h6>
+                            <ul class="small ps-3 mb-3">
+                                <li>Создание, редактирование, дублирование и удаление покрытий.</li>
+                                <li>Справочник производителей.</li>
+                                <li>Управление тегами через autocomplete-подсказки в форме покрытия.</li>
+                                <li>Ввод пределов эксплуатации (сухое тепло / погружение), интервалов перекрытия по средам и основаниям ЛКМ.</li>
+                            </ul>
+                            <div class="mt-auto d-flex gap-2 flex-wrap">
+                                <a href="{{ path('app_cabinet_coating_coating_list') }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Покрытия
+                                </a>
+                                <a href="{{ path('app_cabinet_coating_manufacturer_list') }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Производители
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# ─── Интерфейс ─── #}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 bg-body-tertiary h-100 d-flex flex-column">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-sliders me-1"></i> Интерфейс
+                            </h6>
+                            <ul class="small ps-3 mb-0">
+                                <li>Меню — кнопка «☰» слева вверху (навигация, личный кабинет, выход).</li>
+                                <li>Переключение тёмной / светлой темы — кнопка справа вверху.</li>
+                                <li>На мобильных фильтры и всплывающие меню открываются шторкой снизу.</li>
+                                <li>Бесконечная прокрутка списков (fallback — обычная пагинация без JS).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                {# ─── Примеры поиска — готовые URL-фильтры для типовых сценариев.
+                     Клик по кнопке уводит в /list с pre-filled параметрами. Даёт
+                     новому пользователю понять, как комбинируются фасеты. ─── #}
+                <h5 class="fw-semibold mb-3 mt-4">Примеры поиска</h5>
+
+                <div class="p-3 rounded-3 bg-body-tertiary">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-droplet-half me-1 text-body-secondary"></i>
+                                <strong>«эпоксид в погружении»</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — этот текст уходит в строку поиска, плюс установлен фасет «Температура эксплуатации» в среде «Погружение»
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {search: 'эпоксид в погружении', thermTemp: 50, thermEnv: 'immersion'}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-snow me-1 text-body-secondary"></i>
+                                <strong>Покрытия для нанесения зимой (при −5 °C и ниже)</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — фасет «Мин Т нанесения» с верхней границей −5
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {appMinTempTo: -5}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-fire me-1 text-body-secondary"></i>
+                                <strong>Термостойкие эпоксиды — сухое тепло ≥ 200 °C</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — тип связующего <code>EP</code> + «Температура эксплуатации» 200 °C в среде «Сухое тепло»
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {baseValues: ['EP'], thermTemp: 200, thermEnv: 'dry_heat'}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-search me-1 text-body-secondary"></i>
+                                <strong>Поиск по ключевым словам: «эпокид для бетона»</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — поисковая строка, ищет по названию, описанию и тегам
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {search: 'эпокид для бетона'}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-search me-1 text-body-secondary"></i>
+                                <strong>Поиск по ключевым словам: «эпоксид с цинком»</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — поисковая строка, ищет по названию, описанию и тегам
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {search: 'эпоксид с цинком'}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                            <div class="flex-grow-1 small">
+                                <i class="bi bi-thermometer-sun me-1 text-body-secondary"></i>
+                                <strong>Кратковременно выдерживает +180 °C (сухое тепло, с учётом пика)</strong>
+                                <span class="text-body-secondary d-block d-md-inline">
+                                    — «Температура эксплуатации» 180 °C в «Сухом тепле» + галка «Включая пиковые нагрузки»
+                                </span>
+                            </div>
+                            <a href="{{ path('app_cabinet_coating_coating_list', {thermTemp: 180, thermEnv: 'dry_heat', thermPeak: 1}) }}"
+                               class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                Найти <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         {% endblock %}

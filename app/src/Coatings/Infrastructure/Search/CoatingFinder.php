@@ -24,7 +24,11 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 final class CoatingFinder
 {
     private const FTS_LANG = 'russian';
-    private const FUZZY_SIMILARITY_THRESHOLD = 0.4;
+    // Порог триграммной похожести для fuzzy fallback. Изначально был 0.4, но
+    // 3 общих тригамма из 4-7 давали ложные match'и вроде «мастик» → «Литапрайм»
+    // (sim ≈ 0.43). 0.6 отсекает шум, но пропускает опечатки уровня одной буквы
+    // на конце слова (напр. «бетано» вместо «бетон» даёт ~0.66).
+    private const FUZZY_SIMILARITY_THRESHOLD = 0.6;
     private const FUZZY_LIMIT = 10;
 
     public function __construct(private readonly EntityManagerInterface $em)
@@ -48,7 +52,11 @@ final class CoatingFinder
             return new PaginationResult([], 0);
         }
 
-        $similarity = 'GREATEST(WORD_SIMILARITY(:search, cc.title), WORD_SIMILARITY(:search, cc.description))';
+        // Fuzzy идёт только по title. Description — длинный шумный текст,
+        // добавление его в GREATEST даёт ложные хиты и никакой пользы:
+        // пользователь опечатывается в НАЗВАНИИ («бетано» vs «бетон»),
+        // а не в подробном описании.
+        $similarity = 'WORD_SIMILARITY(:search, cc.title)';
 
         $qb = $this->coatingQueryBuilder();
         $qb->andWhere($similarity . ' > :threshold')
