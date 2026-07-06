@@ -45,19 +45,11 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
         // ВСЮ строку как substring c title/description, теряет per-word
         // AND-семантику и игнорирует теги — это даёт «похожее но не то».
         // Пустой результат лучше, чем нерелевантные хиты.
-        if ($filter->search !== null && $this->isSingleWordQuery($filter->search)) {
+        if ($filter->search?->hasSingleWord()) {
             return $this->finder->fuzzyTitle($filter);
         }
 
         return $result;
-    }
-
-    private function isSingleWordQuery(string $query): bool
-    {
-        // Тот же splitter что и в CoatingFinder::buildPrefixTsQuery —
-        // консистентность определения «слова» между обоими путями.
-        $words = preg_split('/[\s\-.,;]+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY);
-        return is_array($words) && count($words) === 1;
     }
 
     public function findOneById(string $id): ?Coating

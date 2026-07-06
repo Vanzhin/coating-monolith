@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecifi
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Infrastructure\Search\CoatingFinder;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -113,7 +114,7 @@ final class CoatingFinderFtsTagTest extends KernelTestCase
     public function testFtsFindsCoatingByTagTitle(): void
     {
         // Поиск по слову «бетона» — присутствует только в теге, не в title/description → должен найти.
-        $filter = new CoatingsFilter('бетона', pager: Pager::fromPage(1, 50));
+        $filter = new CoatingsFilter(SearchQuery::tryFromString('бетона'), pager: Pager::fromPage(1, 50));
         $result = $this->finder->fullText($filter);
 
         $ids = array_map(fn(Coating $c) => $c->getId(), $result->items);

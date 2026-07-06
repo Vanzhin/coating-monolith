@@ -1,5 +1,4 @@
 {% extends '/cabinet/index.html.twig' %}
-{% import 'admin/coating/coating/_recoating_pair_table.html.twig' as pairTable %}
 
 {% block title %}{{ parent() }} | Покрытия{% endblock %}
 
@@ -130,13 +129,6 @@
 
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
-    {% set selectedTagIdList = selectedTagIds.list %}
-    {# Карта {key_lower => "Русское название (ISO)"} для подписей base-узлов в модалке покрытия. #}
-    {% set baseLabels = {} %}
-    {% for b in coatingBases ?? [] %}
-        {% set baseLabels = baseLabels|merge({(b.value|lower): b.title ~ ' (' ~ b.value ~ ')'}) %}
-    {% endfor %}
-
     {# id'ы активных tag-фильтров — раз собрать для переиспользования (проверки
        on/off, toggle-url'ы, empty-state chip-row'а внутри offcanvas'a). #}
     {% set selectedTagIdList = selectedTags|map(t => t.id) %}
@@ -153,7 +145,8 @@
     } %}
     {% block above_list %}
         <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
-              id="coatingListForm" class="mb-3">
+              id="coatingListForm" class="mb-3"
+              data-controller="chip-facets">
             <div class="input-group input-group-lg mb-3">
                 {# Строка поиска — только текст. Активные фасеты (производитель /
                    ranges / thermal / теги) в chip-row показаны как value-чипы-ссылки,
@@ -167,42 +160,19 @@
                 <button type="submit" class="btn btn-primary">Найти</button>
             </div>
 
-            {# Preserve-state: hidden input'ы активных фасетов, чтобы submit формы
-               не сбрасывал их. Рендерим только для активных — у пустых свои
-               dropdown'ы с form-контролами. #}
-            {% for id in selectedManufacturerIds.list %}
-                <input type="hidden" name="manufacturerIds[]" value="{{ id }}">
+            {# Preserve-state: hidden input'ы всех текущих query-параметров
+               (кроме search/page/partial — они у формы свои). Multi-value
+               в URL приходит как array — суффикс '[]' в name даёт браузеру
+               ту же сериализацию обратно. #}
+            {% for name, value in preservedParams %}
+                {% if value is iterable %}
+                    {% for v in value %}
+                        <input type="hidden" name="{{ name }}[]" value="{{ v }}">
+                    {% endfor %}
+                {% else %}
+                    <input type="hidden" name="{{ name }}" value="{{ value }}">
+                {% endif %}
             {% endfor %}
-            {% if appMinTempFrom is not null %}
-                <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}">
-            {% endif %}
-            {% if appMinTempTo is not null %}
-                <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}">
-            {% endif %}
-            {% if volumeSolidFrom is not null %}
-                <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}">
-            {% endif %}
-            {% if volumeSolidTo is not null %}
-                <input type="hidden" name="volumeSolidTo" value="{{ volumeSolidTo }}">
-            {% endif %}
-            {% if thermTemp is not null %}
-                <input type="hidden" name="thermTemp" value="{{ thermTemp }}">
-            {% endif %}
-            {% if thermEnv %}
-                <input type="hidden" name="thermEnv" value="{{ thermEnv }}">
-            {% endif %}
-            {% if thermIncludingPeak %}
-                <input type="hidden" name="thermPeak" value="1">
-            {% endif %}
-            {% for tag in selectedTags %}
-                <input type="hidden" name="tagIds[]" value="{{ tag.id }}">
-            {% endfor %}
-            {% for baseValue in selectedBaseValues.list %}
-                <input type="hidden" name="baseValues[]" value="{{ baseValue }}">
-            {% endfor %}
-            {% if sort != constant('App\\Coatings\\Domain\\Repository\\CoatingSort::DEFAULT') %}
-                <input type="hidden" name="sort" value="{{ sort.value }}">
-            {% endif %}
 
 
             {# Активные состояния фасетов: используются в лейблах и стилях dropdown-чипов. #}
@@ -226,9 +196,9 @@
                  `data-bs-auto-close="outside"` — не закрывать dropdown при
                  клике по чекбоксу/input'у внутри. #}
 
-            {# Компактные строки-summary для активных фасетов (обрезаем длинные списки). #}
-            {% set mfNames = manufacturers|filter(m => m.id in selectedManufacturerIds.list)|map(m => m.title) %}
-            {% set mfSummary = mfNames|length > 0 ? mfNames|join(', ') : null %}
+            {# Компактные строки-summary для активных фасетов (обрезаем длинные списки).
+               mf/tags summary не нужны — «Производитель» и «Теги» полностью
+               ушли в шторку «Все фильтры», в chip-row остались только range/thermal. #}
             {% set appMinSummary = appMinTempActive
                 ? (appMinTempFrom is not null and appMinTempTo is not null ? appMinTempFrom ~ '…' ~ appMinTempTo ~ '°C'
                    : (appMinTempFrom is not null ? '≥ ' ~ appMinTempFrom ~ '°C' : '≤ ' ~ appMinTempTo ~ '°C'))
@@ -240,15 +210,12 @@
             {% set thSummary = thermalActive
                 ? thermTemp ~ '°C ' ~ (thermEnv == 'immersion' ? 'погр.' : 'сух.') ~ (thermIncludingPeak ? ' +пик' : '')
                 : null %}
-            {% set tagSummary = selectedTags|length > 0 ? selectedTags|map(t => t.title)|join(', ') : null %}
 
-            {# Reset-URL'ы каждого фасета — для × кнопок. #}
-            {% set mfResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({manufacturerIds: [], page: null})|filter(v => v is not null)) %}
+            {# Reset-URL'ы single-value chip'ов (mf/tags/base — multi-value,
+               каждый чип уже даёт свой remove URL прямо на месте). #}
             {% set appMinResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({appMinTempFrom: null, appMinTempTo: null, page: null})|filter(v => v is not null)) %}
             {% set vsResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({volumeSolidFrom: null, volumeSolidTo: null, page: null})|filter(v => v is not null)) %}
             {% set thResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null)) %}
-            {% set tagResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({tagIds: [], page: null})|filter(v => v is not null)) %}
-            {% set baseResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({baseValues: [], page: null})|filter(v => v is not null)) %}
 
             {# === Chip-row: transform-pattern ===
                  - Фасет пуст → `[Фасет ▾]` chip-dropdown для выбора.
@@ -884,7 +851,6 @@
                         coatings: result.coatings,
                         canEdit: canEdit,
                         selectedTagIdList: selectedTagIdList,
-                        baseLabels: baseLabels,
                     },
                     total_pages: totalPages,
                     base_url: path('app_cabinet_coating_coating_list', baseQuery),
@@ -946,75 +912,6 @@
         </div>
     </div>
 
-    {# Chip-фильтры: адаптивная логика desktop-dropdown vs mobile-offcanvas.
-
-       1) Portal desktop chip-dropdown'ов в document.body.
-          Chip-scroll на всех viewport'ах имеет overflow: hidden (для
-          horizontal-only скролла). Из-за этого dropdown-menu, находясь
-          в chip-scroll как descendant, клипится overflow'ом. Раньше я
-          боролся через strategy: 'fixed' + подкрут boundary/altAxis/tether/
-          padding — но эта связка была очень хрупкая и ломалась каждый
-          раз, когда менялся layout (col-обёртки, padding и т.п.).
-          Решение — physically выносить меню в <body> на show и возвращать
-          обратно на hide. Тогда меню не имеет ancestor'ов с overflow /
-          containing block, Popper с дефолтным конфигом (только flip
-          отключён) позиционирует его относительно viewport'а через
-          reference (кнопку). Никаких boundary-параметров вообще не нужно —
-          layout может меняться как угодно, Popper'у всё равно.
-
-          Инпуты и submit-кнопки внутри menu имеют form="coatingListForm",
-          поэтому даже находясь в <body> они остаются участниками формы
-          и корректно submit'ятся.
-
-       2) Viewport-adaptive disabled на fieldset'ах.
-          Инпуты из невидимого viewport'a (например, mobile offcanvas при
-          десктопной ширине) физически остаются в form. Если бы они были
-          enabled, browser отправлял бы их значения при submit — а для
-          hidden'ов range-фильтра и thermTemp это значит, что пустой mobile
-          input перезатирает установленный desktop-ом.
-          Решение: mediaMatch (min-width: 768px) → disabled на fieldset'ах
-          противоположного viewport'a. Disabled fieldset выключает все его
-          input'ы (и submit-кнопки) для form-submit'а. #}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Desktop chip-dropdown'ы: инициализация + portal-логика.
-            document.querySelectorAll('.chip-desktop-panel [data-bs-toggle="dropdown"]').forEach(el => {
-                bootstrap.Dropdown.getInstance(el)?.dispose();
-                const dropdown = new bootstrap.Dropdown(el, {
-                    popperConfig: (defaultConfig) => ({
-                        ...defaultConfig,
-                        modifiers: [
-                            ...defaultConfig.modifiers.filter(m => m.name !== 'flip'),
-                            { name: 'flip', enabled: false },
-                        ],
-                    }),
-                });
-
-                // Portal: на show переносим .dropdown-menu в <body>, на hide
-                // возвращаем в исходное место. Bootstrap хранит ссылку на меню
-                // в dropdown._menu, поэтому перемещение не разрывает связь;
-                // Popper пересчитывает position от reference'а автоматически.
-                const menu = dropdown._menu;
-                const originalParent = menu.parentElement;
-                el.addEventListener('show.bs.dropdown', () => {
-                    document.body.appendChild(menu);
-                });
-                el.addEventListener('hidden.bs.dropdown', () => {
-                    originalParent.appendChild(menu);
-                });
-            });
-
-            // Viewport-adaptive disable для фильтр-fieldset'ов.
-            const mq = window.matchMedia('(min-width: 768px)');
-            const desktopPanels = document.querySelectorAll('.chip-desktop-panel');
-            const mobilePanels = document.querySelectorAll('.chip-mobile-panel');
-            const apply = () => {
-                const isDesktop = mq.matches;
-                desktopPanels.forEach(f => { f.disabled = !isDesktop; });
-                mobilePanels.forEach(f => { f.disabled = isDesktop; });
-            };
-            apply();
-            mq.addEventListener('change', apply);
-        });
-    </script>
+    {# Логика portal + viewport-adaptive живёт в assets/controllers/chip_facets_controller.js
+       (data-controller="chip-facets" на <form> выше). #}
 {% endblock %}

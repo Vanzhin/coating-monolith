@@ -289,24 +289,24 @@ export default class extends Controller {
         const envLabels = { atmospheric: 'Атмосферная', immersion: 'Погружение', special: 'Спец среды' };
         const label = envLabels[envKey] || envKey;
 
-        // Создать tab-кнопку (структура совпадает с Twig: close — sibling nav-link).
+        // Структура совпадает с Twig-версией: close — sibling <button> для .nav-link
+        // внутри <li> (Bootstrap Tabs так и предполагается). Не span-в-button.
         const tabLi = document.createElement('li');
-        tabLi.className = 'nav-item';
+        tabLi.className = 'nav-item position-relative';
         tabLi.setAttribute('role', 'presentation');
         tabLi.setAttribute('data-env-tab', envKey);
         tabLi.innerHTML = `
-            <button class="nav-link d-inline-flex align-items-center gap-2"
+            <button class="nav-link pe-4"
                     data-bs-toggle="tab" data-bs-target="#recoating-pane-${envKey}"
-                    type="button" role="tab">
-                <span>${label}</span>
-                <span role="button" tabindex="0"
-                      class="text-body-secondary d-inline-flex align-items-center"
-                      data-action="click->coating-form#removeEnv"
-                      data-coating-form-env-param="${envKey}"
-                      title="Удалить ветку"
-                      aria-label="Удалить ветку">
-                    <i class="bi bi-x-lg"></i>
-                </span>
+                    type="button" role="tab">${label}</button>
+            <button type="button"
+                    class="btn position-absolute top-50 translate-middle-y p-0 border-0 lh-1 text-body-secondary"
+                    style="right: 0.5rem;"
+                    data-action="click->coating-form#removeEnv"
+                    data-coating-form-env-param="${envKey}"
+                    title="Удалить ветку"
+                    aria-label="Удалить ветку">
+                <i class="bi bi-x-lg"></i>
             </button>`;
         const addEnvLi = root.querySelector('[data-recoating-add-env]');
         tabsUl.insertBefore(tabLi, addEnvLi);
@@ -329,7 +329,6 @@ export default class extends Controller {
     }
 
     removeEnv(event) {
-        event.stopPropagation();
         const envKey = event.params.env;
         if (!envKey) return;
         const root = this.element.querySelector('[data-recoating-root]');

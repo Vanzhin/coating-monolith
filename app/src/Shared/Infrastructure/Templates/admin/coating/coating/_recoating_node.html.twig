@@ -47,22 +47,25 @@
         {# Итерация по union ключей min+max, чтобы env-ветви из max (без min) тоже отрисовались. #}
         {% set envBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
         {% for envKey in envBranchKeys|keys %}
-            {# Крестик — span[role=button] внутри .nav-link (не <button>-в-<button>).
-               Клик на нём вызывает removeEnv, который делает event.stopPropagation()
-               и не даёт Bootstrap Tab переключиться на удаляемую вкладку. #}
-            <li class="nav-item" role="presentation" data-env-tab="{{ envKey }}">
-                <button class="nav-link d-inline-flex align-items-center gap-2"
-                        data-bs-toggle="tab"
+            {# Крестик — sibling <button> рядом с .nav-link внутри одного <li>
+               (Bootstrap Tabs официально это поддерживает: tab-toggle сидит только
+               на .nav-link, close на его брате не активирует Bootstrap Tab-плагин).
+               Раньше был <span role=button> внутри <button data-bs-toggle=tab> —
+               interactive-в-interactive, хрупко: клик по span всплывал к parent'у,
+               и порядок stopPropagation vs Bootstrap-делегата был не гарантирован. #}
+            <li class="nav-item position-relative" role="presentation" data-env-tab="{{ envKey }}">
+                <button class="nav-link pe-4" data-bs-toggle="tab"
                         data-bs-target="#recoating-pane-{{ envKey }}" type="button" role="tab">
-                    <span>{{ envLabels[envKey] ?? envKey }}</span>
-                    <span role="button" tabindex="0"
-                          class="text-body-secondary d-inline-flex align-items-center"
-                          data-action="click->coating-form#removeEnv"
-                          data-coating-form-env-param="{{ envKey }}"
-                          title="Удалить ветку"
-                          aria-label="Удалить ветку">
-                        <i class="bi bi-x-lg"></i>
-                    </span>
+                    {{ envLabels[envKey] ?? envKey }}
+                </button>
+                <button type="button"
+                        class="btn position-absolute top-50 translate-middle-y p-0 border-0 lh-1 text-body-secondary"
+                        style="right: 0.5rem;"
+                        data-action="click->coating-form#removeEnv"
+                        data-coating-form-env-param="{{ envKey }}"
+                        title="Удалить ветку"
+                        aria-label="Удалить ветку">
+                    <i class="bi bi-x-lg"></i>
                 </button>
             </li>
         {% endfor %}

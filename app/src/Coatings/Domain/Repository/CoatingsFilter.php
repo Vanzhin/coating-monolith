@@ -4,61 +4,44 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Repository;
 
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
-use App\Shared\Infrastructure\Exception\AppException;
 
+/**
+ * Bag-of-fields для поискового запроса + фасетов. Собственной логики не носит —
+ * инварианты полей живут в узких VO (SearchQuery, RangeFilter, StringCollection,
+ * ThermalExposureLimits::assertTemperatureInRange). Здесь только одна проверка
+ * границ температурного фасета через делегирование в домен.
+ */
 readonly class CoatingsFilter
 {
-    /**
-     * Разрешённый диапазон длины поискового запроса.
-     * Короче — бессмысленно (стеммер съест в стоп-слова, триграммы дадут мусор).
-     * Длиннее — защита от случайного абзаца / DoS на FTS.
-     */
-    private const MIN_SEARCH_LENGTH = 3;
-    private const MAX_SEARCH_LENGTH = 50;
-
-    public ?string $search;
-
-    public ?Pager $pager;
-
     public function __construct(
-        ?string $search = null,
+        public ?SearchQuery $search = null,
         public StringCollection $manufacturerIds = new StringCollection(),
-        ?Pager $pager = null,
+        public ?Pager $pager = null,
         public ?RangeFilter $applicationMinTemp = null,
         public ?RangeFilter $volumeSolid = null,
         public StringCollection $tagIds = new StringCollection(),
-        public ?ThermalExposureQuery $thermalExposure = null,
+        // Температурный фасет: «покрытие держит T °C в среде E, опционально с
+        // учётом пика». Фасет активен, только когда заданы и temperature, и
+        // environment (см. CoatingFinder::applyThermalExposureFacet).
+        public ?int $thermalTemperature = null,
+        public ?ThermalEnvironment $thermalEnvironment = null,
+        public bool $thermalIncludingPeak = false,
         public CoatingSort $sort = CoatingSort::DEFAULT,
         // Тип связующего (ISO 12944-5): 'AK', 'AY', 'ESI', 'EP', 'PUR', 'FEVE', 'PAS', 'PS'.
         // Multi-value OR-семантика: покрытие подходит, если его base в этом списке.
         // Пустая коллекция — фасет не применяется.
         public StringCollection $baseValues = new StringCollection(),
     ) {
-        $this->search = $this->normalizeSearch($search);
-        $this->pager = $pager;
+        ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
     }
 
-    private function normalizeSearch(?string $search): ?string
+    /** Активен ли температурный фасет — заданы обе обязательные части. */
+    public function hasThermalFacet(): bool
     {
-        if ($search === null) {
-            return null;
-        }
-        $trimmed = trim($search);
-        if ($trimmed === '') {
-            return null;
-        }
-        $length = mb_strlen($trimmed);
-        if ($length < self::MIN_SEARCH_LENGTH || $length > self::MAX_SEARCH_LENGTH) {
-            throw new AppException(sprintf(
-                'Длина поискового запроса должна быть от %d до %d символов.',
-                self::MIN_SEARCH_LENGTH,
-                self::MAX_SEARCH_LENGTH,
-            ));
-        }
-
-        return $trimmed;
+        return $this->thermalTemperature !== null && $this->thermalEnvironment !== null;
     }
 }

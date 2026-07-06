@@ -9,7 +9,6 @@
      coatings          — list<CoatingDTO>
      canEdit           — bool
      selectedTagIdList — list<string>  (id уже активных tag-фильтров)
-     baseLabels        — map<lower_iso, "Русское (ISO)"> для preview-модалки
 #}
 {% for coating in coatings %}
     {# Карточка покрытия — bg-body поверх тертиарного контейнера (см. list_page.html.twig),

@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecifi
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Repository\Pager;
@@ -123,7 +124,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         // Single-word точно матчит лексему тега → fullText AND проходит.
         // Префикс тоже работает — берём 6 символов от уникального title тега.
         $prefix = mb_substr($this->getTagTitle(), 0, 6);
-        $filter = new CoatingsFilter($prefix, pager: Pager::fromPage(1, 50));
+        $filter = new CoatingsFilter(SearchQuery::tryFromString($prefix), pager: Pager::fromPage(1, 50));
 
         $result = $this->repo->findByFilter($filter);
 
@@ -137,7 +138,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         // отсутствующая лексема. AND fullText даёт 0. fuzzy НЕ запускается
         // (multi-word) → результат пуст.
         $query = $this->getTagTitle() . ' нетлексикс';
-        $filter = new CoatingsFilter($query, pager: Pager::fromPage(1, 50));
+        $filter = new CoatingsFilter(SearchQuery::tryFromString($query), pager: Pager::fromPage(1, 50));
 
         $result = $this->repo->findByFilter($filter);
 
@@ -152,7 +153,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         $title = $coating->getTitle();
         $typo = mb_substr($title, 0, -1) . 'я'; // меняем последний символ на cyrillic
 
-        $filter = new CoatingsFilter($typo, pager: Pager::fromPage(1, 50));
+        $filter = new CoatingsFilter(SearchQuery::tryFromString($typo), pager: Pager::fromPage(1, 50));
 
         $result = $this->repo->findByFilter($filter);
 

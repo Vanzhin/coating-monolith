@@ -43,11 +43,13 @@ final class ThermalExposureLimitsTest extends TestCase
         new ThermalExposureLimits(50, 50);
     }
 
-    public function testRejectsPeakEqualToContinuousMax(): void
+    public function testAcceptsPeakEqualToContinuousMax(): void
     {
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessageMatches('/строго выше/');
-        new ThermalExposureLimits(0, 100, 100);
+        // Равенство допустимо: некоторые PDS'ы дают одно и то же значение
+        // для непрерывной и пиковой максимальной.
+        $limits = new ThermalExposureLimits(0, 100, 100);
+        self::assertSame(100, $limits->peakMax);
+        self::assertSame(100, $limits->continuousMax);
     }
 
     public function testRejectsPeakBelowContinuousMax(): void

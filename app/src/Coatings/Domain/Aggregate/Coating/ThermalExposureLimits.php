@@ -22,8 +22,8 @@ use JsonSerializable;
  *
  * Парные инварианты (проверяются ТОЛЬКО когда обе стороны заданы):
  *   1) continuousMin < continuousMax.
- *   2) peakMax > continuousMax — пик всегда строго ВЫШЕ непрерывного максимума,
- *      иначе пик не имеет смысла.
+ *   2) peakMax >= continuousMax — пик не может быть ниже непрерывного максимума
+ *      (равенство допустимо: некоторые PDS'ы дают одно и то же значение).
  *
  * Одиночные инварианты:
  *   3) peakDurationMinutes без peakMax — бессмысленно (длительность чего?).
@@ -36,6 +36,10 @@ final readonly class ThermalExposureLimits implements JsonSerializable
 {
     /** Дефолт длительности пикового воздействия, когда peakMax указан, а duration — нет. */
     public const DEFAULT_PEAK_DURATION_MINUTES = 60;
+
+    /** Разумные границы температуры — отсечь мусор ввода. */
+    private const MIN_TEMPERATURE = -200;
+    private const MAX_TEMPERATURE = 1000;
 
     public ?int $continuousMin;
     public ?int $continuousMax;
@@ -54,6 +58,10 @@ final readonly class ThermalExposureLimits implements JsonSerializable
             throw new AppException('Пределы эксплуатации: нужно указать хотя бы одно значение.');
         }
 
+        self::assertTemperatureInRange('минимальная непрерывная', $continuousMin);
+        self::assertTemperatureInRange('максимальная непрерывная', $continuousMax);
+        self::assertTemperatureInRange('пиковая', $peakMax);
+
         // Если peak указан без явной длительности — по умолчанию 60 мин (стандарт
         // тех-паспортов Литум/Hempel).
         if ($peakMax !== null && $peakDurationMinutes === null) {
@@ -67,9 +75,9 @@ final readonly class ThermalExposureLimits implements JsonSerializable
                 $continuousMax,
             ));
         }
-        if ($peakMax !== null && $continuousMax !== null && $peakMax <= $continuousMax) {
+        if ($peakMax !== null && $continuousMax !== null && $peakMax < $continuousMax) {
             throw new AppException(sprintf(
-                'Пиковая температура (%+d °C) должна быть строго выше максимальной непрерывной (%+d °C), иначе пик не имеет смысла.',
+                'Пиковая температура (%+d °C) должна быть не ниже максимальной непрерывной (%+d °C).',
                 $peakMax,
                 $continuousMax,
             ));
@@ -87,6 +95,27 @@ final readonly class ThermalExposureLimits implements JsonSerializable
         $this->continuousMax = $continuousMax;
         $this->peakMax = $peakMax;
         $this->peakDurationMinutes = $peakDurationMinutes;
+    }
+
+    /**
+     * public static — чтобы CoatingsFilter мог валидировать вход температурного
+     * фасета той же самой проверкой без вытаскивания констант наружу.
+     * Один владелец правила «температура в разумных границах» — этот VO.
+     */
+    public static function assertTemperatureInRange(string $label, ?int $temperature): void
+    {
+        if ($temperature === null) {
+            return;
+        }
+        if ($temperature < self::MIN_TEMPERATURE || $temperature > self::MAX_TEMPERATURE) {
+            throw new AppException(sprintf(
+                'Температура (%s) %+d °C выходит за допустимые границы %+d…%+d °C.',
+                $label,
+                $temperature,
+                self::MIN_TEMPERATURE,
+                self::MAX_TEMPERATURE,
+            ));
+        }
     }
 
     /** @param array{continuous_min?:?int, continuous_max?:?int, peak_max?:?int, peak_duration_minutes?:?int} $row */

@@ -8,8 +8,8 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingSearch;
 use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
-use App\Coatings\Domain\Repository\ThermalExposureQuery;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Domain\Repository\RangeFilter;
@@ -55,7 +55,7 @@ final class CoatingFinder
             ->addSelect($similarity . ' AS HIDDEN sim')
             ->orderBy('sim', 'DESC')
             ->setMaxResults(self::FUZZY_LIMIT)
-            ->setParameter('search', $filter->search)
+            ->setParameter('search', $filter->search->value)
             ->setParameter('threshold', self::FUZZY_SIMILARITY_THRESHOLD);
 
         $this->applyFacets($qb, $filter);
@@ -113,7 +113,7 @@ final class CoatingFinder
         $this->applyRangeFacet($qb, 'applicationMinTemp', 'appMinTemp', $filter->applicationMinTemp);
         $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
         $this->applyTagFacet($qb, $filter);
-        $this->applyThermalExposureFacet($qb, $filter->thermalExposure);
+        $this->applyThermalExposureFacet($qb, $filter);
         $this->applyBaseFacet($qb, $filter);
     }
 
@@ -140,13 +140,13 @@ final class CoatingFinder
      * Покрытия без ThermalExposureLimits в нужной среде вообще (колонка NULL)
      * НЕ попадают в выборку — данных нет, о материале ничего не известно.
      */
-    private function applyThermalExposureFacet(QueryBuilder $qb, ?ThermalExposureQuery $q): void
+    private function applyThermalExposureFacet(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if ($q === null) {
+        if (!$filter->hasThermalFacet()) {
             return;
         }
 
-        $entityField = match ($q->environment) {
+        $entityField = match ($filter->thermalEnvironment) {
             ThermalEnvironment::DRY_HEAT  => 'cc.dryHeatExposure',
             ThermalEnvironment::IMMERSION => 'cc.immersionExposure',
         };
@@ -154,7 +154,7 @@ final class CoatingFinder
         $qb->andWhere("$entityField IS NOT NULL")
             ->andWhere("(JSONB_GET_INT($entityField, 'continuous_min') IS NULL OR JSONB_GET_INT($entityField, 'continuous_min') <= :thermTemp)");
 
-        if ($q->includingPeak) {
+        if ($filter->thermalIncludingPeak) {
             // Верхняя эффективная граница: peak_max ?? continuous_max. Если оба NULL —
             // ограничения сверху нет вообще.
             $qb->andWhere(
@@ -165,7 +165,7 @@ final class CoatingFinder
             $qb->andWhere("(JSONB_GET_INT($entityField, 'continuous_max') IS NULL OR JSONB_GET_INT($entityField, 'continuous_max') >= :thermTemp)");
         }
 
-        $qb->setParameter('thermTemp', $q->temperature);
+        $qb->setParameter('thermTemp', $filter->thermalTemperature);
     }
 
     /**
@@ -222,11 +222,18 @@ final class CoatingFinder
     /**
      * Превращает пользовательский ввод в безопасный tsquery с префиксным сопоставлением.
      * «быстросох эпоксидн» -> «быстросох:* & эпоксидн:*».
+     *
+     * Слова берём из SearchQuery::words() — единственный источник разбиения,
+     * тот же что и в CoatingRepository::hasSingleWord через SearchQuery.
      */
-    private function buildPrefixTsQuery(string $query): string
+    private function buildPrefixTsQuery(SearchQuery $search): string
     {
-        $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $query) ?? '';
-        $words = preg_split('/[\s\-.,;]+/u', trim($sanitized), -1, PREG_SPLIT_NO_EMPTY);
+        // Санитайзим tsquery-мета до разбиения на слова, чтобы не пропустить
+        // «cc:special» → как один токен с двоеточием.
+        $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $search->value) ?? '';
+        // Разбиваем тем же splitter'ом, но уже из очищенной строки — иначе
+        // нельзя, потому что SearchQuery::words() читает исходный value.
+        $words = preg_split('/[\s\-.,;]+/u', $sanitized, -1, PREG_SPLIT_NO_EMPTY);
         if ($words === false || $words === []) {
             return '';
         }

@@ -13,8 +13,8 @@ use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
-use App\Coatings\Domain\Repository\ThermalExposureQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
@@ -81,9 +81,9 @@ class ListAction extends AbstractController
         $volumeSolidTo   = $this->nullableInt($request->query->get('volumeSolidTo'));
 
         // Температура эксплуатации: одно число + среда (сухое/погружение) +
-        // галка «включая пик». Все три параметра прикреплены к одному фасету:
-        // temp без env бессмыслен, env без temp — тоже. Если temp пустой,
-        // ThermalExposureQuery не создаётся вообще (фасет не применяется).
+        // галка «включая пик». Фасет активен, только когда заданы и temp, и env
+        // (см. CoatingsFilter::hasThermalFacet). Если пустое — просто уйдут null'ы,
+        // CoatingFinder их проигнорирует.
         $thermTemp = $this->nullableInt($request->query->get('thermTemp'));
         $thermEnvRaw = $request->query->get('thermEnv');
         $thermEnv = is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null;
@@ -106,15 +106,15 @@ class ListAction extends AbstractController
         $error = null;
         try {
             $filter = new CoatingsFilter(
-                search: $search,
+                search: SearchQuery::tryFromString(is_string($search) ? $search : null),
                 manufacturerIds: $manufacturerIds,
                 pager: $pager,
                 applicationMinTemp: RangeFilter::tryFromNullable($appMinTempFrom, $appMinTempTo),
                 volumeSolid: RangeFilter::tryFromNullable($volumeSolidFrom, $volumeSolidTo),
                 tagIds: $tagIds,
-                thermalExposure: $thermTemp !== null && $thermEnv !== null
-                    ? new ThermalExposureQuery($thermTemp, $thermEnv, $thermIncludingPeak)
-                    : null,
+                thermalTemperature: $thermTemp,
+                thermalEnvironment: $thermEnv,
+                thermalIncludingPeak: $thermIncludingPeak,
                 sort: $sort,
                 baseValues: $baseValues,
             );
@@ -132,9 +132,18 @@ class ListAction extends AbstractController
                 'coatings' => $result->coatings,
                 'canEdit' => $this->isGranted('ROLE_ADMIN'),
                 'selectedTagIdList' => $tagIds->getList(),
-                'baseLabels' => [],
             ]);
         }
+
+        // Preserved-параметры формы: сохраняем всё, что пришло в URL, чтобы submit
+        // не сбросил активные фасеты. Исключаем то, что форма рендерит отдельно:
+        //  - search — свой visible <input>;
+        //  - page/partial — вычисляются заново на бэке.
+        // Twig ходит одним циклом, различая scalar/array через `is iterable`.
+        $preservedParams = array_diff_key(
+            $request->query->all(),
+            array_flip(['search', 'page', 'partial']),
+        );
 
         return $this->render('admin/coating/coating/index.html.twig', [
             'search' => $search ?? '',
@@ -158,6 +167,7 @@ class ListAction extends AbstractController
             'thermIncludingPeak' => $thermIncludingPeak,
             'sort'              => $sort,
             'sortOptions'       => CoatingSort::cases(),
+            'preservedParams'   => $preservedParams,
         ]);
     }
 

@@ -17,7 +17,12 @@
        потомком) — иначе скрытые number-инпуты модалки участвуют в HTML5-валидации формы и роняют
        submit с «An invalid form control with name='' is not focusable». #}
     <div class="p-2 p-md-3" data-controller="coating-form">
-        <form method="post" action="{{ actionUrl }}" class="w-100"
+        {# novalidate — единый паттерн: валидирует бэк, форма рендерит .alert-danger
+           (см. блок `{% if error %}` ниже). Без novalidate браузер блокировал бы
+           submit нативным tooltip'ом, который клипится overflow-hidden карточек
+           и часто не виден. Атрибуты min/max на инпутах остаются как UX-хинт
+           (up/down-стрелки в пределах диапазона), но не блокируют submit. #}
+        <form method="post" action="{{ actionUrl }}" class="w-100" novalidate
               data-action="submit->coating-form#validateBeforeSubmit">
             {% if error %}
                 <div class="alert alert-danger">{{ error }}</div>
