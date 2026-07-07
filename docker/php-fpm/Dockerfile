@@ -66,8 +66,11 @@ COPY app /app
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# Install dependencies. --no-scripts НЕЛЬЗЯ: он отключает POST_AUTOLOAD_DUMP,
+# в котором symfony/runtime плагин создаёт vendor/autoload_runtime.php. Без
+# этого файла /app/public/index.php падает «Failed to open stream».
+# GitHub Actions runner сети имеет, symfony/flex успешно скачает recipes-индекс.
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create cache directory
 RUN mkdir -p /app/var/cache/prod && \

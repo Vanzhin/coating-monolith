@@ -18,8 +18,9 @@ COPY app /app
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# Install dependencies. --no-scripts НЕЛЬЗЯ: он отключает POST_AUTOLOAD_DUMP,
+# в котором symfony/runtime плагин создаёт vendor/autoload_runtime.php.
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create cache directory
 RUN mkdir -p /app/var/cache/prod && \
