@@ -66,6 +66,14 @@ COPY app /app
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 
+# Разрешаем composer'у от root'а активировать plugins. Без этой переменной
+# composer 2.x в non-interactive сессии молча отключает ВСЕ plugins
+# ("plugins have been disabled for safety") — тогда symfony/runtime не
+# подписывается на POST_AUTOLOAD_DUMP и vendor/autoload_runtime.php не
+# создаётся (index.php падает с "Failed to open stream"). Локально проблема
+# не воспроизводится, потому что composer видит host-user, а не root.
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
 # Install dependencies. --no-scripts тут ОБЯЗАТЕЛЕН: post-install-cmd → auto-scripts
 # → cache:clear читает .env, а .env в git не коммитится → в build-контексте его нет.
 # Отдельным шагом composer dump-autoload триггерит POST_AUTOLOAD_DUMP → symfony/runtime
