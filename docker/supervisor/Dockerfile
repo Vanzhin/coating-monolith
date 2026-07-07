@@ -3,13 +3,15 @@ FROM php:8.3-cli-alpine3.19
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions
 
-# Пересоздаём www-data с UID 33 (совпадает с debian php-fpm image, куда bind-mount
-# монтируется), чтобы workers могли писать в /app/var/cache/prod и /app/var/log,
-# созданные init-контейнером под UID 33. Alpine по умолчанию даёт UID 82 →
-# «Permission denied» на shared volume между alpine (supervisor) и debian (php-fpm).
-RUN deluser www-data && \
-    addgroup -g 33 -S www-data && \
-    adduser -u 33 -S -G www-data www-data
+# Переставляем UID/GID www-data с alpine-дефолта (82) на 33 (совпадает с debian
+# php-fpm image, куда идёт тот же bind-mount /app). Иначе workers'ы под alpine
+# www-data:82 не могут писать в директории, чьим владельцем init-контейнер
+# сделал UID 33 → «Permission denied» на /app/var/cache/prod и /app/var/log.
+#
+# Через sed на /etc/passwd и /etc/group — не через deluser/adduser, потому что
+# deluser НЕ удаляет одноимённую группу, а addgroup потом падает «group in use».
+RUN sed -i 's/^www-data:x:82:82:/www-data:x:33:33:/' /etc/passwd && \
+    sed -i 's/^www-data:x:82:/www-data:x:33:/' /etc/group
 
 RUN apk add --update zip unzip grep wget bash supervisor
 
