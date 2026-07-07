@@ -193,6 +193,37 @@ jobs:
                 chown -R $(id -u):$(id -g) node_modules public/build
               "
 
+            # ОЧИСТКА ПЕРЕД pull — освобождаем диск, иначе pull трёх образов
+            # (~1-2 ГБ каждый) может упасть с No space left on device на этапе
+            # chmod/composer/build. Раньше очистка стояла ПОСЛЕ up -d — если
+            # предыдущий деплой падал, образы прошлых версий никогда не удалялись
+            # и диск постепенно забивался.
+            echo "=== Freeing disk space before pull ==="
+            df -h / | tail -1
+
+            # 1. Тегированные образы прошлых деплоев (кроме текущего тега и latest).
+            CURRENT_TAG="${{ github.ref_name }}"
+            echo "Keeping images with tag: $CURRENT_TAG and latest"
+            docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
+            while read id repo tag; do
+              if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
+                echo "Removing old image: $repo:$tag"
+                docker rmi $id 2>/dev/null || echo "Could not remove $id"
+              fi
+            done
+
+            # 2. Dangling images (<none>:<none> — layers без тегов, оставшиеся от
+            # прошлых билдов) и остановленные контейнеры.
+            docker container prune -f
+            docker image prune -f
+
+            # 3. Buildx-кэш — самый жирный. У нас на бою билд не запускается
+            # (образы pull'аются готовыми из ghcr), поэтому кэш чистим агрессивно.
+            docker builder prune -af
+
+            echo "=== Disk after cleanup ==="
+            df -h / | tail -1
+
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -209,23 +240,4 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "Deployment completed successfully!"
-            
-            # ОЧИСТКА СТАРЫХ ОБРАЗОВ
-            echo "=== Cleaning up old images ==="
-
-            # Удаляем все vanzhin образы кроме текущего тега
-            CURRENT_TAG="${{ github.ref_name }}"
-            echo "Keeping images with tag: $CURRENT_TAG and latest"
-
-            docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
-            while read id repo tag; do
-              if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
-                echo "Removing old image: $repo:$tag"
-                docker rmi $id 2>/dev/null || echo "Could not remove $id"
-              else
-                echo "Keeping: $repo:$tag"
-              fi
-            done
-
-            echo "Cleanup completed!"
             docker images | grep vanzhin
