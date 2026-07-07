@@ -2,18 +2,28 @@ services:
   manager_php-fpm:
     hostname: ${DOMAIN}
     image: ${REGISTRY}/${IMAGE_NAME}-php-fpm:${TAG:-latest}
+    # Точечные bind-mount'ы вместо всей ./app — иначе хостовый vendor от прошлого
+    # релиза перекрывает свежий из образа (при добавлении composer-пакетов
+    # container'ы бегут по старому vendor'у). Плюс убирали composer install из
+    # init'а — он требует достучаться до raw.githubusercontent.com (symfony/flex
+    # recipes-индекс), а этот хост режется DPI-фильтром российских VDS-провайдеров.
+    #  - var/: runtime state (cache, log) — пишется контейнером в runtime.
+    #  - config/jwt/: keypair, генерится один раз, переживает деплой.
+    #  - public/build/: webpack assets, собирает CI в node-контейнере на хосте
+    #    (см. deploy.yml step yarn build) — контейнерам нужно только читать
+    #    manifest.json.
     volumes:
-      - ./app:/app:rw
+      - ./app/.env:/app/.env:ro
+      - ./app/var:/app/var:rw
+      - ./app/config/jwt:/app/config/jwt:rw
+      - ./app/public/build:/app/public/build:ro
     depends_on:
       manager_redis:
         condition: service_started
       manager_db:
         condition: service_healthy
-      # manager_php-cli — one-shot init: composer install + migrations +
-      # cache:warmup + chown var/cache. php-fpm стартует ТОЛЬКО когда
-      # init'ит завершился 0-кодом, иначе поднялся бы на stale DI-cache
-      # (bind-mount ./app:/app подменяет запечённый в образ var/cache
-      # хостовой директорией предыдущего релиза).
+      # manager_php-cli — one-shot init: migrations + keypair + cache:warmup +
+      # chown var/. php-fpm стартует ТОЛЬКО когда init завершился 0-кодом.
       manager_php-cli:
         condition: service_completed_successfully
     working_dir: /app
@@ -32,7 +42,10 @@ services:
         condition: service_completed_successfully
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
-      - ./app:/app:rw
+      - ./app/.env:/app/.env:ro
+      - ./app/var:/app/var:rw
+      - ./app/config/jwt:/app/config/jwt:rw
+      - ./app/public/build:/app/public/build:ro
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
 
@@ -40,11 +53,15 @@ services:
   # После него php-fpm/supervisor стартуют как www-data и никогда не касаются
   # cache/log как root — это исключает permission-denied в runtime'e.
   #
-  # Шаги: composer → полный wipe var/cache/prod (rm -rf на директорию — включает
-  # dot-files) → migrations → JWT-keypair (перенесено из entrypoint php-fpm, где
-  # выполнялось как root и портило права после init-chown'а) → cache:warmup →
-  # выставление прав с setgid-битом на директориях, чтобы новые файлы,
-  # создаваемые www-data в runtime, наследовали группу www-data.
+  # Шаги: wipe var/cache/prod → migrations → JWT-keypair (перенесено из
+  # entrypoint php-fpm, где выполнялось как root и портило права после
+  # init-chown'а) → cache:warmup → выставление прав с setgid-битом на
+  # директориях, чтобы новые файлы, создаваемые www-data в runtime, наследовали
+  # группу www-data.
+  #
+  # composer install НЕ здесь — vendor уже в образе (см. docker/php-cli/Dockerfile
+  # шаг composer install при сборке в CI). Bind-mount'ит только ./app/var,
+  # ./app/config/jwt и ./app/public/build, src и vendor берутся из образа.
   #
   # set -e гарантирует остановку всей цепочки при первой ошибке — depends_on
   # `service_completed_successfully` не пустит php-fpm/supervisor до успешного 0.
@@ -57,7 +74,6 @@ services:
       - -c
       - |
         set -e
-        composer install --no-dev --no-interaction --no-scripts
         rm -rf var/cache/prod
         mkdir -p var/cache/prod var/log
         php bin/console --no-interaction doctrine:migrations:migrate
@@ -74,7 +90,10 @@ services:
       manager_db:
         condition: service_healthy
     volumes:
-      - ./app:/app:rw
+      - ./app/.env:/app/.env:ro
+      - ./app/var:/app/var:rw
+      - ./app/config/jwt:/app/config/jwt:rw
+      - ./app/public/build:/app/public/build:ro
 
   caddy:
     image: caddy:2-alpine
@@ -83,6 +102,8 @@ services:
       - "127.0.0.1:8080:80"
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Caddy читает public/ с хоста — host'овый git checkout содержит index.php,
+      # icons/ и т.п. Плюс webpack сборки живут в public/build/, тоже отсюда.
       - ./app/public:/app/public:ro
       - caddy_data:/data
     depends_on:
