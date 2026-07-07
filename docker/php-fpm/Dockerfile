@@ -66,11 +66,13 @@ COPY app /app
 # Install composer
 COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
 
-# Install dependencies. --no-scripts НЕЛЬЗЯ: он отключает POST_AUTOLOAD_DUMP,
-# в котором symfony/runtime плагин создаёт vendor/autoload_runtime.php. Без
-# этого файла /app/public/index.php падает «Failed to open stream».
-# GitHub Actions runner сети имеет, symfony/flex успешно скачает recipes-индекс.
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install dependencies. --no-scripts тут ОБЯЗАТЕЛЕН: post-install-cmd → auto-scripts
+# → cache:clear читает .env, а .env в git не коммитится → в build-контексте его нет.
+# Отдельным шагом composer dump-autoload триггерит POST_AUTOLOAD_DUMP → symfony/runtime
+# plugin создаёт vendor/autoload_runtime.php (нужный /app/public/index.php).
+# dump-autoload НЕ вызывает post-install-cmd, значит cache:clear не побежит.
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
 # Create cache directory
 RUN mkdir -p /app/var/cache/prod && \

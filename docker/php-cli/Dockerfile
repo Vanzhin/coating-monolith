@@ -14,9 +14,11 @@ RUN rm  -rf /tmp/* /var/cache/apk/*
 WORKDIR /app
 COPY app /app
 
-# Install dependencies. --no-scripts НЕЛЬЗЯ: он отключает POST_AUTOLOAD_DUMP,
-# в котором symfony/runtime плагин создаёт vendor/autoload_runtime.php.
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install dependencies. --no-scripts обязателен (cache:clear в post-install-cmd
+# читает .env, которого нет в build-контексте). Отдельный dump-autoload
+# триггерит POST_AUTOLOAD_DUMP → symfony/runtime создаёт autoload_runtime.php.
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
 # Create cache directory
 RUN mkdir -p /app/var/cache/prod && \
