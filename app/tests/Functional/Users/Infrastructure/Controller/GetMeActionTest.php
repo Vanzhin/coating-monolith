@@ -43,15 +43,23 @@ class GetMeActionTest extends WebTestCase
             $client->getResponse()->getStatusCode(),
             $client->getResponse()->getContent(),
         ));
-        $this->assertArrayHasKey('token', $loginResponse);
-        $this->assertNotEmpty($loginResponse['token']);
+        // Ответы API обёрнуты в {result, status, data, message} — токен в data.token.
+        $this->assertArrayHasKey('data', $loginResponse);
+        $this->assertArrayHasKey('token', $loginResponse['data']);
+        $this->assertNotEmpty($loginResponse['data']['token']);
 
-        $client->setServerParameter('HTTP_AUTHORIZATION', sprintf('Bearer %s', $loginResponse['token']));
+        $client->setServerParameter('HTTP_AUTHORIZATION', sprintf('Bearer %s', $loginResponse['data']['token']));
 
         $client->request('GET', '/api/users/me');
         $meResponse = json_decode($client->getResponse()->getContent(), true);
 
-        $this->assertIsArray($meResponse);
-        $this->assertEquals($email, $meResponse['email']);
+        $this->assertIsArray($meResponse, sprintf(
+            'GET /api/users/me: status=%d, location=%s, body=%s',
+            $client->getResponse()->getStatusCode(),
+            $client->getResponse()->headers->get('Location') ?? 'none',
+            substr($client->getResponse()->getContent(), 0, 200),
+        ));
+        $this->assertArrayHasKey('data', $meResponse);
+        $this->assertEquals($email, $meResponse['data']['email']);
     }
 }

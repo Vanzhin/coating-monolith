@@ -3,6 +3,14 @@ FROM php:8.3-cli-alpine3.19
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions
 
+# Пересоздаём www-data с UID 33 (совпадает с debian php-fpm image, куда bind-mount
+# монтируется), чтобы workers могли писать в /app/var/cache/prod и /app/var/log,
+# созданные init-контейнером под UID 33. Alpine по умолчанию даёт UID 82 →
+# «Permission denied» на shared volume между alpine (supervisor) и debian (php-fpm).
+RUN deluser www-data && \
+    addgroup -g 33 -S www-data && \
+    adduser -u 33 -S -G www-data www-data
+
 RUN apk add --update zip unzip grep wget bash supervisor
 
 RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2
@@ -28,8 +36,9 @@ RUN mkdir -p /app/var/cache/prod && \
 # Create supervisor log directory
 RUN mkdir -p /var/log/supervisor
 
-# Copy supervisor configuration
-COPY docker/supervisor/conf.d/php-worker.conf /etc/supervisor/conf.d/php-worker.conf
+# Copy supervisor configuration. php-worker (cache:warmup) удалён — init-контейнер
+# manager_php-cli это уже делает, дублирование только создаёт риск race condition
+# на var/cache/prod при рестарте supervisor'а.
 COPY docker/supervisor/conf.d/messenger-worker.conf /etc/supervisor/conf.d/messenger-worker.conf
 
 # Set proper permissions

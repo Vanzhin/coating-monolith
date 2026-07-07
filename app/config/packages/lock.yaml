@@ -1,2 +1,7 @@
 framework:
-    lock: '%env(LOCK_DSN)%'
+    # flock — файловый локер (var/cache/{env}/lock/). Ставим hardcode, потому что
+    # LOCK_DSN на бою может быть не задан (падает "Environment variable not found").
+    # Нам lock нужен только для sliding_window rate-limiter'а — atomicity на update
+    # счётчика в одном процессе, файлового флока хватает. При multi-instance
+    # deploy'е стоит перейти на redis-based lock (тот же провайдер, что для cache).
+    lock: 'flock'

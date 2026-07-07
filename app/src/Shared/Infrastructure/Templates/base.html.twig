@@ -486,13 +486,12 @@
         {# Зона: навигация. #}
         <div class="p-3 rounded-3 bg-body-tertiary">
             <div class="list-group list-group-flush">
-                <a href="{{ path('app_homepage') }}" class="list-group-item list-group-item-action">
-                    <i class="bi bi-house me-2"></i>Главная
+                {# Покрытия — для всех авторизованных, каталог общего доступа. #}
+                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-grid me-2"></i>Покрытия
                 </a>
+                {# Производители — только для админа (справочник управления). #}
                 {% if is_granted('ROLE_ADMIN') %}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-grid me-2"></i>Покрытия
-                    </a>
                     <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-building me-2"></i>Производители
                     </a>

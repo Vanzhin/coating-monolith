@@ -21,7 +21,7 @@ class GetMeAction
 
         return new JsonResponse([
             'ulid' => $user->getUlid(),
-            'email' => $user->getEmail(),
+            'email' => $user->getEmail()->getValue(),
         ]);
     }
 }

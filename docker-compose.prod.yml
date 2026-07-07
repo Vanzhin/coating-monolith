@@ -63,8 +63,14 @@ services:
         php bin/console --no-interaction doctrine:migrations:migrate
         php bin/console --no-interaction lexik:jwt:generate-keypair --skip-if-exists
         php bin/console cache:warmup --env=prod --no-debug
-        chown -R www-data:www-data var/cache var/log config/jwt
-        # setgid на директориях — новые файлы наследуют группу www-data;
+        # Явный UID 33 — не 'www-data' по имени. Причина: init на php-cli-alpine
+        # (www-data UID=82), а runtime php-fpm — на php-fpm-debian (www-data UID=33).
+        # Bind-mount ./app:/app использует numeric UID; php-fpm под UID 33 не мог
+        # писать в директории с owner UID 82 → «Permission denied» на
+        # /app/var/cache/prod/monolog_dedup_*. Хардкод 33 синхронизирует владельца
+        # с runtime-процессом независимо от base image init'а.
+        chown -R 33:33 var/cache var/log config/jwt
+        # setgid на директориях — новые файлы наследуют группу;
         # 2775 = rwxrwsr-x (owner+group=rw, world=r).
         find var/cache var/log -type d -exec chmod 2775 {} +
         find var/cache var/log -type f -exec chmod 664 {} +

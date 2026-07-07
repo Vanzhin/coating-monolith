@@ -4,3 +4,8 @@ lexik_jwt_authentication:
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: 3600 # in seconds
     user_id_claim: email
+    # Lexik читает identity через PropertyAccess по имени поля из user_id_claim
+    # (не user_identity_field — этот параметр перебивается user_id_claim'ом).
+    # $accessor->getValue($user, 'email') = Email VO → в payload попадает {}.
+    # Приведение к строке делает JWTCreatedListener (см. Shared/Application/
+    # EventListener/JWTCreatedListener.php) перед подписью токена.
