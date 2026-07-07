@@ -8,6 +8,7 @@ use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Faker\Factory;
+use ReflectionProperty;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class GetMeActionTest extends WebTestCase
@@ -24,6 +25,11 @@ class GetMeActionTest extends WebTestCase
         $user = new User(new Email($email));
         $user->setPassword($password, $container->get(UserPasswordHasherInterface::class));
 
+        // Активируем юзера без прохождения канал-верификации — иначе
+        // ChannelVerificationGate редиректит любые non-whitelist маршруты
+        // на /user/channel/verification, и /api/users/me не отдаст JSON.
+        (new ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
+
         $entityManager = $container->get('doctrine.orm.entity_manager');
         $entityManager->persist($user);
         $entityManager->flush();
@@ -37,13 +43,14 @@ class GetMeActionTest extends WebTestCase
             json_encode(['email' => $email, 'password' => $password]),
         );
 
+        // Ответы API обёрнуты глобальным ResponseListener'ом в
+        // {result, status, data, message} — данные лежат в data.
         $loginResponse = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($loginResponse, sprintf(
-            'Login failed with status %d, body: %s',
+            'Login failed: status=%d, body=%s',
             $client->getResponse()->getStatusCode(),
             $client->getResponse()->getContent(),
         ));
-        // Ответы API обёрнуты в {result, status, data, message} — токен в data.token.
         $this->assertArrayHasKey('data', $loginResponse);
         $this->assertArrayHasKey('token', $loginResponse['data']);
         $this->assertNotEmpty($loginResponse['data']['token']);
@@ -54,10 +61,9 @@ class GetMeActionTest extends WebTestCase
         $meResponse = json_decode($client->getResponse()->getContent(), true);
 
         $this->assertIsArray($meResponse, sprintf(
-            'GET /api/users/me: status=%d, location=%s, body=%s',
+            'GET /api/users/me: status=%d, body=%s',
             $client->getResponse()->getStatusCode(),
-            $client->getResponse()->headers->get('Location') ?? 'none',
-            substr($client->getResponse()->getContent(), 0, 200),
+            $client->getResponse()->getContent(),
         ));
         $this->assertArrayHasKey('data', $meResponse);
         $this->assertEquals($email, $meResponse['data']['email']);

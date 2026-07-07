@@ -31,7 +31,9 @@ readonly class GetUserAction
         return new JsonResponse([
             'id' => $user->getUlid(),
             'roles' => $user->getRoles(),
-            'email' => $user->getEmail(),
+            // getEmail() возвращает VO — при json_encode он сериализуется в {}.
+            // Явно приводим к строке.
+            'email' => $user->getEmail()->getValue(),
         ]);
     }
 }
