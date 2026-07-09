@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Controller;
 
+use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Security\LoginFormAuthenticator;
-use App\Users\Domain\Factory\UserFactory;
+use App\Shared\Infrastructure\Exception\AppException;
+use App\Users\Application\UseCase\Command\CreateUser\CreateUserCommand;
 use App\Users\Domain\Repository\UserRepositoryInterface;
 use App\Users\Domain\Service\Validation\EmailValidatorInterface;
 use App\Users\Infrastructure\Form\RegistrationFormType;
@@ -18,7 +20,7 @@ use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 class RegistrationController extends AbstractController
 {
     public function __construct(
-        private readonly UserFactory $factory,
+        private readonly CommandBusInterface $commandBus,
         private readonly UserRepositoryInterface $userRepository,
         private readonly UserAuthenticatorInterface $userAuthenticator,
         private readonly LoginFormAuthenticator $authenticator,
@@ -34,7 +36,7 @@ class RegistrationController extends AbstractController
         }
         $form = $this->createForm(RegistrationFormType::class);
         $form->handleRequest($request);
-        //
+
         if ($form->isSubmitted() && $form->isValid()) {
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
@@ -46,14 +48,16 @@ class RegistrationController extends AbstractController
                 ]);
             }
 
-            if ($this->userRepository->getByEmail($email)) {
-                $this->addFlash('register_failure', 'User already exists!');
+            try {
+                $result = $this->commandBus->execute(new CreateUserCommand($email, $password));
+            } catch (AppException $e) {
+                $this->addFlash('register_failure', $e->getMessage());
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
                 ]);
             }
-            $user = $this->factory->create($email, $password);
-            $this->userRepository->add($user);
+
+            $user = $this->userRepository->find($result->ulid);
 
             $this->addFlash('register_success', 'Регистрация прошла успешно.');
 

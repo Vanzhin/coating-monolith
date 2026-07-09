@@ -28,7 +28,11 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
 
     public function authenticate(Request $request): Passport
     {
-        $email = $request->request->get('email');
+        // Нормализация к тому же виду, в котором Email VO хранит value в БД.
+        // Symfony entity-provider (security.yaml: property: email.value) делает
+        // case-sensitive findOneBy — без нормализации `Alexandr@x.ru` не найдёт
+        // юзера, у которого в БД `alexandr@x.ru`.
+        $email = strtolower(trim((string) $request->request->get('email')));
 
         return new Passport(
             new UserBadge($email),

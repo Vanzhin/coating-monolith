@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Console;
 
-use App\Users\Domain\Factory\UserFactory;
-use App\Users\Infrastructure\Repository\UserRepository;
+use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
+use App\Users\Application\UseCase\Command\CreateUser\CreateUserCommand;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,8 +20,7 @@ use Symfony\Component\Validator\Validation;
 final class CreateUser extends Command
 {
     public function __construct(
-        private readonly UserRepository $repository,
-        private readonly UserFactory $factory
+        private readonly CommandBusInterface $commandBus,
     ) {
         parent::__construct();
     }
@@ -63,8 +63,14 @@ final class CreateUser extends Command
         if ($repeat !== $password) {
             throw new \Exception('Password is not equal to re-enter password .');
         }
-        $user = $this->factory->create($email, $password);
-        $this->repository->add($user);
+
+        try {
+            $this->commandBus->execute(new CreateUserCommand($email, $password));
+        } catch (AppException $e) {
+            $io->error($e->getMessage());
+            return Command::FAILURE;
+        }
+
         $io->success('User created successfully.');
 
         return Command::SUCCESS;

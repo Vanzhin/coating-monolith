@@ -9,14 +9,16 @@ use Stringable;
 
 class Email implements Stringable
 {
+    protected readonly string $value;
     private string $localPart;
     private string $domain;
 
-    public function __construct(
-        protected readonly string $value
-    ) {
-        $this->validateFormat($value);
-        [$this->localPart, $this->domain] = explode('@', strtolower(trim($value)));
+    public function __construct(string $value)
+    {
+        $normalized = strtolower(trim($value));
+        $this->validateFormat($normalized);
+        $this->value = $normalized;
+        [$this->localPart, $this->domain] = explode('@', $normalized);
     }
 
     public static function fromString(string $value): self
