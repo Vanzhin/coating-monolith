@@ -2,129 +2,6 @@
 
 {% block title %}{{ parent() }} | Покрытия{% endblock %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    <style>
-        /* Scrollable часть chip-row: строго один ряд + горизонтальный скролл.
-           Единое поведение на mobile и desktop — pinned-часть (Сортировка +
-           Все фильтры) слева фиксирована, а chip-scroll справа берёт
-           оставшуюся ширину и скроллится горизонтально, если фильтров больше
-           чем помещается. touch-action: pan-x на мобильном ограничивает
-           touch-жест только по X. Скроллбар скрыт, вместо него — fade
-           справа через mask-image; при упоре скролла в правый край
-           контроллер scroll-fade вешает класс .scroll-fade-at-end, mask
-           убирается, чтобы последний чип не «затемнялся».
-           overflow: hidden на другой оси нужен, чтобы chip-scroll не
-           начинал случайно скроллиться по вертикали при touch.
-           dropdown'ы chip-desktop-panel'ей клипятся этим overflow'ом —
-           но у них Popper с strategy: 'fixed' (см. script ниже), меню
-           через position: fixed вылетает из overflow-контейнера. */
-        .chip-scroll {
-            overflow-x: auto;
-            overflow-y: hidden;
-            /* min-width: 0 обязателен — по спеке flex-item с overflow-x должен
-               иметь implicit min-inline-size = 0, но Safari и некоторые версии
-               Chrome оставляют min-content и chip-scroll не даёт себя сжать
-               меньше суммы чипов. Без этого при активации нескольких длинных
-               чипов ("Мин Т нанесения: -5..+5 °C ×" и т.п.) chip-scroll просто
-               растягивает chip-row и весь ряд уезжает за границы контейнера
-               вместо того чтобы скроллиться внутри себя. */
-            min-width: 0;
-            touch-action: pan-x;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-        }
-        .chip-scroll::-webkit-scrollbar { display: none; }
-        /* Не даём чипам в chip-scroll ужиматься. По умолчанию flex-item имеет
-           flex-shrink: 1 — при перенасыщении ряда элементы сжимаются меньше
-           естественной ширины и их контент (текст кнопки, содержимое
-           active-чипа) вылезает и «наезжает» на соседа. С flex-shrink: 0
-           элементы держат свою ширину; лишние — уходят вправо и доступны
-           через горизонтальный скролл. */
-        .chip-scroll > * { flex-shrink: 0; }
-        /* Единая фиксированная ширина desktop chip-dropdown'ов — иначе контент
-           разных фильтров растягивал меню на разную ширину. Селектор на самом
-           .chip-desktop-menu (не через ancestor), потому что на show меню
-           переносится в document.body — иерархия ancestor'ов теряется. */
-        .chip-desktop-menu {
-            min-width: 280px;
-            max-width: 280px;
-        }
-        /* Offcanvas-bottom для chip-фильтров — авто-высота под контент,
-           но не выше половины экрана. Bootstrap по умолчанию ставит 30vh —
-           для 15-строчного списка производителей мало. Скругление верхних
-           углов уже в base.html.twig для .offcanvas-bottom вообще. */
-        @media (max-width: 767.98px) {
-            .offcanvas-bottom.d-md-none {
-                height: auto;
-                max-height: 60vh;
-            }
-        }
-        /* Chip'ы в chip-row: одинаковая высота у pinned- и scroll-стороны.
-           На мобильной pinned-кнопки содержат только иконку (span d-none),
-           а scroll-кнопки — текст; из-за разных line-box'ов при некоторых
-           font stacks кнопки могут визуально различаться по высоте.
-           Явные line-height + white-space гарантируют одинаковый рендер. */
-        .chip-row .btn.btn-sm {
-            line-height: 1.5;
-            white-space: nowrap;
-        }
-        /* Описание в карточке покрытия — обрезаем по -webkit-line-clamp.
-           На мобильной 3 строки — вписывается в высоту колонки из 3
-           стакнутых кнопок действий справа (~120px), заполняет пустое
-           место рядом с ними, но не растит саму карточку. На >=md кнопки
-           идут в строку, карточка становится ниже — там 2 строк достаточно,
-           чтобы список не «дышал» по высоте. */
-        .coating-card-desc {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 0.25rem;
-        }
-        @media (min-width: 768px) {
-            .coating-card-desc {
-                -webkit-line-clamp: 2;
-            }
-        }
-        /* Теги в карточке покрытия — горизонтальный скролл в одну строку.
-           Иначе при большом количестве тегов ряд оборачивается на несколько
-           строк и «дышит» по высоте, ломая консистентность списка. Скроллбар
-           скрыт (touch-scroll на мобильном + shift+wheel на десктопе); теги
-           внутри не переносятся по слову (white-space:nowrap на badge).
-           mask-image даёт fade-затухание последних ~32px — визуальный намёк,
-           что справа есть ещё контент. Когда скролл упирается в правый край
-           (или контента вообще меньше ширины контейнера) — Stimulus-контроллер
-           scroll-fade вешает класс .scroll-fade-at-end, и mask убирается,
-           чтобы последний тег не подкрашивался. */
-        .coating-tags-scroll {
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-x;
-            -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
-                    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
-        }
-        .coating-tags-scroll.scroll-fade-at-end {
-            -webkit-mask-image: none;
-                    mask-image: none;
-        }
-        .coating-tags-scroll::-webkit-scrollbar { display: none; }
-        .coating-tags-scroll .badge { white-space: nowrap; }
-        /* Одинаковая высота карточек в списке. Без min-height карточки скачут
-           по высоте: у одних 1-строчное описание, у других — 2-3 (clamp),
-           плюс у части нет тегов вообще. min-height подтягивает короткие
-           до высоты «средней заполненной» карточки; более длинные (мобильная
-           колонка действий из 3 стакнутых кнопок) остаются в своей естественной
-           высоте. Значение подобрано под контент desktop-верстки:
-           title(~1.5rem) + desc-2-lines(~2.6rem) + tags(~1.5rem) + p-3(2rem). */
-        .coating-card {
-            min-height: 8rem;
-        }
-    </style>
-{% endblock %}
-
 
 
 {% block content %}
@@ -178,10 +55,14 @@
             {# Активные состояния фасетов: используются в лейблах и стилях dropdown-чипов. #}
             {% set appMinTempActive = appMinTempFrom is not null or appMinTempTo is not null %}
             {% set volumeSolidActive = volumeSolidFrom is not null or volumeSolidTo is not null %}
+            {% set minRecoat20Active = minRecoat20From is not null or minRecoat20To is not null %}
+            {% set maxRecoat20Active = maxRecoat20From is not null or maxRecoat20To is not null %}
             {% set thermalActive = thermTemp is not null and thermEnv %}
             {% set activeFacetsCount = selectedManufacturerIds.count
                 + (appMinTempActive ? 1 : 0)
                 + (volumeSolidActive ? 1 : 0)
+                + (minRecoat20Active ? 1 : 0)
+                + (maxRecoat20Active ? 1 : 0)
                 + (thermalActive ? 1 : 0)
                 + selectedTags|length
                 + selectedBaseValues.count %}
@@ -210,12 +91,28 @@
             {% set thSummary = thermalActive
                 ? thermTemp ~ '°C ' ~ (thermEnv == 'immersion' ? 'погр.' : 'сух.') ~ (thermIncludingPeak ? ' +пик' : '')
                 : null %}
+            {% set minRecoat20Summary = minRecoat20Active
+                ? (minRecoat20From is not null and minRecoat20To is not null
+                    ? minRecoat20From ~ '…' ~ minRecoat20To ~ ' ' ~ minRecoat20To|plural_ru('час', 'часа', 'часов')
+                    : (minRecoat20From is not null
+                        ? '≥ ' ~ minRecoat20From ~ ' ' ~ minRecoat20From|plural_ru('час', 'часа', 'часов')
+                        : '≤ ' ~ minRecoat20To ~ ' ' ~ minRecoat20To|plural_ru('час', 'часа', 'часов')))
+                : null %}
+            {% set maxRecoat20Summary = maxRecoat20Active
+                ? (maxRecoat20From is not null and maxRecoat20To is not null
+                    ? maxRecoat20From ~ '…' ~ maxRecoat20To ~ ' ' ~ maxRecoat20To|plural_ru('день', 'дня', 'дней')
+                    : (maxRecoat20From is not null
+                        ? '≥ ' ~ maxRecoat20From ~ ' ' ~ maxRecoat20From|plural_ru('день', 'дня', 'дней')
+                        : '≤ ' ~ maxRecoat20To ~ ' ' ~ maxRecoat20To|plural_ru('день', 'дня', 'дней')))
+                : null %}
 
             {# Reset-URL'ы single-value chip'ов (mf/tags/base — multi-value,
                каждый чип уже даёт свой remove URL прямо на месте). #}
             {% set appMinResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({appMinTempFrom: null, appMinTempTo: null, page: null})|filter(v => v is not null)) %}
             {% set vsResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({volumeSolidFrom: null, volumeSolidTo: null, page: null})|filter(v => v is not null)) %}
             {% set thResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null)) %}
+            {% set minRecoat20ResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({minRecoat20From: null, minRecoat20To: null, page: null})|filter(v => v is not null)) %}
+            {% set maxRecoat20ResetUrl = path('app_cabinet_coating_coating_list', app.request.query.all|merge({maxRecoat20From: null, maxRecoat20To: null, page: null})|filter(v => v is not null)) %}
 
             {# === Chip-row: transform-pattern ===
                  - Фасет пуст → `[Фасет ▾]` chip-dropdown для выбора.
@@ -462,6 +359,86 @@
                     {% endfor %}
                 {% endif %}
 
+                {# --- Мин перекрытие (20°C) (single, range-пресеты) --- #}
+                {% if not minRecoat20Active %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Мин перекрытие
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="minRecoat20From" value=""
+                                       data-range-filter-target="fromInput" form="coatingListForm">
+                                <input type="hidden" name="minRecoat20To" value=""
+                                       data-range-filter-target="toInput" form="coatingListForm">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset" form="coatingListForm">Любой</button>
+                                    {% for p in minRecoat20Presets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="coatingListForm">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterMinRecoat20"
+                            aria-controls="chipFilterMinRecoat20">
+                        Мин перекрытие
+                    </button>
+                {% else %}
+                    <a href="{{ minRecoat20ResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Мин перекрытие: {{ minRecoat20Summary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Макс перекрытие (20°C) (single, range-пресеты) --- #}
+                {% if not maxRecoat20Active %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Макс перекрытие
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="maxRecoat20From" value=""
+                                       data-range-filter-target="fromInput" form="coatingListForm">
+                                <input type="hidden" name="maxRecoat20To" value=""
+                                       data-range-filter-target="toInput" form="coatingListForm">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset" form="coatingListForm">Любой</button>
+                                    {% for p in maxRecoat20Presets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="coatingListForm">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterMaxRecoat20"
+                            aria-controls="chipFilterMaxRecoat20">
+                        Макс перекрытие
+                    </button>
+                {% else %}
+                    <a href="{{ maxRecoat20ResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Макс перекрытие: {{ maxRecoat20Summary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
                 {# Теги (multi) полностью в шторке «Все фильтры» — в chip-row
                    их не показываем, чтобы не засорять горизонтальный ряд.
                    Активные теги видны в offcanvas'e (секция «Активные фильтры»
@@ -528,6 +505,60 @@
                             <button type="button" class="btn btn-sm btn-secondary"
                                     data-action="click->range-filter#reset">Любой</button>
                             {% for p in volumeSolidPresets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not minRecoat20Active %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterMinRecoat20" aria-labelledby="chipFilterMinRecoat20Label">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterMinRecoat20Label">Мин перекрытие (20°C)</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="minRecoat20From" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="minRecoat20To" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любой</button>
+                            {% for p in minRecoat20Presets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not maxRecoat20Active %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterMaxRecoat20" aria-labelledby="chipFilterMaxRecoat20Label">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterMaxRecoat20Label">Макс перекрытие (20°C)</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="maxRecoat20From" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="maxRecoat20To" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любой</button>
+                            {% for p in maxRecoat20Presets %}
                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                         data-action="click->range-filter#preset"
                                         data-from="{{ p.from }}" data-to="{{ p.to }}">
@@ -682,51 +713,86 @@
                                            class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
                                     </span>
                                 {% endif %}
+                                {% if minRecoat20Active %}
+                                    {% set q = app.request.query.all|merge({minRecoat20From: null, minRecoat20To: null, page: null})|filter(v => v is not null) %}
+                                    {% set unitN = minRecoat20To is not null ? minRecoat20To : minRecoat20From %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Мин перекр.: {{ minRecoat20From is not null ? minRecoat20From : '−∞' }}…{{ minRecoat20To is not null ? minRecoat20To : '+∞' }} {{ unitN|plural_ru('час', 'часа', 'часов') }}
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if maxRecoat20Active %}
+                                    {% set q = app.request.query.all|merge({maxRecoat20From: null, maxRecoat20To: null, page: null})|filter(v => v is not null) %}
+                                    {% set unitN = maxRecoat20To is not null ? maxRecoat20To : maxRecoat20From %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Макс перекр.: {{ maxRecoat20From is not null ? maxRecoat20From : '−∞' }}…{{ maxRecoat20To is not null ? maxRecoat20To : '+∞' }} {{ unitN|plural_ru('день', 'дня', 'дней') }}
+                                        <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1" aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
 
-                    {# === Секция: Мин Т нанесения === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="range-filter">
-                        <h6 class="fw-semibold mb-2">Мин температура нанесения <span class="text-muted small fw-normal">°C</span></h6>
-                        <input type="hidden" name="appMinTempFrom" value="{{ appMinTempFrom }}"
-                               data-range-filter-target="fromInput">
-                        <input type="hidden" name="appMinTempTo" value="{{ appMinTempTo }}"
-                               data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-1">
-                            <button type="button" class="btn btn-sm {% if not appMinTempActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
-                                    data-action="click->range-filter#reset">Любая</button>
-                            {% for p in appMinTempPresets %}
-                                {% set active = appMinTempFrom == p.from and appMinTempTo == p.to %}
-                                <button type="button" class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                                        data-action="click->range-filter#preset"
-                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                    {{ p.label }}
-                                </button>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    {# === Секция: Температура нанесения === #}
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Мин Т нанесения',
+                        unit: '°C',
+                        name_from: 'appMinTempFrom',
+                        name_to: 'appMinTempTo',
+                        from: appMinTempFrom,
+                        to: appMinTempTo,
+                        presets: appMinTempPresets,
+                        min: -30,
+                        max: 50,
+                        reset_label: 'Любая',
+                    } only %}
 
                     {# === Секция: Сухой остаток === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="range-filter">
-                        <h6 class="fw-semibold mb-2">Сухой остаток <span class="text-muted small fw-normal">% об.</span></h6>
-                        <input type="hidden" name="volumeSolidFrom" value="{{ volumeSolidFrom }}"
-                               data-range-filter-target="fromInput">
-                        <input type="hidden" name="volumeSolidTo" value="{{ volumeSolidTo }}"
-                               data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-1">
-                            <button type="button" class="btn btn-sm {% if not volumeSolidActive %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
-                                    data-action="click->range-filter#reset">Любой</button>
-                            {% for p in volumeSolidPresets %}
-                                {% set active = volumeSolidFrom == p.from and volumeSolidTo == p.to %}
-                                <button type="button" class="btn btn-sm {% if active %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                                        data-action="click->range-filter#preset"
-                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                    {{ p.label }}
-                                </button>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Сухой остаток',
+                        unit: '% об.',
+                        name_from: 'volumeSolidFrom',
+                        name_to: 'volumeSolidTo',
+                        from: volumeSolidFrom,
+                        to: volumeSolidTo,
+                        presets: volumeSolidPresets,
+                        min: 10,
+                        max: 100,
+                        reset_label: 'Любой',
+                    } only %}
+
+                    {# === Секция: Мин интервал перекрытия при 20°C ===
+                       UI-единица — часы (backend/RECOATING_AT_20C работают в минутах;
+                       ListAction конвертит при построении CoatingsFilter). #}
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Мин перекрытие (20°C)',
+                        unit: 'ч',
+                        name_from: 'minRecoat20From',
+                        name_to: 'minRecoat20To',
+                        from: minRecoat20From,
+                        to: minRecoat20To,
+                        presets: minRecoat20Presets,
+                        min: 0,
+                        max: 168,
+                        reset_label: 'Любой',
+                    } only %}
+
+                    {# === Секция: Макс интервал перекрытия при 20°C ===
+                       UI-единица — сутки. #}
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Макс перекрытие (20°C)',
+                        unit: 'сут',
+                        name_from: 'maxRecoat20From',
+                        name_to: 'maxRecoat20To',
+                        from: maxRecoat20From,
+                        to: maxRecoat20To,
+                        presets: maxRecoat20Presets,
+                        min: 0,
+                        max: 365,
+                        reset_label: 'Любой',
+                    } only %}
 
                     {# === Секция: Температура эксплуатации === #}
                     <div class="p-3 mb-2 rounded-3 bg-body-tertiary">

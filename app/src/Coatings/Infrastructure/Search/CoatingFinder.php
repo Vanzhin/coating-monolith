@@ -120,9 +120,41 @@ final class CoatingFinder
         $this->applyManufacturerFacet($qb, $filter);
         $this->applyRangeFacet($qb, 'applicationMinTemp', 'appMinTemp', $filter->applicationMinTemp);
         $this->applyRangeFacet($qb, 'volumeSolid', 'volSolid', $filter->volumeSolid);
+        $this->applyRecoatingAt20Facet($qb, 'minRecoatingInterval', 'minRecoat20', $filter->minRecoating20, false);
+        $this->applyRecoatingAt20Facet($qb, 'maxRecoatingInterval', 'maxRecoat20', $filter->maxRecoating20, true);
         $this->applyTagFacet($qb, $filter);
         $this->applyThermalExposureFacet($qb, $filter);
         $this->applyBaseFacet($qb, $filter);
+    }
+
+    /**
+     * Range-фасет по интервалу перекрытия при +20 °C (интерполяция в SQL через
+     * RECOATING_AT_20C DQL). $entityField — Doctrine-имя поля дерева;
+     * $paramPrefix — префикс параметров; $range — фильтр из URL; $isNullable —
+     * true для maxRecoatingInterval (колонка nullable → guard'им IS NOT NULL,
+     * иначе покрытия без задокументированной верхней границы валят SQL).
+     */
+    private function applyRecoatingAt20Facet(
+        QueryBuilder $qb,
+        string $entityField,
+        string $paramPrefix,
+        ?RangeFilter $range,
+        bool $isNullable,
+    ): void {
+        if ($range === null) {
+            return;
+        }
+        if ($isNullable) {
+            $qb->andWhere("cc.$entityField IS NOT NULL");
+        }
+        if ($range->from !== null) {
+            $qb->andWhere("RECOATING_AT_20C(cc.$entityField) >= :{$paramPrefix}From")
+                ->setParameter("{$paramPrefix}From", $range->from);
+        }
+        if ($range->to !== null) {
+            $qb->andWhere("RECOATING_AT_20C(cc.$entityField) <= :{$paramPrefix}To")
+                ->setParameter("{$paramPrefix}To", $range->to);
+        }
     }
 
     /**

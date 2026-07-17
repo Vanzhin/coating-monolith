@@ -2,6 +2,9 @@
 @import "bootstrap-icons.css";
 @import "blog.css";
 @import "admin/dashboard.css";
+@import "admin/coating-list.css";
+@import "components/flip-card.css";
+@import "components/range-slider.css";
 @import "fonts.css";
 /*@import "signin.css";*/
 

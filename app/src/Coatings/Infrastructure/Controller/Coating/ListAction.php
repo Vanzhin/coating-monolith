@@ -51,6 +51,41 @@ class ListAction extends AbstractController
         'high'   => ['label' => 'Высокий (≥ 70 %)',   'from' => 70, 'to' => 100],
     ];
 
+    /**
+     * Единицы UI. Бэк (RECOATING_AT_20C, RangeFilter) работает в минутах.
+     * Пресеты, слайдер, URL query params — в этих UI-единицах. Конвертация
+     * UI→минуты происходит при построении CoatingsFilter (× MINUTES_PER_HOUR
+     * для min, × MINUTES_PER_DAY для max).
+     */
+    private const MINUTES_PER_HOUR = 60;
+    private const MINUTES_PER_DAY = 1440;
+
+    /**
+     * Пресеты для мин интервала перекрытия при +20 °C (в ЧАСАХ).
+     * Слайдер тоже в часах; верхняя граница 168 = 1 неделя.
+     *
+     * @var array<string, array{label: string, from: int, to: int}>
+     */
+    private const MIN_RECOAT_20_PRESETS = [
+        'fast'      => ['label' => 'Быстрый (≤ 4 ч)',    'from' => 0,  'to' => 4],
+        'standard'  => ['label' => 'Стандарт (4–24 ч)',  'from' => 4,  'to' => 24],
+        'slow'      => ['label' => 'Медленный (1–3 сут)', 'from' => 24, 'to' => 72],
+        'very_slow' => ['label' => 'Долгий (> 3 сут)',    'from' => 72, 'to' => 168],
+    ];
+
+    /**
+     * Пресеты для макс интервала перекрытия при +20 °C (в ДНЯХ).
+     * Слайдер тоже в днях; верхняя граница 365 = 1 год.
+     *
+     * @var array<string, array{label: string, from: int, to: int}>
+     */
+    private const MAX_RECOAT_20_PRESETS = [
+        'day'   => ['label' => '≤ 1 сут',    'from' => 0,  'to' => 1],
+        'week'  => ['label' => '1–7 сут',    'from' => 1,  'to' => 7],
+        'month' => ['label' => '1–4 нед',    'from' => 7,  'to' => 28],
+        'long'  => ['label' => '> 4 нед',    'from' => 28, 'to' => 365],
+    ];
+
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CoatingTagRepositoryInterface $coatingTagRepository,
@@ -79,6 +114,10 @@ class ListAction extends AbstractController
         $appMinTempTo    = $this->nullableInt($request->query->get('appMinTempTo'));
         $volumeSolidFrom = $this->nullableInt($request->query->get('volumeSolidFrom'));
         $volumeSolidTo   = $this->nullableInt($request->query->get('volumeSolidTo'));
+        $minRecoat20From = $this->nullableInt($request->query->get('minRecoat20From'));
+        $minRecoat20To   = $this->nullableInt($request->query->get('minRecoat20To'));
+        $maxRecoat20From = $this->nullableInt($request->query->get('maxRecoat20From'));
+        $maxRecoat20To   = $this->nullableInt($request->query->get('maxRecoat20To'));
 
         // Температура эксплуатации: одно число + среда (сухое/погружение) +
         // галка «включая пик». Фасет активен, только когда заданы и temp, и env
@@ -117,6 +156,16 @@ class ListAction extends AbstractController
                 thermalIncludingPeak: $thermIncludingPeak,
                 sort: $sort,
                 baseValues: $baseValues,
+                // UI-единицы конвертим в минуты для домена: min в часах,
+                // max в днях. RECOATING_AT_20C возвращает минуты.
+                minRecoating20: RangeFilter::tryFromNullable(
+                    $minRecoat20From !== null ? $minRecoat20From * self::MINUTES_PER_HOUR : null,
+                    $minRecoat20To !== null ? $minRecoat20To * self::MINUTES_PER_HOUR : null,
+                ),
+                maxRecoating20: RangeFilter::tryFromNullable(
+                    $maxRecoat20From !== null ? $maxRecoat20From * self::MINUTES_PER_DAY : null,
+                    $maxRecoat20To !== null ? $maxRecoat20To * self::MINUTES_PER_DAY : null,
+                ),
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
         } catch (AppException $e) {
@@ -158,10 +207,16 @@ class ListAction extends AbstractController
             'coatingBases' => CoatingBase::cases(),
             'appMinTempPresets'   => self::APP_MIN_TEMP_PRESETS,
             'volumeSolidPresets'  => self::VOLUME_SOLID_PRESETS,
+            'minRecoat20Presets'  => self::MIN_RECOAT_20_PRESETS,
+            'maxRecoat20Presets'  => self::MAX_RECOAT_20_PRESETS,
             'appMinTempFrom'   => $appMinTempFrom,
             'appMinTempTo'     => $appMinTempTo,
             'volumeSolidFrom'  => $volumeSolidFrom,
             'volumeSolidTo'    => $volumeSolidTo,
+            'minRecoat20From'  => $minRecoat20From,
+            'minRecoat20To'    => $minRecoat20To,
+            'maxRecoat20From'  => $maxRecoat20From,
+            'maxRecoat20To'    => $maxRecoat20To,
             'thermTemp'         => $thermTemp,
             'thermEnv'          => $thermEnv?->value,
             'thermIncludingPeak' => $thermIncludingPeak,

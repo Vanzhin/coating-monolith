@@ -1,0 +1,84 @@
+{# Flip-карта параметра фильтра: front=пресеты (чипы), back=точный ввод
+   (range-slider). Начальная сторона определяется по URL: from/to совпадают
+   с каким-то пресетом (или оба null) → front; иначе (произвольный
+   диапазон) → back. Значения дублируются в обеих face, но неактивная
+   обёрнута в fieldset disabled — её input'ы не улетают при submit.
+   Range-filter Stimulus живёт на front — там auto-submit по клику на чип.
+   На back — обычный submit по «Применить».
+
+   Args:
+     title       — string, заголовок карты
+     unit        — string, единица (напр. '°C', '%')
+     name_from   — string, form field name для 'от'
+     name_to     — string, form field name для 'до'
+     from        — int|null, текущее значение 'от' из URL
+     to          — int|null, текущее значение 'до' из URL
+     presets     — list<{from:int, to:int, label:string}>
+     min         — int, физическая нижняя граница (для slider bounds)
+     max         — int, физическая верхняя граница
+     reset_label — string|null, дефолт 'Любая'
+#}
+{% set reset_label = reset_label|default('Любая') %}
+{% set active = from is not null or to is not null %}
+{# Строгое сравнение `is same as` предотвращает Twig loose ==: null==0 иначе
+   молча схлопывается и порождает ложное совпадение с пресетом {from:0,...}. #}
+{% set is_preset = presets|filter(p => p.from is same as from and p.to is same as to)|length > 0 %}
+{% set flipped = active and not is_preset %}
+<div class="flip-card mb-2 {% if flipped %}flipped{% endif %}"
+     data-controller="flip-card">
+    <div class="flip-card-inner">
+        <fieldset class="flip-card-face flip-card-face-front p-3 rounded-3 bg-body-tertiary"
+                  data-flip-card-target="front"
+                  data-controller="range-filter"
+                  {% if flipped %}disabled{% endif %}>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-semibold mb-0">{{ title }} <span class="text-muted small fw-normal">{{ unit }}</span></h6>
+                <button type="button" class="flip-card-flip-btn"
+                        data-action="click->flip-card#toggle"
+                        title="Точный ввод">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+            </div>
+            <input type="hidden" name="{{ name_from }}" value="{% if not flipped %}{{ from }}{% endif %}"
+                   data-range-filter-target="fromInput">
+            <input type="hidden" name="{{ name_to }}" value="{% if not flipped %}{{ to }}{% endif %}"
+                   data-range-filter-target="toInput">
+            <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm {% if not active %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+                        data-action="click->range-filter#reset">{{ reset_label }}</button>
+                {% for p in presets %}
+                    {% set active_preset = p.from is same as from and p.to is same as to %}
+                    <button type="button" class="btn btn-sm {% if active_preset %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            data-action="click->range-filter#preset"
+                            data-from="{{ p.from }}" data-to="{{ p.to }}">
+                        {{ p.label }}
+                    </button>
+                {% endfor %}
+            </div>
+        </fieldset>
+        <fieldset class="flip-card-face flip-card-face-back p-3 rounded-3 bg-body-tertiary"
+                  data-flip-card-target="back"
+                  {% if not flipped %}disabled{% endif %}>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-semibold mb-0">{{ title }} <span class="text-muted small fw-normal">{{ unit }}</span></h6>
+                <button type="button" class="flip-card-flip-btn"
+                        data-action="click->flip-card#toggle"
+                        title="Пресеты">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+            </div>
+            {% include 'components/range_slider.html.twig' with {
+                name_from: name_from,
+                name_to: name_to,
+                min: min,
+                max: max,
+                from: flipped ? from : null,
+                to: flipped ? to : null,
+                unit: unit,
+            } only %}
+            <div class="text-end mt-2">
+                <button type="submit" class="btn btn-sm btn-primary">Применить</button>
+            </div>
+        </fieldset>
+    </div>
+</div>

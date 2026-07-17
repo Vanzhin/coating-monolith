@@ -18,7 +18,39 @@ class DurationExtension extends AbstractExtension
             // Короткий формат «5 д 16 ч». Для компактных мест (форма, таблицы).
             new TwigFilter('duration_minutes_short', [$this, 'formatMinutesShort']),
             new TwigFilter('duration_short', [$this, 'formatShort']),
+            // Русская плюрализация: {{ 5|plural_ru('час', 'часа', 'часов') }} → «часов».
+            new TwigFilter('plural_ru', [$this, 'pluralRu']),
         ];
+    }
+
+    /**
+     * Русская плюрализация числительного. Возвращает СУФФИКС, не готовое
+     * словосочетание — числовую часть шаблон рендерит сам.
+     *
+     *   {{ n }} {{ n|plural_ru('час', 'часа', 'часов') }}
+     *
+     * Правила (для целых частей чисел):
+     *   - последние две цифры 11..14 → many (одиннадцать часов)
+     *   - последняя цифра 1 → one   (21 час)
+     *   - последняя цифра 2..4 → few (22 часа)
+     *   - иначе → many                (25 часов)
+     */
+    public function pluralRu(int|float $n, string $one, string $few, string $many): string
+    {
+        $abs = (int) abs((int) $n);
+        $mod100 = $abs % 100;
+        $mod10 = $abs % 10;
+
+        if ($mod100 >= 11 && $mod100 <= 14) {
+            return $many;
+        }
+        if ($mod10 === 1) {
+            return $one;
+        }
+        if ($mod10 >= 2 && $mod10 <= 4) {
+            return $few;
+        }
+        return $many;
     }
 
     // ─── Полный формат ──────────────────────────────────────────

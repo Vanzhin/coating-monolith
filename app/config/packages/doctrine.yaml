@@ -30,6 +30,7 @@ doctrine:
                 WORD_SIMILARITY: App\Coatings\Infrastructure\Database\DQL\WordSimilarity
                 GREATEST: App\Coatings\Infrastructure\Database\DQL\Greatest
                 JSONB_GET_INT: App\Coatings\Infrastructure\Database\DQL\JsonbGetInt
+                RECOATING_AT_20C: App\Coatings\Infrastructure\Database\DQL\RecoatingAt20C
         mappings:
             Users:
                 type: xml

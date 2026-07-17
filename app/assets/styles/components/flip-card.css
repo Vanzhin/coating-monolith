@@ -1,0 +1,31 @@
+/* 3D-flip карточка: две стороны стакнуты в один grid-cell — высота карты =
+   max(front, back), поэтому при flip нет прыжка layout'a. preserve-3d +
+   backface-visibility дают классический эффект переворота. .flipped на
+   root'e переворачивает inner на 180° по Y — видимой становится back.
+   Управление disabled на fieldset'ах — в flip_card_controller.js. */
+.flip-card { perspective: 1200px; }
+.flip-card-inner {
+    display: grid;
+    grid-template-areas: 'stack';
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+}
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-face {
+    grid-area: stack;
+    -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+.flip-card-face-back { transform: rotateY(180deg); }
+.flip-card-flip-btn {
+    border: 0;
+    background: transparent;
+    padding: 0.15rem 0.35rem;
+    color: var(--bs-secondary-color);
+    line-height: 1;
+}
+.flip-card-flip-btn:hover { color: var(--bs-primary); }

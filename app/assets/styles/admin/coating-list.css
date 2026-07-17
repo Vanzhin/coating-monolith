@@ -1,0 +1,119 @@
+/* Scrollable часть chip-row: строго один ряд + горизонтальный скролл.
+   Единое поведение на mobile и desktop — pinned-часть (Сортировка + Все
+   фильтры) слева фиксирована, а chip-scroll справа берёт оставшуюся
+   ширину и скроллится горизонтально, если фильтров больше чем помещается.
+   touch-action: pan-x на мобильном ограничивает touch-жест только по X.
+   Скроллбар скрыт, вместо него — fade справа через mask-image; при упоре
+   скролла в правый край scroll-fade Stimulus-контроллер вешает класс
+   .scroll-fade-at-end, mask убирается, чтобы последний чип не «затемнялся».
+   overflow: hidden на другой оси нужен, чтобы chip-scroll не начинал
+   случайно скроллиться по вертикали при touch. dropdown'ы chip-desktop-
+   panel'ей клипятся этим overflow'ом — но у них Popper с strategy: 'fixed',
+   меню через position: fixed вылетает из overflow-контейнера. */
+.chip-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* min-width: 0 обязателен — по спеке flex-item с overflow-x должен
+       иметь implicit min-inline-size = 0, но Safari и некоторые версии
+       Chrome оставляют min-content и chip-scroll не даёт себя сжать
+       меньше суммы чипов. Без этого при активации нескольких длинных чипов
+       chip-scroll просто растягивает chip-row и весь ряд уезжает за границы
+       контейнера вместо того чтобы скроллиться внутри себя. */
+    min-width: 0;
+    touch-action: pan-x;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.chip-scroll::-webkit-scrollbar { display: none; }
+/* Не даём чипам в chip-scroll ужиматься. По умолчанию flex-item имеет
+   flex-shrink: 1 — при перенасыщении ряда элементы сжимаются меньше
+   естественной ширины и их контент вылезает и «наезжает» на соседа.
+   С flex-shrink: 0 элементы держат свою ширину; лишние — уходят вправо
+   и доступны через горизонтальный скролл. */
+.chip-scroll > * { flex-shrink: 0; }
+
+/* Единая фиксированная ширина desktop chip-dropdown'ов — иначе контент
+   разных фильтров растягивал меню на разную ширину. Селектор на самом
+   .chip-desktop-menu (не через ancestor), потому что на show меню
+   переносится в document.body — иерархия ancestor'ов теряется. */
+.chip-desktop-menu {
+    min-width: 280px;
+    max-width: 280px;
+}
+
+/* Offcanvas-bottom для chip-фильтров — авто-высота под контент, но не
+   выше половины экрана. Bootstrap по умолчанию ставит 30vh — для
+   15-строчного списка производителей мало. Скругление верхних углов
+   уже в base.html.twig для .offcanvas-bottom вообще. */
+@media (max-width: 767.98px) {
+    .offcanvas-bottom.d-md-none {
+        height: auto;
+        max-height: 60vh;
+    }
+}
+
+/* Chip'ы в chip-row: одинаковая высота у pinned- и scroll-стороны.
+   На мобильной pinned-кнопки содержат только иконку (span d-none), а
+   scroll-кнопки — текст; из-за разных line-box'ов при некоторых
+   font stacks кнопки могут визуально различаться по высоте. Явные
+   line-height + white-space гарантируют одинаковый рендер. */
+.chip-row .btn.btn-sm {
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+/* Описание в карточке покрытия — обрезаем по -webkit-line-clamp.
+   На мобильной 3 строки — вписывается в высоту колонки из 3
+   стакнутых кнопок действий справа (~120px), заполняет пустое
+   место рядом с ними, но не растит саму карточку. На >=md кнопки
+   идут в строку, карточка становится ниже — там 2 строк достаточно,
+   чтобы список не «дышал» по высоте. */
+.coating-card-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+@media (min-width: 768px) {
+    .coating-card-desc {
+        -webkit-line-clamp: 2;
+    }
+}
+
+/* Теги в карточке покрытия — горизонтальный скролл в одну строку. Иначе
+   при большом количестве тегов ряд оборачивается на несколько строк и
+   «дышит» по высоте, ломая консистентность списка. Скроллбар скрыт
+   (touch-scroll на мобильном + shift+wheel на десктопе); теги внутри не
+   переносятся по слову (white-space:nowrap на badge). mask-image даёт
+   fade-затухание последних ~32px — визуальный намёк, что справа есть
+   ещё контент. Когда скролл упирается в правый край (или контента вообще
+   меньше ширины контейнера) — Stimulus-контроллер scroll-fade вешает
+   класс .scroll-fade-at-end, и mask убирается, чтобы последний тег не
+   подкрашивался. */
+.coating-tags-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
+            mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 32px), transparent);
+}
+.coating-tags-scroll.scroll-fade-at-end {
+    -webkit-mask-image: none;
+            mask-image: none;
+}
+.coating-tags-scroll::-webkit-scrollbar { display: none; }
+.coating-tags-scroll .badge { white-space: nowrap; }
+
+/* Одинаковая высота карточек в списке. Без min-height карточки скачут
+   по высоте: у одних 1-строчное описание, у других — 2-3 (clamp), плюс
+   у части нет тегов вообще. min-height подтягивает короткие до высоты
+   «средней заполненной» карточки; более длинные (мобильная колонка
+   действий из 3 стакнутых кнопок) остаются в своей естественной высоте.
+   Значение подобрано под контент desktop-верстки:
+   title(~1.5rem) + desc-2-lines(~2.6rem) + tags(~1.5rem) + p-3(2rem). */
+.coating-card {
+    min-height: 8rem;
+}

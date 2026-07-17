@@ -1,0 +1,77 @@
+{# Двух-ручковый range slider с видимыми number-инпутами.
+
+   Args:
+     name_from   — string, name атрибут для input'a "От" (уходит в форму)
+     name_to     — string, name атрибут для input'a "До"
+     min         — int, физическая нижняя граница (для положения range-ручки)
+     max         — int, физическая верхняя граница
+     from        — int|null, текущее значение "От" (null = поле пустое)
+     to          — int|null, текущее значение "До"
+     step        — int, дефолт 1
+     unit        — string, дефолт '' (напр. '°C', '%')
+     label_from  — string, дефолт 'От'
+     label_to    — string, дефолт 'До'
+
+   Источник истины submit'a — number-инпуты. Range'ы синхронизируются
+   через Stimulus range_slider (drag → number, ввод в number → range).
+
+   На number-инпутах НЕТ min/max/step: HTML5-валидация иначе блокирует form
+   submit нативным bubble'ом при значении вне диапазона (частая история —
+   исторический URL). Границы валидирует бэк, домен возвращает AppException
+   → рендерится баннером.
+#}
+{% set step = step|default(1) %}
+{% set unit = unit|default('') %}
+{% set label_from = label_from|default('От') %}
+{% set label_to = label_to|default('До') %}
+<div class="range-slider" data-controller="range-slider"
+     data-range-slider-min-value="{{ min }}"
+     data-range-slider-max-value="{{ max }}"
+     data-range-slider-step-value="{{ step }}">
+    <div class="row g-2 mb-2 align-items-end">
+        <div class="col-6">
+            <label class="form-label small text-muted mb-1">{{ label_from }}</label>
+            <div class="input-group input-group-sm">
+                <input type="number" name="{{ name_from }}" value="{{ from }}"
+                       step="{{ step }}"
+                       class="form-control"
+                       data-range-slider-target="fromInput"
+                       data-action="input->range-slider#typeInput blur->range-slider#blurInput">
+                {% if unit != '' %}
+                    <span class="input-group-text">{{ unit }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-6">
+            <label class="form-label small text-muted mb-1">{{ label_to }}</label>
+            <div class="input-group input-group-sm">
+                <input type="number" name="{{ name_to }}" value="{{ to }}"
+                       step="{{ step }}"
+                       class="form-control"
+                       data-range-slider-target="toInput"
+                       data-action="input->range-slider#typeInput blur->range-slider#blurInput">
+                {% if unit != '' %}
+                    <span class="input-group-text">{{ unit }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="range-slider-track-wrap">
+        <input type="range" min="{{ min }}" max="{{ max }}" step="{{ step }}"
+               value="{{ from|default(min) }}"
+               class="range-slider-thumb range-slider-thumb-from"
+               data-range-slider-target="fromRange"
+               data-action="input->range-slider#dragRange"
+               aria-label="{{ label_from }}">
+        <input type="range" min="{{ min }}" max="{{ max }}" step="{{ step }}"
+               value="{{ to|default(max) }}"
+               class="range-slider-thumb range-slider-thumb-to"
+               data-range-slider-target="toRange"
+               data-action="input->range-slider#dragRange"
+               aria-label="{{ label_to }}">
+    </div>
+    <div class="d-flex justify-content-between mt-1">
+        <span class="text-muted small">{{ min }}{{ unit }}</span>
+        <span class="text-muted small">{{ max }}{{ unit }}</span>
+    </div>
+</div>

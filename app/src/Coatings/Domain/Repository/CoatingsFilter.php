@@ -35,6 +35,12 @@ readonly class CoatingsFilter
         // Multi-value OR-семантика: покрытие подходит, если его base в этом списке.
         // Пустая коллекция — фасет не применяется.
         public StringCollection $baseValues = new StringCollection(),
+        // Интервал перекрытия при +20 °C в минутах. min всегда есть у покрытия,
+        // max — nullable (у покрытий без верхней границы вылетают из выборки при
+        // активном maxRecoating20). Значение при 20 °C интерполируется в SQL
+        // (см. RECOATING_AT_20C DQL-функцию, зеркалит DryingTimeSeries::getPoint).
+        public ?RangeFilter $minRecoating20 = null,
+        public ?RangeFilter $maxRecoating20 = null,
     ) {
         ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
     }
