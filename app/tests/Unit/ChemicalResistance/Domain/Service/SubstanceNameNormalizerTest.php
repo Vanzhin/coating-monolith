@@ -32,6 +32,11 @@ final class SubstanceNameNormalizerTest extends TestCase
                 '00813 Marine Diesel Blend* (*™ Famm)',
                 '00813 Marine Diesel Blend',
             ]],
+            'language-markers stripped' => [[
+                'Ethanol',
+                'Ethanol (G)',
+                'ETHANOL (n)',
+            ]],
         ];
     }
 
