@@ -110,6 +110,8 @@ final class ChemicalResistanceImporter
                 }
                 $assUpdated++;
             } else {
+                // In dry-run mode skip DB-backed validations: notes aren't persisted yet,
+                // and uniqueness is moot since nothing will be written.
                 $a = new Assessment(
                     Uuid::v4(),
                     $coatingId,
@@ -117,11 +119,11 @@ final class ChemicalResistanceImporter
                     Grade::from($g->grade),
                     $maxTemp,
                     $noteIds,
-                    new AssessmentSpecification(
+                    $opts->dryRun ? null : new AssessmentSpecification(
                         new UniqueCoatingSubstanceAssessmentSpecification($this->assessments),
                         new AssessmentNotesConsistencyValidator(),
                     ),
-                    $this->notes,
+                    $opts->dryRun ? null : $this->notes,
                 );
                 if (!$opts->dryRun) {
                     $this->assessments->save($a);
