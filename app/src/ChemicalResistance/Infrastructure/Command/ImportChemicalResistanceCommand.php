@@ -46,7 +46,8 @@ final class ImportChemicalResistanceCommand extends Command
         $title = $input->getOption('coating-title');
 
         if ($title === null || $title === '') {
-            throw new \InvalidArgumentException('--coating-title обязателен');
+            $io->error('Опция --coating-title обязательна.');
+            return Command::FAILURE;
         }
 
         $row = $this->dbal->fetchAssociative('SELECT id::text AS id FROM coatings_coating WHERE title = ?', [$title]);

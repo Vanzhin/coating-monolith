@@ -56,7 +56,7 @@ final class ImportChemicalResistanceCommandTest extends KernelTestCase
         self::assertStringContainsString('created', $output, 'Output should report created counts');
     }
 
-    public function testMissingCoatingTitleFails(): void
+    public function testUnknownCoatingTitleFails(): void
     {
         $exitCode = $this->tester->execute([
             'docx'            => self::FIXTURE_DOCX,
@@ -67,5 +67,17 @@ final class ImportChemicalResistanceCommandTest extends KernelTestCase
 
         $output = $this->tester->getDisplay();
         self::assertStringContainsString('не найдено', $output, 'Output should indicate coating was not found');
+    }
+
+    public function testMissingCoatingTitleOptionFails(): void
+    {
+        $exitCode = $this->tester->execute([
+            'docx' => self::FIXTURE_DOCX,
+        ]);
+
+        self::assertSame(1, $exitCode, 'Command should exit with failure when --coating-title is missing');
+
+        $output = $this->tester->getDisplay();
+        self::assertStringContainsString('coating-title обязательна', $output, 'Output should indicate --coating-title is required');
     }
 }
