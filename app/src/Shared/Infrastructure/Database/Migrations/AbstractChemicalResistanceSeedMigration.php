@@ -88,9 +88,19 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
         }
 
         // 5. Assessments — upsert per (coating_id, substance_id).
+        $seenGradeBySubstance = [];   // Track grades per substance to detect conflicts.
         foreach ($data['assessments'] as $a) {
             $substanceId = $substanceByCanonical[$a['substance']]
                 ?? throw new \RuntimeException("Substance ref «{$a['substance']}» not resolved in {$this->seedFileName()}.");
+
+            // Warn if the same substance appears with conflicting grades.
+            if (isset($seenGradeBySubstance[$substanceId]) && $seenGradeBySubstance[$substanceId] !== $a['grade']) {
+                $this->write(sprintf(
+                    '<comment>Grade conflict for «%s»: %s vs %s — keeping last (%s)</comment>',
+                    $a['substance'], $seenGradeBySubstance[$substanceId], $a['grade'], $a['grade']
+                ));
+            }
+            $seenGradeBySubstance[$substanceId] = $a['grade'];
 
             $noteIds = array_map(
                 function (string $label) use ($labelToId): string {
@@ -133,19 +143,49 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
             true,
         );
 
-        // Remove this coating's assessments. Substances are left untouched (may be shared).
-        $this->connection->executeStatement(
-            'DELETE FROM chemical_resistance_assessment WHERE coating_id = (SELECT id FROM coatings_coating WHERE title = ?)',
+        // Fetch coating id.
+        $coatingId = $this->connection->fetchOne(
+            'SELECT id FROM coatings_coating WHERE title = ?',
             [$data['coating_title']],
         );
+        if (!$coatingId) {
+            return;
+        }
 
-        // Remove notes seeded by this migration (unique titles per coating).
-        foreach ($data['notes'] as $n) {
+        // Collect note UUIDs referenced by THIS coating's assessments before deleting them.
+        $noteIdsRows = $this->connection->fetchAllAssociative(
+            'SELECT DISTINCT jsonb_array_elements_text(note_ids) AS id
+             FROM chemical_resistance_assessment
+             WHERE coating_id = ?',
+            [$coatingId],
+        );
+        $noteIds = array_column($noteIdsRows, 'id');
+
+        // Remove this coating's assessments. Substances are left untouched (may be shared).
+        $this->connection->executeStatement(
+            'DELETE FROM chemical_resistance_assessment WHERE coating_id = ?',
+            [$coatingId],
+        );
+
+        // Remove only notes that are no longer referenced by any surviving assessment.
+        if (!empty($noteIds)) {
+            $placeholders = implode(',', array_fill(0, count($noteIds), '?'));
             $this->connection->executeStatement(
-                'DELETE FROM chemical_resistance_note WHERE title = ?',
-                [$n['title']],
+                "DELETE FROM chemical_resistance_note
+                 WHERE id::text IN ($placeholders)
+                 AND NOT EXISTS (
+                     SELECT 1 FROM chemical_resistance_assessment a
+                     WHERE a.note_ids @> ('[\"'||chemical_resistance_note.id::text||'\"]')::jsonb
+                 )",
+                $noteIds,
             );
         }
+
+        // Rebuild search vector for this coating (assessments gone, need fresh vector).
+        $this->connection->executeStatement(
+            'SELECT coatings_coating_search_rebuild(?)',
+            [$coatingId],
+        );
     }
 
     private function uuidV4(): string
