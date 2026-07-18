@@ -20,16 +20,20 @@ final class GradeCellParser
             return new ParsedAssessment(strtoupper($m[1]), null, []);
         }
 
-        // Split by comma, but keep "Прим. 1,4" together — pre-normalize.
-        // Strategy: replace "Прим. 1,4" → "Прим. 1|4" so comma-split doesn't cut inside.
-        // Only replace commas WITHOUT spaces (to avoid "Прим. 1, 70ºC" being collapsed).
-        $work = preg_replace_callback(
-            '/(Прим\.\s*\d+),(\d+)/u',
-            function ($m) {
-                return $m[1] . '|' . $m[2];
-            },
-            $cell
-        );
+        // Split by comma, but keep "Прим. 1,4,6" together — pre-normalize.
+        // Strategy: replace "Прим. 1,4,6" → "Прим. 1|4|6" so comma-split doesn't cut inside.
+        // Loop until stable to handle multi-way joins (1,4,6 → 1|4|6).
+        $work = $cell;
+        do {
+            $prev = $work;
+            $work = preg_replace_callback(
+                '/(Прим\.\s*[\d|]+),(\d+)/u',
+                function ($m) {
+                    return $m[1] . '|' . $m[2];
+                },
+                $work
+            );
+        } while ($work !== $prev);
 
         $parts = array_map('trim', explode(',', $work));
 

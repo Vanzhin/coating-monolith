@@ -30,6 +30,7 @@ final class GradeCellParserTest extends TestCase
             'with temp °'  => ['R, 60°C',     'R',  60,   []],
             'note single'  => ['R, Прим. 1',  'R',  null, ['Прим. 1']],
             'note multi'   => ['R, Прим. 1,4','R',  null, ['Прим. 1', 'Прим. 4']],
+            'note-three-way' => ['R, Прим. 1,4,6', 'R', null, ['Прим. 1', 'Прим. 4', 'Прим. 6']],
             'combined'     => ['R, Прим. 1, 70ºC', 'R', 70, ['Прим. 1']],
             'with dupes'   => ['R, Прим. 1, 70ºC, Прим. 1', 'R', 70, ['Прим. 1']],
             'lowercase c'  => ['R, 60ºc',     'R',  60,   []],
