@@ -88,9 +88,12 @@
             "aliases": []
         },
         {
-            "canonical": "1,2-DICHLOROPROPANE",
-            "cas": null,
-            "aliases": []
+            "canonical": "1,2-Дихлорпропан",
+            "cas": "78-87-5",
+            "aliases": [
+                "1,2-DICHLOROPROPANE",
+                "Propylene dichloride"
+            ]
         },
         {
             "canonical": "1,3,5-TRIOXANE",
@@ -250,9 +253,13 @@
             "aliases": []
         },
         {
-            "canonical": "2-ETHYLHEXANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "canonical": "2-Этилгексиловая кислота",
+            "cas": "149-57-5",
+            "aliases": [
+                "2-ETHYLHEXANOIC ACID",
+                "Isooctanoic acid",
+                "2-Этилгексановая кислота"
+            ]
         },
         {
             "canonical": "2-ETHYLHEXYL ACRYLATE",
@@ -345,6 +352,7 @@
             "aliases": [
                 "ACETIC ACID",
                 "Ethanoic acid",
+                "Methane carboxylic acid",
                 "Glacial acetic acid",
                 "Acetic acid glacial",
                 "Acetic acid (aqueous)",
@@ -353,9 +361,14 @@
             ]
         },
         {
-            "canonical": "ACETIC ANHYDRIDE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Уксусный ангидрид",
+            "cas": "108-24-7",
+            "aliases": [
+                "ACETIC ANHYDRIDE",
+                "Ethanoic anhydride",
+                "Ac2O",
+                "Ангидрид уксусной кислоты"
+            ]
         },
         {
             "canonical": "ACETOCHLOR(n)",
@@ -592,9 +605,17 @@
             "aliases": []
         },
         {
-            "canonical": "ALKYL (C9+) BENZENES",
+            "canonical": "Алкилат бензиновый",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ALKYL (C9+) BENZENES",
+                "Alkylate",
+                "Gasoline alkylate",
+                "Petrochal alkylate",
+                "Alkilbenzenes",
+                "Алкилат",
+                "Алкилбензолы"
+            ]
         },
         {
             "canonical": "ALKYL (C9-C15) PHENYL PROPOXYLATE",
@@ -702,9 +723,19 @@
             "aliases": []
         },
         {
-            "canonical": "AMMONIA AQUEOUS (28% OR LESS)",
-            "cas": null,
-            "aliases": []
+            "canonical": "Раствор аммиака",
+            "cas": "1336-21-6",
+            "aliases": [
+                "AMMONIA AQUEOUS (28% OR LESS)",
+                "Ammonium hydroxide",
+                "Aqueous ammonia",
+                "AMMONIA AQUEOUS",
+                "Ammonia water",
+                "Ammonia solution",
+                "Аммиачная вода",
+                "Гидроксид аммония",
+                "Нашатырный спирт"
+            ]
         },
         {
             "canonical": "AMMONIUM CHLORIDE SOLUTION (LESS THAN 25%) DRILLING BRINES",
@@ -898,9 +929,15 @@
             "aliases": []
         },
         {
-            "canonical": "BENZYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "canonical": "Бензиловый спирт",
+            "cas": "100-51-6",
+            "aliases": [
+                "BENZYL ALCOHOL",
+                "Benzylalkohol (G)",
+                "Phenylmethanol",
+                "Phenylcarbinol",
+                "Спирт бензиловый"
+            ]
         },
         {
             "canonical": "BENZYL CHLORIDE (n)",
@@ -973,14 +1010,26 @@
             "aliases": []
         },
         {
-            "canonical": "BUTYL ACETATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "canonical": "н-Бутилацетат",
+            "cas": "123-86-4",
+            "aliases": [
+                "BUTYL ACETATE (ALL ISOMERS)",
+                "n-Butyl acetate",
+                "Butyl acetate",
+                "Butyl ethanoate",
+                "Acetic acid butyl ester",
+                "Бутилацетат"
+            ]
         },
         {
-            "canonical": "BUTYL ACRYLATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "canonical": "Бутилакрилат",
+            "cas": "141-32-2",
+            "aliases": [
+                "BUTYL ACRYLATE (ALL ISOMERS)",
+                "Butyl acrylate",
+                "n-Butyl acrylate",
+                "Butyl 2-propenoate"
+            ]
         },
         {
             "canonical": "BUTYL BENZYL PHTHALATE",
@@ -1448,9 +1497,13 @@
             "aliases": []
         },
         {
-            "canonical": "DIBUTYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Дибутилфталат",
+            "cas": "84-74-2",
+            "aliases": [
+                "DIBUTYL PHTHALATE",
+                "DBP",
+                "ДБФ"
+            ]
         },
         {
             "canonical": "DIBUTYLAMINE",
@@ -1504,9 +1557,12 @@
             ]
         },
         {
-            "canonical": "DIETHYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Диэтилфталат",
+            "cas": "84-66-2",
+            "aliases": [
+                "DIETHYL PHTHALATE",
+                "DEP"
+            ]
         },
         {
             "canonical": "DIETHYL SULPHATE",
@@ -1716,9 +1772,15 @@
             "aliases": []
         },
         {
-            "canonical": "DIOCTYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Диоктилфталат",
+            "cas": "117-81-7",
+            "aliases": [
+                "DIOCTYL PHTHALATE",
+                "Bis(2-ethylhexyl) phthalate",
+                "DOP",
+                "DEHP",
+                "ДОФ"
+            ]
         },
         {
             "canonical": "DIPENTENE",
@@ -1988,9 +2050,12 @@
             "aliases": []
         },
         {
-            "canonical": "ETHYLAMINE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Этиламин",
+            "cas": "75-04-7",
+            "aliases": [
+                "ETHYLAMINE",
+                "Aminoethane"
+            ]
         },
         {
             "canonical": "ETHYLAMINE SOLUTIONS (72% OR LESS)",
@@ -2047,6 +2112,8 @@
                 "1,2-Dihydroxyethane",
                 "1,2-Etandiol (N)",
                 "Ethane-1,2-diol",
+                "Mono ethylene glycol",
+                "Glykol (G)",
                 "MEG",
                 "Гликоль",
                 "Моноэтиленгликоль"
@@ -2708,9 +2775,13 @@
             "aliases": []
         },
         {
-            "canonical": "ISOPROPYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Изопропилацетат",
+            "cas": "108-21-4",
+            "aliases": [
+                "ISOPROPYL ACETATE",
+                "2-Propyl acetate",
+                "IPAc"
+            ]
         },
         {
             "canonical": "Изопропанол",
@@ -3522,9 +3593,12 @@
             "aliases": []
         },
         {
-            "canonical": "MALEIC ANHYDRIDE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Малеиновый ангидрид",
+            "cas": "108-31-6",
+            "aliases": [
+                "MALEIC ANHYDRIDE",
+                "cis-Butenedioic anhydride"
+            ]
         },
         {
             "canonical": "MERCAPTOBENZOTHIAZOL, SODIUM SALT SOLUTION",
@@ -3615,6 +3689,7 @@
                 "METHYL ETHYL KETONE",
                 "2-Butanone",
                 "2-Butanon (N)",
+                "Ethyl methyl ketone",
                 "MEK",
                 "Butan-2-one",
                 "МЭК"
@@ -3633,6 +3708,7 @@
                 "4-Methyl-2-pentanone",
                 "4-Methylpentan-2-one",
                 "4-Metyl-2-pentanon (N)",
+                "2-methylpropylmethylketone",
                 "MIBK",
                 "МИБК",
                 "Изобутилметилкетон"
@@ -3719,9 +3795,12 @@
             "aliases": []
         },
         {
-            "canonical": "MORPHOLINE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Морфолин",
+            "cas": "110-91-8",
+            "aliases": [
+                "MORPHOLINE",
+                "Tetrahydro-1,4-oxazine"
+            ]
         },
         {
             "canonical": "MOSSTANOL 120 (NON-NOXIOUS LIQUID, n.o.s. 18)",
@@ -3779,9 +3858,21 @@
             "aliases": []
         },
         {
-            "canonical": "n-BUTYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "canonical": "1-Бутанол",
+            "cas": "71-36-3",
+            "aliases": [
+                "n-BUTYL ALCOHOL",
+                "1-Butanol",
+                "n-Butanol",
+                "Butanol",
+                "1-Butylalkohol (n)",
+                "Butyl alcohol",
+                "NBA",
+                "1-Hydroxybutane",
+                "Butan-1-ol",
+                "Бутиловый спирт",
+                "Бутанол"
+            ]
         },
         {
             "canonical": "n-BUTYL ETHER",
@@ -3840,9 +3931,13 @@
             "aliases": []
         },
         {
-            "canonical": "n-PROPYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Пропилацетат",
+            "cas": "109-60-4",
+            "aliases": [
+                "n-PROPYL ACETATE",
+                "Propyl acetate",
+                "Propyl ethanoate"
+            ]
         },
         {
             "canonical": "n-PROPYL ALCOHOL",
@@ -3993,7 +4088,8 @@
             "canonical": "Нитробензол",
             "cas": "98-95-3",
             "aliases": [
-                "NITROBENZENE"
+                "NITROBENZENE",
+                "Nitrobenzol"
             ]
         },
         {
@@ -4169,9 +4265,13 @@
             "aliases": []
         },
         {
-            "canonical": "OLEIC ACID",
-            "cas": null,
-            "aliases": []
+            "canonical": "Олеиновая кислота",
+            "cas": "112-80-1",
+            "aliases": [
+                "OLEIC ACID",
+                "(Z)-9-Octadecenoic acid",
+                "Олеин"
+            ]
         },
         {
             "canonical": "OLEUM",
@@ -4334,9 +4434,15 @@
             "aliases": []
         },
         {
-            "canonical": "PENTANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "canonical": "Пентан",
+            "cas": "109-66-0",
+            "aliases": [
+                "PENTANE (ALL ISOMERS)",
+                "n-Pentane",
+                "Pentane",
+                "Pentan (G)",
+                "Пентан-нормальный"
+            ]
         },
         {
             "canonical": "PENTANOIC ACID",
@@ -4359,15 +4465,22 @@
             ]
         },
         {
-            "canonical": "PETROLATUM",
-            "cas": null,
-            "aliases": []
+            "canonical": "Вазелин",
+            "cas": "8009-03-8",
+            "aliases": [
+                "PETROLATUM",
+                "Petroleum jelly",
+                "White petrolatum",
+                "Vaseline",
+                "Вазелиновое масло медицинское"
+            ]
         },
         {
             "canonical": "Фенол",
             "cas": "108-95-2",
             "aliases": [
                 "PHENOL",
+                "Fenol",
                 "Carbolic acid",
                 "Hydroxybenzene",
                 "Карболовая кислота",
@@ -4601,9 +4714,16 @@
             "aliases": []
         },
         {
-            "canonical": "POTASSIUM HYDROXIDE SOLUTION",
-            "cas": null,
-            "aliases": []
+            "canonical": "Гидроксид калия",
+            "cas": "1310-58-3",
+            "aliases": [
+                "POTASSIUM HYDROXIDE SOLUTION",
+                "Potassium hydroxide",
+                "KOH",
+                "Caustic potash",
+                "Едкое кали",
+                "Кали едкое"
+            ]
         },
         {
             "canonical": "POTASSIUM OLEATE",
@@ -4878,9 +4998,19 @@
             "aliases": []
         },
         {
-            "canonical": "SODIUM HYDROXIDE SOLUTION",
-            "cas": null,
-            "aliases": []
+            "canonical": "Гидроксид натрия",
+            "cas": "1310-73-2",
+            "aliases": [
+                "SODIUM HYDROXIDE SOLUTION",
+                "Sodium hydroxide",
+                "Natriumhydroxid",
+                "NaOH",
+                "Caustic soda",
+                "Lye",
+                "Едкий натр",
+                "Каустическая сода",
+                "Натр едкий"
+            ]
         },
         {
             "canonical": "SODIUM HYPOCHLORITE SOLUTION (15% OR LESS)",
@@ -5127,13 +5257,25 @@
                 "TOLUENE",
                 "Methylbenzene",
                 "Toluol",
-                "Метилбензол"
+                "Methyl Benzol",
+                "Phenyl Methane",
+                "Метилбензол",
+                "Метилбензен",
+                "Фенилметан"
             ]
         },
         {
-            "canonical": "TOLUENE DIISOCYANATE",
-            "cas": null,
-            "aliases": []
+            "canonical": "Толуилендиизоцианат",
+            "cas": "584-84-9",
+            "aliases": [
+                "TOLUENE DIISOCYANATE",
+                "2,4-Diisocyanatotoluene",
+                "2,4-Toluene diisocyanate",
+                "2,4-Tolulene diisocyanate",
+                "2,4-Tolylene diisocyanate",
+                "TDI",
+                "Толуол-2,4-диизоцианат"
+            ]
         },
         {
             "canonical": "TOLUENEDIAMINE",
@@ -5233,9 +5375,15 @@
             "aliases": []
         },
         {
-            "canonical": "TRIMETHYLBENZENE (ALL ISOMERS)",
+            "canonical": "Триметилбензолы (смесь)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "TRIMETHYLBENZENE (ALL ISOMERS)",
+                "Trimethylbenzenes",
+                "Триметилбензолы",
+                "Триметилбензол",
+                "Смесь триметилбензолов"
+            ]
         },
         {
             "canonical": "TRIMETHYLOLPROPANE POLYETHOXYLATED (n)",
@@ -5275,14 +5423,16 @@
             "aliases": []
         },
         {
-            "canonical": "UREA SOLUTION",
+            "canonical": "Мочевина-водный раствор",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "UREA\/AMMONIUM NITRATE SOLUTION",
-            "cas": null,
-            "aliases": []
+            "aliases": [
+                "UREA SOLUTION",
+                "Urea\/Ammonium nitrate solution",
+                "AUS 32",
+                "AdBlue",
+                "Карбамид водный раствор",
+                "Мочевина-аммиачная селитра"
+            ]
         },
         {
             "canonical": "UREA\/AMMONIUM NITRATE SOLUTION ( CONTAINING LESS THAN 1% FREE AMMONIA) (n)",
@@ -5402,6 +5552,7 @@
             "aliases": [
                 "XYLENES",
                 "Xylene",
+                "xylol",
                 "Ксилол",
                 "Смешанные ксилолы",
                 "Mixed xylenes"
@@ -5537,7 +5688,7 @@
             ]
         },
         {
-            "substance": "1,2-DICHLOROPROPANE",
+            "substance": "1,2-Дихлорпропан",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -5746,7 +5897,7 @@
             "notes": []
         },
         {
-            "substance": "2-ETHYLHEXANOIC ACID",
+            "substance": "2-Этилгексиловая кислота",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -5880,7 +6031,7 @@
             "notes": []
         },
         {
-            "substance": "ACETIC ANHYDRIDE",
+            "substance": "Уксусный ангидрид",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -6169,13 +6320,13 @@
             "notes": []
         },
         {
-            "substance": "ALKYL (C9+) BENZENES",
+            "substance": "Алкилат бензиновый",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "ALKYL (C9+) BENZENES",
+            "substance": "Алкилат бензиновый",
             "grade": "R",
             "max_temperature": 50,
             "notes": []
@@ -6317,7 +6468,7 @@
             "notes": []
         },
         {
-            "substance": "AMMONIA AQUEOUS (28% OR LESS)",
+            "substance": "Раствор аммиака",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -6551,7 +6702,7 @@
             ]
         },
         {
-            "substance": "BENZYL ALCOHOL",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -6646,7 +6797,7 @@
             ]
         },
         {
-            "substance": "BUTYL ACETATE (ALL ISOMERS)",
+            "substance": "н-Бутилацетат",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -6654,7 +6805,7 @@
             ]
         },
         {
-            "substance": "BUTYL ACRYLATE (ALL ISOMERS)",
+            "substance": "Бутилакрилат",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -7238,7 +7389,7 @@
             "notes": []
         },
         {
-            "substance": "DIBUTYL PHTHALATE",
+            "substance": "Дибутилфталат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7295,7 +7446,7 @@
             "notes": []
         },
         {
-            "substance": "DIETHYL PHTHALATE",
+            "substance": "Диэтилфталат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7546,7 +7697,7 @@
             "notes": []
         },
         {
-            "substance": "DIOCTYL PHTHALATE",
+            "substance": "Диоктилфталат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7888,7 +8039,7 @@
             "notes": []
         },
         {
-            "substance": "ETHYLAMINE",
+            "substance": "Этиламин",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -8744,7 +8895,7 @@
             "notes": []
         },
         {
-            "substance": "ISOPROPYL ACETATE",
+            "substance": "Изопропилацетат",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -9721,7 +9872,7 @@
             "notes": []
         },
         {
-            "substance": "MALEIC ANHYDRIDE",
+            "substance": "Малеиновый ангидрид",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -9929,7 +10080,7 @@
             "notes": []
         },
         {
-            "substance": "MORPHOLINE",
+            "substance": "Морфолин",
             "grade": "NT",
             "max_temperature": null,
             "notes": []
@@ -10003,7 +10154,7 @@
             "notes": []
         },
         {
-            "substance": "n-BUTYL ALCOHOL",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -10081,7 +10232,7 @@
             "notes": []
         },
         {
-            "substance": "n-PROPYL ACETATE",
+            "substance": "Пропилацетат",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10510,7 +10661,7 @@
             "notes": []
         },
         {
-            "substance": "OLEIC ACID",
+            "substance": "Олеиновая кислота",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10729,7 +10880,7 @@
             "notes": []
         },
         {
-            "substance": "PENTANE (ALL ISOMERS)",
+            "substance": "Пентан",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -10756,13 +10907,13 @@
             ]
         },
         {
-            "substance": "PETROLATUM",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 70,
             "notes": []
         },
         {
-            "substance": "PETROLATUM",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 70,
             "notes": []
@@ -11057,7 +11208,7 @@
             "notes": []
         },
         {
-            "substance": "POTASSIUM HYDROXIDE SOLUTION",
+            "substance": "Гидроксид калия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11372,7 +11523,7 @@
             "notes": []
         },
         {
-            "substance": "SODIUM HYDROXIDE SOLUTION",
+            "substance": "Гидроксид натрия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11664,7 +11815,7 @@
             "notes": []
         },
         {
-            "substance": "TOLUENE DIISOCYANATE",
+            "substance": "Толуилендиизоцианат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11799,7 +11950,7 @@
             "notes": []
         },
         {
-            "substance": "TRIMETHYLBENZENE (ALL ISOMERS)",
+            "substance": "Триметилбензолы (смесь)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11845,13 +11996,13 @@
             "notes": []
         },
         {
-            "substance": "UREA SOLUTION",
+            "substance": "Мочевина-водный раствор",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "UREA\/AMMONIUM NITRATE SOLUTION",
+            "substance": "Мочевина-водный раствор",
             "grade": "R",
             "max_temperature": null,
             "notes": []

@@ -70,12 +70,15 @@
                 "00813 Marine Diesel Blend* (*™ Famm)",
                 "Diesel",
                 "Diesel fuel",
+                "Diesel oil",
                 "Marine diesel",
                 "Marine Diesel Blend",
+                "Gas oil",
                 "Solar oil",
                 "Соляр",
                 "Дизтопливо",
-                "Солярка"
+                "Солярка",
+                "Газойль"
             ]
         },
         {
@@ -96,6 +99,8 @@
                 "1,2,3,Propane Triol",
                 "Glycerol",
                 "Glycerin",
+                "Glycerine",
+                "Glyzerin",
                 "1,2,3-Propantriol (N)",
                 "1,2,3-Trihydroxypropane",
                 "Propane-1,2,3-triol",
@@ -131,9 +136,12 @@
             ]
         },
         {
-            "canonical": "1,2-DICHLOROPROPANE",
-            "cas": null,
-            "aliases": []
+            "canonical": "1,2-Дихлорпропан",
+            "cas": "78-87-5",
+            "aliases": [
+                "1,2-DICHLOROPROPANE",
+                "Propylene dichloride"
+            ]
         },
         {
             "canonical": "Этиленгликоль",
@@ -144,6 +152,8 @@
                 "1,2-Etandiol (N)",
                 "Ethylene glycol",
                 "Ethane-1,2-diol",
+                "Mono ethylene glycol",
+                "Glykol (G)",
                 "MEG",
                 "Гликоль",
                 "Моноэтиленгликоль"
@@ -185,7 +195,11 @@
             "aliases": [
                 "1-Butanol",
                 "n-Butanol",
+                "Butanol",
                 "1-Butylalkohol (n)",
+                "Butyl alcohol",
+                "n-Butyl alcohol",
+                "NBA",
                 "1-Hydroxybutane",
                 "Butan-1-ol",
                 "Бутиловый спирт",
@@ -198,29 +212,26 @@
             "aliases": [
                 "1-Methylpropyl acetate",
                 "sec-Butyl acetate",
+                "sek-Butylacetat (G)",
                 "2-Butanol acetate",
+                "2-Butyl acetate",
                 "Acetic acid, 1-methylpropyl ester"
             ]
         },
         {
-            "canonical": "1-Phenyldecane",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "1-Phenyltetradecane",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "1-Phenyltridecane",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "1-Phenylundecane",
-            "cas": null,
-            "aliases": []
+            "canonical": "Линейные алкилбензолы (LAB)",
+            "cas": "67774-74-7",
+            "aliases": [
+                "1-Phenyldecane",
+                "Linear alkylbenzene",
+                "LAB",
+                "1-Phenylundecane",
+                "1-Phenyltridecane",
+                "1-Phenyltetradecane",
+                "Phenylalkane",
+                "Линейные алкилбензолы",
+                "Фенилалкан"
+            ]
         },
         {
             "canonical": "Толуилендиизоцианат",
@@ -230,6 +241,7 @@
                 "2,4-Toluene diisocyanate",
                 "2,4-Tolulene diisocyanate",
                 "2,4-Tolylene diisocyanate",
+                "TOLUENE DIISOCYANATE",
                 "TDI",
                 "Толуол-2,4-диизоцианат"
             ]
@@ -241,15 +253,11 @@
                 "2-Butanon (N)",
                 "2-Butanone",
                 "Methyl ethyl ketone",
+                "Ethyl methyl ketone",
                 "MEK",
                 "Butan-2-one",
                 "МЭК"
             ]
-        },
-        {
-            "canonical": "2-Butyl acetate",
-            "cas": null,
-            "aliases": []
         },
         {
             "canonical": "Фурфуриловый спирт",
@@ -292,9 +300,18 @@
             ]
         },
         {
-            "canonical": "2-methylpropylmethylketone",
-            "cas": null,
-            "aliases": []
+            "canonical": "Метилизобутилкетон",
+            "cas": "108-10-1",
+            "aliases": [
+                "2-methylpropylmethylketone",
+                "4-Methyl-2-pentanone",
+                "4-Methylpentan-2-one",
+                "4-Metyl-2-pentanon (N)",
+                "Methyl isobutyl ketone",
+                "MIBK",
+                "МИБК",
+                "Изобутилметилкетон"
+            ]
         },
         {
             "canonical": "Бензин неэтилированный",
@@ -304,27 +321,21 @@
                 "Unleaded gasoline",
                 "Unleaded petrol",
                 "Gasoline unleaded",
+                "Petrol",
+                "Gasoline",
                 "31161 Gasoline 95 Ron Unleaded",
                 "95 Octane RON",
                 "97 Octane",
                 "98 Octane",
+                "Motor gasoline",
+                "Motor gasoline unleaded",
+                "Aviation gasoline",
+                "AVGAS",
                 "Бензин",
                 "АИ-92",
                 "АИ-95",
-                "АИ-98"
-            ]
-        },
-        {
-            "canonical": "Метилизобутилкетон",
-            "cas": "108-10-1",
-            "aliases": [
-                "4-Methyl-2-pentanone",
-                "4-Methylpentan-2-one",
-                "4-Metyl-2-pentanon (N)",
-                "Methyl isobutyl ketone",
-                "MIBK",
-                "МИБК",
-                "Изобутилметилкетон"
+                "АИ-98",
+                "Авиабензин"
             ]
         },
         {
@@ -343,6 +354,7 @@
             "aliases": [
                 "Acetic acid",
                 "Ethanoic acid",
+                "Methane carboxylic acid",
                 "Glacial acetic acid",
                 "Acetic acid glacial",
                 "Acetic acid (aqueous)",
@@ -357,6 +369,7 @@
                 "Acetic acid butyl ester",
                 "n-Butyl acetate",
                 "Butyl acetate",
+                "BUTYL ACETATE (ALL ISOMERS)",
                 "Butyl ethanoate",
                 "Бутилацетат"
             ]
@@ -417,17 +430,20 @@
             "aliases": []
         },
         {
-            "canonical": "ALKYL (C9+) BENZENES",
+            "canonical": "Алкилат бензиновый",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ALKYL (C9+) BENZENES",
+                "Alkylate",
+                "Gasoline alkylate",
+                "Petrochal alkylate",
+                "Alkilbenzenes",
+                "Алкилат",
+                "Алкилбензолы"
+            ]
         },
         {
             "canonical": "Alkylat (*ExxonMobil)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Alkylate *(Petrochal)",
             "cas": null,
             "aliases": []
         },
@@ -457,9 +473,19 @@
             "aliases": []
         },
         {
-            "canonical": "AMMONIA AQUEOUS (28% OR LESS)",
-            "cas": null,
-            "aliases": []
+            "canonical": "Раствор аммиака",
+            "cas": "1336-21-6",
+            "aliases": [
+                "AMMONIA AQUEOUS (28% OR LESS)",
+                "Ammonium hydroxide",
+                "Aqueous ammonia",
+                "AMMONIA AQUEOUS",
+                "Ammonia water",
+                "Ammonia solution",
+                "Аммиачная вода",
+                "Гидроксид аммония",
+                "Нашатырный спирт"
+            ]
         },
         {
             "canonical": "AMMONIA AQUEOUS,28%-30% (various grades)",
@@ -472,24 +498,7 @@
             "aliases": []
         },
         {
-            "canonical": "Раствор аммиака",
-            "cas": "1336-21-6",
-            "aliases": [
-                "Ammonia solution",
-                "Ammonium hydroxide",
-                "Aqueous ammonia",
-                "Аммиачная вода",
-                "Гидроксид аммония",
-                "Нашатырный спирт"
-            ]
-        },
-        {
             "canonical": "Ammonia solutions (28% or less)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Ammonia water",
             "cas": null,
             "aliases": []
         },
@@ -668,11 +677,6 @@
             "aliases": []
         },
         {
-            "canonical": "Avgas",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Avgas 100 LL* (*TRADENAME Shell)",
             "cas": null,
             "aliases": []
@@ -689,11 +693,6 @@
         },
         {
             "canonical": "Aviation fuel 96\/90",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "AVIATION GASOLINE",
             "cas": null,
             "aliases": []
         },
@@ -869,14 +868,15 @@
             "aliases": []
         },
         {
-            "canonical": "Benzyl alcohol",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Benzylalkohol (G)",
-            "cas": null,
-            "aliases": []
+            "canonical": "Бензиловый спирт",
+            "cas": "100-51-6",
+            "aliases": [
+                "Benzyl alcohol",
+                "Benzylalkohol (G)",
+                "Phenylmethanol",
+                "Phenylcarbinol",
+                "Спирт бензиловый"
+            ]
         },
         {
             "canonical": "beta-Methylpropyl ethanoate",
@@ -964,11 +964,6 @@
             "aliases": []
         },
         {
-            "canonical": "Butanol",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Butanol (all isomers)",
             "cas": null,
             "aliases": []
@@ -1009,11 +1004,6 @@
             "aliases": []
         },
         {
-            "canonical": "BUTYL ACETATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Butyl acetate UR grade",
             "cas": null,
             "aliases": []
@@ -1029,19 +1019,14 @@
             "aliases": []
         },
         {
-            "canonical": "Butyl acrylate",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "BUTYL ACRYLATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Butyl alcohol",
-            "cas": null,
-            "aliases": []
+            "canonical": "Бутилакрилат",
+            "cas": "141-32-2",
+            "aliases": [
+                "Butyl acrylate",
+                "n-Butyl acrylate",
+                "BUTYL ACRYLATE (ALL ISOMERS)",
+                "Butyl 2-propenoate"
+            ]
         },
         {
             "canonical": "Butyl alcohol, -n",
@@ -1119,6 +1104,7 @@
             "aliases": [
                 "Carbolic acid",
                 "Phenol",
+                "Fenol",
                 "Hydroxybenzene",
                 "Карболовая кислота",
                 "Оксибензол"
@@ -1145,8 +1131,10 @@
             "aliases": [
                 "Caustic potash",
                 "Potassium hydroxide",
+                "POTASSIUM HYDROXIDE SOLUTION",
                 "KOH",
-                "Едкое кали"
+                "Едкое кали",
+                "Кали едкое"
             ]
         },
         {
@@ -1175,10 +1163,13 @@
             "aliases": [
                 "Caustic soda",
                 "Sodium hydroxide",
+                "SODIUM HYDROXIDE SOLUTION",
+                "Natriumhydroxid",
                 "NaOH",
                 "Lye",
                 "Едкий натр",
-                "Каустическая сода"
+                "Каустическая сода",
+                "Натр едкий"
             ]
         },
         {
@@ -1524,11 +1515,6 @@
             "aliases": []
         },
         {
-            "canonical": "DIESEL OIL",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Diesel oil (marine)",
             "cas": null,
             "aliases": []
@@ -1715,11 +1701,6 @@
             ]
         },
         {
-            "canonical": "Ethyl methyl ketone",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Ethyldimethylmethane",
             "cas": null,
             "aliases": []
@@ -1785,11 +1766,6 @@
             "aliases": []
         },
         {
-            "canonical": "Fenol",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Fenyletan (N)",
             "cas": null,
             "aliases": []
@@ -1800,14 +1776,13 @@
             "aliases": []
         },
         {
-            "canonical": "Fish Liver Oil**",
+            "canonical": "Рыбий жир",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Fish oil",
-            "cas": null,
-            "aliases": []
+            "aliases": [
+                "Fish Liver Oil**",
+                "Fish oil",
+                "Cod liver oil"
+            ]
         },
         {
             "canonical": "Flour Buff",
@@ -1940,11 +1915,6 @@
             "aliases": []
         },
         {
-            "canonical": "Gas oil",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Gas oil, low pour",
             "cas": null,
             "aliases": []
@@ -2040,11 +2010,6 @@
             "aliases": []
         },
         {
-            "canonical": "Glycerine",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Glycerine 99.7* (*DOW)",
             "cas": null,
             "aliases": []
@@ -2081,11 +2046,6 @@
         },
         {
             "canonical": "Glycyl alcohol",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Glykol (G)",
             "cas": null,
             "aliases": []
         },
@@ -2275,9 +2235,12 @@
             "aliases": []
         },
         {
-            "canonical": "Ink Solvent 2629 (*Shell)",
+            "canonical": "Изомерный спиртовой растворитель",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ink Solvent 2629 (*Shell)",
+                "Solvent 2629"
+            ]
         },
         {
             "canonical": "Ink Solvent 2831 (*Shell)",
@@ -2587,9 +2550,13 @@
             "aliases": []
         },
         {
-            "canonical": "LAWS (*Shell)",
+            "canonical": "Уайт-спирит (LAWS)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "LAWS (*Shell)",
+                "Low Aromatic White Spirit",
+                "Уайт-спирит с низким содержанием ароматических"
+            ]
         },
         {
             "canonical": "LB Solvent - Resin Grade* (*Koppers Industries)",
@@ -2628,11 +2595,6 @@
         },
         {
             "canonical": "Liquid caustic potash solution",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Low aromatic white spirit* (*COMMON USAGE)",
             "cas": null,
             "aliases": []
         },
@@ -2738,9 +2700,12 @@
             "aliases": []
         },
         {
-            "canonical": "Metaphosphoric acid",
-            "cas": null,
-            "aliases": []
+            "canonical": "Метафосфорная кислота",
+            "cas": "37267-86-0",
+            "aliases": [
+                "Metaphosphoric acid",
+                "HPO3"
+            ]
         },
         {
             "canonical": "Meta-Toluene Diisocyanate",
@@ -2754,11 +2719,6 @@
         },
         {
             "canonical": "Methacide",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Methane carboxylic acid",
             "cas": null,
             "aliases": []
         },
@@ -2787,13 +2747,12 @@
                 "Methyl Benzene",
                 "Toluene",
                 "Toluol",
-                "Метилбензол"
+                "Methyl Benzol",
+                "Phenyl Methane",
+                "Метилбензол",
+                "Метилбензен",
+                "Фенилметан"
             ]
-        },
-        {
-            "canonical": "Methyl Benzol",
-            "cas": null,
-            "aliases": []
         },
         {
             "canonical": "Хлорметан",
@@ -2920,17 +2879,16 @@
             "aliases": []
         },
         {
-            "canonical": "MOLASSES",
+            "canonical": "Меласса",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "MOLASSES",
+                "Патока",
+                "Черная патока"
+            ]
         },
         {
             "canonical": "Molasses (Pro-lix 37)* (*Westway)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Mono ethylene glycol",
             "cas": null,
             "aliases": []
         },
@@ -2961,11 +2919,6 @@
         },
         {
             "canonical": "Mosul Kirkup",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Motor Gasoline (*Oil Tanking)",
             "cas": null,
             "aliases": []
         },
@@ -3005,9 +2958,19 @@
             "aliases": []
         },
         {
-            "canonical": "Naphtha",
-            "cas": null,
-            "aliases": []
+            "canonical": "Нафта (нефтяная фракция)",
+            "cas": "64742-89-8",
+            "aliases": [
+                "Naphtha",
+                "Petroleum naphtha",
+                "Naphtha coal tar",
+                "Naphtha heavy aromatic",
+                "Heavy aromatic naphtha",
+                "Light naphtha",
+                "Нафта",
+                "Лигроин",
+                "Тяжёлая ароматическая нафта"
+            ]
         },
         {
             "canonical": "Naphtha aromatic",
@@ -3015,17 +2978,7 @@
             "aliases": []
         },
         {
-            "canonical": "Naphtha coal tar",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Naphtha crude condensate",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Naphtha heavy aromatic",
             "cas": null,
             "aliases": []
         },
@@ -3075,17 +3028,7 @@
             "aliases": []
         },
         {
-            "canonical": "Natriumhydroxid",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Natronlauge D ber. 100% (*BASF)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "NBA",
             "cas": null,
             "aliases": []
         },
@@ -3101,11 +3044,6 @@
         },
         {
             "canonical": "n-Butyl acetat 98-100% (*BASF)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "n-BUTYL ALCOHOL",
             "cas": null,
             "aliases": []
         },
@@ -3132,7 +3070,10 @@
         {
             "canonical": "New Brightsol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Brightsol",
+                "Sasol Brightsol"
+            ]
         },
         {
             "canonical": "Nigerian Blend",
@@ -3168,13 +3109,9 @@
             "canonical": "Нитробензол",
             "cas": "98-95-3",
             "aliases": [
-                "Nitrobenzene"
+                "Nitrobenzene",
+                "Nitrobenzol"
             ]
-        },
-        {
-            "canonical": "Nitrobenzol",
-            "cas": null,
-            "aliases": []
         },
         {
             "canonical": "No. 1 fuel oil",
@@ -3236,7 +3173,10 @@
             "cas": "109-66-0",
             "aliases": [
                 "n-Pentane",
-                "Pentane"
+                "Pentane",
+                "Pentan (G)",
+                "Pentane (all isomers)",
+                "Пентан-нормальный"
             ]
         },
         {
@@ -3368,9 +3308,11 @@
             "aliases": []
         },
         {
-            "canonical": "Palm kernel oil",
-            "cas": null,
-            "aliases": []
+            "canonical": "Пальмоядровое масло",
+            "cas": "8023-79-8",
+            "aliases": [
+                "Palm kernel oil"
+            ]
         },
         {
             "canonical": "Palm Kernel Oil Fraction",
@@ -3413,16 +3355,6 @@
             "aliases": []
         },
         {
-            "canonical": "Pentan (G)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Pentane (all isomers)",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Pentane 80% Solution",
             "cas": null,
             "aliases": []
@@ -3448,14 +3380,15 @@
             "aliases": []
         },
         {
-            "canonical": "Petrol",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "PETROLATUM",
-            "cas": null,
-            "aliases": []
+            "canonical": "Вазелин",
+            "cas": "8009-03-8",
+            "aliases": [
+                "PETROLATUM",
+                "Petroleum jelly",
+                "White petrolatum",
+                "Vaseline",
+                "Вазелиновое масло медицинское"
+            ]
         },
         {
             "canonical": "Petrolatum jelly",
@@ -3474,16 +3407,6 @@
         },
         {
             "canonical": "Petroleum ether",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Petroleum jelly",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Petroleum Naphtha",
             "cas": null,
             "aliases": []
         },
@@ -3543,11 +3466,6 @@
             "aliases": []
         },
         {
-            "canonical": "Phenyl Methane",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Phenyl methyl alcohol",
             "cas": null,
             "aliases": []
@@ -3558,17 +3476,7 @@
             "aliases": []
         },
         {
-            "canonical": "Phenylcarbinol",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Phenylic acid",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Phenylmethanol",
             "cas": null,
             "aliases": []
         },
@@ -3638,11 +3546,6 @@
             "aliases": []
         },
         {
-            "canonical": "POTASSIUM HYDROXIDE SOLUTION",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Premium Octane Pyrolysis Gasoline (*Sabic)",
             "cas": null,
             "aliases": []
@@ -3664,11 +3567,6 @@
         },
         {
             "canonical": "Propyl carbinol",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Propylene dichloride",
             "cas": null,
             "aliases": []
         },
@@ -3853,11 +3751,6 @@
             "aliases": []
         },
         {
-            "canonical": "sek-Butylacetat (G)",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Seria",
             "cas": null,
             "aliases": []
@@ -3908,9 +3801,11 @@
             "aliases": []
         },
         {
-            "canonical": "Shellsol D 100* (*TRADENAME Shell)",
+            "canonical": "Shellsol D 100",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Shellsol"
+            ]
         },
         {
             "canonical": "Shellsol D40* (*TRADENAME Shell)",
@@ -4009,11 +3904,6 @@
         },
         {
             "canonical": "Sodium Hydroxide 50% Solution",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "SODIUM HYDROXIDE SOLUTION",
             "cas": null,
             "aliases": []
         },
@@ -4244,11 +4134,6 @@
             "aliases": []
         },
         {
-            "canonical": "TOLUENE DIISOCYANATE",
-            "cas": null,
-            "aliases": []
-        },
-        {
             "canonical": "Toluene diisocyanate 65%",
             "cas": null,
             "aliases": []
@@ -4284,9 +4169,15 @@
             "aliases": []
         },
         {
-            "canonical": "TRIMETHYLBENZENE (ALL ISOMERS)",
+            "canonical": "Триметилбензолы (смесь)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "TRIMETHYLBENZENE (ALL ISOMERS)",
+                "Trimethylbenzenes",
+                "Триметилбензолы",
+                "Триметилбензол",
+                "Смесь триметилбензолов"
+            ]
         },
         {
             "canonical": "Trinidad pitch",
@@ -4325,11 +4216,6 @@
         },
         {
             "canonical": "Varnoline",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Vaseline",
             "cas": null,
             "aliases": []
         },
@@ -4459,6 +4345,7 @@
             "aliases": [
                 "Xylene",
                 "Xylenes",
+                "xylol",
                 "Ксилол",
                 "Смешанные ксилолы",
                 "Mixed xylenes"
@@ -4496,11 +4383,6 @@
         },
         {
             "canonical": "Xylene-p (*Shell)",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "xylol",
             "cas": null,
             "aliases": []
         },
@@ -4613,7 +4495,7 @@
             "notes": []
         },
         {
-            "substance": "1,2-DICHLOROPROPANE",
+            "substance": "1,2-Дихлорпропан",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -4697,25 +4579,25 @@
             "notes": []
         },
         {
-            "substance": "1-Phenyldecane",
+            "substance": "Линейные алкилбензолы (LAB)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "1-Phenyltetradecane",
+            "substance": "Линейные алкилбензолы (LAB)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "1-Phenyltridecane",
+            "substance": "Линейные алкилбензолы (LAB)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "1-Phenylundecane",
+            "substance": "Линейные алкилбензолы (LAB)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -4769,7 +4651,7 @@
             "notes": []
         },
         {
-            "substance": "2-Butyl acetate",
+            "substance": "втор-Бутилацетат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -4829,7 +4711,7 @@
             "notes": []
         },
         {
-            "substance": "2-methylpropylmethylketone",
+            "substance": "Метилизобутилкетон",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -5007,7 +4889,7 @@
             "notes": []
         },
         {
-            "substance": "ALKYL (C9+) BENZENES",
+            "substance": "Алкилат бензиновый",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5019,7 +4901,7 @@
             "notes": []
         },
         {
-            "substance": "Alkylate *(Petrochal)",
+            "substance": "Алкилат бензиновый",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -5027,7 +4909,7 @@
             ]
         },
         {
-            "substance": "Alkylate *(Petrochal)",
+            "substance": "Алкилат бензиновый",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -5065,7 +4947,7 @@
             "notes": []
         },
         {
-            "substance": "AMMONIA AQUEOUS (28% OR LESS)",
+            "substance": "Раствор аммиака",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5101,7 +4983,7 @@
             "notes": []
         },
         {
-            "substance": "Ammonia water",
+            "substance": "Раствор аммиака",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5359,7 +5241,7 @@
             "notes": []
         },
         {
-            "substance": "Avgas",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5389,13 +5271,13 @@
             "notes": []
         },
         {
-            "substance": "AVIATION GASOLINE",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "AVIATION GASOLINE",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5615,25 +5497,25 @@
             "notes": []
         },
         {
-            "substance": "Benzyl alcohol",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Benzyl alcohol",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Benzylalkohol (G)",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Benzylalkohol (G)",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5789,7 +5671,7 @@
             "notes": []
         },
         {
-            "substance": "Butanol",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5801,7 +5683,7 @@
             "notes": []
         },
         {
-            "substance": "Butanol",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -5861,7 +5743,7 @@
             "notes": []
         },
         {
-            "substance": "BUTYL ACETATE (ALL ISOMERS)",
+            "substance": "н-Бутилацетат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -5885,19 +5767,19 @@
             "notes": []
         },
         {
-            "substance": "Butyl acrylate",
+            "substance": "Бутилакрилат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "BUTYL ACRYLATE (ALL ISOMERS)",
+            "substance": "Бутилакрилат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Butyl alcohol",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -6567,7 +6449,7 @@
             "notes": []
         },
         {
-            "substance": "DIESEL OIL",
+            "substance": "Дизельное топливо",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -6811,13 +6693,13 @@
             "notes": []
         },
         {
-            "substance": "Ethyl methyl ketone",
+            "substance": "Метилэтилкетон",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Ethyl methyl ketone",
+            "substance": "Метилэтилкетон",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -6963,13 +6845,13 @@
             ]
         },
         {
-            "substance": "Fenol",
+            "substance": "Фенол",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Fenol",
+            "substance": "Фенол",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -6987,7 +6869,7 @@
             "notes": []
         },
         {
-            "substance": "Fish Liver Oil**",
+            "substance": "Рыбий жир",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -6995,7 +6877,7 @@
             ]
         },
         {
-            "substance": "Fish oil",
+            "substance": "Рыбий жир",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -7003,7 +6885,7 @@
             ]
         },
         {
-            "substance": "Fish oil",
+            "substance": "Рыбий жир",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -7199,7 +7081,7 @@
             ]
         },
         {
-            "substance": "Gas oil",
+            "substance": "Дизельное топливо",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7217,7 +7099,7 @@
             "notes": []
         },
         {
-            "substance": "Gas oil",
+            "substance": "Дизельное топливо",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7375,13 +7257,13 @@
             "notes": []
         },
         {
-            "substance": "Glycerine",
+            "substance": "Глицерин",
             "grade": "R",
             "max_temperature": 60,
             "notes": []
         },
         {
-            "substance": "Glycerine",
+            "substance": "Глицерин",
             "grade": "R",
             "max_temperature": 60,
             "notes": []
@@ -7447,13 +7329,13 @@
             "notes": []
         },
         {
-            "substance": "Glykol (G)",
+            "substance": "Этиленгликоль",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Glykol (G)",
+            "substance": "Этиленгликоль",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7723,7 +7605,7 @@
             ]
         },
         {
-            "substance": "Ink Solvent 2629 (*Shell)",
+            "substance": "Изомерный спиртовой растворитель",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -7731,7 +7613,7 @@
             ]
         },
         {
-            "substance": "Ink Solvent 2629 (*Shell)",
+            "substance": "Изомерный спиртовой растворитель",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -8213,13 +8095,13 @@
             "notes": []
         },
         {
-            "substance": "LAWS (*Shell)",
+            "substance": "Уайт-спирит (LAWS)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "LAWS (*Shell)",
+            "substance": "Уайт-спирит (LAWS)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8277,7 +8159,7 @@
             "notes": []
         },
         {
-            "substance": "Low aromatic white spirit* (*COMMON USAGE)",
+            "substance": "Уайт-спирит (LAWS)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8459,13 +8341,13 @@
             "notes": []
         },
         {
-            "substance": "Metaphosphoric acid",
+            "substance": "Метафосфорная кислота",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Metaphosphoric acid",
+            "substance": "Метафосфорная кислота",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -8495,13 +8377,13 @@
             "notes": []
         },
         {
-            "substance": "Methane carboxylic acid",
+            "substance": "Уксусная кислота",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Methane carboxylic acid",
+            "substance": "Уксусная кислота",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -8531,7 +8413,7 @@
             "notes": []
         },
         {
-            "substance": "Methyl Benzol",
+            "substance": "Толуол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8603,13 +8485,13 @@
             "notes": []
         },
         {
-            "substance": "Methyl Benzol",
+            "substance": "Толуол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Methyl Benzol",
+            "substance": "Толуол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8759,13 +8641,13 @@
             "notes": []
         },
         {
-            "substance": "MOLASSES",
+            "substance": "Меласса",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "MOLASSES",
+            "substance": "Меласса",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8777,13 +8659,13 @@
             "notes": []
         },
         {
-            "substance": "Mono ethylene glycol",
+            "substance": "Этиленгликоль",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Mono ethylene glycol",
+            "substance": "Этиленгликоль",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8829,7 +8711,7 @@
             ]
         },
         {
-            "substance": "Motor Gasoline (*Oil Tanking)",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -8903,7 +8785,7 @@
             "notes": []
         },
         {
-            "substance": "Naphtha",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -8917,7 +8799,7 @@
             "notes": []
         },
         {
-            "substance": "Naphtha coal tar",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -8933,7 +8815,7 @@
             ]
         },
         {
-            "substance": "Naphtha heavy aromatic",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -8973,7 +8855,7 @@
             "notes": []
         },
         {
-            "substance": "Naphtha coal tar",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -8987,7 +8869,7 @@
             "notes": []
         },
         {
-            "substance": "Naphtha heavy aromatic",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9011,13 +8893,13 @@
             "notes": []
         },
         {
-            "substance": "Natriumhydroxid",
+            "substance": "Гидроксид натрия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Natriumhydroxid",
+            "substance": "Гидроксид натрия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9029,13 +8911,13 @@
             "notes": []
         },
         {
-            "substance": "NBA",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "NBA",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9097,7 +8979,7 @@
             "notes": []
         },
         {
-            "substance": "n-BUTYL ALCOHOL",
+            "substance": "1-Бутанол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9203,19 +9085,19 @@
             "notes": []
         },
         {
-            "substance": "Nitrobenzol",
+            "substance": "Нитробензол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Nitrobenzol",
+            "substance": "Нитробензол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Nitrobenzol",
+            "substance": "Нитробензол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9469,7 +9351,7 @@
             "notes": []
         },
         {
-            "substance": "Palm kernel oil",
+            "substance": "Пальмоядровое масло",
             "grade": "R",
             "max_temperature": 85,
             "notes": [
@@ -9477,7 +9359,7 @@
             ]
         },
         {
-            "substance": "Palm kernel oil",
+            "substance": "Пальмоядровое масло",
             "grade": "R",
             "max_temperature": 85,
             "notes": [
@@ -9557,25 +9439,25 @@
             "notes": []
         },
         {
-            "substance": "Pentan (G)",
+            "substance": "Пентан",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Pentan (G)",
+            "substance": "Пентан",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Pentane (all isomers)",
+            "substance": "Пентан",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Pentane (all isomers)",
+            "substance": "Пентан",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9611,7 +9493,7 @@
             "notes": []
         },
         {
-            "substance": "Petrol",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -9619,7 +9501,7 @@
             ]
         },
         {
-            "substance": "Petrol",
+            "substance": "Бензин неэтилированный",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -9627,13 +9509,13 @@
             ]
         },
         {
-            "substance": "PETROLATUM",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 85,
             "notes": []
         },
         {
-            "substance": "PETROLATUM",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 85,
             "notes": []
@@ -9665,13 +9547,13 @@
             "notes": []
         },
         {
-            "substance": "Petroleum jelly",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 85,
             "notes": []
         },
         {
-            "substance": "Petroleum Naphtha",
+            "substance": "Нафта (нефтяная фракция)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9781,7 +9663,7 @@
             "notes": []
         },
         {
-            "substance": "Phenyl Methane",
+            "substance": "Толуол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9799,7 +9681,7 @@
             "notes": []
         },
         {
-            "substance": "Phenylcarbinol",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9817,13 +9699,13 @@
             "notes": []
         },
         {
-            "substance": "Phenyl Methane",
+            "substance": "Толуол",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Phenylmethanol",
+            "substance": "Бензиловый спирт",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9939,7 +9821,7 @@
             "notes": []
         },
         {
-            "substance": "POTASSIUM HYDROXIDE SOLUTION",
+            "substance": "Гидроксид калия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9979,7 +9861,7 @@
             "notes": []
         },
         {
-            "substance": "Propylene dichloride",
+            "substance": "1,2-Дихлорпропан",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -10259,13 +10141,13 @@
             "notes": []
         },
         {
-            "substance": "sek-Butylacetat (G)",
+            "substance": "втор-Бутилацетат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "sek-Butylacetat (G)",
+            "substance": "втор-Бутилацетат",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -10349,7 +10231,7 @@
             ]
         },
         {
-            "substance": "Shellsol D 100* (*TRADENAME Shell)",
+            "substance": "Shellsol D 100",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10357,7 +10239,7 @@
             ]
         },
         {
-            "substance": "Shellsol D 100* (*TRADENAME Shell)",
+            "substance": "Shellsol D 100",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10515,13 +10397,13 @@
             "notes": []
         },
         {
-            "substance": "SODIUM HYDROXIDE SOLUTION",
+            "substance": "Гидроксид натрия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "SODIUM HYDROXIDE SOLUTION",
+            "substance": "Гидроксид натрия",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -10877,19 +10759,19 @@
             "notes": []
         },
         {
-            "substance": "TOLUENE DIISOCYANATE",
+            "substance": "Толуилендиизоцианат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "TOLUENE DIISOCYANATE",
+            "substance": "Толуилендиизоцианат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "TOLUENE DIISOCYANATE",
+            "substance": "Толуилендиизоцианат",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -10955,7 +10837,7 @@
             "notes": []
         },
         {
-            "substance": "TRIMETHYLBENZENE (ALL ISOMERS)",
+            "substance": "Триметилбензолы (смесь)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11041,7 +10923,7 @@
             "notes": []
         },
         {
-            "substance": "Vaseline",
+            "substance": "Вазелин",
             "grade": "R",
             "max_temperature": 85,
             "notes": []
@@ -11283,19 +11165,19 @@
             "notes": []
         },
         {
-            "substance": "xylol",
+            "substance": "Ксилолы (смесь)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "xylol",
+            "substance": "Ксилолы (смесь)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "xylol",
+            "substance": "Ксилолы (смесь)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
