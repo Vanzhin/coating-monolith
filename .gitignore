@@ -3,3 +3,4 @@
 app/.deptrac.cache
 /app/config/jwt/
 /.env
+tools/pubchem-cache.json

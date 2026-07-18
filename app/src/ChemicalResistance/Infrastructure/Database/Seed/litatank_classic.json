@@ -326,7 +326,17 @@
         {
             "canonical": "AC1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "N-[4-HYDROXYMETHYL-CYCLOHEXAN-6-YL-1,2,3-TRIOL]-4,6-DIDEOXY-4-AMINOGLUCOPYRANOSIDE",
+                "N-(4-hydroxymethyl-cyclohexan-6-yl-1,2,3-triol)-4,6-dideoxy-4-aminoglucopyranoside",
+                "RefChem:827695",
+                "(2S,3R,4S,5S,6R)-6-methyl-5-(((1S,4R,5S,6S)-4,5,6-trihydroxy-3-(hydroxymethyl)cyclohex-2-en-1-yl)amino)oxane-2,3,4-triol",
+                "4,6-dideoxy-4-{[(1S,4R,5S,6S)-4,5,6-trihydroxy-3-(hydroxymethyl)cyclohex-2-en-1-yl]amino}-alpha-D-glucopyranose",
+                "6-METHYL-5-(4,5,6-TRIHYDROXY-3-HYDROXYMETHYL-CYCLOHEX-2-ENYLAMINO)-TETRAHYDRO-PYRAN-2,3,4-TRIOL",
+                "DB02218",
+                "PD060104",
+                "Q27457203"
+            ]
         },
         {
             "canonical": "Уксусная кислота",
@@ -357,7 +367,18 @@
         {
             "canonical": "Acetic acid, 2-methylpropyl ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ISOBUTYL ACETATE",
+                "2-Methylpropyl acetate",
+                "Isobutyl ethanoate",
+                "2-Methylpropyl ethanoate",
+                "2-Methyl-1-propyl acetate",
+                "Acetic acid, isobutyl ester",
+                "Acetate d'isobutyle",
+                "beta-Methylpropyl ethanoate",
+                "Isobutylester kyseliny octove",
+                "FEMA No. 2175"
+            ]
         },
         {
             "canonical": "Acetic acid, iso-butyl ester",
@@ -367,12 +388,34 @@
         {
             "canonical": "Acetic acid, n-butyl ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Butyl acetate",
+                "N-BUTYL ACETATE",
+                "Acetic acid, butyl ester",
+                "Butyl ethanoate",
+                "1-Butyl acetate",
+                "n-Butyl ethanoate",
+                "Butylacetat",
+                "Acetate de butyle",
+                "Butylacetaten",
+                "1-acetoxybutane"
+            ]
         },
         {
             "canonical": "Acetic acid, sec-butyl ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SEC-BUTYL ACETATE",
+                "dl-sec-Butyl acetate",
+                "2-Butyl acetate",
+                "butan-2-yl acetate",
+                "1-Methylpropyl acetate",
+                "Acetic acid, 1-methylpropyl ester",
+                "sec-Butyl ethanoate",
+                "1-Methylpropyl ethanoate",
+                "Acetic acid secondary butyl ester",
+                "NSC 8034"
+            ]
         },
         {
             "canonical": "Acetylsäure (G)",
@@ -430,12 +473,34 @@
         {
             "canonical": "alpha-Furylcarbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "FURFURYL ALCOHOL",
+                "2-Furanmethanol",
+                "2-Furylmethanol",
+                "furan-2-ylmethanol",
+                "2-Furancarbinol",
+                "2-Furanylmethanol",
+                "2-Furylcarbinol",
+                "Furfural alcohol",
+                "Furfuralcohol",
+                "2-Furfuryl alcohol"
+            ]
         },
         {
             "canonical": "alpha-Hydroxypropionic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "lactic acid",
+                "2-hydroxypropanoic acid",
+                "DL-Lactic acid",
+                "2-hydroxypropionic acid",
+                "Milk acid",
+                "Tonsillosan",
+                "Racemic lactic acid",
+                "Ordinary lactic acid",
+                "Acidum lacticum",
+                "Ethylidenelactic acid"
+            ]
         },
         {
             "canonical": "alpha-Hydroxypropionic acid <20%",
@@ -445,7 +510,13 @@
         {
             "canonical": "alpha-Hydroxytoluene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "benzyl alcohol",
+                "phenylmethanol",
+                "benzenemethanol",
+                "phenylcarbinol",
+                "Benzoyl alcohol"
+            ]
         },
         {
             "canonical": "Alphahydroxytoluol",
@@ -475,7 +546,13 @@
         {
             "canonical": "Ammonia hydrate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ammonium hydroxide",
+                "Ammonia water",
+                "Ammonia aqueous",
+                "Aquammonia",
+                "Ammonia, aqua"
+            ]
         },
         {
             "canonical": "Ammonia solutions (28% or less)",
@@ -490,7 +567,13 @@
         {
             "canonical": "Ammonium hydrate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ammonium hydroxide",
+                "Ammonia water",
+                "Ammonia aqueous",
+                "Aquammonia",
+                "Ammonia, aqua"
+            ]
         },
         {
             "canonical": "Ammonium hydroxide solution",
@@ -504,13 +587,25 @@
         },
         {
             "canonical": "Amna",
-            "cas": null,
-            "aliases": []
+            "cas": "1175954-87-6",
+            "aliases": [
+                "Arachidonoyl m-Nitroaniline",
+                "(5Z,8Z,11Z,14Z)-N-(3-nitrophenyl)icosa-5,8,11,14-tetraenamide",
+                "SCHEMBL29365774",
+                "HMS3649B21",
+                "MFCD08062240"
+            ]
         },
         {
             "canonical": "Amyl hydride",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "PENTANE",
+                "n-Pentane",
+                "Pentan",
+                "Skellysolve A",
+                "Pentanen"
+            ]
         },
         {
             "canonical": "Anchovy Oil",
@@ -534,8 +629,14 @@
         },
         {
             "canonical": "Aqua ammonia",
-            "cas": null,
-            "aliases": []
+            "cas": "7664-41-7",
+            "aliases": [
+                "ammonia",
+                "azane",
+                "Ammonia gas",
+                "Nitro-sil",
+                "Ammonia anhydrous"
+            ]
         },
         {
             "canonical": "Arabian heavy",
@@ -765,7 +866,13 @@
         {
             "canonical": "Battery acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SULFURIC ACID",
+                "Sulphuric acid",
+                "Dihydrogen sulfate",
+                "Dipping acid",
+                "Mattling acid"
+            ]
         },
         {
             "canonical": "Baxterville",
@@ -805,12 +912,24 @@
         {
             "canonical": "Benzene methanol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "methanol+benzene",
+                "benzene MeOH",
+                "MeOH benzene",
+                "benzene CH3OH",
+                "PhH MeOH"
+            ]
         },
         {
             "canonical": "Benzene, 1,3-diisocyanatomethyl-",
-            "cas": null,
-            "aliases": []
+            "cas": "3634-83-1",
+            "aliases": [
+                "1,3-Bis(isocyanatomethyl)benzene",
+                "m-Xylylene diisocyanate",
+                "m-Xylene diisocyanate",
+                "Takenate",
+                "M-Xdi"
+            ]
         },
         {
             "canonical": "Benzene, dimethyl-1,4",
@@ -830,22 +949,46 @@
         {
             "canonical": "Benzene, hydroxy-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Benzene, methyl-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "toluene",
+                "methylbenzene",
+                "toluol",
+                "Phenylmethane",
+                "methacide"
+            ]
         },
         {
             "canonical": "Benzene, nitro-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITROBENZENE",
+                "Nitrobenzol",
+                "Essence of mirbane",
+                "Nitrobenzeen",
+                "Nitrobenzen"
+            ]
         },
         {
             "canonical": "Benzophenol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Бензиловый спирт",
@@ -861,7 +1004,13 @@
         {
             "canonical": "beta-Methylpropyl ethanoate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ISOBUTYL ACETATE",
+                "2-Methylpropyl acetate",
+                "Isobutyl ethanoate",
+                "2-Methylpropyl ethanoate",
+                "Acetic acid, 2-methylpropyl ester"
+            ]
         },
         {
             "canonical": "Blackstrap",
@@ -926,12 +1075,24 @@
         {
             "canonical": "Butanol (all isomers)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Butanol (HAGASE GR)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Butanol acetate",
@@ -946,7 +1107,13 @@
         {
             "canonical": "Butanol-1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Butanol-n",
@@ -971,7 +1138,13 @@
         {
             "canonical": "Butyl acetate, n-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Butyl acetate",
+                "N-BUTYL ACETATE",
+                "Acetic acid, butyl ester",
+                "Butyl ethanoate",
+                "1-Butyl acetate"
+            ]
         },
         {
             "canonical": "Butyl acetate, sec-",
@@ -995,13 +1168,25 @@
         },
         {
             "canonical": "Butyl cellosolve",
-            "cas": null,
-            "aliases": []
+            "cas": "111-76-2",
+            "aliases": [
+                "2-Butoxyethanol",
+                "Butyl glycol",
+                "Butoxyethanol",
+                "ETHYLENE GLYCOL MONOBUTYL ETHER",
+                "Ethylene glycol butyl ether"
+            ]
         },
         {
             "canonical": "Butyl ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SEC-BUTYL ACETATE",
+                "dl-sec-Butyl acetate",
+                "2-Butyl acetate",
+                "butan-2-yl acetate",
+                "1-Methylpropyl acetate"
+            ]
         },
         {
             "canonical": "Butyl etanoate",
@@ -1011,7 +1196,13 @@
         {
             "canonical": "Butylacetat (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Butyl acetate",
+                "N-BUTYL ACETATE",
+                "Acetic acid, butyl ester",
+                "Butyl ethanoate",
+                "1-Butyl acetate"
+            ]
         },
         {
             "canonical": "Butylic ether",
@@ -1021,7 +1212,13 @@
         {
             "canonical": "Butyric alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "C7+CUT",
@@ -1149,8 +1346,14 @@
         },
         {
             "canonical": "Centa",
-            "cas": null,
-            "aliases": []
+            "cas": "80072-86-2",
+            "aliases": [
+                "DTXSID40230061",
+                "5-Thia-1-azabicyclo(4.2.0)oct-2-ene-2-carboxylic acid, 3-(((3-carboxy-4-nitrophenyl)thio)methyl)-8-oxo-7-((2-thienylacetyl)amino)-, (6R-trans)-",
+                "RefChem:124327",
+                "DTXCID40152552",
+                "CENTA(TM) BETA-LACTAMASE SUBSTRATE"
+            ]
         },
         {
             "canonical": "Central Louisiana",
@@ -1368,7 +1571,13 @@
         {
             "canonical": "Cyclohexanon (Anon rein) (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Sextone",
+                "Nadone"
+            ]
         },
         {
             "canonical": "Cyclohexanon, (Anon) (G)",
@@ -1386,13 +1595,25 @@
         },
         {
             "canonical": "Cyclohexyl ketone",
-            "cas": null,
-            "aliases": []
+            "cas": "119-60-8",
+            "aliases": [
+                "Dicyclohexyl ketone",
+                "Dicyclohexylmethanone",
+                "Methanone, dicyclohexyl-",
+                "Cyclohexane ketone",
+                "KETONE, DICYCLOHEXYL"
+            ]
         },
         {
             "canonical": "Cykloheksanon (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Sextone",
+                "Nadone"
+            ]
         },
         {
             "canonical": "Cypar 7 (*Shell)",
@@ -1501,12 +1722,24 @@
         {
             "canonical": "Diglycol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "DIETHYLENE GLYCOL",
+                "2,2'-Oxydiethanol",
+                "2-(2-Hydroxyethoxy)ethanol",
+                "2,2'-Oxybisethanol",
+                "Diethylenglykol"
+            ]
         },
         {
             "canonical": "Dimethyl benzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "O-XYLENE",
+                "1,2-Dimethylbenzene",
+                "1,2-Xylene",
+                "Ortho-Xylene",
+                "o-Xylol"
+            ]
         },
         {
             "canonical": "Dimethylbenzene, 1,2 -",
@@ -1531,12 +1764,24 @@
         {
             "canonical": "Dipping acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SULFURIC ACID",
+                "Sulphuric acid",
+                "Dihydrogen sulfate",
+                "Mattling acid",
+                "Battery acid"
+            ]
         },
         {
             "canonical": "Distilled water",
-            "cas": null,
-            "aliases": []
+            "cas": "7732-18-5",
+            "aliases": [
+                "water",
+                "Dihydrogen oxide",
+                "Purified water",
+                "Sterile water",
+                "Water vapor"
+            ]
         },
         {
             "canonical": "Drift river mix",
@@ -1556,7 +1801,13 @@
         {
             "canonical": "Drinking water",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "water",
+                "Distilled water",
+                "Dihydrogen oxide",
+                "Purified water",
+                "Sterile water"
+            ]
         },
         {
             "canonical": "Duri",
@@ -1606,7 +1857,13 @@
         {
             "canonical": "Essence of mirbane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITROBENZENE",
+                "Nitrobenzol",
+                "Benzene, nitro-",
+                "Nitrobenzeen",
+                "Nitrobenzen"
+            ]
         },
         {
             "canonical": "Essigsaure chem. rein (*BASF)",
@@ -1636,7 +1893,13 @@
         {
             "canonical": "Ethanediol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ETHYLENE GLYCOL",
+                "Ethane-1,2-diol",
+                "1,2-ethanediol",
+                "glycol",
+                "monoethylene glycol"
+            ]
         },
         {
             "canonical": "Этанол",
@@ -1663,12 +1926,24 @@
         {
             "canonical": "Ethyldimethylmethane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "2-Methylbutane",
+                "ISOPENTANE",
+                "Isoamylhydride",
+                "Butane, 2-methyl-",
+                "1,1,2-Trimethylethane"
+            ]
         },
         {
             "canonical": "Ethylene alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ETHYLENE GLYCOL",
+                "Ethane-1,2-diol",
+                "1,2-ethanediol",
+                "glycol",
+                "monoethylene glycol"
+            ]
         },
         {
             "canonical": "Ethylene cracker residues",
@@ -1678,7 +1953,13 @@
         {
             "canonical": "Ethylene dihydrate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ETHYLENE GLYCOL",
+                "Ethane-1,2-diol",
+                "1,2-ethanediol",
+                "glycol",
+                "monoethylene glycol"
+            ]
         },
         {
             "canonical": "Ethylglykol (*BASF)",
@@ -1766,12 +2047,17 @@
         },
         {
             "canonical": "Мазут",
-            "cas": null,
+            "cas": "1197-09-7",
             "aliases": [
                 "Fuel Oil",
                 "Heavy fuel oil",
                 "HFO",
-                "Bunker C"
+                "Bunker C",
+                "3',4'-Dihydroxyacetophenone",
+                "1-(3,4-Dihydroxyphenyl)ethanone",
+                "3,4-DIHYDROXYACETOPHENONE",
+                "Qingxintong",
+                "Acetopyrocatechol"
             ]
         },
         {
@@ -1837,7 +2123,13 @@
         {
             "canonical": "Furfuralcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "FURFURYL ALCOHOL",
+                "2-Furanmethanol",
+                "2-Furylmethanol",
+                "furan-2-ylmethanol",
+                "2-Furancarbinol"
+            ]
         },
         {
             "canonical": "Furfuryl carbinol",
@@ -1852,7 +2144,13 @@
         {
             "canonical": "Furylcarbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "FURFURYL ALCOHOL",
+                "2-Furanmethanol",
+                "2-Furylmethanol",
+                "furan-2-ylmethanol",
+                "2-Furancarbinol"
+            ]
         },
         {
             "canonical": "Gach Saran",
@@ -1947,7 +2245,13 @@
         {
             "canonical": "Glycol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ETHYLENE GLYCOL",
+                "Ethane-1,2-diol",
+                "1,2-ethanediol",
+                "monoethylene glycol",
+                "2-hydroxyethanol"
+            ]
         },
         {
             "canonical": "Glycol 774D",
@@ -1957,12 +2261,24 @@
         {
             "canonical": "Glycol alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ETHYLENE GLYCOL",
+                "Ethane-1,2-diol",
+                "1,2-ethanediol",
+                "glycol",
+                "monoethylene glycol"
+            ]
         },
         {
             "canonical": "Glycyl alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "glycerol",
+                "glycerin",
+                "Glycerine",
+                "1,2,3-Propanetriol",
+                "Trihydroxypropane"
+            ]
         },
         {
             "canonical": "Glysantin Konz. G 99-26 (*BASF)",
@@ -2036,8 +2352,14 @@
         },
         {
             "canonical": "Heptanol (All isomers)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-70-6",
+            "aliases": [
+                "1-HEPTANOL",
+                "Heptan-1-ol",
+                "Heptyl alcohol",
+                "Heptanol",
+                "n-Heptanol"
+            ]
         },
         {
             "canonical": "Herring Oil",
@@ -2046,13 +2368,25 @@
         },
         {
             "canonical": "Hexanol",
-            "cas": null,
-            "aliases": []
+            "cas": "111-27-3",
+            "aliases": [
+                "1-Hexanol",
+                "Hexyl alcohol",
+                "Hexan-1-ol",
+                "n-Hexanol",
+                "n-Hexyl alcohol"
+            ]
         },
         {
             "canonical": "Hexanon",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Sextone",
+                "Nadone"
+            ]
         },
         {
             "canonical": "Hexanone",
@@ -2062,7 +2396,13 @@
         {
             "canonical": "Hexone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "4-Methyl-2-pentanone",
+                "METHYL ISOBUTYL KETONE",
+                "4-Methylpentan-2-one",
+                "Isopropylacetone",
+                "Isobutyl methyl ketone"
+            ]
         },
         {
             "canonical": "high benzene naphthas",
@@ -2091,13 +2431,25 @@
         },
         {
             "canonical": "Hydrogen sulfate",
-            "cas": null,
-            "aliases": []
+            "cas": "14996-02-2",
+            "aliases": [
+                "Sulfate, hydrogen",
+                "hydrogen sulphate",
+                "RefChem:889534",
+                "Bisulfate",
+                "Tetraoxosulfate(1-)"
+            ]
         },
         {
             "canonical": "Hydrogen sulphate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Hydrogen sulfate",
+                "Sulfate, hydrogen",
+                "RefChem:889534",
+                "Bisulfate",
+                "Tetraoxosulfate(1-)"
+            ]
         },
         {
             "canonical": "Hydrogenated Fish Oil",
@@ -2122,7 +2474,13 @@
         {
             "canonical": "Hytrol O",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Sextone",
+                "Nadone"
+            ]
         },
         {
             "canonical": "Idd El Shargi",
@@ -2195,12 +2553,24 @@
         {
             "canonical": "Isobutyl methyl ketone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "4-Methyl-2-pentanone",
+                "METHYL ISOBUTYL KETONE",
+                "4-Methylpentan-2-one",
+                "Isopropylacetone",
+                "Hexone"
+            ]
         },
         {
             "canonical": "Isobutylacetat (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ISOBUTYL ACETATE",
+                "2-Methylpropyl acetate",
+                "Isobutyl ethanoate",
+                "2-Methylpropyl ethanoate",
+                "Acetic acid, 2-methylpropyl ester"
+            ]
         },
         {
             "canonical": "Isobutylmetylketon (N)",
@@ -2237,7 +2607,13 @@
         {
             "canonical": "Isopropylacetone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "4-Methyl-2-pentanone",
+                "METHYL ISOBUTYL KETONE",
+                "4-Methylpentan-2-one",
+                "Isobutyl methyl ketone",
+                "Hexone"
+            ]
         },
         {
             "canonical": "Jackson County",
@@ -2307,27 +2683,42 @@
         {
             "canonical": "JP-1 (Kerosene)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "JP-1",
+                "CHEMBL4646091"
+            ]
         },
         {
             "canonical": "JP-3",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CHEMBL4648057"
+            ]
         },
         {
             "canonical": "JP-4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CHEMBL4649406"
+            ]
         },
         {
             "canonical": "JP-5 (Kerosene, Heavy)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "JP-5",
+                "CHEMBL4638359"
+            ]
         },
         {
             "canonical": "JP-8 (*Oil Tanking)",
-            "cas": null,
-            "aliases": []
+            "cas": "82863-50-1",
+            "aliases": [
+                "4,7-Methano-2,3,8-methenocyclopent(a)indene, dodecahydro-, stereoisomer, mixt. with methylcyclohexane and (3aalpha,4beta,7beta,7aalpha)-octahydro-4,7-methano-1H-indene",
+                "hexacyclo[9.2.1.02,10.03,8.04,6.05,9]tetradecane;methylcyclohexane;(1S,2R,6S,7R)-tricyclo[5.2.1.02,6]decane",
+                "SCHEMBL29351906",
+                "DDZNRTJLFZLBPE-FBZJSIJRSA-N"
+            ]
         },
         {
             "canonical": "Judean pitch",
@@ -2347,7 +2738,13 @@
         {
             "canonical": "Kaliumhydroxid (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "POTASSIUM HYDROXIDE",
+                "Caustic potash",
+                "Potash lye",
+                "Potassium hydrate",
+                "Hydroxyde de potassium"
+            ]
         },
         {
             "canonical": "Kaustiches kali (G)",
@@ -2372,7 +2769,13 @@
         {
             "canonical": "Ketohexamethylene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Pimelic ketone",
+                "Sextone",
+                "Nadone",
+                "Anone"
+            ]
         },
         {
             "canonical": "Khafji",
@@ -2611,8 +3014,14 @@
         },
         {
             "canonical": "Mesa",
-            "cas": null,
-            "aliases": []
+            "cas": "51596-10-2",
+            "aliases": [
+                "Milbemycin A3",
+                "Milbemectin",
+                "Emamectin A3",
+                "Koromite",
+                "Milbeknock"
+            ]
         },
         {
             "canonical": "Метафосфорная кислота",
@@ -2625,7 +3034,13 @@
         {
             "canonical": "Meta-Toluene Diisocyanate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "2,4-Diisocyanato-1-methylbenzene",
+                "2,4-Toluene diisocyanate",
+                "TOLUENE 2,4-DIISOCYANATE",
+                "2,4-Diisocyanatotoluene",
+                "Tolylene-2,4-diisocyanate"
+            ]
         },
         {
             "canonical": "meta-Tolyene diisocyanate",
@@ -2635,7 +3050,13 @@
         {
             "canonical": "Methacide",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "toluene",
+                "methylbenzene",
+                "toluol",
+                "Phenylmethane",
+                "methylbenzol"
+            ]
         },
         {
             "canonical": "Метанол",
@@ -2653,7 +3074,13 @@
         {
             "canonical": "Methyl acetone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "2-Butanone",
+                "METHYL ETHYL KETONE",
+                "Butan-2-one",
+                "Butanone",
+                "Ethyl methyl ketone"
+            ]
         },
         {
             "canonical": "Толуол",
@@ -2691,7 +3118,13 @@
         {
             "canonical": "Methyl tertiary butyl ether",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "tert-Butyl methyl ether",
+                "Methyl tert-butyl ether",
+                "2-Methoxy-2-methylpropane",
+                "MTBE",
+                "Methyl t-butyl ether"
+            ]
         },
         {
             "canonical": "Methyl toluene",
@@ -2706,12 +3139,24 @@
         {
             "canonical": "Methylisobutylketon (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "4-Methyl-2-pentanone",
+                "METHYL ISOBUTYL KETONE",
+                "4-Methylpentan-2-one",
+                "Isopropylacetone",
+                "Isobutyl methyl ketone"
+            ]
         },
         {
             "canonical": "Methylolpropane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Methylphenylene diisocyanate",
@@ -2731,12 +3176,24 @@
         {
             "canonical": "MIK",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "4-Methyl-2-pentanone",
+                "METHYL ISOBUTYL KETONE",
+                "4-Methylpentan-2-one",
+                "Isopropylacetone",
+                "Isobutyl methyl ketone"
+            ]
         },
         {
             "canonical": "Milk acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "lactic acid",
+                "2-hydroxypropanoic acid",
+                "DL-Lactic acid",
+                "2-hydroxypropionic acid",
+                "Tonsillosan"
+            ]
         },
         {
             "canonical": "Milk acid <20%",
@@ -2815,17 +3272,35 @@
         {
             "canonical": "Monohydroxybenzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Mononitrobenzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITROBENZENE",
+                "Nitrobenzol",
+                "Benzene, nitro-",
+                "Essence of mirbane",
+                "Nitrobenzeen"
+            ]
         },
         {
             "canonical": "Monopropylene glycol",
-            "cas": null,
-            "aliases": []
+            "cas": "57-55-6",
+            "aliases": [
+                "propylene glycol",
+                "1,2-propanediol",
+                "propane-1,2-diol",
+                "1,2-Propylene glycol",
+                "1,2-dihydroxypropane"
+            ]
         },
         {
             "canonical": "Moonie",
@@ -2859,8 +3334,14 @@
         },
         {
             "canonical": "m-Tolylene diisocyanate",
-            "cas": null,
-            "aliases": []
+            "cas": "91-08-7",
+            "aliases": [
+                "2,6-Diisocyanatotoluene",
+                "Toluene-2,6-diisocyanate",
+                "2,6-TOLUENE DIISOCYANATE",
+                "2,6-TDI",
+                "Benzene, 1,3-diisocyanato-2-methyl-"
+            ]
         },
         {
             "canonical": "Murban",
@@ -2870,7 +3351,13 @@
         {
             "canonical": "Nadone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Sextone",
+                "Anone"
+            ]
         },
         {
             "canonical": "Нафта (нефтяная фракция)",
@@ -2975,7 +3462,13 @@
         {
             "canonical": "n-Butylalkohol (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Neutralized Palm Kernel Oil",
@@ -3018,7 +3511,13 @@
         {
             "canonical": "Nitrobenzen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITROBENZENE",
+                "Nitrobenzol",
+                "Benzene, nitro-",
+                "Essence of mirbane",
+                "Nitrobenzeen"
+            ]
         },
         {
             "canonical": "Нитробензол",
@@ -3036,7 +3535,13 @@
         {
             "canonical": "Normal Butanol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Normal Butyl Alcohol (*Shell)",
@@ -3046,12 +3551,24 @@
         {
             "canonical": "Normal pentane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "PENTANE",
+                "n-Pentane",
+                "Pentan",
+                "Skellysolve A",
+                "Pentanen"
+            ]
         },
         {
             "canonical": "normal-Butyl acetate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Butyl acetate",
+                "N-BUTYL ACETATE",
+                "Acetic acid, butyl ester",
+                "Butyl ethanoate",
+                "1-Butyl acetate"
+            ]
         },
         {
             "canonical": "Normalpentan (G)",
@@ -3097,12 +3614,24 @@
         {
             "canonical": "n-Propyl carbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Octanol (All isomers)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-87-5",
+            "aliases": [
+                "1-octanol",
+                "Octan-1-ol",
+                "N-octanol",
+                "Octyl alcohol",
+                "caprylic alcohol"
+            ]
         },
         {
             "canonical": "Oficina",
@@ -3205,7 +3734,13 @@
         {
             "canonical": "Orthoxylene (EXXON)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "O-XYLENE",
+                "1,2-Dimethylbenzene",
+                "1,2-Xylene",
+                "Ortho-Xylene",
+                "o-Xylol"
+            ]
         },
         {
             "canonical": "Orthoxylol (*BASF)",
@@ -3215,7 +3750,13 @@
         {
             "canonical": "Oxybenzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Benzenol"
+            ]
         },
         {
             "canonical": "o-Xylen (N)",
@@ -3267,7 +3808,13 @@
         {
             "canonical": "Paraxylene (EXXON)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "P-XYLENE",
+                "1,4-Dimethylbenzene",
+                "Para-Xylene",
+                "1,4-Xylene",
+                "p-Methyltoluene"
+            ]
         },
         {
             "canonical": "Pentane 80% Solution",
@@ -3363,7 +3910,13 @@
         {
             "canonical": "Phenic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Oxybenzene",
+                "Benzenol"
+            ]
         },
         {
             "canonical": "Phenol 95% Hydrotreated (*INEOS)",
@@ -3373,12 +3926,24 @@
         {
             "canonical": "Phenyl alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Phenyl hydroxide",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Phenyl methyl alcohol",
@@ -3393,7 +3958,13 @@
         {
             "canonical": "Phenylic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "phenol",
+                "carbolic acid",
+                "Hydroxybenzene",
+                "Phenic acid",
+                "Oxybenzene"
+            ]
         },
         {
             "canonical": "Phenyläthan (G)",
@@ -3403,7 +3974,13 @@
         {
             "canonical": "Phosphoric acid (aqueous)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Phosphoric acid",
+                "ORTHOPHOSPHORIC ACID",
+                "o-Phosphoric acid",
+                "Wc-reiniger",
+                "Acidum phosphoricum"
+            ]
         },
         {
             "canonical": "Phosphorsäure (G)",
@@ -3412,8 +3989,14 @@
         },
         {
             "canonical": "PHS",
-            "cas": null,
-            "aliases": []
+            "cas": "93651-83-3",
+            "aliases": [
+                "Propylstilbestrol",
+                "Propylstilboestrol",
+                "alpha-Propyl-4,4'-stilbenediol",
+                "4,4'-Stilbenediol, alpha-propyl-",
+                "BRN 3317900"
+            ]
         },
         {
             "canonical": "Pilon",
@@ -3437,8 +4020,14 @@
         },
         {
             "canonical": "Potassium Chloride",
-            "cas": null,
-            "aliases": []
+            "cas": "7447-40-7",
+            "aliases": [
+                "Klotrix",
+                "Sylvite",
+                "Enseal",
+                "Slow-K",
+                "Muriate of potash"
+            ]
         },
         {
             "canonical": "Potassium chloride drilling brine",
@@ -3477,18 +4066,36 @@
         },
         {
             "canonical": "Propanol",
-            "cas": null,
-            "aliases": []
+            "cas": "71-23-8",
+            "aliases": [
+                "1-propanol",
+                "Propyl alcohol",
+                "Propan-1-ol",
+                "n-propanol",
+                "n-Propyl alcohol"
+            ]
         },
         {
             "canonical": "Propyl carbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-butanol",
+                "Butan-1-ol",
+                "n-butanol",
+                "Butyl alcohol",
+                "n-butyl alcohol"
+            ]
         },
         {
             "canonical": "Propylene glycol monomethyl ether",
-            "cas": null,
-            "aliases": []
+            "cas": "107-98-2",
+            "aliases": [
+                "1-Methoxy-2-propanol",
+                "1-Methoxypropan-2-ol",
+                "Methoxyisopropanol",
+                "Closol",
+                "PGME"
+            ]
         },
         {
             "canonical": "p-Xylen (N)",
@@ -3663,7 +4270,13 @@
         {
             "canonical": "sec-Butyl ester of acetic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SEC-BUTYL ACETATE",
+                "dl-sec-Butyl acetate",
+                "2-Butyl acetate",
+                "butan-2-yl acetate",
+                "1-Methylpropyl acetate"
+            ]
         },
         {
             "canonical": "Seria",
@@ -3673,7 +4286,13 @@
         {
             "canonical": "Sextone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CYCLOHEXANONE",
+                "Ketohexamethylene",
+                "Pimelic ketone",
+                "Nadone",
+                "Anone"
+            ]
         },
         {
             "canonical": "Shell Fenella ALF (*Shell)",
@@ -3800,7 +4419,13 @@
         {
             "canonical": "Sodium hydrate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SODIUM HYDROXIDE",
+                "Caustic soda",
+                "Aetznatron",
+                "Soda lye",
+                "White caustic"
+            ]
         },
         {
             "canonical": "Sodium hydrate solution",
@@ -3995,18 +4620,33 @@
         },
         {
             "canonical": "tert-Butyl acetate",
-            "cas": null,
-            "aliases": []
+            "cas": "540-88-5",
+            "aliases": [
+                "t-Butyl acetate",
+                "Acetic acid, 1,1-dimethylethyl ester",
+                "Texaco lead appreciator",
+                "Acetic acid, tert-butyl ester",
+                "1,1-Dimethyl acetate"
+            ]
         },
         {
             "canonical": "Tetradecylbenzene",
-            "cas": null,
-            "aliases": []
+            "cas": "1459-10-5",
+            "aliases": [
+                "1-Phenyltetradecane",
+                "Benzene, tetradecyl-",
+                "Tetradecane, 1-phenyl-",
+                "n-Tetradecylbenzene",
+                "tetradecylbenzol"
+            ]
         },
         {
             "canonical": "Tetrapropylbenzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SCHEMBL814614",
+                "SCHEMBL1711830"
+            ]
         },
         {
             "canonical": "Tia Juana - 102LP",
@@ -4041,7 +4681,13 @@
         {
             "canonical": "Toluen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "toluene",
+                "methylbenzene",
+                "toluol",
+                "Phenylmethane",
+                "methacide"
+            ]
         },
         {
             "canonical": "Toluene -2,4-diisocyanate",
@@ -4061,7 +4707,13 @@
         {
             "canonical": "Tolylenediisocyanate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "2,4-Diisocyanato-1-methylbenzene",
+                "2,4-Toluene diisocyanate",
+                "TOLUENE 2,4-DIISOCYANATE",
+                "2,4-Diisocyanatotoluene",
+                "Tolylene-2,4-diisocyanate"
+            ]
         },
         {
             "canonical": "Treacle",
@@ -4076,7 +4728,13 @@
         {
             "canonical": "Trihydroxypropane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "glycerol",
+                "glycerin",
+                "Glycerine",
+                "1,2,3-Propanetriol",
+                "Glycyl alcohol"
+            ]
         },
         {
             "canonical": "Trimethyl benzene",
@@ -4091,7 +4749,12 @@
                 "Trimethylbenzenes",
                 "Триметилбензолы",
                 "Триметилбензол",
-                "Смесь триметилбензолов"
+                "Смесь триметилбензолов",
+                "1,2,3-TRIMETHYLBENZENE",
+                "Hemimellitene",
+                "Hemellitol",
+                "Hemimellitol",
+                "ZK4R7UPH6R"
             ]
         },
         {
@@ -4127,12 +4790,24 @@
         {
             "canonical": "uns-Trimethylbenzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1,2,4-TRIMETHYLBENZENE",
+                "Pseudocumene",
+                "Pseudocumol",
+                "Psi-cumene",
+                "as-Trimethylbenzene"
+            ]
         },
         {
             "canonical": "Varnoline",
-            "cas": null,
-            "aliases": []
+            "cas": "71138-35-7",
+            "aliases": [
+                "Marvelon",
+                "RefChem:585821",
+                "ortho-Cept",
+                "Cyclessa",
+                "Mercilon"
+            ]
         },
         {
             "canonical": "Vassa A-70 (*Vassa)",
@@ -4157,7 +4832,13 @@
         {
             "canonical": "Vinegar acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "acetic acid",
+                "ethanoic acid",
+                "Acetic acid glacial",
+                "Ethylic acid",
+                "Glacial acetic acid"
+            ]
         },
         {
             "canonical": "Virsin",
@@ -4187,12 +4868,24 @@
         {
             "canonical": "Water, drinking",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "water",
+                "Distilled water",
+                "Dihydrogen oxide",
+                "Purified water",
+                "Sterile water"
+            ]
         },
         {
             "canonical": "Water, potable",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "water",
+                "Distilled water",
+                "Dihydrogen oxide",
+                "Purified water",
+                "Sterile water"
+            ]
         },
         {
             "canonical": "Wax mineral",
@@ -4222,7 +4915,13 @@
         {
             "canonical": "White Phosphoric acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Phosphoric acid",
+                "ORTHOPHOSPHORIC ACID",
+                "o-Phosphoric acid",
+                "Wc-reiniger",
+                "Acidum phosphoricum"
+            ]
         },
         {
             "canonical": "White spirit (blanding) 10%<aromatinnh. <20% (N)",

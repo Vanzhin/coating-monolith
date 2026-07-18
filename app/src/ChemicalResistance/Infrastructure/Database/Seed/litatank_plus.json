@@ -59,33 +59,69 @@
         },
         {
             "canonical": "1,1,2-TRICHLORO-1,2,2-TRIFLUOROETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "76-13-1",
+            "aliases": [
+                "1,1,2-Trichlorotrifluoroethane",
+                "Fluorocarbon 113",
+                "Arcton 63",
+                "Genesolv D",
+                "Arklone P"
+            ]
         },
         {
             "canonical": "1,1,2-TRICHLOROETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "79-00-5",
+            "aliases": [
+                "Vinyltrichloride",
+                "Ethane, 1,1,2-trichloro-",
+                "beta-Trichloroethane",
+                "1,2,2-Trichloroethane",
+                "1,1,2-Trichlorethane"
+            ]
         },
         {
             "canonical": "1,1-DICHLOROETHANE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "75-34-3",
+            "aliases": [
+                "Ethylidene chloride",
+                "Ethane, 1,1-dichloro-",
+                "Ethylidene dichloride",
+                "1,1-Dichlorethane",
+                "Dichloromethylmethane"
+            ]
         },
         {
             "canonical": "1,1-DICHLOROPROPANE",
-            "cas": null,
-            "aliases": []
+            "cas": "78-99-9",
+            "aliases": [
+                "Propylidene chloride",
+                "Propane, 1,1-dichloro-",
+                "R 270fb",
+                "alpha,alpha-Dichloropropane",
+                "alpha,alpha-Propylene dichloride"
+            ]
         },
         {
             "canonical": "1,2,3-TRICHLOROPROPANE",
-            "cas": null,
-            "aliases": []
+            "cas": "96-18-4",
+            "aliases": [
+                "Trichlorohydrin",
+                "Allyl trichloride",
+                "Glycerol trichlorohydrin",
+                "Propane, 1,2,3-trichloro-",
+                "Glyceryl trichlorohydrin"
+            ]
         },
         {
             "canonical": "1,2-BUTYLENE OXIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "106-88-7",
+            "aliases": [
+                "1,2-Epoxybutane",
+                "2-Ethyloxirane",
+                "Ethyloxirane",
+                "Oxirane, ethyl-",
+                "Ethylethylene oxide"
+            ]
         },
         {
             "canonical": "1,2-Дихлорпропан",
@@ -97,23 +133,44 @@
         },
         {
             "canonical": "1,3,5-TRIOXANE",
-            "cas": null,
-            "aliases": []
+            "cas": "110-88-3",
+            "aliases": [
+                "s-Trioxane",
+                "Trioxymethylene",
+                "Trioxane",
+                "Metaformaldehyde",
+                "Triformol"
+            ]
         },
         {
             "canonical": "1,3-CYCLOPENTADIENE DIMER (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "7313-32-8",
+            "aliases": [
+                "1,3-Cyclopentadiene dimer",
+                "SCHEMBL27595661"
+            ]
         },
         {
             "canonical": "1,3-DICHLOROPROPENE",
-            "cas": null,
-            "aliases": []
+            "cas": "542-75-6",
+            "aliases": [
+                "DTXSID1022057",
+                "1,3-Dichloro-1-propene",
+                "1-Propene, 1,3-dichloro-",
+                "Dorlone",
+                "Telone"
+            ]
         },
         {
             "canonical": "1,3-PENTADIENE",
-            "cas": null,
-            "aliases": []
+            "cas": "504-60-9",
+            "aliases": [
+                "Piperylene",
+                "1-Methylbutadiene",
+                "FW963NF88B",
+                "1-methyl-1,3-butadiene",
+                "DTXSID3027160"
+            ]
         },
         {
             "canonical": "1,4-Диоксан",
@@ -126,8 +183,14 @@
         },
         {
             "canonical": "1,6-DICHLOROHEXANE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "2163-00-0",
+            "aliases": [
+                "Hexane, 1,6-dichloro-",
+                "DTXSID9044409",
+                "NSC-60700",
+                "YK75382Q85",
+                "DTXCID7024409"
+            ]
         },
         {
             "canonical": "1,6-HEXANEDIOL, DISTILLATION OVERHEADS (n)",
@@ -155,17 +218,32 @@
         {
             "canonical": "1-PHENYL-1-XYLYL ETHANE",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "RefChem:435503",
+                "SCHEMBL28012995"
+            ]
         },
         {
             "canonical": "1-UNDECENE",
-            "cas": null,
-            "aliases": []
+            "cas": "821-95-4",
+            "aliases": [
+                "n-1-Undecene",
+                "1-Hendecene",
+                "alpha-Undecylene",
+                "alpha-Undecene",
+                "alpha-Nonylethylene"
+            ]
         },
         {
             "canonical": "2,2,4-TRIMETHYL-1,3-PENTANEDIOL DIISOBUTYRATE",
-            "cas": null,
-            "aliases": []
+            "cas": "6846-50-0",
+            "aliases": [
+                "Kodaflex txib",
+                "TXIB",
+                "DTXSID1027635",
+                "Propanoic acid, 2-methyl-, 2,2-dimethyl-1-(1-methylethyl)-1,3-propanediyl ester",
+                "4KZA479DWQ"
+            ]
         },
         {
             "canonical": "2,2,4-TRIMETHYL-1,3-PENTANEDIOL-1-ISOBUTYRATE",
@@ -174,23 +252,47 @@
         },
         {
             "canonical": "2,2-DICHLOROISOPROPYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "108-60-1",
+            "aliases": [
+                "BIS(2-CHLORO-1-METHYLETHYL) ETHER",
+                "2,2'-Dichlorodiisopropyl ether",
+                "Nemamort",
+                "DCIP (nematocide)",
+                "Nemamorte"
+            ]
         },
         {
             "canonical": "2,2-DICHLOROPROPIONIC ACID (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "75-99-0",
+            "aliases": [
+                "DALAPON",
+                "2,2-Dichloropropanoic acid",
+                "Alatex",
+                "Kenapon",
+                "Proprop"
+            ]
         },
         {
             "canonical": "2,2-DIMETHYLPROPANE-1,3-DIOL (MOLTEN OR SOLUTION)",
-            "cas": null,
-            "aliases": []
+            "cas": "126-30-7",
+            "aliases": [
+                "Neopentyl glycol",
+                "2,2-Dimethylpropane-1,3-diol",
+                "2,2-DIMETHYL-1,3-PROPANEDIOL",
+                "Dimethylolpropane",
+                "1,3-Propanediol, 2,2-dimethyl-"
+            ]
         },
         {
             "canonical": "2,4-DICHLOROPHENOL",
-            "cas": null,
-            "aliases": []
+            "cas": "120-83-2",
+            "aliases": [
+                "Phenol, 2,4-dichloro-",
+                "4,6-Dichlorophenol",
+                "2,4-DCP",
+                "1-Hydroxy-2,4-dichlorobenzene",
+                "NCI-C55345"
+            ]
         },
         {
             "canonical": "2,4-DICHLOROPHENOXYACETIC ACID, DIETHANOLAMINE SALT SOLUTION (n)",
@@ -209,8 +311,14 @@
         },
         {
             "canonical": "2,6-DIETHYLANILINE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "579-66-8",
+            "aliases": [
+                "Benzenamine, 2,6-diethyl-",
+                "2,6-Diethylbenzenamine",
+                "Aniline, 2,6-diethyl-",
+                "DTXSID6027218",
+                "VT2234594H"
+            ]
         },
         {
             "canonical": "2- OR 3-CHLOROPROPIONIC ACID",
@@ -224,13 +332,25 @@
         },
         {
             "canonical": "2-AMINO-2-METHYL-1-PROPANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "124-68-5",
+            "aliases": [
+                "2-Aminoisobutanol",
+                "Aminomethylpropanol",
+                "Isobutanol-2-amine",
+                "1-Propanol, 2-amino-2-methyl-",
+                "AMP Regular"
+            ]
         },
         {
             "canonical": "2-AMINO-2-METHYL-1-PROPANOL (90% OR LESS)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "2-Amino-2-methyl-1-propanol",
+                "2-Aminoisobutanol",
+                "Aminomethylpropanol",
+                "Isobutanol-2-amine",
+                "1-Propanol, 2-amino-2-methyl-"
+            ]
         },
         {
             "canonical": "2-Этоксиэтилацетат",
@@ -249,8 +369,14 @@
         },
         {
             "canonical": "2-ETHYL-3-PROPYLACROLEIN",
-            "cas": null,
-            "aliases": []
+            "cas": "645-62-5",
+            "aliases": [
+                "2-Ethyl-2-hexenal",
+                "(E)-2-ethylhex-2-enal",
+                "(E)-2-Ethyl-2-hexenal",
+                "2-Hexenal, 2-ethyl-",
+                "(2E)-2-Ethyl-2-hexenal"
+            ]
         },
         {
             "canonical": "2-Этилгексиловая кислота",
@@ -263,78 +389,168 @@
         },
         {
             "canonical": "2-ETHYLHEXYL ACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "103-11-7",
+            "aliases": [
+                "2-Ethylhexyl 2-propenoate",
+                "Acrylic acid, 2-ethylhexyl ester",
+                "2-Ethyl-1-hexyl acrylate",
+                "2-Propenoic acid, 2-ethylhexyl ester",
+                "DTXSID9025297"
+            ]
         },
         {
             "canonical": "2-ETHYLHEXYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "104-75-6",
+            "aliases": [
+                "1-Hexanamine, 2-ethyl-",
+                "2-Ethyl-1-hexylamine",
+                "1-Amino-2-ethylhexane",
+                "2-Ethylhexanamine",
+                "2-Ethyl-1-hexanamine"
+            ]
         },
         {
             "canonical": "2-HYDROXY-4-(METHYLTHIO) BUTANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "583-91-5",
+            "aliases": [
+                "alpha-Hydroxy-gamma-methylmercaptobutyric acid",
+                "RefChem:585800",
+                "4-methylthio-2-hydroxybutyrate",
+                "alpha-hydroxy-gamma-methylthiobutyrate",
+                "2-Hydroxy-4-(methylthio)butyric acid"
+            ]
         },
         {
             "canonical": "2-HYDROXYETHYL ACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "818-61-1",
+            "aliases": [
+                "Hydroxyethyl acrylate",
+                "2-Propenoic acid, 2-hydroxyethyl ester",
+                "Ethylene glycol monoacrylate",
+                "Bisomer 2HEA",
+                "2-(Acryloyloxy)ethanol"
+            ]
         },
         {
             "canonical": "2-METHYL-1,3-PROPANEDIOL (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "2163-42-0",
+            "aliases": [
+                "methylpropanediol",
+                "1,3-Propanediol, 2-methyl-",
+                "N8F53B3R4R",
+                ".BETA.-HYDROXYISOBUTANOL",
+                "HSDB 7267"
+            ]
         },
         {
             "canonical": "2-METHYL-2-HYDROXY-3-BUTYNE",
-            "cas": null,
-            "aliases": []
+            "cas": "115-19-5",
+            "aliases": [
+                "2-METHYL-3-BUTYN-2-OL",
+                "2-Methylbut-3-yn-2-ol",
+                "3-Butyn-2-ol, 2-methyl-",
+                "2-Methyl-2-butynol",
+                "Ethynyldimethylcarbinol"
+            ]
         },
         {
             "canonical": "2-METHYL-5-ETHYLPYRIDINE",
-            "cas": null,
-            "aliases": []
+            "cas": "104-90-5",
+            "aliases": [
+                "5-Ethyl-2-methylpyridine",
+                "5-Ethyl-2-picoline",
+                "Aldehydine",
+                "Aldehydecollidine",
+                "Aldehydkollidin"
+            ]
         },
         {
             "canonical": "2-METHYL-6-ETHYLANILINE",
-            "cas": null,
-            "aliases": []
+            "cas": "24549-06-2",
+            "aliases": [
+                "2-ETHYL-6-METHYLANILINE",
+                "6-Ethyl-o-toluidine",
+                "Benzenamine, 2-ethyl-6-methyl-",
+                "o-Toluidine, 6-ethyl-",
+                "6-Ethyl-2-methylaniline"
+            ]
         },
         {
             "canonical": "2-METHYLPYRIDINE",
-            "cas": null,
-            "aliases": []
+            "cas": "109-06-8",
+            "aliases": [
+                "2-Picoline",
+                "alpha-Picoline",
+                "o-Picoline",
+                "Pyridine, 2-methyl-",
+                "alpha-Methylpyridine"
+            ]
         },
         {
             "canonical": "3,4-DICHLORO-1-BUTENE",
-            "cas": null,
-            "aliases": []
+            "cas": "760-23-6",
+            "aliases": [
+                "3,4-Dichlorobut-1-ene",
+                "1-Butene, 3,4-dichloro-",
+                "1,2-Dichloro-3-butene",
+                "3,4-Dichlorobutene-1",
+                "DTXSID8022113"
+            ]
         },
         {
             "canonical": "3-(METHYLTHIO)PROPIONALDEHYDE",
-            "cas": null,
-            "aliases": []
+            "cas": "3268-49-3",
+            "aliases": [
+                "Methional",
+                "Propanal, 3-(methylthio)-",
+                "4-Thiapentanal",
+                "Propionaldehyde, 3-(methylthio)-",
+                "3-Methylmercaptopropyl aldehyde"
+            ]
         },
         {
             "canonical": "3-METHOXY-1-BUTANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "2517-43-3",
+            "aliases": [
+                "3-Methoxybutan-1-ol",
+                "3-Methoxybutanol",
+                "1-Butanol, 3-methoxy-",
+                "3-methoxybutyl alcohol",
+                "CCRIS 8976"
+            ]
         },
         {
             "canonical": "3-METHOXYBUTYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "4435-53-4",
+            "aliases": [
+                "Butoxyl",
+                "Acetic Acid 3-Methoxybutyl Ester",
+                "1-Butanol, 3-methoxy-, acetate",
+                "3-Methoxy-1-butyl acetate",
+                "Methyl-1,3-butylene glycol acetate"
+            ]
         },
         {
             "canonical": "3-METHYL-3-METHOXYBUTANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "56539-66-3",
+            "aliases": [
+                "3-Methoxy-3-methylbutan-1-ol",
+                "3-Methoxy-3-methyl-1-butanol",
+                "3-Methoxy-3-methylbutanol",
+                "METHOXYMETHYLBUTANOL",
+                "1-Butanol, 3-methoxy-3-methyl-"
+            ]
         },
         {
             "canonical": "3-METHYLPYRIDINE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-99-6",
+            "aliases": [
+                "3-Picoline",
+                "beta-Picoline",
+                "Pyridine, 3-methyl-",
+                "m-Picoline",
+                "m-Methylpyridine"
+            ]
         },
         {
             "canonical": "4-CHLORO-2-METHYLPHENOXYACETIC ACID, DIMETHYLAMINE SALT SOLUTION",
@@ -343,8 +559,14 @@
         },
         {
             "canonical": "4-METHYLPYRIDINE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-89-4",
+            "aliases": [
+                "4-Picoline",
+                "gamma-Picoline",
+                "Pyridine, 4-methyl-",
+                "p-Picoline",
+                "p-Methylpyridine"
+            ]
         },
         {
             "canonical": "Уксусная кислота",
@@ -372,8 +594,14 @@
         },
         {
             "canonical": "ACETOCHLOR(n)",
-            "cas": null,
-            "aliases": []
+            "cas": "34256-82-1",
+            "aliases": [
+                "2-Chloro-N-(ethoxymethyl)-N-(2-ethyl-6-methylphenyl)acetamide",
+                "Azetochlor",
+                "Acetochlore",
+                "Harness",
+                "Acenit"
+            ]
         },
         {
             "canonical": "Ацетон",
@@ -389,8 +617,14 @@
         },
         {
             "canonical": "ACETONE CYANOHYDRIN",
-            "cas": null,
-            "aliases": []
+            "cas": "75-86-5",
+            "aliases": [
+                "2-Hydroxy-2-methylpropanenitrile",
+                "Acetone cyanhydrin",
+                "2-Hydroxyisobutyronitrile",
+                "2-Methyllactonitrile",
+                "2-Cyano-2-propanol"
+            ]
         },
         {
             "canonical": "Ацетонитрил",
@@ -404,7 +638,13 @@
         {
             "canonical": "ACETONITRILE (LOW PURITY GRADE)(n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ACETONITRILE",
+                "Methyl cyanide",
+                "Cyanomethane",
+                "Ethanenitrile",
+                "Ethyl nitrile"
+            ]
         },
         {
             "canonical": "ACID OIL MIXTURE FROM SOYABEAN, CORN (MAIZE) AND SUNFLOWER OIL REFINING(n)",
@@ -426,8 +666,14 @@
         },
         {
             "canonical": "ACRYLONITRILE",
-            "cas": null,
-            "aliases": []
+            "cas": "107-13-1",
+            "aliases": [
+                "2-Propenenitrile",
+                "Vinyl cyanide",
+                "Prop-2-enenitrile",
+                "Propenenitrile",
+                "Cyanoethylene"
+            ]
         },
         {
             "canonical": "ACRYLONITRILE-STYRENE COPOLYMER DISPERSION IN POLYETHER POLYOL",
@@ -436,13 +682,25 @@
         },
         {
             "canonical": "ADIPONITRILE",
-            "cas": null,
-            "aliases": []
+            "cas": "111-69-3",
+            "aliases": [
+                "Hexanedinitrile",
+                "1,4-Dicyanobutane",
+                "Adipodinitrile",
+                "Adipyldinitrile",
+                "Adipic acid dinitrile"
+            ]
         },
         {
             "canonical": "ALACHLOR TECHNICAL (90% OR MORE)",
-            "cas": null,
-            "aliases": []
+            "cas": "15972-60-8",
+            "aliases": [
+                "alachlor",
+                "Lasagrin",
+                "Metachlor",
+                "Methachlor",
+                "Alanex"
+            ]
         },
         {
             "canonical": "ALCOHOL (C12-C16) POLY (1-6) ETHOXYLATES",
@@ -684,18 +942,36 @@
         },
         {
             "canonical": "ALLYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "107-18-6",
+            "aliases": [
+                "2-Propen-1-ol",
+                "PROP-2-EN-1-OL",
+                "Vinylcarbinol",
+                "2-Propenol",
+                "2-Propenyl alcohol"
+            ]
         },
         {
             "canonical": "ALLYL CHLORIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "107-05-1",
+            "aliases": [
+                "3-Chloro-1-propene",
+                "3-Chloropropene",
+                "1-Propene, 3-chloro-",
+                "3-Chloropropylene",
+                "Chlorallylene"
+            ]
         },
         {
             "canonical": "alpha-METHYLSTYRENE",
-            "cas": null,
-            "aliases": []
+            "cas": "98-83-9",
+            "aliases": [
+                "2-Phenylpropene",
+                "2-Phenyl-1-propene",
+                "2-Phenylpropylene",
+                "Benzene, (1-methylethenyl)-",
+                "1-Methyl-1-phenylethylene"
+            ]
         },
         {
             "canonical": "alpha-OLEFINS (C6-C18) MIXTURES",
@@ -704,8 +980,14 @@
         },
         {
             "canonical": "alpha-PINENE",
-            "cas": null,
-            "aliases": []
+            "cas": "80-56-8",
+            "aliases": [
+                "2,6,6-Trimethylbicyclo[3.1.1]hept-2-ene",
+                "Acintene A",
+                "pin-2(3)-ene",
+                "alfa-Pinene",
+                "Sylvapine A"
+            ]
         },
         {
             "canonical": "ALUMINIUM SULPHATE SOLUTION",
@@ -719,8 +1001,14 @@
         },
         {
             "canonical": "AMINOETHYLETHANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "111-41-1",
+            "aliases": [
+                "N-(2-Hydroxyethyl)ethylenediamine",
+                "monoethanol ethylenediamine",
+                "RefChem:112035",
+                "2-(2-Aminoethylamino)ethanol",
+                "N-(Hydroxyethyl)ethylenediamine"
+            ]
         },
         {
             "canonical": "Раствор аммиака",
@@ -779,8 +1067,14 @@
         },
         {
             "canonical": "AMYL ACETATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "628-63-7",
+            "aliases": [
+                "Amyl acetate",
+                "Pentyl acetate",
+                "n-Amyl acetate",
+                "N-PENTYL ACETATE",
+                "Acetic acid, pentyl ester"
+            ]
         },
         {
             "canonical": "AMYL ALCOHOL, PRIMARY",
@@ -915,8 +1209,14 @@
         },
         {
             "canonical": "BENZENE SULPHONYL CHLORIDE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "98-09-9",
+            "aliases": [
+                "BENZENESULFONYL CHLORIDE",
+                "Phenylsulfonyl chloride",
+                "Benzene sulfochloride",
+                "Benzenesulfonic chloride",
+                "Benzene sulfonechloride"
+            ]
         },
         {
             "canonical": "BENZENETRICARBOXYLIC ACID, TRIOCTYL ESTER",
@@ -925,8 +1225,14 @@
         },
         {
             "canonical": "BENZYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "140-11-4",
+            "aliases": [
+                "Acetic acid benzyl ester",
+                "Phenylmethyl acetate",
+                "Acetic acid, phenylmethyl ester",
+                "Benzyl ethanoate",
+                "Phenylmethyl ethanoate"
+            ]
         },
         {
             "canonical": "Бензиловый спирт",
@@ -941,18 +1247,36 @@
         },
         {
             "canonical": "BENZYL CHLORIDE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "100-44-7",
+            "aliases": [
+                "(Chloromethyl)benzene",
+                "alpha-Chlorotoluene",
+                "Benzylchlorid",
+                "Chlorophenylmethane",
+                "Tolyl chloride"
+            ]
         },
         {
             "canonical": "beta-PINENE",
-            "cas": null,
-            "aliases": []
+            "cas": "127-91-3",
+            "aliases": [
+                "Nopinene",
+                "2(10)-Pinene",
+                "Terbenthene",
+                "Terebenthene",
+                "6,6-Dimethyl-2-methylenebicyclo[3.1.1]heptane"
+            ]
         },
         {
             "canonical": "beta-PROPIOLACTONE",
-            "cas": null,
-            "aliases": []
+            "cas": "57-57-8",
+            "aliases": [
+                "Propiolactone",
+                "2-Oxetanone",
+                "Oxetan-2-one",
+                "Betaprone",
+                "Propanolide"
+            ]
         },
         {
             "canonical": "BOC 6654 Noxious liquid, NF, (5) n.o.s. (Mineral oil) ST2, Cat. Y",
@@ -996,8 +1320,14 @@
         },
         {
             "canonical": "BROMOCHLOROMETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "74-97-5",
+            "aliases": [
+                "Methylene chlorobromide",
+                "CHLOROBROMOMETHANE",
+                "Methane, bromochloro-",
+                "Halon 1011",
+                "Chloromethyl bromide"
+            ]
         },
         {
             "canonical": "BUTENE OLIGOMER (n)",
@@ -1033,23 +1363,47 @@
         },
         {
             "canonical": "BUTYL BENZYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "85-68-7",
+            "aliases": [
+                "Benzyl butyl phthalate",
+                "Sicol",
+                "Palatinol BB",
+                "Unimoll BB",
+                "Santicizer 160"
+            ]
         },
         {
             "canonical": "BUTYL BUTYRATE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "109-21-7",
+            "aliases": [
+                "Butyl butyrate",
+                "Butyl butanoate",
+                "n-Butyl butyrate",
+                "Butanoic acid, butyl ester",
+                "1-Butyl butyrate"
+            ]
         },
         {
             "canonical": "BUTYL METHACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "97-88-1",
+            "aliases": [
+                "N-Butyl methacrylate",
+                "butyl 2-methylprop-2-enoate",
+                "Butylmethacrylaat",
+                "Butyl 2-methacrylate",
+                "Butil metacrilato"
+            ]
         },
         {
             "canonical": "BUTYLAMINE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "109-73-9",
+            "aliases": [
+                "Butylamine",
+                "butan-1-amine",
+                "N-BUTYLAMINE",
+                "1-Butanamine",
+                "1-Aminobutane"
+            ]
         },
         {
             "canonical": "BUTYLBENZENES (ALL ISOMERS)",
@@ -1058,18 +1412,36 @@
         },
         {
             "canonical": "BUTYLENE GLYCOL",
-            "cas": null,
-            "aliases": []
+            "cas": "107-88-0",
+            "aliases": [
+                "1,3-BUTANEDIOL",
+                "Butane-1,3-diol",
+                "1,3-Butylene glycol",
+                "1,3-Dihydroxybutane",
+                "beta-Butylene glycol"
+            ]
         },
         {
             "canonical": "BUTYRALDEHYDE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "123-72-8",
+            "aliases": [
+                "butyraldehyde",
+                "butanal",
+                "n-butyraldehyde",
+                "Butyral",
+                "1-butanal"
+            ]
         },
         {
             "canonical": "BUTYRIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "107-92-6",
+            "aliases": [
+                "butanoic acid",
+                "n-Butyric acid",
+                "n-Butanoic acid",
+                "propylformic acid",
+                "ethylacetic acid"
+            ]
         },
         {
             "canonical": "CA 303",
@@ -1093,8 +1465,14 @@
         },
         {
             "canonical": "CALCIUM CARBONATE SLURRY",
-            "cas": null,
-            "aliases": []
+            "cas": "471-34-1",
+            "aliases": [
+                "CALCIUM CARBONATE",
+                "Aeromatt",
+                "Calcium carbonate (1:1)",
+                "Carbonic acid calcium salt (1:1)",
+                "Calofort U"
+            ]
         },
         {
             "canonical": "CALCIUM HYDROXIDE SLURRY (n)",
@@ -1188,8 +1566,14 @@
         },
         {
             "canonical": "CARBON DISULPHIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "75-15-0",
+            "aliases": [
+                "CARBON DISULFIDE",
+                "Carbon bisulfide",
+                "Dithiocarbonic anhydride",
+                "Carbon bisulphide",
+                "methanedithione"
+            ]
         },
         {
             "canonical": "Тетрахлорметан",
@@ -1253,8 +1637,14 @@
         },
         {
             "canonical": "CHLOROACETIC ACID (80% OR LESS)",
-            "cas": null,
-            "aliases": []
+            "cas": "79-11-8",
+            "aliases": [
+                "chloroacetic acid",
+                "Monochloroacetic acid",
+                "2-chloroacetic acid",
+                "Chloracetic acid",
+                "Chloroethanoic acid"
+            ]
         },
         {
             "canonical": "Хлорбензол",
@@ -1291,8 +1681,14 @@
         },
         {
             "canonical": "CITRIC ACID (70% OR LESS)",
-            "cas": null,
-            "aliases": []
+            "cas": "77-92-9",
+            "aliases": [
+                "citric acid",
+                "2-hydroxypropane-1,2,3-tricarboxylic acid",
+                "Citric acid, anhydrous",
+                "Aciletten",
+                "Anhydrous citric acid"
+            ]
         },
         {
             "canonical": "CLAIRISOL NS Noxious liquid, F, (10) n.o.s. (N-alkanes(C10+)) ST3, Cat. Z",
@@ -1317,7 +1713,11 @@
         {
             "canonical": "COCONUT OIL FATTY ACID (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "SCHEMBL29360168",
+                "PZKXRDPRLQDAFK-IWKDVGJASA-N",
+                "(4R,4aR,7S,7aR,12bS)-7-hydroxy-9-methoxy-3-methyl-2,4,4a,7,7a,13-hexahydro-1H-4,12-methanobenzofuro[3,2-e]isoquinoline-11-carboxylic acid"
+            ]
         },
         {
             "canonical": "COCONUT OIL FATTY ACID METHYL ESTER (n)",
@@ -1351,13 +1751,25 @@
         },
         {
             "canonical": "CROTONALDEHYDE",
-            "cas": null,
-            "aliases": []
+            "cas": "4170-30-3",
+            "aliases": [
+                "2-Butenal",
+                "Crotonal",
+                "Crotylaldehyde",
+                "(E)-but-2-enal",
+                "(2E)-but-2-enal"
+            ]
         },
         {
             "canonical": "CYCLOHEPTANE",
-            "cas": null,
-            "aliases": []
+            "cas": "291-64-5",
+            "aliases": [
+                "Suberane",
+                "Heptamethylene",
+                "UNII-VTZ53P34JA",
+                "VTZ53P34JA",
+                "HSDB 59"
+            ]
         },
         {
             "canonical": "Циклогексан",
@@ -1391,8 +1803,14 @@
         },
         {
             "canonical": "CYCLOHEXYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "622-45-7",
+            "aliases": [
+                "Acetic acid, cyclohexyl ester",
+                "Hexalin acetate",
+                "Cyclohexanyl acetate",
+                "Adronal acetate",
+                "Cyclohexanolazetat"
+            ]
         },
         {
             "canonical": "Циклогексиламин",
@@ -1403,38 +1821,80 @@
         },
         {
             "canonical": "CYCLOPENTANE",
-            "cas": null,
-            "aliases": []
+            "cas": "287-92-3",
+            "aliases": [
+                "Pentamethylene",
+                "ciclopentano",
+                "cyclopentan",
+                "Zyklopentan",
+                "DTXSID6024886"
+            ]
         },
         {
             "canonical": "CYCLOPENTANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "96-41-3",
+            "aliases": [
+                "Cyclopentyl alcohol",
+                "Hydroxycyclopentane",
+                "DTXSID1033371",
+                "UN2244",
+                "1L43Q07TBU"
+            ]
         },
         {
             "canonical": "CYCLOPENTENE",
-            "cas": null,
-            "aliases": []
+            "cas": "142-29-0",
+            "aliases": [
+                "1-Cyclopentene",
+                "DTXSID6029171",
+                "UNII-ONM2CKV81Z",
+                "ONM2CKV81Z",
+                "NSC 5160"
+            ]
         },
         {
             "canonical": "DECAHYDRONAPHTHALENE",
-            "cas": null,
-            "aliases": []
+            "cas": "91-17-8",
+            "aliases": [
+                "Decalin",
+                "Naphthan",
+                "Dekalin",
+                "Perhydronaphthalene",
+                "Naphthalene, decahydro-"
+            ]
         },
         {
             "canonical": "DECANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "334-48-5",
+            "aliases": [
+                "CAPRIC ACID",
+                "n-Decanoic acid",
+                "n-Capric acid",
+                "Decoic acid",
+                "Decylic acid"
+            ]
         },
         {
             "canonical": "DECENE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "25339-53-1",
+            "aliases": [
+                "RefChem:1083040",
+                "DTXSID2029747",
+                "2-Decene, (E)-",
+                "(E)-dec-2-ene",
+                "2-DECENE"
+            ]
         },
         {
             "canonical": "DECYL ALCOHOL (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-30-1",
+            "aliases": [
+                "1-DECANOL",
+                "Decyl alcohol",
+                "Decan-1-ol",
+                "n-Decyl alcohol",
+                "n-Decanol"
+            ]
         },
         {
             "canonical": "DECYL\/DODECYL\/TETRADECYL ALCOHOL MIXTURE",
@@ -1448,28 +1908,55 @@
         },
         {
             "canonical": "DENATONIUM BENZOATE",
-            "cas": null,
-            "aliases": []
+            "cas": "3734-33-6",
+            "aliases": [
+                "Bitrex",
+                "Lidocaine benzyl benzoate",
+                "Aversion",
+                "THS-839",
+                "Anispray"
+            ]
         },
         {
             "canonical": "DI-(2-ETHYLHEXYL) ADIPATE",
-            "cas": null,
-            "aliases": []
+            "cas": "103-23-1",
+            "aliases": [
+                "BIS(2-ETHYLHEXYL) ADIPATE",
+                "Diethylhexyl adipate",
+                "Bis(2-ethylhexyl)hexanedioate",
+                "DEHA",
+                "BEHA"
+            ]
         },
         {
             "canonical": "DI-(2-ETHYLHEXYL) PHOSPHORIC ACID (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Di-|I-methoxobis(1,5-cyclooctadiene)diiridium(I)",
+                "Di-"
+            ]
         },
         {
             "canonical": "DI-n-PROPYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "142-84-7",
+            "aliases": [
+                "DIPROPYLAMINE",
+                "n-Dipropylamine",
+                "1-Propanamine, N-propyl-",
+                "N-Propyl-1-propanamine",
+                "RCRA waste number U110"
+            ]
         },
         {
             "canonical": "DIACETONE ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "123-42-2",
+            "aliases": [
+                "4-HYDROXY-4-METHYL-2-PENTANONE",
+                "4-Hydroxy-4-methylpentan-2-one",
+                "Diacetonalkohol",
+                "Diketone alcohol",
+                "Diacetonalcohol"
+            ]
         },
         {
             "canonical": "DIALKYL (C7-C13) PHTHALATES",
@@ -1488,13 +1975,25 @@
         },
         {
             "canonical": "DIBROMOMETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "74-95-3",
+            "aliases": [
+                "Methylene bromide",
+                "Methylene dibromide",
+                "Methane, dibromo-",
+                "CH2Br2",
+                "Dibrommethan"
+            ]
         },
         {
             "canonical": "DIBUTYL HYDROGEN PHOSPHONATE",
-            "cas": null,
-            "aliases": []
+            "cas": "1809-19-4",
+            "aliases": [
+                "Dibutyl phosphite",
+                "Dibutyl phosphonate",
+                "Phosphonic acid, dibutyl ester",
+                "Dibutoxyphosphine oxide",
+                "Mobil DBHP"
+            ]
         },
         {
             "canonical": "Дибутилфталат",
@@ -1507,8 +2006,14 @@
         },
         {
             "canonical": "DIBUTYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "111-92-2",
+            "aliases": [
+                "Di-n-butylamine",
+                "N-Butyl-1-butanamine",
+                "1-Butanamine, N-butyl-",
+                "Dibutilamina",
+                "n-Dibutylamine"
+            ]
         },
         {
             "canonical": "DICHLOROBENZENE (ALL ISOMERS)",
@@ -1517,8 +2022,14 @@
         },
         {
             "canonical": "DICHLOROETHYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "111-44-4",
+            "aliases": [
+                "2,2'-Dichlorodiethyl ether",
+                "2-Chloroethyl ether",
+                "BIS(2-CHLOROETHYL) ETHER",
+                "1-Chloro-2-(2-chloroethoxy)ethane",
+                "Chlorex"
+            ]
         },
         {
             "canonical": "Дихлорметан",
@@ -1566,8 +2077,14 @@
         },
         {
             "canonical": "DIETHYL SULPHATE",
-            "cas": null,
-            "aliases": []
+            "cas": "64-67-5",
+            "aliases": [
+                "Diethyl sulfate",
+                "Sulfuric acid, diethyl ester",
+                "Diaethylsulfat",
+                "Diethyl tetraoxosulfate",
+                "Diethylester kyseliny sirove"
+            ]
         },
         {
             "canonical": "Диэтиламин",
@@ -1579,8 +2096,14 @@
         },
         {
             "canonical": "DIETHYLAMINOETHANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "100-37-8",
+            "aliases": [
+                "2-(Diethylamino)ethanol",
+                "DEAE",
+                "Diethylethanolamine",
+                "2-(Diethylamino)Ethan-1-Ol",
+                "N,N-Diethyl-2-aminoethanol"
+            ]
         },
         {
             "canonical": "DIETHYLBENZENE",
@@ -1598,23 +2121,47 @@
         },
         {
             "canonical": "DIETHYLENE GLYCOL DIBUTYL ETHER (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-73-2",
+            "aliases": [
+                "Bis(2-butoxyethyl) ether",
+                "Dibutyl carbitol",
+                "Butyl diglyme",
+                "5,8,11-Trioxapentadecane",
+                "2-Butoxyethyl ether"
+            ]
         },
         {
             "canonical": "DIETHYLENE GLYCOL DIETHYL ETHER (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-36-7",
+            "aliases": [
+                "1-Ethoxy-2-(2-ethoxyethoxy)ethane",
+                "2-Ethoxyethyl ether",
+                "Diethyl carbitol",
+                "Bis(2-ethoxyethyl) ether",
+                "DEGDEE"
+            ]
         },
         {
             "canonical": "DIETHYLENE GLYCOL PHTHALATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "7447-67-8",
+            "aliases": [
+                "Oxydi-2,1-ethanediyl 1,2-benzenedicarboxylate",
+                "1,2-Benzenedicarboxylic acid, oxydi-2,1-ethanediyl ester",
+                "RefChem:587383",
+                "2,2'-[oxybis(ethane-2,1-diyloxycarbonyl)]dibenzoic acid",
+                "2-[2-[2-(2-carboxybenzoyl)oxyethoxy]ethoxycarbonyl]benzoic acid"
+            ]
         },
         {
             "canonical": "DIETHYLENETRIAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "111-40-0",
+            "aliases": [
+                "Bis(2-aminoethyl)amine",
+                "2,2'-Diaminodiethylamine",
+                "1,4,7-Triazaheptane",
+                "DETA",
+                "Barsamide 115"
+            ]
         },
         {
             "canonical": "DIETHYLENETRIAMINE PENTAACETIC ACID, PENTASODIUM SALT SOLUTION (n)",
@@ -1623,93 +2170,201 @@
         },
         {
             "canonical": "DIGLYCIDYL ETHER OF BISPHENOL A (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "1675-54-3",
+            "aliases": [
+                "BISPHENOL A DIGLYCIDYL ETHER",
+                "BADGE",
+                "2,2-Bis(4-glycidyloxyphenyl)propane",
+                "Epoxide A",
+                "Diglycidyl bisphenol A"
+            ]
         },
         {
             "canonical": "DIGLYCIDYL ETHER OF BISPHENOL F (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "54208-63-8",
+            "aliases": [
+                "2,2'-(Methylenebis(2,1-phenyleneoxymethylene))bis(oxirane)",
+                "2,2'-[Methylenebis(2,1-phenyleneoxymethylene)]bis(oxirane)",
+                "2,2'-[Methylenebis(2,1-phenyleneoxymethylene)]bis[oxirane]",
+                "RefChem:440166",
+                "Oxirane, 2,2'-[methylenebis(2,1-phenyleneoxymethylene)]bis-"
+            ]
         },
         {
             "canonical": "DIHEPTYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "3648-21-3",
+            "aliases": [
+                "Di-n-heptyl phthalate",
+                "Heptyl phthalate",
+                "diheptyl benzene-1,2-dicarboxylate",
+                "1,2-Benzenedicarboxylic acid, diheptyl ester",
+                "Phthalic acid, diheptyl ester"
+            ]
         },
         {
             "canonical": "DIHEXYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "84-75-3",
+            "aliases": [
+                "Di-n-hexyl phthalate",
+                "dihexyl benzene-1,2-dicarboxylate",
+                "1,2-Benzenedicarboxylic acid, dihexyl ester",
+                "Phthalic acid, dihexyl ester",
+                "N-Dihexyl phthalate"
+            ]
         },
         {
             "canonical": "DIISOBUTYL KETONE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-83-8",
+            "aliases": [
+                "2,6-Dimethyl-4-heptanone",
+                "2,6-Dimethylheptan-4-one",
+                "Isovalerone",
+                "Isobutyl ketone",
+                "s-Diisopropylacetone"
+            ]
         },
         {
             "canonical": "DIISOBUTYL PHTHALATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "84-69-5",
+            "aliases": [
+                "DIBP",
+                "Isobutyl phthalate",
+                "Palatinol IC",
+                "Hexaplas M\/1B",
+                "Phthalic acid, diisobutyl ester"
+            ]
         },
         {
             "canonical": "DIISOBUTYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "110-96-3",
+            "aliases": [
+                "bis(2-methylpropyl)amine",
+                "Amine, diisobutyl-",
+                "1-Propanamine, 2-methyl-N-(2-methylpropyl)-",
+                "N,N-BIS(2-METHYLPROPYL)AMINE",
+                "Di(-2-methylpropyl)amine"
+            ]
         },
         {
             "canonical": "DIISOBUTYLENE",
-            "cas": null,
-            "aliases": []
+            "cas": "107-39-1",
+            "aliases": [
+                "2,4,4-TRIMETHYL-1-PENTENE",
+                "2,4,4-Trimethylpent-1-ene",
+                "1-Pentene, 2,4,4-trimethyl-",
+                "2,2,4-Trimethyl-4-pentene",
+                "1-Methyl-1-neopentylethylene"
+            ]
         },
         {
             "canonical": "DIISONONYL ADIPATE",
-            "cas": null,
-            "aliases": []
+            "cas": "33703-08-1",
+            "aliases": [
+                "Hexanedioic acid, diisononyl ester",
+                "Diisononyl hexanedioate",
+                "Hexanedioic acid, 1,6-diisononyl ester",
+                "BMQ5JF4857",
+                "PLASTOMOLL DNA"
+            ]
         },
         {
             "canonical": "DIISOOCTYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "27554-26-3",
+            "aliases": [
+                "Isooctyl phthalate",
+                "Diop",
+                "bis(6-methylheptyl) benzene-1,2-dicarboxylate",
+                "Hexaplas M\/O",
+                "Corflex 880"
+            ]
         },
         {
             "canonical": "DIISOPROPANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "110-97-4",
+            "aliases": [
+                "Bis(2-hydroxypropyl)amine",
+                "Bis(2-propanol)amine",
+                "1,1'-Iminodi-2-propanol",
+                "2-Propanol, 1,1'-iminobis-",
+                "Di-2-propanolamine"
+            ]
         },
         {
             "canonical": "DIISOPROPYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-18-9",
+            "aliases": [
+                "N,N-Diisopropylamine",
+                "N-(1-Methylethyl)-2-propanamine",
+                "2-Propanamine, N-(1-methylethyl)-",
+                "DTXSID9025085",
+                "BR9JLI40NO"
+            ]
         },
         {
             "canonical": "DIISOPROPYLBENZENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "25321-09-9",
+            "aliases": [
+                "DIISOPROPYLBENZENE",
+                "Benzene, diisopropyl-",
+                "Bis(1-methylethyl)benzene",
+                "DTXSID0027858",
+                "RefChem:917230"
+            ]
         },
         {
             "canonical": "DIISOPROPYLNAPHTHALENE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "27351-96-8",
+            "aliases": [
+                "1,5-Diisopropylnaphthalene",
+                "Naphthalene, 1,5-diisopropyl-",
+                "Naphthalene, 1,5-bis(1-methylethyl)-",
+                "B091E29ZIR",
+                "DTXSID9067304"
+            ]
         },
         {
             "canonical": "DIMETHYL ADIPATE",
-            "cas": null,
-            "aliases": []
+            "cas": "627-93-0",
+            "aliases": [
+                "RefChem:134217",
+                "Dimethyl hexanedioate",
+                "Adipic acid dimethyl ester",
+                "HEXANEDIOIC ACID, DIMETHYL ESTER",
+                "1,6-Dimethylhexanedioate"
+            ]
         },
         {
             "canonical": "DIMETHYL DISULPHIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "624-92-0",
+            "aliases": [
+                "Dimethyl disulfide",
+                "METHYL DISULFIDE",
+                "(Methyldisulfanyl)methane",
+                "DMDS",
+                "2,3-Dithiabutane"
+            ]
         },
         {
             "canonical": "DIMETHYL GLUTARATE (No Heat)",
-            "cas": null,
-            "aliases": []
+            "cas": "1119-40-0",
+            "aliases": [
+                "DIMETHYL GLUTARATE",
+                "Glutaric acid dimethyl ester",
+                "Dimethyl pentanedioate",
+                "Pentanedioic acid, dimethyl ester",
+                "DBE 5"
+            ]
         },
         {
             "canonical": "DIMETHYL HYDROGEN PHOSPHITE",
-            "cas": null,
-            "aliases": []
+            "cas": "868-85-9",
+            "aliases": [
+                "RefChem:929181",
+                "DTXCID20164557",
+                "Bis(hydroxymethyl)phosphine oxide",
+                "Dimethoxyphosphine oxide",
+                "Dimethyl acid phosphite"
+            ]
         },
         {
             "canonical": "DIMETHYL OCTANOIC ACID",
@@ -1718,13 +2373,25 @@
         },
         {
             "canonical": "DIMETHYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "131-11-3",
+            "aliases": [
+                "Avolin",
+                "Mipax",
+                "Palatinol M",
+                "Solvanom",
+                "Solvarone"
+            ]
         },
         {
             "canonical": "DIMETHYL SUCCINATE",
-            "cas": null,
-            "aliases": []
+            "cas": "106-65-0",
+            "aliases": [
+                "Dimethyl butanedioate",
+                "Butanedioic acid, dimethyl ester",
+                "Succinic acid, dimethyl ester",
+                "Methyl butanedioate",
+                "FEMA No. 2396"
+            ]
         },
         {
             "canonical": "DIMETHYLAMINE SOLUTION (45% OR LESS)",
@@ -1743,8 +2410,14 @@
         },
         {
             "canonical": "DIMETHYLETHANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-01-0",
+            "aliases": [
+                "2-(Dimethylamino)ethanol",
+                "Deanol",
+                "N,N-Dimethylethanolamine",
+                "Dimethylaminoethanol",
+                "Norcholine"
+            ]
         },
         {
             "canonical": "Диметилформамид",
@@ -1768,8 +2441,14 @@
         },
         {
             "canonical": "DINONYL PHTHALATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "84-76-4",
+            "aliases": [
+                "Unimoll DN",
+                "Bisoflex 91",
+                "Nonyl phthalate",
+                "Bisoflex DNP",
+                "1,2-Benzenedicarboxylic acid, dinonyl ester"
+            ]
         },
         {
             "canonical": "Диоктилфталат",
@@ -1784,13 +2463,25 @@
         },
         {
             "canonical": "DIPENTENE",
-            "cas": null,
-            "aliases": []
+            "cas": "138-86-3",
+            "aliases": [
+                "1-methyl-4-prop-1-en-2-ylcyclohexene",
+                "RefChem:1055817",
+                "LIMONENE",
+                "Cinene",
+                "Cajeputene"
+            ]
         },
         {
             "canonical": "DIPHENYL",
-            "cas": null,
-            "aliases": []
+            "cas": "92-52-4",
+            "aliases": [
+                "Biphenyl",
+                "1,1'-Biphenyl",
+                "Phenylbenzene",
+                "Bibenzene",
+                "Lemonene"
+            ]
         },
         {
             "canonical": "DIPHENYL \/ DIPHENYL ETHER MIXTURES",
@@ -1799,8 +2490,14 @@
         },
         {
             "canonical": "DIPHENYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "101-84-8",
+            "aliases": [
+                "Diphenyl oxide",
+                "Phenoxybenzene",
+                "Phenyl ether",
+                "Benzene, 1,1'-oxybis-",
+                "Oxybisbenzene"
+            ]
         },
         {
             "canonical": "DIPHENYL ETHER \/ DIPHENYL PHENYL ETHER MIXTURE",
@@ -1809,8 +2506,14 @@
         },
         {
             "canonical": "DIPHENYLAMINE (MOLTEN) (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "122-39-4",
+            "aliases": [
+                "Diphenylamine",
+                "N-Phenylaniline",
+                "N,N-DIPHENYLAMINE",
+                "N-Phenylbenzenamine",
+                "Anilinobenzene"
+            ]
         },
         {
             "canonical": "DIPHENYLAMINES, ALKYLATED (n)",
@@ -1834,8 +2537,14 @@
         },
         {
             "canonical": "DIPROPYLENE GLYCOL",
-            "cas": null,
-            "aliases": []
+            "cas": "25265-71-8",
+            "aliases": [
+                "Dipropylenglykol",
+                "4-Oxa-2,6-heptandiol",
+                "E107L85C40",
+                "EPA Pesticide Chemical Code 068604",
+                "DTXSID0027856"
+            ]
         },
         {
             "canonical": "DISTILLED PALM KERNEL OIL FATTY ACID",
@@ -1849,28 +2558,58 @@
         },
         {
             "canonical": "DITRIDECYL ADIPATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "16958-92-2",
+            "aliases": [
+                "Bis(tridecyl) adipate",
+                "Hexanedioic acid, ditridecyl ester",
+                "UNII-7CCE2L906B",
+                "Hexanedioic acid, 1,6-ditridecyl ester",
+                "7CCE2L906B"
+            ]
         },
         {
             "canonical": "DITRIDECYL PHTHALATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "119-06-2",
+            "aliases": [
+                "Nuoplaz",
+                "Staflex DTDP",
+                "Truflex DTDP",
+                "ditridecyl benzene-1,2-dicarboxylate",
+                "Jayflex DTDP"
+            ]
         },
         {
             "canonical": "DIUNDECYL PHTHALATE",
-            "cas": null,
-            "aliases": []
+            "cas": "39393-37-8",
+            "aliases": [
+                "Santicizer 711",
+                "1,2-Benzenedicarboxylic acid, diundecyl ester",
+                "diundecyl benzene-1,2-dicarboxylate",
+                "Di-n-undecyl phthalate",
+                "Phthalic acid, diundecyl ester"
+            ]
         },
         {
             "canonical": "DODECANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-40-3",
+            "aliases": [
+                "DODECANE",
+                "n-Dodecane",
+                "Dihexyl",
+                "Bihexyl",
+                "Adakane 12"
+            ]
         },
         {
             "canonical": "DODECENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-41-4",
+            "aliases": [
+                "1-DODECENE",
+                "Dodec-1-ene",
+                "Adacene 12",
+                "Dodecene-1",
+                "n-Dodec-1-ene"
+            ]
         },
         {
             "canonical": "DODECYL \/ PENTADECYL METHACRYLATE MIXTURE",
@@ -1879,8 +2618,14 @@
         },
         {
             "canonical": "DODECYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "112-53-8",
+            "aliases": [
+                "1-DODECANOL",
+                "Dodecan-1-ol",
+                "Dodecanol",
+                "Lauryl alcohol",
+                "n-Dodecyl alcohol"
+            ]
         },
         {
             "canonical": "DODECYL BENZENE",
@@ -1899,8 +2644,14 @@
         },
         {
             "canonical": "DODECYL METHACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "142-90-5",
+            "aliases": [
+                "LAURYL METHACRYLATE",
+                "Dodecyl 2-methylacrylate",
+                "N-Dodecyl methacrylate",
+                "2-Propenoic acid, 2-methyl-, dodecyl ester",
+                "Metazene"
+            ]
         },
         {
             "canonical": "DODECYL\/OCTADECYL METHACRYLATE MIXTURE",
@@ -1914,8 +2665,14 @@
         },
         {
             "canonical": "DODECYLPHENOL",
-            "cas": null,
-            "aliases": []
+            "cas": "5284-29-7",
+            "aliases": [
+                "2-Dodecylphenol",
+                "o-Dodecylphenol",
+                "Phenol, o-dodecyl-",
+                "Phenol, 2-dodecyl-",
+                "UNII-A40GZ9LVDV"
+            ]
         },
         {
             "canonical": "DODECYLXYLENE",
@@ -1944,8 +2701,14 @@
         },
         {
             "canonical": "EPICHLOROHYDRIN",
-            "cas": null,
-            "aliases": []
+            "cas": "106-89-8",
+            "aliases": [
+                "2-(Chloromethyl)oxirane",
+                "Epichlorhydrin",
+                "1-Chloro-2,3-epoxypropane",
+                "Glycidyl chloride",
+                "Epichlorhydrine"
+            ]
         },
         {
             "canonical": "EPIKOTE TN 1001-X-75 Noxious liquid, F, (4) n.o.s. (Diphenol propane epichlorohydrin resins) ST2, Cat. X",
@@ -1954,8 +2717,14 @@
         },
         {
             "canonical": "epsilon-CAPROLACTAM (MOLTEN OR AQUEOUS SOLUTIONS)",
-            "cas": null,
-            "aliases": []
+            "cas": "105-60-2",
+            "aliases": [
+                "azepan-2-one",
+                "CAPROLACTAM",
+                "epsilon-Caprolactam",
+                "2-Oxohexamethylenimine",
+                "6-Caprolactam"
+            ]
         },
         {
             "canonical": "ESCAID 100 Noxious liquid, NF, (3) n.o.s. (Alkyl (C5-C8) benzenes) ST2, Cat. X",
@@ -1990,8 +2759,14 @@
         },
         {
             "canonical": "ETHYL 3-ETHOXYPROPIONATE",
-            "cas": null,
-            "aliases": []
+            "cas": "763-69-9",
+            "aliases": [
+                "Propanoic acid, 3-ethoxy-, ethyl ester",
+                "Ethyl beta-ethoxypropionate",
+                "DTXSID0027309",
+                "EC38RSJ79J",
+                "NSC-8870"
+            ]
         },
         {
             "canonical": "Этилацетат",
@@ -2004,13 +2779,25 @@
         },
         {
             "canonical": "ETHYL ACETOACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "141-97-9",
+            "aliases": [
+                "ethyl 3-oxobutanoate",
+                "ethyl acetylacetate",
+                "ethyl 3-oxobutyrate",
+                "diacetic ether",
+                "Butanoic acid, 3-oxo-, ethyl ester"
+            ]
         },
         {
             "canonical": "ETHYL ACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "140-88-5",
+            "aliases": [
+                "Acrylic acid ethyl ester",
+                "Ethyl propenoate",
+                "2-Propenoic acid, ethyl ester",
+                "Ethyl 2-propenoate",
+                "Ethylacrylaat"
+            ]
         },
         {
             "canonical": "Этанол",
@@ -2026,28 +2813,58 @@
         },
         {
             "canonical": "ETHYL AMYL KETONE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "541-85-5",
+            "aliases": [
+                "5-Methylheptan-3-one",
+                "5-METHYL-3-HEPTANONE",
+                "3-Heptanone, 5-methyl-",
+                "3-Methyl-5-heptanone",
+                "Ethyl 2-methylbutyl ketone"
+            ]
         },
         {
             "canonical": "ETHYL BUTYRATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "105-54-4",
+            "aliases": [
+                "Ethyl butanoate",
+                "Butyric acid ethyl ester",
+                "Ethyl n-butyrate",
+                "Butanoic acid, ethyl ester",
+                "Ethyl n-butanoate"
+            ]
         },
         {
             "canonical": "ETHYL METHACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "97-63-2",
+            "aliases": [
+                "ethyl 2-methylprop-2-enoate",
+                "2-Propenoic acid, 2-methyl-, ethyl ester",
+                "Ethyl 2-methylacrylate",
+                "Ethyl 2-methyl-2-propenoate",
+                "Rhoplex AC-33"
+            ]
         },
         {
             "canonical": "ETHYL PROPIONATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "105-37-3",
+            "aliases": [
+                "Ethyl propanoate",
+                "Propanoic acid, ethyl ester",
+                "Propionic ether",
+                "Propionic ester",
+                "Propionic acid, ethyl ester"
+            ]
         },
         {
             "canonical": "ETHYL tert-BUTYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "637-92-3",
+            "aliases": [
+                "tert-Butyl ethyl ether",
+                "2-Ethoxy-2-methylpropane",
+                "ETBE",
+                "Ethyl tert-butyl oxide",
+                "Propane, 2-ethoxy-2-methyl-"
+            ]
         },
         {
             "canonical": "Этиламин",
@@ -2074,23 +2891,47 @@
         },
         {
             "canonical": "ETHYLCYCLOHEXANE",
-            "cas": null,
-            "aliases": []
+            "cas": "1678-91-7",
+            "aliases": [
+                "Cyclohexane, ethyl-",
+                "DTXSID1051779",
+                "SWACLEAN ECH",
+                "NSC-8880",
+                "567IJI1215"
+            ]
         },
         {
             "canonical": "ETHYLENE CHLOROHYDRIN",
-            "cas": null,
-            "aliases": []
+            "cas": "107-07-3",
+            "aliases": [
+                "2-chloroethanol",
+                "Ethanol, 2-chloro-",
+                "Glycol chlorohydrin",
+                "2-Chloroethyl alcohol",
+                "Chloroethanol"
+            ]
         },
         {
             "canonical": "ETHYLENE CYANOHYDRIN",
-            "cas": null,
-            "aliases": []
+            "cas": "109-78-4",
+            "aliases": [
+                "Hydracrylonitrile",
+                "RefChem:139128",
+                "3-Hydroxypropionitrile",
+                "3-Hydroxypropanenitrile",
+                "2-Cyanoethanol"
+            ]
         },
         {
             "canonical": "ETHYLENE DIBROMIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "106-93-4",
+            "aliases": [
+                "1,2-Dibromoethane",
+                "Ethylene bromide",
+                "sym-Dibromoethane",
+                "Ethane, 1,2-dibromo-",
+                "Aadibroom"
+            ]
         },
         {
             "canonical": "1,2-Дихлорэтан",
@@ -2121,23 +2962,47 @@
         },
         {
             "canonical": "ETHYLENE GLYCOL ACETATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-55-7",
+            "aliases": [
+                "ETHYLENE GLYCOL DIACETATE",
+                "Glycol diacetate",
+                "1,2-Diacetoxyethane",
+                "Ethylene diacetate",
+                "1,2-Ethanediol diacetate"
+            ]
         },
         {
             "canonical": "ETHYLENE GLYCOL BUTYL ETHER ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "112-07-2",
+            "aliases": [
+                "2-Butoxyethyl acetate",
+                "ETHYLENE GLYCOL MONOBUTYL ETHER ACETATE",
+                "Butyl cellosolve acetate",
+                "Butyl glycol acetate",
+                "Ektasolve EB acetate"
+            ]
         },
         {
             "canonical": "ETHYLENE GLYCOL DIACETATE",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Glycol diacetate",
+                "1,2-Diacetoxyethane",
+                "Ethylene diacetate",
+                "1,2-Ethanediol diacetate",
+                "Ethanediol diacetate"
+            ]
         },
         {
             "canonical": "ETHYLENE GLYCOL METHYL ETHER ACETATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "110-49-6",
+            "aliases": [
+                "2-Methoxyethyl acetate",
+                "Methyl glycol acetate",
+                "Ethylene glycol monomethyl ether acetate",
+                "MeCsac",
+                "2-Methoxyethanol acetate"
+            ]
         },
         {
             "canonical": "ETHYLENE GLYCOL MONOALKYL ETHERS",
@@ -2146,8 +3011,14 @@
         },
         {
             "canonical": "ETHYLENE GLYCOL PHENYL ETHER (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "122-99-6",
+            "aliases": [
+                "2-PHENOXYETHANOL",
+                "Phenoxyethanol",
+                "Ethylene glycol monophenyl ether",
+                "Phenyl cellosolve",
+                "Phenoxethol"
+            ]
         },
         {
             "canonical": "ETHYLENE GLYCOL PHENYL ETHER\/DIETHYLENE GLYCOL PHENYL ETHER MIXTURE",
@@ -2180,13 +3051,25 @@
         },
         {
             "canonical": "ETHYLIDENENORBORNENE",
-            "cas": null,
-            "aliases": []
+            "cas": "16219-75-3",
+            "aliases": [
+                "5-ETHYLIDENE-2-NORBORNENE",
+                "5-Ethylidenebicyclo[2.2.1]hept-2-ene",
+                "DTXSID1025306",
+                "Bicyclo[2.2.1]hept-2-ene, 5-ethylidene-",
+                "5-Ethylidenebicyclo(2.2.1)hept-2-ene"
+            ]
         },
         {
             "canonical": "ETHYLTOLUENE",
-            "cas": null,
-            "aliases": []
+            "cas": "611-14-3",
+            "aliases": [
+                "1-Ethyl-2-methylbenzene",
+                "2-Ethyltoluene",
+                "O-ETHYLTOLUENE",
+                "o-Methylethylbenzene",
+                "1-Methyl-2-ethylbenzene"
+            ]
         },
         {
             "canonical": "EXX PRINT T 82A Noxious liquid, NF, (7) n.o.s. (Iso- and cylcloalkanes (C12+)) ST3, Cat. Y",
@@ -2345,8 +3228,14 @@
         },
         {
             "canonical": "FLUOROSILICIC ACID (20-30%) IN WATER SOLUTION (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "16961-83-4",
+            "aliases": [
+                "Hexafluorosilicic acid",
+                "Fluorosilicic acid",
+                "FLUOSILICIC ACID",
+                "Hydrofluosilicic acid",
+                "Hydrofluorosilicic acid"
+            ]
         },
         {
             "canonical": "FORMALDEHYDE SOLUTIONS (45% OR LESS)",
@@ -2395,8 +3284,14 @@
         },
         {
             "canonical": "gamma-BUTYROLACTONE",
-            "cas": null,
-            "aliases": []
+            "cas": "96-48-0",
+            "aliases": [
+                "BUTYROLACTONE",
+                "dihydrofuran-2(3H)-one",
+                "4-Butyrolactone",
+                "4-Butanolide",
+                "1,4-Butanolide"
+            ]
         },
         {
             "canonical": "GLUCITOL\/GLYCEROL BLEND PROPOXYLATED (CONTAINING LESS THAN 10% AMINES) (n)",
@@ -2415,8 +3310,14 @@
         },
         {
             "canonical": "GLYCEROL MONOOLEATE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "25496-72-4",
+            "aliases": [
+                "Monoolein",
+                "Glyceryl monooleate",
+                "alpha-Monoolein",
+                "Glycerol oleate",
+                "Monoglyceryl oleate"
+            ]
         },
         {
             "canonical": "GLYCEROL PROPOXYLATED (n)",
@@ -2435,8 +3336,14 @@
         },
         {
             "canonical": "GLYCERYL TRIACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "102-76-1",
+            "aliases": [
+                "triacetin",
+                "Glycerol triacetate",
+                "Enzactin",
+                "Triacetine",
+                "Triacetylglycerol"
+            ]
         },
         {
             "canonical": "GLYCIDYL ESTER OF C10 TRIALKYL ACETIC ACID",
@@ -2480,43 +3387,91 @@
         },
         {
             "canonical": "HEPTANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "142-82-5",
+            "aliases": [
+                "HEPTANE",
+                "n-Heptane",
+                "Heptan",
+                "Heptyl hydride",
+                "Dipropyl methane"
+            ]
         },
         {
             "canonical": "HEPTANOL (ALL ISOMERS) (d)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-70-6",
+            "aliases": [
+                "1-HEPTANOL",
+                "Heptan-1-ol",
+                "Heptyl alcohol",
+                "Heptanol",
+                "n-Heptanol"
+            ]
         },
         {
             "canonical": "HEPTENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "25339-56-4",
+            "aliases": [
+                "1-HEPTENE",
+                "Hept-1-ene",
+                "HEPTENE",
+                "n-Heptene",
+                "NSC 74130"
+            ]
         },
         {
             "canonical": "HEPTYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "112-06-1",
+            "aliases": [
+                "Acetic acid, heptyl ester",
+                "1-Heptyl acetate",
+                "Heptanyl acetate",
+                "N-HEPTYL ACETATE",
+                "Acetate C-7"
+            ]
         },
         {
             "canonical": "HEXAMETHYLENE DIISOCYANATE",
-            "cas": null,
-            "aliases": []
+            "cas": "822-06-0",
+            "aliases": [
+                "1,6-Diisocyanatohexane",
+                "HMDI",
+                "1,6-Hexamethylene diisocyanate",
+                "Hexane, 1,6-diisocyanato-",
+                "Hexane 1,6-diisocyanate"
+            ]
         },
         {
             "canonical": "HEXAMETHYLENE GLYCOL",
-            "cas": null,
-            "aliases": []
+            "cas": "629-11-8",
+            "aliases": [
+                "1,6-HEXANEDIOL",
+                "Hexane-1,6-diol",
+                "1,6-Dihydroxyhexane",
+                "Hexamethylenediol",
+                "alpha,omega-Hexanediol"
+            ]
         },
         {
             "canonical": "HEXAMETHYLENEDIAMINE (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "124-09-4",
+            "aliases": [
+                "1,6-Hexanediamine",
+                "Hexamethylenediamine",
+                "HEXANE-1,6-DIAMINE",
+                "HMDA",
+                "1,6-Hexylenediamine"
+            ]
         },
         {
             "canonical": "HEXAMETHYLENEDIAMINE ADIPATE (50% IN WATER)",
-            "cas": null,
-            "aliases": []
+            "cas": "3323-53-3",
+            "aliases": [
+                "Hexamethylenediamine adipate",
+                "Hexamethylenediamine adipate (1:1)",
+                "Nylon 66 salt",
+                "Hexamethylenediammonium adipate",
+                "Hexamethylenediamine monoadipate"
+            ]
         },
         {
             "canonical": "HEXAMETHYLENEDIAMINE SOLUTION",
@@ -2525,28 +3480,58 @@
         },
         {
             "canonical": "HEXAMETHYLENEIMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "111-49-9",
+            "aliases": [
+                "Azepane",
+                "Hexahydroazepine",
+                "HEXAMETHYLENIMINE",
+                "Homopiperidine",
+                "Azacycloheptane"
+            ]
         },
         {
             "canonical": "HEXANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "110-54-3",
+            "aliases": [
+                "HEXANE",
+                "n-Hexane",
+                "Skellysolve B",
+                "Esani",
+                "Gettysolve-B"
+            ]
         },
         {
             "canonical": "HEXANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "142-62-1",
+            "aliases": [
+                "Caproic acid",
+                "n-Caproic acid",
+                "n-Hexanoic acid",
+                "Capronic acid",
+                "1-Hexanoic acid"
+            ]
         },
         {
             "canonical": "HEXANOL",
-            "cas": null,
-            "aliases": []
+            "cas": "111-27-3",
+            "aliases": [
+                "1-Hexanol",
+                "Hexyl alcohol",
+                "Hexan-1-ol",
+                "n-Hexanol",
+                "n-Hexyl alcohol"
+            ]
         },
         {
             "canonical": "HEXENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "25264-93-1",
+            "aliases": [
+                "Hexene, isomers",
+                "092313365W",
+                "Hexene,",
+                "RefChem:1086661",
+                "HEXENE (MIXED ISOMERS)"
+            ]
         },
         {
             "canonical": "HEXENE DIMATE Noxious liquid, NF, (5) n.o.s. (Nonene all isomers) ST2, Cat. Y",
@@ -2555,8 +3540,14 @@
         },
         {
             "canonical": "HEXYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "142-92-7",
+            "aliases": [
+                "n-Hexyl acetate",
+                "Acetic Acid Hexyl Ester",
+                "Hexyl ethanoate",
+                "1-Hexyl acetate",
+                "n-Hexyl ethanoate"
+            ]
         },
         {
             "canonical": "Соляная кислота",
@@ -2706,8 +3697,14 @@
         },
         {
             "canonical": "ISOAMYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "123-51-3",
+            "aliases": [
+                "3-Methyl-1-butanol",
+                "Isopentyl alcohol",
+                "3-Methylbutan-1-ol",
+                "Isopentanol",
+                "3-Methylbutanol"
+            ]
         },
         {
             "canonical": "Изобутанол",
@@ -2721,13 +3718,25 @@
         },
         {
             "canonical": "ISOBUTYL FORMATE",
-            "cas": null,
-            "aliases": []
+            "cas": "542-55-2",
+            "aliases": [
+                "2-Methylpropyl formate",
+                "Formic acid, 2-methylpropyl ester",
+                "Tetryl formate",
+                "Isobutyl formate (natural)",
+                "FEMA No. 2197"
+            ]
         },
         {
             "canonical": "ISOBUTYL METHACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "97-86-9",
+            "aliases": [
+                "Methacrylic acid, isobutyl ester",
+                "2-Propenoic acid, 2-methyl-, 2-methylpropyl ester",
+                "Isobutyl 2-methyl-2-propenoate",
+                "2-METHYLPROPYL METHACRYLATE",
+                "Isobutyl alpha-methacrylate"
+            ]
         },
         {
             "canonical": "ISOPAR G Noxious liquid, NF, (7) n.o.s. (Iso- and cycloalkanes (C10-C11)) ST3, Cat. Y",
@@ -2751,28 +3760,58 @@
         },
         {
             "canonical": "ISOPHORONE",
-            "cas": null,
-            "aliases": []
+            "cas": "78-59-1",
+            "aliases": [
+                "Isoacetophorone",
+                "3,5,5-Trimethylcyclohex-2-en-1-one",
+                "3,5,5-Trimethyl-2-cyclohexen-1-one",
+                "Isoforone",
+                "Isoforon"
+            ]
         },
         {
             "canonical": "ISOPHORONE DIISOCYANATE",
-            "cas": null,
-            "aliases": []
+            "cas": "4098-71-9",
+            "aliases": [
+                "IPDI",
+                "5-Isocyanato-1-(isocyanatomethyl)-1,3,3-trimethylcyclohexane",
+                "Isophorone diamine diisocyanate",
+                "Cyclohexane, 5-isocyanato-1-(isocyanatomethyl)-1,3,3-trimethyl-",
+                "3-Isocyanatomethyl-3,5,5-trimethylcyclohexyl isocyanate"
+            ]
         },
         {
             "canonical": "ISOPHORONEDIAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "2855-13-2",
+            "aliases": [
+                "3-Aminomethyl-3,5,5-trimethylcyclohexylamine",
+                "Cyclohexanemethanamine, 5-amino-1,3,3-trimethyl-",
+                "5-Amino-1,3,3-trimethylcyclohexanemethylamine",
+                "DTXSID6027503",
+                "Vestamin IPD"
+            ]
         },
         {
             "canonical": "ISOPRENE",
-            "cas": null,
-            "aliases": []
+            "cas": "78-79-5",
+            "aliases": [
+                "2-Methyl-1,3-butadiene",
+                "2-Methylbuta-1,3-diene",
+                "Isopentadiene",
+                "2-Methylbutadiene",
+                "2-Methyldivinyl"
+            ]
         },
         {
             "canonical": "ISOPROPANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "78-96-6",
+            "aliases": [
+                "1-Aminopropan-2-ol",
+                "1-AMINO-2-PROPANOL",
+                "Threamine",
+                "Monoisopropanolamine",
+                "DL-1-Amino-2-propanol"
+            ]
         },
         {
             "canonical": "Изопропилацетат",
@@ -2797,8 +3836,14 @@
         },
         {
             "canonical": "ISOPROPYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "108-20-3",
+            "aliases": [
+                "Diisopropyl ether",
+                "2-Isopropoxypropane",
+                "Propane, 2,2'-oxybis-",
+                "Diisopropyl oxide",
+                "Ether, isopropyl"
+            ]
         },
         {
             "canonical": "Изопропиламин",
@@ -2811,12 +3856,24 @@
         {
             "canonical": "ISOPROPYLAMINE (70% or less) SOLUTION (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ISOPROPYLAMINE",
+                "propan-2-amine",
+                "2-Propanamine",
+                "2-Aminopropane",
+                "Monoisopropylamine"
+            ]
         },
         {
             "canonical": "ISOPROPYLCYCLOHEXANE",
-            "cas": null,
-            "aliases": []
+            "cas": "696-29-7",
+            "aliases": [
+                "Hexahydrocumene",
+                "propan-2-ylcyclohexane",
+                "Normanthane",
+                "Cyclohexane, (1-methylethyl)-",
+                "Cyclohexane, isopropyl-"
+            ]
         },
         {
             "canonical": "KALCOL 1260 Noxious liquid, NF, (5) n.o.s. (Dodecyl alcohol) ST2, Cat. Y",
@@ -2869,8 +3926,14 @@
         },
         {
             "canonical": "LAURIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "143-07-7",
+            "aliases": [
+                "DODECANOIC ACID",
+                "n-Dodecanoic acid",
+                "Dodecylic acid",
+                "Laurostearic acid",
+                "Vulvic acid"
+            ]
         },
         {
             "canonical": "LB-633 Noxious liquid, NF, (5) n.o.s. (Mineral Oil) ST2, Cat. Y",
@@ -3574,8 +4637,14 @@
         },
         {
             "canonical": "m-CHLOROTOLUENE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-41-8",
+            "aliases": [
+                "3-Chlorotoluene",
+                "1-Chloro-3-methylbenzene",
+                "m-Tolyl chloride",
+                "3-Chloro-1-methylbenzene",
+                "Benzene, 1-chloro-3-methyl-"
+            ]
         },
         {
             "canonical": "MAGNESIUM CHLORIDE SOLUTION",
@@ -3607,13 +4676,25 @@
         },
         {
             "canonical": "MESITYL OXIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "141-79-7",
+            "aliases": [
+                "4-Methylpent-3-en-2-one",
+                "4-Methyl-3-penten-2-one",
+                "Isopropylideneacetone",
+                "3-Penten-2-one, 4-methyl-",
+                "Methyl isobutenyl ketone"
+            ]
         },
         {
             "canonical": "METHACRYLIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "79-41-4",
+            "aliases": [
+                "2-methylprop-2-enoic acid",
+                "2-Methylacrylic acid",
+                "Methylacrylic acid",
+                "2-Propenoic acid, 2-methyl-",
+                "2-Methylpropenoic acid"
+            ]
         },
         {
             "canonical": "METHACRYLIC ACID-ALKOXYPOLY (ALKYLENE OXIDE) METHACRYLATE COPOLYMER, SODIUM SALT AQUEOUS SOLUTION (45% OR LESS) (n)",
@@ -3627,8 +4708,14 @@
         },
         {
             "canonical": "METHACRYLONITRILE",
-            "cas": null,
-            "aliases": []
+            "cas": "126-98-7",
+            "aliases": [
+                "Isopropene cyanide",
+                "Isopropenylnitrile",
+                "2-Methylacrylonitrile",
+                "METHYLACRYLONITRILE",
+                "2-Methyl-2-propenenitrile"
+            ]
         },
         {
             "canonical": "Метилацетат",
@@ -3641,13 +4728,25 @@
         },
         {
             "canonical": "METHYL ACETOACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "105-45-3",
+            "aliases": [
+                "Methyl 3-oxobutanoate",
+                "Methyl acetylacetate",
+                "Acetoacetic acid methyl ester",
+                "Methyl 3-oxobutyrate",
+                "3-Oxobutanoic acid methyl ester"
+            ]
         },
         {
             "canonical": "METHYL ACRYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "96-33-3",
+            "aliases": [
+                "Methyl prop-2-enoate",
+                "2-Propenoic acid, methyl ester",
+                "Methyl propenoate",
+                "Methyl 2-propenoate",
+                "Methylacrylaat"
+            ]
         },
         {
             "canonical": "Метанол",
@@ -3664,23 +4763,47 @@
         },
         {
             "canonical": "METHYL AMYL KETONE",
-            "cas": null,
-            "aliases": []
+            "cas": "110-43-0",
+            "aliases": [
+                "2-HEPTANONE",
+                "Heptan-2-one",
+                "Methyl pentyl ketone",
+                "Butylacetone",
+                "Amyl methyl ketone"
+            ]
         },
         {
             "canonical": "METHYL BUTYL KETONE",
-            "cas": null,
-            "aliases": []
+            "cas": "591-78-6",
+            "aliases": [
+                "2-HEXANONE",
+                "Hexan-2-one",
+                "Butyl methyl ketone",
+                "2-Oxohexane",
+                "Propylacetone"
+            ]
         },
         {
             "canonical": "METHYL BUTYRATE",
-            "cas": null,
-            "aliases": []
+            "cas": "623-42-7",
+            "aliases": [
+                "Methyl butanoate",
+                "Butanoic acid, methyl ester",
+                "METHYL N-BUTYRATE",
+                "Methyl n-butanoate",
+                "FEMA No. 2693"
+            ]
         },
         {
             "canonical": "METHYL DIETHANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "105-59-9",
+            "aliases": [
+                "N-METHYLDIETHANOLAMINE",
+                "N-Methylaminodiglycol",
+                "Ethanol, 2,2'-(methylimino)bis-",
+                "2,2'-(Methylimino)diethanol",
+                "N-Methyliminodiethanol"
+            ]
         },
         {
             "canonical": "Метилэтилкетон",
@@ -3697,8 +4820,14 @@
         },
         {
             "canonical": "METHYL FORMATE",
-            "cas": null,
-            "aliases": []
+            "cas": "107-31-3",
+            "aliases": [
+                "Formic acid, methyl ester",
+                "Methyl methanoate",
+                "Methylformiat",
+                "Formiate de methyle",
+                "Methylformiaat"
+            ]
         },
         {
             "canonical": "Метилизобутилкетон",
@@ -3725,8 +4854,14 @@
         },
         {
             "canonical": "METHYL SALICYLATE",
-            "cas": null,
-            "aliases": []
+            "cas": "119-36-8",
+            "aliases": [
+                "Methyl 2-hydroxybenzoate",
+                "Analgit",
+                "Flucarmit",
+                "Exagien",
+                "Betula"
+            ]
         },
         {
             "canonical": "Метилтретбутиловый эфир",
@@ -3745,38 +4880,80 @@
         },
         {
             "canonical": "METHYLAMYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-84-9",
+            "aliases": [
+                "1,3-Dimethylbutyl acetate",
+                "4-METHYL-2-PENTYL ACETATE",
+                "Methylisoamyl acetate",
+                "4-Methyl-2-amyl acetate",
+                "sec-Hexyl acetate"
+            ]
         },
         {
             "canonical": "METHYLAMYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "108-11-2",
+            "aliases": [
+                "4-METHYL-2-PENTANOL",
+                "4-Methylpentan-2-ol",
+                "Isobutylmethylcarbinol",
+                "2-Pentanol, 4-methyl-",
+                "Methyl isobutyl carbinol"
+            ]
         },
         {
             "canonical": "METHYLBUTENOL",
-            "cas": null,
-            "aliases": []
+            "cas": "115-18-4",
+            "aliases": [
+                "2-METHYL-3-BUTEN-2-OL",
+                "2-Methylbut-3-en-2-ol",
+                "3-Buten-2-ol, 2-methyl-",
+                "1,1-Dimethylallyl alcohol",
+                "3-Hydroxy-3-methylbutene"
+            ]
         },
         {
             "canonical": "METHYLBUTYNOL",
-            "cas": null,
-            "aliases": []
+            "cas": "37365-71-2",
+            "aliases": [
+                "Butynol, methyl-",
+                "DTXSID5068027",
+                "RefChem:158148",
+                "DTXCID4039318",
+                "3-Methyl butynol"
+            ]
         },
         {
             "canonical": "METHYLCYCLOHEXANE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-87-2",
+            "aliases": [
+                "Hexahydrotoluene",
+                "Cyclohexylmethane",
+                "Cyclohexane, methyl-",
+                "Toluene hexahydride",
+                "Sextone B"
+            ]
         },
         {
             "canonical": "METHYLCYCLOPENTADIENE DIMER",
-            "cas": null,
-            "aliases": []
+            "cas": "26472-00-4",
+            "aliases": [
+                "Dimethyldicyclopentadiene",
+                "3a,4,7,7a-Tetrahydrodimethyl-4,7-methanoindene",
+                "Bis(methylcyclopentadiene)",
+                "4,7-Methanoindene, 3a,4,7,7a-tetrahydrodimethyl-",
+                "DTXSID3027902"
+            ]
         },
         {
             "canonical": "METHYLNAPHTHALENE (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "90-12-0",
+            "aliases": [
+                "1-METHYLNAPHTHALENE",
+                "alpha-Methylnaphthalene",
+                "Naphthalene, 1-methyl-",
+                "FEMA No. 3193",
+                "DTXSID9020877"
+            ]
         },
         {
             "canonical": "Минеральное масло",
@@ -3814,8 +4991,14 @@
         },
         {
             "canonical": "MYRCENE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "123-35-3",
+            "aliases": [
+                "beta-Myrcene",
+                "7-Methyl-3-methylene-1,6-octadiene",
+                "1,6-Octadiene, 7-methyl-3-methylene-",
+                "7-methyl-3-methylideneocta-1,6-diene",
+                "beta-geraniolene"
+            ]
         },
         {
             "canonical": "Диметилацетамид",
@@ -3834,8 +5017,14 @@
         },
         {
             "canonical": "N,N-DIMETHYLCYCLOHEXYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "98-94-2",
+            "aliases": [
+                "N,N-Dimethylcyclohexanamine",
+                "Cyclohexyldimethylamine",
+                "Dimethylcyclohexylamine",
+                "N-Cyclohexyldimethylamine",
+                "Cyclohexanamine, N,N-dimethyl-"
+            ]
         },
         {
             "canonical": "N-(HYDROXYETHYL) ETHYLENEDIAMINE TRIACETIC ACID, TRISODIUM SALT SOLUTION",
@@ -3849,13 +5038,25 @@
         },
         {
             "canonical": "N-AMINOETHYLPIPERAZINE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "140-31-8",
+            "aliases": [
+                "Aminoethylpiperazine",
+                "1-AMINOETHYLPIPERAZINE",
+                "monoaminoethylpiperazine",
+                "RefChem:829028",
+                "1-MAEP"
+            ]
         },
         {
             "canonical": "n-AMYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "71-41-0",
+            "aliases": [
+                "1-Pentanol",
+                "Pentan-1-ol",
+                "Amyl alcohol",
+                "n-Pentanol",
+                "Pentyl alcohol"
+            ]
         },
         {
             "canonical": "1-Бутанол",
@@ -3876,28 +5077,58 @@
         },
         {
             "canonical": "n-BUTYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "142-96-1",
+            "aliases": [
+                "Butyl ether",
+                "DIBUTYL ETHER",
+                "Di-n-butyl ether",
+                "Butane, 1,1'-oxybis-",
+                "Dibutyl oxide"
+            ]
         },
         {
             "canonical": "n-BUTYL PROPIONATE",
-            "cas": null,
-            "aliases": []
+            "cas": "590-01-2",
+            "aliases": [
+                "Butyl propionate",
+                "Butyl propanoate",
+                "Propanoic acid, butyl ester",
+                "Propionic Acid Butyl Ester",
+                "Butyl propionate (natural)"
+            ]
         },
         {
             "canonical": "N-ETHYLCYCLOHEXYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "5459-93-8",
+            "aliases": [
+                "N-Ethylcyclohexanamine",
+                "Cyclohexanamine, N-ethyl-",
+                "N-Cyclohexylethylamine",
+                "Vulkacit HX",
+                "Accelerator HX"
+            ]
         },
         {
             "canonical": "N-ETHYLMETHYLALLYLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "18328-90-0",
+            "aliases": [
+                "N-Ethyl-2-methylallylamine",
+                "N-Ethylmethallylamine",
+                "2-Propen-1-amine, N-ethyl-2-methyl-",
+                "N-Ethyl-2-methyl-2-propen-1-amine",
+                "DTXSID3027798"
+            ]
         },
         {
             "canonical": "n-HEPTANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "111-14-8",
+            "aliases": [
+                "HEPTANOIC ACID",
+                "Enanthic acid",
+                "Enanthylic acid",
+                "Oenanthic acid",
+                "Heptoic acid"
+            ]
         },
         {
             "canonical": "N-Метилпирролидон",
@@ -3912,8 +5143,14 @@
         },
         {
             "canonical": "n-OCTYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "112-14-1",
+            "aliases": [
+                "Octyl acetate",
+                "Acetic acid, octyl ester",
+                "Caprylyl acetate",
+                "Octyl ethanoate",
+                "n-Octanyl acetate"
+            ]
         },
         {
             "canonical": "N-PENTANOIC ACID (64%)\/2-METHYLBUTYRIC ACID (36%) MIXTURE",
@@ -3922,13 +5159,25 @@
         },
         {
             "canonical": "n-PENTYL PROPIONATE",
-            "cas": null,
-            "aliases": []
+            "cas": "624-54-4",
+            "aliases": [
+                "Pentyl propionate",
+                "Pentyl propanoate",
+                "AMYL PROPIONATE",
+                "Propanoic acid, pentyl ester",
+                "Amyl propanoate"
+            ]
         },
         {
             "canonical": "n-PROPANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "156-87-6",
+            "aliases": [
+                "3-Aminopropan-1-ol",
+                "3-Aminopropanol",
+                "3-Amino-1-propanol",
+                "1-Propanol, 3-amino-",
+                "PROPANOLAMINE"
+            ]
         },
         {
             "canonical": "Пропилацетат",
@@ -3941,18 +5190,35 @@
         },
         {
             "canonical": "n-PROPYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "71-23-8",
+            "aliases": [
+                "1-propanol",
+                "propanol",
+                "Propyl alcohol",
+                "Propan-1-ol",
+                "n-propanol"
+            ]
         },
         {
             "canonical": "n-PROPYLAMINE",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "RefChem:1092084",
+                "propan-1-aminium",
+                "CHEBI:566825",
+                "Q27225776"
+            ]
         },
         {
             "canonical": "NAPHTHALENE (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "91-20-3",
+            "aliases": [
+                "naphthalene",
+                "Naphthalin",
+                "Tar camphor",
+                "White tar",
+                "Albocarbon"
+            ]
         },
         {
             "canonical": "NAPHTHALENESULPHONIC ACID - FORMALDEHYDE COPOLYMER, SODIUM SALT SOLUTION (n)",
@@ -3967,7 +5233,13 @@
         {
             "canonical": "NAPTHALENE",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "naphthalene",
+                "Naphthalin",
+                "Tar camphor",
+                "White tar",
+                "Albocarbon"
+            ]
         },
         {
             "canonical": "NAPTHALENE SULPHONIC ACID - FORMALDEHYDE COPOLYMER, SODIUM SALT SOLUTION",
@@ -4071,13 +5343,25 @@
         },
         {
             "canonical": "NITRIC ACID (70% AND OVER)",
-            "cas": null,
-            "aliases": []
+            "cas": "7697-37-2",
+            "aliases": [
+                "NITRIC ACID",
+                "Azotic acid",
+                "Aqua fortis",
+                "Salpetersaeure",
+                "Nital"
+            ]
         },
         {
             "canonical": "NITRIC ACID (LESS THAN 70%)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITRIC ACID",
+                "Azotic acid",
+                "Aqua fortis",
+                "Salpetersaeure",
+                "Nital"
+            ]
         },
         {
             "canonical": "NITRILOTRIACETIC ACID, TRISODIUM SALT SOLUTION",
@@ -4102,7 +5386,13 @@
         {
             "canonical": "NITROETHANE(80%)\/NITROPROPANE(20%)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "NITROETHANE",
+                "Ethane, nitro-",
+                "Nitroethan",
+                "Nitroetan",
+                "DTXSID8020969"
+            ]
         },
         {
             "canonical": "NITROETHANE, 1-NITROPROPANE (EACH 15% OR MORE) MIXTURE (n)",
@@ -4121,23 +5411,47 @@
         },
         {
             "canonical": "NONANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-84-2",
+            "aliases": [
+                "NONANE",
+                "n-Nonane",
+                "Nonyl hydride",
+                "Shellsol 140",
+                "DTXSID9025796"
+            ]
         },
         {
             "canonical": "NONANOIC ACID (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-05-0",
+            "aliases": [
+                "NONANOIC ACID",
+                "Pelargonic acid",
+                "n-Nonanoic acid",
+                "Nonoic acid",
+                "Nonylic acid"
+            ]
         },
         {
             "canonical": "NONENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "124-11-8",
+            "aliases": [
+                "1-NONENE",
+                "NONYLENE",
+                "n-Non-1-ene",
+                "alpha-Nonene",
+                "Nonene, 1-"
+            ]
         },
         {
             "canonical": "NONYL ALCOHOL (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "143-08-8",
+            "aliases": [
+                "1-Nonanol",
+                "Nonan-1-ol",
+                "NONYL ALCOHOL",
+                "Pelargonic alcohol",
+                "n-Nonyl alcohol"
+            ]
         },
         {
             "canonical": "NONYL METHACRYLATE MONOMER",
@@ -4196,53 +5510,113 @@
         },
         {
             "canonical": "o-CHLORONITROBENZENE (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "88-73-3",
+            "aliases": [
+                "2-Chloronitrobenzene",
+                "1-CHLORO-2-NITROBENZENE",
+                "2-Nitrochlorobenzene",
+                "o-Nitrochlorobenzene",
+                "2-Chloro-1-nitrobenzene"
+            ]
         },
         {
             "canonical": "o-CHLOROTOLUENE",
-            "cas": null,
-            "aliases": []
+            "cas": "95-49-8",
+            "aliases": [
+                "2-Chlorotoluene",
+                "1-Chloro-2-methylbenzene",
+                "o-Tolyl chloride",
+                "Benzene, 1-chloro-2-methyl-",
+                "ortho-Chlorotoluene"
+            ]
         },
         {
             "canonical": "o-NITROPHENOL (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "88-75-5",
+            "aliases": [
+                "2-NITROPHENOL",
+                "o-Nitrophenol",
+                "2-Hydroxynitrobenzene",
+                "Phenol, 2-nitro-",
+                "o-Hydroxynitrobenzene"
+            ]
         },
         {
             "canonical": "o-TOLUIDINE",
-            "cas": null,
-            "aliases": []
+            "cas": "95-53-4",
+            "aliases": [
+                "2-Methylaniline",
+                "2-Toluidine",
+                "o-Tolylamine",
+                "o-Methylaniline",
+                "2-AMINOTOLUENE"
+            ]
         },
         {
             "canonical": "OCTANE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-65-9",
+            "aliases": [
+                "octane",
+                "n-octane",
+                "Oktan",
+                "Oktanen",
+                "Ottani"
+            ]
         },
         {
             "canonical": "OCTANOIC ACID (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "124-07-2",
+            "aliases": [
+                "octanoic acid",
+                "caprylic acid",
+                "n-octanoic acid",
+                "n-caprylic acid",
+                "Octylic acid"
+            ]
         },
         {
             "canonical": "OCTANOL (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-87-5",
+            "aliases": [
+                "1-octanol",
+                "Octan-1-ol",
+                "N-octanol",
+                "Octyl alcohol",
+                "caprylic alcohol"
+            ]
         },
         {
             "canonical": "OCTENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "111-66-0",
+            "aliases": [
+                "1-OCTENE",
+                "Oct-1-ene",
+                "Caprylene",
+                "1-Octylene",
+                "n-1-Octene"
+            ]
         },
         {
             "canonical": "OCTYL ALDEHYDES",
-            "cas": null,
-            "aliases": []
+            "cas": "124-13-0",
+            "aliases": [
+                "Octanal",
+                "Caprylaldehyde",
+                "Caprylic aldehyde",
+                "n-Octanal",
+                "1-octanal"
+            ]
         },
         {
             "canonical": "OCTYL DECYL ADIPATE",
-            "cas": null,
-            "aliases": []
+            "cas": "110-29-2",
+            "aliases": [
+                "Decyl octyl adipate",
+                "Hexanedioic acid, decyl octyl ester",
+                "Monoplex noda",
+                "Truflex 146",
+                "n-Octyl decyl adipate"
+            ]
         },
         {
             "canonical": "OLEFIN MIXTURES (C5-C15)",
@@ -4275,13 +5649,25 @@
         },
         {
             "canonical": "OLEUM",
-            "cas": null,
-            "aliases": []
+            "cas": "8014-95-7",
+            "aliases": [
+                "Fuming sulfuric acid",
+                "Oleum iodisum",
+                "Sulfuric acid fuming",
+                "Sulfuric acid, mixt with sulfur trioxide",
+                "Sulfur trioxide, mixt. with sulfuric acid"
+            ]
         },
         {
             "canonical": "OLEYLAMINE(n)",
-            "cas": null,
-            "aliases": []
+            "cas": "112-90-3",
+            "aliases": [
+                "Oleamine",
+                "Armeen O",
+                "Oleinamine",
+                "Noram O",
+                "CIS-9-OCTADECENYLAMINE"
+            ]
         },
         {
             "canonical": "OLOA 275JD Noxious liquid, NF, (5) n.o.s. (Mineral oil) ST2, Cat. Y",
@@ -4360,13 +5746,25 @@
         },
         {
             "canonical": "p-CHLOROTOLUENE",
-            "cas": null,
-            "aliases": []
+            "cas": "106-43-4",
+            "aliases": [
+                "4-Chlorotoluene",
+                "1-Chloro-4-methylbenzene",
+                "p-Tolyl chloride",
+                "Benzene, 1-chloro-4-methyl-",
+                "Toluene, p-chloro-"
+            ]
         },
         {
             "canonical": "p-CYMENE",
-            "cas": null,
-            "aliases": []
+            "cas": "99-87-6",
+            "aliases": [
+                "4-Isopropyltoluene",
+                "p-Isopropyltoluene",
+                "Dolcymene",
+                "1-Isopropyl-4-methylbenzene",
+                "p-Cymol"
+            ]
         },
         {
             "canonical": "PALM ACID OIL (n)",
@@ -4405,8 +5803,14 @@
         },
         {
             "canonical": "PARALDEHYDE",
-            "cas": null,
-            "aliases": []
+            "cas": "123-63-7",
+            "aliases": [
+                "2,4,6-Trimethyl-1,3,5-trioxane",
+                "Paracetaldehyde",
+                "Paral",
+                "Paraldehyd",
+                "Paraacetaldehyde"
+            ]
         },
         {
             "canonical": "PARALDEHYDE-AMMONIA REACTION PRODUCT",
@@ -4425,13 +5829,25 @@
         },
         {
             "canonical": "PENTACHLOROETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "76-01-7",
+            "aliases": [
+                "1,1,1,2,2-Pentachloroethane",
+                "Pentalin",
+                "Ethane pentachloride",
+                "Ethane, pentachloro-",
+                "Pentacloroetano"
+            ]
         },
         {
             "canonical": "PENTAETHYLENEHEXAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "4067-16-7",
+            "aliases": [
+                "PEHA",
+                "3,6,9,12-Tetraazatetradecane-1,14-diamine",
+                "3,6,9,12-Tetraazatetradecamethylenediamine",
+                "9K5VZU43LE",
+                "1,4,7,10,13,16-hexaazahexadecane"
+            ]
         },
         {
             "canonical": "Пентан",
@@ -4446,8 +5862,14 @@
         },
         {
             "canonical": "PENTANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "109-52-4",
+            "aliases": [
+                "Valeric acid",
+                "n-Valeric acid",
+                "n-Pentanoic acid",
+                "Valerianic acid",
+                "1-Butanecarboxylic acid"
+            ]
         },
         {
             "canonical": "PENTENE (ALL ISOMERS)",
@@ -4505,8 +5927,14 @@
         },
         {
             "canonical": "PHTHALIC ANHYDRIDE (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "85-44-9",
+            "aliases": [
+                "PHTHALIC ANHYDRIDE",
+                "1,3-Isobenzofurandione",
+                "2-Benzofuran-1,3-dione",
+                "Phthalandione",
+                "Retarder esen"
+            ]
         },
         {
             "canonical": "PINE OIL",
@@ -4606,12 +6034,17 @@
         {
             "canonical": "POLYETHYLENE POLYAMINES (MORE THAN 50% C5-C20 PARAFFIN OIL) (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Humic acid sodium",
+                "Polyethylene-polyamines"
+            ]
         },
         {
             "canonical": "POLYETHYLENE POLYAMINES (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Humic acid sodium"
+            ]
         },
         {
             "canonical": "POLYFERRIC SULPHATE SOLUTION",
@@ -4631,7 +6064,13 @@
         {
             "canonical": "POLYMETHYLENE POLYPHENYL ISOCYANATE (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "CCRIS 8161",
+                "Coronate MR 200",
+                "CR 200",
+                "Desmodur 44V20",
+                "Desmodur PU 1520A20"
+            ]
         },
         {
             "canonical": "POLYOLEFIN (MOLECULAR WEIGHT 300+) (n)",
@@ -4727,13 +6166,25 @@
         },
         {
             "canonical": "POTASSIUM OLEATE",
-            "cas": null,
-            "aliases": []
+            "cas": "143-18-0",
+            "aliases": [
+                "Oleic acid potassium salt",
+                "Trenamine D-200",
+                "Trenamine D-201",
+                "Caswell No. 698B",
+                "HSDB 5643"
+            ]
         },
         {
             "canonical": "POTASSIUM THIOSULPHATE (50% OR LESS)",
-            "cas": null,
-            "aliases": []
+            "cas": "10294-66-3",
+            "aliases": [
+                "Potassium thiosulfate",
+                "UK1TD58L5O",
+                "Thiosulfuric acid (H2S2O3), dipotassium salt",
+                "DIPOTASSIUM THIOSULFATE",
+                "DTXSID70893108"
+            ]
         },
         {
             "canonical": "Product 78040 Noxious liquid, NF, (5) n.o.s. (Mineral oil) ST2, Cat. Y",
@@ -4760,18 +6211,36 @@
         },
         {
             "canonical": "PROPIONIC ANHYDRIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "123-62-6",
+            "aliases": [
+                "Propanoic anhydride",
+                "Propanoic acid, anhydride",
+                "Propionic acid anhydride",
+                "Propionyl oxide",
+                "Methylacetic anhydride"
+            ]
         },
         {
             "canonical": "PROPIONITRILE",
-            "cas": null,
-            "aliases": []
+            "cas": "107-12-0",
+            "aliases": [
+                "Propanenitrile",
+                "Ethyl cyanide",
+                "Propiononitrile",
+                "Cyanoethane",
+                "Propionic nitrile"
+            ]
         },
         {
             "canonical": "PROPYLBENZENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "103-65-1",
+            "aliases": [
+                "Propylbenzene",
+                "N-PROPYLBENZENE",
+                "1-Phenylpropane",
+                "Phenylpropane",
+                "Isocumene"
+            ]
         },
         {
             "canonical": "Пропиленгликоль",
@@ -4786,8 +6255,14 @@
         },
         {
             "canonical": "PROPYLENE GLYCOL METHYL ETHER ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "108-65-6",
+            "aliases": [
+                "PGMEA cpd",
+                "RefChem:433493",
+                "1-Methoxy-2-propyl acetate",
+                "1-methoxypropan-2-yl acetate",
+                "Propylene glycol monomethyl ether acetate"
+            ]
         },
         {
             "canonical": "PROPYLENE GLYCOL MONOALKYL ETHER",
@@ -4796,8 +6271,14 @@
         },
         {
             "canonical": "PROPYLENE GLYCOL PHENYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "770-35-4",
+            "aliases": [
+                "1-Phenoxy-2-propanol",
+                "Propylene phenoxetol",
+                "2-Propanol, 1-phenoxy-",
+                "2-Phenoxy-1-methylethanol",
+                "DTXSID9027312"
+            ]
         },
         {
             "canonical": "Пропиленоксид",
@@ -4810,13 +6291,25 @@
         },
         {
             "canonical": "PROPYLENE TETRAMER",
-            "cas": null,
-            "aliases": []
+            "cas": "6842-15-5",
+            "aliases": [
+                "1-Propene, tetramer",
+                "DTXSID6027634",
+                "DTXCID407634",
+                "RefChem:77180",
+                "DODECENE (NON-LINEAR)"
+            ]
         },
         {
             "canonical": "PROPYLENE TRIMER",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "1-NONENE",
+                "NONYLENE",
+                "n-Non-1-ene",
+                "alpha-Nonene",
+                "Nonene, 1-"
+            ]
         },
         {
             "canonical": "Пиридин",
@@ -4889,8 +6382,14 @@
         },
         {
             "canonical": "S-ETHYL DIPROPYLTHIOCARBAMATE",
-            "cas": null,
-            "aliases": []
+            "cas": "759-94-4",
+            "aliases": [
+                "EPTAM",
+                "DTXSID1024091",
+                "Ethyl dipropylthiocarbamate",
+                "Carbamothioic acid, dipropyl-, S-ethyl ester",
+                "R7PI3287F4"
+            ]
         },
         {
             "canonical": "SA 401 Noxious liquid, NF, (5) n.o.s. (Mineral oil) ST2, Cat. Y",
@@ -4934,8 +6433,14 @@
         },
         {
             "canonical": "SEC-AMYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "6032-29-7",
+            "aliases": [
+                "2-PENTANOL",
+                "Pentan-2-ol",
+                "Methylpropylcarbinol",
+                "sec-Pentyl alcohol",
+                "2-Pentyl alcohol"
+            ]
         },
         {
             "canonical": "SODIUM ALKYL (C14-C17) SULPHONATES (60-65% SOLUTION) (n)",
@@ -4949,8 +6454,14 @@
         },
         {
             "canonical": "SODIUM BENZOATE",
-            "cas": null,
-            "aliases": []
+            "cas": "532-32-1",
+            "aliases": [
+                "Sobenate",
+                "Antimol",
+                "Benzoic acid, sodium salt",
+                "Benzoate sodium",
+                "Benzoate of soda"
+            ]
         },
         {
             "canonical": "SODIUM BOROHYDRIDE (15% OR LESS) \/ SODIUM HYDROXIDE SOLUTION",
@@ -5115,7 +6626,13 @@
         {
             "canonical": "STYRENE MONOMER (n)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "STYRENE",
+                "Ethenylbenzene",
+                "Phenylethylene",
+                "Vinylbenzene",
+                "Styrol"
+            ]
         },
         {
             "canonical": "SULPHOHYDROCARBON (C3-C88) (n)",
@@ -5124,8 +6641,14 @@
         },
         {
             "canonical": "SULPHOLANE",
-            "cas": null,
-            "aliases": []
+            "cas": "126-33-0",
+            "aliases": [
+                "SULFOLANE",
+                "Tetrahydrothiophene 1,1-dioxide",
+                "Tetramethylene sulfone",
+                "Sulfolan",
+                "Thiophene, tetrahydro-, 1,1-dioxide"
+            ]
         },
         {
             "canonical": "SULPHONATED POLYACRYLATE SOLUTION(o)",
@@ -5134,8 +6657,14 @@
         },
         {
             "canonical": "SULPHUR (MOLTEN)",
-            "cas": null,
-            "aliases": []
+            "cas": "7704-34-9",
+            "aliases": [
+                "Anacardium",
+                "Bioelements",
+                "Armarita",
+                "Celesty",
+                "Naturasil"
+            ]
         },
         {
             "canonical": "Серная кислота",
@@ -5191,13 +6720,25 @@
         },
         {
             "canonical": "tert-AMYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "75-85-4",
+            "aliases": [
+                "2-METHYL-2-BUTANOL",
+                "2-Methylbutan-2-ol",
+                "Amylene hydrate",
+                "tert-Pentyl alcohol",
+                "tert-Pentanol"
+            ]
         },
         {
             "canonical": "tert-AMYL METHYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "994-05-8",
+            "aliases": [
+                "2-Methoxy-2-methylbutane",
+                "Butane, 2-methoxy-2-methyl-",
+                "Methyl tert-pentyl ether",
+                "tert-Pentyl methyl ether",
+                "1,1-Dimethylpropyl methyl ether"
+            ]
         },
         {
             "canonical": "трет-Бутанол",
@@ -5212,18 +6753,36 @@
         },
         {
             "canonical": "TETRACHLOROETHANE",
-            "cas": null,
-            "aliases": []
+            "cas": "79-34-5",
+            "aliases": [
+                "1,1,2,2-TETRACHLOROETHANE",
+                "s-Tetrachloroethane",
+                "Acetylene tetrachloride",
+                "sym-Tetrachloroethane",
+                "Bonoform"
+            ]
         },
         {
             "canonical": "TETRAETHYLENE GLYCOL",
-            "cas": null,
-            "aliases": []
+            "cas": "112-60-7",
+            "aliases": [
+                "HI-Dry",
+                "3,6,9-Trioxaundecane-1,11-diol",
+                "Carbitol, diethyl",
+                "3,6,9-Trioxaundecan-1,11-diol",
+                "DTXSID9026922"
+            ]
         },
         {
             "canonical": "TETRAETHYLENEPENTAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "112-57-2",
+            "aliases": [
+                "Tetren",
+                "1,4,7,10,13-Pentaazatridecane",
+                "Tetraethylpentylamine",
+                "1,11-Diamino-3,6,9-triazaundecane",
+                "3,6,9-Triazaundecamethylenediamine"
+            ]
         },
         {
             "canonical": "Тетрагидрофуран",
@@ -5237,13 +6796,25 @@
         },
         {
             "canonical": "TETRAHYDRONAPHTHALENE",
-            "cas": null,
-            "aliases": []
+            "cas": "119-64-2",
+            "aliases": [
+                "1,2,3,4-Tetrahydronaphthalene",
+                "TETRALIN",
+                "Benzocyclohexane",
+                "Tetranap",
+                "Tetraline"
+            ]
         },
         {
             "canonical": "TETRAMETHYLBENZENE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "488-23-3",
+            "aliases": [
+                "1,2,3,4-TETRAMETHYLBENZENE",
+                "Prehnitene",
+                "Prehnitol",
+                "Benzene, 1,2,3,4-tetramethyl-",
+                "96WT7D2WXJ"
+            ]
         },
         {
             "canonical": "TITANIUM DIOXIDE SLURRY",
@@ -5279,13 +6850,25 @@
         },
         {
             "canonical": "TOLUENEDIAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "95-80-7",
+            "aliases": [
+                "2,4-Diaminotoluene",
+                "4-methylbenzene-1,3-diamine",
+                "2,4-Toluenediamine",
+                "TOLUENE-2,4-DIAMINE",
+                "Developer mtd"
+            ]
         },
         {
             "canonical": "TRIBUTYL PHOSPHATE",
-            "cas": null,
-            "aliases": []
+            "cas": "126-73-8",
+            "aliases": [
+                "Tri-n-butyl phosphate",
+                "Phosphoric acid tributyl ester",
+                "Tributylphosphat",
+                "Celluphos 4",
+                "tbpa"
+            ]
         },
         {
             "canonical": "Трихлорэтилен",
@@ -5299,23 +6882,47 @@
         },
         {
             "canonical": "TRICRESYL PHOSPHATE (CONTAINING LESS THAN 1% ORTHO-ISOMER) (n)",
-            "cas": null,
-            "aliases": []
+            "cas": "78-32-0",
+            "aliases": [
+                "TRI-P-CRESYL PHOSPHATE",
+                "Tri-p-tolyl phosphate",
+                "Tris(4-methylphenyl) phosphate",
+                "Phosphoric acid, tris(4-methylphenyl) ester",
+                "Phosphoric acid, tri(4-tolyl)ester"
+            ]
         },
         {
             "canonical": "TRIDECANE",
-            "cas": null,
-            "aliases": []
+            "cas": "629-50-5",
+            "aliases": [
+                "N-TRIDECANE",
+                "Tridekan",
+                "DTXSID6027266",
+                "A3LZF0L939",
+                "NSC-66205"
+            ]
         },
         {
             "canonical": "TRIDECANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "638-53-9",
+            "aliases": [
+                "n-Tridecanoic acid",
+                "Tridecylic acid",
+                "n-Tridecoic acid",
+                "NSC 25955",
+                "MFCD00002741"
+            ]
         },
         {
             "canonical": "TRIDECYL ACETATE",
-            "cas": null,
-            "aliases": []
+            "cas": "1072-33-9",
+            "aliases": [
+                "RefChem:1100382",
+                "Acetic Acid Tridecyl Ester",
+                "1-Tridecanol, acetate",
+                "MFCD00056197",
+                "Tridecanyl acetate"
+            ]
         },
         {
             "canonical": "Триэтаноламин",
@@ -5327,13 +6934,25 @@
         },
         {
             "canonical": "TRIETHYL PHOSPHATE",
-            "cas": null,
-            "aliases": []
+            "cas": "78-40-0",
+            "aliases": [
+                "Tris(ethyl) phosphate",
+                "Triethoxyphosphine oxide",
+                "Phosphoric acid, triethyl ester",
+                "Triethylfosfat",
+                "Ethyl phosphate ((EtO)3PO)"
+            ]
         },
         {
             "canonical": "TRIETHYL PHOSPHITE",
-            "cas": null,
-            "aliases": []
+            "cas": "122-52-1",
+            "aliases": [
+                "Triethoxyphosphine",
+                "Phosphorous acid, triethyl ester",
+                "Ethyl phosphite, (EtO)3P",
+                "Fosforyn trojetylowy",
+                "DTXSID2026991"
+            ]
         },
         {
             "canonical": "Триэтиламин",
@@ -5346,18 +6965,36 @@
         },
         {
             "canonical": "TRIETHYLBENZENE",
-            "cas": null,
-            "aliases": []
+            "cas": "25340-18-5",
+            "aliases": [
+                "Benzene, triethyl-",
+                "RefChem:899515",
+                "SYM-TRIETHYLBENZENE",
+                "DTXSID9027867",
+                "HSDB 5174"
+            ]
         },
         {
             "canonical": "TRIETHYLENETETRAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "112-24-3",
+            "aliases": [
+                "trientine",
+                "Trien",
+                "Tecza",
+                "1,2-Ethanediamine, N,N'-bis(2-aminoethyl)-",
+                "DEH 24"
+            ]
         },
         {
             "canonical": "TRIISOPROPANOLAMINE",
-            "cas": null,
-            "aliases": []
+            "cas": "122-20-3",
+            "aliases": [
+                "TIPA",
+                "TRIS(2-HYDROXYPROPYL)AMINE",
+                "Tri-2-propanolamine",
+                "Tris(2-propanol)amine",
+                "Tris(2-hydroxy-1-propyl)amine"
+            ]
         },
         {
             "canonical": "TRIISOPROPYLATED PHENYL PHOSPHATES",
@@ -5366,8 +7003,14 @@
         },
         {
             "canonical": "TRIMETHYLACETIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "75-98-9",
+            "aliases": [
+                "Pivalic acid",
+                "2,2-DIMETHYLPROPANOIC ACID",
+                "2,2-Dimethylpropionic acid",
+                "Neopentanoic acid",
+                "tert-Pentanoic acid"
+            ]
         },
         {
             "canonical": "TRIMETHYLAMINE SOLUTION (30% OR LESS)",
@@ -5376,13 +7019,18 @@
         },
         {
             "canonical": "Триметилбензолы (смесь)",
-            "cas": null,
+            "cas": "526-73-8",
             "aliases": [
                 "TRIMETHYLBENZENE (ALL ISOMERS)",
                 "Trimethylbenzenes",
                 "Триметилбензолы",
                 "Триметилбензол",
-                "Смесь триметилбензолов"
+                "Смесь триметилбензолов",
+                "1,2,3-TRIMETHYLBENZENE",
+                "Hemimellitene",
+                "Hemellitol",
+                "Hemimellitol",
+                "ZK4R7UPH6R"
             ]
         },
         {
@@ -5397,8 +7045,14 @@
         },
         {
             "canonical": "TRIXYLYL PHOSPHATE",
-            "cas": null,
-            "aliases": []
+            "cas": "25155-23-1",
+            "aliases": [
+                "Trixylenyl phosphate",
+                "Xylyl phosphate",
+                "Coalite NTP",
+                "Phosflex 179",
+                "Reofos 95"
+            ]
         },
         {
             "canonical": "Ксилол-скипидар",
@@ -5414,13 +7068,25 @@
         },
         {
             "canonical": "UNDECANOIC ACID",
-            "cas": null,
-            "aliases": []
+            "cas": "112-37-8",
+            "aliases": [
+                "Hendecanoic acid",
+                "Undecylic acid",
+                "n-Undecoic acid",
+                "n-Undecanoic acid",
+                "n-Undecylic acid"
+            ]
         },
         {
             "canonical": "UNDECYL ALCOHOL",
-            "cas": null,
-            "aliases": []
+            "cas": "112-42-5",
+            "aliases": [
+                "1-UNDECANOL",
+                "Undecan-1-ol",
+                "Undecanol",
+                "1-Hendecanol",
+                "Hendecyl alcohol"
+            ]
         },
         {
             "canonical": "Мочевина-водный раствор",
@@ -5451,8 +7117,14 @@
         },
         {
             "canonical": "VALERALDEHYDE (ALL ISOMERS)",
-            "cas": null,
-            "aliases": []
+            "cas": "110-62-3",
+            "aliases": [
+                "Valeraldehyde",
+                "PENTANAL",
+                "n-Valeraldehyde",
+                "n-Pentanal",
+                "Valeric aldehyde"
+            ]
         },
         {
             "canonical": "VARSOL 140 Noxious liquid, NF, (7) n.o.s. (Alkyl (C9+) benzenes) ST3, Cat. Y",
@@ -5506,18 +7178,36 @@
         },
         {
             "canonical": "VINYL ETHYL ETHER",
-            "cas": null,
-            "aliases": []
+            "cas": "109-92-2",
+            "aliases": [
+                "Ethyl vinyl ether",
+                "Ethoxyethene",
+                "Ethoxyethylene",
+                "Ethene, ethoxy-",
+                "1-Ethoxyethene"
+            ]
         },
         {
             "canonical": "VINYL NEODECANOATE",
-            "cas": null,
-            "aliases": []
+            "cas": "51000-52-3",
+            "aliases": [
+                "9NDY01YYPT",
+                "Neodecanoic acid, vinyl ester",
+                "Neodecanoic acid, ethenyl ester",
+                "EXXAR NEO 10",
+                "EINECS 256-905-8"
+            ]
         },
         {
             "canonical": "VINYLIDENE CHLORIDE",
-            "cas": null,
-            "aliases": []
+            "cas": "75-35-4",
+            "aliases": [
+                "1,1-Dichloroethene",
+                "1,1-DICHLOROETHYLENE",
+                "Vinylidene dichloride",
+                "1,1-Dce",
+                "Vinylidine chloride"
+            ]
         },
         {
             "canonical": "Стирол",
@@ -5570,8 +7260,14 @@
         },
         {
             "canonical": "XYLENOL",
-            "cas": null,
-            "aliases": []
+            "cas": "526-75-0",
+            "aliases": [
+                "2,3-DIMETHYLPHENOL",
+                "2,3-Xylenol",
+                "1-Hydroxy-2,3-dimethylbenzene",
+                "Phenol, 2,3-dimethyl-",
+                "Vic-o-Xylenol"
+            ]
         },
         {
             "canonical": "Y-1680 Noxious liquid, NF, (5) n.o.s. (Mineral oil) ST2, Cat. Y",
