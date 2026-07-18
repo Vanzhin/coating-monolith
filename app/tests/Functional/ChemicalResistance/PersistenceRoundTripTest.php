@@ -8,9 +8,6 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
 use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository;
 use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
@@ -21,9 +18,9 @@ use Symfony\Component\Uid\Uuid;
 
 final class PersistenceRoundTripTest extends KernelTestCase
 {
-    private SubstanceRepository $substances;
-    private NoteRepository $notes;
-    private AssessmentRepository $assessments;
+    private DoctrineSubstanceRepository $substances;
+    private DoctrineNoteRepository $notes;
+    private DoctrineAssessmentRepository $assessments;
     private EntityManagerInterface $em;
 
     private ?Uuid $substanceId = null;
