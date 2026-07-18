@@ -8,3 +8,10 @@ services:
 
   App\Coatings\Infrastructure\Search\CoatingTagFinder:
     public: true
+
+  App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository:
+    public: true
+  App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository:
+    public: true
+  App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository:
+    public: true
