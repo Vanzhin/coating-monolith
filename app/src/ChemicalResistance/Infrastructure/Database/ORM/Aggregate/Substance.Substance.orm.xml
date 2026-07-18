@@ -10,7 +10,20 @@
         <field name="canonicalName"    type="string" length="200" column="canonical_name"/>
         <field name="canonicalNameKey" type="string" length="200" column="canonical_name_key"/>
         <field name="cas"              type="cas_number"           column="cas" nullable="true"/>
-        <field name="aliases"          type="string_collection"    column="aliases"/>
+        <field name="aliases"          type="string_collection"    column="aliases">
+            <options>
+                <option name="jsonb">true</option>
+            </options>
+        </field>
+
+        <!--
+            uq_substance_cas is a PARTIAL unique index (WHERE cas IS NOT NULL) and
+            ix_substance_aliases_gin is a GIN index — neither can be declared in Doctrine XML.
+            Both are managed exclusively via migrations.
+        -->
+        <unique-constraints>
+            <unique-constraint name="uq_substance_canonical_key" columns="canonical_name_key"/>
+        </unique-constraints>
     </entity>
 
 </doctrine-mapping>

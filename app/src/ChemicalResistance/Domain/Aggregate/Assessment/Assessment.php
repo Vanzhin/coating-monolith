@@ -72,6 +72,12 @@ class Assessment extends Aggregate
         $this->maxTemperatureCelsius = $t->celsius;
     }
 
+    /**
+     * Replaces the note IDs collection. Consistency validation (all referenced note IDs must
+     * exist in the repository) is performed only when both $specification and
+     * $notesForConsistency are set. On a hydrated Assessment, callers must invoke
+     * setNotesRepositoryForConsistency() before calling this method to ensure validation runs.
+     */
     public function setNoteIds(StringCollection $ids): void
     {
         if (isset($this->specification) && isset($this->notesForConsistency)) {

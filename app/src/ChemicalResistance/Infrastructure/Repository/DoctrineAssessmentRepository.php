@@ -129,12 +129,11 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
             $qb->andWhere(
                 $qb->expr()->orX(
                     'LOWER(s.canonicalName) LIKE LOWER(:search)',
-                    'LOWER(s.canonicalNameKey) LIKE LOWER(:searchKey)',
-                    'CAST(s.cas AS TEXT) LIKE :search',
+                    'LOWER(s.canonicalNameKey) LIKE LOWER(:search)',
+                    's.cas LIKE :search',
                 )
             )
-            ->setParameter('search', '%' . $search . '%')
-            ->setParameter('searchKey', '%' . $search . '%');
+            ->setParameter('search', '%' . $search . '%');
         }
 
         $qb->setFirstResult(($page - 1) * $pageSize)

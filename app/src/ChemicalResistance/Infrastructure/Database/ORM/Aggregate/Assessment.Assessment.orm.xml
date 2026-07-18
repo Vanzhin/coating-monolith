@@ -11,7 +11,26 @@
         <field name="substanceId"           type="uuid"              column="substance_id"/>
         <field name="grade"                 type="string" length="2" column="grade"/>
         <field name="maxTemperatureCelsius" type="smallint"          column="max_temperature_celsius"/>
-        <field name="noteIds"               type="string_collection" column="note_ids"/>
+        <field name="noteIds"               type="string_collection" column="note_ids">
+            <options>
+                <option name="jsonb">true</option>
+            </options>
+        </field>
+
+        <!--
+            FK constraints (coating_id → coatings_coating, substance_id → chemical_resistance_substance)
+            are managed exclusively via migrations. Doctrine XML FK declarations require <many-to-one>
+            associations, which we intentionally avoid to preserve cross-context boundaries
+            (ids stored by value, no ORM-level join).
+        -->
+        <unique-constraints>
+            <unique-constraint name="uq_assessment_coating_substance" columns="coating_id,substance_id"/>
+        </unique-constraints>
+        <indexes>
+            <index name="ix_assessment_coating"       columns="coating_id"/>
+            <index name="ix_assessment_substance"     columns="substance_id"/>
+            <index name="ix_assessment_coating_grade" columns="coating_id,grade"/>
+        </indexes>
     </entity>
 
 </doctrine-mapping>
