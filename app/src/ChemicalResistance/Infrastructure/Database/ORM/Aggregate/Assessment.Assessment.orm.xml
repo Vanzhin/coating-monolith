@@ -1,0 +1,17 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment" table="chemical_resistance_assessment">
+        <id name="id" type="uuid">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="coatingId"             type="uuid"              column="coating_id"/>
+        <field name="substanceId"           type="uuid"              column="substance_id"/>
+        <field name="grade"                 type="string" length="2" column="grade"/>
+        <field name="maxTemperatureCelsius" type="smallint"          column="max_temperature_celsius"/>
+        <field name="noteIds"               type="string_collection" column="note_ids"/>
+    </entity>
+
+</doctrine-mapping>

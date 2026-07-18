@@ -19,14 +19,14 @@ class Substance extends Aggregate
     private ?CasNumber $cas = null;
     /** @var StringCollection — hydrated from JSONB via StringCollectionType */
     private StringCollection $aliases;
-    private SubstanceSpecification $specification;
+    private ?SubstanceSpecification $specification = null;
 
     public function __construct(
         Uuid $id,
         string $canonicalName,
         ?CasNumber $cas,
         StringCollection $aliases,
-        SubstanceSpecification $specification,
+        ?SubstanceSpecification $specification = null,
     ) {
         $this->id = $id;
         $this->specification = $specification;
@@ -36,6 +36,11 @@ class Substance extends Aggregate
         foreach ($aliases as $a) {
             $this->addAlias($a);
         }
+    }
+
+    public function setSpecification(SubstanceSpecification $spec): void
+    {
+        $this->specification = $spec;
     }
 
     public function getId(): string { return $this->id->toRfc4122(); }
@@ -57,13 +62,17 @@ class Substance extends Aggregate
         }
         $this->canonicalName = $name;
         $this->canonicalNameKey = SubstanceNameNormalizer::normalize($name);
-        $this->specification->uniqueName->satisfy($this);
+        if (isset($this->specification)) {
+            $this->specification->uniqueName->satisfy($this);
+        }
     }
 
     public function setCas(?CasNumber $cas): void
     {
         $this->cas = $cas;
-        $this->specification->uniqueCas->satisfy($this);
+        if (isset($this->specification)) {
+            $this->specification->uniqueCas->satisfy($this);
+        }
     }
 
     public function addAlias(string $alias): void
@@ -87,6 +96,14 @@ class Substance extends Aggregate
             }
         }
         $this->aliases = new StringCollection(...$this->aliases->getList(), ...[$alias]);
+    }
+
+    public function replaceAliases(array $aliases): void
+    {
+        $this->aliases = new StringCollection();
+        foreach ($aliases as $a) {
+            $this->addAlias($a);
+        }
     }
 
     public function removeAlias(string $alias): void

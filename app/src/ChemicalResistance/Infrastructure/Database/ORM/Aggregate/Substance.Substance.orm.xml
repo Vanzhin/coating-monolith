@@ -1,0 +1,16 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\ChemicalResistance\Domain\Aggregate\Substance\Substance" table="chemical_resistance_substance">
+        <id name="id" type="uuid">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="canonicalName"    type="string" length="200" column="canonical_name"/>
+        <field name="canonicalNameKey" type="string" length="200" column="canonical_name_key"/>
+        <field name="cas"              type="cas_number"           column="cas" nullable="true"/>
+        <field name="aliases"          type="string_collection"    column="aliases"/>
+    </entity>
+
+</doctrine-mapping>

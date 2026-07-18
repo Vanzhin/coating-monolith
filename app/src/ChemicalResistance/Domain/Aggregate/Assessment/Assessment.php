@@ -13,10 +13,13 @@ class Assessment extends Aggregate
     public readonly Uuid $id;
     private Uuid $coatingId;
     private Uuid $substanceId;
-    private Grade $grade;
-    private AssessmentTemperature $maxTemperature;
+    /** Backing field stored as string in DB; getter returns Grade enum. */
+    private string $grade;
+    /** Backing field stored as smallint in DB; getter returns AssessmentTemperature VO. */
+    private int $maxTemperatureCelsius;
     private StringCollection $noteIds;
-    private AssessmentSpecification $specification;
+    private ?AssessmentSpecification $specification = null;
+    private ?NoteRepository $notesForConsistency = null;
 
     public function __construct(
         Uuid $id,
@@ -25,33 +28,55 @@ class Assessment extends Aggregate
         Grade $grade,
         ?AssessmentTemperature $maxTemperature,
         StringCollection $noteIds,
-        AssessmentSpecification $specification,
-        NoteRepository $notesForConsistency,
+        ?AssessmentSpecification $specification = null,
+        ?NoteRepository $notesForConsistency = null,
     ) {
         $this->id = $id;
         $this->coatingId = $coatingId;
         $this->substanceId = $substanceId;
         $this->specification = $specification;
+        $this->notesForConsistency = $notesForConsistency;
 
-        $this->grade = $grade;
-        $this->maxTemperature = $maxTemperature ?? AssessmentTemperature::default();
-        $this->setNoteIds($noteIds, $notesForConsistency);
-        $this->specification->uniqueCoatingSubstance->satisfy($this);
+        $this->grade = $grade->value;
+        $this->maxTemperatureCelsius = ($maxTemperature ?? AssessmentTemperature::default())->celsius;
+        $this->setNoteIds($noteIds);
+        if (isset($this->specification)) {
+            $this->specification->uniqueCoatingSubstance->satisfy($this);
+        }
+    }
+
+    public function setSpecification(AssessmentSpecification $spec): void
+    {
+        $this->specification = $spec;
+    }
+
+    public function setNotesRepositoryForConsistency(NoteRepository $notes): void
+    {
+        $this->notesForConsistency = $notes;
     }
 
     public function getId(): string { return $this->id->toRfc4122(); }
     public function getCoatingId(): Uuid { return $this->coatingId; }
     public function getSubstanceId(): Uuid { return $this->substanceId; }
-    public function getGrade(): Grade { return $this->grade; }
-    public function getMaxTemperature(): AssessmentTemperature { return $this->maxTemperature; }
+    public function getGrade(): Grade { return Grade::from($this->grade); }
+    public function getMaxTemperature(): AssessmentTemperature { return AssessmentTemperature::fromInt($this->maxTemperatureCelsius); }
     public function getNoteIds(): StringCollection { return $this->noteIds; }
 
-    public function setGrade(Grade $g): void { $this->grade = $g; }
-    public function setMaxTemperature(AssessmentTemperature $t): void { $this->maxTemperature = $t; }
-
-    public function setNoteIds(StringCollection $ids, NoteRepository $notes): void
+    public function setGrade(Grade $g): void
     {
-        $this->specification->notesConsistency->validate($ids, $notes);
+        $this->grade = $g->value;
+    }
+
+    public function setMaxTemperature(AssessmentTemperature $t): void
+    {
+        $this->maxTemperatureCelsius = $t->celsius;
+    }
+
+    public function setNoteIds(StringCollection $ids): void
+    {
+        if (isset($this->specification) && isset($this->notesForConsistency)) {
+            $this->specification->notesConsistency->validate($ids, $this->notesForConsistency);
+        }
         $this->noteIds = $ids;
     }
 }
