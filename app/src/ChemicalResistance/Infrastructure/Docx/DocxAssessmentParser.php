@@ -39,7 +39,15 @@ final class DocxAssessmentParser
         return new DocxParseResult($rows, $notes);
     }
 
-    /** @return list<ParsedRow> */
+    /**
+     * @return list<ParsedRow>
+     *
+     * Итерирует по ВСЕМ w:tbl в документе. У Литатанк Классик/Плюс — одна
+     * длинная таблица; у Литатанк Стандарт — 23 таблицы (по одной на страницу),
+     * каждая с повторным заголовком «Вещество/Стойкость» на первой строке.
+     * Rows фильтруются по first-cell = numeric row index, что естественно
+     * пропускает заголовки и служебные строки.
+     */
     private function parseRows(\DOMXPath $xp): array
     {
         $out = [];
@@ -49,27 +57,27 @@ final class DocxAssessmentParser
             return $out;
         }
 
-        $firstTable = $tables->item(0);
-
-        foreach ($xp->query('.//w:tr', $firstTable) as $tr) {
-            $cells = [];
-            foreach ($xp->query('.//w:tc', $tr) as $tc) {
-                $text = '';
-                foreach ($xp->query('.//w:t', $tc) as $t) {
-                    $text .= $t->textContent;
+        foreach ($tables as $table) {
+            foreach ($xp->query('.//w:tr', $table) as $tr) {
+                $cells = [];
+                foreach ($xp->query('.//w:tc', $tr) as $tc) {
+                    $text = '';
+                    foreach ($xp->query('.//w:t', $tc) as $t) {
+                        $text .= $t->textContent;
+                    }
+                    $cells[] = trim(preg_replace('/\s+/u', ' ', $text));
                 }
-                $cells[] = trim(preg_replace('/\s+/u', ' ', $text));
-            }
 
-            if (count($cells) < 3) {
-                continue;
-            }
+                if (count($cells) < 3) {
+                    continue;
+                }
 
-            if (!ctype_digit($cells[0])) {
-                continue;
-            }
+                if (!ctype_digit($cells[0])) {
+                    continue;
+                }
 
-            $out[] = new ParsedRow($cells[1], $cells[2]);
+                $out[] = new ParsedRow($cells[1], $cells[2]);
+            }
         }
 
         return $out;
