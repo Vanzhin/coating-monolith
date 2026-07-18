@@ -13,6 +13,8 @@ doctrine:
             dft_range: App\Coatings\Infrastructure\Database\DBAL\DftRangeType
             recoating_interval_tree: App\Coatings\Infrastructure\Database\DBAL\RecoatingIntervalTreeType
             thermal_exposure_limits: App\Coatings\Infrastructure\Database\DBAL\ThermalExposureLimitsType
+            cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
+            string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
         mapping_types:
             jsonb: json
     orm:
@@ -56,6 +58,12 @@ doctrine:
               dir: '%kernel.project_dir%/src/Users/Infrastructure/Database/ORM/ValueObject'
               prefix: 'App\Users\Domain\Entity\ValueObject'
               alias: ValueObject
+            ChemicalResistance:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/ChemicalResistance/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\ChemicalResistance\Domain\Aggregate'
+                alias: ChemicalResistance
 
 
 #            App:
