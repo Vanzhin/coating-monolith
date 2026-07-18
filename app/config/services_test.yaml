@@ -23,6 +23,9 @@ services:
   App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommandHandler:
     public: true
 
+  App\ChemicalResistance\Application\Service\SubstanceLookup:
+    public: true
+
   App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler:
     public: true
   App\ChemicalResistance\Application\UseCase\Command\Substance\UpdateSubstance\UpdateSubstanceCommandHandler:
