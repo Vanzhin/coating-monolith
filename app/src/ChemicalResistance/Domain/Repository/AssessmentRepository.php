@@ -17,4 +17,5 @@ interface AssessmentRepository
     /** @return list<Assessment> */
     public function findAllBySubstance(Uuid $substanceId): array;
     public function paginateByCoating(Uuid $coatingId, ?string $search, int $page, int $pageSize): PaginationResult;
+    public function countAssessmentsWithNoteId(string $noteId): int;
 }

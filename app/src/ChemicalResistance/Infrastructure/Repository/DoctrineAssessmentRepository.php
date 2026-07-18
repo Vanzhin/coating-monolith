@@ -115,6 +115,15 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
         return $assessments;
     }
 
+    public function countAssessmentsWithNoteId(string $noteId): int
+    {
+        $count = $this->em->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM chemical_resistance_assessment WHERE note_ids @> :id::jsonb',
+            ['id' => json_encode([$noteId])],
+        );
+        return (int) $count;
+    }
+
     public function paginateByCoating(Uuid $coatingId, ?string $search, int $page, int $pageSize): PaginationResult
     {
         $qb = $this->em->createQueryBuilder()

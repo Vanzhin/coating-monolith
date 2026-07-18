@@ -15,3 +15,10 @@ services:
     public: true
   App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository:
     public: true
+
+  App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommandHandler:
+    public: true
+  App\ChemicalResistance\Application\UseCase\Command\Note\UpdateNote\UpdateNoteCommandHandler:
+    public: true
+  App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommandHandler:
+    public: true
