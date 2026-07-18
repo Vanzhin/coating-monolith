@@ -22,3 +22,10 @@ services:
     public: true
   App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommandHandler:
     public: true
+
+  App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler:
+    public: true
+  App\ChemicalResistance\Application\UseCase\Command\Substance\UpdateSubstance\UpdateSubstanceCommandHandler:
+    public: true
+  App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommandHandler:
+    public: true

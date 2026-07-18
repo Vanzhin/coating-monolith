@@ -1,0 +1,23 @@
+<?php
+declare(strict_types=1);
+namespace App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance;
+
+use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\Shared\Infrastructure\Exception\AppException;
+use Symfony\Component\Uid\Uuid;
+
+final class DeleteSubstanceCommandHandler
+{
+    public function __construct(private SubstanceRepository $repo) {}
+
+    public function __invoke(DeleteSubstanceCommand $c): void
+    {
+        $sub = $this->repo->find(Uuid::fromString($c->id))
+            ?? throw new AppException('Вещество не найдено.');
+        try {
+            $this->repo->remove($sub);
+        } catch (\Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException) {
+            throw new AppException('Вещество используется в оценках химстойкости, удаление невозможно.');
+        }
+    }
+}
