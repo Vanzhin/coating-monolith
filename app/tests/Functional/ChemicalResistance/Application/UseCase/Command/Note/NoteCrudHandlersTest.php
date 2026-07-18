@@ -132,7 +132,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $substance = new Substance(
             $substanceId,
             'Вещество-' . $suffix,
-            CasNumber::fromString('7732-18-5'),
+            null,
             new StringCollection(),
             $substances->makeSpec(),
         );

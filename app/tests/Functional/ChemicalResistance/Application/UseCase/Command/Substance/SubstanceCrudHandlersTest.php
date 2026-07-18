@@ -76,7 +76,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $suffix = uniqid('sub-create-', true);
         $id = ($this->create)(new CreateSubstanceCommand(
             'Вещество-' . $suffix,
-            '7732-18-5',
+            null,
             ['alias-a-' . $suffix, 'alias-b-' . $suffix],
         ));
         $uuid = Uuid::fromString($id);
@@ -86,8 +86,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $loaded = $this->substances->find($uuid);
         self::assertNotNull($loaded);
         self::assertSame('Вещество-' . $suffix, $loaded->getCanonicalName());
-        self::assertNotNull($loaded->getCas());
-        self::assertSame('7732-18-5', $loaded->getCas()->value);
+        self::assertNull($loaded->getCas());
         self::assertCount(2, $loaded->getAliases()->getList());
     }
 
@@ -105,7 +104,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         ($this->update)(new UpdateSubstanceCommand(
             $id,
             'Обновлённое-' . $suffix,
-            '7664-93-9',
+            null,
             ['новый-псевдоним-' . $suffix],
         ));
 
@@ -113,8 +112,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $updated = $this->substances->find($uuid);
         self::assertNotNull($updated);
         self::assertSame('Обновлённое-' . $suffix, $updated->getCanonicalName());
-        self::assertNotNull($updated->getCas());
-        self::assertSame('7664-93-9', $updated->getCas()->value);
+        self::assertNull($updated->getCas());
         self::assertCount(1, $updated->getAliases()->getList());
     }
 

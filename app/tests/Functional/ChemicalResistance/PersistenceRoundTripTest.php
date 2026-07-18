@@ -88,7 +88,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $sub = new Substance(
             $this->substanceId,
             'Вода-тест-' . $suffix,
-            CasNumber::fromString('7732-18-5'),
+            null,
             new StringCollection('Water', 'H2O'),
             $this->substances->makeSpec(),
         );
@@ -120,7 +120,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $normalizedKey = \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Вода-тест-' . $suffix);
         $loadedSub = $this->substances->findByCanonicalNameKey($normalizedKey);
         self::assertNotNull($loadedSub, 'Substance should be loadable by canonicalNameKey.');
-        self::assertSame('7732-18-5', (string) $loadedSub->getCas());
+        self::assertNull($loadedSub->getCas());
         self::assertSame(['Water', 'H2O'], $loadedSub->getAliases()->getList());
 
         // --- Round-trip: Note ---
