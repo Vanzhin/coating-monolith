@@ -39,3 +39,6 @@ services:
     public: true
   App\ChemicalResistance\Application\UseCase\Command\Assessment\DeleteAssessment\DeleteAssessmentCommandHandler:
     public: true
+
+  App\ChemicalResistance\Application\Service\ChemicalResistanceImporter:
+    public: true

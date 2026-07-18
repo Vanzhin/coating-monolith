@@ -16,6 +16,12 @@ final class SubstanceLookup
 {
     public function __construct(private SubstanceRepository $repo) {}
 
+    public function findByNormalizedName(string $raw): ?Substance
+    {
+        $key = SubstanceNameNormalizer::normalize(trim($raw));
+        return $this->repo->findByCanonicalNameKey($key);
+    }
+
     public function findOrCreateByName(string $raw, ?CasNumber $cas = null): Substance
     {
         $raw = trim($raw);
