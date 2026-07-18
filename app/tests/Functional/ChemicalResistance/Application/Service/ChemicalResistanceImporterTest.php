@@ -153,6 +153,43 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         self::assertSame('Примечание 1-' . $suffix, $note->getTitle());
     }
 
+    public function testDryRunWritesNothing(): void
+    {
+        $coatingId = $this->getCoatingId();
+        $suffix    = uniqid('importer-dryrun-', true);
+
+        $parsed = new DocxParseResult(
+            rows: [
+                new ParsedRow('Гексан-' . $suffix, 'R, 60°C'),
+            ],
+            notes: [
+                new ParsedNote('Прим. 1', 'Примечание-dryrun-' . $suffix, 'Описание'),
+            ],
+        );
+
+        $report = $this->importer->import($parsed, $coatingId, new ImportOptions(dryRun: true));
+
+        // Report should reflect what would have been imported.
+        self::assertSame(1, $report->notesCreated, 'Dry-run: note counted but not saved');
+        self::assertSame(1, $report->substancesCreated, 'Dry-run: substance counted but not saved');
+        self::assertSame(1, $report->assessmentsCreated, 'Dry-run: assessment counted but not saved');
+        self::assertCount(0, $report->conflicts);
+        self::assertCount(0, $report->warnings);
+
+        // DB must be clean — nothing actually written.
+        $this->em->clear();
+
+        $sub = $this->substanceRepo->findByCanonicalNameKey(
+            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Гексан-' . $suffix)
+        );
+        self::assertNull($sub, 'Dry-run must not persist a new substance');
+
+        if ($sub !== null) {
+            $assessment = $this->assessmentRepo->findByCoatingAndSubstance($coatingId, $sub->id);
+            self::assertNull($assessment, 'Dry-run must not persist a new assessment');
+        }
+    }
+
     public function testReimportIsIdempotent(): void
     {
         $coatingId = $this->getCoatingId();

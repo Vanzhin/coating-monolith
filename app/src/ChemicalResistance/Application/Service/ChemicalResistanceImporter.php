@@ -60,7 +60,7 @@ final class ChemicalResistanceImporter
 
             // Substance: distinguish created vs reused.
             $preexisted = $this->lookup->findByNormalizedName($row->substanceName);
-            $sub = $this->lookup->findOrCreateByName($row->substanceName);
+            $sub = $this->lookup->findOrCreateByName($row->substanceName, persist: !$opts->dryRun);
             if ($preexisted === null) {
                 $subCreated++;
             } else {

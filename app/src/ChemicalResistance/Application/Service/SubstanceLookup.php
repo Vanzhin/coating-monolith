@@ -22,7 +22,7 @@ final class SubstanceLookup
         return $this->repo->findByCanonicalNameKey($key);
     }
 
-    public function findOrCreateByName(string $raw, ?CasNumber $cas = null): Substance
+    public function findOrCreateByName(string $raw, ?CasNumber $cas = null, bool $persist = true): Substance
     {
         $raw = trim($raw);
 
@@ -32,7 +32,7 @@ final class SubstanceLookup
             if ($existing !== null) {
                 if (!$existing->hasName($raw)) {
                     $existing->addAlias($raw);
-                    $this->repo->save($existing);
+                    if ($persist) { $this->repo->save($existing); }
                 }
                 return $existing;
             }
@@ -44,14 +44,14 @@ final class SubstanceLookup
         if ($existing !== null) {
             if (!$existing->hasName($raw)) {
                 $existing->addAlias($raw);
-                $this->repo->save($existing);
+                if ($persist) { $this->repo->save($existing); }
             }
             return $existing;
         }
 
         // 3. Create fresh.
         $sub = new Substance(Uuid::v4(), $raw, $cas, new StringCollection(), $this->spec());
-        $this->repo->save($sub);
+        if ($persist) { $this->repo->save($sub); }
         return $sub;
     }
 
