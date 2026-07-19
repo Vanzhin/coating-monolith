@@ -1,6 +1,7 @@
-{# _chem_resistance_row.html.twig — params: row (AssessmentRowDTO) #}
+{# _chem_resistance_row.html.twig — params: row (AssessmentRowDTO), highlight (?string) #}
 <tr data-substance-id="{{ row.substanceId }}"
-    data-search-key="{{ (row.canonicalName ~ ' ' ~ (row.cas ?? '') ~ ' ' ~ row.aliases|join(' '))|lower }}">
+    data-search-key="{{ (row.canonicalName ~ ' ' ~ (row.cas ?? '') ~ ' ' ~ row.aliases|join(' '))|lower }}"
+    class="{% if highlight is defined and highlight == row.substanceId %}table-warning{% endif %}">
     <td>
         <div>{{ row.canonicalName }}</div>
         {% if row.cas or row.aliases|length > 0 %}

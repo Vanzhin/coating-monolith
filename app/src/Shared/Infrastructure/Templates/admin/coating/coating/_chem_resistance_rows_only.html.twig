@@ -1,0 +1,4 @@
+{# _chem_resistance_rows_only.html.twig — params: rows (list<AssessmentRowDTO>), highlight (?string) #}
+{% for row in rows %}
+    {% include 'admin/coating/coating/_chem_resistance_row.html.twig' with { row: row, highlight: highlight } %}
+{% endfor %}

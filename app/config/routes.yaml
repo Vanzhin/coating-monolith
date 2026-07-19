@@ -30,3 +30,7 @@ documents:
   resource: ../src/Documents/Infrastructure/Controller
   type: attribute
 
+chem_resistance:
+  resource: ../src/ChemicalResistance/Infrastructure/Controller
+  type: attribute
+
