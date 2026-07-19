@@ -321,21 +321,15 @@
         {
             "canonical": "607 Fluid* (*TRADENAME Exxon)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "607 Флуид* (*ТРАДЕНАМЕ Ексксон)"
+            ]
         },
         {
             "canonical": "AC1",
             "cas": null,
             "aliases": [
-                "N-[4-HYDROXYMETHYL-CYCLOHEXAN-6-YL-1,2,3-TRIOL]-4,6-DIDEOXY-4-AMINOGLUCOPYRANOSIDE",
-                "N-(4-hydroxymethyl-cyclohexan-6-yl-1,2,3-triol)-4,6-dideoxy-4-aminoglucopyranoside",
-                "RefChem:827695",
-                "(2S,3R,4S,5S,6R)-6-methyl-5-(((1S,4R,5S,6S)-4,5,6-trihydroxy-3-(hydroxymethyl)cyclohex-2-en-1-yl)amino)oxane-2,3,4-triol",
-                "4,6-dideoxy-4-{[(1S,4R,5S,6S)-4,5,6-trihydroxy-3-(hydroxymethyl)cyclohex-2-en-1-yl]amino}-alpha-D-glucopyranose",
-                "6-METHYL-5-(4,5,6-TRIHYDROXY-3-HYDROXYMETHYL-CYCLOHEX-2-ENYLAMINO)-TETRAHYDRO-PYRAN-2,3,4-TRIOL",
-                "DB02218",
-                "PD060104",
-                "Q27457203"
+                "АК1"
             ]
         },
         {
@@ -368,89 +362,78 @@
             "canonical": "Acetic acid, 2-methylpropyl ester",
             "cas": null,
             "aliases": [
-                "ISOBUTYL ACETATE",
-                "2-Methylpropyl acetate",
-                "Isobutyl ethanoate",
-                "2-Methylpropyl ethanoate",
-                "2-Methyl-1-propyl acetate",
-                "Acetic acid, isobutyl ester",
-                "Acetate d'isobutyle",
-                "beta-Methylpropyl ethanoate",
-                "Isobutylester kyseliny octove",
-                "FEMA No. 2175"
+                "Уксусная кислота, 2-метилпропил эфир"
             ]
         },
         {
             "canonical": "Acetic acid, iso-butyl ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Уксусная кислота, исо-бутил эфир"
+            ]
         },
         {
             "canonical": "Acetic acid, n-butyl ester",
             "cas": null,
             "aliases": [
-                "Butyl acetate",
-                "N-BUTYL ACETATE",
-                "Acetic acid, butyl ester",
-                "Butyl ethanoate",
-                "1-Butyl acetate",
-                "n-Butyl ethanoate",
-                "Butylacetat",
-                "Acetate de butyle",
-                "Butylacetaten",
-                "1-acetoxybutane"
+                "Уксусная кислота, н-бутил эфир"
             ]
         },
         {
             "canonical": "Acetic acid, sec-butyl ester",
             "cas": null,
             "aliases": [
-                "SEC-BUTYL ACETATE",
-                "dl-sec-Butyl acetate",
-                "2-Butyl acetate",
-                "butan-2-yl acetate",
-                "1-Methylpropyl acetate",
-                "Acetic acid, 1-methylpropyl ester",
-                "sec-Butyl ethanoate",
-                "1-Methylpropyl ethanoate",
-                "Acetic acid secondary butyl ester",
-                "NSC 8034"
+                "Уксусная кислота, сек-бутил эфир"
             ]
         },
         {
             "canonical": "Acetylsäure (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асетилсауре (Г)"
+            ]
         },
         {
             "canonical": "Acrylic acid, isobuty ester",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Акрилик кислота, исобути эфир"
+            ]
         },
         {
             "canonical": "Agha Jari",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Агха Жари"
+            ]
         },
         {
             "canonical": "Aircraft Gasoline",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиационный бензин"
+            ]
         },
         {
             "canonical": "Alcohols (C6+)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Спирты (К6+)"
+            ]
         },
         {
             "canonical": "Alcohols, C4-C6",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Спирты, К4-К6"
+            ]
         },
         {
             "canonical": "Alkyl (C9 – C17) benzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Алкил (К9 – К17) бензен"
+            ]
         },
         {
             "canonical": "Алкилат бензиновый",
@@ -468,60 +451,44 @@
         {
             "canonical": "Alkylat (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Алкилат (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "alpha-Furylcarbinol",
             "cas": null,
             "aliases": [
-                "FURFURYL ALCOHOL",
-                "2-Furanmethanol",
-                "2-Furylmethanol",
-                "furan-2-ylmethanol",
-                "2-Furancarbinol",
-                "2-Furanylmethanol",
-                "2-Furylcarbinol",
-                "Furfural alcohol",
-                "Furfuralcohol",
-                "2-Furfuryl alcohol"
+                "Алфа-Фурилкарбинол"
             ]
         },
         {
             "canonical": "alpha-Hydroxypropionic acid",
             "cas": null,
             "aliases": [
-                "lactic acid",
-                "2-hydroxypropanoic acid",
-                "DL-Lactic acid",
-                "2-hydroxypropionic acid",
-                "Milk acid",
-                "Tonsillosan",
-                "Racemic lactic acid",
-                "Ordinary lactic acid",
-                "Acidum lacticum",
-                "Ethylidenelactic acid"
+                "Алфа-Хидроксипропионик кислота"
             ]
         },
         {
             "canonical": "alpha-Hydroxypropionic acid <20%",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Алфа-Хидроксипропионик кислота <20%"
+            ]
         },
         {
             "canonical": "alpha-Hydroxytoluene",
             "cas": null,
             "aliases": [
-                "benzyl alcohol",
-                "phenylmethanol",
-                "benzenemethanol",
-                "phenylcarbinol",
-                "Benzoyl alcohol"
+                "Алфа-Хидрокситолуене"
             ]
         },
         {
             "canonical": "Alphahydroxytoluol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Алфахидрокситолуол"
+            ]
         },
         {
             "canonical": "Раствор аммиака",
@@ -532,6 +499,8 @@
                 "Aqueous ammonia",
                 "AMMONIA AQUEOUS",
                 "Ammonia water",
+                "Ammonia water, 28% or less",
+                "Water of ammonia",
                 "Ammonia solution",
                 "Аммиачная вода",
                 "Гидроксид аммония",
@@ -541,147 +510,156 @@
         {
             "canonical": "AMMONIA AQUEOUS,28%-30% (various grades)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АММОНИА водный,28%-30% (вариоус градес)"
+            ]
         },
         {
             "canonical": "Ammonia hydrate",
             "cas": null,
             "aliases": [
-                "ammonium hydroxide",
-                "Ammonia water",
-                "Ammonia aqueous",
-                "Aquammonia",
-                "Ammonia, aqua"
+                "Аммониа хидрате"
             ]
         },
         {
             "canonical": "Ammonia solutions (28% or less)",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Ammonia water, 28% or less",
-            "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аммониа солутионс (28% ор лесс)"
+            ]
         },
         {
             "canonical": "Ammonium hydrate",
             "cas": null,
             "aliases": [
-                "ammonium hydroxide",
-                "Ammonia water",
-                "Ammonia aqueous",
-                "Aquammonia",
-                "Ammonia, aqua"
+                "Аммониум хидрате"
             ]
         },
         {
             "canonical": "Ammonium hydroxide solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аммониум хидроксиде раствор"
+            ]
         },
         {
             "canonical": "Ammonium hydroxide, 28% or less",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аммониум хидроксиде, 28% ор лесс"
+            ]
         },
         {
             "canonical": "Amna",
-            "cas": "1175954-87-6",
+            "cas": null,
             "aliases": [
-                "Arachidonoyl m-Nitroaniline",
-                "(5Z,8Z,11Z,14Z)-N-(3-nitrophenyl)icosa-5,8,11,14-tetraenamide",
-                "SCHEMBL29365774",
-                "HMS3649B21",
-                "MFCD08062240"
+                "Амна"
             ]
         },
         {
             "canonical": "Amyl hydride",
             "cas": null,
             "aliases": [
-                "PENTANE",
-                "n-Pentane",
-                "Pentan",
-                "Skellysolve A",
-                "Pentanen"
+                "Амил хидриде"
             ]
         },
         {
             "canonical": "Anchovy Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Анчови масло"
+            ]
         },
         {
             "canonical": "Anthracene oil (coal tar fraction)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Антрасене масло (коал тар фрактион)"
+            ]
         },
         {
             "canonical": "Antifreeze* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Антифреезе* (*ДОВ)"
+            ]
         },
         {
             "canonical": "APF 310D* (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АПФ 310Д* (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Aqua ammonia",
-            "cas": "7664-41-7",
+            "cas": null,
             "aliases": [
-                "ammonia",
-                "azane",
-                "Ammonia gas",
-                "Nitro-sil",
-                "Ammonia anhydrous"
+                "Вода аммониа"
             ]
         },
         {
             "canonical": "Arabian heavy",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арабиан хеави"
+            ]
         },
         {
             "canonical": "Arabian light (Ras Tanura)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арабиан лигхт (Рас Танура)"
+            ]
         },
         {
             "canonical": "Arabian light (Sidon)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арабиан лигхт (Сидон)"
+            ]
         },
         {
             "canonical": "Arabian medium",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арабиан медиум"
+            ]
         },
         {
             "canonical": "Aramco",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арамко"
+            ]
         },
         {
             "canonical": "Aromatic concentrate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ароматик консентрате"
+            ]
         },
         {
             "canonical": "AROMATIC CONCENTRATE GRADE 1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АРОМАТИК КОНСЕНТРАТЕ ГРАДЕ 1"
+            ]
         },
         {
             "canonical": "Aromatic hydrocarbons, mixed",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ароматик хидрокарбонс, миксед"
+            ]
         },
         {
             "canonical": "Arzew",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Арзев"
+            ]
         },
         {
             "canonical": "Битум",
@@ -695,102 +673,142 @@
         {
             "canonical": "Asphalt bitumen",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалт битумен"
+            ]
         },
         {
             "canonical": "Asphalt cements",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалт сементс"
+            ]
         },
         {
             "canonical": "Asphalt emulsions",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалт емулсионс"
+            ]
         },
         {
             "canonical": "Asphalt solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалт раствор"
+            ]
         },
         {
             "canonical": "Asphaltic bitumen",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалтик битумен"
+            ]
         },
         {
             "canonical": "Asphaltum",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Асфалтум"
+            ]
         },
         {
             "canonical": "Astrail oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Астраил масло"
+            ]
         },
         {
             "canonical": "Atosol 150 (*Atofina)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Атосол 150 (*Атофина)"
+            ]
         },
         {
             "canonical": "Automotive Coolant 007\/400 F (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аутомотиве Коолант 007\/400 Ф (*БАСФ)"
+            ]
         },
         {
             "canonical": "Automotive Coolant 012\/600 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аутомотиве Коолант 012\/600 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Automotive Diesel Oil (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Аутомотиве дизельное топливо (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "AUTOMOTIVE GASOLINE",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АУТОМОТИВЕ бензин"
+            ]
         },
         {
             "canonical": "Avcat",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авкат"
+            ]
         },
         {
             "canonical": "Avgas 100 LL* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авгас 100 ЛЛ* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Aviation fuel 100\/130",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион фуел 100\/130"
+            ]
         },
         {
             "canonical": "Aviation fuel 115\/145",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион фуел 115\/145"
+            ]
         },
         {
             "canonical": "Aviation fuel 96\/90",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион фуел 96\/90"
+            ]
         },
         {
             "canonical": "Aviation gasoline - grade 100",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион бензин - граде 100"
+            ]
         },
         {
             "canonical": "Aviation gasoline - grade 100LL",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион бензин - граде 100ЛЛ"
+            ]
         },
         {
             "canonical": "Aviation gasoline - grade 80",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион бензин - граде 80"
+            ]
         },
         {
             "canonical": "Керосин",
@@ -806,93 +824,121 @@
         {
             "canonical": "Aviation spirit",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион спирит"
+            ]
         },
         {
             "canonical": "Aviation turbo fuel",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатион турбо фуел"
+            ]
         },
         {
             "canonical": "AVTAG",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АВТАГ"
+            ]
         },
         {
             "canonical": "AVTUR (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "АВТУР (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "Bachaquero (Heavy)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бачакуеро (Хеави)"
+            ]
         },
         {
             "canonical": "Bachaquero (Medium)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бачакуеро (Медиум)"
+            ]
         },
         {
             "canonical": "Bahia",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бахиа"
+            ]
         },
         {
             "canonical": "Bai Hassan \/ Jambur",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Баи Хассан \/ Жамбур"
+            ]
         },
         {
             "canonical": "Bakr",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бакр"
+            ]
         },
         {
             "canonical": "Barataria",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Баратариа"
+            ]
         },
         {
             "canonical": "Barco",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Барко"
+            ]
         },
         {
             "canonical": "Basrah",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Басрах"
+            ]
         },
         {
             "canonical": "Battery acid",
             "cas": null,
             "aliases": [
-                "SULFURIC ACID",
-                "Sulphuric acid",
-                "Dihydrogen sulfate",
-                "Dipping acid",
-                "Mattling acid"
+                "Баттери кислота"
             ]
         },
         {
             "canonical": "Baxterville",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бакстервилле"
+            ]
         },
         {
             "canonical": "Beat molasses",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Беат молассес"
+            ]
         },
         {
             "canonical": "Belayim Land",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Белаиим Ланд"
+            ]
         },
         {
             "canonical": "Belayim Marine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Белаиим Марине"
+            ]
         },
         {
             "canonical": "Бензол",
@@ -907,87 +953,71 @@
         {
             "canonical": "Benzene carbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензол карбинол"
+            ]
         },
         {
             "canonical": "Benzene methanol",
             "cas": null,
             "aliases": [
-                "methanol+benzene",
-                "benzene MeOH",
-                "MeOH benzene",
-                "benzene CH3OH",
-                "PhH MeOH"
+                "Бензол метанол"
             ]
         },
         {
             "canonical": "Benzene, 1,3-diisocyanatomethyl-",
-            "cas": "3634-83-1",
+            "cas": null,
             "aliases": [
-                "1,3-Bis(isocyanatomethyl)benzene",
-                "m-Xylylene diisocyanate",
-                "m-Xylene diisocyanate",
-                "Takenate",
-                "M-Xdi"
+                "Бензол, 1,3-диисокянатометил-"
             ]
         },
         {
             "canonical": "Benzene, dimethyl-1,4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензол, диметил-1,4"
+            ]
         },
         {
             "canonical": "benzene, dimethyl-1,3",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензол, диметил-1,3"
+            ]
         },
         {
             "canonical": "benzene, dimetyl-1,2",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензол, диметил-1,2"
+            ]
         },
         {
             "canonical": "Benzene, hydroxy-",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Бензол, хидрокси-"
             ]
         },
         {
             "canonical": "Benzene, methyl-",
             "cas": null,
             "aliases": [
-                "toluene",
-                "methylbenzene",
-                "toluol",
-                "Phenylmethane",
-                "methacide"
+                "Бензол, метил-"
             ]
         },
         {
             "canonical": "Benzene, nitro-",
             "cas": null,
             "aliases": [
-                "NITROBENZENE",
-                "Nitrobenzol",
-                "Essence of mirbane",
-                "Nitrobenzeen",
-                "Nitrobenzen"
+                "Бензол, нитро-"
             ]
         },
         {
             "canonical": "Benzophenol",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Бензофенол"
             ]
         },
         {
@@ -1005,151 +1035,169 @@
             "canonical": "beta-Methylpropyl ethanoate",
             "cas": null,
             "aliases": [
-                "ISOBUTYL ACETATE",
-                "2-Methylpropyl acetate",
-                "Isobutyl ethanoate",
-                "2-Methylpropyl ethanoate",
-                "Acetic acid, 2-methylpropyl ester"
+                "Бета-Метилпропил етаноате"
             ]
         },
         {
             "canonical": "Blackstrap",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Блаккстрап"
+            ]
         },
         {
             "canonical": "Bleached Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Блеачед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Bolivian Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Боливиан Микс"
+            ]
         },
         {
             "canonical": "BOP Cyclics 5206177 (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "БОП Сикликс 5206177 (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "BOP Cyclodiene Concentrate (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "БОП Сиклодиене Консентрате (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Boscan",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Боскан"
+            ]
         },
         {
             "canonical": "BP Unleaded Petrol (*Tradename BP Oil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "БП Унлеадед бензин (*Траденаме БП масло)"
+            ]
         },
         {
             "canonical": "Brega",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Брега"
+            ]
         },
         {
             "canonical": "Brightstock 1904 (*Schumann Sasol)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бригхтстокк 1904 (*Счуманн Сасол)"
+            ]
         },
         {
             "canonical": "BuAc",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "БуАк"
+            ]
         },
         {
             "canonical": "Bunker fuel oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бункер мазут"
+            ]
         },
         {
             "canonical": "Bunker oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бункер масло"
+            ]
         },
         {
             "canonical": "Butanol (all isomers)",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Бутанол (алл исомерс)"
             ]
         },
         {
             "canonical": "Butanol (HAGASE GR)",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Бутанол (ХАГАСЕ ГР)"
             ]
         },
         {
             "canonical": "Butanol acetate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутанол ацетат"
+            ]
         },
         {
             "canonical": "Butanol normal",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутанол нормал"
+            ]
         },
         {
             "canonical": "Butanol-1",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Бутанол-1"
             ]
         },
         {
             "canonical": "Butanol-n",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутанол-н"
+            ]
         },
         {
             "canonical": "Butanon-2 (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутанон-2 (Г)"
+            ]
         },
         {
             "canonical": "Butanone, 2-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутаноне, 2-"
+            ]
         },
         {
             "canonical": "Butyl acetate UR grade",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутил асетате УР граде"
+            ]
         },
         {
             "canonical": "Butyl acetate, n-",
             "cas": null,
             "aliases": [
-                "Butyl acetate",
-                "N-BUTYL ACETATE",
-                "Acetic acid, butyl ester",
-                "Butyl ethanoate",
-                "1-Butyl acetate"
+                "Бутил асетате, н-"
             ]
         },
         {
             "canonical": "Butyl acetate, sec-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутил асетате, сек-"
+            ]
         },
         {
             "canonical": "Бутилакрилат",
@@ -1164,96 +1212,100 @@
         {
             "canonical": "Butyl alcohol, -n",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутиловый спирт, -н"
+            ]
         },
         {
             "canonical": "Butyl cellosolve",
-            "cas": "111-76-2",
+            "cas": null,
             "aliases": [
-                "2-Butoxyethanol",
-                "Butyl glycol",
-                "Butoxyethanol",
-                "ETHYLENE GLYCOL MONOBUTYL ETHER",
-                "Ethylene glycol butyl ether"
+                "Бутил селлосолве"
             ]
         },
         {
             "canonical": "Butyl ester",
             "cas": null,
             "aliases": [
-                "SEC-BUTYL ACETATE",
-                "dl-sec-Butyl acetate",
-                "2-Butyl acetate",
-                "butan-2-yl acetate",
-                "1-Methylpropyl acetate"
+                "Бутил эфир"
             ]
         },
         {
             "canonical": "Butyl etanoate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутил етаноате"
+            ]
         },
         {
             "canonical": "Butylacetat (N)",
             "cas": null,
             "aliases": [
-                "Butyl acetate",
-                "N-BUTYL ACETATE",
-                "Acetic acid, butyl ester",
-                "Butyl ethanoate",
-                "1-Butyl acetate"
+                "Бутиласетат (Н)"
             ]
         },
         {
             "canonical": "Butylic ether",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бутилик эфир"
+            ]
         },
         {
             "canonical": "Butyric alcohol",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Бутирик спирт"
             ]
         },
         {
             "canonical": "C7+CUT",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "К7+КУТ"
+            ]
         },
         {
             "canonical": "Cabinda",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кабинда"
+            ]
         },
         {
             "canonical": "Calcium chloride solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Калсиум члориде раствор"
+            ]
         },
         {
             "canonical": "Calcium hydroxide solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Калсиум хидроксиде раствор"
+            ]
         },
         {
             "canonical": "Canadon Seco",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Канадон Секо"
+            ]
         },
         {
             "canonical": "Cane molasses",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кане молассес"
+            ]
         },
         {
             "canonical": "Capelin Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Капелин масло"
+            ]
         },
         {
             "canonical": "Фенол",
@@ -1270,17 +1322,23 @@
         {
             "canonical": "Carpenteria mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Карпентериа микс"
+            ]
         },
         {
             "canonical": "Casabe",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Касабе"
+            ]
         },
         {
             "canonical": "Caustic Blend* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик Бленд* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Гидроксид калия",
@@ -1297,22 +1355,30 @@
         {
             "canonical": "Caustic potash liquer solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик поташ ликуер раствор"
+            ]
         },
         {
             "canonical": "Caustic potash solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик поташ раствор"
+            ]
         },
         {
             "canonical": "Caustic Pur* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик Пур* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Caustic reg* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик рег* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Гидроксид натрия",
@@ -1332,158 +1398,212 @@
         {
             "canonical": "Caustic Soda 50% (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик Сода 50% (*Шелл)"
+            ]
         },
         {
             "canonical": "Caustic soda solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик сода раствор"
+            ]
         },
         {
             "canonical": "Caustic soda-Lye",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустик сода-Ле"
+            ]
         },
         {
             "canonical": "Centa",
-            "cas": "80072-86-2",
+            "cas": null,
             "aliases": [
-                "DTXSID40230061",
-                "5-Thia-1-azabicyclo(4.2.0)oct-2-ene-2-carboxylic acid, 3-(((3-carboxy-4-nitrophenyl)thio)methyl)-8-oxo-7-((2-thienylacetyl)amino)-, (6R-trans)-",
-                "RefChem:124327",
-                "DTXCID40152552",
-                "CENTA(TM) BETA-LACTAMASE SUBSTRATE"
+                "Сента"
             ]
         },
         {
             "canonical": "Central Louisiana",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сентрал Лоуисиана"
+            ]
         },
         {
             "canonical": "Centro Del Lago",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сентро Дел Лаго"
+            ]
         },
         {
             "canonical": "Certex 67 Special (*Exxon Mobile Trade Name)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сертекс 67 Спесиал (*Ексксон Мобиле Траде Наме)"
+            ]
         },
         {
             "canonical": "Certrex 67",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сертрекс 67"
+            ]
         },
         {
             "canonical": "Ceuta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сеута"
+            ]
         },
         {
             "canonical": "Chamber acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Чамбер кислота"
+            ]
         },
         {
             "canonical": "Chemstop",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Чемстоп"
+            ]
         },
         {
             "canonical": "Cicuco",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сикуко"
+            ]
         },
         {
             "canonical": "Cleaner Unleaded (*Tradename BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Клеанер Унлеадед (*Траденаме БП)"
+            ]
         },
         {
             "canonical": "Coal tar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коал тар"
+            ]
         },
         {
             "canonical": "Coal tar distillate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коал тар дистиллате"
+            ]
         },
         {
             "canonical": "Coal tar naphta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коал тар нафта"
+            ]
         },
         {
             "canonical": "Coal tar naphtha",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коал тар нафта"
+            ]
         },
         {
             "canonical": "Coal tar naphtha solvent",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коал тар нафта солвент"
+            ]
         },
         {
             "canonical": "Coastal heavy",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коастал хеави"
+            ]
         },
         {
             "canonical": "Cod Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Код масло"
+            ]
         },
         {
             "canonical": "Concentrate G 99-26 (*Tradename BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Консентрате Г 99-26 (*Траденаме БАСФ)"
+            ]
         },
         {
             "canonical": "Converter* (*Common Usage for Molasses (Pro-l",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Конвертер* (*Коммон Усаге фор Молассес (Про-л"
+            ]
         },
         {
             "canonical": "Coolant D 542 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коолант Д 542 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Coolant D 995M (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коолант Д 995М (*БАСФ)"
+            ]
         },
         {
             "canonical": "Coolant LX 104 nap free (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Коолант ЛКс 104 нап фрее (*БАСФ)"
+            ]
         },
         {
             "canonical": "Crude C9 (Petrol C9 Aromatics)* (*ICI)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде К9 (бензин К9 Ароматикс)* (*ИСИ)"
+            ]
         },
         {
             "canonical": "Crude coal tar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде коал тар"
+            ]
         },
         {
             "canonical": "Crude coconut oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде кокосовое масло"
+            ]
         },
         {
             "canonical": "Crude Fish Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде Фиш масло"
+            ]
         },
         {
             "canonical": "Crude Naphtha",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде Нафта"
+            ]
         },
         {
             "canonical": "Сырая нефть",
@@ -1498,67 +1618,93 @@
         {
             "canonical": "Crude oil\/brine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сырая нефть\/брине"
+            ]
         },
         {
             "canonical": "Crude palm kernel oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде палм кернел масло"
+            ]
         },
         {
             "canonical": "Crude Palm Kernel Oil (CPKO)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде Палм Кернел масло (КПКО)"
+            ]
         },
         {
             "canonical": "Crude palm oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде пальмовое масло"
+            ]
         },
         {
             "canonical": "Crude solvent coal tar naphta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде солвент коал тар нафта"
+            ]
         },
         {
             "canonical": "Crude Sulfate Turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде Сулфате Турпентине"
+            ]
         },
         {
             "canonical": "Crude turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Круде турпентине"
+            ]
         },
         {
             "canonical": "Cumarebo",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кумаребо"
+            ]
         },
         {
             "canonical": "Cyclo Sol 100 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сикло Сол 100 (*Шелл)"
+            ]
         },
         {
             "canonical": "Cyclo Sol 150 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сикло Сол 150 (*Шелл)"
+            ]
         },
         {
             "canonical": "Cyclo Sol 53 Aromatic Solvent (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сикло Сол 53 Ароматик Солвент (*Шелл)"
+            ]
         },
         {
             "canonical": "Cyclo Sol 63 Aromatic Solvent (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сикло Сол 63 Ароматик Солвент (*Шелл)"
+            ]
         },
         {
             "canonical": "Cyclodiene Concentrate (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сиклодиене Консентрате (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Циклогексанол",
@@ -1572,17 +1718,15 @@
             "canonical": "Cyclohexanon (Anon rein) (*BASF)",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Sextone",
-                "Nadone"
+                "Сиклохексанон (Анон реин) (*БАСФ)"
             ]
         },
         {
             "canonical": "Cyclohexanon, (Anon) (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сиклохексанон, (Анон) (Г)"
+            ]
         },
         {
             "canonical": "Циклогексанон",
@@ -1595,120 +1739,172 @@
         },
         {
             "canonical": "Cyclohexyl ketone",
-            "cas": "119-60-8",
+            "cas": null,
             "aliases": [
-                "Dicyclohexyl ketone",
-                "Dicyclohexylmethanone",
-                "Methanone, dicyclohexyl-",
-                "Cyclohexane ketone",
-                "KETONE, DICYCLOHEXYL"
+                "Сиклохексил кетон"
             ]
         },
         {
             "canonical": "Cykloheksanon (N)",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Sextone",
-                "Nadone"
+                "Сиклохексанон (Н)"
             ]
         },
         {
             "canonical": "Cypar 7 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сипар 7 (*Шелл)"
+            ]
         },
         {
             "canonical": "Cyrus",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сирус"
+            ]
         },
         {
             "canonical": "D O turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Д О турпентине"
+            ]
         },
         {
             "canonical": "D.D. turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Д.Д. турпентине"
+            ]
         },
         {
             "canonical": "Darius",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дариус"
+            ]
         },
         {
             "canonical": "Debenzenized Steam Cracked Naphtha (*Esso)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дебензенизед Стеам Краккед Нафта (*Ессо)"
+            ]
         },
         {
             "canonical": "Decyl benzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Десил бензен"
+            ]
         },
         {
             "canonical": "Delta Ostrica",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Делта Острика"
+            ]
         },
         {
-            "canonical": "De-mineralised water",
-            "cas": null,
-            "aliases": []
+            "canonical": "Вода",
+            "cas": "7732-18-5",
+            "aliases": [
+                "De-mineralised water",
+                "Water",
+                "H2O",
+                "Aqua",
+                "Distilled water",
+                "Drinking water",
+                "Water, drinking",
+                "Water, potable",
+                "Potable water",
+                "Deionized water",
+                "Purified water",
+                "Sterile water",
+                "Sea water",
+                "Saltwater",
+                "Fresh water",
+                "Мineral water",
+                "Water vapor",
+                "Steam",
+                "Дистиллированная вода",
+                "Питьевая вода",
+                "Морская вода",
+                "Пресная вода",
+                "Фильтрованная вода"
+            ]
         },
         {
             "canonical": "Detergent alkylate* (*IBC Code)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Детергент алкилате* (*ИБК Коде)"
+            ]
         },
         {
             "canonical": "Dhara",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дхара"
+            ]
         },
         {
             "canonical": "Diesel fuel (marine)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дизельное топливо (марине)"
+            ]
         },
         {
             "canonical": "Diesel Fuel Oil (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диесел мазут (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "Diesel fuel oil no.1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диесел мазут но.1"
+            ]
         },
         {
             "canonical": "Diesel fuel oil no.2",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диесел мазут но.2"
+            ]
         },
         {
             "canonical": "Diesel fuel oil no.4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диесел мазут но.4"
+            ]
         },
         {
             "canonical": "Diesel oil (marine)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дизельное топливо (марине)"
+            ]
         },
         {
             "canonical": "Diesel oil 1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дизельное топливо 1"
+            ]
         },
         {
             "canonical": "Diesel oil 2",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дизельное топливо 2"
+            ]
         },
         {
             "canonical": "Диэтиленгликоль",
@@ -1716,189 +1912,190 @@
             "aliases": [
                 "Diethylene Glycol",
                 "2,2'-Oxydiethanol",
-                "DEG"
+                "DEG",
+                "ДЭГ"
             ]
         },
         {
             "canonical": "Diglycol",
             "cas": null,
             "aliases": [
-                "DIETHYLENE GLYCOL",
-                "2,2'-Oxydiethanol",
-                "2-(2-Hydroxyethoxy)ethanol",
-                "2,2'-Oxybisethanol",
-                "Diethylenglykol"
+                "Дигликол"
             ]
         },
         {
             "canonical": "Dimethyl benzene",
             "cas": null,
             "aliases": [
-                "O-XYLENE",
-                "1,2-Dimethylbenzene",
-                "1,2-Xylene",
-                "Ortho-Xylene",
-                "o-Xylol"
+                "Диметил бензен"
             ]
         },
         {
             "canonical": "Dimethylbenzene, 1,2 -",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диметилбензене, 1,2 -"
+            ]
         },
         {
             "canonical": "Dimethylbenzene, 1,3 -",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диметилбензене, 1,3 -"
+            ]
         },
         {
             "canonical": "Dimethylbenzene, 1,4 -",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диметилбензене, 1,4 -"
+            ]
         },
         {
             "canonical": "Dimethylbenzol (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Диметилбензол (Г)"
+            ]
         },
         {
             "canonical": "Dipping acid",
             "cas": null,
             "aliases": [
-                "SULFURIC ACID",
-                "Sulphuric acid",
-                "Dihydrogen sulfate",
-                "Mattling acid",
-                "Battery acid"
-            ]
-        },
-        {
-            "canonical": "Distilled water",
-            "cas": "7732-18-5",
-            "aliases": [
-                "water",
-                "Dihydrogen oxide",
-                "Purified water",
-                "Sterile water",
-                "Water vapor"
+                "Диппинг кислота"
             ]
         },
         {
             "canonical": "Drift river mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дрифт ривер микс"
+            ]
         },
         {
             "canonical": "Drilling brine: potassium chloride solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дриллинг брине: потассиум члориде раствор"
+            ]
         },
         {
             "canonical": "Drilling Brines: CALCIUM BROMIDE SOL.,CALCIUM CHLORIDE SOL.,SODIUM CHLORIDE SOL.",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Drinking water",
-            "cas": null,
             "aliases": [
-                "water",
-                "Distilled water",
-                "Dihydrogen oxide",
-                "Purified water",
-                "Sterile water"
+                "Дриллинг Бринес: КАЛСИУМ БРОМИДЕ СОЛ.,КАЛСИУМ КХЛОРИДЕ СОЛ.,СОДИУМ КХЛОРИДЕ СОЛ."
             ]
         },
         {
             "canonical": "Duri",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Дури"
+            ]
         },
         {
             "canonical": "E.B.",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Е.Б."
+            ]
         },
         {
             "canonical": "Earth Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Еарт масло"
+            ]
         },
         {
             "canonical": "Eddiksyre (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Еддиксире (Н)"
+            ]
         },
         {
             "canonical": "Edjehe",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Еджехе"
+            ]
         },
         {
             "canonical": "Ehtylene crakcer residues",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ехтилене краксер ресидуес"
+            ]
         },
         {
             "canonical": "El Morgan",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ел Морган"
+            ]
         },
         {
             "canonical": "Eocene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Еосене"
+            ]
         },
         {
             "canonical": "Es Sider",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ес Сидер"
+            ]
         },
         {
             "canonical": "Essence of mirbane",
             "cas": null,
             "aliases": [
-                "NITROBENZENE",
-                "Nitrobenzol",
-                "Benzene, nitro-",
-                "Nitrobenzeen",
-                "Nitrobenzen"
+                "Ессенсе оф мирбане"
             ]
         },
         {
             "canonical": "Essigsaure chem. rein (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ессигсауре чем. реин (*БАСФ)"
+            ]
         },
         {
             "canonical": "Essigsaure sek-butylester (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ессигсауре сек-бутилестер (Г)"
+            ]
         },
         {
             "canonical": "Essigsaurebutylester (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ессигсауребутилестер (Г)"
+            ]
         },
         {
             "canonical": "Essigsäure (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ессигсауре (Г)"
+            ]
         },
         {
             "canonical": "Etansyre (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Етансире (Н)"
+            ]
         },
         {
             "canonical": "Ethanediol",
             "cas": null,
             "aliases": [
-                "ETHYLENE GLYCOL",
-                "Ethane-1,2-diol",
-                "1,2-ethanediol",
-                "glycol",
-                "monoethylene glycol"
+                "Етанедиол"
             ]
         },
         {
@@ -1927,84 +2124,92 @@
             "canonical": "Ethyldimethylmethane",
             "cas": null,
             "aliases": [
-                "2-Methylbutane",
-                "ISOPENTANE",
-                "Isoamylhydride",
-                "Butane, 2-methyl-",
-                "1,1,2-Trimethylethane"
+                "Етилдиметилметане"
             ]
         },
         {
             "canonical": "Ethylene alcohol",
             "cas": null,
             "aliases": [
-                "ETHYLENE GLYCOL",
-                "Ethane-1,2-diol",
-                "1,2-ethanediol",
-                "glycol",
-                "monoethylene glycol"
+                "Етилене спирт"
             ]
         },
         {
             "canonical": "Ethylene cracker residues",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Етилене краккер ресидуес"
+            ]
         },
         {
             "canonical": "Ethylene dihydrate",
             "cas": null,
             "aliases": [
-                "ETHYLENE GLYCOL",
-                "Ethane-1,2-diol",
-                "1,2-ethanediol",
-                "glycol",
-                "monoethylene glycol"
+                "Етилене дихидрате"
             ]
         },
         {
             "canonical": "Ethylglykol (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Етилгликол (*БАСФ)"
+            ]
         },
         {
             "canonical": "Etylbenzen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Етилбензен (Н)"
+            ]
         },
         {
             "canonical": "Exxon MEK* (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ексксон МЕК* (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Exxsol D 130",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Екскссол Д 130"
+            ]
         },
         {
             "canonical": "Fateh",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фатех"
+            ]
         },
         {
             "canonical": "Federated P.L. Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Федератед П.Л. Микс"
+            ]
         },
         {
             "canonical": "Fella\/Sunniland",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фелла\/Сунниланд"
+            ]
         },
         {
             "canonical": "Fenyletan (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фенилетан (Н)"
+            ]
         },
         {
             "canonical": "Fertilizer acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фертилизер кислота"
+            ]
         },
         {
             "canonical": "Рыбий жир",
@@ -2018,494 +2223,579 @@
         {
             "canonical": "Flour Buff",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Флоур Буфф"
+            ]
         },
         {
             "canonical": "Forcados (Nig.Med.)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Форкадос (Ниг.Мед.)"
+            ]
         },
         {
             "canonical": "Fosforsyre (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фосфорсире (Н)"
+            ]
         },
         {
             "canonical": "Fractionated Fish Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фрактионатед Фиш масло"
+            ]
         },
         {
             "canonical": "Fractionated Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фрактионатед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Fuel Jet Super",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фуел Жет Супер"
+            ]
         },
         {
             "canonical": "Мазут",
-            "cas": "1197-09-7",
+            "cas": null,
             "aliases": [
                 "Fuel Oil",
                 "Heavy fuel oil",
                 "HFO",
-                "Bunker C",
-                "3',4'-Dihydroxyacetophenone",
-                "1-(3,4-Dihydroxyphenyl)ethanone",
-                "3,4-DIHYDROXYACETOPHENONE",
-                "Qingxintong",
-                "Acetopyrocatechol"
+                "Bunker C"
             ]
         },
         {
             "canonical": "Fuel oil D-1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут Д-1"
+            ]
         },
         {
             "canonical": "Fuel oil D-2",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут Д-2"
+            ]
         },
         {
             "canonical": "Fuel oil D-4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут Д-4"
+            ]
         },
         {
             "canonical": "Fuel Oil no.1 (Kerosene)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.1 (керосин)"
+            ]
         },
         {
             "canonical": "Fuel Oil no.1-D",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.1-Д"
+            ]
         },
         {
             "canonical": "Fuel Oil no.2",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.2"
+            ]
         },
         {
             "canonical": "Fuel Oil no.2-D",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.2-Д"
+            ]
         },
         {
             "canonical": "Fuel Oil no.4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.4"
+            ]
         },
         {
             "canonical": "Fuel Oil no.5",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.5"
+            ]
         },
         {
             "canonical": "Fuel Oil no.6",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мазут но.6"
+            ]
         },
         {
             "canonical": "Fuel Tar* (*TRADENAME RTC Chemical)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фуел Тар* (*ТРАДЕНАМЕ РТК Чемикал)"
+            ]
         },
         {
             "canonical": "Furancarbinol, 2-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фуранкарбинол, 2-"
+            ]
         },
         {
             "canonical": "Furfuralcohol",
             "cas": null,
             "aliases": [
-                "FURFURYL ALCOHOL",
-                "2-Furanmethanol",
-                "2-Furylmethanol",
-                "furan-2-ylmethanol",
-                "2-Furancarbinol"
+                "Фурфуралкохол"
             ]
         },
         {
             "canonical": "Furfuryl carbinol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фурфурил карбинол"
+            ]
         },
         {
             "canonical": "Furfuryl carbinol, alpha-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фурфурил карбинол, алфа-"
+            ]
         },
         {
             "canonical": "Furylcarbinol",
             "cas": null,
             "aliases": [
-                "FURFURYL ALCOHOL",
-                "2-Furanmethanol",
-                "2-Furylmethanol",
-                "furan-2-ylmethanol",
-                "2-Furancarbinol"
+                "Фурилкарбинол"
             ]
         },
         {
             "canonical": "Gach Saran",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гач Саран"
+            ]
         },
         {
             "canonical": "Gamba",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гамба"
+            ]
         },
         {
             "canonical": "Gas oil, low pour",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Газойль, лов поур"
+            ]
         },
         {
             "canonical": "Gas oil, low sulphur",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Газойль, лов сулфур"
+            ]
         },
         {
             "canonical": "Gasoline (regular)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин (регулар)"
+            ]
         },
         {
             "canonical": "Gasoline premium grade, leaded",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин премиум граде, леадед"
+            ]
         },
         {
             "canonical": "Gasoline premium grade, unleaded",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин премиум граде, унлеадед"
+            ]
         },
         {
             "canonical": "Gasoline regular grade, leaded",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин регулар граде, леадед"
+            ]
         },
         {
             "canonical": "Gasoline regular grade, unleaded",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин регулар граде, унлеадед"
+            ]
         },
         {
             "canonical": "Gasoline, aircraft",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин, авиационный"
+            ]
         },
         {
             "canonical": "Gasoline, automotive",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин, аутомотиве"
+            ]
         },
         {
             "canonical": "Gasoline, leaded",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензин, леадед"
+            ]
         },
         {
             "canonical": "Gen08 Intermidiate Marine Fuel* (*™ Famm)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ген08 Интермидиате Марине Фуел* (*™ Фамм)"
+            ]
         },
         {
             "canonical": "Gippsland Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гиппсланд Микс"
+            ]
         },
         {
             "canonical": "Glycerine 99.7* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисерине 99.7* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Glycerine 99.8 % (*Henkel)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисерине 99.8 % (*Хенкел)"
+            ]
         },
         {
             "canonical": "Glycerine USP 96%* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисерине УСП 96%* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Glycerine USP 99.5%* (*DOW)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисерине УСП 99.5%* (*ДОВ)"
+            ]
         },
         {
             "canonical": "Glycol",
             "cas": null,
             "aliases": [
-                "ETHYLENE GLYCOL",
-                "Ethane-1,2-diol",
-                "1,2-ethanediol",
-                "monoethylene glycol",
-                "2-hydroxyethanol"
+                "Гликол"
             ]
         },
         {
             "canonical": "Glycol 774D",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гликол 774Д"
+            ]
         },
         {
             "canonical": "Glycol alcohol",
             "cas": null,
             "aliases": [
-                "ETHYLENE GLYCOL",
-                "Ethane-1,2-diol",
-                "1,2-ethanediol",
-                "glycol",
-                "monoethylene glycol"
+                "Гликол спирт"
             ]
         },
         {
             "canonical": "Glycyl alcohol",
             "cas": null,
             "aliases": [
-                "glycerol",
-                "glycerin",
-                "Glycerine",
-                "1,2,3-Propanetriol",
-                "Trihydroxypropane"
+                "Глисил спирт"
             ]
         },
         {
             "canonical": "Glysantin Konz. G 99-26 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисантин Конз. Г 99-26 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Glysantine G 99 (*Tradename BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Глисантине Г 99 (*Траденаме БАСФ)"
+            ]
         },
         {
             "canonical": "Grand Isle",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гранд Исле"
+            ]
         },
         {
             "canonical": "Guanipa",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гуанипа"
+            ]
         },
         {
             "canonical": "Gum spirits",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гум спиритс"
+            ]
         },
         {
             "canonical": "Gum turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Гум турпентине"
+            ]
         },
         {
             "canonical": "H.E.Y",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Х.Е.И"
+            ]
         },
         {
             "canonical": "Hassi Messaoud",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хасси Мессаоуд"
+            ]
         },
         {
             "canonical": "Hawkins",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хавкинс"
+            ]
         },
         {
             "canonical": "Heavy aromatic naptha",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хеави ароматик напта"
+            ]
         },
         {
             "canonical": "Heavy Gas Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хеави газойль"
+            ]
         },
         {
             "canonical": "Heavy kerosene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хеави керосин"
+            ]
         },
         {
             "canonical": "Heavy Lake Mix (HLM)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хеави Лаке Микс (ХЛМ)"
+            ]
         },
         {
             "canonical": "Hemimellitane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хемимеллитане"
+            ]
         },
         {
             "canonical": "Heptanol (All isomers)",
-            "cas": "111-70-6",
+            "cas": null,
             "aliases": [
-                "1-HEPTANOL",
-                "Heptan-1-ol",
-                "Heptyl alcohol",
-                "Heptanol",
-                "n-Heptanol"
+                "Хептанол (Алл исомерс)"
             ]
         },
         {
             "canonical": "Herring Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Херринг масло"
+            ]
         },
         {
             "canonical": "Hexanol",
-            "cas": "111-27-3",
+            "cas": null,
             "aliases": [
-                "1-Hexanol",
-                "Hexyl alcohol",
-                "Hexan-1-ol",
-                "n-Hexanol",
-                "n-Hexyl alcohol"
+                "Хексанол"
             ]
         },
         {
             "canonical": "Hexanon",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Sextone",
-                "Nadone"
+                "Хексанон"
             ]
         },
         {
             "canonical": "Hexanone",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хексаноне"
+            ]
         },
         {
             "canonical": "Hexone",
             "cas": null,
             "aliases": [
-                "4-Methyl-2-pentanone",
-                "METHYL ISOBUTYL KETONE",
-                "4-Methylpentan-2-one",
-                "Isopropylacetone",
-                "Isobutyl methyl ketone"
+                "Хексоне"
             ]
         },
         {
             "canonical": "high benzene naphthas",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хигх бензол нафтас"
+            ]
         },
         {
             "canonical": "High solvent naphta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хигх солвент нафта"
+            ]
         },
         {
             "canonical": "High temperature coal tar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хигх температуре коал тар"
+            ]
         },
         {
             "canonical": "Hydraulic Oil GRO SYNT 46",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидраулик масло ГРО СИНТ 46"
+            ]
         },
         {
             "canonical": "Hydraulic Oil HLP SYNT 46",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидраулик масло ХЛП СИНТ 46"
+            ]
         },
         {
             "canonical": "Hydrogen sulfate",
-            "cas": "14996-02-2",
+            "cas": null,
             "aliases": [
-                "Sulfate, hydrogen",
-                "hydrogen sulphate",
-                "RefChem:889534",
-                "Bisulfate",
-                "Tetraoxosulfate(1-)"
+                "Хидроген сульфат"
             ]
         },
         {
             "canonical": "Hydrogen sulphate",
             "cas": null,
             "aliases": [
-                "Hydrogen sulfate",
-                "Sulfate, hydrogen",
-                "RefChem:889534",
-                "Bisulfate",
-                "Tetraoxosulfate(1-)"
+                "Хидроген сульфат"
             ]
         },
         {
             "canonical": "Hydrogenated Fish Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидрогенатед Фиш масло"
+            ]
         },
         {
             "canonical": "Hydrogenated Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидрогенатед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Hydroxybenzene, mono-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидроксибензене, моно-"
+            ]
         },
         {
             "canonical": "Hydroxymethylfuran, 2-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Хидроксиметилфуран, 2-"
+            ]
         },
         {
             "canonical": "Hytrol O",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Sextone",
-                "Nadone"
+                "Хитрол О"
             ]
         },
         {
             "canonical": "Idd El Shargi",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Идд Ел Шарги"
+            ]
         },
         {
             "canonical": "Illuminating oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Иллуминатинг масло"
+            ]
         },
         {
             "canonical": "Imogene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Имогене"
+            ]
         },
         {
             "canonical": "Industrial phosphoric acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Индустриал фосфорная кислота"
+            ]
         },
         {
             "canonical": "Ink Solvent 2427 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Инк Солвент 2427 (*Шелл)"
+            ]
         },
         {
             "canonical": "Изомерный спиртовой растворитель",
@@ -2518,79 +2808,93 @@
         {
             "canonical": "Ink Solvent 2831 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Инк Солвент 2831 (*Шелл)"
+            ]
         },
         {
             "canonical": "Interesterified Fish Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Интерестерифиед Фиш масло"
+            ]
         },
         {
             "canonical": "Interesterified Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Интерестерифиед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Iranian heavy",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ираниан хеави"
+            ]
         },
         {
             "canonical": "Iranian light",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ираниан лигхт"
+            ]
         },
         {
             "canonical": "Iraq",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ирак"
+            ]
         },
         {
             "canonical": "iso-Butyl ethanoate* (*BP Chemicals)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Исо-Бутил етаноате* (*БП Чемикалс)"
+            ]
         },
         {
             "canonical": "Isobutyl methyl ketone",
             "cas": null,
             "aliases": [
-                "4-Methyl-2-pentanone",
-                "METHYL ISOBUTYL KETONE",
-                "4-Methylpentan-2-one",
-                "Isopropylacetone",
-                "Hexone"
+                "Исобутил метил кетон"
             ]
         },
         {
             "canonical": "Isobutylacetat (*BASF)",
             "cas": null,
             "aliases": [
-                "ISOBUTYL ACETATE",
-                "2-Methylpropyl acetate",
-                "Isobutyl ethanoate",
-                "2-Methylpropyl ethanoate",
-                "Acetic acid, 2-methylpropyl ester"
+                "Исобутиласетат (*БАСФ)"
             ]
         },
         {
             "canonical": "Isobutylmetylketon (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Исобутилметилкетон (Н)"
+            ]
         },
         {
             "canonical": "Isocyanat 236i (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Исокянат 236и (*БАСФ)"
+            ]
         },
         {
             "canonical": "Isomerate (Light Virgin Naphtha)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Исомерате (Лигхт Виргин Нафта)"
+            ]
         },
         {
             "canonical": "Isopar E",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Исопар Е"
+            ]
         },
         {
             "canonical": "Изопропанол",
@@ -2608,264 +2912,323 @@
             "canonical": "Isopropylacetone",
             "cas": null,
             "aliases": [
-                "4-Methyl-2-pentanone",
-                "METHYL ISOBUTYL KETONE",
-                "4-Methylpentan-2-one",
-                "Isobutyl methyl ketone",
-                "Hexone"
+                "Исопропиласетоне"
             ]
         },
         {
             "canonical": "Jackson County",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жакксон Коунти"
+            ]
         },
         {
             "canonical": "Jambur Bai Hassan",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жамбур Баи Хассан"
+            ]
         },
         {
             "canonical": "Jet A (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жет А (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "Jet A-1 (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жет А-1 (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "Jet fuel (All types)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо (Алл типес)"
+            ]
         },
         {
             "canonical": "JET FUEL JP-1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо ЖП-1"
+            ]
         },
         {
             "canonical": "JET FUEL JP-3",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо ЖП-3"
+            ]
         },
         {
             "canonical": "JET FUEL JP-4",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо ЖП-4"
+            ]
         },
         {
             "canonical": "JET FUEL JP-5",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо ЖП-5"
+            ]
         },
         {
             "canonical": "JET FUEL, TURBO FUEL",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Авиатопливо, ТУРБО ФУЕЛ"
+            ]
         },
         {
             "canonical": "Jet Kerosine (*Oil Tanking)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жет Керосине (*масло Танкинг)"
+            ]
         },
         {
             "canonical": "Joffre pygas",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жоффре пигас"
+            ]
         },
         {
             "canonical": "JP (Jet fuel, all types)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ЖП (авиатопливо, алл типес)"
+            ]
         },
         {
             "canonical": "JP-1 (Kerosene)",
             "cas": null,
             "aliases": [
-                "JP-1",
-                "CHEMBL4646091"
+                "ЖП-1 (керосин)"
             ]
         },
         {
             "canonical": "JP-3",
             "cas": null,
             "aliases": [
-                "CHEMBL4648057"
+                "ЖП-3"
             ]
         },
         {
             "canonical": "JP-4",
             "cas": null,
             "aliases": [
-                "CHEMBL4649406"
+                "ЖП-4"
             ]
         },
         {
             "canonical": "JP-5 (Kerosene, Heavy)",
             "cas": null,
             "aliases": [
-                "JP-5",
-                "CHEMBL4638359"
+                "ЖП-5 (керосин, Хеави)"
             ]
         },
         {
             "canonical": "JP-8 (*Oil Tanking)",
-            "cas": "82863-50-1",
+            "cas": null,
             "aliases": [
-                "4,7-Methano-2,3,8-methenocyclopent(a)indene, dodecahydro-, stereoisomer, mixt. with methylcyclohexane and (3aalpha,4beta,7beta,7aalpha)-octahydro-4,7-methano-1H-indene",
-                "hexacyclo[9.2.1.02,10.03,8.04,6.05,9]tetradecane;methylcyclohexane;(1S,2R,6S,7R)-tricyclo[5.2.1.02,6]decane",
-                "SCHEMBL29351906",
-                "DDZNRTJLFZLBPE-FBZJSIJRSA-N"
+                "ЖП-8 (*масло Танкинг)"
             ]
         },
         {
             "canonical": "Judean pitch",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жудеан питч"
+            ]
         },
         {
             "canonical": "Jusepin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Жусепин"
+            ]
         },
         {
             "canonical": "Kaliumhydroksyd (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Калиумхидроксид (Н)"
+            ]
         },
         {
             "canonical": "Kaliumhydroxid (G)",
             "cas": null,
             "aliases": [
-                "POTASSIUM HYDROXIDE",
-                "Caustic potash",
-                "Potash lye",
-                "Potassium hydrate",
-                "Hydroxyde de potassium"
+                "Калиумхидроксид (Г)"
             ]
         },
         {
             "canonical": "Kaustiches kali (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Каустичес кали (Г)"
+            ]
         },
         {
             "canonical": "Kerosene (Fuel) (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Керосин (Фуел) (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Kerosene Rocket Fuel 2095",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Керосин Роккет Фуел 2095"
+            ]
         },
         {
             "canonical": "Kerosene Rocket Fuel 2495",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Керосин Роккет Фуел 2495"
+            ]
         },
         {
             "canonical": "Ketohexamethylene",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Pimelic ketone",
-                "Sextone",
-                "Nadone",
-                "Anone"
+                "Кетохексаметилене"
             ]
         },
         {
             "canonical": "Khafji",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кхафжи"
+            ]
         },
         {
             "canonical": "Khursaniyah",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кхурсаниях"
+            ]
         },
         {
             "canonical": "Kiruk",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кирук"
+            ]
         },
         {
             "canonical": "Kuhlerschutz G 48-24 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кухлерсчутз Г 48-24 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Kuhlerschutz G 51-43 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кухлерсчутз Г 51-43 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Kuhlerschutz G51-22 (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Кухлерсчутз Г51-22 (*БАСФ)"
+            ]
         },
         {
             "canonical": "Kuwait",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Куваит"
+            ]
         },
         {
             "canonical": "La Conchita",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ла Кончита"
+            ]
         },
         {
             "canonical": "La Rosa",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ла Роса"
+            ]
         },
         {
             "canonical": "Lactic acid <20%",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Молочная кислота <20%"
+            ]
         },
         {
             "canonical": "Lafitte Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лафитте Микс"
+            ]
         },
         {
             "canonical": "Lago Medio",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лаго Медио"
+            ]
         },
         {
             "canonical": "Lagomar 1",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лагомар 1"
+            ]
         },
         {
             "canonical": "Lagunillas",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лагуниллас"
+            ]
         },
         {
             "canonical": "Lamp Kerosene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ламп керосин"
+            ]
         },
         {
             "canonical": "Lamp Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ламп масло"
+            ]
         },
         {
             "canonical": "Latex, natural",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Латекс, натурал"
+            ]
         },
         {
             "canonical": "Latex, synthetic",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Латекс, синтетик"
+            ]
         },
         {
             "canonical": "Уайт-спирит (LAWS)",
@@ -2879,52 +3242,72 @@
         {
             "canonical": "LB Solvent - Resin Grade* (*Koppers Industries)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ЛБ Солвент - Ресин Граде* (*Копперс Индустриес)"
+            ]
         },
         {
             "canonical": "LDF 7",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ЛДФ 7"
+            ]
         },
         {
             "canonical": "Lead Replacement Petrol (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Леад Репласемент бензин (*БП)"
+            ]
         },
         {
             "canonical": "Lead-Free Four Star (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Леад-Фрее Фоур Стар (*БП)"
+            ]
         },
         {
             "canonical": "Leona (Tigre)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Леона (Тигре)"
+            ]
         },
         {
             "canonical": "Light Gas Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лигхт газойль"
+            ]
         },
         {
             "canonical": "Light Virgin Naphtha",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лигхт Виргин Нафта"
+            ]
         },
         {
             "canonical": "Liquid caustic potash solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ликуид каустик поташ раствор"
+            ]
         },
         {
             "canonical": "Low Boiling Point Cat-Cracked naphtha (Nerefco)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лов Боилинг Поинт Кат-Краккед нафта (Нерефко)"
+            ]
         },
         {
             "canonical": "Lower Aromatic White Spirit (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ловер Ароматик Вхите Спирит (*Шелл)"
+            ]
         },
         {
             "canonical": "Минеральное масло",
@@ -2940,87 +3323,113 @@
         {
             "canonical": "Lupranat T 80A (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лупранат Т 80А (*БАСФ)"
+            ]
         },
         {
             "canonical": "Lye solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ле раствор"
+            ]
         },
         {
             "canonical": "Lye, Potash",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ле, Поташ"
+            ]
         },
         {
             "canonical": "Lye, soda",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ле, сода"
+            ]
         },
         {
             "canonical": "Lysine CMS (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Лисине КМС (*БАСФ)"
+            ]
         },
         {
             "canonical": "m - Xylol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "М - ксилол"
+            ]
         },
         {
             "canonical": "Mara",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мара"
+            ]
         },
         {
             "canonical": "Marine Fuel Oil 380 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Марине мазут 380 (*Шелл)"
+            ]
         },
         {
             "canonical": "Marlago",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Марлаго"
+            ]
         },
         {
             "canonical": "Mc. Comb",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мк. Комб"
+            ]
         },
         {
             "canonical": "MEG - Fibre Grade (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "МЕГ - Фибре Граде (*Шелл)"
+            ]
         },
         {
             "canonical": "MEG - Normal Grade (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "МЕГ - Нормал Граде (*Шелл)"
+            ]
         },
         {
             "canonical": "Menhaden Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Менхаден масло"
+            ]
         },
         {
             "canonical": "Menhaden Stearin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Менхаден Стеарин"
+            ]
         },
         {
             "canonical": "Merey",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мереи"
+            ]
         },
         {
             "canonical": "Mesa",
-            "cas": "51596-10-2",
+            "cas": null,
             "aliases": [
-                "Milbemycin A3",
-                "Milbemectin",
-                "Emamectin A3",
-                "Koromite",
-                "Milbeknock"
+                "Меса"
             ]
         },
         {
@@ -3035,27 +3444,21 @@
             "canonical": "Meta-Toluene Diisocyanate",
             "cas": null,
             "aliases": [
-                "2,4-Diisocyanato-1-methylbenzene",
-                "2,4-Toluene diisocyanate",
-                "TOLUENE 2,4-DIISOCYANATE",
-                "2,4-Diisocyanatotoluene",
-                "Tolylene-2,4-diisocyanate"
+                "Мета-толуол Диисокянате"
             ]
         },
         {
             "canonical": "meta-Tolyene diisocyanate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мета-Толене диисокянате"
+            ]
         },
         {
             "canonical": "Methacide",
             "cas": null,
             "aliases": [
-                "toluene",
-                "methylbenzene",
-                "toluol",
-                "Phenylmethane",
-                "methylbenzol"
+                "Метасиде"
             ]
         },
         {
@@ -3075,11 +3478,7 @@
             "canonical": "Methyl acetone",
             "cas": null,
             "aliases": [
-                "2-Butanone",
-                "METHYL ETHYL KETONE",
-                "Butan-2-one",
-                "Butanone",
-                "Ethyl methyl ketone"
+                "Метил асетоне"
             ]
         },
         {
@@ -3119,136 +3518,148 @@
             "canonical": "Methyl tertiary butyl ether",
             "cas": null,
             "aliases": [
-                "tert-Butyl methyl ether",
-                "Methyl tert-butyl ether",
-                "2-Methoxy-2-methylpropane",
-                "MTBE",
-                "Methyl t-butyl ether"
+                "Метил тертиари бутил эфир"
             ]
         },
         {
             "canonical": "Methyl toluene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Метил толуол"
+            ]
         },
         {
             "canonical": "Methyl-2-propyl-1-acetate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Метил-2-пропил-1-асетате"
+            ]
         },
         {
             "canonical": "Methylisobutylketon (G)",
             "cas": null,
             "aliases": [
-                "4-Methyl-2-pentanone",
-                "METHYL ISOBUTYL KETONE",
-                "4-Methylpentan-2-one",
-                "Isopropylacetone",
-                "Isobutyl methyl ketone"
+                "Метилисобутилкетон (Г)"
             ]
         },
         {
             "canonical": "Methylolpropane",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Метилолпропане"
             ]
         },
         {
             "canonical": "Methylphenylene diisocyanate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Метилфенилене диисокянате"
+            ]
         },
         {
             "canonical": "Methylpropylethanoate-b",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Метилпропилетаноате-б"
+            ]
         },
         {
             "canonical": "Metylbenzen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Метилбензен (Н)"
+            ]
         },
         {
             "canonical": "MIK",
             "cas": null,
             "aliases": [
-                "4-Methyl-2-pentanone",
-                "METHYL ISOBUTYL KETONE",
-                "4-Methylpentan-2-one",
-                "Isopropylacetone",
-                "Isobutyl methyl ketone"
+                "МИК"
             ]
         },
         {
             "canonical": "Milk acid",
             "cas": null,
             "aliases": [
-                "lactic acid",
-                "2-hydroxypropanoic acid",
-                "DL-Lactic acid",
-                "2-hydroxypropionic acid",
-                "Tonsillosan"
+                "Милк кислота"
             ]
         },
         {
             "canonical": "Milk acid <20%",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Милк кислота <20%"
+            ]
         },
         {
             "canonical": "Minas",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минас"
+            ]
         },
         {
             "canonical": "Mineral jelly",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минерал желли"
+            ]
         },
         {
             "canonical": "Mineral pitch",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минерал питч"
+            ]
         },
         {
             "canonical": "Mineral Spirits 135 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минерал Спиритс 135 (*Шелл)"
+            ]
         },
         {
             "canonical": "Mineral Spirits 135 (Pecten Chemicals, Inc.)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минерал Спиритс 135 (Пектен Чемикалс, Инк.)"
+            ]
         },
         {
             "canonical": "Mineral wax",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Минерал воск"
+            ]
         },
         {
             "canonical": "Mirando",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мирандо"
+            ]
         },
         {
             "canonical": "Mixed Sweet",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Миксед Свеет"
+            ]
         },
         {
             "canonical": "Mixed Xylene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Миксед ксилол"
+            ]
         },
         {
             "canonical": "Mogas 95 RON (Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Могас 95 РОН (Шелл)"
+            ]
         },
         {
             "canonical": "Меласса",
@@ -3262,101 +3673,99 @@
         {
             "canonical": "Molasses (Pro-lix 37)* (*Westway)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Молассес (Про-ликс 37)* (*Вестваи)"
+            ]
         },
         {
             "canonical": "Monoethylenglykol (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Моноетиленгликол (*БАСФ)"
+            ]
         },
         {
             "canonical": "Monohydroxybenzene",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Монохидроксибензене"
             ]
         },
         {
             "canonical": "Mononitrobenzene",
             "cas": null,
             "aliases": [
-                "NITROBENZENE",
-                "Nitrobenzol",
-                "Benzene, nitro-",
-                "Essence of mirbane",
-                "Nitrobenzeen"
+                "Мононитробензене"
             ]
         },
         {
             "canonical": "Monopropylene glycol",
-            "cas": "57-55-6",
+            "cas": null,
             "aliases": [
-                "propylene glycol",
-                "1,2-propanediol",
-                "propane-1,2-diol",
-                "1,2-Propylene glycol",
-                "1,2-dihydroxypropane"
+                "Монопропиленгликоль"
             ]
         },
         {
             "canonical": "Moonie",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мооние"
+            ]
         },
         {
             "canonical": "Mosul Kirkup",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мосул Киркуп"
+            ]
         },
         {
             "canonical": "Motor spirit",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мотор спирит"
+            ]
         },
         {
             "canonical": "Mototan",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мототан"
+            ]
         },
         {
             "canonical": "MR Solvent (*Sasol)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "МР Солвент (*Сасол)"
+            ]
         },
         {
             "canonical": "MTBE, methyl tert-butyl eter",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "МТБЕ, метил терт-бутил етер"
+            ]
         },
         {
             "canonical": "m-Tolylene diisocyanate",
-            "cas": "91-08-7",
+            "cas": null,
             "aliases": [
-                "2,6-Diisocyanatotoluene",
-                "Toluene-2,6-diisocyanate",
-                "2,6-TOLUENE DIISOCYANATE",
-                "2,6-TDI",
-                "Benzene, 1,3-diisocyanato-2-methyl-"
+                "М-Толилене диисокянате"
             ]
         },
         {
             "canonical": "Murban",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Мурбан"
+            ]
         },
         {
             "canonical": "Nadone",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Sextone",
-                "Anone"
+                "Надоне"
             ]
         },
         {
@@ -3377,146 +3786,185 @@
         {
             "canonical": "Naphtha aromatic",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта ароматик"
+            ]
         },
         {
             "canonical": "Naphtha crude condensate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта круде конденсате"
+            ]
         },
         {
             "canonical": "NAPHTHA PETROLEUM",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "НАПХТХА бензинЕУМ"
+            ]
         },
         {
             "canonical": "Naphtha safety solvent",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта сафети солвент"
+            ]
         },
         {
             "canonical": "NAPHTHA SOLVENT",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "НАПХТХА СОЛВЕНТ"
+            ]
         },
         {
             "canonical": "Naphtha Solvent Heavy (*Gadiv Petrochemical)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта Солвент Хеави (*Гадив Петрочемикал)"
+            ]
         },
         {
             "canonical": "Naphtha VM&P",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта ВМ&П"
+            ]
         },
         {
             "canonical": "Naphtha, Crude",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта, Круде"
+            ]
         },
         {
             "canonical": "Naphtha, light",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нафта, лигхт"
+            ]
         },
         {
             "canonical": "National Premium Unleaded (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Натионал Премиум Унлеадед (*БП)"
+            ]
         },
         {
             "canonical": "Natriumhydroksyd (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Натриумхидроксид (Н)"
+            ]
         },
         {
             "canonical": "Natronlauge D ber. 100% (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Натронлауге Д бер. 100% (*БАСФ)"
+            ]
         },
         {
             "canonical": "NBD Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "НБД Палм Кернел масло"
+            ]
         },
         {
             "canonical": "n-Butanol 99.8% (*Rohm & Haas)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Н-Бутанол 99.8% (*Рохм & Хаас)"
+            ]
         },
         {
             "canonical": "n-Butyl acetat 98-100% (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Н-Бутил асетат 98-100% (*БАСФ)"
+            ]
         },
         {
             "canonical": "n-Butyl ester of acetic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Н-Бутил эфир оф уксусная кислота"
+            ]
         },
         {
             "canonical": "n-Butylacetat (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Н-Бутиласетат (Г)"
+            ]
         },
         {
             "canonical": "n-Butylalkohol (N)",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Н-Бутилалкохол (Н)"
             ]
         },
         {
             "canonical": "Neutralized Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Неутрализед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "New Brightsol",
             "cas": null,
             "aliases": [
                 "Brightsol",
-                "Sasol Brightsol"
+                "Sasol Brightsol",
+                "Нев Бригхтсол"
             ]
         },
         {
             "canonical": "Nigerian Blend",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нигериан Бленд"
+            ]
         },
         {
             "canonical": "Nigerian Light",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нигериан Лигхт"
+            ]
         },
         {
             "canonical": "Nigerian Medium (Bonny)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нигериан Медиум (Бонни)"
+            ]
         },
         {
             "canonical": "Nigerian Medium (Forcados)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нигериан Медиум (Форкадос)"
+            ]
         },
         {
             "canonical": "Nikisiki Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Никисики Микс"
+            ]
         },
         {
             "canonical": "Nitrobenzen (N)",
             "cas": null,
             "aliases": [
-                "NITROBENZENE",
-                "Nitrobenzol",
-                "Benzene, nitro-",
-                "Essence of mirbane",
-                "Nitrobenzeen"
+                "Нитробензен (Н)"
             ]
         },
         {
@@ -3530,75 +3978,79 @@
         {
             "canonical": "No. 1 fuel oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Но. 1 мазут"
+            ]
         },
         {
             "canonical": "Normal Butanol",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Нормал Бутанол"
             ]
         },
         {
             "canonical": "Normal Butyl Alcohol (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нормал бутиловый спирт (*Шелл)"
+            ]
         },
         {
             "canonical": "Normal pentane",
             "cas": null,
             "aliases": [
-                "PENTANE",
-                "n-Pentane",
-                "Pentan",
-                "Skellysolve A",
-                "Pentanen"
+                "Нормал пентане"
             ]
         },
         {
             "canonical": "normal-Butyl acetate",
             "cas": null,
             "aliases": [
-                "Butyl acetate",
-                "N-BUTYL ACETATE",
-                "Acetic acid, butyl ester",
-                "Butyl ethanoate",
-                "1-Butyl acetate"
+                "Нормал-Бутил ацетат"
             ]
         },
         {
             "canonical": "Normalpentan (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Нормалпентан (Г)"
+            ]
         },
         {
             "canonical": "Norpar 10",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Норпар 10"
+            ]
         },
         {
             "canonical": "Norpar 5 IT* (*EXXON Trade name)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Норпар 5 ИТ* (*ЕКсКсОН Траде наме)"
+            ]
         },
         {
             "canonical": "North Lama",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Норт Лама"
+            ]
         },
         {
             "canonical": "North Louisiana",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Норт Лоуисиана"
+            ]
         },
         {
             "canonical": "North Zeta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Норт Зета"
+            ]
         },
         {
             "canonical": "Пентан",
@@ -3615,48 +4067,50 @@
             "canonical": "n-Propyl carbinol",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Н-Пропил карбинол"
             ]
         },
         {
             "canonical": "Octanol (All isomers)",
-            "cas": "111-87-5",
+            "cas": null,
             "aliases": [
-                "1-octanol",
-                "Octan-1-ol",
-                "N-octanol",
-                "Octyl alcohol",
-                "caprylic alcohol"
+                "Октанол (Алл исомерс)"
             ]
         },
         {
             "canonical": "Oficina",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Офисина"
+            ]
         },
         {
             "canonical": "Ohanet Sud",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Оханет Суд"
+            ]
         },
         {
             "canonical": "Ó-Hydroxypropionic acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ó-Хидроксипропионик кислота"
+            ]
         },
         {
             "canonical": "Oil of mirbane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Масло оф мирбане"
+            ]
         },
         {
             "canonical": "Oil of turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Масло оф турпентине"
+            ]
         },
         {
             "canonical": "Серная кислота",
@@ -3673,12 +4127,16 @@
         {
             "canonical": "Oman",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Оман"
+            ]
         },
         {
             "canonical": "Orito Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Орито Микс"
+            ]
         },
         {
             "canonical": "Фосфорная кислота",
@@ -3694,74 +4152,86 @@
         {
             "canonical": "Orthophosphoric acid 59%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 59%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 65%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 65%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 70%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 70%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 75%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 75%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 80%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 80%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 81%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 81%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 85%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 85%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthophosphoric acid 93%-foodgrade* (*™Rotem)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортофосфорная кислота 93%-фоодграде* (*™Ротем)"
+            ]
         },
         {
             "canonical": "Orthoxylene (EXXON)",
             "cas": null,
             "aliases": [
-                "O-XYLENE",
-                "1,2-Dimethylbenzene",
-                "1,2-Xylene",
-                "Ortho-Xylene",
-                "o-Xylol"
+                "Ортоксилене (ЕКсКсОН)"
             ]
         },
         {
             "canonical": "Orthoxylol (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ортоксилол (*БАСФ)"
+            ]
         },
         {
             "canonical": "Oxybenzene",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Benzenol"
+                "Оксибензене"
             ]
         },
         {
             "canonical": "o-Xylen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "О-Ксилен (Н)"
+            ]
         },
         {
             "canonical": "Пальмоядровое масло",
@@ -3773,73 +4243,93 @@
         {
             "canonical": "Palm Kernel Oil Fraction",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Палм Кернел масло Фрактион"
+            ]
         },
         {
             "canonical": "Panasol AN-2L* (*TRADENAME AMOCO)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Панасол АН-2Л* (*ТРАДЕНАМЕ АМОКО)"
+            ]
         },
         {
             "canonical": "Panhandle",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Панхандле"
+            ]
         },
         {
             "canonical": "Panuco",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пануко"
+            ]
         },
         {
             "canonical": "Paraffin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Параффин"
+            ]
         },
         {
             "canonical": "Paraffin jelly",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Параффин желли"
+            ]
         },
         {
             "canonical": "Paraffinic",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Параффиник"
+            ]
         },
         {
             "canonical": "Paraxylene (EXXON)",
             "cas": null,
             "aliases": [
-                "P-XYLENE",
-                "1,4-Dimethylbenzene",
-                "Para-Xylene",
-                "1,4-Xylene",
-                "p-Methyltoluene"
+                "Параксилене (ЕКсКсОН)"
             ]
         },
         {
             "canonical": "Pentane 80% Solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пентане 80% раствор"
+            ]
         },
         {
             "canonical": "Pentane 82% Solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пентане 82% раствор"
+            ]
         },
         {
             "canonical": "Pentane 95% Solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пентане 95% раствор"
+            ]
         },
         {
             "canonical": "Pentane plus",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пентане плус"
+            ]
         },
         {
             "canonical": "Petrelab 550",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Петрелаб 550"
+            ]
         },
         {
             "canonical": "Вазелин",
@@ -3855,602 +4345,717 @@
         {
             "canonical": "Petrolatum jelly",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинатум желли"
+            ]
         },
         {
             "canonical": "Petroleum asphalt",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум асфалт"
+            ]
         },
         {
             "canonical": "Petroleum benzin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум бензин"
+            ]
         },
         {
             "canonical": "Petroleum ether",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум эфир"
+            ]
         },
         {
             "canonical": "Petroleum oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум масло"
+            ]
         },
         {
             "canonical": "Petroleum ointment",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум оинтмент"
+            ]
         },
         {
             "canonical": "Petroleum pitch",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум питч"
+            ]
         },
         {
             "canonical": "Petroleum solvent",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум солвент"
+            ]
         },
         {
             "canonical": "Petroleum wax",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Бензинеум воск"
+            ]
         },
         {
             "canonical": "Petrosol 16\/18",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Петросол 16\/18"
+            ]
         },
         {
             "canonical": "Petrosol 18\/20",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Петросол 18\/20"
+            ]
         },
         {
             "canonical": "Phenic acid",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Oxybenzene",
-                "Benzenol"
+                "Феник кислота"
             ]
         },
         {
             "canonical": "Phenol 95% Hydrotreated (*INEOS)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фенол 95% Хидротреатед (*ИНЕОС)"
+            ]
         },
         {
             "canonical": "Phenyl alcohol",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Фенил спирт"
             ]
         },
         {
             "canonical": "Phenyl hydroxide",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Фенил гидроксид"
             ]
         },
         {
             "canonical": "Phenyl methyl alcohol",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фенил мэтиловый спирт"
+            ]
         },
         {
             "canonical": "Phenylalkohol (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фенилалкохол (Г)"
+            ]
         },
         {
             "canonical": "Phenylic acid",
             "cas": null,
             "aliases": [
-                "phenol",
-                "carbolic acid",
-                "Hydroxybenzene",
-                "Phenic acid",
-                "Oxybenzene"
+                "Фенилик кислота"
             ]
         },
         {
             "canonical": "Phenyläthan (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фенилатан (Г)"
+            ]
         },
         {
             "canonical": "Phosphoric acid (aqueous)",
             "cas": null,
             "aliases": [
-                "Phosphoric acid",
-                "ORTHOPHOSPHORIC ACID",
-                "o-Phosphoric acid",
-                "Wc-reiniger",
-                "Acidum phosphoricum"
+                "Фосфорная кислота (водный)"
             ]
         },
         {
             "canonical": "Phosphorsäure (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Фосфорсауре (Г)"
+            ]
         },
         {
             "canonical": "PHS",
-            "cas": "93651-83-3",
+            "cas": null,
             "aliases": [
-                "Propylstilbestrol",
-                "Propylstilboestrol",
-                "alpha-Propyl-4,4'-stilbenediol",
-                "4,4'-Stilbenediol, alpha-propyl-",
-                "BRN 3317900"
+                "ПХС"
             ]
         },
         {
             "canonical": "Pilon",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пилон"
+            ]
         },
         {
             "canonical": "PKO* (*COMMON USAGE)**",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ПКО* (*КОММОН УСАГЕ)**"
+            ]
         },
         {
             "canonical": "Pollard",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Potable water",
-            "cas": null,
-            "aliases": []
+            "aliases": [
+                "Поллард"
+            ]
         },
         {
             "canonical": "Potassium Chloride",
-            "cas": "7447-40-7",
+            "cas": null,
             "aliases": [
-                "Klotrix",
-                "Sylvite",
-                "Enseal",
-                "Slow-K",
-                "Muriate of potash"
+                "хлорид калия"
             ]
         },
         {
             "canonical": "Potassium chloride drilling brine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Потассиум члориде дриллинг брине"
+            ]
         },
         {
             "canonical": "Potassium chloride solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Потассиум члориде раствор"
+            ]
         },
         {
             "canonical": "POTASSIUM CHLORIDE SOLUTION (10% OR MORE)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ПОТАССИУМ КХЛОРИДЕ раствор (10% ОР МОРЕ)"
+            ]
         },
         {
             "canonical": "Potassium hydrate solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Потассиум хидрате раствор"
+            ]
         },
         {
             "canonical": "Premium Octane Pyrolysis Gasoline (*Sabic)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Премиум Октане Пиролисис бензин (*Сабик)"
+            ]
         },
         {
             "canonical": "Premium Unleaded (*Tradename BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Премиум Унлеадед (*Траденаме БП)"
+            ]
         },
         {
             "canonical": "Propanetriol, 1,2,3-",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пропанетриол, 1,2,3-"
+            ]
         },
         {
             "canonical": "Propanol",
-            "cas": "71-23-8",
+            "cas": null,
             "aliases": [
-                "1-propanol",
-                "Propyl alcohol",
-                "Propan-1-ol",
-                "n-propanol",
-                "n-Propyl alcohol"
+                "Пропанол"
             ]
         },
         {
             "canonical": "Propyl carbinol",
             "cas": null,
             "aliases": [
-                "1-butanol",
-                "Butan-1-ol",
-                "n-butanol",
-                "Butyl alcohol",
-                "n-butyl alcohol"
+                "Пропил карбинол"
             ]
         },
         {
             "canonical": "Propylene glycol monomethyl ether",
-            "cas": "107-98-2",
+            "cas": null,
             "aliases": [
-                "1-Methoxy-2-propanol",
-                "1-Methoxypropan-2-ol",
-                "Methoxyisopropanol",
-                "Closol",
-                "PGME"
+                "Пропиленгликоль монометил эфир"
             ]
         },
         {
             "canonical": "p-Xylen (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "П-Ксилен (Н)"
+            ]
         },
         {
             "canonical": "Pyrolysis gasoline",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Пиролисис бензин"
+            ]
         },
         {
             "canonical": "Qatar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Катар"
+            ]
         },
         {
             "canonical": "Qatar Marine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Катар Марине"
+            ]
         },
         {
             "canonical": "Quiriquire",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Куирикуире"
+            ]
         },
         {
             "canonical": "Racemic lacitc acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Расемик ласитк кислота"
+            ]
         },
         {
             "canonical": "Ras Lanuf",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рас Лануф"
+            ]
         },
         {
             "canonical": "Ratawi",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ратави"
+            ]
         },
         {
             "canonical": "RBD Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "РБД Палм Кернел масло"
+            ]
         },
         {
             "canonical": "RBDPKO",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "РБДПКО"
+            ]
         },
         {
             "canonical": "RBDPS",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "РБДПС"
+            ]
         },
         {
             "canonical": "Refined glycerine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рефинед глисерине"
+            ]
         },
         {
             "canonical": "Refined Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рефинед Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Refugio Heavy",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рефугио Хеави"
+            ]
         },
         {
             "canonical": "Refugio Light",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рефугио Лигхт"
+            ]
         },
         {
             "canonical": "Rio Zulia",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Рио Зулиа"
+            ]
         },
         {
             "canonical": "Road asphalt",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Роад асфалт"
+            ]
         },
         {
             "canonical": "Road tar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Роад тар"
+            ]
         },
         {
             "canonical": "Rodessa",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Родесса"
+            ]
         },
         {
             "canonical": "Safety solvent",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сафети солвент"
+            ]
         },
         {
             "canonical": "Salmon Oil",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Saltwater",
-            "cas": null,
-            "aliases": []
+            "aliases": [
+                "Салмон масло"
+            ]
         },
         {
             "canonical": "San Joaquin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сан Жоакуин"
+            ]
         },
         {
             "canonical": "Santa Rosa",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Санта Роса"
+            ]
         },
         {
             "canonical": "Sardine Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сардине масло"
+            ]
         },
         {
             "canonical": "Sarir",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сарир"
+            ]
         },
         {
             "canonical": "Sasol Butanol* (*Sasol)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сасол Бутанол* (*Сасол)"
+            ]
         },
         {
             "canonical": "Sasol Butyl alcohol* (*Sasol)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сасол бутиловый спирт* (*Сасол)"
+            ]
         },
         {
             "canonical": "Sassan",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сассан"
+            ]
         },
         {
             "canonical": "SBP 100\/140 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СБП 100\/140 (*Шелл)"
+            ]
         },
         {
             "canonical": "SBP 140\/165 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СБП 140\/165 (*Шелл)"
+            ]
         },
         {
             "canonical": "SBP 60\/145 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СБП 60\/145 (*Шелл)"
+            ]
         },
         {
             "canonical": "SBP 80\/100 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СБП 80\/100 (*Шелл)"
+            ]
         },
         {
             "canonical": "Schwefelsäure (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Счвефелсауре (Г)"
+            ]
         },
         {
             "canonical": "sec-Butyl ester of acetic acid",
             "cas": null,
             "aliases": [
-                "SEC-BUTYL ACETATE",
-                "dl-sec-Butyl acetate",
-                "2-Butyl acetate",
-                "butan-2-yl acetate",
-                "1-Methylpropyl acetate"
+                "Сек-Бутил эфир оф уксусная кислота"
             ]
         },
         {
             "canonical": "Seria",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сериа"
+            ]
         },
         {
             "canonical": "Sextone",
             "cas": null,
             "aliases": [
-                "CYCLOHEXANONE",
-                "Ketohexamethylene",
-                "Pimelic ketone",
-                "Nadone",
-                "Anone"
+                "Секстоне"
             ]
         },
         {
             "canonical": "Shell Fenella ALF (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шелл Фенелла АЛФ (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol 142 HT (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол 142 ХТ (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol 340 HT (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол 340 ХТ (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol 71 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол 71 (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol 71L* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол 71Л* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol A (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол А (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol A 100 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол А 100 (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol AB (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол АБ (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D 100",
             "cas": null,
             "aliases": [
-                "Shellsol"
+                "Shellsol",
+                "Шеллсол Д 100"
             ]
         },
         {
             "canonical": "Shellsol D40* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д40* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D40\/DMA (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д40\/ДМА (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D43 (*shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д43 (*шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D60* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д60* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D70 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д70 (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol D90 (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Д90 (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol DMA (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол ДМА (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol H* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Х* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol OMS (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол ОМС (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol T (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Т (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol T\/TD (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол Т\/ТД (*Шелл)"
+            ]
         },
         {
             "canonical": "Shellsol TD (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Шеллсол ТД (*Шелл)"
+            ]
         },
         {
             "canonical": "SKDN",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СКДН"
+            ]
         },
         {
             "canonical": "Soaplye glycerine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Соапле глисерине"
+            ]
         },
         {
             "canonical": "Sodium carbonate solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум карбонате раствор"
+            ]
         },
         {
             "canonical": "Sodium hydrate",
             "cas": null,
             "aliases": [
-                "SODIUM HYDROXIDE",
-                "Caustic soda",
-                "Aetznatron",
-                "Soda lye",
-                "White caustic"
+                "Содиум хидрате"
             ]
         },
         {
             "canonical": "Sodium hydrate solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум хидрате раствор"
+            ]
         },
         {
             "canonical": "Sodium Hydroxide 35% Solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум Хидроксиде 35% раствор"
+            ]
         },
         {
             "canonical": "Sodium Hydroxide 50% Liquid* (*™Georgia Gulf)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум Хидроксиде 50% Ликуид* (*™Георгиа Гулф)"
+            ]
         },
         {
             "canonical": "Sodium Hydroxide 50% Solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум Хидроксиде 50% раствор"
+            ]
         },
         {
             "canonical": "Sodium hypochlorate solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Содиум хипочлорате раствор"
+            ]
         },
         {
             "canonical": "Гипохлорит натрия",
@@ -4467,42 +5072,58 @@
         {
             "canonical": "Solvent Naphtha H (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Солвент Нафта Х (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Solvent Naphtha L (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Солвент Нафта Л (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Solvent Naphtha M (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Солвент Нафта М (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Solvent naphtha* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Солвент нафта* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "South La. Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Соут Ла. Микс"
+            ]
         },
         {
             "canonical": "South West Texas Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Соут Вест Тексас Микс"
+            ]
         },
         {
             "canonical": "Spirits of turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Спиритс оф турпентине"
+            ]
         },
         {
             "canonical": "Steam distilled turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Стеам дистиллед турпентине"
+            ]
         },
         {
             "canonical": "Уайт-спирит",
@@ -4516,230 +5137,275 @@
         {
             "canonical": "Sulfate turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сулфате турпентине"
+            ]
         },
         {
             "canonical": "Sulfate wood turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сулфате воод турпентине"
+            ]
         },
         {
             "canonical": "Sulfonate turpentine crude",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сулфонате турпентине круде"
+            ]
         },
         {
             "canonical": "Sulphuric acid, 96%* (* Metallgesellschaft AG)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Серная кислота, 96%* (* Металлгеселлсчафт АГ)"
+            ]
         },
         {
             "canonical": "SUMS (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "СУМС (*БП)"
+            ]
         },
         {
             "canonical": "Sunniland",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сунниланд"
+            ]
         },
         {
             "canonical": "Super plus 98 (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Супер плус 98 (*БП)"
+            ]
         },
         {
             "canonical": "Super plus unleaded (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Супер плус унлеадед (*БП)"
+            ]
         },
         {
             "canonical": "Super Unleaded (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Супер Унлеадед (*БП)"
+            ]
         },
         {
             "canonical": "Superphosphoric acid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Суперфосфорная кислота"
+            ]
         },
         {
             "canonical": "Surdyne B140* (*TRADENAME Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сурдине Б140* (*ТРАДЕНАМЕ Шелл)"
+            ]
         },
         {
             "canonical": "Sure Sol-150",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Суре Сол-150"
+            ]
         },
         {
             "canonical": "Sustainable Palm Kernel Oil",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сустаинабле Палм Кернел масло"
+            ]
         },
         {
             "canonical": "Svovelsyre (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Свовелсире (Н)"
+            ]
         },
         {
             "canonical": "Sweden",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Сведен"
+            ]
         },
         {
             "canonical": "Synthetic paraffinic hydrocarbon",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Синтетик параффиник хидрокарбон"
+            ]
         },
         {
             "canonical": "Tar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тар"
+            ]
         },
         {
             "canonical": "Tar, liquid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тар, ликуид"
+            ]
         },
         {
             "canonical": "Tars liquid",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тарс ликуид"
+            ]
         },
         {
             "canonical": "Terpentin (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Терпентин (Г)"
+            ]
         },
         {
             "canonical": "Terpentin, vegetabilsk (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Терпентин, вегетабилск (Н)"
+            ]
         },
         {
             "canonical": "tert-Butyl acetate",
-            "cas": "540-88-5",
+            "cas": null,
             "aliases": [
-                "t-Butyl acetate",
-                "Acetic acid, 1,1-dimethylethyl ester",
-                "Texaco lead appreciator",
-                "Acetic acid, tert-butyl ester",
-                "1,1-Dimethyl acetate"
+                "Терт-Бутил ацетат"
             ]
         },
         {
             "canonical": "Tetradecylbenzene",
-            "cas": "1459-10-5",
+            "cas": null,
             "aliases": [
-                "1-Phenyltetradecane",
-                "Benzene, tetradecyl-",
-                "Tetradecane, 1-phenyl-",
-                "n-Tetradecylbenzene",
-                "tetradecylbenzol"
+                "Тетрадесилбензене"
             ]
         },
         {
             "canonical": "Tetrapropylbenzene",
             "cas": null,
             "aliases": [
-                "SCHEMBL814614",
-                "SCHEMBL1711830"
+                "Тетрапропилбензене"
             ]
         },
         {
             "canonical": "Tia Juana - 102LP",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тиа Жуана - 102ЛП"
+            ]
         },
         {
             "canonical": "Tia Juana Heavy",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тиа Жуана Хеави"
+            ]
         },
         {
             "canonical": "Tia Juana Light",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тиа Жуана Лигхт"
+            ]
         },
         {
             "canonical": "Tia Juana Medium - Amuay",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тиа Жуана Медиум - Амуаи"
+            ]
         },
         {
             "canonical": "Tia Juana Medium - La Salina",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тиа Жуана Медиум - Ла Салина"
+            ]
         },
         {
             "canonical": "Tigre",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тигре"
+            ]
         },
         {
             "canonical": "Toluen (N)",
             "cas": null,
             "aliases": [
-                "toluene",
-                "methylbenzene",
-                "toluol",
-                "Phenylmethane",
-                "methacide"
+                "Толуен (Н)"
             ]
         },
         {
             "canonical": "Toluene -2,4-diisocyanate",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Толуол -2,4-диисокянате"
+            ]
         },
         {
             "canonical": "Toluene diisocyanate 65%",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Толуол диисокянате 65%"
+            ]
         },
         {
             "canonical": "Toluole (*ExxonMobil)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Толуоле (*ЕксксонМобил)"
+            ]
         },
         {
             "canonical": "Tolylenediisocyanate",
             "cas": null,
             "aliases": [
-                "2,4-Diisocyanato-1-methylbenzene",
-                "2,4-Toluene diisocyanate",
-                "TOLUENE 2,4-DIISOCYANATE",
-                "2,4-Diisocyanatotoluene",
-                "Tolylene-2,4-diisocyanate"
+                "Толиленедиисокянате"
             ]
         },
         {
             "canonical": "Treacle",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Треакле"
+            ]
         },
         {
             "canonical": "Trihydropropane",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Трихидропропане"
+            ]
         },
         {
             "canonical": "Trihydroxypropane",
             "cas": null,
             "aliases": [
-                "glycerol",
-                "glycerin",
-                "Glycerine",
-                "1,2,3-Propanetriol",
-                "Glycyl alcohol"
+                "Трихидроксипропане"
             ]
         },
         {
             "canonical": "Trimethyl benzene",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Триметил бензен"
+            ]
         },
         {
             "canonical": "Триметилбензолы (смесь)",
@@ -4749,209 +5415,211 @@
                 "Trimethylbenzenes",
                 "Триметилбензолы",
                 "Триметилбензол",
-                "Смесь триметилбензолов",
-                "1,2,3-TRIMETHYLBENZENE",
-                "Hemimellitene",
-                "Hemellitol",
-                "Hemimellitol",
-                "ZK4R7UPH6R"
+                "Смесь триметилбензолов"
             ]
         },
         {
             "canonical": "Trinidad pitch",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Тринидад питч"
+            ]
         },
         {
             "canonical": "Turps",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Турпс"
+            ]
         },
         {
             "canonical": "ULMS (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "УЛМС (*БП)"
+            ]
         },
         {
             "canonical": "Umm Shaif",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Умм Шаиф"
+            ]
         },
         {
             "canonical": "Unfinished naphtha",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Унфинишед нафта"
+            ]
         },
         {
             "canonical": "Unleaded 95 (*BP)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Унлеадед 95 (*БП)"
+            ]
         },
         {
             "canonical": "uns-Trimethylbenzene",
             "cas": null,
             "aliases": [
-                "1,2,4-TRIMETHYLBENZENE",
-                "Pseudocumene",
-                "Pseudocumol",
-                "Psi-cumene",
-                "as-Trimethylbenzene"
+                "Унс-Триметилбензене"
             ]
         },
         {
             "canonical": "Varnoline",
-            "cas": "71138-35-7",
+            "cas": null,
             "aliases": [
-                "Marvelon",
-                "RefChem:585821",
-                "ortho-Cept",
-                "Cyclessa",
-                "Mercilon"
+                "Варнолине"
             ]
         },
         {
             "canonical": "Vassa A-70 (*Vassa)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Васса А-70 (*Васса)"
+            ]
         },
         {
             "canonical": "Vassa LP-70 (*Vassa)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Васса ЛП-70 (*Васса)"
+            ]
         },
         {
             "canonical": "Vassa LP-90 (*Vassa)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Васса ЛП-90 (*Васса)"
+            ]
         },
         {
             "canonical": "Vinasses (*BASF)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Винассес (*БАСФ)"
+            ]
         },
         {
             "canonical": "Vinegar acid",
             "cas": null,
             "aliases": [
-                "acetic acid",
-                "ethanoic acid",
-                "Acetic acid glacial",
-                "Ethylic acid",
-                "Glacial acetic acid"
+                "Винегар кислота"
             ]
         },
         {
             "canonical": "Virsin",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вирсин"
+            ]
         },
         {
             "canonical": "Voranate T 80",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Воранате Т 80"
+            ]
         },
         {
             "canonical": "Wakso C9-C11 Blend",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ваксо К9-К11 Бленд"
+            ]
         },
         {
             "canonical": "Waksol 9-11* (*TRADENAME Schumann Sasol)",
             "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Water of ammonia",
-            "cas": null,
-            "aliases": []
-        },
-        {
-            "canonical": "Water, drinking",
-            "cas": null,
             "aliases": [
-                "water",
-                "Distilled water",
-                "Dihydrogen oxide",
-                "Purified water",
-                "Sterile water"
-            ]
-        },
-        {
-            "canonical": "Water, potable",
-            "cas": null,
-            "aliases": [
-                "water",
-                "Distilled water",
-                "Dihydrogen oxide",
-                "Purified water",
-                "Sterile water"
+                "Ваксол 9-11* (*ТРАДЕНАМЕ Счуманн Сасол)"
             ]
         },
         {
             "canonical": "Wax mineral",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Воск минерал"
+            ]
         },
         {
             "canonical": "Wax petroleum",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Воск бензинеум"
+            ]
         },
         {
             "canonical": "West Central Texas Mix",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вест Сентрал Тексас Микс"
+            ]
         },
         {
             "canonical": "West Texas Sour",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вест Тексас Соур"
+            ]
         },
         {
             "canonical": "White caustic solution",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вхите каустик раствор"
+            ]
         },
         {
             "canonical": "White Phosphoric acid",
             "cas": null,
             "aliases": [
-                "Phosphoric acid",
-                "ORTHOPHOSPHORIC ACID",
-                "o-Phosphoric acid",
-                "Wc-reiniger",
-                "Acidum phosphoricum"
+                "Вхите фосфорная кислота"
             ]
         },
         {
             "canonical": "White spirit (blanding) 10%<aromatinnh. <20% (N)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вхите спирит (бландинг) 10%<ароматиннх. <20% (Н)"
+            ]
         },
         {
             "canonical": "White spirit (high aromatic)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вхите спирит (хигх ароматик)"
+            ]
         },
         {
             "canonical": "WHITE SPIRIT, LOW (15-20%) AROMATIC",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "ВХИТЕ СПИРИТ, ЛОВ (15-20%) АРОМАТИК"
+            ]
         },
         {
             "canonical": "Willamar",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вилламар"
+            ]
         },
         {
             "canonical": "Wimlington",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Вимлингтон"
+            ]
         },
         {
             "canonical": "Wood turpentine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Воод турпентине"
+            ]
         },
         {
             "canonical": "Ксилолы (смесь)",
@@ -4968,77 +5636,107 @@
         {
             "canonical": "Xylene (mixed isomers)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол (миксед исомерс)"
+            ]
         },
         {
             "canonical": "Xylene, Meta",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол, Мета"
+            ]
         },
         {
             "canonical": "Xylene, ortho",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол, орто"
+            ]
         },
         {
             "canonical": "Xylene, Para",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол, Пара"
+            ]
         },
         {
             "canonical": "Xylene-n (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол-н (*Шелл)"
+            ]
         },
         {
             "canonical": "Xylene-o (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол-о (*Шелл)"
+            ]
         },
         {
             "canonical": "Xylene-p (*Shell)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Ксилол-п (*Шелл)"
+            ]
         },
         {
             "canonical": "Yellow petrolatum",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Еллов бензинатум"
+            ]
         },
         {
             "canonical": "Zakum",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Закум"
+            ]
         },
         {
             "canonical": "Zarzaitine",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Зарзаитине"
+            ]
         },
         {
             "canonical": "Zueitina",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Зуеитина"
+            ]
         },
         {
             "canonical": "Äthandiol (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Атандиол (Г)"
+            ]
         },
         {
             "canonical": "Äthylbenzol (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Атилбензол (Г)"
+            ]
         },
         {
             "canonical": "Äthylenglykol (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Атиленгликол (Г)"
+            ]
         },
         {
             "canonical": "Äthylmethylketon (G)",
             "cas": null,
-            "aliases": []
+            "aliases": [
+                "Атилметилкетон (Г)"
+            ]
         }
     ],
     "assessments": [
@@ -5603,7 +6301,7 @@
             "notes": []
         },
         {
-            "substance": "Ammonia water, 28% or less",
+            "substance": "Раствор аммиака",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
@@ -6969,7 +7667,7 @@
             ]
         },
         {
-            "substance": "De-mineralised water",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7109,7 +7807,7 @@
             "notes": []
         },
         {
-            "substance": "Distilled water",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -7135,7 +7833,7 @@
             "notes": []
         },
         {
-            "substance": "Drinking water",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10287,7 +10985,7 @@
             ]
         },
         {
-            "substance": "Potable water",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -10549,7 +11247,7 @@
             ]
         },
         {
-            "substance": "Saltwater",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -11497,13 +12195,13 @@
             "notes": []
         },
         {
-            "substance": "Water of ammonia",
+            "substance": "Раствор аммиака",
             "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
         {
-            "substance": "Water, drinking",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": [
@@ -11511,7 +12209,7 @@
             ]
         },
         {
-            "substance": "Water, potable",
+            "substance": "Вода",
             "grade": "R",
             "max_temperature": null,
             "notes": [
