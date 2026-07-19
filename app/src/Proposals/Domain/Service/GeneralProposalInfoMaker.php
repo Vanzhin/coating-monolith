@@ -1,10 +1,9 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Service;
 
-use App\Proposals\Domain\Service\GeneralProposalInfoItemDataInterface;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 use App\Proposals\Domain\Factory\GeneralProposalInfoFactory;
 use App\Proposals\Domain\Factory\GeneralProposalInfoItemFactory;
@@ -14,18 +13,17 @@ final readonly class GeneralProposalInfoMaker
 {
     public function __construct(
         private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-        private GeneralProposalInfoFactory             $generalProposalInfoFactory,
-        private GeneralProposalInfoItemFactory         $generalProposalInfoItemFactory,
-    )
-    {
+        private GeneralProposalInfoFactory $generalProposalInfoFactory,
+        private GeneralProposalInfoItemFactory $generalProposalInfoItemFactory,
+    ) {
     }
 
     public function make(
-        string  $number,
-        string  $ownerId,
-        string  $unit,
-        string  $projectTitle,
-        float   $projectArea,
+        string $number,
+        string $ownerId,
+        string $unit,
+        string $projectTitle,
+        float $projectArea,
         ?string $description,
         ?string $basis,
         ?string $projectStructureDescription,
@@ -33,11 +31,9 @@ final readonly class GeneralProposalInfoMaker
         ?string $category,
         ?string $treatment,
         ?string $method,
-        int     $loss,
-        array   $coats,
-
-    ): GeneralProposalInfo
-    {
+        int $loss,
+        array $coats,
+    ): GeneralProposalInfo {
         $generalProposalInfo = $this->generalProposalInfoFactory->create($number,
             $ownerId,
             $unit,

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Repository;
 
@@ -19,7 +19,6 @@ class GeneralProposalInfoItemRepository extends ServiceEntityRepository implemen
     {
         parent::__construct($registry, GeneralProposalInfoItem::class);
     }
-
 
     public function add(Coating $coating): void
     {

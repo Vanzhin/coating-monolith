@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Aggregate\Coating;
@@ -10,13 +11,13 @@ use PHPUnit\Framework\TestCase;
 
 class DryingTimeSeriesTest extends TestCase
 {
-    public function testEmptySeriesThrows(): void
+    public function test_empty_series_throws(): void
     {
         $this->expectException(AppException::class);
         new DryingTimeSeries();
     }
 
-    public function testValidMonotonicProfile(): void
+    public function test_valid_monotonic_profile(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(5, 30),
@@ -25,11 +26,11 @@ class DryingTimeSeriesTest extends TestCase
         );
 
         $this->assertCount(3, $series->points);
-        $temps = array_map(fn(TimeAtTemperature $p) => $p->temperatureAt, $series->points);
+        $temps = array_map(fn (TimeAtTemperature $p) => $p->temperatureAt, $series->points);
         $this->assertSame([5, 20, 30], $temps);
     }
 
-    public function testSortsUnorderedInput(): void
+    public function test_sorts_unordered_input(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(30, 5),
@@ -37,11 +38,11 @@ class DryingTimeSeriesTest extends TestCase
             new TimeAtTemperature(20, 10),
         );
 
-        $temps = array_map(fn(TimeAtTemperature $p) => $p->temperatureAt, $series->points);
+        $temps = array_map(fn (TimeAtTemperature $p) => $p->temperatureAt, $series->points);
         $this->assertSame([5, 20, 30], $temps);
     }
 
-    public function testDuplicateTemperatureThrows(): void
+    public function test_duplicate_temperature_throws(): void
     {
         $this->expectException(AppException::class);
         new DryingTimeSeries(
@@ -50,7 +51,7 @@ class DryingTimeSeriesTest extends TestCase
         );
     }
 
-    public function testNonMonotonicThrows(): void
+    public function test_non_monotonic_throws(): void
     {
         $this->expectException(AppException::class);
         new DryingTimeSeries(
@@ -59,7 +60,7 @@ class DryingTimeSeriesTest extends TestCase
         );
     }
 
-    public function testEqualTimesAllowed(): void
+    public function test_equal_times_allowed(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 10),
@@ -68,13 +69,13 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertCount(2, $series->points);
     }
 
-    public function testSinglePointAllowed(): void
+    public function test_single_point_allowed(): void
     {
         $series = new DryingTimeSeries(new TimeAtTemperature(20, 10));
         $this->assertCount(1, $series->points);
     }
 
-    public function testGetPointExact(): void
+    public function test_get_point_exact(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 10),
@@ -87,7 +88,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertFalse($point->isCalculated);
     }
 
-    public function testInterpolatesBetweenPoints(): void
+    public function test_interpolates_between_points(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 10),
@@ -102,7 +103,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertTrue($point->isCalculated);
     }
 
-    public function testGetPointOutOfRangeReturnsNull(): void
+    public function test_get_point_out_of_range_returns_null(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 10),
@@ -113,7 +114,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertNull($series->getPoint(35));
     }
 
-    public function testJsonSerializeUsesSnakeCase(): void
+    public function test_json_serialize_uses_snake_case(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 10),
@@ -131,7 +132,7 @@ class DryingTimeSeriesTest extends TestCase
         );
     }
 
-    public function testFromArrayRoundTripsSerialization(): void
+    public function test_from_array_round_trips_serialization(): void
     {
         $original = new DryingTimeSeries(
             new TimeAtTemperature(20, 10, isCalculated: true),
@@ -147,7 +148,7 @@ class DryingTimeSeriesTest extends TestCase
         );
     }
 
-    public function testFromArrayPreservesIsCalculatedFlag(): void
+    public function test_from_array_preserves_is_calculated_flag(): void
     {
         $raw = [
             ['temperature_at' => 20, 'time_in_minutes' => 10, 'is_calculated' => false],
@@ -164,7 +165,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertTrue($series->points[1]->isCalculated);
     }
 
-    public function testMixedSeriesWithUnlimitedAndUnknownIsValid(): void
+    public function test_mixed_series_with_unlimited_and_unknown_is_valid(): void
     {
         // Серия: 10°C → 24h (duration), 20°C → null (N/A), 30°C → 12h (duration), 40°C → 0 (unlimited).
         // Физ-правило применяется только к Duration: 24h@10 → 12h@30 — ОК.
@@ -177,7 +178,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertCount(4, $series->points);
     }
 
-    public function testPhysRuleStillEnforcedAmongDurationPoints(): void
+    public function test_phys_rule_still_enforced_among_duration_points(): void
     {
         // Среди Duration: 10°C → 60min, 30°C → 120min — нарушение (выросло с температурой).
         $this->expectException(AppException::class);
@@ -188,7 +189,7 @@ class DryingTimeSeriesTest extends TestCase
         );
     }
 
-    public function testGetPointExactMatchReturnsUnknownAsIs(): void
+    public function test_get_point_exact_match_returns_unknown_as_is(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(10, 24 * 60),
@@ -201,7 +202,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertNull($p->timeInMinutes);
     }
 
-    public function testGetPointExactMatchReturnsUnlimitedAsIs(): void
+    public function test_get_point_exact_match_returns_unlimited_as_is(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(10, 24 * 60),
@@ -213,7 +214,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertSame(0, $p->timeInMinutes);
     }
 
-    public function testGetPointInterpolatesAcrossNonDurationPoint(): void
+    public function test_get_point_interpolates_across_non_duration_point(): void
     {
         // 10°C → 24h = 1440min, 20°C → null, 30°C → 12h = 720min.
         // Запрос 15°C: интерполяция между 10 и 30 (null в 20 пропускается).
@@ -230,7 +231,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertTrue($p->isCalculated);
     }
 
-    public function testGetPointReturnsNullWhenUpperBoundIsUnlimited(): void
+    public function test_get_point_returns_null_when_upper_bound_is_unlimited(): void
     {
         // 10°C → 24h, 40°C → 0 (unlimited). Запрос 30°C → upper Duration нет → null.
         $series = new DryingTimeSeries(
@@ -240,7 +241,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertNull($series->getPoint(30));
     }
 
-    public function testGetPointReturnsNullWhenLowerBoundMissing(): void
+    public function test_get_point_returns_null_when_lower_bound_missing(): void
     {
         $series = new DryingTimeSeries(
             new TimeAtTemperature(20, 1440),
@@ -249,7 +250,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertNull($series->getPoint(5));
     }
 
-    public function testFromArrayWithNullMinutes(): void
+    public function test_from_array_with_null_minutes(): void
     {
         $series = DryingTimeSeries::fromArray([
             ['temperature_at' => 10, 'time_in_minutes' => 1440],
@@ -262,7 +263,7 @@ class DryingTimeSeriesTest extends TestCase
         $this->assertSame(0, $series->points[2]->timeInMinutes);
     }
 
-    public function testJsonSerializeRoundtripPreservesAllKinds(): void
+    public function test_json_serialize_roundtrip_preserves_all_kinds(): void
     {
         $original = new DryingTimeSeries(
             new TimeAtTemperature(10, 1440),

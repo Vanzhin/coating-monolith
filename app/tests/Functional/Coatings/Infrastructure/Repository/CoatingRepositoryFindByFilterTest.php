@@ -55,14 +55,14 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         $suffix = bin2hex(random_bytes(2));
 
         $manufacturer = new Manufacturer(
-            'Производитель' . $suffix,
+            'Производитель'.$suffix,
             $container->get(ManufacturerSpecification::class),
         );
         $this->em->persist($manufacturer);
 
         // Tag — уникальная лексема, прилетит в search_vector через триггер.
         $tag = new CoatingTag(
-            'тагунико' . $suffix,
+            'тагунико'.$suffix,
             $container->get(CoatingTagSpecification::class),
             CoatingTag::TYPE_GENERAL,
         );
@@ -70,7 +70,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
 
         $coating = new Coating(
             UuidService::generateUuid(),
-            'Образец' . $suffix,
+            'Образец'.$suffix,
             'Нейтральное описание без специфичных слов.',
             50,
             1.5,
@@ -101,25 +101,25 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         $em->clear();
         try {
             $coating = $em->find(Coating::class, Uuid::fromString($this->coatingId));
-            if ($coating !== null) {
+            if (null !== $coating) {
                 $em->remove($coating);
             }
             $tag = static::getContainer()->get(CoatingTagRepositoryInterface::class)->findOneById($this->tagId);
-            if ($tag !== null) {
+            if (null !== $tag) {
                 $em->remove($tag);
             }
             $manufacturer = $em->find(Manufacturer::class, Uuid::fromString($this->manufacturerId));
-            if ($manufacturer !== null) {
+            if (null !== $manufacturer) {
                 $em->remove($manufacturer);
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         parent::tearDown();
     }
 
-    public function testSingleWordFindsCoatingViaTag(): void
+    public function test_single_word_finds_coating_via_tag(): void
     {
         // Single-word точно матчит лексему тега → fullText AND проходит.
         // Префикс тоже работает — берём 6 символов от уникального title тега.
@@ -128,16 +128,16 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
 
         $result = $this->repo->findByFilter($filter);
 
-        $ids = array_map(fn(Coating $c) => $c->getId(), $result->items);
+        $ids = array_map(fn (Coating $c) => $c->getId(), $result->items);
         self::assertContains($this->coatingId, $ids);
     }
 
-    public function testMultiWordWithUnmatchedTokenReturnsEmpty(): void
+    public function test_multi_word_with_unmatched_token_returns_empty(): void
     {
         // Multi-word: первое слово — наш тег (есть), второе — заведомо
         // отсутствующая лексема. AND fullText даёт 0. fuzzy НЕ запускается
         // (multi-word) → результат пуст.
-        $query = $this->getTagTitle() . ' нетлексикс';
+        $query = $this->getTagTitle().' нетлексикс';
         $filter = new CoatingsFilter(SearchQuery::tryFromString($query), pager: Pager::fromPage(1, 50));
 
         $result = $this->repo->findByFilter($filter);
@@ -145,19 +145,19 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         self::assertSame(0, $result->total, 'Multi-word без полного AND-матча должен давать пусто, а не fuzzy-похожее.');
     }
 
-    public function testSingleWordTypoTriggersFuzzyFallback(): void
+    public function test_single_word_typo_triggers_fuzzy_fallback(): void
     {
         // Single-word опечатка (последняя буква изменена) — fullText ничего
         // не находит, но fuzzy WORD_SIMILARITY должен сматчить через title.
         $coating = $this->em->find(Coating::class, Uuid::fromString($this->coatingId));
         $title = $coating->getTitle();
-        $typo = mb_substr($title, 0, -1) . 'я'; // меняем последний символ на cyrillic
+        $typo = mb_substr($title, 0, -1).'я'; // меняем последний символ на cyrillic
 
         $filter = new CoatingsFilter(SearchQuery::tryFromString($typo), pager: Pager::fromPage(1, 50));
 
         $result = $this->repo->findByFilter($filter);
 
-        $ids = array_map(fn(Coating $c) => $c->getId(), $result->items);
+        $ids = array_map(fn (Coating $c) => $c->getId(), $result->items);
         self::assertContains($this->coatingId, $ids, 'Single-word опечатка должна ловиться fuzzy fallback\'ом.');
     }
 

@@ -18,8 +18,7 @@ final class DocumentDbDeleteConsoleCommand extends Command
 {
     public function __construct(
         private readonly CommandBusInterface $commandBus,
-    )
-    {
+    ) {
         parent::__construct();
     }
 

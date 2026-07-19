@@ -28,12 +28,12 @@ final class CoatingTagFinder
     public function suggest(string $query, ?string $type, int $limit = 10): array
     {
         $query = trim($query);
-        if ($query === '') {
+        if ('' === $query) {
             return [];
         }
 
         $ftsResults = $this->fullText($query, $type, $limit);
-        if ($ftsResults !== []) {
+        if ([] !== $ftsResults) {
             return $ftsResults;
         }
 
@@ -46,7 +46,7 @@ final class CoatingTagFinder
     private function fullText(string $query, ?string $type, int $limit): array
     {
         $tsquery = $this->buildPrefixTsQuery($query);
-        if ($tsquery === '') {
+        if ('' === $tsquery) {
             return [];
         }
 
@@ -72,8 +72,8 @@ final class CoatingTagFinder
         $similarity = 'WORD_SIMILARITY(:search, t.title)';
 
         $qb = $this->coatingTagQueryBuilder();
-        $qb->andWhere($similarity . ' > :threshold')
-            ->addSelect($similarity . ' AS HIDDEN sim')
+        $qb->andWhere($similarity.' > :threshold')
+            ->addSelect($similarity.' AS HIDDEN sim')
             ->orderBy('sim', 'DESC')
             ->setMaxResults($limit)
             ->setParameter('search', $query)
@@ -86,7 +86,7 @@ final class CoatingTagFinder
 
     private function applyTypeFilter(QueryBuilder $qb, ?string $type): void
     {
-        if ($type === null) {
+        if (null === $type) {
             return;
         }
         $qb->andWhere('t.type = :type')->setParameter('type', $type);
@@ -106,10 +106,10 @@ final class CoatingTagFinder
     {
         $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $query) ?? '';
         $words = preg_split('/[\s\-.,;]+/u', trim($sanitized), -1, PREG_SPLIT_NO_EMPTY);
-        if ($words === false || $words === []) {
+        if (false === $words || [] === $words) {
             return '';
         }
 
-        return implode(' & ', array_map(static fn(string $word) => $word . ':*', $words));
+        return implode(' & ', array_map(static fn (string $word) => $word.':*', $words));
     }
 }

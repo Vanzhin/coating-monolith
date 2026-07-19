@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace App\Users\Application\Service\AccessControl;
 
 use App\Shared\Application\Security\AuthChecker;
-use App\Shared\Domain\Security\Role;
 use App\Shared\Domain\Security\AuthUserFetcherInterface;
+use App\Shared\Domain\Security\Role;
 use App\Users\Domain\Entity\Channel;
 
 /**
- * Служба проверки прав доступа к каналу
+ * Служба проверки прав доступа к каналу.
  */
 readonly class ChannelAccessControl
 {
     public function __construct(
         private AuthChecker $checker,
         private AuthUserFetcherInterface $fetcher,
-    )
-    {
+    ) {
     }
 
     public function canView(Channel $channel): bool

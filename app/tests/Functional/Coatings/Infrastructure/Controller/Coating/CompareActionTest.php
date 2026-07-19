@@ -43,7 +43,7 @@ final class CompareActionTest extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
 
         $suffix = uniqid('', true);
-        $this->userEmail = 'test_compare_' . $suffix . '@example.com';
+        $this->userEmail = 'test_compare_'.$suffix.'@example.com';
 
         $hasher = $container->get(UserPasswordHasherInterface::class);
         $user = new User(new Email($this->userEmail));
@@ -58,7 +58,7 @@ final class CompareActionTest extends WebTestCase
         /** @var ManufacturerSpecification $manufacturerSpec */
         $manufacturerSpec = $container->get(ManufacturerSpecification::class);
         $manufacturer = new Manufacturer(
-            'TestManufacturer_' . $suffix,
+            'TestManufacturer_'.$suffix,
             $manufacturerSpec,
         );
         $this->em->persist($manufacturer);
@@ -77,24 +77,24 @@ final class CompareActionTest extends WebTestCase
         try {
             foreach ($this->createdCoatingIds as $id) {
                 $coating = $em->find(Coating::class, Uuid::fromString($id));
-                if ($coating !== null) {
+                if (null !== $coating) {
                     $em->remove($coating);
                 }
             }
 
             $manufacturer = $em->find(Manufacturer::class, Uuid::fromString($this->manufacturerId));
-            if ($manufacturer !== null) {
+            if (null !== $manufacturer) {
                 $em->remove($manufacturer);
             }
 
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if ($user !== null) {
+            if (null !== $user) {
                 $em->remove($user);
             }
 
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -116,7 +116,7 @@ final class CompareActionTest extends WebTestCase
         $coating = new Coating(
             UuidService::generateUuid(),
             $title,
-            'Description for ' . $title,
+            'Description for '.$title,
             $volumeSolid,
             1.5,
             CoatingBase::EP,
@@ -141,7 +141,7 @@ final class CompareActionTest extends WebTestCase
         return $id;
     }
 
-    public function testRendersComparisonTableForTwoCoatings(): void
+    public function test_renders_comparison_table_for_two_coatings(): void
     {
         $idA = $this->createCoating('Coating A', 50);
         $idB = $this->createCoating('Coating B', 70);
@@ -160,11 +160,11 @@ final class CompareActionTest extends WebTestCase
         );
     }
 
-    public function testRedirectsWhenFewerThanTwoIds(): void
+    public function test_redirects_when_fewer_than_two_ids(): void
     {
         $idA = $this->createCoating('Solo Coating');
 
-        $this->client->request('GET', '/cabinet/coating/coating/compare?ids=' . $idA);
+        $this->client->request('GET', '/cabinet/coating/coating/compare?ids='.$idA);
 
         self::assertResponseRedirects('/cabinet/coating/coating/list');
         $session = $this->client->getRequest()->getSession();
@@ -174,7 +174,7 @@ final class CompareActionTest extends WebTestCase
         );
     }
 
-    public function testRedirectsWhenAllIdsMissing(): void
+    public function test_redirects_when_all_ids_missing(): void
     {
         $fakeA = '00000000-0000-0000-0000-000000000001';
         $fakeB = '00000000-0000-0000-0000-000000000002';

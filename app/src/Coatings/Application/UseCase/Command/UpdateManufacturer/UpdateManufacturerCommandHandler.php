@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Coatings\Application\UseCase\Command\UpdateManufacturer;
 
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
@@ -12,8 +11,7 @@ readonly class UpdateManufacturerCommandHandler implements CommandHandlerInterfa
 {
     public function __construct(
         private ManufacturerRepositoryInterface $manufacturerRepository
-    )
-    {
+    ) {
     }
 
     public function __invoke(UpdateManufacturerCommand $command): UpdateManufacturerCommandResult

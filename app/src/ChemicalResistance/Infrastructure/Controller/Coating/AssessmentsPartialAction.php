@@ -21,13 +21,14 @@ final class AssessmentsPartialAction extends AbstractController
 {
     public function __construct(
         private ListCoatingAssessmentsQueryHandler $handler,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $coatingId, Request $req): Response
     {
-        $page      = max(1, $req->query->getInt('page', 1));
-        $pageSize  = max(1, min(2000, $req->query->getInt('pageSize', 50)));
-        $search    = $req->query->get('search') ?: null;
+        $page = max(1, $req->query->getInt('page', 1));
+        $pageSize = max(1, min(2000, $req->query->getInt('pageSize', 50)));
+        $search = $req->query->get('search') ?: null;
         $highlight = $req->query->get('highlight') ?: null;
 
         $result = ($this->handler)(new ListCoatingAssessmentsQuery(

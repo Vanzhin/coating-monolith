@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Substance;
 
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
@@ -10,9 +12,9 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
-use Webmozart\Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use Webmozart\Assert\InvalidArgumentException;
 
 final class SubstanceTest extends TestCase
 {
@@ -21,6 +23,7 @@ final class SubstanceTest extends TestCase
         $repo = $this->createMock(SubstanceRepositoryInterface::class);
         $repo->method('findByCanonicalNameKey')->willReturn(null);
         $repo->method('findByCas')->willReturn(null);
+
         return new SubstanceSpecification(
             new UniqueSubstanceNameSpecification($repo),
             new UniqueCasSpecification($repo),
@@ -36,6 +39,7 @@ final class SubstanceTest extends TestCase
                 $this->noopSpec())
         );
         $repo->method('findByCas')->willReturn(null);
+
         return new SubstanceSpecification(
             new UniqueSubstanceNameSpecification($repo),
             new UniqueCasSpecification($repo),
@@ -51,22 +55,23 @@ final class SubstanceTest extends TestCase
             new Substance($conflictingId, 'Dummy', $conflictCas, new StringCollection(),
                 $this->noopSpec())
         );
+
         return new SubstanceSpecification(
             new UniqueSubstanceNameSpecification($repo),
             new UniqueCasSpecification($repo),
         );
     }
 
-    public function testConstructRussianCanonical(): void
+    public function test_construct_russian_canonical(): void
     {
         $s = new Substance(Uuid::v4(), 'Этиленгликоль', CasNumber::fromString('107-21-1'),
             new StringCollection('Ethylene glycol', '1,2-Ethanediol'), $this->noopSpec());
         self::assertSame('Этиленгликоль', $s->getCanonicalName());
-        self::assertSame('107-21-1', (string)$s->getCas());
+        self::assertSame('107-21-1', (string) $s->getCas());
         self::assertSame(['Ethylene glycol', '1,2-Ethanediol'], $s->getAliases()->getList());
     }
 
-    public function testHasNameFindsCanonical(): void
+    public function test_has_name_finds_canonical(): void
     {
         $s = new Substance(Uuid::v4(), 'Этиленгликоль', null, new StringCollection(), $this->noopSpec());
         self::assertTrue($s->hasName('этиленгликоль'));
@@ -74,7 +79,7 @@ final class SubstanceTest extends TestCase
         self::assertFalse($s->hasName('Водоглицерин'));
     }
 
-    public function testHasNameFindsAliases(): void
+    public function test_has_name_finds_aliases(): void
     {
         $s = new Substance(Uuid::v4(), 'Этиленгликоль', null,
             new StringCollection('Ethylene glycol'), $this->noopSpec());
@@ -82,7 +87,7 @@ final class SubstanceTest extends TestCase
         self::assertTrue($s->hasName('ETHYLENE GLYCOL'));
     }
 
-    public function testAddAliasIdempotent(): void
+    public function test_add_alias_idempotent(): void
     {
         $s = new Substance(Uuid::v4(), 'Water', null,
             new StringCollection('Вода'), $this->noopSpec());
@@ -91,14 +96,14 @@ final class SubstanceTest extends TestCase
         self::assertSame(['Вода'], $s->getAliases()->getList());
     }
 
-    public function testAddAliasSameAsCanonicalIsNoop(): void
+    public function test_add_alias_same_as_canonical_is_noop(): void
     {
         $s = new Substance(Uuid::v4(), 'Water', null, new StringCollection(), $this->noopSpec());
         $s->addAlias('WATER');
         self::assertSame([], $s->getAliases()->getList());
     }
 
-    public function testCanonicalNameKeyReflectsRename(): void
+    public function test_canonical_name_key_reflects_rename(): void
     {
         $s = new Substance(Uuid::v4(), 'Water', null, new StringCollection(), $this->noopSpec());
         $keyBefore = $s->getCanonicalNameKey();
@@ -106,35 +111,35 @@ final class SubstanceTest extends TestCase
         self::assertNotSame($keyBefore, $s->getCanonicalNameKey());
     }
 
-    public function testEmptyCanonicalNameThrows(): void
+    public function test_empty_canonical_name_throws(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('Название вещества не может быть пустым.');
         new Substance(Uuid::v4(), '', null, new StringCollection(), $this->noopSpec());
     }
 
-    public function testWhitespaceOnlyCanonicalNameThrows(): void
+    public function test_whitespace_only_canonical_name_throws(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('Название вещества не может быть пустым.');
         new Substance(Uuid::v4(), '   ', null, new StringCollection(), $this->noopSpec());
     }
 
-    public function testCanonicalNameTooLongThrows(): void
+    public function test_canonical_name_too_long_throws(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $longName = str_repeat('a', 201);
         new Substance(Uuid::v4(), $longName, null, new StringCollection(), $this->noopSpec());
     }
 
-    public function testAliasTooLongThrows(): void
+    public function test_alias_too_long_throws(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $longAlias = str_repeat('b', 201);
         new Substance(Uuid::v4(), 'Water', null, new StringCollection($longAlias), $this->noopSpec());
     }
 
-    public function testUniqueSubstanceNameSpecificationConflictThrows(): void
+    public function test_unique_substance_name_specification_conflict_throws(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('Вещество «Water» уже существует в справочнике.');
@@ -142,7 +147,7 @@ final class SubstanceTest extends TestCase
             $this->conflictingByNameSpec('Water'));
     }
 
-    public function testUniqueCasSpecificationConflictThrows(): void
+    public function test_unique_cas_specification_conflict_throws(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('CAS-номер «107-21-1» уже используется другим веществом в справочнике.');
@@ -151,7 +156,7 @@ final class SubstanceTest extends TestCase
             $this->conflictingByCasSpec($cas));
     }
 
-    public function testGetSearchableNamesIncludesCanonicalAliasesAndCas(): void
+    public function test_get_searchable_names_includes_canonical_aliases_and_cas(): void
     {
         $cas = CasNumber::fromString('107-21-1');
         $s = new Substance(Uuid::v4(), 'Этиленгликоль', $cas,

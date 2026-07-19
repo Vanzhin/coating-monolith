@@ -22,6 +22,6 @@ readonly class VerifyChannelCommandHandler implements CommandHandlerInterface
         $channel = $this->channelRepository->findById($command->channelId);
         AssertService::notNull($channel, 'Канал не найден.');
         $channel->verify($this->tokenService, $command->tokenString);
-        $this->channelRepository->add($channel);;
+        $this->channelRepository->add($channel);
     }
 }

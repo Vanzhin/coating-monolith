@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Validation;
 
@@ -12,8 +12,7 @@ readonly class Validator
 {
     public function __construct(
         private ValidatorBuilder $validatorBuilder,
-    )
-    {
+    ) {
     }
 
     /**

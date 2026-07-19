@@ -35,7 +35,7 @@ final class CoatingTagFinderTest extends KernelTestCase
     {
         foreach ($this->createdIds as $id) {
             $tag = $this->repo->findOneById($id);
-            if ($tag !== null) {
+            if (null !== $tag) {
                 $this->em->remove($tag);
             }
         }
@@ -44,7 +44,7 @@ final class CoatingTagFinderTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function testSuggestReturnsGeneralTagsByPrefix(): void
+    public function test_suggest_returns_general_tags_by_prefix(): void
     {
         $forConcrete = $this->makeTag('Для бетона', CoatingTag::TYPE_GENERAL);
         $forSteel = $this->makeTag('Для стали', CoatingTag::TYPE_GENERAL);
@@ -52,31 +52,31 @@ final class CoatingTagFinderTest extends KernelTestCase
 
         $result = $this->finder->suggest('для', CoatingTag::TYPE_GENERAL);
 
-        $titles = array_map(fn(CoatingTag $t) => $t->getTitle(), $result);
+        $titles = array_map(fn (CoatingTag $t) => $t->getTitle(), $result);
         self::assertContains('Для бетона', $titles);
         self::assertContains('Для стали', $titles);
         self::assertNotContains('top_test_unique', $titles, 'Не general — не должен попасть');
     }
 
-    public function testSuggestFallsBackToFuzzyWhenFtsEmpty(): void
+    public function test_suggest_falls_back_to_fuzzy_when_fts_empty(): void
     {
         $this->makeTag('Для бетона', CoatingTag::TYPE_GENERAL);
 
         // 'бетано' — опечатка, FTS prefix не сматчится; fuzzy должен поймать.
         $result = $this->finder->suggest('бетано', CoatingTag::TYPE_GENERAL);
 
-        $titles = array_map(fn(CoatingTag $t) => $t->getTitle(), $result);
+        $titles = array_map(fn (CoatingTag $t) => $t->getTitle(), $result);
         self::assertContains('Для бетона', $titles);
     }
 
-    public function testSuggestEmptyQueryReturnsEmpty(): void
+    public function test_suggest_empty_query_returns_empty(): void
     {
         $this->makeTag('Для бетона', CoatingTag::TYPE_GENERAL);
 
         self::assertSame([], $this->finder->suggest('', CoatingTag::TYPE_GENERAL));
     }
 
-    public function testSuggestFindsSuperByPrefixSupe(): void
+    public function test_suggest_finds_super_by_prefix_supe(): void
     {
         // Чистим leftover из интерактивной отладки в shared dev/test БД,
         // вместе с pivot-связями (иначе FK violation).
@@ -96,14 +96,14 @@ final class CoatingTagFinderTest extends KernelTestCase
         // ведёт себя иначе — поймает fuzzy-fallback (WORD_SIMILARITY).
         $result = $this->finder->suggest('супе', CoatingTag::TYPE_GENERAL);
 
-        $titles = array_map(fn(CoatingTag $t) => $t->getTitle(), $result);
+        $titles = array_map(fn (CoatingTag $t) => $t->getTitle(), $result);
         self::assertContains('супер', $titles);
     }
 
-    public function testSuggestRespectsLimit(): void
+    public function test_suggest_respects_limit(): void
     {
-        for ($i = 0; $i < 5; $i++) {
-            $this->makeTag('Для теста ' . $i, CoatingTag::TYPE_GENERAL);
+        for ($i = 0; $i < 5; ++$i) {
+            $this->makeTag('Для теста '.$i, CoatingTag::TYPE_GENERAL);
         }
 
         $result = $this->finder->suggest('для теста', CoatingTag::TYPE_GENERAL, limit: 2);
@@ -116,6 +116,7 @@ final class CoatingTagFinderTest extends KernelTestCase
         $tag = new CoatingTag($title, $this->spec, $type);
         $this->repo->add($tag);
         $this->createdIds[] = $tag->getId();
+
         return $tag;
     }
 }

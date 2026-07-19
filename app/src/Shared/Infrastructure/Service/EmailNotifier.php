@@ -46,7 +46,6 @@ readonly class EmailNotifier implements NotifierInterface
 
     public function isSupportedChannel(Channel $channel): bool
     {
-        return $channel->getType() === ChannelType::EMAIL;
+        return ChannelType::EMAIL === $channel->getType();
     }
 }
-

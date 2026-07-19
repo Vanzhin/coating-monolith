@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
@@ -24,11 +24,11 @@ use Symfony\Component\Routing\Annotation\Route;
 class AddAction extends BaseController
 {
     public function __construct(
-        private readonly CommandBusInterface       $commandBus,
-        private readonly Validator                 $validator,
+        private readonly CommandBusInterface $commandBus,
+        private readonly Validator $validator,
         private readonly GeneralProposalInfoMapper $generalProposalInfoMapper,
-        private readonly CoatingsAdapter           $coatingsAdapter,
-        LoggerInterface                            $logger)
+        private readonly CoatingsAdapter $coatingsAdapter,
+        LoggerInterface $logger)
     {
         parent::__construct($logger);
     }
@@ -36,7 +36,7 @@ class AddAction extends BaseController
     public function __invoke(Request $request): Response
     {
         try {
-            $addItem = $request->query->get('add_item') === "1";
+            $addItem = '1' === $request->query->get('add_item');
             $coatings = $this->coatingsAdapter->getPagedCoatings();
             $data = [
                 'units' => GeneralProposalInfoUnit::values(),
@@ -46,7 +46,6 @@ class AddAction extends BaseController
                 'methods' => CoatingSystemApplicationMethod::values(),
             ];
             if ($request->isMethod(Request::METHOD_POST)) {
-
                 $inputData = $request->getPayload()->all();
                 $inputData['ownerId'] = $this->getUser()->getUlid();
                 $errors = $this->validator->validate($inputData,
@@ -58,7 +57,6 @@ class AddAction extends BaseController
                 $command = new CreateGeneralProposalInfoCommand($dto);
                 $result = $this->commandBus->execute($command);
                 if ($addItem) {
-
                     return $this->redirectToRoute('app_cabinet_proposals_general_proposal_update', ['id' => $result->id, 'add_item' => $addItem]);
                 }
                 $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));

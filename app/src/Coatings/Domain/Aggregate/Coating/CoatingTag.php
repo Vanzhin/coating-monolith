@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating;
 
@@ -25,11 +25,10 @@ class CoatingTag extends Aggregate
     private Collection $coatings;
 
     public function __construct(
-        string                  $title,
+        string $title,
         CoatingTagSpecification $specification,
-        ?string                 $type = null,
-    )
-    {
+        ?string $type = null,
+    ) {
         $this->id = UuidService::generate();
         $this->specification = $specification;
         $this->coatings = new ArrayCollection();
@@ -71,5 +70,4 @@ class CoatingTag extends Aggregate
             $this->coatings->add($coating);
         }
     }
-
 }

@@ -1,12 +1,11 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Factory;
 
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
-
 
 readonly class ManufacturerFactory
 {
@@ -18,5 +17,4 @@ readonly class ManufacturerFactory
     {
         return new Manufacturer($title, $this->manufacturerSpecification, $description);
     }
-
 }

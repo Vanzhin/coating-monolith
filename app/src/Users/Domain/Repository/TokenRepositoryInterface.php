@@ -17,5 +17,4 @@ interface TokenRepositoryInterface
     public function remove(Token $token): void;
 
     public function removeBySubject(string $subjectId): void;
-
 }

@@ -495,14 +495,11 @@
                     <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-building me-2"></i>Производители
                     </a>
-                    {# Химстойкость — справочники Substance + Note.
-                       Оценки (Assessment) редактируются in-context на странице
-                       конкретного покрытия, поэтому в шторке отдельного пункта не даём. #}
+                    {# Химстойкость — справочник веществ. Оценки (Assessment) и
+                       примечания редактируются in-context на странице конкретного
+                       покрытия, поэтому отдельных пунктов в шторке для них нет. #}
                     <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-droplet me-2"></i>Химстойкость — вещества
-                    </a>
-                    <a href="{{ path('app_cabinet_chemical_resistance_note_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-journal-text me-2"></i>Химстойкость — примечания
+                        <i class="bi bi-droplet me-2"></i>Химстойкость
                     </a>
                 {% endif %}
             </div>

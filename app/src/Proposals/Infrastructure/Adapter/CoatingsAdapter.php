@@ -21,7 +21,7 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
         $result = $this->coatingsApi->getPagedCoatings();
 
         $coatings = array_map(
-            fn(CoatingDTO $coating) => $this->toCoatingData($coating),
+            fn (CoatingDTO $coating) => $this->toCoatingData($coating),
             $result->coatings,
         );
 
@@ -62,7 +62,7 @@ readonly class CoatingsAdapter implements CoatingsServiceInterface
             applicationMinTemp: $dto->applicationMinTemp,
             dryToTouch: $this->firstPointMinutes($dto->dryToTouch),
             minRecoatingInterval: $this->firstPointMinutes($dto->minRecoatingInterval->default),
-            maxRecoatingInterval: $dto->maxRecoatingInterval !== null
+            maxRecoatingInterval: null !== $dto->maxRecoatingInterval
                 ? $this->firstPointMinutes($dto->maxRecoatingInterval->default)
                 : null,
             fullCure: $this->firstPointMinutes($dto->fullCure),

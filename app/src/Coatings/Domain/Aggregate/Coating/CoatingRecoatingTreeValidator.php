@@ -15,7 +15,7 @@ final readonly class CoatingRecoatingTreeValidator
     public function validate(RecoatingIntervalTree $tree): void
     {
         // 1. Проверяем корень. Он всегда должен иметь ключ 'default'
-        if ($tree->key !== 'default') {
+        if ('default' !== $tree->key) {
             throw new AppException("Корневой узел дерева интервалов должен иметь ключ 'default'.");
         }
 
@@ -27,17 +27,13 @@ final readonly class CoatingRecoatingTreeValidator
         }
 
         // Получаем списки эталонных значений из ваших Enum
-        $allowedEnvironments = array_map(static fn(EnvironmentType $env) => $env->value, EnvironmentType::cases());
-        $allowedBases = array_map(static fn(CoatingBase $base) => mb_strtolower($base->value, 'UTF-8'), CoatingBase::cases());
+        $allowedEnvironments = array_map(static fn (EnvironmentType $env) => $env->value, EnvironmentType::cases());
+        $allowedBases = array_map(static fn (CoatingBase $base) => mb_strtolower($base->value, 'UTF-8'), CoatingBase::cases());
 
         // 2. Если дети есть, проверяем 1-й уровень (Среды эксплуатации)
         foreach ($rootChildren as $envKey => $envNode) {
             if (!in_array($envKey, $allowedEnvironments, true)) {
-                throw new AppException(sprintf(
-                    "Невалидный тип среды '%s' в дереве интервалов. Разрешены только: %s",
-                    $envKey,
-                    implode(', ', $allowedEnvironments)
-                ));
+                throw new AppException(sprintf("Невалидный тип среды '%s' в дереве интервалов. Разрешены только: %s", $envKey, implode(', ', $allowedEnvironments)));
             }
 
             // Проверяем подкатегории внутри среды (2-й уровень — Основы последующего ЛКМ)
@@ -50,21 +46,12 @@ final readonly class CoatingRecoatingTreeValidator
             foreach ($envChildren as $baseKey => $baseNode) {
                 // 3. Проверяем ключ основы через эталонный список из Enum CoatingBase
                 if (!in_array($baseKey, $allowedBases, true)) {
-                    throw new AppException(sprintf(
-                        "Невалидный тип последующего покрытия '%s' для среды '%s'. Разрешены только: %s",
-                        $baseKey,
-                        $envKey,
-                        implode(', ', $allowedBases)
-                    ));
+                    throw new AppException(sprintf("Невалидный тип последующего покрытия '%s' для среды '%s'. Разрешены только: %s", $baseKey, $envKey, implode(', ', $allowedBases)));
                 }
 
                 // 4. Проверяем 3-й уровень (Лист основы должен быть финальным и не иметь детей)
                 if (!empty($baseNode->getChildren())) {
-                    throw new AppException(sprintf(
-                        "Узел основы ЛКМ '%s -> %s' является финальным и не может содержать вложенных элементов.",
-                        $envKey,
-                        $baseKey
-                    ));
+                    throw new AppException(sprintf("Узел основы ЛКМ '%s -> %s' является финальным и не может содержать вложенных элементов.", $envKey, $baseKey));
                 }
             }
         }

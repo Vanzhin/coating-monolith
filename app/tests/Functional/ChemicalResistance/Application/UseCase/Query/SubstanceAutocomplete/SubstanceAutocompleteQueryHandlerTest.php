@@ -1,12 +1,14 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete;
 
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\DTO\SubstanceDTO;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQuery;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -27,9 +29,9 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->handler       = $c->get(SubstanceAutocompleteQueryHandler::class);
+        $this->handler = $c->get(SubstanceAutocompleteQueryHandler::class);
         $this->substanceRepo = $c->get(SubstanceRepository::class);
-        $this->em            = $c->get(EntityManagerInterface::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -40,13 +42,13 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         try {
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -59,8 +61,8 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
     private function seedTestSubstance(string $canonicalName, ?string $cas, ?string $alias): Uuid
     {
         $id = Uuid::v4();
-        $casObj = $cas !== null ? CasNumber::fromString($cas) : null;
-        $aliasCollection = $alias !== null ? new StringCollection($alias) : new StringCollection();
+        $casObj = null !== $cas ? CasNumber::fromString($cas) : null;
+        $aliasCollection = null !== $alias ? new StringCollection($alias) : new StringCollection();
 
         $substance = new Substance(
             $id,
@@ -72,13 +74,14 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         $this->substanceRepo->add($substance);
         $this->createdSubstanceIds[] = $id;
         $this->em->clear();
+
         return $id;
     }
 
-    public function testFindsByRussianCanonicalPrefix(): void
+    public function test_finds_by_russian_canonical_prefix(): void
     {
         // Use a unique test substance to avoid conflicts with seed data
-        $this->seedTestSubstance('Вода-' . uniqid(), null, null);
+        $this->seedTestSubstance('Вода-'.uniqid(), null, null);
 
         $result = ($this->handler)(new SubstanceAutocompleteQuery('Вод', 10));
 
@@ -96,7 +99,7 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         self::assertTrue($found, 'Expected to find a substance with "вод" in canonical name.');
     }
 
-    public function testFindsByCasExact(): void
+    public function test_finds_by_cas_exact(): void
     {
         // Search for the known water CAS from seed data (if available)
         // Fallback to searching by alias if CAS isn't unique
@@ -110,7 +113,7 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
 
         $found = false;
         foreach ($result as $dto) {
-            if ($dto->cas === '7732-18-5') {
+            if ('7732-18-5' === $dto->cas) {
                 $found = true;
                 break;
             }
@@ -118,11 +121,11 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         self::assertTrue($found, 'Expected to find substance with CAS "7732-18-5".');
     }
 
-    public function testFindsByAliasPrefix(): void
+    public function test_finds_by_alias_prefix(): void
     {
         // Use a unique alias prefix
-        $uniqueAlias = 'Тестовый-Алиас-' . uniqid();
-        $this->seedTestSubstance('Основное-Название-' . uniqid(), null, $uniqueAlias);
+        $uniqueAlias = 'Тестовый-Алиас-'.uniqid();
+        $this->seedTestSubstance('Основное-Название-'.uniqid(), null, $uniqueAlias);
 
         // Query by first few characters of alias
         $aliasPrefix = mb_substr($uniqueAlias, 0, 10);
@@ -142,21 +145,21 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         self::assertTrue($found, "Expected to find substance with alias containing '{$aliasPrefix}'.");
     }
 
-    public function testEmptyQueryReturnsEmpty(): void
+    public function test_empty_query_returns_empty(): void
     {
         $result = ($this->handler)(new SubstanceAutocompleteQuery('', 10));
 
         self::assertEmpty($result, 'Empty query string should return empty array.');
     }
 
-    public function testWhitespaceOnlyQueryReturnsEmpty(): void
+    public function test_whitespace_only_query_returns_empty(): void
     {
         $result = ($this->handler)(new SubstanceAutocompleteQuery('   ', 10));
 
         self::assertEmpty($result, 'Whitespace-only query should return empty array.');
     }
 
-    public function testRespectsLimit(): void
+    public function test_respects_limit(): void
     {
         // Seed multiple substances
         $ids = [];
@@ -164,7 +167,7 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
             $id = Uuid::v4();
             $substance = new Substance(
                 $id,
-                'Вещество-' . $i,
+                'Вещество-'.$i,
                 null,
                 new StringCollection(),
                 self::getContainer()->get(SubstanceSpecification::class),

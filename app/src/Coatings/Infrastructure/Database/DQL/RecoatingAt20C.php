@@ -11,7 +11,7 @@ use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Query\TokenType;
 
 /**
- * DQL: RECOATING_AT_20C(cc.minRecoatingInterval)
+ * DQL: RECOATING_AT_20C(cc.minRecoatingInterval).
  *
  * Возвращает интервал перекрытия при +20 °C в минутах, интерполированный между
  * ближайшими точками серии `default`. Зеркалит домен (DryingTimeSeries::getPoint):
@@ -45,24 +45,24 @@ final class RecoatingAt20C extends FunctionNode
 
         return sprintf(
             'COALESCE('
-                . '(SELECT (pt->>%1$s)::int FROM jsonb_array_elements(%2$s->%3$s) pt '
-                . 'WHERE (pt->>%4$s)::int = 20 '
-                . 'AND pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 LIMIT 1), '
-                . '('
-                . 'SELECT low_v + (high_v - low_v) * (20 - low_t) / NULLIF(high_t - low_t, 0) '
-                . 'FROM '
-                . '(SELECT (pt->>%4$s)::int AS low_t, (pt->>%1$s)::int AS low_v '
-                . 'FROM jsonb_array_elements(%2$s->%3$s) pt '
-                . 'WHERE pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 '
-                . 'AND (pt->>%4$s)::int < 20 '
-                . 'ORDER BY (pt->>%4$s)::int DESC LIMIT 1) low, '
-                . '(SELECT (pt->>%4$s)::int AS high_t, (pt->>%1$s)::int AS high_v '
-                . 'FROM jsonb_array_elements(%2$s->%3$s) pt '
-                . 'WHERE pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 '
-                . 'AND (pt->>%4$s)::int > 20 '
-                . 'ORDER BY (pt->>%4$s)::int ASC LIMIT 1) high'
-                . ')'
-            . ')',
+                .'(SELECT (pt->>%1$s)::int FROM jsonb_array_elements(%2$s->%3$s) pt '
+                .'WHERE (pt->>%4$s)::int = 20 '
+                .'AND pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 LIMIT 1), '
+                .'('
+                .'SELECT low_v + (high_v - low_v) * (20 - low_t) / NULLIF(high_t - low_t, 0) '
+                .'FROM '
+                .'(SELECT (pt->>%4$s)::int AS low_t, (pt->>%1$s)::int AS low_v '
+                .'FROM jsonb_array_elements(%2$s->%3$s) pt '
+                .'WHERE pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 '
+                .'AND (pt->>%4$s)::int < 20 '
+                .'ORDER BY (pt->>%4$s)::int DESC LIMIT 1) low, '
+                .'(SELECT (pt->>%4$s)::int AS high_t, (pt->>%1$s)::int AS high_v '
+                .'FROM jsonb_array_elements(%2$s->%3$s) pt '
+                .'WHERE pt->>%1$s IS NOT NULL AND (pt->>%1$s)::int > 0 '
+                .'AND (pt->>%4$s)::int > 20 '
+                .'ORDER BY (pt->>%4$s)::int ASC LIMIT 1) high'
+                .')'
+            .')',
             "'time_in_minutes'",
             $field,
             "'default'",

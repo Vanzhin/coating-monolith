@@ -25,8 +25,8 @@ class GetPagedDocumentsAction extends AbstractController
     public function __invoke(Request $request): JsonResponse
     {
         $search = $request->query->get('search');
-        $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
-        $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
+        $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
+        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $filter = new DocumentFilter(
             $search,
             null,

@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingCompareMatrixBuilderTest extends TestCase
 {
-    public function testColumnsAreUnionAcrossSubjects(): void
+    public function test_columns_are_union_across_subjects(): void
     {
         $a = $this->coating(0, 20, dryToTouch: [$this->point(20, 60)]);
         $b = $this->coating(10, 30, dryToTouch: [$this->point(20, 90)]);
@@ -24,7 +24,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         self::assertSame([0, 10, 20, 30], $sections[0]['columns']);
     }
 
-    public function testDiffColumnDetectedWhenValuesMismatch(): void
+    public function test_diff_column_detected_when_values_mismatch(): void
     {
         $a = $this->coating(0, 30, dryToTouch: [$this->point(20, 60)]);
         $b = $this->coating(0, 30, dryToTouch: [$this->point(20, 90)]);
@@ -37,7 +37,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         self::assertArrayNotHasKey(0, $section['diffColumns']); // оба null
     }
 
-    public function testNoDiffWhenValuesMatch(): void
+    public function test_no_diff_when_values_match(): void
     {
         $a = $this->coating(0, 30, dryToTouch: [$this->point(20, 60)]);
         $b = $this->coating(0, 30, dryToTouch: [$this->point(20, 60)]);
@@ -48,7 +48,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         self::assertSame([], $section['diffColumns']);
     }
 
-    public function testMissingSubjectRowGetsNullCells(): void
+    public function test_missing_subject_row_gets_null_cells(): void
     {
         // a has dryToTouch, b doesn't → секция dryToTouch есть, у b всё null.
         $a = $this->coating(0, 30, dryToTouch: [$this->point(20, 60)]);
@@ -64,7 +64,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         self::assertArrayHasKey(20, $section['diffColumns']);
     }
 
-    public function testFullyEmptySectionSkipped(): void
+    public function test_fully_empty_section_skipped(): void
     {
         // Оба subject'а без fullCure → секция «Полное отверждение» не появляется.
         $a = $this->coating(0, 30, dryToTouch: [$this->point(20, 60)]);
@@ -75,12 +75,12 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         self::assertNull($this->findSection($sections, 'Полное отверждение'));
     }
 
-    public function testEmptySubjectsListReturnsEmpty(): void
+    public function test_empty_subjects_list_returns_empty(): void
     {
         self::assertSame([], $this->builder()->build([]));
     }
 
-    public function testEnvBaseBranchGetsOwnSection(): void
+    public function test_env_base_branch_gets_own_section(): void
     {
         $treeA = new RecoatingIntervalTreeDTO();
         $treeA->default = [$this->point(20, 240)];
@@ -113,6 +113,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
                 return $s;
             }
         }
+
         return null;
     }
 
@@ -130,6 +131,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         $c->fullCure = [];
         $c->minRecoatingInterval = $minRecoatingTree ?? new RecoatingIntervalTreeDTO();
         $c->maxRecoatingInterval = null;
+
         return $c;
     }
 
@@ -139,6 +141,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         $p->temperature_at = $tempAt;
         $p->time_in_minutes = $timeInMinutes;
         $p->is_calculated = false;
+
         return $p;
     }
 }

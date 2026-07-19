@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\UseCase\Command\CreateGeneralProposalInfo;
 
 use App\Proposals\Domain\Service\GeneralProposalInfoMaker;
@@ -12,8 +11,7 @@ readonly class CreateGeneralProposalInfoCommandHandler implements CommandHandler
 {
     public function __construct(
         private GeneralProposalInfoMaker $generalProposalInfoMaker,
-    )
-    {
+    ) {
     }
 
     public function __invoke(CreateGeneralProposalInfoCommand $command): CreateGeneralProposalInfoCommandResult

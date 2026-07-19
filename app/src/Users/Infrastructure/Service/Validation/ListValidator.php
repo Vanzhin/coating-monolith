@@ -6,7 +6,6 @@ namespace App\Users\Infrastructure\Service\Validation;
 
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Users\Domain\Service\Validation\ValidatorInterface;
-use Stringable;
 
 abstract class ListValidator implements ValidatorInterface
 {
@@ -17,9 +16,10 @@ abstract class ListValidator implements ValidatorInterface
         protected array $blacklistPatterns = [],
         protected bool $whitelistEnabled = true,
         protected bool $blacklistEnabled = true
-    ) {}
+    ) {
+    }
 
-    public function isValid(string|Stringable $value): bool
+    public function isValid(string|\Stringable $value): bool
     {
         try {
             $normalizedValue = $this->normalizeValue($value);
@@ -40,17 +40,18 @@ abstract class ListValidator implements ValidatorInterface
         }
     }
 
-    public function supports(string|Stringable $value): bool
+    public function supports(string|\Stringable $value): bool
     {
         try {
             $normalizedValue = $this->normalizeValue($value);
+
             return $this->isSupportedNormalized($normalizedValue);
         } catch (\InvalidArgumentException) {
             return false;
         }
     }
 
-    protected function validate(string|Stringable $value): void
+    protected function validate(string|\Stringable $value): void
     {
         if (!$this->isValid($value)) {
             throw new AppException($this->getValidationErrorMessage($value));
@@ -101,20 +102,20 @@ abstract class ListValidator implements ValidatorInterface
         return true;
     }
 
-    protected function normalizeValue(string|Stringable $value): string
+    protected function normalizeValue(string|\Stringable $value): string
     {
-        return (string)$value;
+        return (string) $value;
     }
 
-    protected function getValidationErrorMessage(string|Stringable $value): string
+    protected function getValidationErrorMessage(string|\Stringable $value): string
     {
-        $stringValue = (string)$value;
+        $stringValue = (string) $value;
 
-        if ($this->blacklistEnabled && $this->isInBlacklist((string)$value)) {
+        if ($this->blacklistEnabled && $this->isInBlacklist((string) $value)) {
             return sprintf('Value "%s" is in blacklist', $stringValue);
         }
 
-        if ($this->whitelistEnabled && !$this->isInWhitelist((string)$value)) {
+        if ($this->whitelistEnabled && !$this->isInWhitelist((string) $value)) {
             return sprintf('Value "%s" is not in whitelist', $stringValue);
         }
 
@@ -122,7 +123,7 @@ abstract class ListValidator implements ValidatorInterface
     }
 
     /**
-     * Вспомогательные методы для работы с паттернами
+     * Вспомогательные методы для работы с паттернами.
      */
     protected function convertToPattern(string $value): string
     {

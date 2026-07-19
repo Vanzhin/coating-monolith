@@ -10,47 +10,47 @@ use PHPUnit\Framework\TestCase;
 
 final class SearchQueryTest extends TestCase
 {
-    public function testTryFromStringReturnsNullForNullInput(): void
+    public function test_try_from_string_returns_null_for_null_input(): void
     {
         $this->assertNull(SearchQuery::tryFromString(null));
     }
 
-    public function testTryFromStringReturnsNullForEmptyOrWhitespace(): void
+    public function test_try_from_string_returns_null_for_empty_or_whitespace(): void
     {
         $this->assertNull(SearchQuery::tryFromString(''));
         $this->assertNull(SearchQuery::tryFromString('   '));
     }
 
-    public function testTryFromStringTrimsValue(): void
+    public function test_try_from_string_trims_value(): void
     {
         $query = SearchQuery::tryFromString('  эпоксидная   ');
         $this->assertNotNull($query);
         $this->assertSame('эпоксидная', $query->value);
     }
 
-    public function testShortQueryThrows(): void
+    public function test_short_query_throws(): void
     {
         $this->expectException(AppException::class);
         SearchQuery::tryFromString('ва');
     }
 
-    public function testTooLongQueryThrows(): void
+    public function test_too_long_query_throws(): void
     {
         $this->expectException(AppException::class);
         SearchQuery::tryFromString(str_repeat('а', 51));
     }
 
-    public function testHasSingleWordTrueForOneToken(): void
+    public function test_has_single_word_true_for_one_token(): void
     {
         $this->assertTrue(SearchQuery::tryFromString('эпоксидная')->hasSingleWord());
     }
 
-    public function testHasSingleWordFalseForMultipleTokens(): void
+    public function test_has_single_word_false_for_multiple_tokens(): void
     {
         $this->assertFalse(SearchQuery::tryFromString('быстросох эпоксидн')->hasSingleWord());
     }
 
-    public function testHasSingleWordFalseWhenSeparatorSplits(): void
+    public function test_has_single_word_false_when_separator_splits(): void
     {
         // dash/dot/semicolon тоже разбивают: те же правила что и tsquery-builder.
         $this->assertFalse(SearchQuery::tryFromString('a-b')->hasSingleWord());
@@ -58,7 +58,7 @@ final class SearchQueryTest extends TestCase
         $this->assertFalse(SearchQuery::tryFromString('a; b')->hasSingleWord());
     }
 
-    public function testWordsReturnsList(): void
+    public function test_words_returns_list(): void
     {
         $q = SearchQuery::tryFromString('быстросох эпоксидн');
         $this->assertSame(['быстросох', 'эпоксидн'], $q->words());

@@ -27,18 +27,14 @@ final readonly class ObjectComparator
         $class = $objects[0]::class;
         foreach ($objects as $obj) {
             if ($obj::class !== $class) {
-                throw new AppException(sprintf(
-                    'Все объекты должны быть одного класса; получены %s и %s.',
-                    $class,
-                    $obj::class,
-                ));
+                throw new AppException(sprintf('Все объекты должны быть одного класса; получены %s и %s.', $class, $obj::class));
             }
         }
 
         $rows = [];
         foreach ($config->fields as $field) {
             $values = array_map(
-                fn(object $obj) => $this->propertyAccessor->getValue($obj, $field),
+                fn (object $obj) => $this->propertyAccessor->getValue($obj, $field),
                 $objects,
             );
             // SORT_REGULAR глубоко сравнивает VO/массивы по значениям свойств.

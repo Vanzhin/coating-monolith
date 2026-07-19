@@ -44,8 +44,7 @@ class AppExceptionHtmlListener
     private function acceptsHtml(Request $request): bool
     {
         $accept = $request->headers->get('Accept', 'text/html');
+
         return str_contains($accept, 'text/html');
     }
 }
-
-

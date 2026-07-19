@@ -34,7 +34,7 @@ class Mailer
             ->htmlTemplate('emails/login_link.html.twig')
             ->context([
                 'appName' => $this->appName,
-                'uri' => $uri
+                'uri' => $uri,
             ]);
         $this->mailer->send($email);
     }
@@ -49,7 +49,7 @@ class Mailer
             ->context([
                 'appName' => $this->appName,
                 'code' => $code,
-                'time_to_use' => $timeToUse
+                'time_to_use' => $timeToUse,
             ]);
         $this->mailer->send($email);
     }
@@ -59,7 +59,7 @@ class Mailer
         $email = (new TemplatedEmail())
             ->from(new Address($this->defaultFromEmail, $this->defaultFromName))
             ->to($to)
-            ->subject($subject . ' | ' . $this->appName)
+            ->subject($subject.' | '.$this->appName)
             ->htmlTemplate('emails/notification.html.twig')
             ->context([
                 'appName' => $this->appName,

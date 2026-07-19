@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\UseCase\Command\CreateProposalDocumentTemplate;
 
 use App\Proposals\Domain\Service\GeneralProposalInfoMaker;
@@ -12,13 +11,12 @@ readonly class CreateProposalDocumentTemplateCommandHandler implements CommandHa
 {
     public function __construct(
         private GeneralProposalInfoMaker $generalProposalInfoMaker,
-    )
-    {
+    ) {
     }
 
     public function __invoke(CreateProposalDocumentTemplateCommand $command): CreateProposalDocumentTemplateCommandResult
     {
-       //todo надо ли это?
+        // todo надо ли это?
 
         return new CreateProposalDocumentTemplateCommandResult(
             $generalProposalInfo->getId()

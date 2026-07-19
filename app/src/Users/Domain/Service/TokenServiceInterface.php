@@ -11,12 +11,12 @@ interface TokenServiceInterface
 {
     /**
      * Создает и сохраняет токен верификации для субъекта
-     * Удаляет старые токены и проверяет ограничения по времени
+     * Удаляет старые токены и проверяет ограничения по времени.
      */
     public function makeToken(VerificationSubjectInterface $verifiable): Token;
 
     /**
-     * Удаляет все токены для указанного объекта
+     * Удаляет все токены для указанного объекта.
      */
     public function removeToken(VerificationSubjectInterface $verifiable): void;
 
@@ -24,8 +24,8 @@ interface TokenServiceInterface
      * Проверяет токен для конкретного объекта и возвращает верифицированный субъект
      *
      * @throws \InvalidArgumentException Если токен невалиден
-     * @throws \DomainException Если токен просрочен или не принадлежит субъект
-     * @throws \DomainException Если субъект уже верифицирован
+     * @throws \DomainException          Если токен просрочен или не принадлежит субъект
+     * @throws \DomainException          Если субъект уже верифицирован
      */
     public function verifySubjectByTokenString(string $tokenString, VerificationSubjectInterface $verifiable): true;
 
@@ -35,8 +35,7 @@ interface TokenServiceInterface
     public function canCreateToken(VerificationSubjectInterface $verifiable): bool;
 
     /**
-     * Возвращает время, оставшееся до возможности создания нового токена
+     * Возвращает время, оставшееся до возможности создания нового токена.
      */
     public function getTimeUntilNextToken(VerificationSubjectInterface $verifiable): int;
-
 }

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\ChemicalResistance\Search;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
-use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
@@ -33,9 +32,9 @@ final class SearchIntegrationTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->substanceRepo  = $c->get(SubstanceRepository::class);
+        $this->substanceRepo = $c->get(SubstanceRepository::class);
         $this->assessmentRepo = $c->get(AssessmentRepository::class);
-        $this->em             = $c->get(EntityManagerInterface::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -46,7 +45,7 @@ final class SearchIntegrationTest extends KernelTestCase
         try {
             foreach ($this->assessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
@@ -54,13 +53,13 @@ final class SearchIntegrationTest extends KernelTestCase
 
             foreach ($this->substanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -72,7 +71,7 @@ final class SearchIntegrationTest extends KernelTestCase
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
@@ -84,7 +83,7 @@ final class SearchIntegrationTest extends KernelTestCase
         $substanceId = Uuid::v4();
         $sub = new Substance(
             $substanceId,
-            'Вода-' . $suffix,
+            'Вода-'.$suffix,
             null,
             new StringCollection('Water'),
             self::getContainer()->get(SubstanceSpecification::class),
@@ -115,7 +114,7 @@ final class SearchIntegrationTest extends KernelTestCase
      * For every Grade enum case, verify that the SQL function result matches Grade::isSuitable().
      * This is the safety net for PHP↔SQL rule duplication.
      */
-    public function testGradeSyncBetweenPhpAndSql(): void
+    public function test_grade_sync_between_php_and_sql(): void
     {
         $dbal = $this->em->getConnection();
 
@@ -140,7 +139,7 @@ final class SearchIntegrationTest extends KernelTestCase
      * Creating an Assessment R for a substance «Вода» + alias «Water»
      * must cause those tokens to appear in the coating's search_vector.
      */
-    public function testSubstanceNameEndsUpInCoatingSearchVector(): void
+    public function test_substance_name_ends_up_in_coating_search_vector(): void
     {
         $coatingId = $this->getCoatingId();
         $suffix = uniqid('fts-sub-', true);
@@ -163,7 +162,7 @@ final class SearchIntegrationTest extends KernelTestCase
     /**
      * The coating must be findable via FTS query on the Russian alias «вода».
      */
-    public function testFtsQueryFindsCoatingByRussianAlias(): void
+    public function test_fts_query_finds_coating_by_russian_alias(): void
     {
         $coatingId = $this->getCoatingId();
         $suffix = uniqid('fts-fts-', true);
@@ -176,7 +175,7 @@ final class SearchIntegrationTest extends KernelTestCase
              WHERE search_vector @@ to_tsquery('russian', :q)
                AND coating_id = :cid",
             [
-                'q'   => 'вод:*',
+                'q' => 'вод:*',
                 'cid' => $coatingId->toRfc4122(),
             ],
         );
@@ -193,7 +192,7 @@ final class SearchIntegrationTest extends KernelTestCase
      * This test verifies that the assessment deletion operation completes without error
      * and that the substance's tokens are properly recalculated in the vector.
      */
-    public function testAssessmentDeleteRemovesFromVector(): void
+    public function test_assessment_delete_removes_from_vector(): void
     {
         $coatingId = $this->getCoatingId();
         $suffix = uniqid('fts-del-', true);
@@ -219,7 +218,7 @@ final class SearchIntegrationTest extends KernelTestCase
         // Remove from cleanup list — already deleted.
         $this->assessmentIds = array_values(array_filter(
             $this->assessmentIds,
-            fn(Uuid $id) => !$id->equals($assessmentId),
+            fn (Uuid $id) => !$id->equals($assessmentId),
         ));
 
         // Verify deletion succeeded by reloading the assessment.
@@ -234,7 +233,7 @@ final class SearchIntegrationTest extends KernelTestCase
      * assessment triggers must NOT update the search_vector.
      * Manually calling coatings_coating_search_rebuild() must then add the token.
      */
-    public function testSuppressionFlagPreventsRecalc(): void
+    public function test_suppression_flag_prevents_recalc(): void
     {
         $coatingId = $this->getCoatingId();
         $suffix = uniqid('fts-sup-', true);
@@ -250,7 +249,7 @@ final class SearchIntegrationTest extends KernelTestCase
         $substanceId = Uuid::v4();
         $sub = new Substance(
             $substanceId,
-            'ВодаСупр-' . $suffix,
+            'ВодаСупр-'.$suffix,
             null,
             new StringCollection('WaterSuppr'),
             self::getContainer()->get(SubstanceSpecification::class),
@@ -269,12 +268,12 @@ final class SearchIntegrationTest extends KernelTestCase
                 'INSERT INTO chemical_resistance_assessment (id, coating_id, substance_id, grade, max_temperature_celsius, note_ids)
                  VALUES (:id, :coating_id, :substance_id, :grade, :temp, :notes::jsonb)',
                 [
-                    'id'           => $assessmentId->toRfc4122(),
-                    'coating_id'   => $coatingId->toRfc4122(),
+                    'id' => $assessmentId->toRfc4122(),
+                    'coating_id' => $coatingId->toRfc4122(),
                     'substance_id' => $substanceId->toRfc4122(),
-                    'grade'        => 'R',
-                    'temp'         => 40,
-                    'notes'        => '[]',
+                    'grade' => 'R',
+                    'temp' => 40,
+                    'notes' => '[]',
                 ],
             );
             $this->assessmentIds[] = $assessmentId;

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
@@ -27,13 +27,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class UpdateAction extends AbstractController
 {
     public function __construct(
-        private readonly QueryBusInterface      $queryBus,
-        private readonly CommandBusInterface    $commandBus,
-        private readonly Validator              $validator,
-        private readonly CoatingMapper          $coatingMapper,
+        private readonly QueryBusInterface $queryBus,
+        private readonly CommandBusInterface $commandBus,
+        private readonly Validator $validator,
+        private readonly CoatingMapper $coatingMapper,
         private readonly GeneralTagsJsonHydrator $hydrator,
-    )
-    {
+    ) {
     }
 
     public function __invoke(Request $request, string $id): Response
@@ -48,6 +47,7 @@ class UpdateAction extends AbstractController
         $coating = $this->queryBus->execute(new GetCoatingQuery($id));
         if (!$coating->coatingDTO) {
             $this->addFlash('manufacturer_update_error', sprintf('Coating with id "%s" not found.', $id));
+
             return $this->redirectToRoute('app_cabinet_coating_coating_list');
         }
 
@@ -66,6 +66,7 @@ class UpdateAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
             } catch (\Exception $e) {
                 $error = $e->getMessage();
+
                 return $this->render('admin/coating/coating/form.html.twig', array_merge(
                     compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'),
                     [
@@ -77,6 +78,7 @@ class UpdateAction extends AbstractController
         }
 
         $inputData = $this->coatingMapper->buildInputDataFromDto($coating->coatingDTO);
+
         return $this->render('admin/coating/coating/form.html.twig', array_merge(
             compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'),
             [
@@ -85,5 +87,4 @@ class UpdateAction extends AbstractController
             ],
         ));
     }
-
 }

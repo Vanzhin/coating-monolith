@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Repository;
 
@@ -43,9 +43,10 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
 
     public function findByIds(StringCollection $ids): array
     {
-        if ($ids->count() === 0) {
+        if (0 === $ids->count()) {
             return [];
         }
+
         return $this->findBy(['id' => $ids->getList()]);
     }
 
@@ -64,8 +65,8 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
         }
         foreach ($filter->types as $key => $type) {
             if ($type) {
-                $qb->orWhere($qb->expr()->eq('ct.type', ':type' . $key))
-                    ->setParameter('type' . $key, $type);
+                $qb->orWhere($qb->expr()->eq('ct.type', ':type'.$key))
+                    ->setParameter('type'.$key, $type);
             }
             if (is_null($type)) {
                 $qb->orWhere($qb->expr()->isNull('ct.type'));
@@ -75,7 +76,7 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
             $qb->setMaxResults($filter->pager->getLimit());
             $qb->setFirstResult($filter->pager->getOffset());
         }
-//        dd($qb->getQuery());
+        //        dd($qb->getQuery());
         $paginator = new Paginator($qb->getQuery());
 
         return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());

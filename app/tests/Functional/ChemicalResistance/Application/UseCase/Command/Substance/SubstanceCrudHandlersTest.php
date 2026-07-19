@@ -1,8 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Command\Substance;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommand;
@@ -12,6 +13,7 @@ use App\ChemicalResistance\Application\UseCase\Command\Substance\UpdateSubstance
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
@@ -39,11 +41,11 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->create    = $c->get(CreateSubstanceCommandHandler::class);
-        $this->update    = $c->get(UpdateSubstanceCommandHandler::class);
-        $this->delete    = $c->get(DeleteSubstanceCommandHandler::class);
+        $this->create = $c->get(CreateSubstanceCommandHandler::class);
+        $this->update = $c->get(UpdateSubstanceCommandHandler::class);
+        $this->delete = $c->get(DeleteSubstanceCommandHandler::class);
         $this->substances = $c->get(SubstanceRepository::class);
-        $this->em        = $c->get(EntityManagerInterface::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -54,31 +56,31 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
     }
 
-    public function testCreateSubstance(): void
+    public function test_create_substance(): void
     {
         $suffix = uniqid('sub-create-', true);
         $id = ($this->create)(new CreateSubstanceCommand(
-            'Вещество-' . $suffix,
+            'Вещество-'.$suffix,
             null,
-            ['alias-a-' . $suffix, 'alias-b-' . $suffix],
+            ['alias-a-'.$suffix, 'alias-b-'.$suffix],
         ));
         $uuid = Uuid::fromString($id);
         $this->createdSubstanceIds[] = $uuid;
@@ -86,16 +88,16 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $this->em->clear();
         $loaded = $this->substances->find($uuid);
         self::assertNotNull($loaded);
-        self::assertSame('Вещество-' . $suffix, $loaded->getCanonicalName());
+        self::assertSame('Вещество-'.$suffix, $loaded->getCanonicalName());
         self::assertNull($loaded->getCas());
         self::assertCount(2, $loaded->getAliases()->getList());
     }
 
-    public function testUpdateSubstance(): void
+    public function test_update_substance(): void
     {
         $suffix = uniqid('sub-update-', true);
         $id = ($this->create)(new CreateSubstanceCommand(
-            'Вещество-' . $suffix,
+            'Вещество-'.$suffix,
             null,
             [],
         ));
@@ -104,24 +106,24 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
 
         ($this->update)(new UpdateSubstanceCommand(
             $id,
-            'Обновлённое-' . $suffix,
+            'Обновлённое-'.$suffix,
             null,
-            ['новый-псевдоним-' . $suffix],
+            ['новый-псевдоним-'.$suffix],
         ));
 
         $this->em->clear();
         $updated = $this->substances->find($uuid);
         self::assertNotNull($updated);
-        self::assertSame('Обновлённое-' . $suffix, $updated->getCanonicalName());
+        self::assertSame('Обновлённое-'.$suffix, $updated->getCanonicalName());
         self::assertNull($updated->getCas());
         self::assertCount(1, $updated->getAliases()->getList());
     }
 
-    public function testDeleteSubstance(): void
+    public function test_delete_substance(): void
     {
         $suffix = uniqid('sub-delete-', true);
         $id = ($this->create)(new CreateSubstanceCommand(
-            'Вещество-del-' . $suffix,
+            'Вещество-del-'.$suffix,
             null,
             [],
         ));
@@ -136,13 +138,13 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $this->createdSubstanceIds = [];
     }
 
-    public function testDeleteSubstanceBlockedByAssessments(): void
+    public function test_delete_substance_blocked_by_assessments(): void
     {
         $coatingIdRaw = $this->em
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($coatingIdRaw === false || $coatingIdRaw === null || $coatingIdRaw === '') {
+        if (false === $coatingIdRaw || null === $coatingIdRaw || '' === $coatingIdRaw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
@@ -150,7 +152,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $suffix = uniqid('sub-fk-', true);
 
         $id = ($this->create)(new CreateSubstanceCommand(
-            'ВеществоFK-' . $suffix,
+            'ВеществоFK-'.$suffix,
             null,
             [],
         ));

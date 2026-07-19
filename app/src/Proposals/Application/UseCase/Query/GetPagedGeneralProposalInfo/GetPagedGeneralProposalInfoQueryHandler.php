@@ -13,9 +13,8 @@ readonly class GetPagedGeneralProposalInfoQueryHandler implements QueryHandlerIn
 {
     public function __construct(
         private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-        private GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer
-    )
-    {
+        private GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer
+    ) {
     }
 
     public function __invoke(GetPagedGeneralProposalInfoQuery $query): GetPagedGeneralProposalInfoQueryResult

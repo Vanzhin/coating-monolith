@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Users\Domain\Entity;
 
 use App\Shared\Domain\Aggregate\Aggregate;
-use App\Users\Domain\Entity\ValueObject\Email;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\Service\UuidService;
+use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Event\UserCreatedEvent;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\Common\Collections\ArrayCollection;

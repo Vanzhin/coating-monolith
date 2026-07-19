@@ -27,7 +27,7 @@ final class ChannelVerificationGateTest extends WebTestCase
         parent::setUp();
         $this->client = static::createClient();
         $this->em = $this->client->getContainer()->get(EntityManagerInterface::class);
-        $this->userEmail = 'gate_test_' . uniqid('', true) . '@example.com';
+        $this->userEmail = 'gate_test_'.uniqid('', true).'@example.com';
     }
 
     protected function tearDown(): void
@@ -36,17 +36,17 @@ final class ChannelVerificationGateTest extends WebTestCase
         $em->clear();
         try {
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if ($user !== null) {
+            if (null !== $user) {
                 $em->remove($user);
                 $em->flush();
             }
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         parent::tearDown();
     }
 
-    public function testAnonymousIsRedirectedToLoginByFirewall(): void
+    public function test_anonymous_is_redirected_to_login_by_firewall(): void
     {
         $this->client->request('GET', '/cabinet/coating/coating/list');
 
@@ -55,7 +55,7 @@ final class ChannelVerificationGateTest extends WebTestCase
         self::assertStringContainsString('/login', (string) $location, 'Anonymous должен попасть на /login, а не на verification');
     }
 
-    public function testInactiveUserIsRedirectedToVerification(): void
+    public function test_inactive_user_is_redirected_to_verification(): void
     {
         $user = $this->createUser(active: false);
         $this->client->loginUser($user);
@@ -65,7 +65,7 @@ final class ChannelVerificationGateTest extends WebTestCase
         self::assertResponseRedirects('/user/channel/verification');
     }
 
-    public function testGateDoesNotRedirectAwayFromVerificationPage(): void
+    public function test_gate_does_not_redirect_away_from_verification_page(): void
     {
         // Цель теста — проверить именно ChannelVerificationGate (whitelist), а не
         // ChannelVerificationAction. Гейт ОБЯЗАН НЕ редиректить inactive юзера на
@@ -84,7 +84,7 @@ final class ChannelVerificationGateTest extends WebTestCase
         );
     }
 
-    public function testActiveUserCanAccessProtectedRoute(): void
+    public function test_active_user_can_access_protected_route(): void
     {
         $user = $this->createUser(active: true);
         $this->client->loginUser($user);
@@ -106,6 +106,7 @@ final class ChannelVerificationGateTest extends WebTestCase
         }
         $this->em->persist($user);
         $this->em->flush();
+
         return $user;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Aggregate\Coating;
@@ -21,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingTest extends TestCase
 {
-    public function testMinRecoatingForFallsBackToRootDefaultWhenNoBranches(): void
+    public function test_min_recoating_for_falls_back_to_root_default_when_no_branches(): void
     {
         $globalDefault = new DryingTimeSeries(new TimeAtTemperature(20, 14 * 24 * 60));
         $coating = $this->makeCoating(
@@ -34,11 +35,11 @@ final class CoatingTest extends TestCase
         $this->assertSame($globalDefault, $series);
     }
 
-    public function testMinRecoatingForReturnsTopcoatLeafWhenPresent(): void
+    public function test_min_recoating_for_returns_topcoat_leaf_when_present(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 30));
-        $epDef   = new DryingTimeSeries(new TimeAtTemperature(20, 15));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 30));
+        $epDef = new DryingTimeSeries(new TimeAtTemperature(20, 15));
         $min = new RecoatingIntervalTree(
             $rootDef,
             'default',
@@ -59,10 +60,10 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testMinRecoatingForUsesEnvDefaultWhenTopcoatMissing(): void
+    public function test_min_recoating_for_uses_env_default_when_topcoat_missing(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 30));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 30));
         $min = new RecoatingIntervalTree(
             $rootDef,
             'default',
@@ -80,7 +81,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testMinRecoatingPointAtAppliesGetPointToFoundSeries(): void
+    public function test_min_recoating_point_at_applies_get_point_to_found_series(): void
     {
         $epSeries = new DryingTimeSeries(
             new TimeAtTemperature(20, 30),
@@ -105,7 +106,7 @@ final class CoatingTest extends TestCase
         $this->assertSame(30, $point->timeInMinutes);
     }
 
-    public function testMaxRecoatingForReturnsNullWhenMaxIsAbsent(): void
+    public function test_max_recoating_for_returns_null_when_max_is_absent(): void
     {
         $coating = $this->makeCoating(
             min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
@@ -117,10 +118,10 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testMaxRecoatingForUsesEnvDefaultWhenTopcoatMissing(): void
+    public function test_max_recoating_for_uses_env_default_when_topcoat_missing(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 14 * 24 * 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 7  * 24 * 60));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 7 * 24 * 60));
         $max = new RecoatingIntervalTree(
             $rootDef,
             'default',
@@ -136,11 +137,11 @@ final class CoatingTest extends TestCase
         $this->assertSame($atmDef, $series, 'EP не задан → возвращаем дефолт среды');
     }
 
-    public function testMaxRecoatingForReturnsTopcoatLeafWhenPresent(): void
+    public function test_max_recoating_for_returns_topcoat_leaf_when_present(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 14 * 24 * 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 7  * 24 * 60));
-        $epDef   = new DryingTimeSeries(new TimeAtTemperature(20, 30 * 24 * 60));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 7 * 24 * 60));
+        $epDef = new DryingTimeSeries(new TimeAtTemperature(20, 30 * 24 * 60));
         $max = new RecoatingIntervalTree(
             $rootDef,
             'default',
@@ -161,10 +162,10 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testMaxRecoatingForFallsBackToRootWhenEnvMissing(): void
+    public function test_max_recoating_for_falls_back_to_root_when_env_missing(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 14 * 24 * 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 7  * 24 * 60));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 7 * 24 * 60));
         $max = new RecoatingIntervalTree(
             $rootDef,
             'default',
@@ -182,7 +183,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testMaxRecoatingPointAtAppliesGetPointToFoundSeries(): void
+    public function test_max_recoating_point_at_applies_get_point_to_found_series(): void
     {
         $epSeries = new DryingTimeSeries(
             new TimeAtTemperature(20, 30 * 24 * 60),
@@ -207,7 +208,7 @@ final class CoatingTest extends TestCase
         $this->assertSame(30 * 24 * 60, $point->timeInMinutes);
     }
 
-    public function testMaxRecoatingPointAtReturnsNullWhenMaxIsAbsent(): void
+    public function test_max_recoating_point_at_returns_null_when_max_is_absent(): void
     {
         $coating = $this->makeCoating(
             min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
@@ -219,7 +220,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testDefaultsDryingMaxTempTo50(): void
+    public function test_defaults_drying_max_temp_to50(): void
     {
         $coating = $this->makeCoating(
             min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
@@ -228,7 +229,7 @@ final class CoatingTest extends TestCase
         $this->assertSame(50, $coating->getDryingMaxTemp());
     }
 
-    public function testRejectsApplicationMinGreaterOrEqualToDryingMax(): void
+    public function test_rejects_application_min_greater_or_equal_to_drying_max(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/строго меньше/');
@@ -240,7 +241,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testRejectsDryToTouchPointBelowApplicationMin(): void
+    public function test_rejects_dry_to_touch_point_below_application_min(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
@@ -253,7 +254,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testRejectsRecoatingTreePointAboveDryingMax(): void
+    public function test_rejects_recoating_tree_point_above_drying_max(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
@@ -265,7 +266,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testWideningRangeBeforeAddingHigherPointSucceeds(): void
+    public function test_widening_range_before_adding_higher_point_succeeds(): void
     {
         $coating = $this->makeCoating(
             min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
@@ -285,7 +286,7 @@ final class CoatingTest extends TestCase
         $this->assertSame(80, $coating->getDryingMaxTemp());
     }
 
-    public function testAddingHigherPointBeforeWideningRangeThrows(): void
+    public function test_adding_higher_point_before_widening_range_throws(): void
     {
         $coating = $this->makeCoating(
             min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
@@ -302,7 +303,7 @@ final class CoatingTest extends TestCase
         );
     }
 
-    public function testRejectsRecoatingNestedBranchPointOutsideRange(): void
+    public function test_rejects_recoating_nested_branch_point_outside_range(): void
     {
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/вне допустимого диапазона/');

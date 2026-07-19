@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Application\DTO\GeneralProposalInfoItem;
 
@@ -39,5 +39,4 @@ class GeneralProposalInfoItemDTOTransformer
 
         return $generalProposalInfoItemDTOs;
     }
-
 }

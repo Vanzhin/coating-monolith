@@ -12,9 +12,8 @@ readonly class GetGeneralProposalInfoQueryHandler implements QueryHandlerInterfa
 {
     public function __construct(
         private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-        private GeneralProposalInfoDTOTransformer      $generalProposalInfoDTOTransformer
-    )
-    {
+        private GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer
+    ) {
     }
 
     public function __invoke(GetGeneralProposalInfoQuery $query): GetGeneralProposalInfoQueryResult

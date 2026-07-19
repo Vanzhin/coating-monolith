@@ -68,6 +68,7 @@ final class CreateUser extends Command
             $this->commandBus->execute(new CreateUserCommand($email, $password));
         } catch (AppException $e) {
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
 

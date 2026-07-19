@@ -10,8 +10,8 @@ return [
                     'filter' => [
                         'lowercase',
                         'russian_stop',
-                        'russian_stemmer'
-                    ]
+                        'russian_stemmer',
+                    ],
                 ],
                 'custom_en' => [
                     'type' => 'custom',
@@ -19,41 +19,41 @@ return [
                     'filter' => [
                         'lowercase',
                         'english_stop',
-                        'english_stemmer'
-                    ]
+                        'english_stemmer',
+                    ],
                 ],
                 'number_extractor' => [
                     'type' => 'custom',
                     'tokenizer' => 'standard',
                     'filter' => [
-                        'number_normalizer'
-                    ]
-                ]
+                        'number_normalizer',
+                    ],
+                ],
             ],
             'filter' => [
                 'russian_stop' => [
                     'type' => 'stop',
-                    'stopwords' => '_russian_'
+                    'stopwords' => '_russian_',
                 ],
                 'english_stop' => [
                     'type' => 'stop',
-                    'stopwords' => '_english_'
+                    'stopwords' => '_english_',
                 ],
                 'russian_stemmer' => [
                     'type' => 'stemmer',
-                    'language' => 'russian'
+                    'language' => 'russian',
                 ],
                 'english_stemmer' => [
                     'type' => 'stemmer',
-                    'language' => 'english'
+                    'language' => 'english',
                 ],
                 'number_normalizer' => [
                     'type' => 'pattern_replace',
                     'pattern' => '[^0-9.]',
-                    'replacement' => ''
-                ]
-            ]
-        ]
+                    'replacement' => '',
+                ],
+            ],
+        ],
     ],
     'mappings' => [
         'properties' => [
@@ -66,17 +66,17 @@ return [
                 'fields' => [
                     'english' => [
                         'type' => 'text',
-                        'analyzer' => 'custom_en'
+                        'analyzer' => 'custom_en',
                     ],
                     'exact' => [
                         'type' => 'keyword',
-                        'ignore_above' => 512
+                        'ignore_above' => 512,
                     ],
                     'stemmed' => [
                         'type' => 'text',
-                        'analyzer' => 'standard'
-                    ]
-                ]
+                        'analyzer' => 'standard',
+                    ],
+                ],
             ],
             'title' => [
                 'type' => 'text',
@@ -84,20 +84,20 @@ return [
                 'fields' => [
                     'english' => [
                         'type' => 'text',
-                        'analyzer' => 'custom_en'
+                        'analyzer' => 'custom_en',
                     ],
                     'exact' => [
                         'type' => 'keyword',
                         'ignore_above' => 512,
-                        'doc_values' => true
-                    ]
-                ]
+                        'doc_values' => true,
+                    ],
+                ],
             ],
             'url' => [
                 'type' => 'keyword',
                 'null_value' => null,
                 'ignore_above' => 2048,
-                'doc_values' => true
+                'doc_values' => true,
             ],
             'products' => [
                 'type' => 'nested',
@@ -108,25 +108,25 @@ return [
                         'fields' => [
                             'english' => [
                                 'type' => 'text',
-                                'analyzer' => 'custom_en'
+                                'analyzer' => 'custom_en',
                             ],
                             'exact' => [
                                 'type' => 'keyword',
                                 'ignore_above' => 512,
-                                'doc_values' => true
+                                'doc_values' => true,
                             ],
                             'normalized' => [
                                 'type' => 'text',
                                 'analyzer' => 'number_extractor',
-                                'fielddata' => true
-                            ]
-                        ]
+                                'fielddata' => true,
+                            ],
+                        ],
                     ],
                     'product_id' => [
                         'type' => 'keyword',
                         'ignore_above' => 36,
                         'doc_values' => true,
-                        'null_value' => 'NULL'
+                        'null_value' => 'NULL',
                     ],
                 ],
             ],
@@ -139,42 +139,42 @@ return [
                         'fields' => [
                             'english' => [
                                 'type' => 'text',
-                                'analyzer' => 'custom_en'
+                                'analyzer' => 'custom_en',
                             ],
                             'exact' => [
                                 'type' => 'keyword',
                                 'ignore_above' => 512,
-                                'doc_values' => true
+                                'doc_values' => true,
                             ],
                             'numeric' => [
                                 'type' => 'scaled_float',
                                 'scaling_factor' => 100,
                                 'ignore_malformed' => true,
-                                'null_value' => null
+                                'null_value' => null,
                             ],
                             'normalized' => [
                                 'type' => 'text',
                                 'analyzer' => 'number_extractor',
-                                'fielddata' => true
-                            ]
-                        ]
+                                'fielddata' => true,
+                            ],
+                        ],
                     ],
                     'type' => [
                         'type' => 'keyword',
                         'ignore_above' => 100,
                         'doc_values' => true,
-                        'null_value' => 'NULL'
-                    ]
-                ]
+                        'null_value' => 'NULL',
+                    ],
+                ],
             ],
             'created_at' => [
                 'type' => 'date',
-                'format' => 'strict_date_optional_time||epoch_millis'
+                'format' => 'strict_date_optional_time||epoch_millis',
             ],
             'updated_at' => [
                 'type' => 'date',
-                'format' => 'strict_date_optional_time||epoch_millis'
-            ]
+                'format' => 'strict_date_optional_time||epoch_millis',
+            ],
         ],
     ],
 ];

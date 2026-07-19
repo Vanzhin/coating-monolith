@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\Service;
 
 use App\ChemicalResistance\Application\Service\ChemicalResistanceImporter;
@@ -36,11 +38,11 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->importer      = $c->get(ChemicalResistanceImporter::class);
+        $this->importer = $c->get(ChemicalResistanceImporter::class);
         $this->assessmentRepo = $c->get(AssessmentRepository::class);
-        $this->noteRepo       = $c->get(NoteRepository::class);
-        $this->substanceRepo  = $c->get(SubstanceRepository::class);
-        $this->em             = $c->get(EntityManagerInterface::class);
+        $this->noteRepo = $c->get(NoteRepository::class);
+        $this->substanceRepo = $c->get(SubstanceRepository::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -51,7 +53,7 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
@@ -59,19 +61,19 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
 
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             foreach ($this->createdNoteIds as $id) {
                 $e = $em->find(Note::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -83,25 +85,25 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
         return Uuid::fromString($raw);
     }
 
-    public function testImportFixtureCreatesEverything(): void
+    public function test_import_fixture_creates_everything(): void
     {
         $coatingId = $this->getCoatingId();
-        $suffix    = uniqid('importer-', true);
+        $suffix = uniqid('importer-', true);
 
         $parsed = new DocxParseResult(
             rows: [
-                new ParsedRow('Бензол-' . $suffix, 'R, 60°C, Прим. 1'),
-                new ParsedRow('Ацетон-' . $suffix, 'NR'),
+                new ParsedRow('Бензол-'.$suffix, 'R, 60°C, Прим. 1'),
+                new ParsedRow('Ацетон-'.$suffix, 'NR'),
             ],
             notes: [
-                new ParsedNote('Прим. 1', 'Примечание 1-' . $suffix, 'Описание примечания 1'),
+                new ParsedNote('Прим. 1', 'Примечание 1-'.$suffix, 'Описание примечания 1'),
             ],
         );
 
@@ -120,13 +122,13 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         $this->em->clear();
 
         $benzol = $this->substanceRepo->findByCanonicalNameKey(
-            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Бензол-' . $suffix)
+            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Бензол-'.$suffix)
         );
         self::assertNotNull($benzol, 'Benzol substance should exist');
         $this->createdSubstanceIds[] = $benzol->id;
 
         $aceton = $this->substanceRepo->findByCanonicalNameKey(
-            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Ацетон-' . $suffix)
+            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Ацетон-'.$suffix)
         );
         self::assertNotNull($aceton, 'Aceton substance should exist');
         $this->createdSubstanceIds[] = $aceton->id;
@@ -150,20 +152,20 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         $this->createdNoteIds[] = $noteId;
         $note = $this->noteRepo->find($noteId);
         self::assertNotNull($note, 'Note should be saved');
-        self::assertSame('Примечание 1-' . $suffix, $note->getTitle());
+        self::assertSame('Примечание 1-'.$suffix, $note->getTitle());
     }
 
-    public function testDryRunWritesNothing(): void
+    public function test_dry_run_writes_nothing(): void
     {
         $coatingId = $this->getCoatingId();
-        $suffix    = uniqid('importer-dryrun-', true);
+        $suffix = uniqid('importer-dryrun-', true);
 
         $parsed = new DocxParseResult(
             rows: [
-                new ParsedRow('Гексан-' . $suffix, 'R, 60°C'),
+                new ParsedRow('Гексан-'.$suffix, 'R, 60°C'),
             ],
             notes: [
-                new ParsedNote('Прим. 1', 'Примечание-dryrun-' . $suffix, 'Описание'),
+                new ParsedNote('Прим. 1', 'Примечание-dryrun-'.$suffix, 'Описание'),
             ],
         );
 
@@ -180,25 +182,25 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         $this->em->clear();
 
         $sub = $this->substanceRepo->findByCanonicalNameKey(
-            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Гексан-' . $suffix)
+            \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Гексан-'.$suffix)
         );
         self::assertNull($sub, 'Dry-run must not persist a new substance');
 
-        if ($sub !== null) {
+        if (null !== $sub) {
             $assessment = $this->assessmentRepo->findByCoatingAndSubstance($coatingId, $sub->id);
             self::assertNull($assessment, 'Dry-run must not persist a new assessment');
         }
     }
 
-    public function testReimportIsIdempotent(): void
+    public function test_reimport_is_idempotent(): void
     {
         $coatingId = $this->getCoatingId();
-        $suffix    = uniqid('importer-idempotent-', true);
+        $suffix = uniqid('importer-idempotent-', true);
 
         $parsed = new DocxParseResult(
             rows: [
-                new ParsedRow('Толуол-' . $suffix, 'LR'),
-                new ParsedRow('Ксилол-' . $suffix, 'R'),
+                new ParsedRow('Толуол-'.$suffix, 'LR'),
+                new ParsedRow('Ксилол-'.$suffix, 'R'),
             ],
             notes: [],
         );
@@ -211,14 +213,14 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
 
         // Collect created IDs for teardown.
         $this->em->clear();
-        foreach (['Толуол-' . $suffix, 'Ксилол-' . $suffix] as $name) {
+        foreach (['Толуол-'.$suffix, 'Ксилол-'.$suffix] as $name) {
             $sub = $this->substanceRepo->findByCanonicalNameKey(
                 \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize($name)
             );
-            if ($sub !== null) {
+            if (null !== $sub) {
                 $this->createdSubstanceIds[] = $sub->id;
                 $a = $this->assessmentRepo->findByCoatingAndSubstance($coatingId, $sub->id);
-                if ($a !== null) {
+                if (null !== $a) {
                     $this->createdAssessmentIds[] = $a->id;
                 }
             }

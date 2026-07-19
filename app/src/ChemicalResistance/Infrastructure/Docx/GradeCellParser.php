@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Infrastructure\Docx;
 
 use App\Shared\Infrastructure\Exception\AppException;
@@ -11,7 +13,7 @@ final class GradeCellParser
     public function parse(string $cell): ParsedAssessment
     {
         $cell = trim(preg_replace('/\s+/u', ' ', $cell));
-        if ($cell === '') {
+        if ('' === $cell) {
             throw new AppException('Пустая ячейка оценки.');
         }
 
@@ -29,7 +31,7 @@ final class GradeCellParser
             $work = preg_replace_callback(
                 '/(Прим\.\s*[\d|]+),(\d+)/u',
                 function ($m) {
-                    return $m[1] . '|' . $m[2];
+                    return $m[1].'|'.$m[2];
                 },
                 $work
             );
@@ -42,7 +44,9 @@ final class GradeCellParser
         $noteLabels = [];
 
         foreach ($parts as $p) {
-            if ($p === '') continue;
+            if ('' === $p) {
+                continue;
+            }
 
             // Grade?
             if (in_array(strtoupper($p), self::GRADES, true)) {
@@ -51,23 +55,26 @@ final class GradeCellParser
             }
             // Temperature: "60ºC", "60°C", "60ºc", "60 °C", etc.
             if (preg_match('/^(\d+)\s*[°º]?[CСcс]$/u', $p, $m)) {
-                $maxT = (int)$m[1];
+                $maxT = (int) $m[1];
                 continue;
             }
             // Note ref, single or joined by | (from earlier collapse).
             if (preg_match('/^Прим\.\s*(\d+(?:\|\d+)*)$/u', $p, $m)) {
                 foreach (explode('|', $m[1]) as $n) {
-                    $label = 'Прим. ' . $n;
-                    if (!in_array($label, $noteLabels, true)) $noteLabels[] = $label;
+                    $label = 'Прим. '.$n;
+                    if (!in_array($label, $noteLabels, true)) {
+                        $noteLabels[] = $label;
+                    }
                 }
                 continue;
             }
             // Unknown token — silently skip (docx has occasional junk like "*Shell").
         }
 
-        if ($grade === null) {
+        if (null === $grade) {
             throw new AppException(sprintf('Не удалось распознать оценку в ячейке «%s».', $cell));
         }
+
         return new ParsedAssessment($grade, $maxT, $noteLabels);
     }
 }

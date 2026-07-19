@@ -70,7 +70,7 @@ class Query implements \JsonSerializable
             $result['aggs'] = $this->aggregations;
         }
 
-        if ($this->minimumShouldMatch !== 0) {
+        if (0 !== $this->minimumShouldMatch) {
             $result['query']['bool']['minimum_should_match'] = $this->minimumShouldMatch;
         }
 
@@ -78,7 +78,7 @@ class Query implements \JsonSerializable
             $result['from'] = $this->from;
         }
 
-        if ($this->size !== 10) {
+        if (10 !== $this->size) {
             $result['size'] = $this->size;
         }
 

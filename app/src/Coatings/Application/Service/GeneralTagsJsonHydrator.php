@@ -23,32 +23,32 @@ class GeneralTagsJsonHydrator
     }
 
     /**
-     * @param array<mixed> $tags CoatingTagDTO objects or raw arrays with at least 'id'.
+     * @param array<mixed> $tags coatingTagDTO objects or raw arrays with at least 'id'
      */
     public function hydrateAsJson(array $tags): string
     {
         $result = [];
 
         foreach ($tags as $t) {
-            $id    = is_object($t) ? $t->id    : ($t['id']    ?? null);
+            $id = is_object($t) ? $t->id : ($t['id'] ?? null);
             $title = is_object($t) ? $t->title : ($t['title'] ?? null);
-            $type  = is_object($t) ? $t->type  : ($t['type']  ?? null);
+            $type = is_object($t) ? $t->type : ($t['type'] ?? null);
 
-            if ($id === null) {
+            if (null === $id) {
                 continue;
             }
 
             // Raw POST: only id present — hydrate from repository.
-            if ($title === null || $type === null) {
+            if (null === $title || null === $type) {
                 $entity = $this->coatingTagRepository->findOneById($id);
-                if ($entity === null) {
+                if (null === $entity) {
                     continue;
                 }
                 $title = $entity->getTitle();
-                $type  = $entity->getType();
+                $type = $entity->getType();
             }
 
-            if ($type !== CoatingTag::TYPE_GENERAL) {
+            if (CoatingTag::TYPE_GENERAL !== $type) {
                 continue;
             }
 

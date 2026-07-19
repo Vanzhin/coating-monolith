@@ -30,7 +30,7 @@ final class SuggestTagsActionTest extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
 
         $suffix = uniqid('', true);
-        $this->userEmail = 'suggest_tags_' . $suffix . '@example.com';
+        $this->userEmail = 'suggest_tags_'.$suffix.'@example.com';
 
         $hasher = $container->get(UserPasswordHasherInterface::class);
         $user = new User(new Email($this->userEmail));
@@ -56,22 +56,22 @@ final class SuggestTagsActionTest extends WebTestCase
             $repo = static::getContainer()->get(CoatingTagRepositoryInterface::class);
             foreach ($this->createdTagIds as $id) {
                 $tag = $repo->findOneById($id);
-                if ($tag !== null) {
+                if (null !== $tag) {
                     $em->remove($tag);
                 }
             }
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if ($user !== null) {
+            if (null !== $user) {
                 $em->remove($user);
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         parent::tearDown();
     }
 
-    public function testReturnsGeneralTagsByPrefix(): void
+    public function test_returns_general_tags_by_prefix(): void
     {
         $this->makeTag('Для бетона test', CoatingTag::TYPE_GENERAL);
         $this->makeTag('Для стали test', CoatingTag::TYPE_GENERAL);
@@ -89,7 +89,7 @@ final class SuggestTagsActionTest extends WebTestCase
         self::assertContains('Для стали test', $titles);
     }
 
-    public function testEmptyQueryReturnsEmptyArray(): void
+    public function test_empty_query_returns_empty_array(): void
     {
         $this->client->request('GET', '/cabinet/coating/coating-tag/suggest?q=&type=general');
 
@@ -100,7 +100,7 @@ final class SuggestTagsActionTest extends WebTestCase
         self::assertSame([], $response['data']);
     }
 
-    public function testEachItemHasIdAndTitle(): void
+    public function test_each_item_has_id_and_title(): void
     {
         $tag = $this->makeTag('Уникальный тег xyz', CoatingTag::TYPE_GENERAL);
 
@@ -124,6 +124,7 @@ final class SuggestTagsActionTest extends WebTestCase
         $tag = new CoatingTag($title, $spec, $type);
         $container->get(CoatingTagRepositoryInterface::class)->add($tag);
         $this->createdTagIds[] = $tag->getId();
+
         return $tag;
     }
 }

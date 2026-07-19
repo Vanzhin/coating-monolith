@@ -29,7 +29,7 @@ readonly class ChannelVerifiedEventHandler implements EventHandlerInterface
         if ($channel) {
             $user = $channel->getOwner();
             if (!$this->emailValidator->isEmailValid($user->getEmail())) {
-                throw new AppException(sprintf("Пользователь с email `%s` не может быть активирован.", $user->getEmail()->getValue()));
+                throw new AppException(sprintf('Пользователь с email `%s` не может быть активирован.', $user->getEmail()->getValue()));
             }
             $user->makeActiveInternally();
             $this->userRepository->add($user);

@@ -50,7 +50,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
 
         $suffix = uniqid('', true);
-        $this->userEmail = 'test_recoating_tree_' . $suffix . '@example.com';
+        $this->userEmail = 'test_recoating_tree_'.$suffix.'@example.com';
 
         // Create an active user for cabinet authentication
         $hasher = $container->get(UserPasswordHasherInterface::class);
@@ -69,7 +69,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         /** @var ManufacturerSpecification $manufacturerSpec */
         $manufacturerSpec = $container->get(ManufacturerSpecification::class);
         $manufacturer = new Manufacturer(
-            'TestManufacturer_' . $suffix,
+            'TestManufacturer_'.$suffix,
             $manufacturerSpec,
         );
         $this->em->persist($manufacturer);
@@ -80,14 +80,14 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $minTree = new RecoatingIntervalTree($rootDefault);
 
         $touchSeries = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $cureSeries  = new DryingTimeSeries(new TimeAtTemperature(20, 1440));
+        $cureSeries = new DryingTimeSeries(new TimeAtTemperature(20, 1440));
 
         /** @var CoatingSpecification $coatingSpec */
         $coatingSpec = $container->get(CoatingSpecification::class);
 
         $coating = new Coating(
             UuidService::generateUuid(),
-            'TestCoating_' . $suffix,
+            'TestCoating_'.$suffix,
             'A test coating for functional tree test.',
             50,
             1.5,
@@ -116,51 +116,51 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
     {
         // Fetch a fresh EM from the container — $this->em captured in setUp may be closed
         // after the kernel reboot triggered by $this->client->request(...).
-        $em = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
 
         try {
             $coating = $em->find(Coating::class, Uuid::fromString($this->coatingId));
-            if ($coating !== null) {
+            if (null !== $coating) {
                 $em->remove($coating);
             }
 
             $manufacturer = $em->find(Manufacturer::class, Uuid::fromString($this->manufacturerId));
-            if ($manufacturer !== null) {
+            if (null !== $manufacturer) {
                 $em->remove($manufacturer);
             }
 
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if ($user !== null) {
+            if (null !== $user) {
                 $em->remove($user);
             }
 
             $em->flush();
         } catch (\Throwable $e) {
             // Don't mask the underlying test failure — but log so a polluting failure is visible.
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
     }
 
-    public function testSubmittingTreeWithBranchPersistsAndIsAccessibleViaLookup(): void
+    public function test_submitting_tree_with_branch_persists_and_is_accessible_via_lookup(): void
     {
         // POST with a nested tree:
         //   root default:             4 h  (240 min)
         //   atmospheric default:      3 h  (180 min)
         //   atmospheric -> ep:        2 h  (120 min)
         $this->client->request('POST', "/cabinet/coating/coating/{$this->coatingId}/edit", [
-            'title'              => 'Updated Coating',
-            'description'        => 'Updated description for tree test.',
-            'volumeSolid'        => 50,
-            'massDensity'        => 1.5,
-            'base'               => 'EP',
-            'minDft'             => 80,
-            'maxDft'             => 150,
-            'tdsDft'             => 100,
+            'title' => 'Updated Coating',
+            'description' => 'Updated description for tree test.',
+            'volumeSolid' => 50,
+            'massDensity' => 1.5,
+            'base' => 'EP',
+            'minDft' => 80,
+            'maxDft' => 150,
+            'tdsDft' => 100,
             'applicationMinTemp' => 5,
-            'pack'               => 1.0,
+            'pack' => 1.0,
             'dryToTouch' => [
                 ['temperature_at' => 20, 'days' => 0, 'hours' => 1, 'minutes' => 0],
             ],
@@ -169,13 +169,13 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
             ],
             'manufacturer' => ['id' => $this->manufacturerId],
             'minRecoatingInterval' => [
-                'default'  => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 4, 'minutes' => 0]]],
+                'default' => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 4, 'minutes' => 0]]],
                 'branches' => [
                     'atmospheric' => [
-                        'default'  => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 3, 'minutes' => 0]]],
+                        'default' => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 3, 'minutes' => 0]]],
                         'branches' => [
                             'ep' => [
-                                'default'  => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 2, 'minutes' => 0]]],
+                                'default' => ['points' => [['temperature_at' => 20, 'days' => 0, 'hours' => 2, 'minutes' => 0]]],
                                 'branches' => [],
                             ],
                         ],
@@ -183,7 +183,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
                 ],
             ],
             'maxRecoatingInterval' => [
-                'default'  => ['points' => []],
+                'default' => ['points' => []],
                 'branches' => [],
             ],
         ]);
@@ -191,7 +191,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $this->assertResponseRedirects(
             null,
             null,
-            'Expected a redirect after successful POST; response was: ' . $this->client->getResponse()->getContent(),
+            'Expected a redirect after successful POST; response was: '.$this->client->getResponse()->getContent(),
         );
 
         // Reload the coating fresh from the DB (clear identity map first)
@@ -231,7 +231,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         );
     }
 
-    public function testSubmittingMaxTreeWithRootUnknownAndChildrenSetIsAccepted(): void
+    public function test_submitting_max_tree_with_root_unknown_and_children_set_is_accepted(): void
     {
         // Сценарий из жалобы пользователя:
         //  - root.max: для +35°C → нет данных (unknown)
@@ -303,16 +303,16 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $this->assertResponseRedirects(
             null,
             null,
-            'Expected redirect after successful POST; got: ' . $this->client->getResponse()->getContent(),
+            'Expected redirect after successful POST; got: '.$this->client->getResponse()->getContent(),
         );
 
         // Reload и проверка состояния
         $container = $this->client->getContainer();
-        $repoEm = $container->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $repoEm = $container->get(EntityManagerInterface::class);
         $repoEm->clear();
 
-        /** @var \App\Coatings\Domain\Repository\CoatingRepositoryInterface $repo */
-        $repo = $container->get(\App\Coatings\Domain\Repository\CoatingRepositoryInterface::class);
+        /** @var CoatingRepositoryInterface $repo */
+        $repo = $container->get(CoatingRepositoryInterface::class);
         $coating = $repo->findOneById($this->coatingId);
         $this->assertNotNull($coating);
 

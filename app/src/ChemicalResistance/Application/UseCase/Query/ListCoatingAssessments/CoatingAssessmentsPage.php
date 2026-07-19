@@ -15,7 +15,6 @@ final readonly class CoatingAssessmentsPage
         public int $countR,
         public int $countLR,
         public int $countOther,
-    )
-    {
+    ) {
     }
 }

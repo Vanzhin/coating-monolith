@@ -21,6 +21,4 @@ class CabinetController extends AbstractController
 
         return $this->render('cabinet/index.html.twig');
     }
-
-
 }

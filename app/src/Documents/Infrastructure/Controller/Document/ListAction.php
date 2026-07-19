@@ -30,14 +30,13 @@ class ListAction extends AbstractController
         $categoryTypes = DocumentCategoryType::array();
         $countByCategory = null;
         if (!empty($inputData['search'])) {
-            $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
-            $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
+            $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
+            $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
             $filter = new DocumentFilter(
                 $inputData['search'],
                 null,
                 null,
                 Pager::fromPage($page, $limit)
-
             );
             foreach ($inputData['categories'] ?? [] as $category) {
                 $category = DocumentCategoryType::fromName($category);

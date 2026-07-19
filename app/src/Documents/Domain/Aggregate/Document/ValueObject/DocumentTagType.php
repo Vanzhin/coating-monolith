@@ -18,6 +18,7 @@ enum DocumentTagType: string
     public static function fromName(string $name)
     {
         $name = mb_strtoupper($name);
+
         return constant("self::$name");
     }
 }

@@ -75,6 +75,7 @@ class SendChannelTokenAction extends AbstractController
         $cooldownRemaining = $this->tokenService->getTimeUntilNextToken($channel);
         if ($cooldownRemaining > 0) {
             $minutes = ceil($cooldownRemaining / 60);
+
             return $this->json(
                 $this->responseFormatter->formatError(
                     "Повторная отправка возможна через {$minutes} минут",
@@ -94,21 +95,22 @@ class SendChannelTokenAction extends AbstractController
             $this->channelNotifier->sendVerificationCode(
                 $channel,
                 $token->getToken(),
-                (int)ceil($timeInSeconds / 60)
+                (int) ceil($timeInSeconds / 60)
             );
+
             return $this->json(
                 $this->responseFormatter->formatSuccess(
                     'Код верификации отправлен!',
                     [
                         'cooldown_remaining' => $token->getRemainingTimeInSeconds(),
-                        'message_type' => 'success'
+                        'message_type' => 'success',
                     ]
                 )
             );
         } catch (\Exception $e) {
             return $this->json(
                 $this->responseFormatter->formatError(
-                    'Ошибка при отправке кода: ' . $e->getMessage(),
+                    'Ошибка при отправке кода: '.$e->getMessage(),
                     Response::HTTP_INTERNAL_SERVER_ERROR
                 ),
                 Response::HTTP_INTERNAL_SERVER_ERROR

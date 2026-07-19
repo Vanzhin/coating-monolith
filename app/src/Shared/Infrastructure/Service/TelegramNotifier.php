@@ -32,7 +32,7 @@ readonly class TelegramNotifier implements NotifierInterface
             $timeToUse
         );
 
-        $this->service->sendMessage((int)$channel->getValue(), $message);
+        $this->service->sendMessage((int) $channel->getValue(), $message);
     }
 
     public function notify(Channel $channel, string $message): void
@@ -43,12 +43,12 @@ readonly class TelegramNotifier implements NotifierInterface
 
         // Форматируем сообщение для красивого отображения в Telegram
         $formattedMessage = $this->formatMessage($message);
-        
-        $this->service->sendMessage((int)$channel->getValue(), $formattedMessage);
+
+        $this->service->sendMessage((int) $channel->getValue(), $formattedMessage);
     }
 
     /**
-     * Форматирует сообщение для красивого отображения в Telegram
+     * Форматирует сообщение для красивого отображения в Telegram.
      */
     private function formatMessage(string $message): string
     {
@@ -59,12 +59,12 @@ readonly class TelegramNotifier implements NotifierInterface
 
         // Очищаем сообщение от возможных HTML-тегов и экранируем для безопасности
         $cleanMessage = htmlspecialchars(strip_tags($message), ENT_QUOTES, 'UTF-8');
-        
+
         // Заменяем переносы строк на <br> для HTML-форматирования
         $cleanMessage = str_replace(["\r\n", "\r", "\n"], '<br>', $cleanMessage);
-        
+
         // Форматируем сообщение с красивым оформлением
-        $formatted = '<b>📬 Уведомление</b>' . "\n\n";
+        $formatted = '<b>📬 Уведомление</b>'."\n\n";
         $formatted .= $cleanMessage;
 
         return $formatted;
@@ -72,7 +72,6 @@ readonly class TelegramNotifier implements NotifierInterface
 
     public function isSupportedChannel(Channel $channel): bool
     {
-        return $channel->getType() === ChannelType::TELEGRAM;
+        return ChannelType::TELEGRAM === $channel->getType();
     }
 }
-

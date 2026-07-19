@@ -14,25 +14,19 @@ class DftRange implements \JsonSerializable
         public PositiveNumberRange $range,
         public int $tdsDft,
         public ThicknessType $type = ThicknessType::MIC,
-    )
-    {
+    ) {
         if (!$range->isWithin($tdsDft)) {
-            throw new AppException(sprintf(
-                'Целевая толщина (tdsDft=%d) должна быть в диапазоне [%s, %s].',
-                $tdsDft,
-                $range->getMin(),
-                $range->getMax()
-            ));
+            throw new AppException(sprintf('Целевая толщина (tdsDft=%d) должна быть в диапазоне [%s, %s].', $tdsDft, $range->getMin(), $range->getMax()));
         }
     }
 
     public function jsonSerialize(): array
     {
         return [
-            'min'     => $this->range->getMin(),
-            'max'     => $this->range->getMax(),
+            'min' => $this->range->getMin(),
+            'max' => $this->range->getMax(),
             'tds_dft' => $this->tdsDft,
-            'type'    => $this->type->value,
+            'type' => $this->type->value,
         ];
     }
 

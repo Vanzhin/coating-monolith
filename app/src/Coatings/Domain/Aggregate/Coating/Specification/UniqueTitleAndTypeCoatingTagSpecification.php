@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating\Specification;
 
@@ -18,7 +18,7 @@ class UniqueTitleAndTypeCoatingTagSpecification implements SpecificationInterfac
     public function satisfy(CoatingTag $coatingTag): void
     {
         $exist = $this->coatingTagRepository->findOneByTitleAndType($coatingTag->getTitle(), $coatingTag->getType());
-        if ($exist !== null && $exist->getId() !== $coatingTag->getId()) {
+        if (null !== $exist && $exist->getId() !== $coatingTag->getId()) {
             AssertService::null(
                 $exist,
                 sprintf('Тэг "%s" уже существует для типа "%s".',
@@ -28,5 +28,4 @@ class UniqueTitleAndTypeCoatingTagSpecification implements SpecificationInterfac
             );
         }
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Substance;
@@ -23,13 +24,15 @@ class UpdateAction extends AbstractController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $id, Request $request): Response
     {
         $result = $this->queryBus->execute(new GetSubstanceQuery($id));
-        if ($result->substance === null) {
+        if (null === $result->substance) {
             $this->addFlash('substance_edited_error', sprintf('Вещество с идентификатором «%s» не найдено.', $id));
+
             return $this->redirectToRoute('app_cabinet_chemical_resistance_substance_list');
         }
 
@@ -38,10 +41,10 @@ class UpdateAction extends AbstractController
             $inputData['id'] = $id;
             try {
                 $this->commandBus->execute(new UpdateSubstanceCommand(
-                    id:            $id,
+                    id: $id,
                     canonicalName: (string) ($inputData['canonicalName'] ?? ''),
-                    cas:           ($inputData['cas'] ?? '') !== '' ? (string) $inputData['cas'] : null,
-                    aliases:       AliasesParser::parse((string) ($inputData['aliasesText'] ?? '')),
+                    cas: ($inputData['cas'] ?? '') !== '' ? (string) $inputData['cas'] : null,
+                    aliases: AliasesParser::parse((string) ($inputData['aliasesText'] ?? '')),
                 ));
                 $this->addFlash(
                     'substance_updated_success',
@@ -51,6 +54,7 @@ class UpdateAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_chemical_resistance_substance_list');
             } catch (AppException $e) {
                 $error = $e->getMessage();
+
                 return $this->render(
                     'admin/chemical_resistance/substance/form.html.twig',
                     compact('error', 'inputData'),
@@ -60,10 +64,10 @@ class UpdateAction extends AbstractController
 
         $dto = $result->substance;
         $inputData = [
-            'id'            => $id,
+            'id' => $id,
             'canonicalName' => $dto->canonicalName,
-            'cas'           => $dto->cas ?? '',
-            'aliasesText'   => implode("\n", $dto->aliases),
+            'cas' => $dto->cas ?? '',
+            'aliasesText' => implode("\n", $dto->aliases),
         ];
 
         return $this->render('admin/chemical_resistance/substance/form.html.twig', compact('inputData'));

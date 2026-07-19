@@ -66,7 +66,7 @@ enum CoatingBase: string
     public static function fromGost(string $gost): ?self
     {
         $needle = mb_strtoupper(trim($gost));
-        if ($needle === '') {
+        if ('' === $needle) {
             return null;
         }
         foreach (self::cases() as $case) {
@@ -107,7 +107,7 @@ enum CoatingBase: string
      */
     private function allowedPrimers(): array
     {
-        //todo записать совместимость
+        // todo записать совместимость
         return match ($this) {
             self::AK => [self::AK, self::AY, self::EP, self::PUR],
             self::AY => [self::AY, self::AK, self::EP, self::PUR, self::ESI],

@@ -18,7 +18,7 @@ readonly class CheckIsChannelVerifiedQueryHandler implements QueryHandlerInterfa
 
     public function __invoke(CheckIsChannelVerifiedQuery $query): CheckIsChannelVerifiedQueryResult
     {
-        //todo сначала обратиться в редис, потом сюда
+        // todo сначала обратиться в редис, потом сюда
         $filter = new ChannelFilter();
         $filter->value = $query->channelValue;
         $filter->type = $query->type;

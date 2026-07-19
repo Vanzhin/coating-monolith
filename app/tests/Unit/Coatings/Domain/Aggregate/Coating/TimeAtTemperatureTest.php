@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 final class TimeAtTemperatureTest extends TestCase
 {
-    public function testDurationPoint(): void
+    public function test_duration_point(): void
     {
         $point = new TimeAtTemperature(20, 10);
         $this->assertSame(20, $point->temperatureAt);
@@ -19,37 +19,37 @@ final class TimeAtTemperatureTest extends TestCase
         $this->assertFalse($point->isCalculated);
     }
 
-    public function testUnlimitedPointIsZeroMinutes(): void
+    public function test_unlimited_point_is_zero_minutes(): void
     {
         $point = new TimeAtTemperature(20, 0);
         $this->assertSame(0, $point->timeInMinutes);
     }
 
-    public function testUnknownPointIsNullMinutes(): void
+    public function test_unknown_point_is_null_minutes(): void
     {
         $point = new TimeAtTemperature(20, null);
         $this->assertNull($point->timeInMinutes);
     }
 
-    public function testNegativeMinutesThrow(): void
+    public function test_negative_minutes_throw(): void
     {
         $this->expectException(AppException::class);
         new TimeAtTemperature(20, -1);
     }
 
-    public function testNegativeTemperatureIsAllowed(): void
+    public function test_negative_temperature_is_allowed(): void
     {
         $point = new TimeAtTemperature(-10, 60);
         $this->assertSame(-10, $point->temperatureAt);
     }
 
-    public function testIsCalculatedFlag(): void
+    public function test_is_calculated_flag(): void
     {
         $point = new TimeAtTemperature(20, 10, isCalculated: true);
         $this->assertTrue($point->isCalculated);
     }
 
-    public function testGetIntervalForDurationReturnsCarbonInterval(): void
+    public function test_get_interval_for_duration_returns_carbon_interval(): void
     {
         $point = new TimeAtTemperature(20, 150);
         $interval = $point->getInterval();
@@ -57,19 +57,19 @@ final class TimeAtTemperatureTest extends TestCase
         $this->assertSame(150.0, $interval->totalMinutes);
     }
 
-    public function testGetIntervalForUnlimitedReturnsNull(): void
+    public function test_get_interval_for_unlimited_returns_null(): void
     {
         $point = new TimeAtTemperature(20, 0);
         $this->assertNull($point->getInterval());
     }
 
-    public function testGetIntervalForUnknownReturnsNull(): void
+    public function test_get_interval_for_unknown_returns_null(): void
     {
         $point = new TimeAtTemperature(20, null);
         $this->assertNull($point->getInterval());
     }
 
-    public function testJsonSerializeKeepsDurationMinutes(): void
+    public function test_json_serialize_keeps_duration_minutes(): void
     {
         $point = new TimeAtTemperature(20, 10);
         $this->assertSame(
@@ -78,7 +78,7 @@ final class TimeAtTemperatureTest extends TestCase
         );
     }
 
-    public function testJsonSerializeKeepsUnlimitedAsZero(): void
+    public function test_json_serialize_keeps_unlimited_as_zero(): void
     {
         $point = new TimeAtTemperature(20, 0);
         $this->assertSame(
@@ -87,7 +87,7 @@ final class TimeAtTemperatureTest extends TestCase
         );
     }
 
-    public function testJsonSerializeKeepsUnknownAsNull(): void
+    public function test_json_serialize_keeps_unknown_as_null(): void
     {
         $point = new TimeAtTemperature(20, null);
         $this->assertSame(

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Infrastructure\Database\DBAL;
@@ -26,7 +27,7 @@ final class RecoatingIntervalTreeTypeTest extends TestCase
         $this->platform = new PostgreSQLPlatform();
     }
 
-    public function testRoundTripLeaf(): void
+    public function test_round_trip_leaf(): void
     {
         $tree = new RecoatingIntervalTree(
             new DryingTimeSeries(new TimeAtTemperature(20, 14)),
@@ -42,7 +43,7 @@ final class RecoatingIntervalTreeTypeTest extends TestCase
         );
     }
 
-    public function testRoundTripNested(): void
+    public function test_round_trip_nested(): void
     {
         $tree = new RecoatingIntervalTree(
             new DryingTimeSeries(new TimeAtTemperature(20, 14)),
@@ -66,13 +67,13 @@ final class RecoatingIntervalTreeTypeTest extends TestCase
         );
     }
 
-    public function testNullValueRoundTrips(): void
+    public function test_null_value_round_trips(): void
     {
         $this->assertNull($this->type->convertToDatabaseValue(null, $this->platform));
         $this->assertNull($this->type->convertToPHPValue(null, $this->platform));
     }
 
-    public function testRejectsWrongPhpType(): void
+    public function test_rejects_wrong_php_type(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->type->convertToDatabaseValue('not a tree', $this->platform);

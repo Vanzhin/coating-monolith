@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\ProposalDocument;
 
@@ -13,13 +13,11 @@ class ProposalDocument extends Aggregate
     private readonly string $id;
     private readonly \DateTimeImmutable $createdAt;
 
-
     public function __construct(
         private readonly ProposalDocumentTemplate $template,
-        private readonly GeneralProposalInfo      $proposalInfo,
-        private readonly ProposalDocumentFormat   $format
-    )
-    {
+        private readonly GeneralProposalInfo $proposalInfo,
+        private readonly ProposalDocumentFormat $format
+    ) {
         $this->id = UuidService::generate();
         $this->createdAt = new \DateTimeImmutable();
     }

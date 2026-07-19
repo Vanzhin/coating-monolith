@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Aggregate\Coating;
@@ -8,17 +9,17 @@ use PHPUnit\Framework\TestCase;
 
 final class EnvironmentTypeTest extends TestCase
 {
-    public function testHasThreeCases(): void
+    public function test_has_three_cases(): void
     {
-        $values = array_map(static fn(EnvironmentType $c) => $c->value, EnvironmentType::cases());
+        $values = array_map(static fn (EnvironmentType $c) => $c->value, EnvironmentType::cases());
         sort($values);
         $this->assertSame(['atmospheric', 'immersion', 'special'], $values);
     }
 
-    public function testFromValue(): void
+    public function test_from_value(): void
     {
         $this->assertSame(EnvironmentType::Atmospheric, EnvironmentType::from('atmospheric'));
-        $this->assertSame(EnvironmentType::Immersion,   EnvironmentType::from('immersion'));
-        $this->assertSame(EnvironmentType::Special,     EnvironmentType::from('special'));
+        $this->assertSame(EnvironmentType::Immersion, EnvironmentType::from('immersion'));
+        $this->assertSame(EnvironmentType::Special, EnvironmentType::from('special'));
     }
 }

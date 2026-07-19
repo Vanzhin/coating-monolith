@@ -6,8 +6,8 @@ namespace App\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingSearch;
-use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Repository\Pager;
@@ -48,7 +48,7 @@ final class CoatingFinder
 
     public function fuzzyTitle(CoatingsFilter $filter): PaginationResult
     {
-        if ($filter->search === null) {
+        if (null === $filter->search) {
             return new PaginationResult([], 0);
         }
 
@@ -59,8 +59,8 @@ final class CoatingFinder
         $similarity = 'WORD_SIMILARITY(:search, cc.title)';
 
         $qb = $this->coatingQueryBuilder();
-        $qb->andWhere($similarity . ' > :threshold')
-            ->addSelect($similarity . ' AS HIDDEN sim')
+        $qb->andWhere($similarity.' > :threshold')
+            ->addSelect($similarity.' AS HIDDEN sim')
             ->orderBy('sim', 'DESC')
             ->setMaxResults(self::FUZZY_LIMIT)
             ->setParameter('search', $filter->search->value)
@@ -79,31 +79,33 @@ final class CoatingFinder
      */
     private function applyUserSort(QueryBuilder $qb, CoatingSort $sort): void
     {
-        if ($sort === CoatingSort::DEFAULT) {
+        if (CoatingSort::DEFAULT === $sort) {
             return;
         }
 
         match ($sort) {
-            CoatingSort::TITLE_ASC        => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'ASC'),
-            CoatingSort::TITLE_DESC       => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'DESC'),
+            CoatingSort::TITLE_ASC => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'ASC'),
+            CoatingSort::TITLE_DESC => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'DESC'),
             CoatingSort::MANUFACTURER_ASC => $qb->resetDQLPart('orderBy')
                 ->leftJoin('cc.manufacturer', 'sortMf')
                 ->orderBy('sortMf.title', 'ASC')
                 ->addOrderBy('cc.title', 'ASC'),
-            default                       => null,
+            default => null,
         };
     }
 
     private function applyFtsClause(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if ($filter->search === null) {
+        if (null === $filter->search) {
             $qb->orderBy('cc.title', 'ASC');
+
             return;
         }
 
         $tsquery = $this->buildPrefixTsQuery($filter->search);
-        if ($tsquery === '') {
+        if ('' === $tsquery) {
             $qb->andWhere('1 = 0');
+
             return;
         }
 
@@ -141,17 +143,17 @@ final class CoatingFinder
         ?RangeFilter $range,
         bool $isNullable,
     ): void {
-        if ($range === null) {
+        if (null === $range) {
             return;
         }
         if ($isNullable) {
             $qb->andWhere("cc.$entityField IS NOT NULL");
         }
-        if ($range->from !== null) {
+        if (null !== $range->from) {
             $qb->andWhere("RECOATING_AT_20C(cc.$entityField) >= :{$paramPrefix}From")
                 ->setParameter("{$paramPrefix}From", $range->from);
         }
-        if ($range->to !== null) {
+        if (null !== $range->to) {
             $qb->andWhere("RECOATING_AT_20C(cc.$entityField) <= :{$paramPrefix}To")
                 ->setParameter("{$paramPrefix}To", $range->to);
         }
@@ -164,7 +166,7 @@ final class CoatingFinder
      */
     private function applyBaseFacet(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if ($filter->baseValues->count() === 0) {
+        if (0 === $filter->baseValues->count()) {
             return;
         }
         $qb->andWhere('cc.base IN (:baseValues)')
@@ -187,7 +189,7 @@ final class CoatingFinder
         }
 
         $entityField = match ($filter->thermalEnvironment) {
-            ThermalEnvironment::DRY_HEAT  => 'cc.dryHeatExposure',
+            ThermalEnvironment::DRY_HEAT => 'cc.dryHeatExposure',
             ThermalEnvironment::IMMERSION => 'cc.immersionExposure',
         };
 
@@ -198,7 +200,7 @@ final class CoatingFinder
             // Верхняя эффективная граница: peak_max ?? continuous_max. Если оба NULL —
             // ограничения сверху нет вообще.
             $qb->andWhere(
-                "(COALESCE(JSONB_GET_INT($entityField, 'peak_max'), JSONB_GET_INT($entityField, 'continuous_max')) IS NULL " .
+                "(COALESCE(JSONB_GET_INT($entityField, 'peak_max'), JSONB_GET_INT($entityField, 'continuous_max')) IS NULL ".
                 "OR COALESCE(JSONB_GET_INT($entityField, 'peak_max'), JSONB_GET_INT($entityField, 'continuous_max')) >= :thermTemp)"
             );
         } else {
@@ -216,7 +218,7 @@ final class CoatingFinder
      */
     private function applyTagFacet(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if ($filter->tagIds->count() === 0) {
+        if (0 === $filter->tagIds->count()) {
             return;
         }
         foreach ($filter->tagIds->getList() as $i => $tagId) {
@@ -232,7 +234,7 @@ final class CoatingFinder
 
     private function applyManufacturerFacet(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if ($filter->manufacturerIds->count() === 0) {
+        if (0 === $filter->manufacturerIds->count()) {
             return;
         }
         $qb->andWhere('cc.manufacturer IN (:manufacturerIds)')
@@ -246,14 +248,14 @@ final class CoatingFinder
      */
     private function applyRangeFacet(QueryBuilder $qb, string $entityField, string $paramPrefix, ?RangeFilter $range): void
     {
-        if ($range === null) {
+        if (null === $range) {
             return;
         }
-        if ($range->from !== null) {
+        if (null !== $range->from) {
             $qb->andWhere("cc.$entityField >= :{$paramPrefix}From")
                 ->setParameter("{$paramPrefix}From", $range->from);
         }
-        if ($range->to !== null) {
+        if (null !== $range->to) {
             $qb->andWhere("cc.$entityField <= :{$paramPrefix}To")
                 ->setParameter("{$paramPrefix}To", $range->to);
         }
@@ -274,11 +276,11 @@ final class CoatingFinder
         // Разбиваем тем же splitter'ом, но уже из очищенной строки — иначе
         // нельзя, потому что SearchQuery::words() читает исходный value.
         $words = preg_split('/[\s\-.,;]+/u', $sanitized, -1, PREG_SPLIT_NO_EMPTY);
-        if ($words === false || $words === []) {
+        if (false === $words || [] === $words) {
             return '';
         }
 
-        return implode(' & ', array_map(static fn(string $word) => $word . ':*', $words));
+        return implode(' & ', array_map(static fn (string $word) => $word.':*', $words));
     }
 
     private function coatingQueryBuilder(): QueryBuilder
@@ -291,7 +293,7 @@ final class CoatingFinder
 
     private function applyPaging(QueryBuilder $qb, ?Pager $pager): void
     {
-        if ($pager === null) {
+        if (null === $pager) {
             return;
         }
         $qb->setMaxResults($pager->getLimit());

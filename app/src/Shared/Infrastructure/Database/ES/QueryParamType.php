@@ -2,7 +2,6 @@
 
 namespace App\Shared\Infrastructure\Database\ES;
 
-
 enum QueryParamType: string
 {
     case MUST = 'must';
@@ -12,5 +11,4 @@ enum QueryParamType: string
     case FILTER = 'filter';
 
     case MUST_NOT = 'must_not';
-
 }

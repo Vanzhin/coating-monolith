@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetPagedNotes;
@@ -11,7 +12,8 @@ class GetPagedNotesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly NoteRepositoryInterface $noteRepository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetPagedNotesQuery $query): GetPagedNotesQueryResult
     {

@@ -30,13 +30,13 @@ class DocumentMapper
             $item->setUpdatedAt(new \DateTimeImmutable($data['_source']['updated_at']));
         }
 
-        foreach ($data['_source']['products']??[] as $product) {
+        foreach ($data['_source']['products'] ?? [] as $product) {
             $item->addProduct(new DocumentProduct(
                 new DocumentTitle($product['title']),
                 $product['product_id'] ? new Uuid($product['product_id']) : null,
             ));
         }
-        foreach ($data['_source']['tags']??[] as $tag) {
+        foreach ($data['_source']['tags'] ?? [] as $tag) {
             $item->addTag(new DocumentTag(
                 new DocumentTitle($tag['title']),
                 DocumentTagType::fromName($tag['type']),

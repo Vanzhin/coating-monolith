@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Manufacturer;
 
@@ -25,11 +25,10 @@ class Manufacturer extends Aggregate
     private ManufacturerSpecification $manufacturerSpecification;
 
     public function __construct(
-        string                    $title,
+        string $title,
         ManufacturerSpecification $manufacturerSpecification,
-        string                    $description = null,
-    )
-    {
+        ?string $description = null,
+    ) {
         $this->manufacturerSpecification = $manufacturerSpecification;
         $this->id = UuidService::generate();
         $this->coatings = new ArrayCollection();

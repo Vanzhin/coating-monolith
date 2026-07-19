@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
@@ -26,23 +26,21 @@ use Symfony\Component\Routing\Annotation\Route;
 class UpdateAction extends BaseController
 {
     public function __construct(
-        private readonly CommandBusInterface               $commandBus,
-        private readonly Validator                         $validator,
-        private readonly GeneralProposalInfoFetcher        $generalProposalInfoFetcher,
+        private readonly CommandBusInterface $commandBus,
+        private readonly Validator $validator,
+        private readonly GeneralProposalInfoFetcher $generalProposalInfoFetcher,
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
-        private readonly GeneralProposalInfoMapper         $generalProposalInfoMapper,
-        private readonly CoatingsAdapter                   $coatingsAdapter,
-        LoggerInterface                                    $logger,
-
-    )
-    {
+        private readonly GeneralProposalInfoMapper $generalProposalInfoMapper,
+        private readonly CoatingsAdapter $coatingsAdapter,
+        LoggerInterface $logger,
+    ) {
         parent::__construct($logger);
     }
 
     public function __invoke(Request $request, string $id): Response
     {
         try {
-            $addItem = $request->query->get('add_item') === "1";
+            $addItem = '1' === $request->query->get('add_item');
 
             $coatings = $this->coatingsAdapter->getPagedCoatings();
             $data = [
@@ -55,6 +53,7 @@ class UpdateAction extends BaseController
             $proposal = $this->generalProposalInfoFetcher->getRequiredGeneralProposalInfo($id);
             if (!$proposal) {
                 $this->addFlash('general_proposal_info_update_error', sprintf('Форма с идентификатором "%s" не найдена.', $id));
+
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
 

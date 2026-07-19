@@ -89,27 +89,60 @@ class Coating extends Aggregate
         $this->setManufacturer($manufacturer);
     }
 
-    public function getId(): string { return $this->id->toRfc4122(); }
+    public function getId(): string
+    {
+        return $this->id->toRfc4122();
+    }
 
-    public function getTitle(): string { return $this->title; }
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
 
-    public function getDescription(): string { return $this->description; }
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
 
-    public function getVolumeSolid(): int { return $this->volumeSolid; }
+    public function getVolumeSolid(): int
+    {
+        return $this->volumeSolid;
+    }
 
-    public function getMassDensity(): float { return $this->massDensity; }
+    public function getMassDensity(): float
+    {
+        return $this->massDensity;
+    }
 
-    public function getBase(): CoatingBase { return $this->base; }
+    public function getBase(): CoatingBase
+    {
+        return $this->base;
+    }
 
-    public function getDftRange(): DftRange { return $this->dftRange; }
+    public function getDftRange(): DftRange
+    {
+        return $this->dftRange;
+    }
 
-    public function getApplicationMinTemp(): int { return $this->applicationMinTemp; }
+    public function getApplicationMinTemp(): int
+    {
+        return $this->applicationMinTemp;
+    }
 
-    public function getDryingMaxTemp(): int { return $this->dryingMaxTemp; }
+    public function getDryingMaxTemp(): int
+    {
+        return $this->dryingMaxTemp;
+    }
 
-    public function getDryHeatExposure(): ?ThermalExposureLimits { return $this->dryHeatExposure; }
+    public function getDryHeatExposure(): ?ThermalExposureLimits
+    {
+        return $this->dryHeatExposure;
+    }
 
-    public function getImmersionExposure(): ?ThermalExposureLimits { return $this->immersionExposure; }
+    public function getImmersionExposure(): ?ThermalExposureLimits
+    {
+        return $this->immersionExposure;
+    }
 
     public function setDryHeatExposure(?ThermalExposureLimits $limits): void
     {
@@ -121,21 +154,45 @@ class Coating extends Aggregate
         $this->immersionExposure = $limits;
     }
 
-    public function getDryToTouch(): DryingTimeSeries { return $this->dryToTouch; }
+    public function getDryToTouch(): DryingTimeSeries
+    {
+        return $this->dryToTouch;
+    }
 
-    public function getFullCure(): DryingTimeSeries { return $this->fullCure; }
+    public function getFullCure(): DryingTimeSeries
+    {
+        return $this->fullCure;
+    }
 
-    public function getMinRecoatingInterval(): RecoatingIntervalTree { return $this->minRecoatingInterval; }
+    public function getMinRecoatingInterval(): RecoatingIntervalTree
+    {
+        return $this->minRecoatingInterval;
+    }
 
-    public function getMaxRecoatingInterval(): ?RecoatingIntervalTree { return $this->maxRecoatingInterval; }
+    public function getMaxRecoatingInterval(): ?RecoatingIntervalTree
+    {
+        return $this->maxRecoatingInterval;
+    }
 
-    public function getManufacturer(): Manufacturer { return $this->manufacturer; }
+    public function getManufacturer(): Manufacturer
+    {
+        return $this->manufacturer;
+    }
 
-    public function getPack(): float { return $this->pack; }
+    public function getPack(): float
+    {
+        return $this->pack;
+    }
 
-    public function getThinner(): ?string { return $this->thinner; }
+    public function getThinner(): ?string
+    {
+        return $this->thinner;
+    }
 
-    public function getTags(): Collection { return $this->tags; }
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
 
     public function setTitle(string $title): void
     {
@@ -259,7 +316,7 @@ class Coating extends Aggregate
 
     public function setMaxRecoatingInterval(?RecoatingIntervalTree $maxRecoatingInterval): void
     {
-        if ($maxRecoatingInterval !== null) {
+        if (null !== $maxRecoatingInterval) {
             (new CoatingRecoatingTreeValidator())->validate($maxRecoatingInterval);
         }
         $this->maxRecoatingInterval = $maxRecoatingInterval;
@@ -283,23 +340,13 @@ class Coating extends Aggregate
             return;
         }
         if ($this->applicationMinTemp >= $this->dryingMaxTemp) {
-            throw new AppException(sprintf(
-                'Минимальная температура нанесения (%+d °C) должна быть строго меньше максимальной температуры сушки (%+d °C).',
-                $this->applicationMinTemp,
-                $this->dryingMaxTemp,
-            ));
+            throw new AppException(sprintf('Минимальная температура нанесения (%+d °C) должна быть строго меньше максимальной температуры сушки (%+d °C).', $this->applicationMinTemp, $this->dryingMaxTemp));
         }
         foreach ($this->collectAllSeries() as $label => $series) {
             foreach ($series->points as $point) {
                 $t = $point->temperatureAt;
                 if ($t < $this->applicationMinTemp || $t > $this->dryingMaxTemp) {
-                    throw new AppException(sprintf(
-                        'Температура %+d °C (%s) вне допустимого диапазона %+d..%+d °C.',
-                        $t,
-                        $label,
-                        $this->applicationMinTemp,
-                        $this->dryingMaxTemp,
-                    ));
+                    throw new AppException(sprintf('Температура %+d °C (%s) вне допустимого диапазона %+d..%+d °C.', $t, $label, $this->applicationMinTemp, $this->dryingMaxTemp));
                 }
             }
         }
@@ -319,7 +366,7 @@ class Coating extends Aggregate
         if (isset($this->minRecoatingInterval)) {
             yield from $this->walkRecoatingTree($this->minRecoatingInterval, 'мин. интервал перекрытия');
         }
-        if (isset($this->maxRecoatingInterval) && $this->maxRecoatingInterval !== null) {
+        if (isset($this->maxRecoatingInterval) && null !== $this->maxRecoatingInterval) {
             yield from $this->walkRecoatingTree($this->maxRecoatingInterval, 'макс. интервал перекрытия');
         }
     }
@@ -331,7 +378,7 @@ class Coating extends Aggregate
     {
         yield $prefix => $tree->default;
         foreach ($tree->getChildren() as $key => $child) {
-            yield from $this->walkRecoatingTree($child, $prefix . ' → ' . $key);
+            yield from $this->walkRecoatingTree($child, $prefix.' → '.$key);
         }
     }
 
@@ -369,8 +416,8 @@ class Coating extends Aggregate
 
     public function addMaxRecoatingFor(EnvironmentType $env, CoatingBase $base, DryingTimeSeries $timeSeries, ?DryingTimeSeries $envDefault = null): void
     {
-        if ($this->maxRecoatingInterval === null) {
-            throw new AppException("Нельзя добавить правило для максимального интервала: максимальный интервал равен null.");
+        if (null === $this->maxRecoatingInterval) {
+            throw new AppException('Нельзя добавить правило для максимального интервала: максимальный интервал равен null.');
         }
         $this->setMaxRecoatingInterval(
             $this->withRecoatingFor($this->maxRecoatingInterval, $env, $base, $timeSeries, $envDefault),

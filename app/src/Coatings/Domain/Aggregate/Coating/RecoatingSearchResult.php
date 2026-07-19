@@ -9,13 +9,12 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 final readonly class RecoatingSearchResult
 {
     /**
-     * @param DryingTimeSeries $series
-     * @param bool $isExactMatch
      * @param StringCollection $matchedPath Список эталонных нормализованных ключей, которые удалось пройти
      */
     public function __construct(
         public DryingTimeSeries $series,
         public bool $isExactMatch,
         public StringCollection $matchedPath,
-    ) {}
+    ) {
+    }
 }

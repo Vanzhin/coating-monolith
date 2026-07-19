@@ -19,7 +19,6 @@ use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Validation\Validator;
-use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,10 +28,10 @@ use Symfony\Component\Routing\Annotation\Route;
 class AddAction extends AbstractController
 {
     public function __construct(
-        private readonly CommandBusInterface    $commandBus,
-        private readonly QueryBusInterface      $queryBus,
-        private readonly Validator              $validator,
-        private readonly CoatingMapper          $coatingMapper,
+        private readonly CommandBusInterface $commandBus,
+        private readonly QueryBusInterface $queryBus,
+        private readonly Validator $validator,
+        private readonly CoatingMapper $coatingMapper,
         private readonly GeneralTagsJsonHydrator $hydrator,
     ) {
     }
@@ -59,8 +58,9 @@ class AddAction extends AbstractController
                 $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $error = $e->getMessage();
+
                 return $this->render(
                     'admin/coating/coating/form.html.twig',
                     array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), [
@@ -74,12 +74,12 @@ class AddAction extends AbstractController
         // Дублирование: ?from={id} — берём существующее покрытие и наполняем форму его данными
         $inputData = null;
         $duplicateFrom = $request->query->get('from');
-        if ($duplicateFrom !== null) {
+        if (null !== $duplicateFrom) {
             $source = $this->queryBus->execute(new GetCoatingQuery($duplicateFrom));
-            if ($source->coatingDTO !== null) {
+            if (null !== $source->coatingDTO) {
                 $inputData = $this->coatingMapper->buildInputDataFromDto($source->coatingDTO);
                 unset($inputData['id']);
-                $inputData['title'] = $inputData['title'] . ' (копия)';
+                $inputData['title'] = $inputData['title'].' (копия)';
             }
         }
 
@@ -91,5 +91,4 @@ class AddAction extends AbstractController
             ]),
         );
     }
-
 }

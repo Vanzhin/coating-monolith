@@ -3,7 +3,7 @@
 namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 /**
- * Типа покрытия по назначению
+ * Типа покрытия по назначению.
  */
 enum CoatingSystemSurfaceTreatment: string
 {

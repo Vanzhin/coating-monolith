@@ -12,7 +12,7 @@ use Doctrine\ORM\Query\TokenType;
 
 /**
  * DQL: JSONB_GET_INT(cc.dryHeatExposure, 'continuous_max')
- * SQL: (cc.dry_heat_exposure ->> 'continuous_max')::int
+ * SQL: (cc.dry_heat_exposure ->> 'continuous_max')::int.
  *
  * Достаёт числовое поле из JSONB-колонки, приводит к int. NULL для отсутствующего
  * ключа. Использовать только на nullable JSONB-колонках, обёрнутых в IS NOT NULL.

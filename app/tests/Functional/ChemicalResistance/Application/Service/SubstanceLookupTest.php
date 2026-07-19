@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\Service;
 
 use App\ChemicalResistance\Application\Service\SubstanceLookup;
@@ -22,7 +24,7 @@ final class SubstanceLookupTest extends KernelTestCase
         self::bootKernel();
         $c = static::getContainer();
         $this->lookup = $c->get(SubstanceLookup::class);
-        $this->em     = $c->get(EntityManagerInterface::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -33,22 +35,22 @@ final class SubstanceLookupTest extends KernelTestCase
         try {
             foreach ($this->createdIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
     }
 
-    public function testCreatesNewWhenNotFound(): void
+    public function test_creates_new_when_not_found(): void
     {
         $suffix = uniqid('lookup-new-', true);
-        $raw    = 'Новое Вещество ' . $suffix;
+        $raw = 'Новое Вещество '.$suffix;
 
         $substance = $this->lookup->findOrCreateByName($raw);
         $this->createdIds[] = $substance->id;
@@ -64,17 +66,17 @@ final class SubstanceLookupTest extends KernelTestCase
         self::assertSame($raw, $reloaded->getCanonicalName());
     }
 
-    public function testReusesByCanonicalKey(): void
+    public function test_reuses_by_canonical_key(): void
     {
         $suffix = uniqid('lookup-reuse-', true);
-        $canonical = 'Вещество-' . $suffix;
+        $canonical = 'Вещество-'.$suffix;
 
         // Insert canonical substance.
         $first = $this->lookup->findOrCreateByName($canonical);
         $this->createdIds[] = $first->id;
 
         // Look up a variant with different case/whitespace.
-        $variant = 'вещество-' . $suffix;
+        $variant = 'вещество-'.$suffix;
         $second = $this->lookup->findOrCreateByName($variant);
 
         self::assertSame($first->getId(), $second->getId(), 'Should return the same substance');
@@ -86,10 +88,10 @@ final class SubstanceLookupTest extends KernelTestCase
         self::assertTrue($reloaded->hasName($variant), 'Variant spelling should be an alias');
     }
 
-    public function testReusesByCas(): void
+    public function test_reuses_by_cas(): void
     {
         $suffix = uniqid('lookup-cas-', true);
-        $originalName = 'ВеществоCAS-' . $suffix;
+        $originalName = 'ВеществоCAS-'.$suffix;
         $cas = CasNumber::fromString('7732-18-5');
 
         // Insert substance with CAS.
@@ -97,7 +99,7 @@ final class SubstanceLookupTest extends KernelTestCase
         $this->createdIds[] = $first->id;
 
         // Look up with a completely different name but same CAS.
-        $differentName = 'ИноеНазвание-' . $suffix;
+        $differentName = 'ИноеНазвание-'.$suffix;
         $second = $this->lookup->findOrCreateByName($differentName, $cas);
 
         self::assertSame($first->getId(), $second->getId(), 'CAS match should return the same substance');

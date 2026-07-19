@@ -8,7 +8,6 @@ use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Faker\Factory;
-use ReflectionProperty;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class GetMeActionTest extends WebTestCase
@@ -28,7 +27,7 @@ class GetMeActionTest extends WebTestCase
         // Активируем юзера без прохождения канал-верификации — иначе
         // ChannelVerificationGate редиректит любые non-whitelist маршруты
         // на /user/channel/verification, и /api/users/me не отдаст JSON.
-        (new ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
+        (new \ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
 
         $entityManager = $container->get('doctrine.orm.entity_manager');
         $entityManager->persist($user);

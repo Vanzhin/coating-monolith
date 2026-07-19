@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments;
 
 use App\ChemicalResistance\Application\DTO\AssessmentRowDTO;
@@ -13,19 +15,20 @@ use Symfony\Component\Uid\Uuid;
 final class ListCoatingAssessmentsQueryHandler
 {
     public function __construct(
-        private AssessmentRepositoryInterface   $assessments,
-        private SubstanceRepositoryInterface    $substances,
+        private AssessmentRepositoryInterface $assessments,
+        private SubstanceRepositoryInterface $substances,
         private EffectiveAssessmentNotes $effectiveNotes,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ListCoatingAssessmentsQuery $q): CoatingAssessmentsPage
     {
-        $cid  = Uuid::fromString($q->coatingId);
+        $cid = Uuid::fromString($q->coatingId);
         $page = $this->assessments->paginateByCoating($cid, $q->search, $q->page, $q->pageSize);
 
         /** @var list<string> $substanceIds */
         $substanceIds = array_map(
-            fn(Assessment $a) => $a->getSubstanceId()->toRfc4122(),
+            fn (Assessment $a) => $a->getSubstanceId()->toRfc4122(),
             $page->items,
         );
 
@@ -38,7 +41,7 @@ final class ListCoatingAssessmentsQueryHandler
         $rows = [];
         foreach ($page->items as $a) {
             $s = $subById[$a->getSubstanceId()->toRfc4122()] ?? null;
-            if ($s === null) {
+            if (null === $s) {
                 continue;
             }
             $noteViews = $this->effectiveNotes->of($a);
@@ -50,10 +53,10 @@ final class ListCoatingAssessmentsQueryHandler
                 grade: $a->getGrade()->value,
                 maxTemperatureCelsius: $a->getMaxTemperature()->celsius,
                 notes: array_map(
-                    fn(NoteView $n) => [
-                        'title'       => $n->title,
+                    fn (NoteView $n) => [
+                        'title' => $n->title,
                         'description' => $n->description,
-                        'isSystem'    => $n->isSystem,
+                        'isSystem' => $n->isSystem,
                     ],
                     $noteViews,
                 ),
@@ -65,10 +68,10 @@ final class ListCoatingAssessmentsQueryHandler
         $counts = $this->assessments->countByCoatingGroupedByGrade($cid);
 
         return new CoatingAssessmentsPage(
-            rows:       $rows,
-            total:      $page->total,
-            countR:     $counts['R'] ?? 0,
-            countLR:    $counts['LR'] ?? 0,
+            rows: $rows,
+            total: $page->total,
+            countR: $counts['R'] ?? 0,
+            countLR: $counts['LR'] ?? 0,
             countOther: ($counts['NR'] ?? 0) + ($counts['FS'] ?? 0) + ($counts['NT'] ?? 0),
         );
     }

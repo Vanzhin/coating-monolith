@@ -23,6 +23,7 @@ final class StringCollectionType extends JsonType
         if (!is_array($arr)) {
             return new StringCollection();
         }
+
         return new StringCollection(...array_map('strval', array_values($arr)));
     }
 
@@ -31,6 +32,7 @@ final class StringCollectionType extends JsonType
         if ($value instanceof StringCollection) {
             return parent::convertToDatabaseValue($value->getList(), $platform);
         }
+
         return parent::convertToDatabaseValue($value ?? [], $platform);
     }
 

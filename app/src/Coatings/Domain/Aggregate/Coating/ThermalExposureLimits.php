@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Shared\Infrastructure\Exception\AppException;
-use JsonSerializable;
 
 /**
  * Границы температурного воздействия на покрытие (уже нанесённое и высохшее),
@@ -32,7 +31,7 @@ use JsonSerializable;
  * Хранение — JSONB, через ThermalExposureLimitsType (Doctrine DBAL). Nullable
  * на уровне coating: null = никаких границ вообще не задокументировано.
  */
-final readonly class ThermalExposureLimits implements JsonSerializable
+final readonly class ThermalExposureLimits implements \JsonSerializable
 {
     /** Дефолт длительности пикового воздействия, когда peakMax указан, а duration — нет. */
     public const DEFAULT_PEAK_DURATION_MINUTES = 60;
@@ -54,7 +53,7 @@ final readonly class ThermalExposureLimits implements JsonSerializable
     ) {
         // VO без данных не создаём — вызывающий должен передать null. Это защита
         // от «пустых» записей в БД, отличных от отсутствия записи.
-        if ($continuousMin === null && $continuousMax === null && $peakMax === null && $peakDurationMinutes === null) {
+        if (null === $continuousMin && null === $continuousMax && null === $peakMax && null === $peakDurationMinutes) {
             throw new AppException('Пределы эксплуатации: нужно указать хотя бы одно значение.');
         }
 
@@ -64,30 +63,20 @@ final readonly class ThermalExposureLimits implements JsonSerializable
 
         // Если peak указан без явной длительности — по умолчанию 60 мин (стандарт
         // тех-паспортов Литум/Hempel).
-        if ($peakMax !== null && $peakDurationMinutes === null) {
+        if (null !== $peakMax && null === $peakDurationMinutes) {
             $peakDurationMinutes = self::DEFAULT_PEAK_DURATION_MINUTES;
         }
 
-        if ($continuousMin !== null && $continuousMax !== null && $continuousMin >= $continuousMax) {
-            throw new AppException(sprintf(
-                'Минимальная температура непрерывной эксплуатации (%+d °C) должна быть строго меньше максимальной (%+d °C).',
-                $continuousMin,
-                $continuousMax,
-            ));
+        if (null !== $continuousMin && null !== $continuousMax && $continuousMin >= $continuousMax) {
+            throw new AppException(sprintf('Минимальная температура непрерывной эксплуатации (%+d °C) должна быть строго меньше максимальной (%+d °C).', $continuousMin, $continuousMax));
         }
-        if ($peakMax !== null && $continuousMax !== null && $peakMax < $continuousMax) {
-            throw new AppException(sprintf(
-                'Пиковая температура (%+d °C) должна быть не ниже максимальной непрерывной (%+d °C).',
-                $peakMax,
-                $continuousMax,
-            ));
+        if (null !== $peakMax && null !== $continuousMax && $peakMax < $continuousMax) {
+            throw new AppException(sprintf('Пиковая температура (%+d °C) должна быть не ниже максимальной непрерывной (%+d °C).', $peakMax, $continuousMax));
         }
-        if ($peakDurationMinutes !== null && $peakMax === null) {
-            throw new AppException(
-                'Длительность пикового воздействия задана без самой пиковой температуры — уточните пиковую температуру.'
-            );
+        if (null !== $peakDurationMinutes && null === $peakMax) {
+            throw new AppException('Длительность пикового воздействия задана без самой пиковой температуры — уточните пиковую температуру.');
         }
-        if ($peakDurationMinutes !== null && $peakDurationMinutes <= 0) {
+        if (null !== $peakDurationMinutes && $peakDurationMinutes <= 0) {
             throw new AppException('Длительность пикового воздействия должна быть положительной.');
         }
 
@@ -104,17 +93,11 @@ final readonly class ThermalExposureLimits implements JsonSerializable
      */
     public static function assertTemperatureInRange(string $label, ?int $temperature): void
     {
-        if ($temperature === null) {
+        if (null === $temperature) {
             return;
         }
         if ($temperature < self::MIN_TEMPERATURE || $temperature > self::MAX_TEMPERATURE) {
-            throw new AppException(sprintf(
-                'Температура (%s) %+d °C выходит за допустимые границы %+d…%+d °C.',
-                $label,
-                $temperature,
-                self::MIN_TEMPERATURE,
-                self::MAX_TEMPERATURE,
-            ));
+            throw new AppException(sprintf('Температура (%s) %+d °C выходит за допустимые границы %+d…%+d °C.', $label, $temperature, self::MIN_TEMPERATURE, self::MAX_TEMPERATURE));
         }
     }
 
@@ -149,12 +132,13 @@ final readonly class ThermalExposureLimits implements JsonSerializable
      */
     public function covers(int $temperature, bool $includingPeak): bool
     {
-        if ($this->continuousMin !== null && $temperature < $this->continuousMin) {
+        if (null !== $this->continuousMin && $temperature < $this->continuousMin) {
             return false;
         }
-        $upper = $includingPeak && $this->peakMax !== null
+        $upper = $includingPeak && null !== $this->peakMax
             ? $this->peakMax
             : $this->continuousMax;
-        return $upper === null || $temperature <= $upper;
+
+        return null === $upper || $temperature <= $upper;
     }
 }

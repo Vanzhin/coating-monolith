@@ -42,15 +42,15 @@ final readonly class DryingTimeSeries implements TimeSeries
         }
 
         [$lower, $upper] = $this->findBoundingPoints($temperatureAt);
-        if ($lower === null || $upper === null) {
+        if (null === $lower || null === $upper) {
             return null;
         }
 
         $interpolated = $this->linearInterpolate($temperatureAt, $lower, $upper);
 
         return new TimeAtTemperature(
-            (int)round($temperatureAt),
-            (int)round($interpolated),
+            (int) round($temperatureAt),
+            (int) round($interpolated),
             isCalculated: true,
         );
     }
@@ -65,15 +65,16 @@ final readonly class DryingTimeSeries implements TimeSeries
      * Обратная сборка из плоского массива точек (формат jsonSerialize()).
      *
      * @param list<array<string, mixed>> $rows
+     *
      * @throws AppException
      */
     public static function fromArray(array $rows): self
     {
         $points = array_map(
-            fn(array $row): TimeAtTemperature => new TimeAtTemperature(
-                (int)$row['temperature_at'],
-                is_numeric($row['time_in_minutes']) ? (int)$row['time_in_minutes'] : null,
-                (bool)($row['is_calculated'] ?? false),
+            fn (array $row): TimeAtTemperature => new TimeAtTemperature(
+                (int) $row['temperature_at'],
+                is_numeric($row['time_in_minutes']) ? (int) $row['time_in_minutes'] : null,
+                (bool) ($row['is_calculated'] ?? false),
             ),
             $rows,
         );
@@ -83,6 +84,7 @@ final readonly class DryingTimeSeries implements TimeSeries
 
     /**
      * @param TimeAtTemperature[] $points
+     *
      * @throws AppException
      */
     private function assertNotEmpty(array $points): void
@@ -94,17 +96,21 @@ final readonly class DryingTimeSeries implements TimeSeries
 
     /**
      * @param TimeAtTemperature[] $points
+     *
      * @return list<TimeAtTemperature>
      */
     private function sortPoints(array $points): array
     {
-        usort($points, fn(TimeAtTemperature $a, TimeAtTemperature $b) => $a->temperatureAt <=> $b->temperatureAt);
+        usort($points, fn (TimeAtTemperature $a, TimeAtTemperature $b) => $a->temperatureAt <=> $b->temperatureAt);
+
         return array_values($points);
     }
 
     /**
-     * Валидация всей серии за один проход (O(N))
+     * Валидация всей серии за один проход (O(N)).
+     *
      * @param TimeAtTemperature[] $points
+     *
      * @throws AppException
      */
     private function validatePointsConsistency(array $points): void
@@ -115,31 +121,18 @@ final readonly class DryingTimeSeries implements TimeSeries
         $previousDuration = null;
 
         foreach ($points as $point) {
-            if ($previous !== null) {
+            if (null !== $previous) {
                 // 1. Дубликат температуры запрещён для любых kind'ов.
                 if ($point->temperatureAt === $previous->temperatureAt) {
-                    throw new AppException(
-                        sprintf(
-                            'Дублирующаяся температурная точка %d °C.',
-                            $point->temperatureAt,
-                        )
-                    );
+                    throw new AppException(sprintf('Дублирующаяся температурная точка %d °C.', $point->temperatureAt));
                 }
             }
 
             // 2. Физ-правило применяем ТОЛЬКО среди Duration-точек.
             // Unlimited (0) и Unknown (null) — пропускаем при сравнении.
-            if ($point->timeInMinutes !== null && $point->timeInMinutes > 0) {
-                if ($previousDuration !== null && $point->timeInMinutes > $previousDuration->timeInMinutes) {
-                    throw new AppException(
-                        sprintf(
-                            'При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).',
-                            $point->temperatureAt,
-                            $this->humanize($point->timeInMinutes),
-                            $previousDuration->temperatureAt,
-                            $this->humanize($previousDuration->timeInMinutes),
-                        )
-                    );
+            if (null !== $point->timeInMinutes && $point->timeInMinutes > 0) {
+                if (null !== $previousDuration && $point->timeInMinutes > $previousDuration->timeInMinutes) {
+                    throw new AppException(sprintf('При +%d °C время сушки (%s) не может быть больше, чем при +%d °C (%s).', $point->temperatureAt, $this->humanize($point->timeInMinutes), $previousDuration->temperatureAt, $this->humanize($previousDuration->timeInMinutes)));
                 }
                 $previousDuration = $point;
             }
@@ -159,7 +152,7 @@ final readonly class DryingTimeSeries implements TimeSeries
         foreach ($this->points as $point) {
             // Для интерполяции учитываем только Duration-точки.
             // Unlimited (0) и Unknown (null) — пропускаем: между ними и Duration интерполировать нельзя.
-            if ($point->timeInMinutes === null || $point->timeInMinutes === 0) {
+            if (null === $point->timeInMinutes || 0 === $point->timeInMinutes) {
                 continue;
             }
             if ($point->temperatureAt <= $key) {
@@ -184,7 +177,7 @@ final readonly class DryingTimeSeries implements TimeSeries
             * ($key - $lower->temperatureAt)
             / ($upper->temperatureAt - $lower->temperatureAt);
 
-        return (int)round($interpolated);
+        return (int) round($interpolated);
     }
 
     private function humanize(int $minutes): string

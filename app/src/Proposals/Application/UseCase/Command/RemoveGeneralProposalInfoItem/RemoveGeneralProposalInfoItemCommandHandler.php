@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\UseCase\Command\RemoveGeneralProposalInfoItem;
 
 use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessControl;
@@ -14,9 +13,8 @@ readonly class RemoveGeneralProposalInfoItemCommandHandler implements CommandHan
 {
     public function __construct(
         private GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository,
-        private GeneralProposalInfoAccessControl           $generalProposalInfoAccessControl
-    )
-    {
+        private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl
+    ) {
     }
 
     public function __invoke(RemoveGeneralProposalInfoItemCommand $command): RemoveGeneralProposalInfoItemCommandResult

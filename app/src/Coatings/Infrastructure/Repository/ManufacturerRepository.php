@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Repository;
 
@@ -44,11 +44,11 @@ class ManufacturerRepository extends ServiceEntityRepository implements Manufact
     public function findByFilter(ManufacturersFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('cm');
-        //todo запихать сортинг в фильтр
+        // todo запихать сортинг в фильтр
         $qb->orderBy('cm.title', 'ASC');
         if ($filter->title) {
             $qb->where($qb->expr()->like('LOWER(cm.title)', 'LOWER(:title)'))
-                ->setParameter('title', '%' . $filter->title . '%');
+                ->setParameter('title', '%'.$filter->title.'%');
         }
         if ($filter->pager) {
             $qb->setMaxResults($filter->pager->getLimit());

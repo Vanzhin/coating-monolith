@@ -38,6 +38,7 @@ final class CoatingCompareMatrixBuilder
 
     /**
      * @param list<CoatingDTO> $subjects
+     *
      * @return list<array{
      *   label: string,
      *   columns: list<int>,
@@ -47,11 +48,11 @@ final class CoatingCompareMatrixBuilder
      */
     public function build(array $subjects): array
     {
-        if ($subjects === []) {
+        if ([] === $subjects) {
             return [];
         }
 
-        $matrices = array_map(fn(CoatingDTO $s) => $this->singleBuilder->build($s), $subjects);
+        $matrices = array_map(fn (CoatingDTO $s) => $this->singleBuilder->build($s), $subjects);
 
         $columns = $this->unionColumns($matrices);
         $labelOrder = $this->collectLabelsInEncounterOrder($matrices);
@@ -67,7 +68,7 @@ final class CoatingCompareMatrixBuilder
                 foreach ($columns as $t) {
                     $cell = $sourceRow['values'][$t] ?? ['minutes' => null, 'is_calculated' => false];
                     $rowValues[$t] = $cell;
-                    if ($cell['minutes'] !== null) {
+                    if (null !== $cell['minutes']) {
                         $allEmpty = false;
                     }
                 }
@@ -91,6 +92,7 @@ final class CoatingCompareMatrixBuilder
 
     /**
      * @param list<array{columns: list<int>, rows: list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>}> $matrices
+     *
      * @return list<int>
      */
     private function unionColumns(array $matrices): array
@@ -103,6 +105,7 @@ final class CoatingCompareMatrixBuilder
         }
         $keys = array_keys($all);
         sort($keys);
+
         return $keys;
     }
 
@@ -111,6 +114,7 @@ final class CoatingCompareMatrixBuilder
      * порядок (dryToTouch → fullCure → recoating root → env → env→base).
      *
      * @param list<array{columns: list<int>, rows: list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>}> $matrices
+     *
      * @return list<string>
      */
     private function collectLabelsInEncounterOrder(array $matrices): array
@@ -123,11 +127,13 @@ final class CoatingCompareMatrixBuilder
                 }
             }
         }
+
         return $order;
     }
 
     /**
      * @param list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}> $rows
+     *
      * @return array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}|null
      */
     private function findRowByLabel(array $rows, string $label): ?array
@@ -137,6 +143,7 @@ final class CoatingCompareMatrixBuilder
                 return $row;
             }
         }
+
         return null;
     }
 
@@ -145,7 +152,8 @@ final class CoatingCompareMatrixBuilder
      * есть хотя бы 2 разных значения (null считается равноправным bucket'ом).
      *
      * @param list<array{subject: CoatingDTO, values: array<int, array{minutes: ?int, is_calculated: bool}>}> $subjectRows
-     * @param list<int> $columns
+     * @param list<int>                                                                                       $columns
+     *
      * @return array<int, true>
      */
     private function detectDiffColumns(array $subjectRows, array $columns): array
@@ -155,12 +163,13 @@ final class CoatingCompareMatrixBuilder
             $buckets = [];
             foreach ($subjectRows as $row) {
                 $m = $row['values'][$t]['minutes'];
-                $buckets[$m === null ? '__null' : (string) $m] = true;
+                $buckets[null === $m ? '__null' : (string) $m] = true;
             }
             if (count($buckets) > 1) {
                 $diff[$t] = true;
             }
         }
+
         return $diff;
     }
 }

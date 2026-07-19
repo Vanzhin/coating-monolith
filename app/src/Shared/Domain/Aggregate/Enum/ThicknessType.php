@@ -8,5 +8,5 @@ enum ThicknessType: string
 {
     case MIC = 'мкм';
     case MM = 'мм';
-    case CM ='см';
+    case CM = 'см';
 }

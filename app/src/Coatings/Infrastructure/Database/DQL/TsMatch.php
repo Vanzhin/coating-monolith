@@ -11,7 +11,7 @@ use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Query\TokenType;
 
 /**
- * DQL: TS_MATCH(searchVector, tsquery) -> SQL: (searchVector @@ tsquery)
+ * DQL: TS_MATCH(searchVector, tsquery) -> SQL: (searchVector @@ tsquery).
  */
 final class TsMatch extends FunctionNode
 {

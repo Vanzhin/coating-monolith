@@ -1,31 +1,31 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Documents\Domain\Service;
 
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
-use App\Proposals\Domain\Service\GeneralProposalInfoItemDataInterface;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 use App\Proposals\Domain\Factory\GeneralProposalInfoFactory;
 use App\Proposals\Domain\Factory\GeneralProposalInfoItemFactory;
+use App\Proposals\Domain\Service\GeneralProposalInfoItemDataInterface;
 
 final readonly class DocumentMaker
 {
-    //todo
+    // todo
     public function __construct(
         private DocumentRepositoryInterface $documentRepository,
-        private GeneralProposalInfoFactory             $generalProposalInfoFactory,
-        private GeneralProposalInfoItemFactory         $generalProposalInfoItemFactory,
-    )
-    {
+        private GeneralProposalInfoFactory $generalProposalInfoFactory,
+        private GeneralProposalInfoItemFactory $generalProposalInfoItemFactory,
+    ) {
     }
 
     public function make(
-        string  $number,
-        string  $ownerId,
-        string  $unit,
-        string  $projectTitle,
-        float   $projectArea,
+        string $number,
+        string $ownerId,
+        string $unit,
+        string $projectTitle,
+        float $projectArea,
         ?string $description,
         ?string $basis,
         ?string $projectStructureDescription,
@@ -33,11 +33,9 @@ final readonly class DocumentMaker
         ?string $category,
         ?string $treatment,
         ?string $method,
-        int     $loss,
-        array   $coats,
-
-    ): GeneralProposalInfo
-    {
+        int $loss,
+        array $coats,
+    ): GeneralProposalInfo {
         $generalProposalInfo = $this->generalProposalInfoFactory->create($number,
             $ownerId,
             $unit,

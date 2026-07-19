@@ -8,7 +8,7 @@ class DocumentCountByCategoryDTO
 {
     public array $categories = [];
 
-    public function __construct(DocumentCategoryCount...$items)
+    public function __construct(DocumentCategoryCount ...$items)
     {
         $this->categories = $items;
     }

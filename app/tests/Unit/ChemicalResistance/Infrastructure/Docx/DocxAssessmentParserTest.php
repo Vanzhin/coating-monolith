@@ -14,10 +14,10 @@ final class DocxAssessmentParserTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->fixturePath = dirname(__DIR__, 4) . '/Fixtures/ChemicalResistance/minimal.docx';
+        $this->fixturePath = dirname(__DIR__, 4).'/Fixtures/ChemicalResistance/minimal.docx';
     }
 
-    public function testParsesMinimalFixture(): void
+    public function test_parses_minimal_fixture(): void
     {
         $out = (new DocxAssessmentParser())->parse($this->fixturePath);
 
@@ -33,7 +33,7 @@ final class DocxAssessmentParserTest extends TestCase
         self::assertStringContainsString('поменять цвет', $out->notes[0]->description);
     }
 
-    public function testParsesUnreadableFile(): void
+    public function test_parses_unreadable_file(): void
     {
         $this->expectException(AppException::class);
         (new DocxAssessmentParser())->parse('/no/such/file.docx');

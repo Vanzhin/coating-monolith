@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal\Specification;
 
@@ -10,8 +10,6 @@ readonly class GeneralProposalInfoItemSpecification implements SpecificationInte
 {
     public function __construct(
         public UniqueCoatNumberGeneralProposalInfoItemSpecification $uniqueCoatNumberGeneralProposalInfoItemSpecification
-    )
-    {
+    ) {
     }
-
 }

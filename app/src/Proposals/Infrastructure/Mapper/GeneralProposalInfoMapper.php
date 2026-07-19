@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Mapper;
 
@@ -13,10 +13,8 @@ use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemDurability;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemSurfaceTreatment;
 use Symfony\Component\Validator\Constraints as Assert;
 
-
 class GeneralProposalInfoMapper
 {
-
     public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
@@ -30,13 +28,13 @@ class GeneralProposalInfoMapper
     public function buildDtoFromInputData(array $inputData): GeneralProposalInfoDTO
     {
         $dto = new GeneralProposalInfoDTO();
-        //
+
         $dto->number = $inputData['number'];
         $dto->ownerId = $inputData['ownerId'];
         $dto->description = $inputData['description'] ?? null;
         $dto->basis = $inputData['basis'] ?? null;
-        $dto->projectArea = (float)$inputData['projectArea'];
-        $dto->loss = (int)$inputData['loss'];
+        $dto->projectArea = (float) $inputData['projectArea'];
+        $dto->loss = (int) $inputData['loss'];
         $dto->projectTitle = $inputData['projectTitle'] ?? null;
         $dto->projectStructureDescription = $inputData['projectStructureDescription'] ?? null;
         $dto->durability = $inputData['durability'];
@@ -48,13 +46,13 @@ class GeneralProposalInfoMapper
         foreach ($inputData['coats'] ?? [] as $coat) {
             $itemDto = new GeneralProposalInfoItemDTO();
             $itemDto->coatId = $coat['coatId'];
-            $itemDto->loss = empty($coat['loss']) ? null : (int)$coat['loss'];
-            $itemDto->coatPrice = (float)$coat['coatPrice'];
-            $itemDto->coatNumber = (int)$coat['coatNumber'];
-            $itemDto->coatDft = (int)$coat['coatDft'];
+            $itemDto->loss = empty($coat['loss']) ? null : (int) $coat['loss'];
+            $itemDto->coatPrice = (float) $coat['coatPrice'];
+            $itemDto->coatNumber = (int) $coat['coatNumber'];
+            $itemDto->coatDft = (int) $coat['coatDft'];
             $itemDto->coatColor = $coat['coatColor'];
-            $itemDto->thinnerPrice = (int)$coat['thinnerPrice'];
-            $itemDto->thinnerConsumption = (int)$coat['thinnerConsumption'];
+            $itemDto->thinnerPrice = (int) $coat['thinnerPrice'];
+            $itemDto->thinnerConsumption = (int) $coat['thinnerConsumption'];
             $coats[] = $itemDto;
         }
         $dto->coats = $coats;
@@ -73,7 +71,6 @@ class GeneralProposalInfoMapper
                     'max' => 100,
                     'maxMessage' => 'Номер не должен быть длиннее {{ limit }}.',
                     'minMessage' => 'Номер не должен быть короче {{ limit }}.',
-
                 ]),
             ],
             'description' => new Assert\Optional([
@@ -102,7 +99,7 @@ class GeneralProposalInfoMapper
                 new Assert\Range([
                     'min' => 1,
                     'max' => 1000000,
-                    'notInRangeMessage' => 'Площадь должна быть в переделах от {{ min }} до {{ max }} м кв.'
+                    'notInRangeMessage' => 'Площадь должна быть в переделах от {{ min }} до {{ max }} м кв.',
                 ]),
             ],
             'loss' => [
@@ -111,7 +108,7 @@ class GeneralProposalInfoMapper
                 new Assert\Range([
                     'min' => 0,
                     'max' => 99,
-                    'notInRangeMessage' => 'Потери должны быть в переделах от {{ min }} до {{ max }} %.'
+                    'notInRangeMessage' => 'Потери должны быть в переделах от {{ min }} до {{ max }} %.',
                 ]),
             ],
             'projectTitle' => [
@@ -139,28 +136,28 @@ class GeneralProposalInfoMapper
                 new Assert\Type('string'),
                 new Assert\Choice(CoatingSystemDurability::values(),
                     message: sprintf('Не верный формат для долговечности. Поддерживается: %s.',
-                        implode(', ', CoatingSystemDurability::values())))
+                        implode(', ', CoatingSystemDurability::values()))),
             ],
             'category' => [
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
                 new Assert\Choice(CoatingSystemCorrosiveCategory::values(),
                     message: sprintf('Не верный формат коррозионной категории. Поддерживается: %s.',
-                        implode(', ', CoatingSystemCorrosiveCategory::values())))
+                        implode(', ', CoatingSystemCorrosiveCategory::values()))),
             ],
             'treatment' => [
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
                 new Assert\Choice(CoatingSystemSurfaceTreatment::values(),
                     message: sprintf('Не верный формат подготовки поверхности. Поддерживается: %s.',
-                        implode(', ', CoatingSystemSurfaceTreatment::values())))
+                        implode(', ', CoatingSystemSurfaceTreatment::values()))),
             ],
             'method' => [
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
                 new Assert\Choice(CoatingSystemApplicationMethod::values(),
                     message: sprintf('Не верный формат метода нанесения. Поддерживается: %s.',
-                        implode(', ', CoatingSystemApplicationMethod::values())))
+                        implode(', ', CoatingSystemApplicationMethod::values()))),
             ],
 
             'coats' => new Assert\All([
@@ -169,7 +166,7 @@ class GeneralProposalInfoMapper
                         new Assert\AtLeastOneOf([
                             new Assert\Blank(),
                             new Assert\Uuid(),
-                        ])
+                        ]),
                     ]),
                     'coatId' => [
                         new Assert\NotBlank(),
@@ -180,7 +177,7 @@ class GeneralProposalInfoMapper
                         new Assert\Type('numeric'),
                         new Assert\Positive(
                             message: 'Цена покрытия должна быть положительным числом.'
-                        )
+                        ),
                     ],
                     'coatNumber' => [
                         new Assert\NotBlank(),
@@ -192,7 +189,7 @@ class GeneralProposalInfoMapper
                         new Assert\Range([
                             'min' => 10,
                             'max' => 9999,
-                            'notInRangeMessage' => 'ТСП должна быть в переделах от {{ min }} до {{ max }}.'
+                            'notInRangeMessage' => 'ТСП должна быть в переделах от {{ min }} до {{ max }}.',
                         ]),
                     ],
                     'coatColor' => [
@@ -210,7 +207,7 @@ class GeneralProposalInfoMapper
                         new Assert\Type('numeric'),
                         new Assert\Positive(
                             message: 'Цена растворителя должна быть положительным числом.'
-                        )
+                        ),
                     ],
                     'loss' => new Assert\Optional([
                         new Assert\AtLeastOneOf([
@@ -219,9 +216,9 @@ class GeneralProposalInfoMapper
                             new Assert\Range([
                                 'min' => 0,
                                 'max' => 99,
-                                'notInRangeMessage' => 'Потери должны быть в переделах от {{ min }} до {{ max }} %.'
+                                'notInRangeMessage' => 'Потери должны быть в переделах от {{ min }} до {{ max }} %.',
                             ]),
-                        ])
+                        ]),
                     ]),
                     'thinnerConsumption' => [
                         new Assert\NotBlank(),
@@ -229,15 +226,12 @@ class GeneralProposalInfoMapper
                         new Assert\Range([
                             'min' => 0,
                             'max' => 99,
-                            'notInRangeMessage' => 'Процент разбавления должен быть в переделах от {{ min }} до {{ max }} %.'
+                            'notInRangeMessage' => 'Процент разбавления должен быть в переделах от {{ min }} до {{ max }} %.',
                         ]),
                     ],
-
                 ]),
-
             ]),
         ],
             allowExtraFields: true);
     }
-
 }

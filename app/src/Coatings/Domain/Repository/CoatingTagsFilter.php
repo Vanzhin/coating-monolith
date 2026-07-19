@@ -11,11 +11,10 @@ class CoatingTagsFilter
     public array $types = [];
 
     public function __construct(
-        public ?Pager  $pager = null,
+        public ?Pager $pager = null,
         public ?string $title = null,
-        ?string        ...$types,
-    )
-    {
+        ?string ...$types,
+    ) {
         $this->types = $types;
     }
 }

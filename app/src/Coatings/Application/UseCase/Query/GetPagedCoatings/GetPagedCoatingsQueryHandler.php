@@ -16,10 +16,10 @@ use App\Shared\Domain\Repository\Pager;
 class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly CoatingRepositoryInterface           $coatingRepository,
-        private readonly CoatingDTOTransformer                $coatingDTOTransformer,
+        private readonly CoatingRepositoryInterface $coatingRepository,
+        private readonly CoatingDTOTransformer $coatingDTOTransformer,
         private readonly MatchSubstancesForSearchQueryHandler $matchSubstances,
-        private readonly ListCoatingAssessmentsQueryHandler   $listAssessments,
+        private readonly ListCoatingAssessmentsQueryHandler $listAssessments,
     ) {
     }
 
@@ -28,11 +28,11 @@ class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
         $paginator = $this->coatingRepository->findByFilter($query->filter);
         $coatings = $this->coatingDTOTransformer->fromEntityList($paginator->items);
 
-        if ($query->filter->search !== null && $coatings !== []) {
+        if (null !== $query->filter->search && [] !== $coatings) {
             $words = $query->filter->search->words();
-            if ($words !== []) {
+            if ([] !== $words) {
                 $matches = ($this->matchSubstances)(new MatchSubstancesForSearchQuery(
-                    coatingIds: array_map(fn($c) => $c->id, $coatings),
+                    coatingIds: array_map(fn ($c) => $c->id, $coatings),
                     searchWords: $words,
                 ));
                 foreach ($coatings as $c) {
@@ -41,7 +41,7 @@ class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
             }
         }
 
-        if ($coatings !== []) {
+        if ([] !== $coatings) {
             foreach ($coatings as $c) {
                 $c->chemResistancePage = ($this->listAssessments)(new ListCoatingAssessmentsQuery(
                     coatingId: $c->id,

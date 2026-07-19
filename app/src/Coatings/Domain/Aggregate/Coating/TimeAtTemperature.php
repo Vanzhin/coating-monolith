@@ -6,7 +6,6 @@ namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Shared\Infrastructure\Exception\AppException;
 use Carbon\CarbonInterval;
-use JsonSerializable;
 
 /**
  * Точка серии «температура → длительность».
@@ -18,26 +17,24 @@ use JsonSerializable;
  *
  * Конструктор отвергает только отрицательные значения. null/0 — валидны.
  */
-final readonly class TimeAtTemperature implements JsonSerializable
+final readonly class TimeAtTemperature implements \JsonSerializable
 {
     public function __construct(
         public int $temperatureAt,
         public ?int $timeInMinutes,
         public bool $isCalculated = false,
     ) {
-        if ($timeInMinutes !== null && $timeInMinutes < 0) {
-            throw new AppException(sprintf(
-                'Длительность при +%d °C не может быть отрицательной.',
-                $temperatureAt,
-            ));
+        if (null !== $timeInMinutes && $timeInMinutes < 0) {
+            throw new AppException(sprintf('Длительность при +%d °C не может быть отрицательной.', $temperatureAt));
         }
     }
 
     public function getInterval(): ?CarbonInterval
     {
-        if ($this->timeInMinutes === null || $this->timeInMinutes === 0) {
+        if (null === $this->timeInMinutes || 0 === $this->timeInMinutes) {
             return null;
         }
+
         return CarbonInterval::minutes($this->timeInMinutes);
     }
 

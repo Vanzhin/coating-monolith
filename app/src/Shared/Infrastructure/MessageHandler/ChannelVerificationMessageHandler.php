@@ -30,11 +30,13 @@ readonly class ChannelVerificationMessageHandler
 
             if (!$channel) {
                 $this->sendErrorMessage($message->telegramChatId, 'Канал не найден.');
+
                 return;
             }
 
             if ($channel->isVerified()) {
                 $this->sendErrorMessage($message->telegramChatId, 'Канал уже верифицирован.');
+
                 return;
             }
 
@@ -43,6 +45,7 @@ readonly class ChannelVerificationMessageHandler
                 $this->tokenService->verifySubjectByTokenString($message->tokenString, $channel);
             } catch (\Exception $e) {
                 $this->sendErrorMessage($message->telegramChatId, 'Код верификации недействителен или истек срок действия.');
+
                 return;
             }
 
@@ -79,7 +82,7 @@ readonly class ChannelVerificationMessageHandler
     private function sendErrorMessage(int $chatId, string $text): void
     {
         try {
-            $this->telegramBotService->sendMessage($chatId, '❌ ' . $text);
+            $this->telegramBotService->sendMessage($chatId, '❌ '.$text);
         } catch (\Exception $e) {
             $this->logger->error('Failed to send error message', [
                 'chatId' => $chatId,
@@ -88,4 +91,3 @@ readonly class ChannelVerificationMessageHandler
         }
     }
 }
-

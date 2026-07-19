@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Substance;
@@ -17,7 +18,9 @@ use Symfony\Component\Routing\Annotation\Route;
 )]
 class DeleteAction extends AbstractController
 {
-    public function __construct(private readonly CommandBusInterface $commandBus) {}
+    public function __construct(private readonly CommandBusInterface $commandBus)
+    {
+    }
 
     public function __invoke(string $id): Response
     {

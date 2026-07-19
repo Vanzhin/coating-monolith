@@ -11,7 +11,6 @@ readonly class GetPagedCoatingTagsQueryResult
 {
     /**
      * @param CoatingTagDTO[] $coatingTags
-     * @param Pager $pager
      */
     public function __construct(public array $coatingTags, public Pager $pager)
     {

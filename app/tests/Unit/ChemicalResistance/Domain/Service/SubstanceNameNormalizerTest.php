@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\ChemicalResistance\Domain\Service;
 
 use App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer;
@@ -8,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 final class SubstanceNameNormalizerTest extends TestCase
 {
     /** @dataProvider sameGroup */
-    public function testAllInGroupNormalizeSame(array $variants): void
+    public function test_all_in_group_normalize_same(array $variants): void
     {
         $first = SubstanceNameNormalizer::normalize($variants[0]);
         foreach ($variants as $v) {
@@ -24,7 +26,7 @@ final class SubstanceNameNormalizerTest extends TestCase
                 '1,2 - Ethanediol',
                 '1,2-ETHANEDIOL',
             ]],
-            'butanone synonyms'   => [[
+            'butanone synonyms' => [[
                 '2-Butanone',
                 '2-Butanone (*Shell)',
             ]],
@@ -41,7 +43,7 @@ final class SubstanceNameNormalizerTest extends TestCase
     }
 
     /** @dataProvider distinctGroup */
-    public function testDifferentSubstancesNormalizeDifferently(string $a, string $b): void
+    public function test_different_substances_normalize_differently(string $a, string $b): void
     {
         self::assertNotSame(
             SubstanceNameNormalizer::normalize($a),

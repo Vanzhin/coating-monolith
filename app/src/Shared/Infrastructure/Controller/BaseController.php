@@ -9,13 +9,11 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Webmozart\Assert\InvalidArgumentException;
 
-
 class BaseController extends AbstractController
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-    )
-    {
+    ) {
     }
 
     protected function getClientErrorMessage(\Throwable $error): string

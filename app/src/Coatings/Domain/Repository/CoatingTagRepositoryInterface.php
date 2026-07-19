@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Repository;
 
@@ -31,5 +31,4 @@ interface CoatingTagRepositoryInterface
     public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag;
 
     public function findByFilter(CoatingTagsFilter $filter): PaginationResult;
-
 }

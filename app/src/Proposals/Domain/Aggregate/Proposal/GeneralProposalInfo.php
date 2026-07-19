@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal;
 
@@ -31,29 +31,27 @@ class GeneralProposalInfo extends Aggregate
     private ?CoatingSystemApplicationMethod $method;
     private GeneralProposalInfoSpecification $specification;
 
-
     /**
      * @var Collection<GeneralProposalInfoItem>
      */
     private Collection $coats;
 
     public function __construct(
-        string                           $number,
-        string                           $ownerId,
-        GeneralProposalInfoUnit          $unit,
-        string                           $projectTitle,
-        float                            $projectArea,
+        string $number,
+        string $ownerId,
+        GeneralProposalInfoUnit $unit,
+        string $projectTitle,
+        float $projectArea,
         GeneralProposalInfoSpecification $specification,
-        ?string                          $description = null,
-        ?string                          $basis = null,
-        ?string                          $projectStructureDescription = null,
-        ?CoatingSystemDurability         $durability = null,
-        ?CoatingSystemCorrosiveCategory  $category = null,
-        ?CoatingSystemSurfaceTreatment   $treatment = null,
-        ?CoatingSystemApplicationMethod  $method = null,
-        int                              $loss = 30,
-    )
-    {
+        ?string $description = null,
+        ?string $basis = null,
+        ?string $projectStructureDescription = null,
+        ?CoatingSystemDurability $durability = null,
+        ?CoatingSystemCorrosiveCategory $category = null,
+        ?CoatingSystemSurfaceTreatment $treatment = null,
+        ?CoatingSystemApplicationMethod $method = null,
+        int $loss = 30,
+    ) {
         $this->id = UuidService::generate();
         $this->ownerId = $ownerId;
         $this->specification = $specification;
@@ -71,8 +69,6 @@ class GeneralProposalInfo extends Aggregate
         $this->setProjectTitle($projectTitle);
         $this->setProjectStructureDescription($projectStructureDescription);
         $this->setLoss($loss);
-
-
     }
 
     public function getId(): string
@@ -101,7 +97,6 @@ class GeneralProposalInfo extends Aggregate
     {
         $this->description = $description;
         AssertService::maxLength($this->description, 750);
-
     }
 
     public function getBasis(): ?string
@@ -113,7 +108,6 @@ class GeneralProposalInfo extends Aggregate
     {
         $this->basis = $basis;
         AssertService::maxLength($this->basis, 750);
-
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -186,7 +180,6 @@ class GeneralProposalInfo extends Aggregate
     {
         $this->projectStructureDescription = $projectStructureDescription;
         AssertService::maxLength($this->projectStructureDescription, 750);
-
     }
 
     public function getLoss(): int

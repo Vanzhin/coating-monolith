@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Controller\Security;
 
@@ -18,16 +18,15 @@ use Symfony\Component\Routing\Annotation\Route;
 class LoginLinkAction extends AbstractController
 {
     public function __construct(
-        private readonly EventBusInterface       $eventBus,
+        private readonly EventBusInterface $eventBus,
         private readonly UserRepositoryInterface $userRepository,
         // Rate limiters — Symfony auto-wire по имени: framework.rate_limiter.<name>
         // → RateLimiterFactory <name>Limiter (см. config/packages/framework.yaml).
         #[Autowire(service: 'limiter.login_link_per_email')]
-        private readonly RateLimiterFactory      $loginLinkPerEmailLimiter,
+        private readonly RateLimiterFactory $loginLinkPerEmailLimiter,
         #[Autowire(service: 'limiter.login_link_per_ip')]
-        private readonly RateLimiterFactory      $loginLinkPerIpLimiter,
-    )
-    {
+        private readonly RateLimiterFactory $loginLinkPerIpLimiter,
+    ) {
     }
 
     public function __invoke(Request $request): Response
@@ -58,7 +57,7 @@ class LoginLinkAction extends AbstractController
             // атакующий меняет IP. При превышении молча пропускаем отправку —
             // одинаковый ответ независимо от того, лимит это или отсутствие юзера.
             $user = is_string($email) ? $this->userRepository->getByEmail($email) : null;
-            if ($user !== null) {
+            if (null !== $user) {
                 $emailLimit = $this->loginLinkPerEmailLimiter->create(mb_strtolower($email))->consume();
                 if ($emailLimit->isAccepted()) {
                     $this->eventBus->execute(new LoginLinkCreatedEvent($user->getUlid()));
@@ -67,7 +66,7 @@ class LoginLinkAction extends AbstractController
 
             return $this->render('security/login_link_sent.html.twig', compact('email'));
         }
+
         return $this->render('security/login_link.html.twig', compact('email'));
     }
-
 }

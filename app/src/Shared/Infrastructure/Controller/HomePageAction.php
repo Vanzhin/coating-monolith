@@ -14,15 +14,14 @@ class HomePageAction extends AbstractController
 {
     public function __construct(
         private readonly AuthUserFetcher $userFetcher,
-    )
-    {
+    ) {
     }
 
     public function __invoke(): Response
     {
-        if($this->userFetcher->isAuthenticated()){
+        if ($this->userFetcher->isAuthenticated()) {
             return $this->redirectToRoute('app_cabinet');
-        };
+        }
 
         return $this->render('home/index.html.twig');
     }

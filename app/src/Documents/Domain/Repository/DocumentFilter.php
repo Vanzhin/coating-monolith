@@ -9,7 +9,7 @@ use App\Shared\Domain\Repository\Pager;
 
 class DocumentFilter implements \JsonSerializable
 {
-    public const  SEARCH_SEPARATOR = '+';
+    public const SEARCH_SEPARATOR = '+';
 
     private array $categoryTypes = [];
     private ?string $search = null;
@@ -45,6 +45,7 @@ class DocumentFilter implements \JsonSerializable
     public function setTitle(?string $title): self
     {
         $this->title = $title;
+
         return $this;
     }
 
@@ -56,6 +57,7 @@ class DocumentFilter implements \JsonSerializable
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -67,6 +69,7 @@ class DocumentFilter implements \JsonSerializable
     public function setCategory(?string $category): self
     {
         $this->category = $category;
+
         return $this;
     }
 
@@ -78,6 +81,7 @@ class DocumentFilter implements \JsonSerializable
     public function setProducts(?array $products): self
     {
         $this->products = $products;
+
         return $this;
     }
 
@@ -89,6 +93,7 @@ class DocumentFilter implements \JsonSerializable
     public function setPager(?Pager $pager): self
     {
         $this->pager = $pager;
+
         return $this;
     }
 
@@ -100,6 +105,7 @@ class DocumentFilter implements \JsonSerializable
     public function setSearch(?string $search): self
     {
         $this->search = $search;
+
         return $this;
     }
 
@@ -113,6 +119,7 @@ class DocumentFilter implements \JsonSerializable
         if (!in_array($categoryType, $this->categoryTypes, true)) {
             $this->categoryTypes[] = $categoryType;
         }
+
         return $this;
     }
 
@@ -122,6 +129,7 @@ class DocumentFilter implements \JsonSerializable
         foreach ($categoryTypes as $type) {
             $this->addCategoryType($type);
         }
+
         return $this;
     }
 
@@ -133,6 +141,7 @@ class DocumentFilter implements \JsonSerializable
     public function setIndex(?string $index): self
     {
         $this->index = $index;
+
         return $this;
     }
 
@@ -144,6 +153,7 @@ class DocumentFilter implements \JsonSerializable
     public function addSort(string $field, string $direction = 'asc'): self
     {
         $this->sort[$field] = $direction;
+
         return $this;
     }
 
@@ -155,6 +165,7 @@ class DocumentFilter implements \JsonSerializable
     public function setCreatedFrom(?\DateTimeInterface $date): self
     {
         $this->createdFrom = $date;
+
         return $this;
     }
 
@@ -166,19 +177,20 @@ class DocumentFilter implements \JsonSerializable
     public function setCreatedTo(?\DateTimeInterface $date): self
     {
         $this->createdTo = $date;
+
         return $this;
     }
 
     public function hasFilters(): bool
     {
-        return $this->search !== null
-            || $this->title !== null
-            || $this->description !== null
-            || $this->category !== null
+        return null !== $this->search
+            || null !== $this->title
+            || null !== $this->description
+            || null !== $this->category
             || !empty($this->products)
             || !empty($this->categoryTypes)
-            || $this->createdFrom !== null
-            || $this->createdTo !== null;
+            || null !== $this->createdFrom
+            || null !== $this->createdTo;
     }
 
     public function jsonSerialize(): array

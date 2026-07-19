@@ -12,13 +12,13 @@ use PHPUnit\Framework\TestCase;
 
 final class RecoatingTreeBuilderTest extends TestCase
 {
-    public function testReturnsNullWhenNodeAndChildrenAreEmpty(): void
+    public function test_returns_null_when_node_and_children_are_empty(): void
     {
         $tree = (new RecoatingTreeBuilder())->build(new RecoatingIntervalTreeDTO());
         $this->assertNull($tree);
     }
 
-    public function testBuildsFlatTreeFromDefaultOnly(): void
+    public function test_builds_flat_tree_from_default_only(): void
     {
         $dto = new RecoatingIntervalTreeDTO();
         $dto->default = [$this->point(20, 60)];
@@ -31,7 +31,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         $this->assertSame(60, $tree->default->points[0]->timeInMinutes);
     }
 
-    public function testBuildsNestedBranches(): void
+    public function test_builds_nested_branches(): void
     {
         $root = new RecoatingIntervalTreeDTO();
         $root->default = [$this->point(20, 60)];
@@ -46,7 +46,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         $this->assertSame(30, $tree->getChildren()['atmospheric']->default->points[0]->timeInMinutes);
     }
 
-    public function testThrowsWhenDefaultEmptyButChildrenPresent(): void
+    public function test_throws_when_default_empty_but_children_present(): void
     {
         $root = new RecoatingIntervalTreeDTO();
         $env = new RecoatingIntervalTreeDTO();
@@ -57,7 +57,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         (new RecoatingTreeBuilder())->build($root);
     }
 
-    public function testBuildMinTreeAcceptsPositiveDuration(): void
+    public function test_build_min_tree_accepts_positive_duration(): void
     {
         $dto = new RecoatingIntervalTreeDTO();
         $dto->default = [$this->point(20, 60)];
@@ -68,7 +68,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         $this->assertSame(60, $tree->default->points[0]->timeInMinutes);
     }
 
-    public function testBuildMinTreeThrowsWhenPointIsNull(): void
+    public function test_build_min_tree_throws_when_point_is_null(): void
     {
         $dto = new RecoatingIntervalTreeDTO();
         $dto->default = [$this->pointWithNull(20)];
@@ -78,7 +78,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         (new RecoatingTreeBuilder())->buildMinTree($dto);
     }
 
-    public function testBuildMinTreeThrowsWhenPointIsZero(): void
+    public function test_build_min_tree_throws_when_point_is_zero(): void
     {
         $dto = new RecoatingIntervalTreeDTO();
         $dto->default = [$this->point(5, 0)];
@@ -88,7 +88,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         (new RecoatingTreeBuilder())->buildMinTree($dto);
     }
 
-    public function testBuildMinTreeThrowsWhenNestedPointIsNull(): void
+    public function test_build_min_tree_throws_when_nested_point_is_null(): void
     {
         $root = new RecoatingIntervalTreeDTO();
         $root->default = [$this->point(20, 60)];
@@ -100,7 +100,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         (new RecoatingTreeBuilder())->buildMinTree($root);
     }
 
-    public function testBuildDoesNotValidateDurationForMax(): void
+    public function test_build_does_not_validate_duration_for_max(): void
     {
         $dto = new RecoatingIntervalTreeDTO();
         $dto->default = [$this->pointWithNull(20)];
@@ -117,6 +117,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         $p->temperature_at = $temp;
         $p->time_in_minutes = $minutes;
         $p->is_calculated = false;
+
         return $p;
     }
 
@@ -126,6 +127,7 @@ final class RecoatingTreeBuilderTest extends TestCase
         $p->temperature_at = $temp;
         $p->time_in_minutes = null;
         $p->is_calculated = false;
+
         return $p;
     }
 }

@@ -19,10 +19,10 @@ enum CoatingSort: string
     public function label(): string
     {
         return match ($this) {
-            self::DEFAULT           => 'По умолчанию',
-            self::TITLE_ASC         => 'Название А→Я',
-            self::TITLE_DESC        => 'Название Я→А',
-            self::MANUFACTURER_ASC  => 'По производителю',
+            self::DEFAULT => 'По умолчанию',
+            self::TITLE_ASC => 'Название А→Я',
+            self::TITLE_DESC => 'Название Я→А',
+            self::MANUFACTURER_ASC => 'По производителю',
         };
     }
 }

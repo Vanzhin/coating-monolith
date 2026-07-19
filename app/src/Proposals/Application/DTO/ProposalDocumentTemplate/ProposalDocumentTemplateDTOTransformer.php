@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\DTO\ProposalDocumentTemplate;
-
 
 use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTO;
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTOTransformer;
@@ -11,7 +10,7 @@ use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 
 readonly class ProposalDocumentTemplateDTOTransformer
 {
-    //todo нужен ли?
+    // todo нужен ли?
     public function __construct(private GeneralProposalInfoItemDTOTransformer $itemDTOTransformer)
     {
     }
@@ -49,8 +48,8 @@ readonly class ProposalDocumentTemplateDTOTransformer
         $dto->ownerId = $inputData['ownerId'];
         $dto->description = $inputData['description'] ?? null;
         $dto->basis = $inputData['basis'] ?? null;
-        $dto->projectArea = (float)$inputData['projectArea'];
-        $dto->loss = (int)$inputData['loss'];
+        $dto->projectArea = (float) $inputData['projectArea'];
+        $dto->loss = (int) $inputData['loss'];
         $dto->projectTitle = $inputData['projectTitle'] ?? null;
         $dto->projectStructureDescription = $inputData['projectStructureDescription'] ?? null;
         $dto->durability = $inputData['durability'];
@@ -63,13 +62,13 @@ readonly class ProposalDocumentTemplateDTOTransformer
             $itemDto = new GeneralProposalInfoItemDTO();
             $itemDto->id = $coat['id'] ?? null;
             $itemDto->coatId = $coat['coatId'];
-            $itemDto->loss = empty($coat['loss']) ? null : (int)$coat['loss'];
-            $itemDto->coatPrice = (float)$coat['coatPrice'];
-            $itemDto->coatNumber = (int)$coat['coatNumber'];
-            $itemDto->coatDft = (int)$coat['coatDft'];
+            $itemDto->loss = empty($coat['loss']) ? null : (int) $coat['loss'];
+            $itemDto->coatPrice = (float) $coat['coatPrice'];
+            $itemDto->coatNumber = (int) $coat['coatNumber'];
+            $itemDto->coatDft = (int) $coat['coatDft'];
             $itemDto->coatColor = $coat['coatColor'];
-            $itemDto->thinnerPrice = (int)$coat['thinnerPrice'];
-            $itemDto->thinnerConsumption = (int)$coat['thinnerConsumption'];
+            $itemDto->thinnerPrice = (int) $coat['thinnerPrice'];
+            $itemDto->thinnerConsumption = (int) $coat['thinnerConsumption'];
             $coats[] = $itemDto;
         }
         $dto->coats = $coats;
@@ -91,5 +90,4 @@ readonly class ProposalDocumentTemplateDTOTransformer
 
         return $DTOs;
     }
-
 }

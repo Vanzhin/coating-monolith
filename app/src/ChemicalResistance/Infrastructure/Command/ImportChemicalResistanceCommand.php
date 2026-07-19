@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Infrastructure\Command;
 
 use App\ChemicalResistance\Application\Service\ChemicalResistanceImporter;
@@ -45,14 +47,16 @@ final class ImportChemicalResistanceCommand extends Command
         $docx = $input->getArgument('docx');
         $title = $input->getOption('coating-title');
 
-        if ($title === null || $title === '') {
+        if (null === $title || '' === $title) {
             $io->error('Опция --coating-title обязательна.');
+
             return Command::FAILURE;
         }
 
         $row = $this->dbal->fetchAssociative('SELECT id::text AS id FROM coatings_coating WHERE title = ?', [$title]);
-        if ($row === false) {
+        if (false === $row) {
             $io->error(sprintf('Покрытие «%s» не найдено.', $title));
+
             return Command::FAILURE;
         }
         $coatingId = Uuid::fromString($row['id']);

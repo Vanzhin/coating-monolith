@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
@@ -20,12 +20,11 @@ class CloneAction extends BaseController
     private const PREFIX = 'Копия-';
 
     public function __construct(
-        private readonly CommandBusInterface               $commandBus,
-        private readonly GeneralProposalInfoFetcher        $generalProposalInfoFetcher,
+        private readonly CommandBusInterface $commandBus,
+        private readonly GeneralProposalInfoFetcher $generalProposalInfoFetcher,
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
-        LoggerInterface                                    $logger
-    )
-    {
+        LoggerInterface $logger
+    ) {
         parent::__construct($logger);
     }
 
@@ -35,10 +34,11 @@ class CloneAction extends BaseController
             $proposal = $this->generalProposalInfoFetcher->getRequiredGeneralProposalInfo($id);
             if (!$proposal) {
                 $this->addFlash('general_proposal_info_update_error', sprintf('Форма с идентификатором "%s" не найдена.', $id));
+
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
             $dto = $this->generalProposalInfoDTOTransformer->fromEntity($proposal);
-            $dto->number = self::PREFIX . $dto->number . '-' . random_int(10, 9999);
+            $dto->number = self::PREFIX.$dto->number.'-'.random_int(10, 9999);
             $command = new CreateGeneralProposalInfoCommand($dto);
             $result = $this->commandBus->execute($command);
             $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));

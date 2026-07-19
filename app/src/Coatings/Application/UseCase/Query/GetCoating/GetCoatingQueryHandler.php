@@ -12,9 +12,8 @@ readonly class GetCoatingQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private CoatingRepositoryInterface $coatingRepository,
-        private CoatingDTOTransformer      $coatingDTOTransformer
-    )
-    {
+        private CoatingDTOTransformer $coatingDTOTransformer
+    ) {
     }
 
     public function __invoke(GetCoatingQuery $query): GetCoatingQueryResult

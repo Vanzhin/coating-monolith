@@ -19,17 +19,18 @@ final class CasNumberType extends Type
 
     public function convertToPHPValue($value, AbstractPlatform $platform): ?CasNumber
     {
-        return $value === null ? null : CasNumber::fromString((string) $value);
+        return null === $value ? null : CasNumber::fromString((string) $value);
     }
 
     public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
         if (!$value instanceof CasNumber) {
-            throw new \LogicException('Expected CasNumber, got ' . get_debug_type($value));
+            throw new \LogicException('Expected CasNumber, got '.get_debug_type($value));
         }
+
         return $value->value;
     }
 

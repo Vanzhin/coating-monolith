@@ -33,8 +33,8 @@ final class Greatest extends FunctionNode
 
     public function getSql(SqlWalker $sqlWalker): string
     {
-        $parts = array_map(fn(Node $arg) => $arg->dispatch($sqlWalker), $this->args);
+        $parts = array_map(fn (Node $arg) => $arg->dispatch($sqlWalker), $this->args);
 
-        return 'GREATEST(' . implode(', ', $parts) . ')';
+        return 'GREATEST('.implode(', ', $parts).')';
     }
 }

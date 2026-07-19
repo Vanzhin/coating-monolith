@@ -12,9 +12,8 @@ readonly class GetManufacturerQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private ManufacturerDTOTransformer      $manufacturerDTOTransformer
-    )
-    {
+        private ManufacturerDTOTransformer $manufacturerDTOTransformer
+    ) {
     }
 
     public function __invoke(GetManufacturerQuery $query): GetManufacturerQueryResult

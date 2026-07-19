@@ -43,17 +43,18 @@ final class CompareAction extends AbstractController
 
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly ObjectComparator  $comparator,
+        private readonly ObjectComparator $comparator,
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
         $idsParam = trim((string) $request->query->get('ids', ''));
-        $ids = $idsParam === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $idsParam))));
+        $ids = '' === $idsParam ? [] : array_values(array_filter(array_map('trim', explode(',', $idsParam))));
 
         if (count($ids) < 2) {
             $this->addFlash('compare_error', 'Выберите минимум 2 покрытия для сравнения.');
+
             return $this->redirectToRoute('app_cabinet_coating_coating_list');
         }
         if (count($ids) > self::MAX_ITEMS) {
@@ -66,15 +67,16 @@ final class CompareAction extends AbstractController
 
         if (count($subjects) < 2) {
             $this->addFlash('compare_error', 'Не удалось загрузить выбранные покрытия (возможно, часть была удалена).');
+
             return $this->redirectToRoute('app_cabinet_coating_coating_list');
         }
 
         $comparison = $this->comparator->compare(new ComparisonConfig(self::FIELDS), ...$subjects);
 
         return $this->render('admin/coating/coating/compare.html.twig', [
-            'subjects'   => $subjects,
+            'subjects' => $subjects,
             'comparison' => $comparison,
-            'fields'     => self::FIELDS,
+            'fields' => self::FIELDS,
         ]);
     }
 }

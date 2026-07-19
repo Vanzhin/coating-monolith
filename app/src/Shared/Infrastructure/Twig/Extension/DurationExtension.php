@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Twig\Extension;
@@ -44,12 +45,13 @@ class DurationExtension extends AbstractExtension
         if ($mod100 >= 11 && $mod100 <= 14) {
             return $many;
         }
-        if ($mod10 === 1) {
+        if (1 === $mod10) {
             return $one;
         }
         if ($mod10 >= 2 && $mod10 <= 4) {
             return $few;
         }
+
         return $many;
     }
 
@@ -58,18 +60,20 @@ class DurationExtension extends AbstractExtension
     /** Принимает CarbonInterval (для DTO/getInterval). */
     public function format(?CarbonInterval $interval): string
     {
-        if ($interval === null) {
+        if (null === $interval) {
             return '—';
         }
+
         return $interval->copy()->locale('ru')->cascade()->forHumans(['parts' => 2]);
     }
 
     /** Принимает int минут — отдаёт «5 дней 16 часов». */
     public function formatMinutes(?int $minutes): string
     {
-        if ($minutes === null) {
+        if (null === $minutes) {
             return '—';
         }
+
         return $this->format(CarbonInterval::minutes($minutes));
     }
 
@@ -77,9 +81,10 @@ class DurationExtension extends AbstractExtension
 
     public function formatShort(?CarbonInterval $interval): string
     {
-        if ($interval === null) {
+        if (null === $interval) {
             return '—';
         }
+
         return $this->formatMinutesShort((int) round($interval->totalMinutes));
     }
 
@@ -89,10 +94,10 @@ class DurationExtension extends AbstractExtension
      */
     public function formatMinutesShort(?int $minutes): string
     {
-        if ($minutes === null) {
+        if (null === $minutes) {
             return '—';
         }
-        if ($minutes === 0) {
+        if (0 === $minutes) {
             return '0 мин';
         }
 
@@ -102,9 +107,15 @@ class DurationExtension extends AbstractExtension
         $mins = $rem - $hours * 60;
 
         $parts = [];
-        if ($days > 0)  { $parts[] = $days . ' д'; }
-        if ($hours > 0) { $parts[] = $hours . ' ч'; }
-        if ($mins > 0)  { $parts[] = $mins . ' мин'; }
+        if ($days > 0) {
+            $parts[] = $days.' д';
+        }
+        if ($hours > 0) {
+            $parts[] = $hours.' ч';
+        }
+        if ($mins > 0) {
+            $parts[] = $mins.' мин';
+        }
 
         return implode(' ', array_slice($parts, 0, 2));
     }

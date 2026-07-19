@@ -25,22 +25,23 @@ use Symfony\Component\Routing\Annotation\Route;
 final class AssessmentsPageAction extends AbstractController
 {
     public function __construct(
-        private readonly QueryBusInterface                  $queryBus,
+        private readonly QueryBusInterface $queryBus,
         private readonly ListCoatingAssessmentsQueryHandler $assessmentsHandler,
-        private readonly NoteRepositoryInterface                     $notes,
-    ) {}
+        private readonly NoteRepositoryInterface $notes,
+    ) {
+    }
 
     public function __invoke(string $coatingId, Request $req): Response
     {
         $coatingResult = $this->queryBus->execute(new GetCoatingQuery($coatingId));
-        if ($coatingResult->coatingDTO === null) {
+        if (null === $coatingResult->coatingDTO) {
             throw new AppException(sprintf('Покрытие с идентификатором "%s" не найдено.', $coatingId), 404);
         }
         $coating = $coatingResult->coatingDTO;
 
-        $page     = max(1, $req->query->getInt('page', 1));
+        $page = max(1, $req->query->getInt('page', 1));
         $pageSize = max(1, min(2000, $req->query->getInt('pageSize', 200)));
-        $search   = $req->query->get('search') ?: null;
+        $search = $req->query->get('search') ?: null;
 
         $assessments = ($this->assessmentsHandler)(new ListCoatingAssessmentsQuery(
             coatingId: $coatingId,
@@ -52,11 +53,11 @@ final class AssessmentsPageAction extends AbstractController
         $allNotes = $this->notes->findByFilter(new NotesFilter(null, null))->items;
 
         return $this->render('admin/coating/coating/chem_resistance_edit.html.twig', [
-            'coating'     => $coating,
+            'coating' => $coating,
             'assessments' => $assessments,
-            'allNotes'    => $allNotes,
-            'coatingId'   => $coatingId,
-            'search'      => $search,
+            'allNotes' => $allNotes,
+            'coatingId' => $coatingId,
+            'search' => $search,
         ]);
     }
 }

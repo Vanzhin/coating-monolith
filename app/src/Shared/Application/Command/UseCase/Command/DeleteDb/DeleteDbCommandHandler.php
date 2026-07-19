@@ -11,8 +11,7 @@ readonly class DeleteDbCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private DocumentRepositoryInterface $documentRepository,
-    )
-    {
+    ) {
     }
 
     public function __invoke(DeleteDbCommand $command): DeleteDbCommandResult

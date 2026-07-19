@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Factory;
 
@@ -13,15 +13,13 @@ readonly class ProposalDocumentFactory
 {
     public function create(
         ProposalDocumentTemplate $template,
-        GeneralProposalInfo      $proposalInfo,
-        string                   $format,
-    ): ProposalDocument
-    {
+        GeneralProposalInfo $proposalInfo,
+        string $format,
+    ): ProposalDocument {
         return new ProposalDocument(
             $template,
             $proposalInfo,
             ProposalDocumentFormat::from($format)
         );
-
     }
 }

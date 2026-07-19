@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Controller\Security;
 
@@ -17,10 +17,9 @@ class LoginLinkProcessAction extends AbstractController
 {
     public function __construct(
         private readonly UserRepositoryInterface $userRepository,
-        private readonly RedisService            $redisService,
-        private readonly Security                $security,
-    )
-    {
+        private readonly RedisService $redisService,
+        private readonly Security $security,
+    ) {
     }
 
     public function __invoke(Request $request): Response
@@ -38,6 +37,7 @@ class LoginLinkProcessAction extends AbstractController
             // Юзер удалён между отправкой ссылки и её использованием — стираем
             // hash тоже, чтобы висящий ключ не жил свой TTL зря.
             $this->redisService->delete($hash);
+
             return $this->invalidLinkResponse();
         }
 

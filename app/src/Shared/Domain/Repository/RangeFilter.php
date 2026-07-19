@@ -26,15 +26,11 @@ final readonly class RangeFilter
         public ?int $from = null,
         public ?int $to = null,
     ) {
-        if ($from === null && $to === null) {
+        if (null === $from && null === $to) {
             throw new AppException('Диапазон-фильтр требует хотя бы одну границу.');
         }
-        if ($from !== null && $to !== null && $from > $to) {
-            throw new AppException(sprintf(
-                'Минимум диапазона (%d) не может быть больше максимума (%d).',
-                $from,
-                $to,
-            ));
+        if (null !== $from && null !== $to && $from > $to) {
+            throw new AppException(sprintf('Минимум диапазона (%d) не может быть больше максимума (%d).', $from, $to));
         }
     }
 
@@ -44,9 +40,10 @@ final readonly class RangeFilter
      */
     public static function tryFromNullable(?int $from, ?int $to): ?self
     {
-        if ($from === null && $to === null) {
+        if (null === $from && null === $to) {
             return null;
         }
+
         return new self($from, $to);
     }
 }

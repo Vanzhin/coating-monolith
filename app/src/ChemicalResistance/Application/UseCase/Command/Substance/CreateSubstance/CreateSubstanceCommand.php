@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance;
 
 final readonly class CreateSubstanceCommand
@@ -9,5 +11,6 @@ final readonly class CreateSubstanceCommand
         public string $canonicalName,
         public ?string $cas,
         public array $aliases,
-    ) {}
+    ) {
+    }
 }

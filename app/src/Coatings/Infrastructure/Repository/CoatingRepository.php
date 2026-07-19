@@ -64,7 +64,7 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
 
     public function findByIds(array $ids): array
     {
-        if ($ids === []) {
+        if ([] === $ids) {
             return [];
         }
         /** @var array<string, Coating> $byId */
@@ -78,6 +78,7 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
                 $ordered[] = $byId[$id];
             }
         }
+
         return $ordered;
     }
 }

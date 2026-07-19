@@ -10,8 +10,7 @@ readonly class ManufacturersFilter
 {
     public function __construct(
         public ?string $title = null,
-        public ?Pager  $pager = null,
-    )
-    {
+        public ?Pager $pager = null,
+    ) {
     }
 }

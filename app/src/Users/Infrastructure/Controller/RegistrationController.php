@@ -40,9 +40,10 @@ class RegistrationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
-            //посторонних не пускаем
+            // посторонних не пускаем
             if (!$this->emailListValidator->isValid($email)) {
                 $this->addFlash('register_failure', sprintf('С почтой `%s` зарегистрироваться невозможно.', $email));
+
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
                 ]);
@@ -52,6 +53,7 @@ class RegistrationController extends AbstractController
                 $result = $this->commandBus->execute(new CreateUserCommand($email, $password));
             } catch (AppException $e) {
                 $this->addFlash('register_failure', $e->getMessage());
+
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
                 ]);

@@ -15,10 +15,9 @@ use App\Shared\Domain\Service\AssertService;
 readonly class GeneralProposalInfoAccessControl
 {
     public function __construct(
-        private AuthChecker                            $authChecker,
+        private AuthChecker $authChecker,
         private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-    )
-    {
+    ) {
     }
 
     /**
@@ -48,7 +47,6 @@ readonly class GeneralProposalInfoAccessControl
 
         return $proposalInfo->isOwnedBy($userId);
     }
-
 
     private function isAdmin(): bool
     {

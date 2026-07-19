@@ -11,6 +11,7 @@ final class RecoatingIntervalTree implements \JsonSerializable
 {
     /**
      * Внутренний ассоциативный массив для мгновенного поиска за O(1).
+     *
      * @var array<string, RecoatingIntervalTree>
      */
     private array $children = [];
@@ -98,11 +99,13 @@ final class RecoatingIntervalTree implements \JsonSerializable
             }
             $currentNode = $currentNode->children[$normalizedKey];
         }
+
         return $currentNode;
     }
 
     /**
      * Геттер для получения карты детей (используется валидатором в Coating).
+     *
      * @return array<string, RecoatingIntervalTree>
      */
     public function getChildren(): array
@@ -118,24 +121,22 @@ final class RecoatingIntervalTree implements \JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'default'  => $this->default,
+            'default' => $this->default,
             'children' => (object) $this->children, // (object) гарантирует {}, если детей нет
         ];
     }
 
     /**
      * Фабрика для сборки дерева из сырого JSON/массива.
+     *
      * @param string $key — ключ текущего узла (для корня — 'default'). Если в $raw присутствует
-     *                      устаревшее поле 'key' (легаси-данные), оно игнорируется.
+     *                    устаревшее поле 'key' (легаси-данные), оно игнорируется.
      */
     public static function fromArray(array $raw, string $key = 'default'): self
     {
         $rawDefault = $raw['default'] ?? null;
-        if (!is_array($rawDefault) || $rawDefault === []) {
-            throw new AppException(sprintf(
-                'Дерево интервалов перекрытия повреждено: default-серия пуста или отсутствует у узла "%s".',
-                $key,
-            ));
+        if (!is_array($rawDefault) || [] === $rawDefault) {
+            throw new AppException(sprintf('Дерево интервалов перекрытия повреждено: default-серия пуста или отсутствует у узла "%s".', $key));
         }
 
         $children = [];

@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Aggregate\Collection;
 
-use ArrayIterator;
-use IteratorAggregate;
-use JsonSerializable;
-use Traversable;
-
-readonly class StringCollection implements IteratorAggregate, JsonSerializable
+readonly class StringCollection implements \IteratorAggregate, \JsonSerializable
 {
     public array $list;
 
@@ -33,9 +28,9 @@ readonly class StringCollection implements IteratorAggregate, JsonSerializable
         return $this->list;
     }
 
-    public function getIterator(): Traversable
+    public function getIterator(): \Traversable
     {
-        return new ArrayIterator($this->getList());
+        return new \ArrayIterator($this->getList());
     }
 
     public function jsonSerialize(): array

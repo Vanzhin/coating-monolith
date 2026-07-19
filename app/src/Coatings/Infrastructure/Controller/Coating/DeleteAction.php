@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
@@ -16,8 +16,7 @@ class DeleteAction extends AbstractController
 {
     public function __construct(
         private readonly CommandBus $commandBus,
-    )
-    {
+    ) {
     }
 
     public function __invoke(Request $request, string $id): Response

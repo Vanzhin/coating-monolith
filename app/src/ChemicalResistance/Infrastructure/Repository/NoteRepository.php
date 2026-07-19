@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Infrastructure\Repository;
 
 use App\ChemicalResistance\Application\DTO\NoteDTO;
@@ -37,11 +39,12 @@ class NoteRepository extends ServiceEntityRepository implements NoteRepositoryIn
 
     /**
      * @param list<string> $ids
+     *
      * @return list<Note>
      */
     public function findAllByIds(array $ids): array
     {
-        if ($ids === []) {
+        if ([] === $ids) {
             return [];
         }
         /** @var list<Note> $notes */
@@ -61,6 +64,7 @@ class NoteRepository extends ServiceEntityRepository implements NoteRepositoryIn
                 $ordered[] = $byId[$id];
             }
         }
+
         return $ordered;
     }
 
@@ -72,8 +76,8 @@ class NoteRepository extends ServiceEntityRepository implements NoteRepositoryIn
         $params = [];
         $types = [];
 
-        if ($filter->search !== null && trim($filter->search) !== '') {
-            $like = '%' . trim($filter->search) . '%';
+        if (null !== $filter->search && '' !== trim($filter->search)) {
+            $like = '%'.trim($filter->search).'%';
             $where = '(n.title ILIKE :search OR n.description ILIKE :search)';
             $params['search'] = $like;
         }
@@ -89,7 +93,7 @@ class NoteRepository extends ServiceEntityRepository implements NoteRepositoryIn
                     WHERE {$where}
                     ORDER BY n.title ASC";
 
-        if ($filter->pager !== null) {
+        if (null !== $filter->pager) {
             $dataSql .= ' LIMIT :lim OFFSET :off';
             $params['lim'] = $filter->pager->getLimit();
             $params['off'] = $filter->pager->getOffset();
@@ -99,7 +103,7 @@ class NoteRepository extends ServiceEntityRepository implements NoteRepositoryIn
 
         $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
 
-        $items = array_map(fn(array $r) => new NoteDTO(
+        $items = array_map(fn (array $r) => new NoteDTO(
             id: $r['id'],
             title: $r['title'],
             description: $r['description'],

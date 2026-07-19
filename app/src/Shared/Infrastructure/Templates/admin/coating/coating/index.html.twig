@@ -635,13 +635,13 @@
              пользователь. Search сохраняем hidden, чтобы не потерять при apply. #}
         <div class="offcanvas offcanvas-end" tabindex="-1" id="allFiltersOffcanvas" aria-labelledby="allFiltersOffcanvasLabel">
             <div class="offcanvas-header border-bottom">
+                <button type="button" class="btn-close m-0 me-auto" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                 <h5 class="offcanvas-title" id="allFiltersOffcanvasLabel">
                     Фильтры
                     {% if activeFacetsCount > 0 %}
                         <span class="badge text-bg-primary ms-1">{{ activeFacetsCount }}</span>
                     {% endif %}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
             </div>
 
             <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"

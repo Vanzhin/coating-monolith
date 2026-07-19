@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Repository;
 
@@ -13,5 +13,4 @@ interface ProposalDocumentTemplateRepositoryInterface
     public function findOneById(string $id): ?ProposalDocumentTemplate;
 
     public function remove(ProposalDocumentTemplate $template): void;
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Domain\Repository;
@@ -9,6 +10,7 @@ readonly class NotesFilter
 {
     public function __construct(
         public ?string $search = null,
-        public ?Pager  $pager = null,
-    ) {}
+        public ?Pager $pager = null,
+    ) {
+    }
 }

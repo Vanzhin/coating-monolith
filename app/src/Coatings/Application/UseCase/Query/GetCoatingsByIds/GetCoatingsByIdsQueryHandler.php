@@ -12,7 +12,7 @@ readonly class GetCoatingsByIdsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private CoatingRepositoryInterface $coatingRepository,
-        private CoatingDTOTransformer      $coatingDTOTransformer,
+        private CoatingDTOTransformer $coatingDTOTransformer,
     ) {
     }
 
@@ -20,9 +20,10 @@ readonly class GetCoatingsByIdsQueryHandler implements QueryHandlerInterface
     {
         $coatings = $this->coatingRepository->findByIds($query->ids);
         $dtos = array_map(
-            fn($coating) => $this->coatingDTOTransformer->fromEntity($coating),
+            fn ($coating) => $this->coatingDTOTransformer->fromEntity($coating),
             $coatings,
         );
+
         return new GetCoatingsByIdsQueryResult($dtos);
     }
 }

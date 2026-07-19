@@ -23,7 +23,7 @@ class CoatingMapper
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
         $coatingTagIds = array_map(
-            fn(CoatingTagDTO $coatingTag) => $coatingTag->id,
+            fn (CoatingTagDTO $coatingTag) => $coatingTag->id,
             $coatingDTO->tags,
         );
 
@@ -37,11 +37,11 @@ class CoatingMapper
         }
 
         $vars['dryToTouch'] = $this->decomposeSeriesForForm($vars['dryToTouch'] ?? null);
-        $vars['fullCure']   = $this->decomposeSeriesForForm($vars['fullCure'] ?? null);
+        $vars['fullCure'] = $this->decomposeSeriesForForm($vars['fullCure'] ?? null);
         $vars['minRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['minRecoatingInterval'] ?? null);
         $vars['maxRecoatingInterval'] = $this->decomposeTreeDtoForForm($vars['maxRecoatingInterval'] ?? null);
 
-        $vars['dryHeatExposure']   = $this->decomposeExposureForForm($coatingDTO->dryHeatExposure);
+        $vars['dryHeatExposure'] = $this->decomposeExposureForForm($coatingDTO->dryHeatExposure);
         $vars['immersionExposure'] = $this->decomposeExposureForForm($coatingDTO->immersionExposure);
 
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
@@ -67,13 +67,13 @@ class CoatingMapper
         $dto->base = CoatingBase::from($inputData['base'])->value;
 
         $dftRange = new DftRangeDTO();
-        $dftRange->min = (int) ($inputData['minDft']);
-        $dftRange->max = (int) ($inputData['maxDft']);
-        $dftRange->tds_dft = (int) ($inputData['tdsDft']);
+        $dftRange->min = (int) $inputData['minDft'];
+        $dftRange->max = (int) $inputData['maxDft'];
+        $dftRange->tds_dft = (int) $inputData['tdsDft'];
         $dftRange->type = ThicknessType::MIC->value;
         $dto->dftRange = $dftRange;
         $dto->applicationMinTemp = (int) $inputData['applicationMinTemp'];
-        $dto->dryingMaxTemp = isset($inputData['dryingMaxTemp']) && $inputData['dryingMaxTemp'] !== ''
+        $dto->dryingMaxTemp = isset($inputData['dryingMaxTemp']) && '' !== $inputData['dryingMaxTemp']
             ? (int) $inputData['dryingMaxTemp']
             : 50;
 
@@ -89,7 +89,7 @@ class CoatingMapper
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
 
-        $dto->dryHeatExposure   = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
+        $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
         $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
 
         $tags = [];
@@ -105,9 +105,10 @@ class CoatingMapper
 
     public function parseDurationInput(array $raw): int
     {
-        $days    = (int) ($raw['days']    ?? 0);
-        $hours   = (int) ($raw['hours']   ?? 0);
+        $days = (int) ($raw['days'] ?? 0);
+        $hours = (int) ($raw['hours'] ?? 0);
         $minutes = (int) ($raw['minutes'] ?? 0);
+
         return $days * 24 * 60 + $hours * 60 + $minutes;
     }
 
@@ -118,6 +119,7 @@ class CoatingMapper
         $rem = $totalMinutes - $days * 24 * 60;
         $hours = intdiv($rem, 60);
         $minutes = $rem - $hours * 60;
+
         return ['days' => $days, 'hours' => $hours, 'minutes' => $minutes];
     }
 
@@ -176,8 +178,8 @@ class CoatingMapper
                 new Assert\Type('numeric'),
                 new Assert\Range(['min' => 0, 'max' => 250, 'notInRangeMessage' => 'Макс Т сушки должна быть от {{ min }} до {{ max }}.']),
             ]),
-            'dryToTouch'           => $this->seriesFieldConstraints(required: true),
-            'fullCure'             => $this->seriesFieldConstraints(required: true),
+            'dryToTouch' => $this->seriesFieldConstraints(required: true),
+            'fullCure' => $this->seriesFieldConstraints(required: true),
             // min обязателен на структурном уровне; content-валидация (хотя бы одна точка > 0)
             // живёт в домене (TimeAtTemperature) и долетает до пользователя через AppException → banner.
             'minRecoatingInterval' => $this->recoatingNodeConstraints(required: true),
@@ -203,7 +205,7 @@ class CoatingMapper
             // тех-сообщения типа "[dryHeatExposure][continuous_min] должно быть numeric"
             // при пустой строке), а через buildExposureFromInput → AppException с
             // человеческой формулировкой и явным указанием секции.
-            'dryHeatExposure'   => new Assert\Optional([new Assert\Type('array')]),
+            'dryHeatExposure' => new Assert\Optional([new Assert\Type('array')]),
             'immersionExposure' => new Assert\Optional([new Assert\Type('array')]),
         ], allowExtraFields: true);
     }
@@ -221,33 +223,34 @@ class CoatingMapper
      */
     private function buildExposureFromInput(array $raw, string $sectionLabel): ?ThermalExposureLimitsDTO
     {
-        $min     = $this->trimOrEmpty($raw['continuous_min'] ?? '');
-        $max     = $this->trimOrEmpty($raw['continuous_max'] ?? '');
+        $min = $this->trimOrEmpty($raw['continuous_min'] ?? '');
+        $max = $this->trimOrEmpty($raw['continuous_max'] ?? '');
         $peakMax = $this->trimOrEmpty($raw['peak_max'] ?? '');
         $peakDur = $this->trimOrEmpty($raw['peak_duration_minutes'] ?? '');
 
-        if ($min === '' && $max === '' && $peakMax === '' && $peakDur === '') {
+        if ('' === $min && '' === $max && '' === $peakMax && '' === $peakDur) {
             return null;
         }
 
-        if ($min !== '' && !$this->looksLikeInt($min)) {
+        if ('' !== $min && !$this->looksLikeInt($min)) {
             throw new AppException(sprintf('Секция «%s»: минимальная температура должна быть целым числом.', $sectionLabel));
         }
-        if ($max !== '' && !$this->looksLikeInt($max)) {
+        if ('' !== $max && !$this->looksLikeInt($max)) {
             throw new AppException(sprintf('Секция «%s»: максимальная температура должна быть целым числом.', $sectionLabel));
         }
-        if ($peakMax !== '' && !$this->looksLikeInt($peakMax)) {
+        if ('' !== $peakMax && !$this->looksLikeInt($peakMax)) {
             throw new AppException(sprintf('Секция «%s»: пиковая температура должна быть целым числом.', $sectionLabel));
         }
-        if ($peakDur !== '' && !$this->looksLikeInt($peakDur)) {
+        if ('' !== $peakDur && !$this->looksLikeInt($peakDur)) {
             throw new AppException(sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel));
         }
 
         $dto = new ThermalExposureLimitsDTO();
-        $dto->continuous_min = $min !== ''     ? (int) $min     : null;
-        $dto->continuous_max = $max !== ''     ? (int) $max     : null;
-        $dto->peak_max = $peakMax !== ''       ? (int) $peakMax : null;
-        $dto->peak_duration_minutes = $peakDur !== '' ? (int) $peakDur : null;
+        $dto->continuous_min = '' !== $min ? (int) $min : null;
+        $dto->continuous_max = '' !== $max ? (int) $max : null;
+        $dto->peak_max = '' !== $peakMax ? (int) $peakMax : null;
+        $dto->peak_duration_minutes = '' !== $peakDur ? (int) $peakDur : null;
+
         return $dto;
     }
 
@@ -264,18 +267,19 @@ class CoatingMapper
     /** Раскладывает ThermalExposureLimitsDTO в плоский набор для формы (или пустой массив). */
     private function decomposeExposureForForm(?ThermalExposureLimitsDTO $dto): array
     {
-        if ($dto === null) {
+        if (null === $dto) {
             return [
-                'continuous_min'        => '',
-                'continuous_max'        => '',
-                'peak_max'              => '',
+                'continuous_min' => '',
+                'continuous_max' => '',
+                'peak_max' => '',
                 'peak_duration_minutes' => '',
             ];
         }
+
         return [
-            'continuous_min'        => $dto->continuous_min,
-            'continuous_max'        => $dto->continuous_max,
-            'peak_max'              => $dto->peak_max ?? '',
+            'continuous_min' => $dto->continuous_min,
+            'continuous_max' => $dto->continuous_max,
+            'peak_max' => $dto->peak_max ?? '',
             'peak_duration_minutes' => $dto->peak_duration_minutes ?? '',
         ];
     }
@@ -289,18 +293,19 @@ class CoatingMapper
         $node = new RecoatingIntervalTreeDTO();
         $node->default = $this->buildPointsFromInput($raw['default']['points'] ?? []);
         foreach ($raw['branches'] ?? [] as $key => $childRaw) {
-            if (!is_string($key) || $key === '') {
+            if (!is_string($key) || '' === $key) {
                 continue;
             }
             $node->branches[$key] = $this->buildTreeDtoFromInput((array) $childRaw);
         }
+
         return $node;
     }
 
     /** Узел считается пустым, если у него нет default-точек и нет (рекурсивно) непустых веток. */
     private function isTreeDtoEffectivelyEmpty(RecoatingIntervalTreeDTO $node): bool
     {
-        if ($node->default !== []) {
+        if ([] !== $node->default) {
             return false;
         }
         foreach ($node->branches as $child) {
@@ -308,21 +313,23 @@ class CoatingMapper
                 return false;
             }
         }
+
         return true;
     }
 
     /** Декомпозит RecoatingIntervalTreeDTO в nested-array для шаблона. NULL → пустой узел. */
     private function decomposeTreeDtoForForm(?RecoatingIntervalTreeDTO $node): array
     {
-        if ($node === null) {
+        if (null === $node) {
             return ['default' => ['points' => []], 'branches' => []];
         }
         $branches = [];
         foreach ($node->branches as $key => $child) {
             $branches[$key] = $this->decomposeTreeDtoForForm($child);
         }
+
         return [
-            'default'  => ['points' => $this->decomposeSeriesForForm($node->default)],
+            'default' => ['points' => $this->decomposeSeriesForForm($node->default)],
             'branches' => $branches,
         ];
     }
@@ -348,6 +355,7 @@ class CoatingMapper
             ],
             'allowExtraFields' => true,
         ]);
+
         return $required ? $nodeShape : new Assert\Optional([$nodeShape]);
     }
 
@@ -356,13 +364,13 @@ class CoatingMapper
         return new Assert\All([
             new Assert\Collection([
                 'fields' => [
-                    'temperature_at'  => [new Assert\NotBlank(), new Assert\Type('numeric')],
-                    'days'            => new Assert\Optional([new Assert\Type('numeric')]),
-                    'hours'           => new Assert\Optional([new Assert\Type('numeric')]),
-                    'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
+                    'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                    'days' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'hours' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
                     'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'is_calculated'   => new Assert\Optional([new Assert\Type('numeric')]),
-                    'kind'            => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
+                    'is_calculated' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'kind' => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
                 ],
                 'allowExtraFields' => true,
             ]),
@@ -370,16 +378,18 @@ class CoatingMapper
     }
 
     /**
-     * @param ?list<DryingTimePointDTO> $points null = весь max-tree отсутствует (старая семантика).
+     * @param ?list<DryingTimePointDTO> $points null = весь max-tree отсутствует (старая семантика)
+     *
      * @return list<array<string, mixed>>
      */
     private function decomposeSeriesForForm(?array $points): array
     {
-        if ($points === null) {
+        if (null === $points) {
             return [];
         }
+
         return array_map(
-            fn(DryingTimePointDTO $p) => array_merge(
+            fn (DryingTimePointDTO $p) => array_merge(
                 $this->decomposeDurationForForm($p->time_in_minutes ?? 0),
                 [
                     'temperature_at' => $p->temperature_at,
@@ -394,17 +404,19 @@ class CoatingMapper
 
     private function kindForMinutes(?int $minutes): string
     {
-        if ($minutes === null) {
+        if (null === $minutes) {
             return 'unknown';
         }
-        if ($minutes === 0) {
+        if (0 === $minutes) {
             return 'unlimited';
         }
+
         return 'duration';
     }
 
     /**
      * @param list<array<string, mixed>> $rawPoints
+     *
      * @return list<DryingTimePointDTO>
      */
     private function buildPointsFromInput(array $rawPoints): array
@@ -414,6 +426,7 @@ class CoatingMapper
             $point->temperature_at = (int) ($raw['temperature_at'] ?? 20);
             $point->time_in_minutes = $this->resolveTimeInMinutes($raw);
             $point->is_calculated = (bool) ($raw['is_calculated'] ?? false);
+
             return $point;
         }, $rawPoints));
     }
@@ -429,20 +442,22 @@ class CoatingMapper
     {
         $kind = $raw['kind'] ?? null;
 
-        if ($kind === 'unlimited') {
+        if ('unlimited' === $kind) {
             return 0;
         }
-        if ($kind === 'unknown') {
+        if ('unknown' === $kind) {
             return null;
         }
 
         // duration (явный или legacy)
-        if (isset($raw['time_in_minutes']) && $raw['time_in_minutes'] !== '') {
+        if (isset($raw['time_in_minutes']) && '' !== $raw['time_in_minutes']) {
             $value = (int) $raw['time_in_minutes'];
-            return $value === 0 ? null : $value;
+
+            return 0 === $value ? null : $value;
         }
         $value = $this->parseDurationInput($raw);
-        return $value === 0 ? null : $value;
+
+        return 0 === $value ? null : $value;
     }
 
     /**
@@ -454,13 +469,13 @@ class CoatingMapper
         $rowConstraint = new Assert\All([
             new Assert\Collection([
                 'fields' => [
-                    'temperature_at'  => [new Assert\NotBlank(), new Assert\Type('numeric')],
-                    'days'            => new Assert\Optional([new Assert\Type('numeric')]),
-                    'hours'           => new Assert\Optional([new Assert\Type('numeric')]),
-                    'minutes'         => new Assert\Optional([new Assert\Type('numeric')]),
+                    'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                    'days' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'hours' => new Assert\Optional([new Assert\Type('numeric')]),
+                    'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
                     'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'is_calculated'   => new Assert\Optional(new Assert\Type('numeric')),
-                    'kind'            => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
+                    'is_calculated' => new Assert\Optional(new Assert\Type('numeric')),
+                    'kind' => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
                 ],
                 'allowExtraFields' => true,
             ]),

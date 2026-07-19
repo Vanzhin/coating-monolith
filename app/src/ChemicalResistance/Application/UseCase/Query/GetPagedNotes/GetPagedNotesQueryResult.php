@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetPagedNotes;
@@ -14,5 +15,6 @@ class GetPagedNotesQueryResult
     public function __construct(
         public readonly array $notes,
         public readonly Pager $pager,
-    ) {}
+    ) {
+    }
 }

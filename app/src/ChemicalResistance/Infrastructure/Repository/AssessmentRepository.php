@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Infrastructure\Repository;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
@@ -70,20 +72,21 @@ class AssessmentRepository extends ServiceEntityRepository implements Assessment
             'SELECT COUNT(*) FROM chemical_resistance_assessment WHERE note_ids @> :id::jsonb',
             ['id' => json_encode([$noteId])],
         );
+
         return (int) $count;
     }
 
     public function paginateByCoating(Uuid $coatingId, ?string $search, int $page, int $pageSize): PaginationResult
     {
-        $conn   = $this->getEntityManager()->getConnection();
+        $conn = $this->getEntityManager()->getConnection();
         $cidStr = $coatingId->toRfc4122();
         $offset = ($page - 1) * $pageSize;
 
         $baseWhere = 'a.coating_id = :cid';
         $baseParams = ['cid' => $cidStr];
 
-        if ($search !== null && $search !== '') {
-            $baseWhere .= "
+        if (null !== $search && '' !== $search) {
+            $baseWhere .= '
                 AND (
                     s.canonical_name ILIKE :search
                     OR s.cas ILIKE :search
@@ -92,8 +95,8 @@ class AssessmentRepository extends ServiceEntityRepository implements Assessment
                         FROM jsonb_array_elements_text(s.aliases) AS alias_val
                         WHERE alias_val ILIKE :search
                     )
-                )";
-            $baseParams['search'] = '%' . $search . '%';
+                )';
+            $baseParams['search'] = '%'.$search.'%';
         }
 
         $countSql = "
@@ -104,7 +107,7 @@ class AssessmentRepository extends ServiceEntityRepository implements Assessment
         ";
         $total = (int) $conn->fetchOne($countSql, $baseParams);
 
-        if ($total === 0) {
+        if (0 === $total) {
             return new PaginationResult([], 0);
         }
 
@@ -116,14 +119,14 @@ class AssessmentRepository extends ServiceEntityRepository implements Assessment
             ORDER BY s.canonical_name ASC
             LIMIT :limit OFFSET :offset
         ";
-        $pageParams           = $baseParams;
-        $pageParams['limit']  = $pageSize;
+        $pageParams = $baseParams;
+        $pageParams['limit'] = $pageSize;
         $pageParams['offset'] = $offset;
 
         $rows = $conn->fetchAllAssociative($pageSql, $pageParams);
-        $ids  = array_column($rows, 'id');
+        $ids = array_column($rows, 'id');
 
-        if ($ids === []) {
+        if ([] === $ids) {
             return new PaginationResult([], $total);
         }
 
@@ -162,6 +165,7 @@ class AssessmentRepository extends ServiceEntityRepository implements Assessment
         foreach ($rows as $r) {
             $out[$r['grade']] = (int) $r['cnt'];
         }
+
         return $out;
     }
 }

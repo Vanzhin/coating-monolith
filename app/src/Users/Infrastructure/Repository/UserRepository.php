@@ -31,5 +31,4 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
     {
         return $this->findOneBy(['email.value' => strtolower($email)]);
     }
-
 }

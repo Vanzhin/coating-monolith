@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Assessment;
@@ -8,10 +9,11 @@ final class AssessmentInputParser
     public static function temperature(mixed $value): ?int
     {
         $str = trim((string) $value);
-        if ($str === '' || $str === '0') {
+        if ('' === $str || '0' === $str) {
             return null;
         }
         $int = (int) $str;
+
         return $int > 0 ? $int : null;
     }
 
@@ -22,9 +24,10 @@ final class AssessmentInputParser
             return array_values(array_filter(array_map('trim', $value)));
         }
         $str = trim((string) $value);
-        if ($str === '') {
+        if ('' === $str) {
             return [];
         }
+
         return array_values(array_filter(array_map('trim', explode(',', $str))));
     }
 }

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Twig\Components;
 
@@ -11,5 +11,4 @@ class Alert
 {
     public string $message;
     public string $type = 'success';
-
 }

@@ -14,7 +14,7 @@ use Symfony\Component\Routing\RouterInterface;
  */
 final class ChannelVerificationGateRoutesTest extends KernelTestCase
 {
-    public function testAllPublicRoutesResolveViaRouter(): void
+    public function test_all_public_routes_resolve_via_router(): void
     {
         self::bootKernel();
         /** @var RouterInterface $router */
@@ -25,11 +25,11 @@ final class ChannelVerificationGateRoutesTest extends KernelTestCase
 
         $missing = [];
         foreach ($routes as $routeName) {
-            if ($router->getRouteCollection()->get($routeName) === null) {
+            if (null === $router->getRouteCollection()->get($routeName)) {
                 $missing[] = $routeName;
             }
         }
 
-        self::assertSame([], $missing, 'PUBLIC_ROUTES contains route names that do not exist in the router: ' . implode(', ', $missing));
+        self::assertSame([], $missing, 'PUBLIC_ROUTES contains route names that do not exist in the router: '.implode(', ', $missing));
     }
 }

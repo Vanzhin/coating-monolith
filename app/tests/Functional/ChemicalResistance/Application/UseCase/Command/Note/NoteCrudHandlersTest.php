@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Command\Note;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommand;
@@ -13,8 +13,9 @@ use App\ChemicalResistance\Application\UseCase\Command\Note\UpdateNote\UpdateNot
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
@@ -48,8 +49,8 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $this->create = $c->get(CreateNoteCommandHandler::class);
         $this->update = $c->get(UpdateNoteCommandHandler::class);
         $this->delete = $c->get(DeleteNoteCommandHandler::class);
-        $this->notes  = $c->get(NoteRepository::class);
-        $this->em     = $c->get(EntityManagerInterface::class);
+        $this->notes = $c->get(NoteRepository::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -60,31 +61,31 @@ final class NoteCrudHandlersTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             foreach ($this->createdNoteIds as $id) {
                 $e = $em->find(Note::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
     }
 
-    public function testCreateUpdateDelete(): void
+    public function test_create_update_delete(): void
     {
         $id = ($this->create)(new CreateNoteCommand('T1', 'D1'));
         $this->createdNoteIds[] = Uuid::fromString($id);
@@ -109,13 +110,13 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $this->createdNoteIds = [];
     }
 
-    public function testDeleteBlockedWhenReferenced(): void
+    public function test_delete_blocked_when_referenced(): void
     {
         $coatingIdRaw = $this->em
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($coatingIdRaw === false || $coatingIdRaw === null || $coatingIdRaw === '') {
+        if (false === $coatingIdRaw || null === $coatingIdRaw || '' === $coatingIdRaw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
@@ -123,7 +124,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $suffix = uniqid('note-crud-', true);
 
         // Create note via handler
-        $noteId = ($this->create)(new CreateNoteCommand('Block-test-' . $suffix, 'desc'));
+        $noteId = ($this->create)(new CreateNoteCommand('Block-test-'.$suffix, 'desc'));
         $noteUuid = Uuid::fromString($noteId);
         $this->createdNoteIds[] = $noteUuid;
 
@@ -133,7 +134,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $this->createdSubstanceIds[] = $substanceId;
         $substance = new Substance(
             $substanceId,
-            'Вещество-' . $suffix,
+            'Вещество-'.$suffix,
             null,
             new StringCollection(),
             self::getContainer()->get(SubstanceSpecification::class),

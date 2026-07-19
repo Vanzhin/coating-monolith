@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Shared\Domain\Service;
@@ -9,10 +10,9 @@ readonly class RedisService
 
     public function __construct(
         private \Redis $redis,
-        //todo сделать так, чтобы на разные сервисы был разный префикс
+        // todo сделать так, чтобы на разные сервисы был разный префикс
         private string $prefix = self::PREFIX
-    )
-    {
+    ) {
     }
 
     private function getKey(string $key): string
@@ -53,7 +53,7 @@ readonly class RedisService
 
     public function exists(string $key): bool
     {
-        return (bool)$this->redis->exists($this->getKey($key));
+        return (bool) $this->redis->exists($this->getKey($key));
     }
 
     public function listPush(string $key, string $value): void
@@ -64,12 +64,14 @@ readonly class RedisService
     public function listPop(string $key): ?string
     {
         $value = $this->redis->lPop($this->getKey($key));
+
         return $value ?: null;
     }
 
     public function listRange(string $key, int $start = 0, int $end = -1, $default = []): array
     {
         $value = $this->redis->lRange($this->getKey($key), $start, $end);
+
         return $value ?: $default;
     }
 
@@ -80,7 +82,6 @@ readonly class RedisService
 
     public function listLen(string $key): int
     {
-        return (int)$this->redis->lLen($this->getKey($key));
+        return (int) $this->redis->lLen($this->getKey($key));
     }
-
 }

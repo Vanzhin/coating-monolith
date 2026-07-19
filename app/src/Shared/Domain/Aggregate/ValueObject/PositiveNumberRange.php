@@ -17,9 +17,7 @@ final class PositiveNumberRange extends NumberRange
     protected function validate(int|float $min, int|float $max): void
     {
         if ($min <= 0 || $max <= 0) {
-            throw new AppException(
-                sprintf('Значения диапазона не могут быть отрицательными. Передано: min=%s, max=%s', $min, $max)
-            );
+            throw new AppException(sprintf('Значения диапазона не могут быть отрицательными. Передано: min=%s, max=%s', $min, $max));
         }
     }
 }

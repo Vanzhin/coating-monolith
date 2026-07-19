@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Coating\Specification;
 
@@ -10,8 +10,6 @@ readonly class CoatingSpecification implements SpecificationInterface
 {
     public function __construct(
         public UniqueTitleCoatingSpecification $uniqueTitleCoatingSpecification
-    )
-    {
+    ) {
     }
-
 }

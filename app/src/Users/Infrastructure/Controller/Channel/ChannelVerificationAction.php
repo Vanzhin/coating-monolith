@@ -51,14 +51,15 @@ class ChannelVerificationAction extends AbstractController
             ChannelType::EMAIL->value,
             $user->getEmail()->getValue(),
         );
-        if ($emailChannel === null) {
+        if (null === $emailChannel) {
             $this->createChannel($user);
+
             return $this->redirectToRoute('app_user_channel_verification');
         }
 
         $unverifiedChannels = $user->getUnVerifiedChannels();
         $firstChannel = $unverifiedChannels->isEmpty() ? null : $unverifiedChannels->first();
-        $formData = $firstChannel !== null ? ['channel' => $firstChannel] : null;
+        $formData = null !== $firstChannel ? ['channel' => $firstChannel] : null;
 
         $form = $this->createForm(ChannelVerificationFormType::class, $formData, [
             'user' => $user,
@@ -79,6 +80,7 @@ class ChannelVerificationAction extends AbstractController
 
                 $this->addFlash('success', 'Канал успешно верифицирован!');
                 $this->addFlash('success', 'Аккаунт успешно активирован!');
+
                 return $this->redirectToRoute('app_cabinet');
             } catch (\Exception $e) {
                 $this->addFlash('error', $this->getOriginalExceptionMessage($e));

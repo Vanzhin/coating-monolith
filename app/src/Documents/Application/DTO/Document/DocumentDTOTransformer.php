@@ -49,5 +49,4 @@ class DocumentDTOTransformer
 
         return $documentDTOs;
     }
-
 }

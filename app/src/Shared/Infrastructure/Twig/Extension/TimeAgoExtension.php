@@ -11,7 +11,6 @@ class TimeAgoExtension extends AbstractExtension
     public function getFilters(): array
     {
         return [
-
             new TwigFilter('timeAgo', [$this, 'getDif']),
         ];
     }

@@ -7,4 +7,3 @@ namespace App\Shared\Domain\Message;
 interface MessageInterface
 {
 }
-

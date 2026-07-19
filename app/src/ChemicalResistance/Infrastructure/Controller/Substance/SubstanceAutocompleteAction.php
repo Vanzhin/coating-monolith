@@ -20,7 +20,8 @@ final class SubstanceAutocompleteAction extends AbstractController
 {
     public function __construct(
         private readonly SubstanceAutocompleteQueryHandler $handler,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $req): JsonResponse
     {
@@ -30,7 +31,7 @@ final class SubstanceAutocompleteAction extends AbstractController
         ));
 
         return new JsonResponse(array_map(
-            fn($d) => ['id' => $d->id, 'canonicalName' => $d->canonicalName, 'cas' => $d->cas],
+            fn ($d) => ['id' => $d->id, 'canonicalName' => $d->canonicalName, 'cas' => $d->cas],
             $dtos,
         ));
     }

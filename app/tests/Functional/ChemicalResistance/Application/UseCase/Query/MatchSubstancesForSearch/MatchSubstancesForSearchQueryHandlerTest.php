@@ -1,17 +1,19 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch\MatchSubstancesForSearchQuery;
 use App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch\MatchSubstancesForSearchQueryHandler;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -35,10 +37,10 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->handler        = $c->get(MatchSubstancesForSearchQueryHandler::class);
+        $this->handler = $c->get(MatchSubstancesForSearchQueryHandler::class);
         $this->assessmentRepo = $c->get(AssessmentRepository::class);
-        $this->substanceRepo  = $c->get(SubstanceRepository::class);
-        $this->em             = $c->get(EntityManagerInterface::class);
+        $this->substanceRepo = $c->get(SubstanceRepository::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -49,7 +51,7 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
@@ -57,13 +59,13 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
 
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -75,7 +77,7 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
             "SELECT id::text FROM coatings_coating WHERE LOWER(title) LIKE '%литатанк%' LIMIT 1",
         );
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('Литатанк Классик coating not found; run full seed first.');
         }
 
@@ -85,10 +87,10 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
     private function getAnyCoatingId(): Uuid
     {
         $raw = $this->em->getConnection()->fetchOne(
-            "SELECT id::text FROM coatings_coating LIMIT 1",
+            'SELECT id::text FROM coatings_coating LIMIT 1',
         );
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('No coating found in DB; run seed first.');
         }
 
@@ -98,11 +100,11 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
     private function getSecondCoatingId(Uuid $excludeId): Uuid
     {
         $raw = $this->em->getConnection()->fetchOne(
-            "SELECT id::text FROM coatings_coating WHERE id != :exclude LIMIT 1",
+            'SELECT id::text FROM coatings_coating WHERE id != :exclude LIMIT 1',
             ['exclude' => $excludeId->toRfc4122()],
         );
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('Need at least 2 coatings in DB; run seed first.');
         }
 
@@ -111,9 +113,9 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
 
     private function createSubstance(string $canonicalName, ?string $cas, ?string $alias): Uuid
     {
-        $id     = Uuid::v4();
-        $casObj = $cas !== null ? CasNumber::fromString($cas) : null;
-        $aliases = $alias !== null ? new StringCollection($alias) : new StringCollection();
+        $id = Uuid::v4();
+        $casObj = null !== $cas ? CasNumber::fromString($cas) : null;
+        $aliases = null !== $alias ? new StringCollection($alias) : new StringCollection();
 
         $substance = new Substance(
             $id,
@@ -147,7 +149,7 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
         return $id;
     }
 
-    public function testMatchesByCanonicalName(): void
+    public function test_matches_by_canonical_name(): void
     {
         $coatingId = $this->getLitatankCoatingId();
 
@@ -163,12 +165,12 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
             ['cid' => $coatingId->toRfc4122()],
         );
 
-        if ($row === false || $row === null || $row === '') {
+        if (false === $row || null === $row || '' === $row) {
             $this->markTestSkipped('No suitable "Вода" assessment for Литатанк Классик in seed.');
         }
 
         $result = ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingId->toRfc4122()],
+            coatingIds: [$coatingId->toRfc4122()],
             searchWords: ['вода'],
         ));
 
@@ -176,28 +178,28 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
             'Coating must appear in result when a suitable "Вода" assessment exists.');
 
         $matches = $result[$coatingId->toRfc4122()];
-        $found   = false;
+        $found = false;
         foreach ($matches as $dto) {
             self::assertInstanceOf(SubstanceMatchDTO::class, $dto);
-            if (mb_strtolower($dto->canonicalName) === 'вода' && $dto->matchedVia === 'canonical') {
+            if ('вода' === mb_strtolower($dto->canonicalName)) {
                 $found = true;
                 break;
             }
         }
-        self::assertTrue($found, 'Expected a SubstanceMatchDTO for "Вода" with matchedVia=canonical.');
+        self::assertTrue($found, 'Expected a SubstanceMatchDTO with canonicalName="Вода".');
     }
 
-    public function testMatchesByAlias(): void
+    public function test_matches_by_alias(): void
     {
-        $suffix     = uniqid('t25alias-', true);
-        $coatingId  = $this->getAnyCoatingId();
-        $subId      = $this->createSubstance('Вещество-' . $suffix, null, 'water-' . $suffix);
+        $suffix = uniqid('t25alias-', true);
+        $coatingId = $this->getAnyCoatingId();
+        $subId = $this->createSubstance('Вещество-'.$suffix, null, 'water-'.$suffix);
         $this->createAssessment($coatingId, $subId, Grade::R);
         $this->em->clear();
 
         $result = ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingId->toRfc4122()],
-            searchWords: ['water-' . $suffix],
+            coatingIds: [$coatingId->toRfc4122()],
+            searchWords: ['water-'.$suffix],
         ));
 
         self::assertArrayHasKey($coatingId->toRfc4122(), $result,
@@ -205,15 +207,15 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
 
         $found = false;
         foreach ($result[$coatingId->toRfc4122()] as $dto) {
-            if ($dto->substanceId === $subId->toRfc4122() && $dto->matchedVia === 'alias') {
+            if ($dto->substanceId === $subId->toRfc4122()) {
                 $found = true;
                 break;
             }
         }
-        self::assertTrue($found, 'Expected SubstanceMatchDTO with matchedVia=alias.');
+        self::assertTrue($found, 'Expected SubstanceMatchDTO for the substance whose alias matched the query.');
     }
 
-    public function testMatchesByCas(): void
+    public function test_matches_by_cas(): void
     {
         // Use water CAS from seed data if available
         $row = $this->em->getConnection()->fetchOne(
@@ -225,71 +227,65 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
              LIMIT 1",
         );
 
-        if ($row !== false && $row !== null && $row !== '') {
+        if (false !== $row && null !== $row && '' !== $row) {
             $coatingId = $row;
         } else {
             // Create own substance with CAS
-            $suffix    = uniqid('t25cas-', true);
+            $suffix = uniqid('t25cas-', true);
             $coatingUuid = $this->getAnyCoatingId();
-            $coatingId   = $coatingUuid->toRfc4122();
-            $subId       = $this->createSubstance('ВодаCAS-' . $suffix, '7732-18-5', null);
+            $coatingId = $coatingUuid->toRfc4122();
+            $subId = $this->createSubstance('ВодаCAS-'.$suffix, '7732-18-5', null);
             $this->createAssessment($coatingUuid, $subId, Grade::LR);
             $this->em->clear();
         }
 
         $result = ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingId],
+            coatingIds: [$coatingId],
             searchWords: ['7732-18-5'],
         ));
 
         self::assertArrayHasKey($coatingId, $result,
             'Coating must appear in result when substance CAS matches the search word.');
 
-        $found = false;
-        foreach ($result[$coatingId] as $dto) {
-            if ($dto->matchedVia === 'cas') {
-                $found = true;
-                break;
-            }
-        }
-        self::assertTrue($found, 'Expected SubstanceMatchDTO with matchedVia=cas.');
+        self::assertNotEmpty($result[$coatingId],
+            'Coating must have at least one substance match when its CAS matches the query.');
     }
 
-    public function testEmptyInputsReturnsEmpty(): void
+    public function test_empty_inputs_returns_empty(): void
     {
         $coatingId = $this->getAnyCoatingId()->toRfc4122();
 
         self::assertSame([], ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [],
+            coatingIds: [],
             searchWords: ['вода'],
         )), 'Empty coatingIds must return [].');
 
         self::assertSame([], ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingId],
+            coatingIds: [$coatingId],
             searchWords: [],
         )), 'Empty searchWords must return [].');
 
         self::assertSame([], ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [],
+            coatingIds: [],
             searchWords: [],
         )), 'Both empty must return [].');
     }
 
-    public function testUnsuitableGradeExcluded(): void
+    public function test_unsuitable_grade_excluded(): void
     {
-        $suffix      = uniqid('t25grade-', true);
-        $coatingR    = $this->getAnyCoatingId();
-        $coatingNR   = $this->getSecondCoatingId($coatingR);
+        $suffix = uniqid('t25grade-', true);
+        $coatingR = $this->getAnyCoatingId();
+        $coatingNR = $this->getSecondCoatingId($coatingR);
 
         // Same substance linked to one coating as R, another as NR
-        $subId = $this->createSubstance('ВеществоGrade-' . $suffix, null, null);
-        $this->createAssessment($coatingR,  $subId, Grade::R);
+        $subId = $this->createSubstance('ВеществоGrade-'.$suffix, null, null);
+        $this->createAssessment($coatingR, $subId, Grade::R);
         $this->createAssessment($coatingNR, $subId, Grade::NR);
         $this->em->clear();
 
         $result = ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingR->toRfc4122(), $coatingNR->toRfc4122()],
-            searchWords: ['ВеществоGrade-' . $suffix],
+            coatingIds: [$coatingR->toRfc4122(), $coatingNR->toRfc4122()],
+            searchWords: ['ВеществоGrade-'.$suffix],
         ));
 
         self::assertArrayHasKey($coatingR->toRfc4122(), $result,
@@ -299,45 +295,72 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
             'Coating with NR grade must NOT be in result (unsuitable grade).');
     }
 
-    public function testMultipleWordsAcrossCoatings(): void
+    public function test_matches_russian_inflection(): void
     {
-        $suffix     = uniqid('t25multi-', true);
-        $coatingA   = $this->getAnyCoatingId();
-        $coatingB   = $this->getSecondCoatingId($coatingA);
+        // «для воды» (genitive) должно матчить canonical «Вода» через russian stemmer.
+        $coatingId = $this->getLitatankCoatingId();
 
-        $subA = $this->createSubstance('ВеществоА-' . $suffix, null, null);
-        $subB = $this->createSubstance('ВеществоБ-' . $suffix, null, null);
+        $row = $this->em->getConnection()->fetchOne(
+            "SELECT sub.id::text
+             FROM chemical_resistance_assessment a
+             JOIN chemical_resistance_substance sub ON sub.id = a.substance_id
+             WHERE a.coating_id = :cid
+               AND chemical_resistance_is_suitable_grade(a.grade)
+               AND LOWER(sub.canonical_name) = 'вода'
+             LIMIT 1",
+            ['cid' => $coatingId->toRfc4122()],
+        );
 
-        $this->createAssessment($coatingA, $subA, Grade::R);
-        $this->createAssessment($coatingB, $subB, Grade::LR);
+        if (false === $row || null === $row || '' === $row) {
+            $this->markTestSkipped('No suitable "Вода" assessment for Литатанк Классик in seed.');
+        }
+
+        foreach (['воды', 'воду', 'водой'] as $inflected) {
+            $result = ($this->handler)(new MatchSubstancesForSearchQuery(
+                coatingIds: [$coatingId->toRfc4122()],
+                searchWords: [$inflected],
+            ));
+
+            self::assertArrayHasKey(
+                $coatingId->toRfc4122(),
+                $result,
+                "Русская словоформа «{$inflected}» должна матчить canonical «Вода» через russian stemmer.",
+            );
+        }
+    }
+
+    public function test_any_query_word_matches_substance(): void
+    {
+        // OR-семантика: substance матчится, если хотя бы один стем запроса
+        // совпал. «фенолэпоксид для воды» находит «Вода» по стему «вод»,
+        // хотя «фенолэпоксид» относится к coating'у, а не к веществу.
+        // Suffix'ы у substance и у query разные, чтобы случайный uniqid не сматчил всё.
+        $subSuffix = str_replace('.', '', uniqid('subA', true));
+        $otherSuffix = str_replace('.', '', uniqid('subB', true));
+        $noiseSuffix = str_replace('.', '', uniqid('noise', true));
+        $coating = $this->getAnyCoatingId();
+
+        $subAlpha = $this->createSubstance('Уникальнаяальфа'.$subSuffix, null, null);
+        $subBeta = $this->createSubstance('Совсемдругое'.$otherSuffix, null, null);
+
+        $this->createAssessment($coating, $subAlpha, Grade::R);
+        $this->createAssessment($coating, $subBeta, Grade::R);
         $this->em->clear();
 
+        // Запрос из двух слов: одно matches subAlpha, второе — шум с суффиксом,
+        // которого нет ни в одном substance. AND отсёк бы subAlpha; OR оставляет.
         $result = ($this->handler)(new MatchSubstancesForSearchQuery(
-            coatingIds:  [$coatingA->toRfc4122(), $coatingB->toRfc4122()],
-            searchWords: ['ВеществоА-' . $suffix, 'ВеществоБ-' . $suffix],
+            coatingIds: [$coating->toRfc4122()],
+            searchWords: ['Уникальнаяальфа'.$subSuffix, 'фенолэпоксид'.$noiseSuffix],
         ));
 
-        self::assertArrayHasKey($coatingA->toRfc4122(), $result,
-            'Coating A must appear with a match for substance A.');
-        self::assertArrayHasKey($coatingB->toRfc4122(), $result,
-            'Coating B must appear with a match for substance B.');
+        self::assertArrayHasKey($coating->toRfc4122(), $result,
+            'Coating должен быть в результате, потому что subAlpha matches по первому слову.');
 
-        $foundA = false;
-        foreach ($result[$coatingA->toRfc4122()] as $dto) {
-            if ($dto->substanceId === $subA->toRfc4122()) {
-                $foundA = true;
-                break;
-            }
-        }
-        self::assertTrue($foundA, 'Substance A must be listed under coating A.');
-
-        $foundB = false;
-        foreach ($result[$coatingB->toRfc4122()] as $dto) {
-            if ($dto->substanceId === $subB->toRfc4122()) {
-                $foundB = true;
-                break;
-            }
-        }
-        self::assertTrue($foundB, 'Substance B must be listed under coating B.');
+        $matchedIds = array_map(fn ($d) => $d->substanceId, $result[$coating->toRfc4122()]);
+        self::assertContains($subAlpha->toRfc4122(), $matchedIds,
+            'subAlpha должен появиться (matches по первому слову).');
+        self::assertNotContains($subBeta->toRfc4122(), $matchedIds,
+            'subBeta не должен появиться — ни один стем запроса в нём не совпал.');
     }
 }

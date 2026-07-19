@@ -19,11 +19,11 @@ class Document extends Aggregate
     private ?\DateTimeImmutable $updatedAt;
 
     /**
-     * @var DocumentProduct[] $products
+     * @var DocumentProduct[]
      */
     private array $products = [];
     /**
-     * @var DocumentTag[] $tags
+     * @var DocumentTag[]
      */
     private array $tags = [];
 
@@ -105,5 +105,4 @@ class Document extends Aggregate
             $this->tags[] = $tag;
         }
     }
-
 }

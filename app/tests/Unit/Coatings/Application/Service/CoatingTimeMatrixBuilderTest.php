@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingTimeMatrixBuilderTest extends TestCase
 {
-    public function testColumnsStepBy10FromMinToMax(): void
+    public function test_columns_step_by10_from_min_to_max(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-10, 50));
 
@@ -21,7 +21,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([-10, 0, 10, 20, 30, 40, 50], $matrix['columns']);
     }
 
-    public function testColumnsAddMandatoryTempsBetweenStep(): void
+    public function test_columns_add_mandatory_temps_between_step(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-5, 45));
 
@@ -29,7 +29,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([-5, 0, 5, 15, 20, 25, 35, 45], $matrix['columns']);
     }
 
-    public function testColumnsAppendMaxWhenGapAtEnd(): void
+    public function test_columns_append_max_when_gap_at_end(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(-10, 47));
 
@@ -37,7 +37,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([-10, 0, 10, 20, 30, 40, 47], $matrix['columns']);
     }
 
-    public function testMandatoryTempsSkippedWhenOutsideRange(): void
+    public function test_mandatory_temps_skipped_when_outside_range(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(30, 50));
 
@@ -45,7 +45,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([30, 40, 50], $matrix['columns']);
     }
 
-    public function testOnlyOneMandatoryInRange(): void
+    public function test_only_one_mandatory_in_range(): void
     {
         $matrix = (new CoatingTimeMatrixBuilder())->build($this->coating(10, 30));
 
@@ -53,7 +53,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame([10, 20, 30], $matrix['columns']);
     }
 
-    public function testExactPointGivesRawValue(): void
+    public function test_exact_point_gives_raw_value(): void
     {
         $coating = $this->coating(0, 50, dryToTouch: [
             $this->point(20, 60),
@@ -66,7 +66,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame(['minutes' => 60, 'is_calculated' => false], $row['values'][20]);
     }
 
-    public function testLinearInterpolationBetweenPoints(): void
+    public function test_linear_interpolation_between_points(): void
     {
         $coating = $this->coating(0, 50, dryToTouch: [
             $this->point(0, 100),
@@ -78,7 +78,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame(['minutes' => 60, 'is_calculated' => true], $matrix['rows'][0]['values'][10]);
     }
 
-    public function testOutsideRangeIsNull(): void
+    public function test_outside_range_is_null(): void
     {
         $coating = $this->coating(0, 50, dryToTouch: [
             $this->point(20, 60),
@@ -90,7 +90,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['rows'][0]['values'][40]);
     }
 
-    public function testUnlimitedBoundKillsInterpolation(): void
+    public function test_unlimited_bound_kills_interpolation(): void
     {
         $coating = $this->coating(0, 50, dryToTouch: [
             $this->point(20, 60),
@@ -101,7 +101,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['rows'][0]['values'][20 + 5] ?? ['minutes' => null, 'is_calculated' => false]);
     }
 
-    public function testEmptyDryToTouchProducesNoRow(): void
+    public function test_empty_dry_to_touch_produces_no_row(): void
     {
         $coating = $this->coating(0, 50, dryToTouch: []);
 
@@ -110,7 +110,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertNotContains('Сухой на отлип', $labels);
     }
 
-    public function testRecoatingEnvBranchesGetOwnRows(): void
+    public function test_recoating_env_branches_get_own_rows(): void
     {
         $minTree = new RecoatingIntervalTreeDTO();
         $minTree->default = [$this->point(20, 240)];
@@ -142,6 +142,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         $c->fullCure = $fullCure;
         $c->minRecoatingInterval = $minRecoatingTree ?? new RecoatingIntervalTreeDTO();
         $c->maxRecoatingInterval = null;
+
         return $c;
     }
 
@@ -151,6 +152,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         $p->temperature_at = $tempAt;
         $p->time_in_minutes = $timeInMinutes;
         $p->is_calculated = $isCalculated;
+
         return $p;
     }
 }

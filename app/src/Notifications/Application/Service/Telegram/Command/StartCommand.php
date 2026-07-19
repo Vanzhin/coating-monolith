@@ -45,4 +45,3 @@ class StartCommand extends UserCommand
         return $text;
     }
 }
-

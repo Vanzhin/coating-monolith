@@ -25,24 +25,21 @@ final readonly class SearchQuery
     {
         $length = mb_strlen($value);
         if ($length < self::MIN_LENGTH || $length > self::MAX_LENGTH) {
-            throw new AppException(sprintf(
-                'Длина поискового запроса должна быть от %d до %d символов.',
-                self::MIN_LENGTH,
-                self::MAX_LENGTH,
-            ));
+            throw new AppException(sprintf('Длина поискового запроса должна быть от %d до %d символов.', self::MIN_LENGTH, self::MAX_LENGTH));
         }
     }
 
     /** null-in → null-out; пустая строка после trim тоже null. */
     public static function tryFromString(?string $raw): ?self
     {
-        if ($raw === null) {
+        if (null === $raw) {
             return null;
         }
         $trimmed = trim($raw);
-        if ($trimmed === '') {
+        if ('' === $trimmed) {
             return null;
         }
+
         return new self($trimmed);
     }
 
@@ -50,11 +47,12 @@ final readonly class SearchQuery
     public function words(): array
     {
         $words = preg_split('/[\s\-.,;]+/u', $this->value, -1, PREG_SPLIT_NO_EMPTY);
-        return $words === false ? [] : $words;
+
+        return false === $words ? [] : $words;
     }
 
     public function hasSingleWord(): bool
     {
-        return count($this->words()) === 1;
+        return 1 === count($this->words());
     }
 }

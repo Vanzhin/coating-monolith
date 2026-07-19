@@ -27,7 +27,7 @@ class DftRangeTypeTest extends TestCase
         $this->platform = new PostgreSQLPlatform();
     }
 
-    public function testDftRangeIsSerializedToJson(): void
+    public function test_dft_range_is_serialized_to_json(): void
     {
         $dftRange = new DftRange(
             new PositiveNumberRange(50, 150),
@@ -43,7 +43,7 @@ class DftRangeTypeTest extends TestCase
         );
     }
 
-    public function testJsonIsDeserializedBackToDftRange(): void
+    public function test_json_is_deserialized_back_to_dft_range(): void
     {
         $json = '{"min":50,"max":150,"tds_dft":100,"type":"\u043c\u043a\u043c"}';
 
@@ -56,7 +56,7 @@ class DftRangeTypeTest extends TestCase
         $this->assertSame(ThicknessType::MIC, $dftRange->type);
     }
 
-    public function testNullRoundtrip(): void
+    public function test_null_roundtrip(): void
     {
         $this->assertNull($this->type->convertToDatabaseValue(null, $this->platform));
         $this->assertNull($this->type->convertToPHPValue(null, $this->platform));

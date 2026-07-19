@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Command\Assessment;
 
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment\CreateAssessmentCommand;
@@ -10,12 +12,8 @@ use App\ChemicalResistance\Application\UseCase\Command\Assessment\UpdateAssessme
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\UpdateAssessment\UpdateAssessmentCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommandHandler;
-use App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommand;
-use App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler;
-use App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommand;
-use App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommandHandler;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
@@ -44,11 +42,11 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->create         = $c->get(CreateAssessmentCommandHandler::class);
-        $this->update         = $c->get(UpdateAssessmentCommandHandler::class);
-        $this->delete         = $c->get(DeleteAssessmentCommandHandler::class);
+        $this->create = $c->get(CreateAssessmentCommandHandler::class);
+        $this->update = $c->get(UpdateAssessmentCommandHandler::class);
+        $this->delete = $c->get(DeleteAssessmentCommandHandler::class);
         $this->assessmentRepo = $c->get(AssessmentRepository::class);
-        $this->em             = $c->get(EntityManagerInterface::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -59,7 +57,7 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
@@ -67,19 +65,19 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
 
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             foreach ($this->createdNoteIds as $id) {
                 $e = $em->find(Note::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -91,7 +89,7 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
@@ -102,8 +100,9 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
     {
         $c = static::getContainer();
         $handler = $c->get(CreateSubstanceCommandHandler::class);
-        $id = ($handler)(new CreateSubstanceCommand('Вещество-' . $suffix, null, []));
+        $id = ($handler)(new CreateSubstanceCommand('Вещество-'.$suffix, null, []));
         $this->createdSubstanceIds[] = Uuid::fromString($id);
+
         return $id;
     }
 
@@ -111,17 +110,18 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
     {
         $c = static::getContainer();
         $handler = $c->get(CreateNoteCommandHandler::class);
-        $id = ($handler)(new CreateNoteCommand('Примечание-' . $suffix, 'Описание-' . $suffix));
+        $id = ($handler)(new CreateNoteCommand('Примечание-'.$suffix, 'Описание-'.$suffix));
         $this->createdNoteIds[] = Uuid::fromString($id);
+
         return $id;
     }
 
-    public function testHappyPath(): void
+    public function test_happy_path(): void
     {
-        $coatingId   = $this->getCoatingId();
-        $suffix      = uniqid('asmt-happy-', true);
+        $coatingId = $this->getCoatingId();
+        $suffix = uniqid('asmt-happy-', true);
         $substanceId = $this->createSubstance($suffix);
-        $noteId      = $this->createNote($suffix);
+        $noteId = $this->createNote($suffix);
 
         // Create
         $id = ($this->create)(new CreateAssessmentCommand(
@@ -160,10 +160,10 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
         $this->createdAssessmentIds = [];
     }
 
-    public function testDuplicatePairThrows(): void
+    public function test_duplicate_pair_throws(): void
     {
-        $coatingId   = $this->getCoatingId();
-        $suffix      = uniqid('asmt-dup-', true);
+        $coatingId = $this->getCoatingId();
+        $suffix = uniqid('asmt-dup-', true);
         $substanceId = $this->createSubstance($suffix);
 
         $id = ($this->create)(new CreateAssessmentCommand(
@@ -187,10 +187,10 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
         ));
     }
 
-    public function testMissingNoteIdThrows(): void
+    public function test_missing_note_id_throws(): void
     {
-        $coatingId   = $this->getCoatingId();
-        $suffix      = uniqid('asmt-note-', true);
+        $coatingId = $this->getCoatingId();
+        $suffix = uniqid('asmt-note-', true);
         $substanceId = $this->createSubstance($suffix);
 
         $nonExistentNoteId = Uuid::v4()->toRfc4122();

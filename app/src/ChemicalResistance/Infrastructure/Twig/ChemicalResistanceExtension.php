@@ -13,7 +13,7 @@ final class ChemicalResistanceExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('system_notes', fn() => SystemNotes::all()),
+            new TwigFunction('system_notes', fn () => SystemNotes::all()),
         ];
     }
 }

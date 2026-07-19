@@ -38,36 +38,27 @@ final readonly class RecoatingTreeBuilder
         $children = [];
         foreach ($node->branches as $childKey => $childDto) {
             $childTree = $this->buildNode($childDto, (string) $childKey, $requireDuration);
-            if ($childTree !== null) {
+            if (null !== $childTree) {
                 $children[] = $childTree;
             }
         }
 
-        if ($node->default === [] && $children === []) {
+        if ([] === $node->default && [] === $children) {
             return null;
         }
-        if ($node->default === []) {
+        if ([] === $node->default) {
             $nodeLabel = $this->labelFor($key);
             $childLabels = array_map(
-                fn(RecoatingIntervalTree $child) => $this->labelFor($child->key),
+                fn (RecoatingIntervalTree $child) => $this->labelFor($child->key),
                 $children,
             );
-            throw new AppException(sprintf(
-                'На уровне «%s» заданы правила для (%s), но не указано общее значение для самого уровня «%s». '
-                . 'Заполните хотя бы одну точку (с ненулевой длительностью) на этом уровне — иначе для остальных оснований не будет известно значение интервала.',
-                $nodeLabel,
-                implode(', ', $childLabels),
-                $nodeLabel,
-            ));
+            throw new AppException(sprintf('На уровне «%s» заданы правила для (%s), но не указано общее значение для самого уровня «%s». Заполните хотя бы одну точку (с ненулевой длительностью) на этом уровне — иначе для остальных оснований не будет известно значение интервала.', $nodeLabel, implode(', ', $childLabels), $nodeLabel));
         }
 
         if ($requireDuration) {
             foreach ($node->default as $point) {
                 if (!($point->time_in_minutes > 0)) {
-                    throw new AppException(sprintf(
-                        'Минимальный интервал перекрытия при +%d°C не может быть пустым или без ограничения. Введите длительность.',
-                        $point->temperature_at,
-                    ));
+                    throw new AppException(sprintf('Минимальный интервал перекрытия при +%d°C не может быть пустым или без ограничения. Введите длительность.', $point->temperature_at));
                 }
             }
         }
@@ -81,17 +72,17 @@ final readonly class RecoatingTreeBuilder
      */
     private function labelFor(string $key): string
     {
-        if ($key === 'default') {
+        if ('default' === $key) {
             return 'Общее';
         }
 
         $env = EnvironmentType::tryFrom($key);
-        if ($env !== null) {
+        if (null !== $env) {
             return $env->title();
         }
 
         $base = CoatingBase::tryFrom(strtoupper($key));
-        if ($base !== null) {
+        if (null !== $base) {
             return sprintf('основания %s (%s)', $base->title(), $base->iso());
         }
 
@@ -102,7 +93,7 @@ final readonly class RecoatingTreeBuilder
     private function buildSeries(array $points): DryingTimeSeries
     {
         return new DryingTimeSeries(...array_map(
-            fn(DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes, $p->is_calculated),
+            fn (DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes, $p->is_calculated),
             $points,
         ));
     }

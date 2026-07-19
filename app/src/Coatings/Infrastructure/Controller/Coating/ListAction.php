@@ -9,8 +9,8 @@ use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQuer
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
@@ -37,18 +37,18 @@ class ListAction extends AbstractController
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const APP_MIN_TEMP_PRESETS = [
-        'winter'   => ['label' => 'Зимнее (ниже -5)',    'from' => -30, 'to' => -5],
+        'winter' => ['label' => 'Зимнее (ниже -5)',    'from' => -30, 'to' => -5],
         'standard' => ['label' => 'Стандартное (-5..+5)', 'from' => -5,  'to' => 5],
-        'summer'   => ['label' => 'Летнее (более +5)',   'from' => 5,   'to' => 50],
+        'summer' => ['label' => 'Летнее (более +5)',   'from' => 5,   'to' => 50],
     ];
 
     /**
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const VOLUME_SOLID_PRESETS = [
-        'low'    => ['label' => 'Низкий (≤ 40 %)',    'from' => 10, 'to' => 40],
+        'low' => ['label' => 'Низкий (≤ 40 %)',    'from' => 10, 'to' => 40],
         'medium' => ['label' => 'Средний (40–70 %)',  'from' => 40, 'to' => 70],
-        'high'   => ['label' => 'Высокий (≥ 70 %)',   'from' => 70, 'to' => 100],
+        'high' => ['label' => 'Высокий (≥ 70 %)',   'from' => 70, 'to' => 100],
     ];
 
     /**
@@ -67,9 +67,9 @@ class ListAction extends AbstractController
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const MIN_RECOAT_20_PRESETS = [
-        'fast'      => ['label' => 'Быстрый (≤ 4 ч)',    'from' => 0,  'to' => 4],
-        'standard'  => ['label' => 'Стандарт (4–24 ч)',  'from' => 4,  'to' => 24],
-        'slow'      => ['label' => 'Медленный (1–3 сут)', 'from' => 24, 'to' => 72],
+        'fast' => ['label' => 'Быстрый (≤ 4 ч)',    'from' => 0,  'to' => 4],
+        'standard' => ['label' => 'Стандарт (4–24 ч)',  'from' => 4,  'to' => 24],
+        'slow' => ['label' => 'Медленный (1–3 сут)', 'from' => 24, 'to' => 72],
         'very_slow' => ['label' => 'Долгий (> 3 сут)',    'from' => 72, 'to' => 168],
     ];
 
@@ -80,10 +80,10 @@ class ListAction extends AbstractController
      * @var array<string, array{label: string, from: int, to: int}>
      */
     private const MAX_RECOAT_20_PRESETS = [
-        'day'   => ['label' => '≤ 1 сут',    'from' => 0,  'to' => 1],
-        'week'  => ['label' => '1–7 сут',    'from' => 1,  'to' => 7],
+        'day' => ['label' => '≤ 1 сут',    'from' => 0,  'to' => 1],
+        'week' => ['label' => '1–7 сут',    'from' => 1,  'to' => 7],
         'month' => ['label' => '1–4 нед',    'from' => 7,  'to' => 28],
-        'long'  => ['label' => '> 4 нед',    'from' => 28, 'to' => 365],
+        'long' => ['label' => '> 4 нед',    'from' => 28, 'to' => 365],
     ];
 
     public function __construct(
@@ -103,21 +103,21 @@ class ListAction extends AbstractController
         // чекбокс дважды в разных местах шторки.
         $baseValuesRaw = array_values(array_filter(
             $request->query->all('baseValues'),
-            static fn($v): bool => is_string($v) && CoatingBase::tryFrom($v) !== null,
+            static fn ($v): bool => is_string($v) && null !== CoatingBase::tryFrom($v),
         ));
         $baseValues = new StringCollection(...array_unique($baseValuesRaw));
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
         $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $pager = Pager::fromPage($page, $limit);
 
-        $appMinTempFrom  = $this->nullableInt($request->query->get('appMinTempFrom'));
-        $appMinTempTo    = $this->nullableInt($request->query->get('appMinTempTo'));
+        $appMinTempFrom = $this->nullableInt($request->query->get('appMinTempFrom'));
+        $appMinTempTo = $this->nullableInt($request->query->get('appMinTempTo'));
         $volumeSolidFrom = $this->nullableInt($request->query->get('volumeSolidFrom'));
-        $volumeSolidTo   = $this->nullableInt($request->query->get('volumeSolidTo'));
+        $volumeSolidTo = $this->nullableInt($request->query->get('volumeSolidTo'));
         $minRecoat20From = $this->nullableInt($request->query->get('minRecoat20From'));
-        $minRecoat20To   = $this->nullableInt($request->query->get('minRecoat20To'));
+        $minRecoat20To = $this->nullableInt($request->query->get('minRecoat20To'));
         $maxRecoat20From = $this->nullableInt($request->query->get('maxRecoat20From'));
-        $maxRecoat20To   = $this->nullableInt($request->query->get('maxRecoat20To'));
+        $maxRecoat20To = $this->nullableInt($request->query->get('maxRecoat20To'));
 
         // Температура эксплуатации: одно число + среда (сухое/погружение) +
         // галка «включая пик». Фасет активен, только когда заданы и temp, и env
@@ -159,12 +159,12 @@ class ListAction extends AbstractController
                 // UI-единицы конвертим в минуты для домена: min в часах,
                 // max в днях. RECOATING_AT_20C возвращает минуты.
                 minRecoating20: RangeFilter::tryFromNullable(
-                    $minRecoat20From !== null ? $minRecoat20From * self::MINUTES_PER_HOUR : null,
-                    $minRecoat20To !== null ? $minRecoat20To * self::MINUTES_PER_HOUR : null,
+                    null !== $minRecoat20From ? $minRecoat20From * self::MINUTES_PER_HOUR : null,
+                    null !== $minRecoat20To ? $minRecoat20To * self::MINUTES_PER_HOUR : null,
                 ),
                 maxRecoating20: RangeFilter::tryFromNullable(
-                    $maxRecoat20From !== null ? $maxRecoat20From * self::MINUTES_PER_DAY : null,
-                    $maxRecoat20To !== null ? $maxRecoat20To * self::MINUTES_PER_DAY : null,
+                    null !== $maxRecoat20From ? $maxRecoat20From * self::MINUTES_PER_DAY : null,
+                    null !== $maxRecoat20To ? $maxRecoat20To * self::MINUTES_PER_DAY : null,
                 ),
             );
             $result = $this->queryBus->execute(new GetPagedCoatingsQuery($filter));
@@ -205,32 +205,33 @@ class ListAction extends AbstractController
             'result' => $result,
             'error' => $error,
             'coatingBases' => CoatingBase::cases(),
-            'appMinTempPresets'   => self::APP_MIN_TEMP_PRESETS,
-            'volumeSolidPresets'  => self::VOLUME_SOLID_PRESETS,
-            'minRecoat20Presets'  => self::MIN_RECOAT_20_PRESETS,
-            'maxRecoat20Presets'  => self::MAX_RECOAT_20_PRESETS,
-            'appMinTempFrom'   => $appMinTempFrom,
-            'appMinTempTo'     => $appMinTempTo,
-            'volumeSolidFrom'  => $volumeSolidFrom,
-            'volumeSolidTo'    => $volumeSolidTo,
-            'minRecoat20From'  => $minRecoat20From,
-            'minRecoat20To'    => $minRecoat20To,
-            'maxRecoat20From'  => $maxRecoat20From,
-            'maxRecoat20To'    => $maxRecoat20To,
-            'thermTemp'         => $thermTemp,
-            'thermEnv'          => $thermEnv?->value,
+            'appMinTempPresets' => self::APP_MIN_TEMP_PRESETS,
+            'volumeSolidPresets' => self::VOLUME_SOLID_PRESETS,
+            'minRecoat20Presets' => self::MIN_RECOAT_20_PRESETS,
+            'maxRecoat20Presets' => self::MAX_RECOAT_20_PRESETS,
+            'appMinTempFrom' => $appMinTempFrom,
+            'appMinTempTo' => $appMinTempTo,
+            'volumeSolidFrom' => $volumeSolidFrom,
+            'volumeSolidTo' => $volumeSolidTo,
+            'minRecoat20From' => $minRecoat20From,
+            'minRecoat20To' => $minRecoat20To,
+            'maxRecoat20From' => $maxRecoat20From,
+            'maxRecoat20To' => $maxRecoat20To,
+            'thermTemp' => $thermTemp,
+            'thermEnv' => $thermEnv?->value,
             'thermIncludingPeak' => $thermIncludingPeak,
-            'sort'              => $sort,
-            'sortOptions'       => CoatingSort::cases(),
-            'preservedParams'   => $preservedParams,
+            'sort' => $sort,
+            'sortOptions' => CoatingSort::cases(),
+            'preservedParams' => $preservedParams,
         ]);
     }
 
     private function nullableInt(?string $raw): ?int
     {
-        if ($raw === null || trim($raw) === '') {
+        if (null === $raw || '' === trim($raw)) {
             return null;
         }
+
         return (int) $raw;
     }
 }

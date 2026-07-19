@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\ProposalDocument;
 
@@ -16,8 +16,7 @@ class ProposalDocumentTemplate extends Aggregate
     public function __construct(
         private readonly string $description,
         private readonly string $path,
-    )
-    {
+    ) {
         $this->id = UuidService::generate();
     }
 

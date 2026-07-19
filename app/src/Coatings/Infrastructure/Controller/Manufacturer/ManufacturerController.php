@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Manufacturer;
 
@@ -22,20 +22,20 @@ use Symfony\Component\Routing\Annotation\Route;
 class ManufacturerController extends AbstractController
 {
     public function __construct(
-        private readonly QueryBusInterface   $queryBus,
+        private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
-    )
-    {
+    ) {
     }
 
     #[Route(path: '/list', name: 'list', methods: ['GET'])]
     public function list(Request $request): Response
     {
         $search = $request->query->get('search');
-        $page = $request->query->get('page') ? (int)$request->query->get('page') : null;
-        $limit = $request->query->get('limit') ? (int)$request->query->get('limit') : null;
+        $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
+        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
         $query = new GetPagedManufacturersQuery(new ManufacturersFilter($search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
+
         return $this->render('admin/coating/manufacturer/index.html.twig', compact('result'));
     }
 
@@ -53,6 +53,7 @@ class ManufacturerController extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
+
                 return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
             }
         }
@@ -66,6 +67,7 @@ class ManufacturerController extends AbstractController
         $result = $this->queryBus->execute(new GetManufacturerQuery($id));
         if (null === $result->manufacturer) {
             $this->addFlash('manufacturer_edited_error', sprintf('Производитель с идентификатором "%s" не найден.', $id));
+
             return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
         }
 
@@ -81,6 +83,7 @@ class ManufacturerController extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
             } catch (\Exception|\Error $e) {
                 $error = $e->getMessage();
+
                 return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
             }
         }
@@ -90,6 +93,7 @@ class ManufacturerController extends AbstractController
             'title' => $result->manufacturer->title,
             'description' => $result->manufacturer->description,
         ];
+
         return $this->render('admin/coating/manufacturer/form.html.twig', compact('inputData'));
     }
 
@@ -103,6 +107,7 @@ class ManufacturerController extends AbstractController
         } catch (\Exception|\Error $e) {
             $error = $e->getMessage();
         }
+
         return $this->redirectToRoute('app_cabinet_coating_manufacturer_list', compact('error'));
     }
 }

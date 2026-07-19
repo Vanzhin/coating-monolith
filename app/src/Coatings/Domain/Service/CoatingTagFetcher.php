@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Service;
 
@@ -21,5 +21,4 @@ readonly class CoatingTagFetcher
 
         return $coatingTag;
     }
-
 }

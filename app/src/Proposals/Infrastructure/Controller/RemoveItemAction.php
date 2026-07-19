@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
@@ -17,9 +17,8 @@ class RemoveItemAction extends BaseController
 {
     public function __construct(
         private readonly CommandBus $commandBus,
-        LoggerInterface             $logger,
-    )
-    {
+        LoggerInterface $logger,
+    ) {
         parent::__construct($logger);
     }
 

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal;
 
@@ -23,20 +23,18 @@ class GeneralProposalInfoItem extends Aggregate
     private readonly GeneralProposalInfo $proposal;
     private readonly GeneralProposalInfoItemSpecification $specification;
 
-
     public function __construct(
-        string                               $coatId,
-        int                                  $coatNumber,
-        float                                $coatPrice,
-        int                                  $coatDft,
-        string                               $coatColor,
-        float                                $thinnerPrice,
-        int                                  $thinnerConsumption,
-        GeneralProposalInfo                  $proposal,
+        string $coatId,
+        int $coatNumber,
+        float $coatPrice,
+        int $coatDft,
+        string $coatColor,
+        float $thinnerPrice,
+        int $thinnerConsumption,
+        GeneralProposalInfo $proposal,
         GeneralProposalInfoItemSpecification $specification,
-        ?int                                 $loss = null,
-    )
-    {
+        ?int $loss = null,
+    ) {
         $this->id = UuidService::generate();
         $this->proposal = $proposal;
         $this->specification = $specification;
@@ -68,7 +66,6 @@ class GeneralProposalInfoItem extends Aggregate
     public function getCoatNumber(): int
     {
         return $this->coatNumber;
-
     }
 
     public function setCoatNumber(int $coatNumber): void
@@ -87,7 +84,6 @@ class GeneralProposalInfoItem extends Aggregate
     {
         $this->coatPrice = $coatPrice;
         AssertService::greaterThanEq($this->coatPrice, 0);
-
     }
 
     public function getCoatDft(): int
@@ -99,7 +95,6 @@ class GeneralProposalInfoItem extends Aggregate
     {
         $this->coatDft = $coatDft;
         AssertService::greaterThanEq($this->coatDft, 0);
-
     }
 
     public function getCoatColor(): string
@@ -121,7 +116,6 @@ class GeneralProposalInfoItem extends Aggregate
     {
         $this->thinnerPrice = $thinnerPrice;
         AssertService::greaterThanEq($this->thinnerPrice, 0);
-
     }
 
     public function getThinnerConsumption(): int
@@ -150,5 +144,4 @@ class GeneralProposalInfoItem extends Aggregate
     {
         return $this->proposal;
     }
-
 }

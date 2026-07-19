@@ -32,9 +32,11 @@
     // Update the modal's content.
     const modalTitle = deleteModal.querySelector('.modal-body')
     const modalDeleteLink = deleteModal.querySelector('.modal-footer a')
-    const path = "{{ path(delete, {'id': 'link'}) }}"
+    {# UUID-placeholder, чтобы path() прошёл requirements '[0-9a-f-]{36}'. #}
+    const placeholder = "00000000-0000-0000-0000-000000000000"
+    const path = "{{ path(delete, {'id': '00000000-0000-0000-0000-000000000000'}) }}"
     modalTitle.textContent = `Вы точно хотите удалить ${title}?`
-    modalDeleteLink.setAttribute("href", `${path.replace("link", id)}`)
+    modalDeleteLink.setAttribute("href", path.replace(placeholder, id))
 })
 </script>
 {% endblock %}

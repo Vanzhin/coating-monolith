@@ -45,7 +45,7 @@ class CoatingDTOTransformer
         $dto->dryToTouch = $this->pointsFromSeries($entity->getDryToTouch());
         $dto->fullCure = $this->pointsFromSeries($entity->getFullCure());
         $dto->minRecoatingInterval = $this->treeDtoFromTree($entity->getMinRecoatingInterval());
-        $dto->maxRecoatingInterval = $entity->getMaxRecoatingInterval() !== null
+        $dto->maxRecoatingInterval = null !== $entity->getMaxRecoatingInterval()
             ? $this->treeDtoFromTree($entity->getMaxRecoatingInterval())
             : null;
         $dto->applicationMinTemp = $entity->getApplicationMinTemp();
@@ -66,7 +66,7 @@ class CoatingDTOTransformer
 
     private function exposureDto(?ThermalExposureLimits $limits): ?ThermalExposureLimitsDTO
     {
-        if ($limits === null) {
+        if (null === $limits) {
             return null;
         }
         $dto = new ThermalExposureLimitsDTO();
@@ -74,6 +74,7 @@ class CoatingDTOTransformer
         $dto->continuous_max = $limits->continuousMax;
         $dto->peak_max = $limits->peakMax;
         $dto->peak_duration_minutes = $limits->peakDurationMinutes;
+
         return $dto;
     }
 
@@ -99,6 +100,7 @@ class CoatingDTOTransformer
         foreach ($tree->getChildren() as $key => $child) {
             $dto->branches[$key] = $this->treeDtoFromTree($child);
         }
+
         return $dto;
     }
 
@@ -110,6 +112,7 @@ class CoatingDTOTransformer
             $point->temperature_at = $p->temperatureAt;
             $point->time_in_minutes = $p->timeInMinutes;
             $point->is_calculated = $p->isCalculated;
+
             return $point;
         }, $series->points);
     }

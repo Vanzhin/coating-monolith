@@ -23,33 +23,28 @@ abstract class AbstractJsonObjectType extends JsonType
 
     public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
         $class = $this->valueClass();
         if (!$value instanceof $class) {
-            throw new \InvalidArgumentException(sprintf(
-                'Ожидался %s, передан %s.',
-                $class,
-                is_object($value) ? $value::class : gettype($value),
-            ));
+            throw new \InvalidArgumentException(sprintf('Ожидался %s, передан %s.', $class, is_object($value) ? $value::class : gettype($value)));
         }
+
         // JsonType::convertToDatabaseValue → json_encode сам зовёт jsonSerialize() рекурсивно.
         return parent::convertToDatabaseValue($value, $platform);
     }
 
     public function convertToPHPValue($value, AbstractPlatform $platform): ?object
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
         $raw = parent::convertToPHPValue($value, $platform);
         if (!is_array($raw)) {
-            throw new \UnexpectedValueException(sprintf(
-                'Для %s ожидается JSON-массив/объект.',
-                $this->valueClass(),
-            ));
+            throw new \UnexpectedValueException(sprintf('Для %s ожидается JSON-массив/объект.', $this->valueClass()));
         }
+
         return $this->hydrate($raw);
     }
 }

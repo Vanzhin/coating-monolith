@@ -8,7 +8,6 @@ use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Faker\Factory;
-use ReflectionProperty;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class GetUserActionTest extends WebTestCase
@@ -27,7 +26,7 @@ class GetUserActionTest extends WebTestCase
 
         // Активируем юзера, иначе ChannelVerificationGate редиректит на
         // /user/channel/verification (см. GetMeActionTest).
-        (new ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
+        (new \ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
 
         $entityManager = $container->get('doctrine.orm.entity_manager');
         $entityManager->persist($user);
@@ -50,7 +49,7 @@ class GetUserActionTest extends WebTestCase
 
         $client->setServerParameter('HTTP_AUTHORIZATION', sprintf('Bearer %s', $loginResponse['data']['token']));
 
-        $client->request('GET', '/api/users/' . $user->getUlid());
+        $client->request('GET', '/api/users/'.$user->getUlid());
         $userResponse = json_decode($client->getResponse()->getContent(), true);
 
         $this->assertIsArray($userResponse);

@@ -21,12 +21,12 @@ final readonly class CreateGeneralTagCommandHandler implements CommandHandlerInt
     public function __invoke(CreateGeneralTagCommand $command): CreateGeneralTagCommandResult
     {
         $title = trim($command->title);
-        if ($title === '') {
+        if ('' === $title) {
             throw new AppException('Название тега не может быть пустым.');
         }
 
         $existing = $this->repository->findOneByTitleAndType($title, CoatingTag::TYPE_GENERAL);
-        if ($existing !== null) {
+        if (null !== $existing) {
             throw new AppException(sprintf('Тег «%s» уже существует.', $title));
         }
 

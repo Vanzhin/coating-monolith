@@ -1,14 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
@@ -45,40 +46,40 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $em->clear();
 
         try {
-            if ($this->assessmentId !== null) {
+            if (null !== $this->assessmentId) {
                 $a = $em->find(Assessment::class, $this->assessmentId);
-                if ($a !== null) {
+                if (null !== $a) {
                     $em->remove($a);
                 }
             }
-            if ($this->substanceId !== null) {
+            if (null !== $this->substanceId) {
                 $s = $em->find(Substance::class, $this->substanceId);
-                if ($s !== null) {
+                if (null !== $s) {
                     $em->remove($s);
                 }
             }
-            if ($this->noteId !== null) {
+            if (null !== $this->noteId) {
                 $n = $em->find(Note::class, $this->noteId);
-                if ($n !== null) {
+                if (null !== $n) {
                     $em->remove($n);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
     }
 
-    public function testSaveAndLoadAll(): void
+    public function test_save_and_load_all(): void
     {
         // Precondition: a real coating must exist (Assessment FK references coatings_coating).
         $coatingIdRaw = $this->em
             ->getConnection()
             ->fetchOne('SELECT id::text FROM coatings_coating LIMIT 1');
 
-        if ($coatingIdRaw === false || $coatingIdRaw === null || $coatingIdRaw === '') {
+        if (false === $coatingIdRaw || null === $coatingIdRaw || '' === $coatingIdRaw) {
             $this->markTestSkipped('No coatings in database; seed a coating first.');
         }
 
@@ -89,7 +90,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $this->substanceId = Uuid::v4();
         $sub = new Substance(
             $this->substanceId,
-            'Вода-тест-' . $suffix,
+            'Вода-тест-'.$suffix,
             null,
             new StringCollection('Water', 'H2O'),
             self::getContainer()->get(SubstanceSpecification::class),
@@ -98,7 +99,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
 
         // --- Note ---
         $this->noteId = Uuid::v4();
-        $note = new Note($this->noteId, 'Изменение цвета', 'Тест-описание-' . $suffix);
+        $note = new Note($this->noteId, 'Изменение цвета', 'Тест-описание-'.$suffix);
         $this->notes->add($note);
 
         // --- Assessment ---
@@ -119,7 +120,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $this->em->clear();
 
         // --- Round-trip: Substance ---
-        $normalizedKey = \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Вода-тест-' . $suffix);
+        $normalizedKey = \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Вода-тест-'.$suffix);
         $loadedSub = $this->substances->findByCanonicalNameKey($normalizedKey);
         self::assertNotNull($loadedSub, 'Substance should be loadable by canonicalNameKey.');
         self::assertNull($loadedSub->getCas());
@@ -129,7 +130,7 @@ final class PersistenceRoundTripTest extends KernelTestCase
         $loadedNote = $this->notes->find($this->noteId);
         self::assertNotNull($loadedNote, 'Note should be loadable by id.');
         self::assertSame('Изменение цвета', $loadedNote->getTitle());
-        self::assertSame('Тест-описание-' . $suffix, $loadedNote->getDescription());
+        self::assertSame('Тест-описание-'.$suffix, $loadedNote->getDescription());
 
         // --- Round-trip: Assessment ---
         $loadedAssessment = $this->assessments->findByCoatingAndSubstance($coatingId, $this->substanceId);

@@ -21,7 +21,7 @@ final class CasNumberTypeTest extends TestCase
         $this->type = \Doctrine\DBAL\Types\Type::getType('cas_number');
     }
 
-    public function testToPhpAndBack(): void
+    public function test_to_php_and_back(): void
     {
         $plat = new PostgreSQLPlatform();
         self::assertNull($this->type->convertToPHPValue(null, $plat));

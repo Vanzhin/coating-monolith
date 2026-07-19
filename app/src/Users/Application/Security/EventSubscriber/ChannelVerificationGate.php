@@ -61,7 +61,7 @@ final class ChannelVerificationGate implements EventSubscriberInterface
         }
 
         $route = $event->getRequest()->attributes->get('_route');
-        if ($route === null || in_array($route, self::PUBLIC_ROUTES, true)) {
+        if (null === $route || in_array($route, self::PUBLIC_ROUTES, true)) {
             return;
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
@@ -49,7 +50,7 @@ class InterpolateAction extends AbstractController
 
         try {
             $points = array_map(
-                fn(array $p) => new TimeAtTemperature(
+                fn (array $p) => new TimeAtTemperature(
                     (int) ($p['temperature_at'] ?? 0),
                     (int) ($p['minutes'] ?? 0),
                 ),
@@ -61,7 +62,7 @@ class InterpolateAction extends AbstractController
             return $this->errorResponse($e->getMessage());
         }
 
-        if ($result === null) {
+        if (null === $result) {
             return $this->errorResponse(sprintf(
                 'Температура +%d °C находится вне диапазона заданных точек — расчёт невозможен.',
                 $targetTemp,

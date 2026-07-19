@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\UseCase\Command\UpdateGeneralProposalInfo;
-
 
 use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTOTransformer;
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTO;
@@ -24,13 +22,12 @@ use App\Shared\Domain\Service\AssertService;
 readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private GeneralProposalInfoRepositoryInterface     $generalProposalInfoRepository,
-        private GeneralProposalInfoItemFactory             $generalProposalInfoItemFactory,
-        private GeneralProposalInfoAccessControl           $generalProposalInfoAccessControl,
+        private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
+        private GeneralProposalInfoItemFactory $generalProposalInfoItemFactory,
+        private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl,
         private GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository,
-        private GeneralProposalInfoDTOTransformer          $generalProposalInfoDTOTransformer,
-    )
-    {
+        private GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
+    ) {
     }
 
     public function __invoke(UpdateGeneralProposalInfoCommand $command): UpdateGeneralProposalInfoCommandResult

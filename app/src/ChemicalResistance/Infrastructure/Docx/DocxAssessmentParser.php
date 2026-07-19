@@ -15,13 +15,13 @@ final class DocxAssessmentParser
         }
 
         $zip = new \ZipArchive();
-        if ($zip->open($path) !== true) {
+        if (true !== $zip->open($path)) {
             throw new AppException("Не удалось открыть docx: $path");
         }
         $xml = $zip->getFromName('word/document.xml') ?: '';
         $zip->close();
 
-        if ($xml === '') {
+        if ('' === $xml) {
             return new DocxParseResult([], []);
         }
 
@@ -53,7 +53,7 @@ final class DocxAssessmentParser
         $out = [];
 
         $tables = $xp->query('//w:tbl');
-        if ($tables === false || $tables->length === 0) {
+        if (false === $tables || 0 === $tables->length) {
             return $out;
         }
 
@@ -93,7 +93,7 @@ final class DocxAssessmentParser
                 $text .= $wt->textContent;
             }
             $text = trim(preg_replace('/\s+/u', ' ', $text));
-            if ($text !== '') {
+            if ('' !== $text) {
                 $paragraphs[] = $text;
             }
         }
@@ -104,19 +104,19 @@ final class DocxAssessmentParser
 
         while ($i < $total) {
             if (preg_match('/^Прим(?:ечание)?\s*(\d+)\.\s*(.+)$/u', $paragraphs[$i], $m)) {
-                $label = 'Прим. ' . $m[1];
+                $label = 'Прим. '.$m[1];
                 $title = trim($m[2]);
                 $descLines = [];
                 $j = $i + 1;
                 while ($j < $total && !preg_match('/^Прим(?:ечание)?\s*\d+\.\s/u', $paragraphs[$j])) {
                     $descLines[] = $paragraphs[$j];
-                    $j++;
+                    ++$j;
                 }
                 $out[] = new ParsedNote($label, $title, implode(' ', $descLines));
                 $i = $j;
                 continue;
             }
-            $i++;
+            ++$i;
         }
 
         return $out;

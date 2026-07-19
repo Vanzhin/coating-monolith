@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Assessment;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
@@ -33,7 +35,7 @@ final class AssessmentTest extends TestCase
         );
     }
 
-    public function testDefaultMaxTempIs40(): void
+    public function test_default_max_temp_is40(): void
     {
         $a = new Assessment(
             Uuid::v4(), Uuid::v4(), Uuid::v4(),
@@ -43,7 +45,7 @@ final class AssessmentTest extends TestCase
         self::assertSame(40, $a->getMaxTemperature()->celsius);
     }
 
-    public function testExplicitMaxTemp(): void
+    public function test_explicit_max_temp(): void
     {
         $a = new Assessment(
             Uuid::v4(), Uuid::v4(), Uuid::v4(),
@@ -54,7 +56,7 @@ final class AssessmentTest extends TestCase
         self::assertSame(70, $a->getMaxTemperature()->celsius);
     }
 
-    public function testNoteIdsMustExist(): void
+    public function test_note_ids_must_exist(): void
     {
         $noteId = Uuid::v4()->toRfc4122();
         $this->expectException(AppException::class);
@@ -65,7 +67,7 @@ final class AssessmentTest extends TestCase
         );
     }
 
-    public function testNoteIdsSuccess(): void
+    public function test_note_ids_success(): void
     {
         $noteId = Uuid::v4();
         $note = new Note($noteId, 'T', 'D');
@@ -77,7 +79,7 @@ final class AssessmentTest extends TestCase
         self::assertSame([$noteId->toRfc4122()], $a->getNoteIds()->getList());
     }
 
-    public function testNoteIdsRejectsDuplicates(): void
+    public function test_note_ids_rejects_duplicates(): void
     {
         $noteId = Uuid::v4();
         $this->expectException(AppException::class);
@@ -89,7 +91,7 @@ final class AssessmentTest extends TestCase
         );
     }
 
-    public function testUniqueCoatingSubstanceSpecificationConflictThrows(): void
+    public function test_unique_coating_substance_specification_conflict_throws(): void
     {
         $coatingId = Uuid::v4();
         $substanceId = Uuid::v4();

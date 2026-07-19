@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Factory;
 
@@ -19,11 +19,11 @@ readonly class GeneralProposalInfoFactory
     }
 
     public function create(
-        string  $number,
-        string  $ownerId,
-        string  $unit,
-        string  $projectTitle,
-        float   $projectArea,
+        string $number,
+        string $ownerId,
+        string $unit,
+        string $projectTitle,
+        float $projectArea,
         ?string $description,
         ?string $basis,
         ?string $projectStructureDescription,
@@ -31,9 +31,8 @@ readonly class GeneralProposalInfoFactory
         ?string $category,
         ?string $treatment,
         ?string $method,
-        int     $loss,
-    ): GeneralProposalInfo
-    {
+        int $loss,
+    ): GeneralProposalInfo {
         return new GeneralProposalInfo(
             $number,
             $ownerId,

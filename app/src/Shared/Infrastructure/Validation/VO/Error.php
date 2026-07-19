@@ -8,17 +8,11 @@ readonly class Error implements \JsonSerializable
     {
     }
 
-    /**
-     * @return string
-     */
     public function getProperty(): string
     {
         return $this->property;
     }
 
-    /**
-     * @return string
-     */
     public function getMessage(): string
     {
         return $this->message;
@@ -26,7 +20,7 @@ readonly class Error implements \JsonSerializable
 
     public function getFullMessage(): string
     {
-        return $this->property . ' - ' . $this->message;
+        return $this->property.' - '.$this->message;
     }
 
     public function jsonSerialize(): array

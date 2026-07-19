@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Shared\Domain\Aggregate\ValueObject;
 
 use App\Shared\Infrastructure\Exception\AppException;
-use JsonSerializable;
 
-abstract class NumberRange implements JsonSerializable
+abstract class NumberRange implements \JsonSerializable
 {
     // Свойства защищены (protected) и немутабельны (readonly)
     protected readonly int|float $min;

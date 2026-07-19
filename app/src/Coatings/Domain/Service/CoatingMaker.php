@@ -22,30 +22,30 @@ use App\Shared\Domain\Service\UuidService;
 final readonly class CoatingMaker
 {
     public function __construct(
-        private CoatingRepositoryInterface      $coatingRepository,
+        private CoatingRepositoryInterface $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingTagFetcher               $coatingTagFetcher,
-        private CoatingSpecification            $coatingSpecification,
+        private CoatingTagFetcher $coatingTagFetcher,
+        private CoatingSpecification $coatingSpecification,
     ) {
     }
 
     public function make(
-        string            $title,
-        string            $description,
-        int               $volumeSolid,
-        float             $massDensity,
-        CoatingBase       $base,
-        DftRange          $dftRange,
-        int               $applicationMinTemp,
-        DryingTimeSeries  $dryToTouch,
-        DryingTimeSeries  $fullCure,
-        RecoatingIntervalTree  $minRecoatingInterval,
+        string $title,
+        string $description,
+        int $volumeSolid,
+        float $massDensity,
+        CoatingBase $base,
+        DftRange $dftRange,
+        int $applicationMinTemp,
+        DryingTimeSeries $dryToTouch,
+        DryingTimeSeries $fullCure,
+        RecoatingIntervalTree $minRecoatingInterval,
         ?RecoatingIntervalTree $maxRecoatingInterval,
-        string            $manufacturerId,
-        array             $coatingTagIds,
-        float             $pack,
-        ?string           $thinner,
-        int               $dryingMaxTemp = 50,
+        string $manufacturerId,
+        array $coatingTagIds,
+        float $pack,
+        ?string $thinner,
+        int $dryingMaxTemp = 50,
         ?ThermalExposureLimits $dryHeatExposure = null,
         ?ThermalExposureLimits $immersionExposure = null,
     ): Coating {

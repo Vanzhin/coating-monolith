@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal\Specification;
 
@@ -26,5 +26,4 @@ readonly class UniqueNumberGeneralProposalInfoSpecification implements Specifica
             );
         }
     }
-
 }

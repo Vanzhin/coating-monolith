@@ -6,6 +6,8 @@
     ? inputData['noteIds']
     : assessment.noteIds.list %}
 
+{% set preselectedNotes = allNotes|filter(n => n.id in currentNoteIds)|map(n => {id: n.id, title: n.title}) %}
+
 {% block content %}
 <div class="p-2 p-md-3">
     <form method="post"
@@ -78,15 +80,23 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Примечания</label>
-                    <select name="noteIds[]" class="form-select" multiple size="6">
-                        {% for note in allNotes %}
-                            <option value="{{ note.id }}"
-                                    {% if note.id in currentNoteIds %}selected{% endif %}>
-                                {{ note.title }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <div class="form-text">Удерживайте Ctrl / Cmd для выбора нескольких.</div>
+                    <div class="position-relative"
+                         data-controller="notes-picker"
+                         data-notes-picker-endpoint-value="{{ path('app_api_chemical_resistance_note_autocomplete') }}"
+                         data-notes-picker-endpoint-create-value="{{ path('app_api_chemical_resistance_note_add') }}"
+                         data-notes-picker-selected-value="{{ preselectedNotes|json_encode }}">
+                        <div class="d-flex flex-wrap gap-1 mb-1"
+                             data-notes-picker-target="chips"></div>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Поиск или создать…"
+                               autocomplete="off"
+                               data-notes-picker-target="input"
+                               data-action="input->notes-picker#onInput">
+                        <span data-notes-picker-target="hidden"></span>
+                        <div class="dropdown-menu w-100"
+                             data-notes-picker-target="results"></div>
+                    </div>
                 </div>
             </div>
         </div>

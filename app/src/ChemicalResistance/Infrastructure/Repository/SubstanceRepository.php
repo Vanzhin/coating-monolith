@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Infrastructure\Repository;
 
 use App\ChemicalResistance\Application\DTO\SubstanceDTO;
@@ -56,11 +58,12 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
 
     /**
      * @param list<string> $ids
+     *
      * @return list<Substance>
      */
     public function findAllByIds(array $ids): array
     {
-        if ($ids === []) {
+        if ([] === $ids) {
             return [];
         }
         /** @var list<Substance> $substances */
@@ -80,6 +83,7 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
                 $ordered[] = $byId[$id];
             }
         }
+
         return $ordered;
     }
 
@@ -91,19 +95,19 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
         $params = [];
         $types = [];
 
-        if ($filter->search !== null && trim($filter->search) !== '') {
-            $whereParts[] = "(s.canonical_name ILIKE :search
+        if (null !== $filter->search && '' !== trim($filter->search)) {
+            $whereParts[] = '(s.canonical_name ILIKE :search
                 OR s.cas ILIKE :search
-                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search))";
-            $params['search'] = '%' . trim($filter->search) . '%';
+                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search))';
+            $params['search'] = '%'.trim($filter->search).'%';
         }
 
-        if ($filter->cas !== null && trim($filter->cas) !== '') {
+        if (null !== $filter->cas && '' !== trim($filter->cas)) {
             $whereParts[] = 's.cas ILIKE :cas';
-            $params['cas'] = '%' . trim($filter->cas) . '%';
+            $params['cas'] = '%'.trim($filter->cas).'%';
         }
 
-        $where = $whereParts === [] ? '1=1' : implode(' AND ', $whereParts);
+        $where = [] === $whereParts ? '1=1' : implode(' AND ', $whereParts);
 
         $total = (int) $conn->fetchOne(
             "SELECT COUNT(*) FROM chemical_resistance_substance s WHERE {$where}",
@@ -116,7 +120,7 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
                     WHERE {$where}
                     ORDER BY s.canonical_name ASC";
 
-        if ($filter->pager !== null) {
+        if (null !== $filter->pager) {
             $dataSql .= ' LIMIT :lim OFFSET :off';
             $params['lim'] = $filter->pager->getLimit();
             $params['off'] = $filter->pager->getOffset();
@@ -126,7 +130,7 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
 
         $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
 
-        $items = array_map(fn(array $r) => new SubstanceDTO(
+        $items = array_map(fn (array $r) => new SubstanceDTO(
             id: $r['id'],
             canonicalName: $r['canonical_name'],
             cas: $r['cas'],

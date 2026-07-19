@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Domain\Aggregate\Substance;
 
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
@@ -41,16 +43,35 @@ class Substance extends Aggregate
         }
     }
 
-    public function getId(): string { return $this->id->toRfc4122(); }
-    public function getCanonicalName(): string { return $this->canonicalName; }
-    public function getCanonicalNameKey(): string { return $this->canonicalNameKey; }
-    public function getCas(): ?CasNumber { return $this->cas; }
-    public function getAliases(): StringCollection { return $this->aliases; }
+    public function getId(): string
+    {
+        return $this->id->toRfc4122();
+    }
+
+    public function getCanonicalName(): string
+    {
+        return $this->canonicalName;
+    }
+
+    public function getCanonicalNameKey(): string
+    {
+        return $this->canonicalNameKey;
+    }
+
+    public function getCas(): ?CasNumber
+    {
+        return $this->cas;
+    }
+
+    public function getAliases(): StringCollection
+    {
+        return $this->aliases;
+    }
 
     public function setCanonicalName(string $name): void
     {
         $name = trim($name);
-        if ($name === '') {
+        if ('' === $name) {
             throw new AppException('Название вещества не может быть пустым.');
         }
         AssertService::maxLength($name, 200);
@@ -68,7 +89,7 @@ class Substance extends Aggregate
     public function addAlias(string $alias): void
     {
         $alias = trim($alias);
-        if ($alias === '') {
+        if ('' === $alias) {
             return;
         }
         AssertService::maxLength($alias, 200);
@@ -97,7 +118,7 @@ class Substance extends Aggregate
         $key = SubstanceNameNormalizer::normalize($alias);
         $kept = array_values(array_filter(
             $this->aliases->getList(),
-            fn(string $a) => SubstanceNameNormalizer::normalize($a) !== $key,
+            fn (string $a) => SubstanceNameNormalizer::normalize($a) !== $key,
         ));
         $this->aliases = new StringCollection(...$kept);
     }
@@ -113,6 +134,7 @@ class Substance extends Aggregate
                 return true;
             }
         }
+
         return false;
     }
 
@@ -120,9 +142,10 @@ class Substance extends Aggregate
     public function getSearchableNames(): StringCollection
     {
         $items = [$this->canonicalName, ...$this->aliases->getList()];
-        if ($this->cas !== null) {
+        if (null !== $this->cas) {
             $items[] = $this->cas->value;
         }
+
         return new StringCollection(...$items);
     }
 }

@@ -58,7 +58,7 @@ class TokenService implements TokenServiceInterface
         // Ищем токен для данного субъекта
         $token = $this->tokenRepository->findBySubject($verifiable->getSubjectId());
 
-        if ($token === null) {
+        if (null === $token) {
             throw new AppException('Токен верификации не найден или истек');
         }
 
@@ -100,6 +100,7 @@ class TokenService implements TokenServiceInterface
 
         if ($exist) {
             $now = new \DateTimeImmutable();
+
             return $exist->getExpiresAt()->getTimestamp() - $now->getTimestamp();
         }
 
@@ -115,12 +116,13 @@ class TokenService implements TokenServiceInterface
         $min = pow(10, self::TOKEN_LENGTH - 1);
         $max = pow(10, self::TOKEN_LENGTH) - 1;
 
-        return (string)random_int($min, $max);
+        return (string) random_int($min, $max);
     }
 
     private function generateExpiresAt(): \DateTimeImmutable
     {
         $now = new \DateTimeImmutable();
-        return $now->add(new \DateInterval('PT' . self::TOKEN_LIFETIME . 'S'));
+
+        return $now->add(new \DateInterval('PT'.self::TOKEN_LIFETIME.'S'));
     }
 }

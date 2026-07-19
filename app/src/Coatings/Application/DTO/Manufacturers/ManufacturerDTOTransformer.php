@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace App\Coatings\Application\DTO\Manufacturers;
-
 
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 
@@ -33,5 +32,4 @@ class ManufacturerDTOTransformer
 
         return $manufacturerDTOs;
     }
-
 }

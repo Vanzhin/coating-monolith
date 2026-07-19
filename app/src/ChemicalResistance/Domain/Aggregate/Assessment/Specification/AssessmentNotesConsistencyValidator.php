@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Domain\Aggregate\Assessment\Specification;
 
 use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
@@ -8,7 +10,9 @@ use App\Shared\Infrastructure\Exception\AppException;
 
 final class AssessmentNotesConsistencyValidator
 {
-    public function __construct(private NoteRepositoryInterface $notes) {}
+    public function __construct(private NoteRepositoryInterface $notes)
+    {
+    }
 
     public function validate(StringCollection $noteIds): void
     {

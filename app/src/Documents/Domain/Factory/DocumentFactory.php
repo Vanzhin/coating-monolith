@@ -12,7 +12,6 @@ use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentTitle;
 use App\Shared\Domain\Aggregate\ValueObject\Link;
 use Symfony\Component\Uid\Uuid;
 
-
 readonly class DocumentFactory
 {
     public function create(

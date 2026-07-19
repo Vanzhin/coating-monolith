@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Controller;
 
@@ -21,13 +21,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class DownloadAction extends BaseController
 {
     public function __construct(
-        private readonly CommandBusInterface                         $commandBus,
-        private readonly GeneralProposalInfoFetcher                  $generalProposalInfoFetcher,
+        private readonly CommandBusInterface $commandBus,
+        private readonly GeneralProposalInfoFetcher $generalProposalInfoFetcher,
         private readonly ProposalDocumentTemplateRepositoryInterface $proposalDocumentTemplateRepository,
-        private readonly ProposalDocumentFactory                     $proposalDocumentFactory,
-        LoggerInterface                                              $logger,
-    )
-    {
+        private readonly ProposalDocumentFactory $proposalDocumentFactory,
+        LoggerInterface $logger,
+    ) {
         parent::__construct($logger);
     }
 
@@ -47,7 +46,7 @@ class DownloadAction extends BaseController
             $command = new CreateProposalDocumentFileCommand($document);
             $result = $this->commandBus->execute($command);
 
-            return $this->file($result->file, $this->buildFileName($document) . '.' . $result->file->getExtension());
+            return $this->file($result->file, $this->buildFileName($document).'.'.$result->file->getExtension());
         } catch (\Throwable $e) {
             $referer = $request->headers->get('referer');
             $this->addFlash('general_proposal_download_error', $this->getClientErrorMessage($e));
@@ -60,7 +59,6 @@ class DownloadAction extends BaseController
     {
         $string = preg_replace('/[^\p{L}\p{N}\s]/u', '', $document->getProposalInfo()->getProjectTitle());
 
-        return mb_substr($string, 0, 20) . '_' . (new \DateTimeImmutable())->format('Y-m-d_H-i-s');
+        return mb_substr($string, 0, 20).'_'.(new \DateTimeImmutable())->format('Y-m-d_H-i-s');
     }
-
 }

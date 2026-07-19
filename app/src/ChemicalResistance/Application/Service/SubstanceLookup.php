@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\Service;
 
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
@@ -14,11 +16,14 @@ use Symfony\Component\Uid\Uuid;
 
 final class SubstanceLookup
 {
-    public function __construct(private SubstanceRepositoryInterface $repo) {}
+    public function __construct(private SubstanceRepositoryInterface $repo)
+    {
+    }
 
     public function findByNormalizedName(string $raw): ?Substance
     {
         $key = SubstanceNameNormalizer::normalize(trim($raw));
+
         return $this->repo->findByCanonicalNameKey($key);
     }
 
@@ -27,13 +32,16 @@ final class SubstanceLookup
         $raw = trim($raw);
 
         // 1. Prefer CAS match if given.
-        if ($cas !== null) {
+        if (null !== $cas) {
             $existing = $this->repo->findByCas($cas);
-            if ($existing !== null) {
+            if (null !== $existing) {
                 if (!$existing->hasName($raw)) {
                     $existing->addAlias($raw);
-                    if ($persist) { $this->repo->add($existing); }
+                    if ($persist) {
+                        $this->repo->add($existing);
+                    }
                 }
+
                 return $existing;
             }
         }
@@ -41,17 +49,23 @@ final class SubstanceLookup
         // 2. Try normalized name.
         $key = SubstanceNameNormalizer::normalize($raw);
         $existing = $this->repo->findByCanonicalNameKey($key);
-        if ($existing !== null) {
+        if (null !== $existing) {
             if (!$existing->hasName($raw)) {
                 $existing->addAlias($raw);
-                if ($persist) { $this->repo->add($existing); }
+                if ($persist) {
+                    $this->repo->add($existing);
+                }
             }
+
             return $existing;
         }
 
         // 3. Create fresh.
         $sub = new Substance(Uuid::v4(), $raw, $cas, new StringCollection(), $this->spec());
-        if ($persist) { $this->repo->add($sub); }
+        if ($persist) {
+            $this->repo->add($sub);
+        }
+
         return $sub;
     }
 

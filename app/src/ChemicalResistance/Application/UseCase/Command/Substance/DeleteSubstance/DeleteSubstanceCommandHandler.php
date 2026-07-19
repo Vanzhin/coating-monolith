@@ -1,14 +1,18 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance;
 
 use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
+use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
-use Symfony\Component\Uid\Uuid;
 
-final class DeleteSubstanceCommandHandler
+final class DeleteSubstanceCommandHandler implements CommandHandlerInterface
 {
-    public function __construct(private SubstanceRepositoryInterface $repo) {}
+    public function __construct(private SubstanceRepositoryInterface $repo)
+    {
+    }
 
     public function __invoke(DeleteSubstanceCommand $c): void
     {

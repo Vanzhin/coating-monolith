@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Domain\Service;
 
 /**
@@ -22,6 +24,7 @@ final class SubstanceNameNormalizer
         $s = preg_replace('/\*.*/u', '', $s) ?? $s;
         // технические разделители — пробелы/тире/точки/запятые/слэши/скобки
         $s = preg_replace('/[\s\-.,;\/\\\\()]+/u', '', $s) ?? $s;
+
         return trim($s);
     }
 }

@@ -1,14 +1,18 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Command\Note\UpdateNote;
 
 use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
+use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
-use Symfony\Component\Uid\Uuid;
 
-final class UpdateNoteCommandHandler
+final class UpdateNoteCommandHandler implements CommandHandlerInterface
 {
-    public function __construct(private NoteRepositoryInterface $repo) {}
+    public function __construct(private NoteRepositoryInterface $repo)
+    {
+    }
 
     public function __invoke(UpdateNoteCommand $c): void
     {

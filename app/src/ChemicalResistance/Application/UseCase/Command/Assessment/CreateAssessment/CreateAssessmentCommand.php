@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment;
 
 final readonly class CreateAssessmentCommand implements \App\Shared\Application\Command\CommandInterface
@@ -11,5 +13,6 @@ final readonly class CreateAssessmentCommand implements \App\Shared\Application\
         public string $grade,
         public ?int $maxTemperatureCelsius,
         public array $noteIds,
-    ) {}
+    ) {
+    }
 }

@@ -5,7 +5,7 @@ namespace App\Proposals\Domain\Aggregate\Proposal;
 use App\Shared\Domain\Trait\EnumToArray;
 
 /**
- * Тип покрытия по назначению
+ * Тип покрытия по назначению.
  */
 enum GeneralProposalInfoUnit: string
 {
@@ -14,6 +14,4 @@ enum GeneralProposalInfoUnit: string
     case LITER = 'л';
 
     case KG = 'кг';
-
-
 }

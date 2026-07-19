@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace App\Proposals\Application\DTO\GeneralProposalInfo;
-
 
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTO;
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTOTransformer;
@@ -48,8 +47,8 @@ readonly class GeneralProposalInfoDTOTransformer
         $dto->ownerId = $inputData['ownerId'];
         $dto->description = $inputData['description'] ?? null;
         $dto->basis = $inputData['basis'] ?? null;
-        $dto->projectArea = (float)$inputData['projectArea'];
-        $dto->loss = (int)$inputData['loss'];
+        $dto->projectArea = (float) $inputData['projectArea'];
+        $dto->loss = (int) $inputData['loss'];
         $dto->projectTitle = $inputData['projectTitle'] ?? null;
         $dto->projectStructureDescription = $inputData['projectStructureDescription'] ?? null;
         $dto->durability = $inputData['durability'];
@@ -62,13 +61,13 @@ readonly class GeneralProposalInfoDTOTransformer
             $itemDto = new GeneralProposalInfoItemDTO();
             $itemDto->id = $coat['id'] ?? null;
             $itemDto->coatId = $coat['coatId'];
-            $itemDto->loss = empty($coat['loss']) ? null : (int)$coat['loss'];
-            $itemDto->coatPrice = (float)$coat['coatPrice'];
-            $itemDto->coatNumber = (int)$coat['coatNumber'];
-            $itemDto->coatDft = (int)$coat['coatDft'];
+            $itemDto->loss = empty($coat['loss']) ? null : (int) $coat['loss'];
+            $itemDto->coatPrice = (float) $coat['coatPrice'];
+            $itemDto->coatNumber = (int) $coat['coatNumber'];
+            $itemDto->coatDft = (int) $coat['coatDft'];
             $itemDto->coatColor = $coat['coatColor'];
-            $itemDto->thinnerPrice = (int)$coat['thinnerPrice'];
-            $itemDto->thinnerConsumption = (int)$coat['thinnerConsumption'];
+            $itemDto->thinnerPrice = (int) $coat['thinnerPrice'];
+            $itemDto->thinnerConsumption = (int) $coat['thinnerConsumption'];
             $coats[] = $itemDto;
         }
         $dto->coats = $coats;
@@ -90,5 +89,4 @@ readonly class GeneralProposalInfoDTOTransformer
 
         return $DTOs;
     }
-
 }

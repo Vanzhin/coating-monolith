@@ -14,7 +14,7 @@ readonly class ChannelNotifierService
     }
 
     /**
-     * Отправляет код верификации в канал
+     * Отправляет код верификации в канал.
      */
     public function sendVerificationCode(Channel $channel, string $code, int $timeToUse): void
     {
@@ -23,7 +23,7 @@ readonly class ChannelNotifierService
     }
 
     /**
-     * Отправляет обычное сообщение в канал
+     * Отправляет обычное сообщение в канал.
      */
     public function notify(Channel $channel, string $message): void
     {
@@ -31,4 +31,3 @@ readonly class ChannelNotifierService
         $notifier->notify($channel, $message);
     }
 }
-

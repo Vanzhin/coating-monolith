@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\Service;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
@@ -23,18 +25,19 @@ final class ChemicalResistanceImporter
         private AssessmentRepositoryInterface $assessments,
         private GradeCellParser $gradeParser,
         private AssessmentSpecification $specification,
-    ) {}
+    ) {
+    }
 
     public function import(DocxParseResult $parsed, Uuid $coatingId, ImportOptions $opts): ImportReport
     {
-        $subCreated    = 0;
-        $subReused     = 0;
-        $aliasesAdded  = 0;
-        $assCreated    = 0;
-        $assUpdated    = 0;
-        $notesCreated  = 0;
-        $conflicts     = [];
-        $warnings      = [];
+        $subCreated = 0;
+        $subReused = 0;
+        $aliasesAdded = 0;
+        $assCreated = 0;
+        $assUpdated = 0;
+        $notesCreated = 0;
+        $conflicts = [];
+        $warnings = [];
 
         // 1. Notes: create one Note per ParsedNote, build label→id map.
         $labelToId = [];
@@ -44,7 +47,7 @@ final class ChemicalResistanceImporter
                 $this->notes->add($note);
             }
             $labelToId[$pn->label] = $note->getId();
-            $notesCreated++;
+            ++$notesCreated;
         }
 
         // 2. Rows.
@@ -60,14 +63,14 @@ final class ChemicalResistanceImporter
             // Substance: distinguish created vs reused.
             $preexisted = $this->lookup->findByNormalizedName($row->substanceName);
             $sub = $this->lookup->findOrCreateByName($row->substanceName, persist: !$opts->dryRun);
-            if ($preexisted === null) {
-                $subCreated++;
+            if (null === $preexisted) {
+                ++$subCreated;
             } else {
-                $subReused++;
+                ++$subReused;
                 // Count alias additions: if the preexisted substance didn't have this
                 // exact raw name before findOrCreateByName was called, an alias was added.
                 if (!$preexisted->hasName($row->substanceName)) {
-                    $aliasesAdded++;
+                    ++$aliasesAdded;
                 }
             }
 
@@ -86,20 +89,20 @@ final class ChemicalResistanceImporter
             }
             $noteIds = new StringCollection(...$resolvedNoteIds);
 
-            $maxTemp = $g->maxTemperatureCelsius !== null
+            $maxTemp = null !== $g->maxTemperatureCelsius
                 ? AssessmentTemperature::fromInt($g->maxTemperatureCelsius)
                 : AssessmentTemperature::fromInt($opts->defaultMaxTemp);
 
             $substanceId = Uuid::fromString($sub->getId());
             $existing = $this->assessments->findByCoatingAndSubstance($coatingId, $substanceId);
 
-            if ($existing !== null && !$opts->overwrite) {
+            if (null !== $existing && !$opts->overwrite) {
                 $conflicts[] = sprintf('«%s»: оценка уже существует, пропущено.', $row->substanceName);
                 continue;
             }
 
-            if ($existing !== null) {
-                $assUpdated++;
+            if (null !== $existing) {
+                ++$assUpdated;
                 if ($opts->dryRun) {
                     continue;
                 }
@@ -109,7 +112,7 @@ final class ChemicalResistanceImporter
                 $existing->setNoteIds($noteIds);
                 $this->assessments->add($existing);
             } else {
-                $assCreated++;
+                ++$assCreated;
                 if ($opts->dryRun) {
                     continue;
                 }

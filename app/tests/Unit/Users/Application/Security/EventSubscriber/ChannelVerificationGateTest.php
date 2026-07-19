@@ -21,7 +21,7 @@ final class ChannelVerificationGateTest extends TestCase
 {
     private const VERIFICATION_URL = '/user/channel/verification';
 
-    public function testSkipsWhenSubRequest(): void
+    public function test_skips_when_sub_request(): void
     {
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->expects($this->never())->method('getToken');
@@ -34,7 +34,7 @@ final class ChannelVerificationGateTest extends TestCase
         self::assertSame([$this, 'noopController'], $event->getController()); // controller не подменён
     }
 
-    public function testSkipsWhenPublicRoute(): void
+    public function test_skips_when_public_route(): void
     {
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->expects($this->never())->method('getToken');
@@ -47,7 +47,7 @@ final class ChannelVerificationGateTest extends TestCase
         self::assertSame([$this, 'noopController'], $event->getController());
     }
 
-    public function testSkipsWhenRouteNull(): void
+    public function test_skips_when_route_null(): void
     {
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->expects($this->never())->method('getToken');
@@ -60,7 +60,7 @@ final class ChannelVerificationGateTest extends TestCase
         self::assertSame([$this, 'noopController'], $event->getController());
     }
 
-    public function testSkipsWhenAnonymous(): void
+    public function test_skips_when_anonymous(): void
     {
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->method('getToken')->willReturn(null);
@@ -73,7 +73,7 @@ final class ChannelVerificationGateTest extends TestCase
         self::assertSame([$this, 'noopController'], $event->getController());
     }
 
-    public function testSkipsWhenUserActive(): void
+    public function test_skips_when_user_active(): void
     {
         $user = new User(new Email('active@example.com'));
         $this->forceIsActive($user, true);
@@ -91,7 +91,7 @@ final class ChannelVerificationGateTest extends TestCase
         self::assertSame([$this, 'noopController'], $event->getController());
     }
 
-    public function testRedirectsWhenUserInactive(): void
+    public function test_redirects_when_user_inactive(): void
     {
         $user = new User(new Email('inactive@example.com'));
         // isActive по умолчанию false — менять ничего не нужно.
@@ -127,16 +127,18 @@ final class ChannelVerificationGateTest extends TestCase
         $urlGenerator->method('generate')
             ->with('app_user_channel_verification')
             ->willReturn(self::VERIFICATION_URL);
+
         return $urlGenerator;
     }
 
     private function controllerEvent(?string $route, int $requestType = HttpKernelInterface::MAIN_REQUEST): ControllerEvent
     {
         $request = new Request();
-        if ($route !== null) {
+        if (null !== $route) {
             $request->attributes->set('_route', $route);
         }
         $kernel = $this->createMock(HttpKernelInterface::class);
+
         return new ControllerEvent($kernel, [$this, 'noopController'], $request, $requestType);
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetNote;
@@ -9,18 +10,20 @@ use Doctrine\DBAL\Connection;
 
 class GetNoteQueryHandler implements QueryHandlerInterface
 {
-    public function __construct(private readonly Connection $dbal) {}
+    public function __construct(private readonly Connection $dbal)
+    {
+    }
 
     public function __invoke(GetNoteQuery $query): GetNoteQueryResult
     {
         $row = $this->dbal->fetchAssociative(
-            "SELECT id::text AS id, title, description
+            'SELECT id::text AS id, title, description
              FROM chemical_resistance_note
-             WHERE id = :id::uuid",
+             WHERE id = :id::uuid',
             ['id' => $query->id],
         );
 
-        if ($row === false) {
+        if (false === $row) {
             return new GetNoteQueryResult(null);
         }
 

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Application\Service\Handler;
 
@@ -8,7 +8,6 @@ use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoUnit;
 use App\Proposals\Domain\Aggregate\ProposalDocument\ProposalDocument;
 use App\Proposals\Domain\Service\CoatingsServiceInterface;
-use App\Proposals\Domain\Service\CoatingData;
 use App\Shared\Domain\Service\AssertService;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -31,9 +30,8 @@ class GenerateCommercialProposalXlsx
 
     public function __construct(
         private readonly CoatingsServiceInterface $coatingsService,
-        private readonly string                   $pathToDirectory,
-    )
-    {
+        private readonly string $pathToDirectory,
+    ) {
     }
 
     public function generate(ProposalDocument $document): Spreadsheet
@@ -42,40 +40,40 @@ class GenerateCommercialProposalXlsx
         $coatsCalcData = [];
         $thinnerData = [];
 
-        $spreadsheet = IOFactory::load($this->pathToDirectory . '/' . $document->getTemplate()->getPath());
+        $spreadsheet = IOFactory::load($this->pathToDirectory.'/'.$document->getTemplate()->getPath());
         $sheet = $spreadsheet->getSheetByName($this->sheetName);
         foreach ($sheet->getRowIterator() as $row) {
             $cellIterator = $row->getCellIterator();
             $cellIterator->setIterateOnlyExistingCells(true);
             foreach ($cellIterator as $cell) {
-                if ($cell->getValue() === 'Проект:') {
+                if ('Проект:' === $cell->getValue()) {
                     $this->setNextCellValue($sheet, $cellIterator, $document->getProposalInfo()->getProjectTitle());
                     break;
                 }
-                if ($cell->getValue() === 'Система:') {
+                if ('Система:' === $cell->getValue()) {
                     $this->setNextCellValue($sheet, $cellIterator, $document->getProposalInfo()->getProjectStructureDescription());
                     break;
                 }
-                if ($cell->getValue() === 'Прогнозируемый срок эксплуатации:') {
+                if ('Прогнозируемый срок эксплуатации:' === $cell->getValue()) {
                     $this->setNextCellValue($sheet, $cellIterator, $document->getProposalInfo()->getDurability()->value);
                     break;
                 }
-                if ($cell->getValue() === 'Площадь под окраску, м2:') {
+                if ('Площадь под окраску, м2:' === $cell->getValue()) {
                     $this->setNextCellValue($sheet, $cellIterator, $document->getProposalInfo()->getProjectArea());
                     break;
                 }
-                if ($cell->getValue() === 'Потери материала, %:') {
+                if ('Потери материала, %:' === $cell->getValue()) {
                     $this->setNextCellValue($sheet, $cellIterator, $document->getProposalInfo()->getLoss());
                     break;
                 }
-                if ($cell->getValue() === 'Материалы') {
+                if ('Материалы' === $cell->getValue()) {
                     /** @var GeneralProposalInfoItem $coat */
                     foreach ($document->getProposalInfo()->getCoats() as $coat) {
                         $coatingResult = $this->coatingsService->getCoating($coat->getCoatId());
                         AssertService::notNull($coatingResult->coatingData, 'Одно из покрытий формы не найдено.');
-                        
+
                         $coatingData = $coatingResult->coatingData;
-                        $coatsTitleData[] = [$coatingData->title, '- ' . mb_substr($coatingData->description, 0, 100)];
+                        $coatsTitleData[] = [$coatingData->title, '- '.mb_substr($coatingData->description, 0, 100)];
 
                         $coatsCalcData[] = [
                             $coatingData->title,
@@ -99,21 +97,20 @@ class GenerateCommercialProposalXlsx
                             $theoreticalPricePerSqMeter = $coat->getCoatPrice() * $tsr,
                             $practicalPricePerSqMeter = $coat->getCoatPrice() * $psr,
                             $quantity = ceil($document->getProposalInfo()->getProjectArea() * $psr / $coatingData->pack) * $coatingData->pack,
-                            $coatPrice = $coat->getCoatPrice() * $quantity
-
+                            $coatPrice = $coat->getCoatPrice() * $quantity,
                         ];
                         $thinnerData[] = [
-                            'Разбавитель ' . $coatingData->thinner . ' для ' . $coatingData->title,
+                            'Разбавитель '.$coatingData->thinner.' для '.$coatingData->title,
                             null, null, null,
                             $coat->getThinnerConsumption() / 100,
                             null, null,
                             $coat->getThinnerPrice(),
                             null,
                             $thinnerQuantity = ceil($quantity * $coat->getThinnerConsumption() / 100 / 20) * 20,
-                            $thinnerPrice = $thinnerQuantity * $coat->getThinnerPrice()
+                            $thinnerPrice = $thinnerQuantity * $coat->getThinnerPrice(),
                         ];
 
-                        //добиваю итого
+                        // добиваю итого
                         $this->totalDft += $coat->getCoatDft();
                         $this->totalCoatPricePerUnit += $coat->getCoatPrice();
                         $this->totalTheoreticalCoatPricePerSqMeter += $theoreticalPricePerSqMeter;
@@ -127,11 +124,11 @@ class GenerateCommercialProposalXlsx
                     $sheet->fromArray(
                         $coatsTitleData,  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
                     );
                     break;
                 }
-                if ($cell->getValue() === 'Сухой остаток, %') {
+                if ('Сухой остаток, %' === $cell->getValue()) {
                     $unitData = [
                         [
                             sprintf('Теор. расход, %s/м2', $document->getProposalInfo()->getUnit()->value),
@@ -146,19 +143,19 @@ class GenerateCommercialProposalXlsx
                         $unitData,  // The data to set
                         null,        // Array values with this value will not be set
                         Coordinate::stringFromColumnIndex($cellIterator->getCurrentColumnIndex() + 1)
-                        . $cell->getRow()     // Top left coordinate of the worksheet range where
+                        .$cell->getRow()     // Top left coordinate of the worksheet range where
                     );
                     break;
                 }
-                if ($cell->getValue() === 'Материал') {
+                if ('Материал' === $cell->getValue()) {
                     $sheet->fromArray(
                         $coatsCalcData,  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
                     );
                     continue;
                 }
-                if ($cell->getValue() === 'Подитог ЛКМ') {
+                if ('Подитог ЛКМ' === $cell->getValue()) {
                     $sheet->fromArray(
                         [
                             null, null, $this->totalDft, null, null, null,
@@ -166,22 +163,22 @@ class GenerateCommercialProposalXlsx
                             $this->totalTheoreticalCoatPricePerSqMeter,
                             $this->totalPracticalCoatPricePerSqMeter,
                             $this->totalCoatQuantity,
-                            $this->totalCoatPrice
+                            $this->totalCoatPrice,
                         ],  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow())         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().$cell->getRow()         // Top left coordinate of the worksheet range where
                     );
                     continue;
                 }
-                if ($cell->getValue() === 'Растворители для разбавления (опционально)') {
+                if ('Растворители для разбавления (опционально)' === $cell->getValue()) {
                     $sheet->fromArray(
                         $thinnerData,  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().($cell->getRow() + 1)         // Top left coordinate of the worksheet range where
                     );
                     continue;
                 }
-                if ($cell->getValue() === 'Подитог р-ль') {
+                if ('Подитог р-ль' === $cell->getValue()) {
                     $sheet->fromArray(
                         [
                             null, null, null, null, null, null, null, null, null,
@@ -189,18 +186,18 @@ class GenerateCommercialProposalXlsx
                             $this->totalThinnerPrice,
                         ],  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow())         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().$cell->getRow()         // Top left coordinate of the worksheet range where
                     );
                     continue;
                 }
-                if ($cell->getValue() === 'Итого стоимость ЛКМ') {
+                if ('Итого стоимость ЛКМ' === $cell->getValue()) {
                     $sheet->fromArray(
                         [
                             null, null, null, null, null, null, null, null, null, null,
                             $this->grandTotal,
                         ],  // The data to set
                         null,        // Array values with this value will not be set
-                        $cell->getColumn() . ($cell->getRow())         // Top left coordinate of the worksheet range where
+                        $cell->getColumn().$cell->getRow()         // Top left coordinate of the worksheet range where
                     );
                     continue;
                 }
@@ -220,7 +217,7 @@ class GenerateCommercialProposalXlsx
     private function calculateSpreadingRate(int $dft, int $vs, float $massDensity, GeneralProposalInfoUnit $unit, int $loss = 0): float
     {
         $tsr = $dft / 10 / $vs * (100 / (100 - $loss));
-        if ($unit->value === 'кг') {
+        if ('кг' === $unit->value) {
             $tsr *= $massDensity;
         }
 

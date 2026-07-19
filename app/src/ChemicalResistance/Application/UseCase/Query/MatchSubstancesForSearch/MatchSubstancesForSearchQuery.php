@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch;
 
 final readonly class MatchSubstancesForSearchQuery
@@ -9,5 +11,6 @@ final readonly class MatchSubstancesForSearchQuery
         public array $coatingIds,
         /** @var list<string> $searchWords — raw words; normalized inside the handler */
         public array $searchWords,
-    ) {}
+    ) {
+    }
 }

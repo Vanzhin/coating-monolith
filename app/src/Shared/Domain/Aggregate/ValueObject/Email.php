@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Aggregate\ValueObject;
 
-use InvalidArgumentException;
-use Stringable;
-
-class Email implements Stringable
+class Email implements \Stringable
 {
     protected readonly string $value;
     private string $localPart;
@@ -29,11 +26,11 @@ class Email implements Stringable
     private function validateFormat(string $value): void
     {
         if (empty($value)) {
-            throw new InvalidArgumentException('Email не может быть пустым.');
+            throw new \InvalidArgumentException('Email не может быть пустым.');
         }
 
-        if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
-            throw new InvalidArgumentException(sprintf('Не верный формат почты: "%s".', $value));
+        if (false === filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException(sprintf('Не верный формат почты: "%s".', $value));
         }
     }
 

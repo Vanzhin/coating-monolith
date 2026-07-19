@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Api;
 
@@ -15,8 +15,7 @@ class CoatingsApi implements CoatingsApiInterface
 {
     public function __construct(
         private PublicUseCaseInteractor $queryInteractor,
-    )
-    {
+    ) {
     }
 
     public function getPagedCoatings(): GetPagedCoatingsQueryResult

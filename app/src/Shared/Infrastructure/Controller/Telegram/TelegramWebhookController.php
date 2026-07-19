@@ -27,7 +27,7 @@ class TelegramWebhookController extends AbstractController
     }
 
     /**
-     * Webhook для обработки обновлений от Telegram Bot API
+     * Webhook для обработки обновлений от Telegram Bot API.
      */
     #[Route('/webhook/telegram', name: 'app_telegram_webhook', methods: ['POST'])]
     public function webhook(Request $request): Response
@@ -40,7 +40,7 @@ class TelegramWebhookController extends AbstractController
             $channelId = $this->getChannelId($request);
             if (!$channelId) {
                 throw new BadRequestException('Invalid telegram channel id');
-            };
+            }
             if (!$this->checkIsChannelVerified($channelId)) {
                 throw new BadRequestException('Telegram channel is not verified');
             }
@@ -51,16 +51,17 @@ class TelegramWebhookController extends AbstractController
         } catch (BadRequestException $exception) {
             $message = $this->formatErrorMessage($exception->getMessage(), $channelId);
             if ($channelId) {
-                $this->telegramBotService->sendMessage((int)$channelId, $message);
+                $this->telegramBotService->sendMessage((int) $channelId, $message);
             }
+
             return new Response('ok');
         } catch (\Exception $e) {
-
             // Логируем ошибку, но возвращаем 200, чтобы Telegram не повторял запрос
             $this->logger->error('Telegram webhook error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return new Response('ok');
         }
     }
@@ -70,14 +71,14 @@ class TelegramWebhookController extends AbstractController
         $messageData = $request->getPayload()->all();
         $channelId = $messageData['message']['from']['id'] ?? null;
 
-        if ($channelId === null) {
+        if (null === $channelId) {
             return null;
         }
         if (!is_numeric($channelId)) {
             return null;
         }
 
-        return (string)$channelId;
+        return (string) $channelId;
     }
 
     private function checkIsChannelVerified(string $channelId): bool
@@ -88,14 +89,14 @@ class TelegramWebhookController extends AbstractController
     }
 
     /**
-     * Форматирует сообщение об ошибке для красивого отображения в Telegram
+     * Форматирует сообщение об ошибке для красивого отображения в Telegram.
      */
     private function formatErrorMessage(string $errorMessage, ?string $channelId = null): string
     {
         // Маппинг ошибок на красивые сообщения
         $errorMessages = [
-            'Invalid telegram bot secret' => '❌ <b>Ошибка безопасности</b>' . "\n\n" . '🔒 Неверный токен бота',
-            'Invalid telegram channel id' => '❌ <b>Ошибка</b>' . "\n\n" . '⚠️ Не удалось определить идентификатор канала',
+            'Invalid telegram bot secret' => '❌ <b>Ошибка безопасности</b>'."\n\n".'🔒 Неверный токен бота',
+            'Invalid telegram channel id' => '❌ <b>Ошибка</b>'."\n\n".'⚠️ Не удалось определить идентификатор канала',
             'Telegram channel is not verified' => $this->formatChannelNotVerifiedMessage($channelId),
         ];
 
@@ -105,22 +106,22 @@ class TelegramWebhookController extends AbstractController
         }
 
         // Иначе форматируем общее сообщение об ошибке
-        return '❌ <b>Произошла ошибка</b>' . "\n\n" .
-            '⚠️ ' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . "\n\n" .
+        return '❌ <b>Произошла ошибка</b>'."\n\n".
+            '⚠️ '.htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8')."\n\n".
             '💡 Если проблема повторяется, обратитесь в поддержку.';
     }
 
     /**
-     * Форматирует сообщение о том, что канал не верифицирован, со ссылкой на создание
+     * Форматирует сообщение о том, что канал не верифицирован, со ссылкой на создание.
      */
     private function formatChannelNotVerifiedMessage(?string $channelId): string
     {
-        $message = '❌ <b>Канал не верифицирован</b>' . "\n\n" .
-            '📝 Для работы с ботом необходимо сначала верифицировать ваш Telegram канал.' . "\n\n";
+        $message = '❌ <b>Канал не верифицирован</b>'."\n\n".
+            '📝 Для работы с ботом необходимо сначала верифицировать ваш Telegram канал.'."\n\n";
 
         if ($channelId) {
             $url = $this->generateCreationChannelUrl($channelId);
-            $message .= '🔗 <a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">Создать и верифицировать канал</a>';
+            $message .= '🔗 <a href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'">Создать и верифицировать канал</a>';
         } else {
             $message .= '🔗 Перейдите в личный кабинет и выполните верификацию канала.';
         }
@@ -137,4 +138,3 @@ class TelegramWebhookController extends AbstractController
         );
     }
 }
-

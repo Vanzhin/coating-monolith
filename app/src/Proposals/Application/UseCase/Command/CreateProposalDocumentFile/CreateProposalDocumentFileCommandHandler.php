@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Application\UseCase\Command\CreateProposalDocumentFile;
 
@@ -15,9 +15,8 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
 {
     public function __construct(
         private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl,
-        private GenerateCommercialProposalXlsx   $generateGeneralProposalXlsx,
-    )
-    {
+        private GenerateCommercialProposalXlsx $generateGeneralProposalXlsx,
+    ) {
     }
 
     public function __invoke(CreateProposalDocumentFileCommand $command): CreateProposalDocumentFileCommandResult
@@ -29,11 +28,11 @@ readonly class CreateProposalDocumentFileCommandHandler implements CommandHandle
             ),
             'Запрещено.'
         );
-        //todo написать логику заполнения шаблона если нужно пдф или эксель или еще что-то
+        // todo написать логику заполнения шаблона если нужно пдф или эксель или еще что-то
         /** Load $inputFileName to a Spreadsheet object **/
         $spreadsheet = $this->generateGeneralProposalXlsx->generate($command->document);
         $writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
-        $filename = sys_get_temp_dir() . '/' . uniqid() . '.pdf';
+        $filename = sys_get_temp_dir().'/'.uniqid().'.pdf';
         $writer->save($filename);
 
         return new CreateProposalDocumentFileCommandResult(new File($filename));

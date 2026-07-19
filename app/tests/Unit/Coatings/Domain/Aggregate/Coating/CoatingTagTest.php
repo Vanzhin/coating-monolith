@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingTagTest extends TestCase
 {
-    public function testTypeGeneralConstantValue(): void
+    public function test_type_general_constant_value(): void
     {
         self::assertSame('general', CoatingTag::TYPE_GENERAL);
     }

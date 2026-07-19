@@ -34,7 +34,7 @@ final class SuggestTagsAction extends AbstractController
         $type = $request->query->get('type');
         $limit = max(1, min(self::MAX_LIMIT, (int) $request->query->get('limit', self::DEFAULT_LIMIT)));
 
-        if ($q === '') {
+        if ('' === $q) {
             return new JsonResponse([]);
         }
 
@@ -42,7 +42,7 @@ final class SuggestTagsAction extends AbstractController
         $result = $this->queryBus->execute(new SuggestTagsQuery($q, $type ?: null, $limit));
 
         $payload = array_map(
-            static fn($dto) => ['id' => $dto->id, 'title' => $dto->title],
+            static fn ($dto) => ['id' => $dto->id, 'title' => $dto->title],
             $result->tags,
         );
 

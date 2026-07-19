@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
@@ -15,7 +15,7 @@ use Doctrine\Common\Collections\Collection;
 
 class CoatingSystem extends Aggregate
 {
-    //todo займусь попозже
+    // todo займусь попозже
     private readonly string $id;
     private string $description;
 
@@ -38,25 +38,23 @@ class CoatingSystem extends Aggregate
      */
     private Collection $tags;
 
-
     public function __construct(
-        string               $title,
-        string               $description,
-        int                  $volumeSolid,
-        float                $massDensity,
-        int                  $tdsDft,
-        int                  $minDft,
-        int                  $maxDft,
-        int                  $applicationMinTemp,
-        float                $dryToTouch,
-        float                $minRecoatingInterval,
-        float                $maxRecoatingInterval,
-        float                $fullCure,
-        float                $pack,
-        Manufacturer         $manufacturer,
+        string $title,
+        string $description,
+        int $volumeSolid,
+        float $massDensity,
+        int $tdsDft,
+        int $minDft,
+        int $maxDft,
+        int $applicationMinTemp,
+        float $dryToTouch,
+        float $minRecoatingInterval,
+        float $maxRecoatingInterval,
+        float $fullCure,
+        float $pack,
+        Manufacturer $manufacturer,
         CoatingSpecification $specification
-    )
-    {
+    ) {
         $this->id = UuidService::generate();
         $this->tags = new ArrayCollection();
         $this->specification = $specification;
@@ -74,7 +72,6 @@ class CoatingSystem extends Aggregate
         $this->setFullCure($fullCure);
         $this->setPack($pack);
         $this->manufacturer = $manufacturer;
-
     }
 
     public function getTitle(): string
@@ -126,7 +123,6 @@ class CoatingSystem extends Aggregate
     {
         $this->massDensity = $massDensity;
         AssertService::greaterThanEq($this->massDensity, 0);
-
     }
 
     public function getTdsDft(): int
@@ -149,7 +145,6 @@ class CoatingSystem extends Aggregate
     {
         $this->minDft = $minDft;
         AssertService::greaterThanEq($this->minDft, 10);
-
     }
 
     public function getMaxDft(): int
@@ -182,7 +177,6 @@ class CoatingSystem extends Aggregate
     {
         $this->dryToTouch = $dryToTouch;
         AssertService::greaterThanEq($this->dryToTouch, 0);
-
     }
 
     public function getMinRecoatingInterval(): float
@@ -194,7 +188,6 @@ class CoatingSystem extends Aggregate
     {
         $this->minRecoatingInterval = $minRecoatingInterval;
         AssertService::greaterThanEq($this->minRecoatingInterval, 0);
-
     }
 
     public function getMaxRecoatingInterval(): float
@@ -216,9 +209,7 @@ class CoatingSystem extends Aggregate
     {
         $this->fullCure = $fullCure;
         AssertService::greaterThanEq($this->fullCure, 0);
-
     }
-
 
     public function getTags(): Collection
     {
@@ -234,7 +225,7 @@ class CoatingSystem extends Aggregate
     {
         $this->volumeSolid = $volumeSolid;
         if ($volumeSolid < 1 || $volumeSolid > 100) {
-            throw new \Exception("Volume solid must be between 1 and 100");
+            throw new \Exception('Volume solid must be between 1 and 100');
         }
     }
 
@@ -257,8 +248,7 @@ class CoatingSystem extends Aggregate
     {
         $this->pack = $pack;
         if ($pack < 1 || $pack > 1000) {
-            throw new \Exception("Pack must be between 1 and 1000.");
+            throw new \Exception('Pack must be between 1 and 1000.');
         }
-
     }
 }

@@ -13,9 +13,8 @@ class GetPagedCoatingTagsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly CoatingTagRepositoryInterface $coatingTagRepository,
-        private readonly CoatingTagDTOTransformer      $coatingTagDTOTransformer
-    )
-    {
+        private readonly CoatingTagDTOTransformer $coatingTagDTOTransformer
+    ) {
     }
 
     public function __invoke(GetPagedCoatingTagsQuery $query): GetPagedCoatingTagsQueryResult

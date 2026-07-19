@@ -1,14 +1,16 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments;
 
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQuery;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
@@ -33,10 +35,10 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->handler        = $c->get(ListCoatingAssessmentsQueryHandler::class);
+        $this->handler = $c->get(ListCoatingAssessmentsQueryHandler::class);
         $this->assessmentRepo = $c->get(AssessmentRepository::class);
-        $this->substanceRepo  = $c->get(SubstanceRepository::class);
-        $this->em             = $c->get(EntityManagerInterface::class);
+        $this->substanceRepo = $c->get(SubstanceRepository::class);
+        $this->em = $c->get(EntityManagerInterface::class);
     }
 
     protected function tearDown(): void
@@ -47,7 +49,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
         try {
             foreach ($this->createdAssessmentIds as $id) {
                 $e = $em->find(Assessment::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
@@ -55,13 +57,13 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
 
             foreach ($this->createdSubstanceIds as $id) {
                 $e = $em->find(Substance::class, $id);
-                if ($e !== null) {
+                if (null !== $e) {
                     $em->remove($e);
                 }
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, 'tearDown cleanup error: ' . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
 
         parent::tearDown();
@@ -73,7 +75,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
             "SELECT id::text FROM coatings_coating WHERE LOWER(title) LIKE '%литатанк%' LIMIT 1",
         );
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('Литатанк Классик coating not found; run full seed first.');
         }
 
@@ -83,15 +85,15 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
     private function getAnyCoatingId(): Uuid
     {
         $raw = $this->em->getConnection()->fetchOne(
-            "SELECT c.id::text
+            'SELECT c.id::text
              FROM coatings_coating c
              WHERE EXISTS (
                  SELECT 1 FROM chemical_resistance_assessment a WHERE a.coating_id = c.id
              )
-             LIMIT 1",
+             LIMIT 1',
         );
 
-        if ($raw === false || $raw === null || $raw === '') {
+        if (false === $raw || null === $raw || '' === $raw) {
             $this->markTestSkipped('No coating with assessments found; run seed first.');
         }
 
@@ -110,16 +112,16 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
 
         $suffix = uniqid('q23-', true);
 
-        $sR  = Uuid::v4();
+        $sR = Uuid::v4();
         $sLR = Uuid::v4();
         $sNR = Uuid::v4();
 
         foreach ([
-            [$sR,  'Вещество-R-'  . $suffix, Grade::R,  'Вода ' . $suffix],
-            [$sLR, 'Вещество-LR-' . $suffix, Grade::LR, null],
-            [$sNR, 'Вещество-NR-' . $suffix, Grade::NR, null],
+            [$sR,  'Вещество-R-'.$suffix, Grade::R,  'Вода '.$suffix],
+            [$sLR, 'Вещество-LR-'.$suffix, Grade::LR, null],
+            [$sNR, 'Вещество-NR-'.$suffix, Grade::NR, null],
         ] as [$sid, $name, $grade, $alias]) {
-            $aliases = $alias !== null ? new StringCollection($alias) : new StringCollection();
+            $aliases = null !== $alias ? new StringCollection($alias) : new StringCollection();
             $substance = new Substance(
                 $sid,
                 $name,
@@ -150,7 +152,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
         return [$coatingId, $sR, $sLR, $sNR];
     }
 
-    public function testFirstPageOfLitatankKlassik(): void
+    public function test_first_page_of_litatank_klassik(): void
     {
         $coatingId = $this->getLitatankClassikCoatingId();
 
@@ -186,7 +188,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
         }
     }
 
-    public function testSearchFiltersToWater(): void
+    public function test_search_filters_to_water(): void
     {
         $coatingId = $this->getLitatankClassikCoatingId();
 
@@ -201,13 +203,13 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
             'Search for "вода" should return at least 1 row for Литатанк Классик.');
 
         foreach ($result->rows as $row) {
-            $haystack = mb_strtolower($row->canonicalName . ' ' . implode(' ', $row->aliases));
+            $haystack = mb_strtolower($row->canonicalName.' '.implode(' ', $row->aliases));
             self::assertStringContainsString('вода', $haystack,
                 'Every row matching "вода" must have "вода" in canonical name or aliases.');
         }
     }
 
-    public function testPageTwo(): void
+    public function test_page_two(): void
     {
         $coatingId = $this->getLitatankClassikCoatingId();
 
@@ -239,7 +241,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
         );
     }
 
-    public function testCountsWithSeededData(): void
+    public function test_counts_with_seeded_data(): void
     {
         [$coatingId] = $this->seedMiniCoating();
 
@@ -266,8 +268,8 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
             $result->countR + $result->countLR + $result->countOther,
             'Counts must sum to total.',
         );
-        self::assertGreaterThanOrEqual(1, $result->countR,   'Must have at least 1 R after seed.');
-        self::assertGreaterThanOrEqual(1, $result->countLR,  'Must have at least 1 LR after seed.');
+        self::assertGreaterThanOrEqual(1, $result->countR, 'Must have at least 1 R after seed.');
+        self::assertGreaterThanOrEqual(1, $result->countLR, 'Must have at least 1 LR after seed.');
         self::assertGreaterThanOrEqual(1, $result->countOther, 'Must have at least 1 other after seed.');
     }
 }

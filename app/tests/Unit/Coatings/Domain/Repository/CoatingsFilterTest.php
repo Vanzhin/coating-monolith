@@ -15,7 +15,7 @@ class CoatingsFilterTest extends TestCase
 {
     private const VALID_UUID_A = '11111111-1111-4111-8111-111111111111';
 
-    public function testDefaultsAreEmptyAndNull(): void
+    public function test_defaults_are_empty_and_null(): void
     {
         $filter = new CoatingsFilter();
         $this->assertNull($filter->search);
@@ -28,7 +28,7 @@ class CoatingsFilterTest extends TestCase
         $this->assertSame([], $filter->baseValues->getList());
     }
 
-    public function testValidSearchAndFacetTogether(): void
+    public function test_valid_search_and_facet_together(): void
     {
         $filter = new CoatingsFilter(
             search: SearchQuery::tryFromString('эпоксидная'),
@@ -39,7 +39,7 @@ class CoatingsFilterTest extends TestCase
         $this->assertSame([self::VALID_UUID_A], $filter->manufacturerIds->getList());
     }
 
-    public function testHasThermalFacetRequiresBothTemperatureAndEnvironment(): void
+    public function test_has_thermal_facet_requires_both_temperature_and_environment(): void
     {
         $onlyTemp = new CoatingsFilter(thermalTemperature: 90);
         $this->assertFalse($onlyTemp->hasThermalFacet());
@@ -54,7 +54,7 @@ class CoatingsFilterTest extends TestCase
         $this->assertTrue($both->hasThermalFacet());
     }
 
-    public function testRejectsOutOfRangeThermalTemperature(): void
+    public function test_rejects_out_of_range_thermal_temperature(): void
     {
         $this->expectException(AppException::class);
         new CoatingsFilter(thermalTemperature: 9999);

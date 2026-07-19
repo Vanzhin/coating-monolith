@@ -8,12 +8,10 @@ use App\Shared\Domain\Repository\Pager;
 
 readonly class GeneralProposalInfoFilter
 {
-
     public function __construct(
-        public string  $userId,
+        public string $userId,
         public ?string $search = null,
-        public ?Pager  $pager = null,
-    )
-    {
+        public ?Pager $pager = null,
+    ) {
     }
 }

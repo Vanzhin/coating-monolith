@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetSubstance;
@@ -9,18 +10,20 @@ use Doctrine\DBAL\Connection;
 
 class GetSubstanceQueryHandler implements QueryHandlerInterface
 {
-    public function __construct(private readonly Connection $dbal) {}
+    public function __construct(private readonly Connection $dbal)
+    {
+    }
 
     public function __invoke(GetSubstanceQuery $query): GetSubstanceQueryResult
     {
         $row = $this->dbal->fetchAssociative(
-            "SELECT id::text AS id, canonical_name, cas, aliases::text AS aliases
+            'SELECT id::text AS id, canonical_name, cas, aliases::text AS aliases
              FROM chemical_resistance_substance
-             WHERE id = :id::uuid",
+             WHERE id = :id::uuid',
             ['id' => $query->id],
         );
 
-        if ($row === false) {
+        if (false === $row) {
             return new GetSubstanceQueryResult(null);
         }
 

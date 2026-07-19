@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Application\Service;
 
 final readonly class ImportReport
@@ -17,5 +19,6 @@ final readonly class ImportReport
         public int $notesCreated,
         public array $conflicts,
         public array $warnings,
-    ) {}
+    ) {
+    }
 }

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Repository;
 
@@ -20,5 +20,4 @@ interface GeneralProposalInfoRepositoryInterface
     public function remove(GeneralProposalInfo $generalProposalInfo): void;
 
     public function findByFilter(GeneralProposalInfoFilter $filter): PaginationResult;
-
 }

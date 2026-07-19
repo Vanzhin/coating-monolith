@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Substance;
@@ -15,14 +16,16 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route(path: '/cabinet/chemical-resistance/substance/list', name: 'app_cabinet_chemical_resistance_substance_list', methods: ['GET'])]
 class ListAction extends AbstractController
 {
-    public function __construct(private readonly QueryBusInterface $queryBus) {}
+    public function __construct(private readonly QueryBusInterface $queryBus)
+    {
+    }
 
     public function __invoke(Request $request): Response
     {
         $search = $request->query->get('search');
-        $cas    = $request->query->get('cas');
-        $page   = $request->query->get('page')  ? (int) $request->query->get('page')  : null;
-        $limit  = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
+        $cas = $request->query->get('cas');
+        $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
+        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
 
         $result = $this->queryBus->execute(
             new GetPagedSubstancesQuery(

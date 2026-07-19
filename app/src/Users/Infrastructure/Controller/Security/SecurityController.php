@@ -9,20 +9,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
-
 class SecurityController extends AbstractController
 {
     public function __construct(
         private readonly UserRepositoryInterface $userRepository,
         private readonly RedisService $redisService,
-    )
-    {
+    ) {
     }
 
     #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
-
         if ($this->getUser()) {
             return $this->redirectToRoute('app_cabinet');
         }
@@ -40,5 +37,4 @@ class SecurityController extends AbstractController
     {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
     }
-
 }

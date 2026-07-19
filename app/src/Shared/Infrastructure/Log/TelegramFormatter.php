@@ -20,8 +20,8 @@ readonly class TelegramFormatter implements FormatterInterface
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ];
-
         }
+
         return json_encode([
             'message' => $record->message,
             'context' => $context ?? $record->context,
@@ -39,6 +39,6 @@ readonly class TelegramFormatter implements FormatterInterface
             $message .= $this->format($record);
         }
 
-        return "```\n" . $message . "\n```";
+        return "```\n".$message."\n```";
     }
 }

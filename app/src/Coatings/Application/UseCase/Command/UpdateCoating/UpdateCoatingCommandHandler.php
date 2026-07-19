@@ -24,10 +24,10 @@ use App\Shared\Infrastructure\Exception\AppException;
 readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private CoatingRepositoryInterface      $coatingRepository,
+        private CoatingRepositoryInterface $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingTagFetcher               $coatingTagFetcher,
-        private RecoatingTreeBuilder            $treeBuilder,
+        private CoatingTagFetcher $coatingTagFetcher,
+        private RecoatingTreeBuilder $treeBuilder,
     ) {
     }
 
@@ -83,7 +83,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         if (!empty($dto->massDensity)) {
             $coating->setMassDensity($dto->massDensity);
         }
-        if (!empty($dto->base) && CoatingBase::tryFrom($dto->base) !== null) {
+        if (!empty($dto->base) && null !== CoatingBase::tryFrom($dto->base)) {
             $coating->setBase(CoatingBase::from($dto->base));
         }
         if (!empty($dto->pack)) {
@@ -96,7 +96,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 
         // maxRecoatingInterval=null означает «без верхней границы».
         $coating->setMaxRecoatingInterval(
-            $dto->maxRecoatingInterval !== null
+            null !== $dto->maxRecoatingInterval
                 ? $this->treeBuilder->build($dto->maxRecoatingInterval)
                 : null,
         );
@@ -121,9 +121,10 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 
     private function buildExposure(?ThermalExposureLimitsDTO $dto): ?ThermalExposureLimits
     {
-        if ($dto === null) {
+        if (null === $dto) {
             return null;
         }
+
         return new ThermalExposureLimits(
             $dto->continuous_min,
             $dto->continuous_max,
@@ -145,7 +146,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
         return new DryingTimeSeries(...array_map(
-            fn(DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
+            fn (DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
             $points,
         ));
     }

@@ -21,8 +21,8 @@ class RegistrationFormType extends AbstractType
             ->add('email', EmailType::class, [
                 'constraints' => [
                     new NotBlank(),
-                    new Email()
-                ]
+                    new Email(),
+                ],
             ])
             ->add('plainPassword', PasswordType::class, [
                 // instead of being set onto the object directly,
@@ -51,8 +51,8 @@ class RegistrationFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-//        $resolver->setDefaults([
-//            'data_class' => User::class,
-//        ]);
+        //        $resolver->setDefaults([
+        //            'data_class' => User::class,
+        //        ]);
     }
 }

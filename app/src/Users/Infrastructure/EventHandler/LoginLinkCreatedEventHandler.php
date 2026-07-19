@@ -38,5 +38,4 @@ readonly class LoginLinkCreatedEventHandler implements EventHandlerInterface
             );
         }
     }
-
 }

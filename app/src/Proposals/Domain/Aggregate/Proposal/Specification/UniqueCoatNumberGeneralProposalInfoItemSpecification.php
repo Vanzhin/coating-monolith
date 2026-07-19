@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Domain\Aggregate\Proposal\Specification;
 
@@ -13,8 +13,7 @@ class UniqueCoatNumberGeneralProposalInfoItemSpecification implements Specificat
 {
     public function __construct(
         private readonly GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository
-    )
-    {
+    ) {
     }
 
     public function satisfy(GeneralProposalInfoItem $item): void

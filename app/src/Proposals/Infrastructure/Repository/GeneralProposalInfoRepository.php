@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Proposals\Infrastructure\Repository;
 
@@ -18,7 +18,6 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
     {
         parent::__construct($registry, GeneralProposalInfo::class);
     }
-
 
     public function add(GeneralProposalInfo $generalProposalInfo): void
     {
@@ -52,12 +51,12 @@ class GeneralProposalInfoRepository extends ServiceEntityRepository implements G
         $qb = $this->createQueryBuilder('gp');
         $qb->andWhere($qb->expr()->eq('gp.ownerId', ':ownerId'))
             ->setParameter('ownerId', $filter->userId);
-        //сортировка по полю обновлено, если нет, то по полю создано
+        // сортировка по полю обновлено, если нет, то по полю создано
         $qb->addSelect('COALESCE(gp.updatedAt, gp.createdAt) AS HIDDEN date')
             ->orderBy('date', 'DESC');
         if ($filter->search) {
             $qb->andWhere($qb->expr()->like('LOWER(gp.description)', 'LOWER(:search)'))
-                ->setParameter('search', '%' . $filter->search . '%');
+                ->setParameter('search', '%'.$filter->search.'%');
         }
         if ($filter->pager) {
             $qb->setMaxResults($filter->pager->getLimit());

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace App\Shared\Application\Command\UseCase\Command\InitDb;
 
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
@@ -12,8 +11,7 @@ readonly class InitDbCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private DocumentRepositoryInterface $documentRepository,
-    )
-    {
+    ) {
     }
 
     public function __invoke(InitDbCommand $command): InitDbCommandResult

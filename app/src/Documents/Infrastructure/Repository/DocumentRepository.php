@@ -43,8 +43,8 @@ class DocumentRepository implements DocumentRepositoryInterface
             'index' => $dbTitle,
             'body' => [
                 'settings' => $this->defaultConfig->loadFromConfig($this->default)['settings'],
-                'mappings' => $this->defaultConfig->loadFromConfig($this->default)['mappings']
-            ]
+                'mappings' => $this->defaultConfig->loadFromConfig($this->default)['mappings'],
+            ],
         ];
         if ($mappings) {
             $data['body']['mappings'] = $mappings;
@@ -117,9 +117,9 @@ class DocumentRepository implements DocumentRepositoryInterface
                     'field' => 'category.keyword',
                     'size' => 1000, // Достаточно большое число, чтобы получить все категории
                     'min_doc_count' => 1, // Только категории с документами
-                    'order' => ['_count' => 'desc'] // Сортировка по количеству
-                ]
-            ]
+                    'order' => ['_count' => 'desc'], // Сортировка по количеству
+                ],
+            ],
         ]);
 
         // 4. Выполняем запрос
@@ -197,8 +197,8 @@ class DocumentRepository implements DocumentRepositoryInterface
             $mustQueries[] = [
                 'bool' => [
                     'should' => $shouldQueries,
-                    'minimum_should_match' => 1
-                ]
+                    'minimum_should_match' => 1,
+                ],
             ];
         }
 
@@ -207,7 +207,7 @@ class DocumentRepository implements DocumentRepositoryInterface
                 Type::BOOL,
                 'multi_part_search',
                 [
-                    'must' => $mustQueries
+                    'must' => $mustQueries,
                 ]
             );
         }
@@ -223,14 +223,14 @@ class DocumentRepository implements DocumentRepositoryInterface
             'bool_query',
             [
                 'should' => $shouldQueries,
-                'minimum_should_match' => 1
+                'minimum_should_match' => 1,
             ]
         );
     }
 
     private function applyCategoryTypesFilter(array $categoryTypes): void
     {
-        $types = array_map(fn($item) => $item->value, $categoryTypes);
+        $types = array_map(fn ($item) => $item->value, $categoryTypes);
 
         // Используем минимум 1 должно совпасть
         $this->queryBuilder->getQuery()->setMinimumShouldMatch(1);
@@ -257,12 +257,12 @@ class DocumentRepository implements DocumentRepositoryInterface
         try {
             return $this->client->search([
                 'index' => $filter->getIndex() ?? $this->default,
-                'body' => $this->queryBuilder->getQuery()->jsonSerialize()
+                'body' => $this->queryBuilder->getQuery()->jsonSerialize(),
             ])->asArray();
         } catch (ElasticsearchException $e) {
             $this->logger->error('Elasticsearch search failed', [
                 'error' => $e->getMessage(),
-                'query' => $this->queryBuilder->getQuery()->jsonSerialize()
+                'query' => $this->queryBuilder->getQuery()->jsonSerialize(),
             ]);
 
             return ['hits' => ['total' => ['value' => 0], 'hits' => []]];
@@ -273,17 +273,13 @@ class DocumentRepository implements DocumentRepositoryInterface
     {
         $total = $result['hits']['total']['value'] ?? 0;
         $items = array_map(
-            fn($document) => $this->documentMapper->mapEntity($document),
+            fn ($document) => $this->documentMapper->mapEntity($document),
             $result['hits']['hits'] ?? []
         );
 
         return new PaginationResult($items, $total);
     }
 
-    /**
-     * @param string $searchTerm
-     * @return array
-     */
     private function buildSearchQueryArray(string $searchTerm): array
     {
         $shouldQueries = [];
@@ -297,7 +293,7 @@ class DocumentRepository implements DocumentRepositoryInterface
             'products.title' => ['boost' => 3.0],
             'title' => ['boost' => 2.0],
             'description' => ['boost' => 1.0],
-            'tags.title' => ['boost' => 2.0]
+            'tags.title' => ['boost' => 2.0],
         ];
 
         foreach ($standardFields as $field => $options) {
@@ -305,8 +301,8 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'match_phrase' => [
                     $field => array_merge([
                         'query' => $searchTerm,
-                        'slop' => 2
-                    ], $options)
+                        'slop' => 2,
+                    ], $options),
                 ],
             ];
 
@@ -314,8 +310,8 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'match' => [
                     $field => array_merge([
                         'query' => $searchTerm,
-                        'operator' => 'and'
-                    ], $options)
+                        'operator' => 'and',
+                    ], $options),
                 ],
             ];
         }
@@ -327,8 +323,8 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'term' => [
                     'products.title.normalized' => [
                         'value' => $number,
-                        'boost' => 15.0 // Максимальный буст
-                    ]
+                        'boost' => 15.0, // Максимальный буст
+                    ],
                 ],
             ];
 
@@ -337,8 +333,8 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'term' => [
                     'title.normalized' => [
                         'value' => $number,
-                        'boost' => 10.0
-                    ]
+                        'boost' => 10.0,
+                    ],
                 ],
             ];
 
@@ -347,8 +343,8 @@ class DocumentRepository implements DocumentRepositoryInterface
                 'match' => [
                     'products.title' => [
                         'query' => $number,
-                        'boost' => 8.0
-                    ]
+                        'boost' => 8.0,
+                    ],
                 ],
             ];
         }

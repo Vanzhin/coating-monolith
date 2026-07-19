@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Substance;
@@ -14,7 +15,9 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route(path: '/cabinet/chemical-resistance/substance', name: 'app_cabinet_chemical_resistance_substance_create')]
 class AddAction extends AbstractController
 {
-    public function __construct(private readonly CommandBusInterface $commandBus) {}
+    public function __construct(private readonly CommandBusInterface $commandBus)
+    {
+    }
 
     public function __invoke(Request $request): Response
     {
@@ -25,8 +28,8 @@ class AddAction extends AbstractController
             try {
                 $this->commandBus->execute(new CreateSubstanceCommand(
                     canonicalName: (string) ($inputData['canonicalName'] ?? ''),
-                    cas:           ($inputData['cas'] ?? '') !== '' ? (string) $inputData['cas'] : null,
-                    aliases:       AliasesParser::parse((string) ($inputData['aliasesText'] ?? '')),
+                    cas: ($inputData['cas'] ?? '') !== '' ? (string) $inputData['cas'] : null,
+                    aliases: AliasesParser::parse((string) ($inputData['aliasesText'] ?? '')),
                 ));
                 $this->addFlash(
                     'substance_created_success',
@@ -36,6 +39,7 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_chemical_resistance_substance_list');
             } catch (AppException $e) {
                 $error = $e->getMessage();
+
                 return $this->render(
                     'admin/chemical_resistance/substance/form.html.twig',
                     compact('error', 'inputData'),

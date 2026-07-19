@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\ChemicalResistance\Domain\Service;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
@@ -12,7 +14,7 @@ use Symfony\Component\Uid\Uuid;
 
 final class EffectiveAssessmentNotesTest extends TestCase
 {
-    public function testSystemNotesFirstThenStoredInOrder(): void
+    public function test_system_notes_first_then_stored_in_order(): void
     {
         $n1 = new Note(Uuid::v4(), 'Прим. 1', 'text1');
         $n2 = new Note(Uuid::v4(), 'Прим. 4', 'text4');
@@ -31,8 +33,8 @@ final class EffectiveAssessmentNotesTest extends TestCase
         self::assertGreaterThanOrEqual(2, count($views));
         self::assertTrue($views[0]->isSystem);
         // Last two must be stored, in noteIds order.
-        self::assertFalse($views[count($views)-2]->isSystem);
-        self::assertSame('Прим. 1', $views[count($views)-2]->title);
-        self::assertSame('Прим. 4', $views[count($views)-1]->title);
+        self::assertFalse($views[count($views) - 2]->isSystem);
+        self::assertSame('Прим. 1', $views[count($views) - 2]->title);
+        self::assertSame('Прим. 4', $views[count($views) - 1]->title);
     }
 }

@@ -33,7 +33,7 @@ final readonly class InitSpecificationOnPostLoadListener
 
         foreach ($reflect->getProperties() as $property) {
             $type = $property->getType();
-            if ($type === null || $property->isInitialized($entity)) {
+            if (null === $type || $property->isInitialized($entity)) {
                 continue;
             }
             if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {

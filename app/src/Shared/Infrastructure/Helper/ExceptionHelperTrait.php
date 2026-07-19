@@ -20,6 +20,7 @@ trait ExceptionHelperTrait
     private function getOriginalExceptionMessage(\Exception $e): string
     {
         $originalException = $this->getOriginalException($e);
+
         return $originalException->getMessage();
     }
 }

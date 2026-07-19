@@ -22,11 +22,11 @@ use PHPUnit\Framework\TestCase;
 
 final class CoatingDTOTransformerTest extends TestCase
 {
-    public function testFromEntityPreservesMinRecoatingTreeBranches(): void
+    public function test_from_entity_preserves_min_recoating_tree_branches(): void
     {
         $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $atmDef  = new DryingTimeSeries(new TimeAtTemperature(20, 30));
-        $epDef   = new DryingTimeSeries(new TimeAtTemperature(20, 15));
+        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 30));
+        $epDef = new DryingTimeSeries(new TimeAtTemperature(20, 15));
 
         $minTree = new RecoatingIntervalTree(
             $rootDef,
@@ -53,7 +53,7 @@ final class CoatingDTOTransformerTest extends TestCase
         $this->assertSame(15, $atm->branches['ep']->default[0]->time_in_minutes);
     }
 
-    public function testFromEntityReturnsNullMaxRecoatingWhenAbsent(): void
+    public function test_from_entity_returns_null_max_recoating_when_absent(): void
     {
         $minTree = new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60)));
         $coating = $this->makeCoating(min: $minTree, max: null);

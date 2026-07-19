@@ -48,6 +48,6 @@ readonly class CoatingsFilter
     /** Активен ли температурный фасет — заданы обе обязательные части. */
     public function hasThermalFacet(): bool
     {
-        return $this->thermalTemperature !== null && $this->thermalEnvironment !== null;
+        return null !== $this->thermalTemperature && null !== $this->thermalEnvironment;
     }
 }

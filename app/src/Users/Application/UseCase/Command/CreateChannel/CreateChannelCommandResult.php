@@ -8,7 +8,6 @@ class CreateChannelCommandResult
 {
     public function __construct(
         public string $id,
-    )
-    {
+    ) {
     }
 }

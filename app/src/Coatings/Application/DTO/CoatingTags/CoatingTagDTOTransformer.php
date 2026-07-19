@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace App\Coatings\Application\DTO\CoatingTags;
-
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 
@@ -11,7 +10,6 @@ class CoatingTagDTOTransformer
 {
     public function fromEntity(CoatingTag $entity): object
     {
-
         $dto = new CoatingTagDTO();
         $dto->id = $entity->getId();
         $dto->title = $entity->getTitle();
@@ -34,5 +32,4 @@ class CoatingTagDTOTransformer
 
         return $coatingTagDTOs;
     }
-
 }

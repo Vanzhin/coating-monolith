@@ -8,7 +8,7 @@ use App\Shared\Domain\Repository\Pager;
 
 final class ChannelFilter
 {
-    //todo расширить фильтр
+    // todo расширить фильтр
 
     public function __construct(
         public ?string $type = null,

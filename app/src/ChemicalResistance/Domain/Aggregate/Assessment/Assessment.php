@@ -48,17 +48,35 @@ class Assessment extends Aggregate
         $this->specification->uniqueCoatingSubstance->satisfy($this);
     }
 
-    public function getId(): string { return $this->id->toRfc4122(); }
+    public function getId(): string
+    {
+        return $this->id->toRfc4122();
+    }
 
-    public function getCoatingId(): Uuid { return $this->coatingId; }
+    public function getCoatingId(): Uuid
+    {
+        return $this->coatingId;
+    }
 
-    public function getSubstanceId(): Uuid { return $this->substanceId; }
+    public function getSubstanceId(): Uuid
+    {
+        return $this->substanceId;
+    }
 
-    public function getGrade(): Grade { return Grade::from($this->grade); }
+    public function getGrade(): Grade
+    {
+        return Grade::from($this->grade);
+    }
 
-    public function getMaxTemperature(): AssessmentTemperature { return AssessmentTemperature::fromInt($this->maxTemperatureCelsius); }
+    public function getMaxTemperature(): AssessmentTemperature
+    {
+        return AssessmentTemperature::fromInt($this->maxTemperatureCelsius);
+    }
 
-    public function getNoteIds(): StringCollection { return $this->noteIds; }
+    public function getNoteIds(): StringCollection
+    {
+        return $this->noteIds;
+    }
 
     public function setGrade(Grade $g): void
     {

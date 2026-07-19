@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Domain\Aggregate\Assessment;
 
 enum Grade: string
@@ -13,6 +15,6 @@ enum Grade: string
     /** «Стойкое» для целей поиска и UI. Единственный источник правды. */
     public function isSuitable(): bool
     {
-        return $this === self::R || $this === self::LR;
+        return self::R === $this || self::LR === $this;
     }
 }

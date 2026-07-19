@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace App\Coatings\Domain\Repository;
 
@@ -15,15 +15,14 @@ interface CoatingRepositoryInterface
 
     public function findOneByTitle(string $title): ?Coating;
 
-
     public function remove(Coating $coating): void;
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult;
 
     /**
      * @param list<string> $ids
+     *
      * @return list<Coating> возвращает в том же порядке, что и $ids; отсутствующие id просто опущены
      */
     public function findByIds(array $ids): array;
-
 }

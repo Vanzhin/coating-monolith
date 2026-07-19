@@ -21,12 +21,14 @@ class QueryBuilder
     {
         $this->query = new Query();
         $this->nestedPaths = [];
+
         return $this;
     }
 
     public function getQuery(): Query
     {
         $this->buildNestedQueries();
+
         return $this->query;
     }
 
@@ -62,25 +64,28 @@ class QueryBuilder
     public function setLimit(int $limit): self
     {
         $this->query->setSize($limit);
+
         return $this;
     }
 
     public function setOffset(int $offset): self
     {
         $this->query->setFrom($offset);
+
         return $this;
     }
 
     public function addSort(string $field, string $order = 'asc'): self
     {
         $this->query->addSort([$field => ['order' => $order]]);
+
         return $this;
     }
 
     public function addAggregation(array $aggregation): self
     {
         // Если передана одна агрегация без имени, используем ключ как имя
-        if (count($aggregation) === 1 && !isset($aggregation[0])) {
+        if (1 === count($aggregation) && !isset($aggregation[0])) {
             $name = key($aggregation);
             $body = current($aggregation);
             $this->query->addAggregation($name, $body);
@@ -96,7 +101,7 @@ class QueryBuilder
 
     private function add(Type $type, string $key, array|string $value, Operator $operator, ?array $options = null): self
     {
-        if ($type === Type::MATCH && is_string($value)) {
+        if (Type::MATCH === $type && is_string($value)) {
             return $this->handleMatchQuery($key, $value, $operator, $options);
         }
 
@@ -139,18 +144,18 @@ class QueryBuilder
                 // Create exact match for numbers (using term query for exact match)
                 $shouldQueries[] = [
                     'term' => [
-                        $key => $number
-                    ]
+                        $key => $number,
+                    ],
                 ];
 
                 // Also support numbers with optional letters (like "750К")
                 $shouldQueries[] = [
                     'wildcard' => [
                         $key => [
-                            'value' => $number . '*',
-                            'case_insensitive' => true
-                        ]
-                    ]
+                            'value' => $number.'*',
+                            'case_insensitive' => true,
+                        ],
+                    ],
                 ];
             }
         }
@@ -176,26 +181,27 @@ class QueryBuilder
                         // Strict match for numbers
                         [
                             'bool' => [
-                                'should' => array_filter($shouldQueries, function($query) {
+                                'should' => array_filter($shouldQueries, function ($query) {
                                     return isset($query['term']) || isset($query['wildcard']['value']) && str_ends_with($query['wildcard']['value'], '*');
                                 }),
-                                'minimum_should_match' => 1
-                            ]
+                                'minimum_should_match' => 1,
+                            ],
                         ],
                         // Fuzzy match for text
                         [
                             'bool' => [
-                                'should' => array_filter($shouldQueries, function($query) {
+                                'should' => array_filter($shouldQueries, function ($query) {
                                     return isset($query['match_phrase']) || isset($query['wildcard']) || isset($query['match']);
                                 }),
-                                'minimum_should_match' => 1
-                            ]
-                        ]
-                    ]
-                ]
+                                'minimum_should_match' => 1,
+                            ],
+                        ],
+                    ],
+                ],
             ];
 
             $this->addQueryPart($combinedQuery, $operator);
+
             return $this;
         }
 
@@ -203,8 +209,8 @@ class QueryBuilder
         $this->addQueryPart([
             'bool' => [
                 'should' => $shouldQueries,
-                'minimum_should_match' => 1
-            ]
+                'minimum_should_match' => 1,
+            ],
         ], $operator);
 
         return $this;
@@ -213,6 +219,7 @@ class QueryBuilder
     private function extractNumbers(string $value): array
     {
         preg_match_all('/\d+/', $value, $matches);
+
         return $matches[0] ?? [];
     }
 
@@ -220,6 +227,7 @@ class QueryBuilder
     {
         return preg_replace('/\d+/', '', $value);
     }
+
     private function generateSearchVariations(string $input): array
     {
         $variations = [mb_strtolower($input)];
@@ -227,7 +235,7 @@ class QueryBuilder
 
         // Генерируем транслитерированные варианты
         foreach ($translitMap as $ru => $en) {
-            if (mb_strpos($input, $ru) !== false) {
+            if (false !== mb_strpos($input, $ru)) {
                 foreach ($en as $enChar) {
                     $variations[] = str_replace($ru, $enChar, $input);
                 }
@@ -247,10 +255,10 @@ class QueryBuilder
             $letter = mb_strtolower($matches[2]);
 
             $variations = [
-                $number . $letter,
-                $number . ' ' . $letter,
-                $number . $this->transliterateLetter($letter),
-                $number . ' ' . $this->transliterateLetter($letter)
+                $number.$letter,
+                $number.' '.$letter,
+                $number.$this->transliterateLetter($letter),
+                $number.' '.$this->transliterateLetter($letter),
             ];
         }
 
@@ -260,6 +268,7 @@ class QueryBuilder
     private function transliterateLetter(string $letter): string
     {
         $map = $this->getTransliterationMap();
+
         return $map[$letter][0] ?? $letter;
     }
 
@@ -269,9 +278,9 @@ class QueryBuilder
             'match_phrase' => [
                 $key => [
                     'query' => $value,
-                    'slop' => 2
-                ]
-            ]
+                    'slop' => 2,
+                ],
+            ],
         ];
     }
 
@@ -280,10 +289,10 @@ class QueryBuilder
         return [
             'wildcard' => [
                 $key => [
-                    'value' => '*' . $value . '*',
-                    'case_insensitive' => true
-                ]
-            ]
+                    'value' => '*'.$value.'*',
+                    'case_insensitive' => true,
+                ],
+            ],
         ];
     }
 
@@ -293,9 +302,9 @@ class QueryBuilder
             'match' => [
                 $key => [
                     'query' => $value,
-                    'fuzziness' => 'AUTO'
-                ]
-            ]
+                    'fuzziness' => 'AUTO',
+                ],
+            ],
         ];
     }
 
@@ -312,6 +321,7 @@ class QueryBuilder
     private function addRawQuery(array $query, Operator $operator): self
     {
         $this->addQueryPart($query, $operator);
+
         return $this;
     }
 
@@ -343,7 +353,7 @@ class QueryBuilder
 
     private function buildTermQuery(string $key, mixed $value, ?array $options): array
     {
-        $field = str_ends_with($key, '.keyword') ? $key : $key . '.keyword';
+        $field = str_ends_with($key, '.keyword') ? $key : $key.'.keyword';
         $query = ['value' => $value];
 
         return ['term' => [$field => ($options ? array_merge($query, $options) : $query)]];
@@ -382,8 +392,8 @@ class QueryBuilder
                     'nested' => [
                         'path' => $path,
                         'query' => $query['bool'] ?? $query,
-                        'score_mode' => 'avg'
-                    ]
+                        'score_mode' => 'avg',
+                    ],
                 ]);
             }
         }

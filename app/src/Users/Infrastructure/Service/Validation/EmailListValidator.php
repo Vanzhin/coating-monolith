@@ -6,13 +6,12 @@ namespace App\Users\Infrastructure\Service\Validation;
 
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\Validation\EmailValidatorInterface;
-use Stringable;
 
 class EmailListValidator extends ListValidator implements EmailValidatorInterface
 {
-    protected function normalizeValue(string|Stringable $value): string
+    protected function normalizeValue(string|\Stringable $value): string
     {
-        $stringValue = (string)$value;
+        $stringValue = (string) $value;
         $normalized = strtolower(trim($stringValue));
 
         if (!filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
@@ -24,12 +23,12 @@ class EmailListValidator extends ListValidator implements EmailValidatorInterfac
 
     protected function isSupportedNormalized(string $normalizedValue): bool
     {
-        return filter_var($normalizedValue, FILTER_VALIDATE_EMAIL) !== false;
+        return false !== filter_var($normalizedValue, FILTER_VALIDATE_EMAIL);
     }
 
-    protected function getValidationErrorMessage(string|Stringable $value): string
+    protected function getValidationErrorMessage(string|\Stringable $value): string
     {
-        $stringValue = (string)$value;
+        $stringValue = (string) $value;
 
         try {
             $normalized = $this->normalizeValue($value);

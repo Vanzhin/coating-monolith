@@ -32,7 +32,8 @@
                     <label class="form-label small text-muted">Вещество</label>
                     <div class="position-relative"
                          data-controller="substance-autocomplete"
-                         data-substance-autocomplete-endpoint-value="{{ path('app_cabinet_chemical_resistance_substance_autocomplete') }}">
+                         data-substance-autocomplete-endpoint-value="{{ path('app_cabinet_chemical_resistance_substance_autocomplete') }}"
+                         data-substance-autocomplete-endpoint-create-value="{{ path('app_api_chemical_resistance_substance_add') }}">
                         <input type="text"
                                class="form-control"
                                placeholder="Начните вводить вещество…"
@@ -64,14 +65,25 @@
                            class="form-control" min="1" max="500">
                 </div>
 
-                {# Notes multi-select #}
+                {# Notes chips + typeahead + inline create #}
                 <div class="col-md-3">
                     <label class="form-label small text-muted">Примечания</label>
-                    <select name="noteIds[]" class="form-select" multiple size="3">
-                        {% for note in allNotes %}
-                            <option value="{{ note.id }}">{{ note.title }}</option>
-                        {% endfor %}
-                    </select>
+                    <div class="position-relative"
+                         data-controller="notes-picker"
+                         data-notes-picker-endpoint-value="{{ path('app_api_chemical_resistance_note_autocomplete') }}"
+                         data-notes-picker-endpoint-create-value="{{ path('app_api_chemical_resistance_note_add') }}">
+                        <div class="d-flex flex-wrap gap-1 mb-1"
+                             data-notes-picker-target="chips"></div>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Поиск или создать…"
+                               autocomplete="off"
+                               data-notes-picker-target="input"
+                               data-action="input->notes-picker#onInput">
+                        <span data-notes-picker-target="hidden"></span>
+                        <div class="dropdown-menu w-100"
+                             data-notes-picker-target="results"></div>
+                    </div>
                 </div>
 
                 <div class="col-md-1">

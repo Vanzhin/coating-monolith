@@ -27,7 +27,7 @@ class TokenRepository implements TokenRepositoryInterface
 
     public function findByTokenValueAndSubject(string $value, string $subjectId): ?Token
     {
-        //todo может убрать такой метод
+        // todo может убрать такой метод
         $data = $this->redisService->get($this->buildKey($subjectId));
         if (!$data) {
             return null;
@@ -48,7 +48,7 @@ class TokenRepository implements TokenRepositoryInterface
 
     private function buildKey(string $value): string
     {
-        return self::TOKEN_PREFIX . $value;
+        return self::TOKEN_PREFIX.$value;
     }
 
     public function remove(Token $token): void

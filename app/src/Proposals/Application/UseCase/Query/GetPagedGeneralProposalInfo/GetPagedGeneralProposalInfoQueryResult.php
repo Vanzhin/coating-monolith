@@ -11,7 +11,6 @@ readonly class GetPagedGeneralProposalInfoQueryResult
 {
     /**
      * @param GeneralProposalInfoDTO[] $proposals
-     * @param Pager $pager
      */
     public function __construct(public array $proposals, public Pager $pager)
     {

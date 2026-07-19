@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingTag;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingTagSpecification;
 use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
@@ -31,7 +30,7 @@ final class CreateGeneralTagActionTest extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
 
         $suffix = uniqid('', true);
-        $this->userEmail = 'create_tag_' . $suffix . '@example.com';
+        $this->userEmail = 'create_tag_'.$suffix.'@example.com';
 
         $hasher = $container->get(UserPasswordHasherInterface::class);
         $user = new User(new Email($this->userEmail));
@@ -56,24 +55,24 @@ final class CreateGeneralTagActionTest extends WebTestCase
             $repo = static::getContainer()->get(CoatingTagRepositoryInterface::class);
             foreach ($this->titlesToCleanup as $title) {
                 $tag = $repo->findOneByTitleAndType($title, CoatingTag::TYPE_GENERAL);
-                if ($tag !== null) {
+                if (null !== $tag) {
                     $em->remove($tag);
                 }
             }
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if ($user !== null) {
+            if (null !== $user) {
                 $em->remove($user);
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         parent::tearDown();
     }
 
-    public function testCreatesNewGeneralTag(): void
+    public function test_creates_new_general_tag(): void
     {
-        $title = 'Для бетона unique-' . uniqid('', false);
+        $title = 'Для бетона unique-'.uniqid('', false);
         $this->titlesToCleanup[] = $title;
 
         $this->client->request(
@@ -99,9 +98,9 @@ final class CreateGeneralTagActionTest extends WebTestCase
         self::assertSame(CoatingTag::TYPE_GENERAL, $tag->getType());
     }
 
-    public function testRejectsDuplicate(): void
+    public function test_rejects_duplicate(): void
     {
-        $title = 'Дубль-' . uniqid('', false);
+        $title = 'Дубль-'.uniqid('', false);
         $this->titlesToCleanup[] = $title;
 
         // Первый раз — успешно.
@@ -131,7 +130,7 @@ final class CreateGeneralTagActionTest extends WebTestCase
         self::assertStringContainsString('уже существует', $payload['message']);
     }
 
-    public function testRejectsEmptyTitle(): void
+    public function test_rejects_empty_title(): void
     {
         $this->client->request(
             'POST',

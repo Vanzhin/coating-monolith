@@ -13,7 +13,7 @@ class ResponseFormatter
         return [
             'success' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
         ];
     }
 
@@ -23,7 +23,7 @@ class ResponseFormatter
             'success' => false,
             'message' => $message,
             'code' => $code,
-            'data' => $data
+            'data' => $data,
         ];
     }
 

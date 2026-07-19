@@ -36,13 +36,13 @@ class ChannelVerificationFormType extends AbstractType
                 'choice_attr' => function ($channel) {
                     return [
                         'data-channel-type' => $channel->getType()->value,
-                        'data-channel-value' => $channel->getValue()
+                        'data-channel-value' => $channel->getValue(),
                     ];
                 },
                 'placeholder' => 'Выберите канал для верификации',
                 'attr' => [
                     'class' => 'form-select',
-                    'id' => 'verification_channel'
+                    'id' => 'verification_channel',
                 ],
                 'constraints' => [
                     new NotBlank([

@@ -15,7 +15,7 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $path = __DIR__ . '/../../../../ChemicalResistance/Infrastructure/Database/Seed/' . $this->seedFileName();
+        $path = __DIR__.'/../../../../ChemicalResistance/Infrastructure/Database/Seed/'.$this->seedFileName();
         if (!is_readable($path)) {
             throw new \RuntimeException("Seed file not found: $path");
         }
@@ -26,7 +26,7 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
             'SELECT id FROM coatings_coating WHERE title = ?',
             [$data['coating_title']],
         );
-        if ($coating === false) {
+        if (false === $coating) {
             throw new \RuntimeException("Coating «{$data['coating_title']}» must exist before seeding.");
         }
         $coatingId = $coating['id'];
@@ -56,13 +56,13 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
                 [$key],
             );
             // Fallback: same CAS, different canonical key (e.g. language/case variant).
-            if ($existing === false && !empty($s['cas'])) {
+            if (false === $existing && !empty($s['cas'])) {
                 $existing = $this->connection->fetchAssociative(
                     'SELECT id, aliases FROM chemical_resistance_substance WHERE cas = ?',
                     [$s['cas']],
                 );
             }
-            if ($existing !== false) {
+            if (false !== $existing) {
                 $existingAliases = json_decode($existing['aliases'], true) ?: [];
                 $merged = array_values(array_unique(array_merge($existingAliases, $s['aliases'] ?? [])));
                 $this->connection->executeStatement(
@@ -139,7 +139,7 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
     public function down(Schema $schema): void
     {
         $data = json_decode(
-            file_get_contents(__DIR__ . '/../../../../ChemicalResistance/Infrastructure/Database/Seed/' . $this->seedFileName()),
+            file_get_contents(__DIR__.'/../../../../ChemicalResistance/Infrastructure/Database/Seed/'.$this->seedFileName()),
             true,
         );
 

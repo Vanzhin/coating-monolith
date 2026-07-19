@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Infrastructure\Controller\Assessment;
@@ -14,14 +15,16 @@ use Symfony\Component\Routing\Annotation\Route;
     path: '/cabinet/coatings/{coatingId}/chem-resistance/assessment/{assessmentId}/delete',
     name: 'app_cabinet_coating_chem_resistance_assessment_delete',
     requirements: [
-        'coatingId'    => '[0-9a-f-]{36}',
+        'coatingId' => '[0-9a-f-]{36}',
         'assessmentId' => '[0-9a-f-]{36}',
     ],
     methods: ['POST'],
 )]
 class DeleteAction extends AbstractController
 {
-    public function __construct(private readonly CommandBusInterface $commandBus) {}
+    public function __construct(private readonly CommandBusInterface $commandBus)
+    {
+    }
 
     public function __invoke(string $coatingId, string $assessmentId): Response
     {

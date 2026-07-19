@@ -52,17 +52,17 @@ final class CoatingFinderFtsTagTest extends KernelTestCase
         $suffix = uniqid('', true);
 
         // Manufacturer
-        $manufacturer = new Manufacturer('TestMfg_' . $suffix, $container->get(ManufacturerSpecification::class));
+        $manufacturer = new Manufacturer('TestMfg_'.$suffix, $container->get(ManufacturerSpecification::class));
         $this->em->persist($manufacturer);
 
         // General tag — содержит уникальное слово «бетонxxx» которого нет в title/description.
-        $tag = new CoatingTag('Для бетона FTS_' . $suffix, $container->get(CoatingTagSpecification::class), CoatingTag::TYPE_GENERAL);
+        $tag = new CoatingTag('Для бетона FTS_'.$suffix, $container->get(CoatingTagSpecification::class), CoatingTag::TYPE_GENERAL);
         $container->get(CoatingTagRepositoryInterface::class)->add($tag);
 
         // Coating с нейтральным title/description — должно матчиться только за счёт тега.
         $coating = new Coating(
             UuidService::generateUuid(),
-            'NeutralTitle_' . $suffix,
+            'NeutralTitle_'.$suffix,
             'Описание не содержит нужного слова.',
             50,
             1.5,
@@ -93,31 +93,31 @@ final class CoatingFinderFtsTagTest extends KernelTestCase
         $em->clear();
         try {
             $coating = $em->find(Coating::class, Uuid::fromString($this->coatingId));
-            if ($coating !== null) {
+            if (null !== $coating) {
                 $em->remove($coating);
             }
             $tag = static::getContainer()->get(CoatingTagRepositoryInterface::class)->findOneById($this->tagId);
-            if ($tag !== null) {
+            if (null !== $tag) {
                 $em->remove($tag);
             }
             $manufacturer = $em->find(Manufacturer::class, Uuid::fromString($this->manufacturerId));
-            if ($manufacturer !== null) {
+            if (null !== $manufacturer) {
                 $em->remove($manufacturer);
             }
             $em->flush();
         } catch (\Throwable $e) {
-            fwrite(STDERR, "tearDown cleanup error: " . $e->getMessage() . "\n");
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         parent::tearDown();
     }
 
-    public function testFtsFindsCoatingByTagTitle(): void
+    public function test_fts_finds_coating_by_tag_title(): void
     {
         // Поиск по слову «бетона» — присутствует только в теге, не в title/description → должен найти.
         $filter = new CoatingsFilter(SearchQuery::tryFromString('бетона'), pager: Pager::fromPage(1, 50));
         $result = $this->finder->fullText($filter);
 
-        $ids = array_map(fn(Coating $c) => $c->getId(), $result->items);
+        $ids = array_map(fn (Coating $c) => $c->getId(), $result->items);
         self::assertContains(
             $this->coatingId,
             $ids,

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetPagedSubstances;
@@ -11,7 +12,8 @@ class GetPagedSubstancesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly SubstanceRepositoryInterface $substanceRepository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetPagedSubstancesQuery $query): GetPagedSubstancesQueryResult
     {

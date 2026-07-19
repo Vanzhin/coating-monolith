@@ -48,7 +48,7 @@ readonly class Pager
         if (!$this->total_items) {
             $this->total_pages = null;
         } else {
-            $this->total_pages = (int)ceil($this->total_items / $this->perPage);
+            $this->total_pages = (int) ceil($this->total_items / $this->perPage);
         }
     }
 }

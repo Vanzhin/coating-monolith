@@ -43,11 +43,11 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $this->buildDryingTimeSeries($dto->fullCure),
             $this->treeBuilder->buildMinTree($dto->minRecoatingInterval)
                 ?? throw new AppException('Минимальный интервал перекрытия обязателен.'),
-            $dto->maxRecoatingInterval !== null
+            null !== $dto->maxRecoatingInterval
                 ? $this->treeBuilder->build($dto->maxRecoatingInterval)
                 : null,
             $dto->manufacturer->id,
-            array_map(fn($tag) => $tag->id, $dto->tags),
+            array_map(fn ($tag) => $tag->id, $dto->tags),
             $dto->pack,
             $dto->thinner,
             $dto->dryingMaxTemp,
@@ -60,9 +60,10 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
 
     private function buildExposure(?ThermalExposureLimitsDTO $dto): ?ThermalExposureLimits
     {
-        if ($dto === null) {
+        if (null === $dto) {
             return null;
         }
+
         return new ThermalExposureLimits(
             $dto->continuous_min,
             $dto->continuous_max,
@@ -74,6 +75,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
     private function buildDftRange(CoatingDTO $dto): DftRange
     {
         $range = $dto->dftRange;
+
         return new DftRange(
             new PositiveNumberRange($range->min, $range->max),
             $range->tds_dft,
@@ -85,7 +87,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
     private function buildDryingTimeSeries(array $points): DryingTimeSeries
     {
         return new DryingTimeSeries(...array_map(
-            fn(DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
+            fn (DryingTimePointDTO $p) => new TimeAtTemperature($p->temperature_at, $p->time_in_minutes),
             $points,
         ));
     }
