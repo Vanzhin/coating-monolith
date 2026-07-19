@@ -1,0 +1,76 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление вещества' : 'Добавление вещества' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_chemical_resistance_substance_update', {id: inputData.id})
+    : path('app_cabinet_chemical_resistance_substance_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <form method="post" action="{{ actionUrl }}" class="w-100">
+            {% if error is defined and error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Данные вещества</h6>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="inputCanonicalName" class="form-label">Название <span class="text-danger">*</span></label>
+                        <input type="text"
+                               value="{{ inputData.canonicalName ?? '' }}"
+                               name="canonicalName"
+                               id="inputCanonicalName"
+                               class="form-control"
+                               required
+                               autofocus
+                               maxlength="200"
+                               placeholder="Каноническое название вещества...">
+                        <div class="form-text">до 200 символов</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="inputCas" class="form-label">CAS-номер</label>
+                        <input type="text"
+                               value="{{ inputData.cas ?? '' }}"
+                               name="cas"
+                               id="inputCas"
+                               class="form-control"
+                               maxlength="20"
+                               placeholder="Например: 107-21-1">
+                        <div class="form-text">Необязательно</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputAliasesText" class="form-label">Псевдонимы</label>
+                        <textarea name="aliasesText"
+                                  id="inputAliasesText"
+                                  class="form-control"
+                                  rows="5"
+                                  placeholder="Один псевдоним на строку...">{{ inputData.aliasesText ?? '' }}</textarea>
+                        <div class="form-text">Один псевдоним на строку. Необязательно.</div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}"
+                   class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -8,6 +8,9 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueCasSpe
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueSubstanceNameSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstancesFilter;
+use App\Shared\Domain\Repository\PaginationResult;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -112,5 +115,49 @@ final class DoctrineSubstanceRepository implements SubstanceRepository
             }
         }
         return $ordered;
+    }
+
+    public function findByFilter(SubstancesFilter $filter): PaginationResult
+    {
+        $conn = $this->em->getConnection();
+
+        $where = '1=1';
+        $params = [];
+        $types = [];
+
+        if ($filter->search !== null && trim($filter->search) !== '') {
+            $like = '%' . trim($filter->search) . '%';
+            $where = "(s.canonical_name ILIKE :search
+                OR s.cas ILIKE :search
+                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search))";
+            $params['search'] = $like;
+        }
+
+        $countSql = "SELECT COUNT(*) FROM chemical_resistance_substance s WHERE {$where}";
+        $total = (int) $conn->fetchOne($countSql, $params, $types);
+
+        $dataSql = "SELECT s.id::text AS id, s.canonical_name, s.cas, s.aliases::text AS aliases
+                    FROM chemical_resistance_substance s
+                    WHERE {$where}
+                    ORDER BY s.canonical_name ASC";
+
+        if ($filter->pager !== null) {
+            $dataSql .= ' LIMIT :lim OFFSET :off';
+            $params['lim'] = $filter->pager->getLimit();
+            $params['off'] = $filter->pager->getOffset();
+            $types['lim'] = ParameterType::INTEGER;
+            $types['off'] = ParameterType::INTEGER;
+        }
+
+        $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
+
+        $items = array_map(fn(array $r) => new \App\ChemicalResistance\Application\DTO\SubstanceDTO(
+            id: $r['id'],
+            canonicalName: $r['canonical_name'],
+            cas: $r['cas'],
+            aliases: json_decode($r['aliases'], true) ?: [],
+        ), $rows);
+
+        return new PaginationResult($items, $total);
     }
 }

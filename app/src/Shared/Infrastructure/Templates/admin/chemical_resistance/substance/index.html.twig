@@ -1,0 +1,71 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Вещества{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Вещества',
+        create_route: 'app_cabinet_chemical_resistance_substance_create',
+        can_edit: canEdit,
+        is_empty: result.substances is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="mb-0">
+                <div class="input-group">
+                    <input type="search" name="search" value="{{ app.request.query.get('search') }}"
+                           class="form-control"
+                           placeholder="Поиск по названию, CAS, псевдонимам..."
+                           autocomplete="off">
+                    <button type="submit" class="btn btn-primary">Найти</button>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="d-flex flex-column gap-2">
+                {% for substance in result.substances %}
+                    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">
+                                {{ substance.canonicalName }}
+                            </h6>
+                            <div class="small text-muted">
+                                {% if substance.cas %}
+                                    <span class="me-3"><strong>CAS:</strong> {{ substance.cas }}</span>
+                                {% endif %}
+                                {% if substance.aliases is not empty %}
+                                    <span>
+                                        <strong>Псевдонимы:</strong>
+                                        {{ substance.aliases|slice(0, 3)|join(', ') }}
+                                        {% if substance.aliases|length > 3 %}…{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if canEdit %}
+                            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                                {% include '/components/edit_delete.html.twig' with {
+                                    'edit':   'app_cabinet_chemical_resistance_substance_update',
+                                    'delete': 'app_cabinet_chemical_resistance_substance_delete',
+                                    'id':     substance.id,
+                                    'title':  substance.canonicalName,
+                                    'name':   'вещества'
+                                } %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if canEdit %}
+                {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_chemical_resistance_substance_delete'} %}
+            {% endif %}
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
