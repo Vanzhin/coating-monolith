@@ -5,6 +5,7 @@
 @import "admin/coating-list.css";
 @import "components/flip-card.css";
 @import "components/range-slider.css";
+@import "./components/coating-substance-badges.css";
 @import "fonts.css";
 /*@import "signin.css";*/
 

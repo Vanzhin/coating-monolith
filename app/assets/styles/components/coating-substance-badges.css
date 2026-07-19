@@ -1,0 +1,8 @@
+/* coating-substance-badges.css — badges shown on the list card when a coating
+   matches the search query via a chemical substance name. */
+.coating-match-substances .badge {
+    font-size: 0.75rem;
+}
+.coating-match-substances a.badge {
+    cursor: pointer;
+}

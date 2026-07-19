@@ -36,6 +36,27 @@
                     {{ coating.description }}
                 </p>
             </div>
+            {% if coating.matchedSubstances is defined and coating.matchedSubstances|length > 0 %}
+                {% set matches = coating.matchedSubstances %}
+                {% set visible = matches|slice(0, 3) %}
+                {% set hidden = matches|length - visible|length %}
+                <div class="d-flex flex-wrap gap-1 align-items-center mb-1 coating-match-substances">
+                    <span class="small text-success-emphasis fw-medium me-1">✓ Стойкое к:</span>
+                    {% for m in visible %}
+                        <a href="#"
+                           data-bs-toggle="modal"
+                           data-bs-target="#coatingPreview-{{ coating.id }}"
+                           data-controller="substance-badge"
+                           data-substance-badge-id-value="{{ m.substanceId }}"
+                           class="badge text-bg-success bg-opacity-25 text-body-emphasis fw-normal text-decoration-none">
+                            {{ m.canonicalName }}
+                        </a>
+                    {% endfor %}
+                    {% if hidden > 0 %}
+                        <span class="badge text-bg-light fw-normal">+{{ hidden }} ещё</span>
+                    {% endif %}
+                </div>
+            {% endif %}
             {% if coating.tags|length > 0 %}
                 {# Теги в одну строку с горизонтальным скроллом. При большом
                    количестве тегов не растягивают карточку по высоте — CSS
