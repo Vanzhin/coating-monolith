@@ -6,12 +6,10 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentNotesConsistencyValidator;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\UniqueCoatingSubstanceAssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
 use App\ChemicalResistance\Domain\Repository\NoteRepository;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Component\Uid\Uuid;
 
 final class DoctrineAssessmentRepository implements AssessmentRepository
