@@ -65,20 +65,21 @@ final class MatchSubstancesForSearchQueryHandler
             $cas         = $r['cas'];
 
             $matched = null;
-            foreach ($normalizedWords as $i => $needle) {
-                if ($needle === $canonNorm) {
-                    $matched = 'canonical';
-                    break;
-                }
-                // CAS is compared raw (not normalized) — dashes are semantically significant
-                if ($cas !== null && $cas === $rawWords[$i]) {
-                    $matched = 'cas';
-                    break;
-                }
-                foreach ($aliases as $alias) {
-                    if (SubstanceNameNormalizer::normalize((string) $alias) === $needle) {
-                        $matched = 'alias';
-                        break 2;
+
+            // CAS check is independent: CAS strings are unambiguous and not normalized.
+            if ($cas !== null && in_array($cas, $rawWords, true)) {
+                $matched = 'cas';
+            } else {
+                foreach ($normalizedWords as $needle) {
+                    if ($needle === $canonNorm) {
+                        $matched = 'canonical';
+                        break;
+                    }
+                    foreach ($aliases as $alias) {
+                        if (SubstanceNameNormalizer::normalize((string) $alias) === $needle) {
+                            $matched = 'alias';
+                            break 2;
+                        }
                     }
                 }
             }
