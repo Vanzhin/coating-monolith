@@ -45,24 +45,33 @@ export default class extends Controller {
             return;
         }
 
-        this.resultsTarget.innerHTML = items.map(it =>
-            `<button type="button" class="dropdown-item" data-id="${it.id}" data-canonical="${it.canonicalName}">` +
-            `${it.canonicalName}${it.cas ? ` <small class="text-muted">CAS ${it.cas}</small>` : ''}` +
-            `</button>`
-        ).join('');
-
-        this.resultsTarget.classList.add('show');
-        this.resultsTarget.style.position = 'absolute';
-        this.resultsTarget.style.zIndex = '1000';
-        this.resultsTarget.style.minWidth = '100%';
-
-        this.resultsTarget.querySelectorAll('button').forEach(btn => {
+        this.resultsTarget.innerHTML = '';
+        items.forEach(it => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'dropdown-item';
+            btn.dataset.id = it.id;
+            btn.dataset.canonical = it.canonicalName;
+            btn.textContent = it.canonicalName;
+            if (it.cas) {
+                const small = document.createElement('small');
+                small.className = 'text-muted ms-2';
+                small.textContent = 'CAS ' + it.cas;
+                btn.appendChild(document.createTextNode(' '));
+                btn.appendChild(small);
+            }
             btn.addEventListener('click', () => {
                 this.hiddenTarget.value = btn.dataset.id;
                 this.inputTarget.value = btn.dataset.canonical;
                 this._close();
             });
+            this.resultsTarget.appendChild(btn);
         });
+
+        this.resultsTarget.classList.add('show');
+        this.resultsTarget.style.position = 'absolute';
+        this.resultsTarget.style.zIndex = '1000';
+        this.resultsTarget.style.minWidth = '100%';
     }
 
     _close() {
