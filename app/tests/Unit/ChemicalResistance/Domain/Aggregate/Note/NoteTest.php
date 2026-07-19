@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Note;
 
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\Shared\Infrastructure\Exception\AppException;
+use Webmozart\Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,13 +19,13 @@ final class NoteTest extends TestCase
 
     public function testTitleTooLong(): void
     {
-        $this->expectException(AppException::class);
+        $this->expectException(InvalidArgumentException::class);
         new Note(Uuid::v4(), str_repeat('a', 201), 'desc');
     }
 
     public function testDescriptionTooLong(): void
     {
-        $this->expectException(AppException::class);
+        $this->expectException(InvalidArgumentException::class);
         new Note(Uuid::v4(), 'title', str_repeat('a', 2001));
     }
 }

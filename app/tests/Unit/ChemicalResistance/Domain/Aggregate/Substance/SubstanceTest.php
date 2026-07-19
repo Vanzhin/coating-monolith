@@ -10,6 +10,7 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
+use Webmozart\Assert\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -121,16 +122,14 @@ final class SubstanceTest extends TestCase
 
     public function testCanonicalNameTooLongThrows(): void
     {
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('Название вещества не может быть длиннее 200 символов.');
+        $this->expectException(InvalidArgumentException::class);
         $longName = str_repeat('a', 201);
         new Substance(Uuid::v4(), $longName, null, new StringCollection(), $this->noopSpec());
     }
 
     public function testAliasTooLongThrows(): void
     {
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('Псевдоним вещества не может быть длиннее 200 символов.');
+        $this->expectException(InvalidArgumentException::class);
         $longAlias = str_repeat('b', 201);
         new Substance(Uuid::v4(), 'Water', null, new StringCollection($longAlias), $this->noopSpec());
     }

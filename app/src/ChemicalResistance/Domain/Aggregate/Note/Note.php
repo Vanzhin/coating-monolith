@@ -4,9 +4,7 @@ namespace App\ChemicalResistance\Domain\Aggregate\Note;
 
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
-use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
-use Webmozart\Assert\InvalidArgumentException;
 
 class Note extends Aggregate
 {
@@ -27,21 +25,13 @@ class Note extends Aggregate
 
     public function setTitle(string $title): void
     {
-        try {
-            AssertService::maxLength($title, 200);
-        } catch (InvalidArgumentException $e) {
-            throw new AppException('Название не может быть длиннее 200 символов.');
-        }
+        AssertService::maxLength($title, 200);
         $this->title = $title;
     }
 
     public function setDescription(string $description): void
     {
-        try {
-            AssertService::maxLength($description, 2000);
-        } catch (InvalidArgumentException $e) {
-            throw new AppException('Описание не может быть длиннее 2000 символов.');
-        }
+        AssertService::maxLength($description, 2000);
         $this->description = $description;
     }
 }

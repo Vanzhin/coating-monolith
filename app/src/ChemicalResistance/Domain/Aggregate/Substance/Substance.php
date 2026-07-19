@@ -9,7 +9,6 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
-use Webmozart\Assert\InvalidArgumentException;
 
 class Substance extends Aggregate
 {
@@ -54,11 +53,7 @@ class Substance extends Aggregate
         if ($name === '') {
             throw new AppException('Название вещества не может быть пустым.');
         }
-        try {
-            AssertService::maxLength($name, 200);
-        } catch (InvalidArgumentException) {
-            throw new AppException('Название вещества не может быть длиннее 200 символов.');
-        }
+        AssertService::maxLength($name, 200);
         $this->canonicalName = $name;
         $this->canonicalNameKey = SubstanceNameNormalizer::normalize($name);
         $this->specification->uniqueName->satisfy($this);
@@ -76,11 +71,7 @@ class Substance extends Aggregate
         if ($alias === '') {
             return;
         }
-        try {
-            AssertService::maxLength($alias, 200);
-        } catch (InvalidArgumentException) {
-            throw new AppException('Псевдоним вещества не может быть длиннее 200 символов.');
-        }
+        AssertService::maxLength($alias, 200);
         $key = SubstanceNameNormalizer::normalize($alias);
         if ($key === $this->canonicalNameKey) {
             return;
