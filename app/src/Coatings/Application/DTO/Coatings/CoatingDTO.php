@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\Coatings;
 
+use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
@@ -53,4 +54,7 @@ class CoatingDTO
 
     /** @var CoatingTagDTO[] */
     public array $tags;
+
+    /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */
+    public array $matchedSubstances = [];
 }
