@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment;
 
-final readonly class CreateAssessmentCommand
+final readonly class CreateAssessmentCommand implements \App\Shared\Application\Command\CommandInterface
 {
     /** @param list<string> $noteIds */
     public function __construct(

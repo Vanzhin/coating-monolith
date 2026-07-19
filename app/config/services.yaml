@@ -41,6 +41,7 @@ services:
 
     App\Shared\Domain\Specification\SpecificationInterface:
       public: true
+      tags: ['app.specification']
 
   App\*\Domain\Factory\:
     namespace: App\
@@ -136,12 +137,12 @@ services:
         basicAuthentication: [ '%env(ELASTIC_USERNAME)%', '%env(ELASTIC_PASSWORD)%' ]
         sslVerification: false
 
-  App\ChemicalResistance\Domain\Repository\NoteRepository:
-    alias: App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository
-  App\ChemicalResistance\Domain\Repository\SubstanceRepository:
-    alias: App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository
-  App\ChemicalResistance\Domain\Repository\AssessmentRepository:
-    alias: App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository
+  App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
+    alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository
+  App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface:
+    alias: App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository
+  App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface:
+    alias: App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository
 
   #Валидатор почты
   App\Users\Infrastructure\Service\Validation\EmailListValidator:

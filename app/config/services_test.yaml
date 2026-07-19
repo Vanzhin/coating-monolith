@@ -9,11 +9,11 @@ services:
   App\Coatings\Infrastructure\Search\CoatingTagFinder:
     public: true
 
-  App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository:
+  App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository:
     public: true
-  App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository:
+  App\ChemicalResistance\Infrastructure\Repository\NoteRepository:
     public: true
-  App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository:
+  App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository:
     public: true
 
   App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommandHandler:

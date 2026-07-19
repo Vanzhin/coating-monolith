@@ -2,12 +2,13 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete;
 
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\DTO\SubstanceDTO;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQuery;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -16,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
 final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
 {
     private SubstanceAutocompleteQueryHandler $handler;
-    private DoctrineSubstanceRepository $substanceRepo;
+    private SubstanceRepository $substanceRepo;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -27,7 +28,7 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
         self::bootKernel();
         $c = static::getContainer();
         $this->handler       = $c->get(SubstanceAutocompleteQueryHandler::class);
-        $this->substanceRepo = $c->get(DoctrineSubstanceRepository::class);
+        $this->substanceRepo = $c->get(SubstanceRepository::class);
         $this->em            = $c->get(EntityManagerInterface::class);
     }
 
@@ -66,9 +67,9 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
             $canonicalName,
             $casObj,
             $aliasCollection,
-            $this->substanceRepo->makeSpec(),
+            self::getContainer()->get(SubstanceSpecification::class),
         );
-        $this->substanceRepo->save($substance);
+        $this->substanceRepo->add($substance);
         $this->createdSubstanceIds[] = $id;
         $this->em->clear();
         return $id;
@@ -166,9 +167,9 @@ final class SubstanceAutocompleteQueryHandlerTest extends KernelTestCase
                 'Вещество-' . $i,
                 null,
                 new StringCollection(),
-                $this->substanceRepo->makeSpec(),
+                self::getContainer()->get(SubstanceSpecification::class),
             );
-            $this->substanceRepo->save($substance);
+            $this->substanceRepo->add($substance);
             $ids[] = $id;
         }
         $this->em->clear();

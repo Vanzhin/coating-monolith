@@ -3,7 +3,6 @@ declare(strict_types=1);
 namespace App\ChemicalResistance\Domain\Aggregate\Assessment;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
@@ -13,13 +12,19 @@ class Assessment extends Aggregate
     public readonly Uuid $id;
     private Uuid $coatingId;
     private Uuid $substanceId;
-    /** Backing field stored as string in DB; getter returns Grade enum. */
+    /** Backing scalar; getter returns Grade enum. */
     private string $grade;
-    /** Backing field stored as smallint in DB; getter returns AssessmentTemperature VO. */
+    /** Backing scalar; getter returns AssessmentTemperature VO. */
     private int $maxTemperatureCelsius;
     private StringCollection $noteIds;
-    private ?AssessmentSpecification $specification = null;
-    private ?NoteRepository $notesForConsistency = null;
+
+    /**
+     * Инжектится через InitSpecificationOnPostLoadListener на postLoad
+     * или через конструктор при создании новой оценки. Хранит только
+     * ссылку на bag со специализациями — репозитории живут внутри самих
+     * специализаций.
+     */
+    private AssessmentSpecification $specification;
 
     public function __construct(
         Uuid $id,
@@ -28,31 +33,17 @@ class Assessment extends Aggregate
         Grade $grade,
         ?AssessmentTemperature $maxTemperature,
         StringCollection $noteIds,
-        ?AssessmentSpecification $specification = null,
-        ?NoteRepository $notesForConsistency = null,
+        AssessmentSpecification $specification,
     ) {
         $this->id = $id;
         $this->coatingId = $coatingId;
         $this->substanceId = $substanceId;
         $this->specification = $specification;
-        $this->notesForConsistency = $notesForConsistency;
 
         $this->grade = $grade->value;
         $this->maxTemperatureCelsius = ($maxTemperature ?? AssessmentTemperature::default())->celsius;
         $this->setNoteIds($noteIds);
-        if (isset($this->specification)) {
-            $this->specification->uniqueCoatingSubstance->satisfy($this);
-        }
-    }
-
-    public function setSpecification(AssessmentSpecification $spec): void
-    {
-        $this->specification = $spec;
-    }
-
-    public function setNotesRepositoryForConsistency(NoteRepository $notes): void
-    {
-        $this->notesForConsistency = $notes;
+        $this->specification->uniqueCoatingSubstance->satisfy($this);
     }
 
     public function getId(): string { return $this->id->toRfc4122(); }
@@ -72,17 +63,9 @@ class Assessment extends Aggregate
         $this->maxTemperatureCelsius = $t->celsius;
     }
 
-    /**
-     * Replaces the note IDs collection. Consistency validation (all referenced note IDs must
-     * exist in the repository) is performed only when both $specification and
-     * $notesForConsistency are set. On a hydrated Assessment, callers must invoke
-     * setNotesRepositoryForConsistency() before calling this method to ensure validation runs.
-     */
     public function setNoteIds(StringCollection $ids): void
     {
-        if (isset($this->specification) && isset($this->notesForConsistency)) {
-            $this->specification->notesConsistency->validate($ids, $this->notesForConsistency);
-        }
+        $this->specification->notesConsistency->validate($ids);
         $this->noteIds = $ids;
     }
 }

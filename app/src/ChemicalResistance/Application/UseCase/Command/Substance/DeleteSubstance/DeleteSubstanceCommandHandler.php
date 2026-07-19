@@ -2,17 +2,17 @@
 declare(strict_types=1);
 namespace App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance;
 
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
 final class DeleteSubstanceCommandHandler
 {
-    public function __construct(private SubstanceRepository $repo) {}
+    public function __construct(private SubstanceRepositoryInterface $repo) {}
 
     public function __invoke(DeleteSubstanceCommand $c): void
     {
-        $sub = $this->repo->find(Uuid::fromString($c->id))
+        $sub = $this->repo->findOneById($c->id)
             ?? throw new AppException('Вещество не найдено.');
         try {
             $this->repo->remove($sub);

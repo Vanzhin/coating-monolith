@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\ChemicalResistance\Search;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,8 +20,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class SearchIntegrationTest extends KernelTestCase
 {
-    private DoctrineSubstanceRepository $substanceRepo;
-    private DoctrineAssessmentRepository $assessmentRepo;
+    private SubstanceRepository $substanceRepo;
+    private AssessmentRepository $assessmentRepo;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -31,8 +33,8 @@ final class SearchIntegrationTest extends KernelTestCase
     {
         self::bootKernel();
         $c = static::getContainer();
-        $this->substanceRepo  = $c->get(DoctrineSubstanceRepository::class);
-        $this->assessmentRepo = $c->get(DoctrineAssessmentRepository::class);
+        $this->substanceRepo  = $c->get(SubstanceRepository::class);
+        $this->assessmentRepo = $c->get(AssessmentRepository::class);
         $this->em             = $c->get(EntityManagerInterface::class);
     }
 
@@ -85,9 +87,9 @@ final class SearchIntegrationTest extends KernelTestCase
             'Вода-' . $suffix,
             null,
             new StringCollection('Water'),
-            $this->substanceRepo->makeSpec(),
+            self::getContainer()->get(SubstanceSpecification::class),
         );
-        $this->substanceRepo->save($sub);
+        $this->substanceRepo->add($sub);
         $this->substanceIds[] = $substanceId;
 
         $assessmentId = Uuid::v4();
@@ -98,10 +100,10 @@ final class SearchIntegrationTest extends KernelTestCase
             Grade::R,
             AssessmentTemperature::fromInt(40),
             new StringCollection(),
-            $this->assessmentRepo->makeSpec(),
+            self::getContainer()->get(AssessmentSpecification::class),
             null,
         );
-        $this->assessmentRepo->save($assessment);
+        $this->assessmentRepo->add($assessment);
         $this->assessmentIds[] = $assessmentId;
 
         $this->em->clear();
@@ -251,9 +253,9 @@ final class SearchIntegrationTest extends KernelTestCase
             'ВодаСупр-' . $suffix,
             null,
             new StringCollection('WaterSuppr'),
-            $this->substanceRepo->makeSpec(),
+            self::getContainer()->get(SubstanceSpecification::class),
         );
-        $this->substanceRepo->save($sub);
+        $this->substanceRepo->add($sub);
         $this->substanceIds[] = $substanceId;
         $this->em->clear();
 

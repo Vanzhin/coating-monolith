@@ -7,7 +7,7 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpe
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueCasSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueSubstanceNameSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +17,7 @@ final class SubstanceTest extends TestCase
 {
     private function noopSpec(): SubstanceSpecification
     {
-        $repo = $this->createMock(SubstanceRepository::class);
+        $repo = $this->createMock(SubstanceRepositoryInterface::class);
         $repo->method('findByCanonicalNameKey')->willReturn(null);
         $repo->method('findByCas')->willReturn(null);
         return new SubstanceSpecification(
@@ -28,7 +28,7 @@ final class SubstanceTest extends TestCase
 
     private function conflictingByNameSpec(string $conflictCanonical): SubstanceSpecification
     {
-        $repo = $this->createMock(SubstanceRepository::class);
+        $repo = $this->createMock(SubstanceRepositoryInterface::class);
         $conflictingId = Uuid::v4();
         $repo->method('findByCanonicalNameKey')->willReturn(
             new Substance($conflictingId, $conflictCanonical, null, new StringCollection(),
@@ -43,7 +43,7 @@ final class SubstanceTest extends TestCase
 
     private function conflictingByCasSpec(CasNumber $conflictCas): SubstanceSpecification
     {
-        $repo = $this->createMock(SubstanceRepository::class);
+        $repo = $this->createMock(SubstanceRepositoryInterface::class);
         $conflictingId = Uuid::v4();
         $repo->method('findByCanonicalNameKey')->willReturn(null);
         $repo->method('findByCas')->willReturn(

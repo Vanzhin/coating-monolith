@@ -6,11 +6,11 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\Shared\Domain\Repository\PaginationResult;
 use Symfony\Component\Uid\Uuid;
 
-interface AssessmentRepository
+interface AssessmentRepositoryInterface
 {
-    public function save(Assessment $a): void;
+    public function add(Assessment $a): void;
     public function remove(Assessment $a): void;
-    public function find(Uuid $id): ?Assessment;
+    public function findOneById(string $id): ?Assessment;
     public function findByCoatingAndSubstance(Uuid $coatingId, Uuid $substanceId): ?Assessment;
     /** @return list<Assessment> */
     public function findAllByCoating(Uuid $coatingId): array;

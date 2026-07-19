@@ -4,65 +4,48 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventListener\Doctrine;
 
-use App\Coatings\Domain\Aggregate\Coating\Coating;
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
-use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
-use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
-use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
-use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfoItem;
-use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoItemSpecification;
-use App\Proposals\Domain\Aggregate\Proposal\Specification\GeneralProposalInfoSpecification;
 use App\Shared\Domain\Specification\SpecificationInterface;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostLoadEventArgs;
 use Doctrine\ORM\Events;
-use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use Psr\Container\ContainerInterface;
+use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 
+/**
+ * После hydration Doctrine инициализирует все свойства-Specification агрегата
+ * из service-locator (собран через #[AutowireLocator] по тегу
+ * SpecificationInterface). Новые контексты подтягиваются автоматически —
+ * достаточно чтобы Specification-класс имплементировал SpecificationInterface.
+ */
 #[AsDoctrineListener(event: Events::postLoad)]
 final readonly class InitSpecificationOnPostLoadListener
 {
-    // todo надо сделать один на все сущности, но ContainerBagInterface $container не видит спецификацию в параметрах
-    public function __construct(private ContainerBagInterface                $container,
-                                private ManufacturerSpecification            $manufacturerSpecification,
-                                private CoatingSpecification                 $coatingSpecification,
-                                private GeneralProposalInfoItemSpecification $generalProposalInfoItemSpecification,
-                                private GeneralProposalInfoSpecification     $generalProposalInfoSpecification,
-    )
-    {
+    public function __construct(
+        #[AutowireLocator('app.specification', defaultIndexMethod: null)]
+        private ContainerInterface $specifications,
+    ) {
     }
 
     public function postLoad(PostLoadEventArgs $args): void
     {
         $entity = $args->getObject();
-
         $reflect = new \ReflectionClass($entity);
 
         foreach ($reflect->getProperties() as $property) {
             $type = $property->getType();
-
-            if (is_null($type) || $property->isInitialized($entity)) {
+            if ($type === null || $property->isInitialized($entity)) {
+                continue;
+            }
+            if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {
                 continue;
             }
 
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                // initialize specifications
-                $interfaces = class_implements($type->getName());
-                if (isset($interfaces[SpecificationInterface::class])) {
-//                    $property->setValue($entity, $this->container->get($type->getName()));
-                    $property->setValue($entity, $this->match($entity));
-
-                }
+            $className = $type->getName();
+            if (!$this->specifications->has($className)) {
+                continue;
             }
-        }
-    }
 
-    private function match(object $entity): SpecificationInterface
-    {
-        return match ($entity::class) {
-            Manufacturer::class => $this->manufacturerSpecification,
-            Coating::class => $this->coatingSpecification,
-            GeneralProposalInfoItem::class => $this->generalProposalInfoItemSpecification,
-            GeneralProposalInfo::class => $this->generalProposalInfoSpecification,
-        };
+            $property->setValue($entity, $this->specifications->get($className));
+        }
     }
 }

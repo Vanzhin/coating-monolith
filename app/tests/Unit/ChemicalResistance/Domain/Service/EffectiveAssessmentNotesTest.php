@@ -4,7 +4,7 @@ namespace App\Tests\Unit\ChemicalResistance\Domain\Service;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +17,7 @@ final class EffectiveAssessmentNotesTest extends TestCase
         $n1 = new Note(Uuid::v4(), 'Прим. 1', 'text1');
         $n2 = new Note(Uuid::v4(), 'Прим. 4', 'text4');
 
-        $notes = $this->createMock(NoteRepository::class);
+        $notes = $this->createMock(NoteRepositoryInterface::class);
         $notes->method('findAllByIds')
             ->with([$n1->getId(), $n2->getId()])
             ->willReturn([$n1, $n2]);

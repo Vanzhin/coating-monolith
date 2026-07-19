@@ -2,83 +2,56 @@
 declare(strict_types=1);
 namespace App\ChemicalResistance\Infrastructure\Repository;
 
+use App\ChemicalResistance\Application\DTO\SubstanceDTO;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueCasSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueSubstanceNameSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\SubstancesFilter;
 use App\Shared\Domain\Repository\PaginationResult;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ParameterType;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Uid\Uuid;
+use Doctrine\Persistence\ManagerRegistry;
 
-final class DoctrineSubstanceRepository implements SubstanceRepository
+class SubstanceRepository extends ServiceEntityRepository implements SubstanceRepositoryInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em) {}
-
-    public function makeSpec(): SubstanceSpecification
+    public function __construct(ManagerRegistry $registry)
     {
-        return new SubstanceSpecification(
-            new UniqueSubstanceNameSpecification($this),
-            new UniqueCasSpecification($this),
-        );
+        parent::__construct($registry, Substance::class);
     }
 
-    public function save(Substance $s): void
+    public function add(Substance $s): void
     {
-        $this->em->persist($s);
-        $this->em->flush();
+        $this->getEntityManager()->persist($s);
+        $this->getEntityManager()->flush();
     }
 
     public function remove(Substance $s): void
     {
-        $this->em->remove($s);
-        $this->em->flush();
+        $this->getEntityManager()->remove($s);
+        $this->getEntityManager()->flush();
     }
 
-    public function find(Uuid $id): ?Substance
+    public function findOneById(string $id): ?Substance
     {
-        $s = $this->em->find(Substance::class, $id);
-        if ($s !== null) {
-            $s->setSpecification($this->makeSpec());
-        }
-        return $s;
+        return $this->find($id);
     }
 
     public function findByCanonicalNameKey(string $key): ?Substance
     {
-        /** @var ?Substance $s */
-        $s = $this->em->createQueryBuilder()
-            ->select('s')
-            ->from(Substance::class, 's')
+        return $this->createQueryBuilder('s')
             ->where('s.canonicalNameKey = :key')
             ->setParameter('key', $key)
             ->getQuery()
             ->getOneOrNullResult();
-
-        if ($s !== null) {
-            $s->setSpecification($this->makeSpec());
-        }
-        return $s;
     }
 
     public function findByCas(CasNumber $cas): ?Substance
     {
-        /** @var ?Substance $s */
-        $s = $this->em->createQueryBuilder()
-            ->select('s')
-            ->from(Substance::class, 's')
+        return $this->createQueryBuilder('s')
             ->where('s.cas = :cas')
             ->setParameter('cas', $cas->value)
             ->getQuery()
             ->getOneOrNullResult();
-
-        if ($s !== null) {
-            $s->setSpecification($this->makeSpec());
-        }
-        return $s;
     }
 
     /**
@@ -90,24 +63,17 @@ final class DoctrineSubstanceRepository implements SubstanceRepository
         if ($ids === []) {
             return [];
         }
-
         /** @var list<Substance> $substances */
-        $substances = $this->em->createQueryBuilder()
-            ->select('s')
-            ->from(Substance::class, 's')
+        $substances = $this->createQueryBuilder('s')
             ->where('s.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
             ->getResult();
 
-        $spec = $this->makeSpec();
-        /** @var array<string, Substance> $byId */
         $byId = [];
         foreach ($substances as $s) {
-            $s->setSpecification($spec);
             $byId[$s->getId()] = $s;
         }
-
         $ordered = [];
         foreach ($ids as $id) {
             if (isset($byId[$id])) {
@@ -119,7 +85,7 @@ final class DoctrineSubstanceRepository implements SubstanceRepository
 
     public function findByFilter(SubstancesFilter $filter): PaginationResult
     {
-        $conn = $this->em->getConnection();
+        $conn = $this->getEntityManager()->getConnection();
 
         $where = '1=1';
         $params = [];
@@ -133,8 +99,11 @@ final class DoctrineSubstanceRepository implements SubstanceRepository
             $params['search'] = $like;
         }
 
-        $countSql = "SELECT COUNT(*) FROM chemical_resistance_substance s WHERE {$where}";
-        $total = (int) $conn->fetchOne($countSql, $params, $types);
+        $total = (int) $conn->fetchOne(
+            "SELECT COUNT(*) FROM chemical_resistance_substance s WHERE {$where}",
+            $params,
+            $types,
+        );
 
         $dataSql = "SELECT s.id::text AS id, s.canonical_name, s.cas, s.aliases::text AS aliases
                     FROM chemical_resistance_substance s
@@ -151,7 +120,7 @@ final class DoctrineSubstanceRepository implements SubstanceRepository
 
         $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
 
-        $items = array_map(fn(array $r) => new \App\ChemicalResistance\Application\DTO\SubstanceDTO(
+        $items = array_map(fn(array $r) => new SubstanceDTO(
             id: $r['id'],
             canonicalName: $r['canonical_name'],
             cas: $r['cas'],

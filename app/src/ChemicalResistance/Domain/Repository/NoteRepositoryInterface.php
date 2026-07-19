@@ -4,13 +4,12 @@ namespace App\ChemicalResistance\Domain\Repository;
 
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\Shared\Domain\Repository\PaginationResult;
-use Symfony\Component\Uid\Uuid;
 
-interface NoteRepository
+interface NoteRepositoryInterface
 {
-    public function save(Note $note): void;
+    public function add(Note $note): void;
     public function remove(Note $note): void;
-    public function find(Uuid $id): ?Note;
+    public function findOneById(string $id): ?Note;
 
     /**
      * @param list<string> $ids UUIDs as strings

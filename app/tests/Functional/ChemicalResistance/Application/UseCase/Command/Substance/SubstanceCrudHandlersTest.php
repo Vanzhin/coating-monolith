@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Command\Substance;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommand;
@@ -12,9 +13,9 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,7 +27,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
     private CreateSubstanceCommandHandler $create;
     private UpdateSubstanceCommandHandler $update;
     private DeleteSubstanceCommandHandler $delete;
-    private DoctrineSubstanceRepository $substances;
+    private SubstanceRepository $substances;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -41,7 +42,7 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $this->create    = $c->get(CreateSubstanceCommandHandler::class);
         $this->update    = $c->get(UpdateSubstanceCommandHandler::class);
         $this->delete    = $c->get(DeleteSubstanceCommandHandler::class);
-        $this->substances = $c->get(DoctrineSubstanceRepository::class);
+        $this->substances = $c->get(SubstanceRepository::class);
         $this->em        = $c->get(EntityManagerInterface::class);
     }
 
@@ -156,8 +157,8 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $substanceUuid = Uuid::fromString($id);
         $this->createdSubstanceIds[] = $substanceUuid;
 
-        $assessments = static::getContainer()->get(DoctrineAssessmentRepository::class);
-        $noteRepo = static::getContainer()->get(DoctrineNoteRepository::class);
+        $assessments = static::getContainer()->get(AssessmentRepository::class);
+        $noteRepo = static::getContainer()->get(NoteRepository::class);
         $assessmentId = Uuid::v4();
         $this->createdAssessmentIds[] = $assessmentId;
         $assessment = new Assessment(
@@ -167,10 +168,10 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
             Grade::R,
             AssessmentTemperature::fromInt(20),
             new StringCollection(),
-            $assessments->makeSpec(),
+            self::getContainer()->get(AssessmentSpecification::class),
             $noteRepo,
         );
-        $assessments->save($assessment);
+        $assessments->add($assessment);
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/оценках/');

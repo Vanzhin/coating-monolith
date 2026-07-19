@@ -4,18 +4,18 @@ namespace App\ChemicalResistance\Application\UseCase\Command\Assessment\UpdateAs
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
 final class UpdateAssessmentCommandHandler
 {
-    public function __construct(private AssessmentRepository $assessments) {}
+    public function __construct(private AssessmentRepositoryInterface $assessments) {}
 
     public function __invoke(UpdateAssessmentCommand $c): void
     {
-        $a = $this->assessments->find(Uuid::fromString($c->id))
+        $a = $this->assessments->findOneById($c->id)
             ?? throw new AppException('Оценка не найдена.');
 
         $a->setGrade(Grade::from($c->grade));
@@ -25,6 +25,6 @@ final class UpdateAssessmentCommandHandler
                 : AssessmentTemperature::default(),
         );
         $a->setNoteIds(new StringCollection(...$c->noteIds));
-        $this->assessments->save($a);
+        $this->assessments->add($a);
     }
 }

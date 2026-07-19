@@ -5,12 +5,10 @@ namespace App\ChemicalResistance\Application\Service;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentNotesConsistencyValidator;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\UniqueCoatingSubstanceAssessmentSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Infrastructure\Docx\DocxParseResult;
 use App\ChemicalResistance\Infrastructure\Docx\GradeCellParser;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -21,9 +19,10 @@ final class ChemicalResistanceImporter
 {
     public function __construct(
         private SubstanceLookup $lookup,
-        private NoteRepository $notes,
-        private AssessmentRepository $assessments,
+        private NoteRepositoryInterface $notes,
+        private AssessmentRepositoryInterface $assessments,
         private GradeCellParser $gradeParser,
+        private AssessmentSpecification $specification,
     ) {}
 
     public function import(DocxParseResult $parsed, Uuid $coatingId, ImportOptions $opts): ImportReport
@@ -42,7 +41,7 @@ final class ChemicalResistanceImporter
         foreach ($parsed->notes as $pn) {
             $note = new Note(Uuid::v4(), $pn->title, $pn->description);
             if (!$opts->dryRun) {
-                $this->notes->save($note);
+                $this->notes->add($note);
             }
             $labelToId[$pn->label] = $note->getId();
             $notesCreated++;
@@ -100,18 +99,20 @@ final class ChemicalResistanceImporter
             }
 
             if ($existing !== null) {
-                // Overwrite: update in place.
+                $assUpdated++;
+                if ($opts->dryRun) {
+                    continue;
+                }
+                // Spec injected на postLoad — setNoteIds сам провалидирует.
                 $existing->setGrade(Grade::from($g->grade));
                 $existing->setMaxTemperature($maxTemp);
-                $existing->setNotesRepositoryForConsistency($this->notes);
                 $existing->setNoteIds($noteIds);
-                if (!$opts->dryRun) {
-                    $this->assessments->save($existing);
-                }
-                $assUpdated++;
+                $this->assessments->add($existing);
             } else {
-                // In dry-run mode skip DB-backed validations: notes aren't persisted yet,
-                // and uniqueness is moot since nothing will be written.
+                $assCreated++;
+                if ($opts->dryRun) {
+                    continue;
+                }
                 $a = new Assessment(
                     Uuid::v4(),
                     $coatingId,
@@ -119,16 +120,9 @@ final class ChemicalResistanceImporter
                     Grade::from($g->grade),
                     $maxTemp,
                     $noteIds,
-                    $opts->dryRun ? null : new AssessmentSpecification(
-                        new UniqueCoatingSubstanceAssessmentSpecification($this->assessments),
-                        new AssessmentNotesConsistencyValidator(),
-                    ),
-                    $opts->dryRun ? null : $this->notes,
+                    $this->specification,
                 );
-                if (!$opts->dryRun) {
-                    $this->assessments->save($a);
-                }
-                $assCreated++;
+                $this->assessments->add($a);
             }
         }
 

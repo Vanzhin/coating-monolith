@@ -5,19 +5,16 @@ namespace App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAs
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentNotesConsistencyValidator;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\UniqueCoatingSubstanceAssessmentSpecification;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateAssessmentCommandHandler
 {
     public function __construct(
-        private AssessmentRepository $assessments,
-        private NoteRepository $notes,
+        private AssessmentRepositoryInterface $assessments,
+        private AssessmentSpecification $specification,
     ) {}
 
     public function __invoke(CreateAssessmentCommand $c): string
@@ -32,18 +29,9 @@ final class CreateAssessmentCommandHandler
             Grade::from($c->grade),
             $maxTemp,
             new StringCollection(...$c->noteIds),
-            $this->makeSpec(),
-            $this->notes,
+            $this->specification,
         );
-        $this->assessments->save($a);
+        $this->assessments->add($a);
         return $a->getId();
-    }
-
-    private function makeSpec(): AssessmentSpecification
-    {
-        return new AssessmentSpecification(
-            new UniqueCoatingSubstanceAssessmentSpecification($this->assessments),
-            new AssessmentNotesConsistencyValidator(),
-        );
     }
 }

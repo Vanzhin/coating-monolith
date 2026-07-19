@@ -2,7 +2,9 @@
 declare(strict_types=1);
 namespace App\ChemicalResistance\Domain\Aggregate\Assessment\Specification;
 
-final readonly class AssessmentSpecification
+use App\Shared\Domain\Specification\SpecificationInterface;
+
+final readonly class AssessmentSpecification implements SpecificationInterface
 {
     public function __construct(
         public UniqueCoatingSubstanceAssessmentSpecification $uniqueCoatingSubstance,

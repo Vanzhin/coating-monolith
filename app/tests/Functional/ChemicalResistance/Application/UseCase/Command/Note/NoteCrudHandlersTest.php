@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Command\Note;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Note\CreateNote\CreateNoteCommandHandler;
 use App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote\DeleteNoteCommand;
@@ -14,10 +16,10 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +31,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
     private CreateNoteCommandHandler $create;
     private UpdateNoteCommandHandler $update;
     private DeleteNoteCommandHandler $delete;
-    private NoteRepository $notes;
+    private NoteRepositoryInterface $notes;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -46,7 +48,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $this->create = $c->get(CreateNoteCommandHandler::class);
         $this->update = $c->get(UpdateNoteCommandHandler::class);
         $this->delete = $c->get(DeleteNoteCommandHandler::class);
-        $this->notes  = $c->get(DoctrineNoteRepository::class);
+        $this->notes  = $c->get(NoteRepository::class);
         $this->em     = $c->get(EntityManagerInterface::class);
     }
 
@@ -87,21 +89,21 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $id = ($this->create)(new CreateNoteCommand('T1', 'D1'));
         $this->createdNoteIds[] = Uuid::fromString($id);
 
-        $loaded = $this->notes->find(Uuid::fromString($id));
+        $loaded = $this->notes->findOneById($id);
         self::assertNotNull($loaded);
         self::assertSame('T1', $loaded->getTitle());
         self::assertSame('D1', $loaded->getDescription());
 
         ($this->update)(new UpdateNoteCommand($id, 'T2', 'D2'));
         $this->em->clear();
-        $updated = $this->notes->find(Uuid::fromString($id));
+        $updated = $this->notes->findOneById($id);
         self::assertNotNull($updated);
         self::assertSame('T2', $updated->getTitle());
         self::assertSame('D2', $updated->getDescription());
 
         ($this->delete)(new DeleteNoteCommand($id));
         $this->em->clear();
-        self::assertNull($this->notes->find(Uuid::fromString($id)));
+        self::assertNull($this->notes->findOneById($id));
 
         // Already deleted — remove from cleanup list
         $this->createdNoteIds = [];
@@ -126,7 +128,7 @@ final class NoteCrudHandlersTest extends KernelTestCase
         $this->createdNoteIds[] = $noteUuid;
 
         // Create substance
-        $substances = static::getContainer()->get(DoctrineSubstanceRepository::class);
+        $substances = static::getContainer()->get(SubstanceRepository::class);
         $substanceId = Uuid::v4();
         $this->createdSubstanceIds[] = $substanceId;
         $substance = new Substance(
@@ -134,15 +136,15 @@ final class NoteCrudHandlersTest extends KernelTestCase
             'Вещество-' . $suffix,
             null,
             new StringCollection(),
-            $substances->makeSpec(),
+            self::getContainer()->get(SubstanceSpecification::class),
         );
-        $substances->save($substance);
+        $substances->add($substance);
 
         // Create assessment referencing the note
-        $assessments = static::getContainer()->get(DoctrineAssessmentRepository::class);
+        $assessments = static::getContainer()->get(AssessmentRepository::class);
         $assessmentId = Uuid::v4();
         $this->createdAssessmentIds[] = $assessmentId;
-        $noteRepo = static::getContainer()->get(DoctrineNoteRepository::class);
+        $noteRepo = static::getContainer()->get(NoteRepository::class);
         $assessment = new Assessment(
             $assessmentId,
             $coatingId,
@@ -150,10 +152,10 @@ final class NoteCrudHandlersTest extends KernelTestCase
             Grade::R,
             AssessmentTemperature::fromInt(20),
             new StringCollection($noteId),
-            $assessments->makeSpec(),
+            self::getContainer()->get(AssessmentSpecification::class),
             $noteRepo,
         );
-        $assessments->save($assessment);
+        $assessments->add($assessment);
 
         // Attempt delete — must be blocked
         $this->expectException(AppException::class);

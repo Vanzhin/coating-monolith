@@ -2,21 +2,21 @@
 declare(strict_types=1);
 namespace App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote;
 
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
 final class DeleteNoteCommandHandler
 {
     public function __construct(
-        private NoteRepository $notes,
-        private AssessmentRepository $assessments,
+        private NoteRepositoryInterface $notes,
+        private AssessmentRepositoryInterface $assessments,
     ) {}
 
     public function __invoke(DeleteNoteCommand $c): void
     {
-        $note = $this->notes->find(Uuid::fromString($c->id))
+        $note = $this->notes->findOneById($c->id)
             ?? throw new AppException('Примечание не найдено.');
 
         $used = $this->assessments->countAssessmentsWithNoteId($c->id);

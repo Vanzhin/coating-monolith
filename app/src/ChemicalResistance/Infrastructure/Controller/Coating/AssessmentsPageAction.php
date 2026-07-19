@@ -6,7 +6,7 @@ namespace App\ChemicalResistance\Infrastructure\Controller\Coating;
 
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQuery;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\NotesFilter;
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -27,7 +27,7 @@ final class AssessmentsPageAction extends AbstractController
     public function __construct(
         private readonly QueryBusInterface                  $queryBus,
         private readonly ListCoatingAssessmentsQueryHandler $assessmentsHandler,
-        private readonly NoteRepository                     $notes,
+        private readonly NoteRepositoryInterface                     $notes,
     ) {}
 
     public function __invoke(string $coatingId, Request $req): Response

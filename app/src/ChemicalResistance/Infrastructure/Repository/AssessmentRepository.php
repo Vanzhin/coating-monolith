@@ -3,119 +3,70 @@ declare(strict_types=1);
 namespace App\ChemicalResistance\Infrastructure\Repository;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentNotesConsistencyValidator;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\UniqueCoatingSubstanceAssessmentSpecification;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
 use App\Shared\Domain\Repository\PaginationResult;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineAssessmentRepository implements AssessmentRepository
+class AssessmentRepository extends ServiceEntityRepository implements AssessmentRepositoryInterface
 {
-    public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly NoteRepository $notes,
-    ) {}
-
-    public function makeSpec(): AssessmentSpecification
+    public function __construct(ManagerRegistry $registry)
     {
-        return new AssessmentSpecification(
-            new UniqueCoatingSubstanceAssessmentSpecification($this),
-            new AssessmentNotesConsistencyValidator(),
-        );
+        parent::__construct($registry, Assessment::class);
     }
 
-    private function reinject(Assessment $a): void
+    public function add(Assessment $a): void
     {
-        $a->setSpecification($this->makeSpec());
-        $a->setNotesRepositoryForConsistency($this->notes);
-    }
-
-    public function save(Assessment $a): void
-    {
-        $this->em->persist($a);
-        $this->em->flush();
+        $this->getEntityManager()->persist($a);
+        $this->getEntityManager()->flush();
     }
 
     public function remove(Assessment $a): void
     {
-        $this->em->remove($a);
-        $this->em->flush();
+        $this->getEntityManager()->remove($a);
+        $this->getEntityManager()->flush();
     }
 
-    public function find(Uuid $id): ?Assessment
+    public function findOneById(string $id): ?Assessment
     {
-        $a = $this->em->find(Assessment::class, $id);
-        if ($a !== null) {
-            $this->reinject($a);
-        }
-        return $a;
+        return $this->find($id);
     }
 
     public function findByCoatingAndSubstance(Uuid $coatingId, Uuid $substanceId): ?Assessment
     {
-        /** @var ?Assessment $a */
-        $a = $this->em->createQueryBuilder()
-            ->select('a')
-            ->from(Assessment::class, 'a')
+        return $this->createQueryBuilder('a')
             ->where('a.coatingId = :coatingId')
             ->andWhere('a.substanceId = :substanceId')
             ->setParameter('coatingId', $coatingId->toRfc4122())
             ->setParameter('substanceId', $substanceId->toRfc4122())
             ->getQuery()
             ->getOneOrNullResult();
-
-        if ($a !== null) {
-            $this->reinject($a);
-        }
-        return $a;
     }
 
-    /**
-     * @return list<Assessment>
-     */
+    /** @return list<Assessment> */
     public function findAllByCoating(Uuid $coatingId): array
     {
-        /** @var list<Assessment> $assessments */
-        $assessments = $this->em->createQueryBuilder()
-            ->select('a')
-            ->from(Assessment::class, 'a')
+        return $this->createQueryBuilder('a')
             ->where('a.coatingId = :coatingId')
             ->setParameter('coatingId', $coatingId->toRfc4122())
             ->getQuery()
             ->getResult();
-
-        foreach ($assessments as $a) {
-            $this->reinject($a);
-        }
-        return $assessments;
     }
 
-    /**
-     * @return list<Assessment>
-     */
+    /** @return list<Assessment> */
     public function findAllBySubstance(Uuid $substanceId): array
     {
-        /** @var list<Assessment> $assessments */
-        $assessments = $this->em->createQueryBuilder()
-            ->select('a')
-            ->from(Assessment::class, 'a')
+        return $this->createQueryBuilder('a')
             ->where('a.substanceId = :substanceId')
             ->setParameter('substanceId', $substanceId->toRfc4122())
             ->getQuery()
             ->getResult();
-
-        foreach ($assessments as $a) {
-            $this->reinject($a);
-        }
-        return $assessments;
     }
 
     public function countAssessmentsWithNoteId(string $noteId): int
     {
-        $count = $this->em->getConnection()->fetchOne(
+        $count = $this->getEntityManager()->getConnection()->fetchOne(
             'SELECT COUNT(*) FROM chemical_resistance_assessment WHERE note_ids @> :id::jsonb',
             ['id' => json_encode([$noteId])],
         );
@@ -124,7 +75,7 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
 
     public function paginateByCoating(Uuid $coatingId, ?string $search, int $page, int $pageSize): PaginationResult
     {
-        $conn   = $this->em->getConnection();
+        $conn   = $this->getEntityManager()->getConnection();
         $cidStr = $coatingId->toRfc4122();
         $offset = ($page - 1) * $pageSize;
 
@@ -145,7 +96,6 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
             $baseParams['search'] = '%' . $search . '%';
         }
 
-        // Total count (no LIMIT/OFFSET).
         $countSql = "
             SELECT COUNT(*)
             FROM chemical_resistance_assessment a
@@ -158,7 +108,6 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
             return new PaginationResult([], 0);
         }
 
-        // Fetch page of IDs ordered by substance name.
         $pageSql = "
             SELECT a.id
             FROM chemical_resistance_assessment a
@@ -178,11 +127,8 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
             return new PaginationResult([], $total);
         }
 
-        // Load Assessment entities, then re-order to match SQL result order.
         /** @var list<Assessment> $unordered */
-        $unordered = $this->em->createQueryBuilder()
-            ->select('a')
-            ->from(Assessment::class, 'a')
+        $unordered = $this->createQueryBuilder('a')
             ->where('a.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
@@ -190,7 +136,6 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
 
         $byId = [];
         foreach ($unordered as $a) {
-            $this->reinject($a);
             $byId[$a->getId()] = $a;
         }
         $items = [];
@@ -206,7 +151,7 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
     /** @return array<string, int> */
     public function countByCoatingGroupedByGrade(Uuid $coatingId): array
     {
-        $rows = $this->em->getConnection()->fetchAllAssociative(
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
             'SELECT grade, COUNT(*) AS cnt
              FROM chemical_resistance_assessment
              WHERE coating_id = :cid

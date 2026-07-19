@@ -2,15 +2,17 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\ChemicalResistance;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,9 +20,9 @@ use Symfony\Component\Uid\Uuid;
 
 final class PersistenceRoundTripTest extends KernelTestCase
 {
-    private DoctrineSubstanceRepository $substances;
-    private DoctrineNoteRepository $notes;
-    private DoctrineAssessmentRepository $assessments;
+    private SubstanceRepository $substances;
+    private NoteRepository $notes;
+    private AssessmentRepository $assessments;
     private EntityManagerInterface $em;
 
     private ?Uuid $substanceId = null;
@@ -31,9 +33,9 @@ final class PersistenceRoundTripTest extends KernelTestCase
     {
         self::bootKernel();
         $container = static::getContainer();
-        $this->substances = $container->get(DoctrineSubstanceRepository::class);
-        $this->notes = $container->get(DoctrineNoteRepository::class);
-        $this->assessments = $container->get(DoctrineAssessmentRepository::class);
+        $this->substances = $container->get(SubstanceRepository::class);
+        $this->notes = $container->get(NoteRepository::class);
+        $this->assessments = $container->get(AssessmentRepository::class);
         $this->em = $container->get(EntityManagerInterface::class);
     }
 
@@ -90,14 +92,14 @@ final class PersistenceRoundTripTest extends KernelTestCase
             'Вода-тест-' . $suffix,
             null,
             new StringCollection('Water', 'H2O'),
-            $this->substances->makeSpec(),
+            self::getContainer()->get(SubstanceSpecification::class),
         );
-        $this->substances->save($sub);
+        $this->substances->add($sub);
 
         // --- Note ---
         $this->noteId = Uuid::v4();
         $note = new Note($this->noteId, 'Изменение цвета', 'Тест-описание-' . $suffix);
-        $this->notes->save($note);
+        $this->notes->add($note);
 
         // --- Assessment ---
         $this->assessmentId = Uuid::v4();
@@ -108,10 +110,10 @@ final class PersistenceRoundTripTest extends KernelTestCase
             Grade::R,
             AssessmentTemperature::fromInt(70),
             new StringCollection($note->getId()),
-            $this->assessments->makeSpec(),
+            self::getContainer()->get(AssessmentSpecification::class),
             $this->notes,
         );
-        $this->assessments->save($assessment);
+        $this->assessments->add($assessment);
 
         // Clear the identity map to force real DB reads.
         $this->em->clear();

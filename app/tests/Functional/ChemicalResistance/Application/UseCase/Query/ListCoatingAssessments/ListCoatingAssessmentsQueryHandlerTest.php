@@ -2,14 +2,16 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQuery;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,8 +20,8 @@ use Symfony\Component\Uid\Uuid;
 final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
 {
     private ListCoatingAssessmentsQueryHandler $handler;
-    private DoctrineAssessmentRepository $assessmentRepo;
-    private DoctrineSubstanceRepository $substanceRepo;
+    private AssessmentRepository $assessmentRepo;
+    private SubstanceRepository $substanceRepo;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -32,8 +34,8 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
         self::bootKernel();
         $c = static::getContainer();
         $this->handler        = $c->get(ListCoatingAssessmentsQueryHandler::class);
-        $this->assessmentRepo = $c->get(DoctrineAssessmentRepository::class);
-        $this->substanceRepo  = $c->get(DoctrineSubstanceRepository::class);
+        $this->assessmentRepo = $c->get(AssessmentRepository::class);
+        $this->substanceRepo  = $c->get(SubstanceRepository::class);
         $this->em             = $c->get(EntityManagerInterface::class);
     }
 
@@ -123,9 +125,9 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
                 $name,
                 null,
                 $aliases,
-                $this->substanceRepo->makeSpec(),
+                self::getContainer()->get(SubstanceSpecification::class),
             );
-            $this->substanceRepo->save($substance);
+            $this->substanceRepo->add($substance);
             $this->createdSubstanceIds[] = $sid;
 
             $aid = Uuid::v4();
@@ -136,10 +138,10 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
                 $grade,
                 AssessmentTemperature::fromInt(40),
                 new StringCollection(),
-                $this->assessmentRepo->makeSpec(),
+                self::getContainer()->get(AssessmentSpecification::class),
                 null,
             );
-            $this->assessmentRepo->save($assessment);
+            $this->assessmentRepo->add($assessment);
             $this->createdAssessmentIds[] = $aid;
         }
 

@@ -3,11 +3,11 @@ declare(strict_types=1);
 namespace App\ChemicalResistance\Domain\Service;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 
 final class EffectiveAssessmentNotes
 {
-    public function __construct(private NoteRepository $notes) {}
+    public function __construct(private NoteRepositoryInterface $notes) {}
 
     /** @return list<NoteView> */
     public function of(Assessment $a): array

@@ -4,16 +4,17 @@ namespace App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSub
 
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueCasSpecification;
-use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueSubstanceNameSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateSubstanceCommandHandler
 {
-    public function __construct(private SubstanceRepository $repo) {}
+    public function __construct(
+        private SubstanceRepositoryInterface $repo,
+        private SubstanceSpecification $specification,
+    ) {}
 
     public function __invoke(CreateSubstanceCommand $c): string
     {
@@ -23,17 +24,9 @@ final class CreateSubstanceCommandHandler
             $c->canonicalName,
             $cas,
             new StringCollection(...$c->aliases),
-            $this->makeSpec(),
+            $this->specification,
         );
-        $this->repo->save($sub);
+        $this->repo->add($sub);
         return $sub->getId();
-    }
-
-    private function makeSpec(): SubstanceSpecification
-    {
-        return new SubstanceSpecification(
-            new UniqueSubstanceNameSpecification($this->repo),
-            new UniqueCasSpecification($this->repo),
-        );
     }
 }

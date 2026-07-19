@@ -10,9 +10,9 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Docx\DocxParseResult;
 use App\ChemicalResistance\Infrastructure\Docx\ParsedNote;
 use App\ChemicalResistance\Infrastructure\Docx\ParsedRow;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineNoteRepository;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineSubstanceRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -20,9 +20,9 @@ use Symfony\Component\Uid\Uuid;
 final class ChemicalResistanceImporterTest extends KernelTestCase
 {
     private ChemicalResistanceImporter $importer;
-    private DoctrineAssessmentRepository $assessmentRepo;
-    private DoctrineNoteRepository $noteRepo;
-    private DoctrineSubstanceRepository $substanceRepo;
+    private AssessmentRepository $assessmentRepo;
+    private NoteRepository $noteRepo;
+    private SubstanceRepository $substanceRepo;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -37,9 +37,9 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
         self::bootKernel();
         $c = static::getContainer();
         $this->importer      = $c->get(ChemicalResistanceImporter::class);
-        $this->assessmentRepo = $c->get(DoctrineAssessmentRepository::class);
-        $this->noteRepo       = $c->get(DoctrineNoteRepository::class);
-        $this->substanceRepo  = $c->get(DoctrineSubstanceRepository::class);
+        $this->assessmentRepo = $c->get(AssessmentRepository::class);
+        $this->noteRepo       = $c->get(NoteRepository::class);
+        $this->substanceRepo  = $c->get(SubstanceRepository::class);
         $this->em             = $c->get(EntityManagerInterface::class);
     }
 

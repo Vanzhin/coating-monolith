@@ -7,14 +7,14 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpe
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueCasSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\UniqueSubstanceNameSpecification;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 final class SubstanceLookup
 {
-    public function __construct(private SubstanceRepository $repo) {}
+    public function __construct(private SubstanceRepositoryInterface $repo) {}
 
     public function findByNormalizedName(string $raw): ?Substance
     {
@@ -32,7 +32,7 @@ final class SubstanceLookup
             if ($existing !== null) {
                 if (!$existing->hasName($raw)) {
                     $existing->addAlias($raw);
-                    if ($persist) { $this->repo->save($existing); }
+                    if ($persist) { $this->repo->add($existing); }
                 }
                 return $existing;
             }
@@ -44,14 +44,14 @@ final class SubstanceLookup
         if ($existing !== null) {
             if (!$existing->hasName($raw)) {
                 $existing->addAlias($raw);
-                if ($persist) { $this->repo->save($existing); }
+                if ($persist) { $this->repo->add($existing); }
             }
             return $existing;
         }
 
         // 3. Create fresh.
         $sub = new Substance(Uuid::v4(), $raw, $cas, new StringCollection(), $this->spec());
-        if ($persist) { $this->repo->save($sub); }
+        if ($persist) { $this->repo->add($sub); }
         return $sub;
     }
 

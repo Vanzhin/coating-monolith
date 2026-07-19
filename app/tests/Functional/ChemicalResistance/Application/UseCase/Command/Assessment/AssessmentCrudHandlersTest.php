@@ -19,7 +19,7 @@ use App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
-use App\ChemicalResistance\Infrastructure\Repository\DoctrineAssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -30,7 +30,7 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
     private CreateAssessmentCommandHandler $create;
     private UpdateAssessmentCommandHandler $update;
     private DeleteAssessmentCommandHandler $delete;
-    private DoctrineAssessmentRepository $assessmentRepo;
+    private AssessmentRepository $assessmentRepo;
     private EntityManagerInterface $em;
 
     /** @var list<Uuid> */
@@ -47,7 +47,7 @@ final class AssessmentCrudHandlersTest extends KernelTestCase
         $this->create         = $c->get(CreateAssessmentCommandHandler::class);
         $this->update         = $c->get(UpdateAssessmentCommandHandler::class);
         $this->delete         = $c->get(DeleteAssessmentCommandHandler::class);
-        $this->assessmentRepo = $c->get(DoctrineAssessmentRepository::class);
+        $this->assessmentRepo = $c->get(AssessmentRepository::class);
         $this->em             = $c->get(EntityManagerInterface::class);
     }
 

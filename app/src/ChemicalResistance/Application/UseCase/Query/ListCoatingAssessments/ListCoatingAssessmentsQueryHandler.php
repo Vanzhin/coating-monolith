@@ -4,8 +4,8 @@ namespace App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessment
 
 use App\ChemicalResistance\Application\DTO\AssessmentRowDTO;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes;
 use App\ChemicalResistance\Domain\Service\NoteView;
 use Symfony\Component\Uid\Uuid;
@@ -13,8 +13,8 @@ use Symfony\Component\Uid\Uuid;
 final class ListCoatingAssessmentsQueryHandler
 {
     public function __construct(
-        private AssessmentRepository   $assessments,
-        private SubstanceRepository    $substances,
+        private AssessmentRepositoryInterface   $assessments,
+        private SubstanceRepositoryInterface    $substances,
         private EffectiveAssessmentNotes $effectiveNotes,
     ) {}
 

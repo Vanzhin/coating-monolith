@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetPagedSubstances;
 
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 
 class GetPagedSubstancesQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly SubstanceRepository $substanceRepository,
+        private readonly SubstanceRepositoryInterface $substanceRepository,
     ) {}
 
     public function __invoke(GetPagedSubstancesQuery $query): GetPagedSubstancesQueryResult

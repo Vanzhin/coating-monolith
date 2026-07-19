@@ -4,36 +4,39 @@ namespace App\ChemicalResistance\Infrastructure\Repository;
 
 use App\ChemicalResistance\Application\DTO\NoteDTO;
 use App\ChemicalResistance\Domain\Aggregate\Note\Note;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\NotesFilter;
 use App\Shared\Domain\Repository\PaginationResult;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ParameterType;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Uid\Uuid;
+use Doctrine\Persistence\ManagerRegistry;
 
-final class DoctrineNoteRepository implements NoteRepository
+class NoteRepository extends ServiceEntityRepository implements NoteRepositoryInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em) {}
-
-    public function save(Note $note): void
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->em->persist($note);
-        $this->em->flush();
+        parent::__construct($registry, Note::class);
+    }
+
+    public function add(Note $note): void
+    {
+        $this->getEntityManager()->persist($note);
+        $this->getEntityManager()->flush();
     }
 
     public function remove(Note $note): void
     {
-        $this->em->remove($note);
-        $this->em->flush();
+        $this->getEntityManager()->remove($note);
+        $this->getEntityManager()->flush();
     }
 
-    public function find(Uuid $id): ?Note
+    public function findOneById(string $id): ?Note
     {
-        return $this->em->find(Note::class, $id);
+        return $this->find($id);
     }
 
     /**
-     * @param list<string> $ids UUIDs as strings
+     * @param list<string> $ids
      * @return list<Note>
      */
     public function findAllByIds(array $ids): array
@@ -42,20 +45,16 @@ final class DoctrineNoteRepository implements NoteRepository
             return [];
         }
         /** @var list<Note> $notes */
-        $notes = $this->em->createQueryBuilder()
-            ->select('n')
-            ->from(Note::class, 'n')
+        $notes = $this->createQueryBuilder('n')
             ->where('n.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
             ->getResult();
 
-        /** @var array<string, Note> $byId */
         $byId = [];
-        foreach ($notes as $note) {
-            $byId[$note->getId()] = $note;
+        foreach ($notes as $n) {
+            $byId[$n->getId()] = $n;
         }
-
         $ordered = [];
         foreach ($ids as $id) {
             if (isset($byId[$id])) {
@@ -67,7 +66,7 @@ final class DoctrineNoteRepository implements NoteRepository
 
     public function findByFilter(NotesFilter $filter): PaginationResult
     {
-        $conn = $this->em->getConnection();
+        $conn = $this->getEntityManager()->getConnection();
 
         $where = '1=1';
         $params = [];
@@ -75,12 +74,15 @@ final class DoctrineNoteRepository implements NoteRepository
 
         if ($filter->search !== null && trim($filter->search) !== '') {
             $like = '%' . trim($filter->search) . '%';
-            $where = "(n.title ILIKE :search OR n.description ILIKE :search)";
+            $where = '(n.title ILIKE :search OR n.description ILIKE :search)';
             $params['search'] = $like;
         }
 
-        $countSql = "SELECT COUNT(*) FROM chemical_resistance_note n WHERE {$where}";
-        $total = (int) $conn->fetchOne($countSql, $params, $types);
+        $total = (int) $conn->fetchOne(
+            "SELECT COUNT(*) FROM chemical_resistance_note n WHERE {$where}",
+            $params,
+            $types,
+        );
 
         $dataSql = "SELECT n.id::text AS id, n.title, n.description
                     FROM chemical_resistance_note n

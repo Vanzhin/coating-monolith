@@ -7,10 +7,10 @@ namespace App\ChemicalResistance\Infrastructure\Controller\Assessment;
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment\CreateAssessmentCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\DeleteAssessment\DeleteAssessmentCommand;
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\UpdateAssessment\UpdateAssessmentCommand;
-use App\ChemicalResistance\Domain\Repository\AssessmentRepository;
-use App\ChemicalResistance\Domain\Repository\NoteRepository;
+use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
+use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\NotesFilter;
-use App\ChemicalResistance\Domain\Repository\SubstanceRepository;
+use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -31,9 +31,9 @@ final class AssessmentController extends AbstractController
     public function __construct(
         private readonly QueryBusInterface   $queryBus,
         private readonly CommandBusInterface $commandBus,
-        private readonly AssessmentRepository $assessmentRepository,
-        private readonly NoteRepository      $notes,
-        private readonly SubstanceRepository $substances,
+        private readonly AssessmentRepositoryInterface $assessmentRepository,
+        private readonly NoteRepositoryInterface      $notes,
+        private readonly SubstanceRepositoryInterface $substances,
     ) {}
 
     #[Route(path: '/create', name: 'create', methods: ['POST'])]
@@ -64,7 +64,7 @@ final class AssessmentController extends AbstractController
     )]
     public function update(string $coatingId, string $assessmentId, Request $req): Response
     {
-        $assessment = $this->assessmentRepository->find(Uuid::fromString($assessmentId));
+        $assessment = $this->assessmentRepository->findOneById($assessmentId);
         if ($assessment === null) {
             $this->addFlash('assessment_error', 'Оценка не найдена.');
             return $this->redirectToRoute('app_cabinet_coating_chem_resistance_edit', ['coatingId' => $coatingId]);
