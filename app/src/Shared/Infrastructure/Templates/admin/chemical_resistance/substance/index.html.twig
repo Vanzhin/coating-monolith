@@ -13,12 +13,22 @@
     } %}
         {% block above_list %}
             <form method="get" action="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="mb-0">
-                <div class="input-group">
-                    <input type="search" name="search" value="{{ app.request.query.get('search') }}"
-                           class="form-control"
-                           placeholder="Поиск по названию, CAS, псевдонимам..."
-                           autocomplete="off">
-                    <button type="submit" class="btn btn-primary">Найти</button>
+                <div class="row g-2">
+                    <div class="col-md">
+                        <input type="search" name="search" value="{{ app.request.query.get('search') }}"
+                               class="form-control"
+                               placeholder="Поиск по названию, CAS, псевдонимам..."
+                               autocomplete="off">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="search" name="cas" value="{{ app.request.query.get('cas') }}"
+                               class="form-control"
+                               placeholder="CAS (например 7732-18-5)"
+                               autocomplete="off">
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary w-100">Найти</button>
+                    </div>
                 </div>
             </form>
         {% endblock %}

@@ -10,5 +10,6 @@ readonly class SubstancesFilter
     public function __construct(
         public ?string $search = null,
         public ?Pager  $pager = null,
+        public ?string $cas = null,
     ) {}
 }

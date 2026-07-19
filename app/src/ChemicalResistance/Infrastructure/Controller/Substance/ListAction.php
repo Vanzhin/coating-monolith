@@ -20,11 +20,14 @@ class ListAction extends AbstractController
     public function __invoke(Request $request): Response
     {
         $search = $request->query->get('search');
+        $cas    = $request->query->get('cas');
         $page   = $request->query->get('page')  ? (int) $request->query->get('page')  : null;
         $limit  = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
 
         $result = $this->queryBus->execute(
-            new GetPagedSubstancesQuery(new SubstancesFilter($search, Pager::fromPage($page, $limit))),
+            new GetPagedSubstancesQuery(
+                new SubstancesFilter($search, Pager::fromPage($page, $limit), $cas),
+            ),
         );
 
         return $this->render('admin/chemical_resistance/substance/index.html.twig', compact('result'));

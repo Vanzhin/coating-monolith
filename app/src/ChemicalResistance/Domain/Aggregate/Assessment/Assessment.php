@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\ChemicalResistance\Domain\Aggregate\Assessment;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
@@ -47,10 +49,15 @@ class Assessment extends Aggregate
     }
 
     public function getId(): string { return $this->id->toRfc4122(); }
+
     public function getCoatingId(): Uuid { return $this->coatingId; }
+
     public function getSubstanceId(): Uuid { return $this->substanceId; }
+
     public function getGrade(): Grade { return Grade::from($this->grade); }
+
     public function getMaxTemperature(): AssessmentTemperature { return AssessmentTemperature::fromInt($this->maxTemperatureCelsius); }
+
     public function getNoteIds(): StringCollection { return $this->noteIds; }
 
     public function setGrade(Grade $g): void

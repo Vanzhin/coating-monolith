@@ -87,17 +87,23 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $where = '1=1';
+        $whereParts = [];
         $params = [];
         $types = [];
 
         if ($filter->search !== null && trim($filter->search) !== '') {
-            $like = '%' . trim($filter->search) . '%';
-            $where = "(s.canonical_name ILIKE :search
+            $whereParts[] = "(s.canonical_name ILIKE :search
                 OR s.cas ILIKE :search
                 OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search))";
-            $params['search'] = $like;
+            $params['search'] = '%' . trim($filter->search) . '%';
         }
+
+        if ($filter->cas !== null && trim($filter->cas) !== '') {
+            $whereParts[] = 's.cas ILIKE :cas';
+            $params['cas'] = '%' . trim($filter->cas) . '%';
+        }
+
+        $where = $whereParts === [] ? '1=1' : implode(' AND ', $whereParts);
 
         $total = (int) $conn->fetchOne(
             "SELECT COUNT(*) FROM chemical_resistance_substance s WHERE {$where}",
