@@ -6,6 +6,7 @@ namespace App\ChemicalResistance\Infrastructure\Controller\Substance;
 
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQuery;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -15,7 +16,7 @@ use Symfony\Component\Routing\Annotation\Route;
     name: 'app_cabinet_chemical_resistance_substance_autocomplete',
     methods: ['GET'],
 )]
-final class SubstanceAutocompleteAction
+final class SubstanceAutocompleteAction extends AbstractController
 {
     public function __construct(
         private readonly SubstanceAutocompleteQueryHandler $handler,

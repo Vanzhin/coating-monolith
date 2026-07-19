@@ -52,14 +52,6 @@ services:
     resource: '../src/Users/Infrastructure/Controller'
     tags: [ 'controller.service_arguments' ]
 
-  # Invokable actions (не extends AbstractController) требуют явного тега,
-  # иначе Symfony не резолвит их как controller services. Затрагивает
-  # AssessmentsPartialAction, SubstanceAutocompleteAction и все будущие
-  # invokable actions в контексте ChemicalResistance.
-  App\ChemicalResistance\Infrastructure\Controller\:
-    resource: '../src/ChemicalResistance/Infrastructure/Controller'
-    tags: [ 'controller.service_arguments' ]
-
   #        add custom fields to jwt
   acme_api.event.jwt_created_listener:
     class: App\Shared\Application\EventListener\JWTCreatedListener
