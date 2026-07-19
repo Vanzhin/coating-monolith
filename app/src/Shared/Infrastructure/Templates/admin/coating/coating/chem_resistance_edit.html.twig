@@ -1,0 +1,169 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Химстойкость — {{ coating.title }}{% endblock %}
+
+{% block content %}
+<div class="p-2 p-md-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Химическая стойкость — {{ coating.title }}</h1>
+        <a href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Назад к покрытию
+        </a>
+    </div>
+
+    {# ─── Статистика ─── #}
+    <div class="d-flex gap-2 mb-3">
+        <span class="badge text-bg-success bg-opacity-25 text-body-emphasis fs-6">R: {{ assessments.countR }}</span>
+        <span class="badge text-bg-warning bg-opacity-25 text-body-emphasis fs-6">LR: {{ assessments.countLR }}</span>
+        <span class="badge text-bg-danger bg-opacity-25 text-body-emphasis fs-6">Прочие: {{ assessments.countOther }}</span>
+        <span class="badge text-bg-secondary fs-6">Всего: {{ assessments.total }}</span>
+    </div>
+
+    {# ─── Форма добавления новой оценки ─── #}
+    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+        <h6 class="fw-semibold mb-3">Добавить оценку</h6>
+        <form method="post"
+              action="{{ path('app_cabinet_coating_chem_resistance_assessment_create', {coatingId: coatingId}) }}"
+              class="w-100">
+            <div class="row g-2 align-items-end">
+                {# Substance autocomplete #}
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Вещество</label>
+                    <div class="position-relative"
+                         data-controller="substance-autocomplete"
+                         data-substance-autocomplete-endpoint-value="{{ path('app_cabinet_chemical_resistance_substance_autocomplete') }}">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Начните вводить вещество…"
+                               autocomplete="off"
+                               data-substance-autocomplete-target="input"
+                               data-action="input->substance-autocomplete#onInput">
+                        <input type="hidden" name="substanceId" data-substance-autocomplete-target="hidden">
+                        <div class="dropdown-menu w-100"
+                             data-substance-autocomplete-target="results"></div>
+                    </div>
+                </div>
+
+                {# Grade #}
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Оценка</label>
+                    <select name="grade" class="form-select">
+                        <option value="R">R — стойкое</option>
+                        <option value="LR">LR — ограниченно</option>
+                        <option value="NR">NR — нестойкое</option>
+                        <option value="FS">FS — спец. условия</option>
+                        <option value="NT" selected>NT — не испытано</option>
+                    </select>
+                </div>
+
+                {# Max temperature #}
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Макс. °C</label>
+                    <input type="number" name="maxTemperatureCelsius" placeholder="напр. 40"
+                           class="form-control" min="1" max="500">
+                </div>
+
+                {# Notes multi-select #}
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Примечания</label>
+                    <select name="noteIds[]" class="form-select" multiple size="3">
+                        {% for note in allNotes %}
+                            <option value="{{ note.id }}">{{ note.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {# ─── Таблица существующих оценок ─── #}
+    <div class="p-3 rounded-3 bg-body-tertiary">
+        <h6 class="fw-semibold mb-3">Оценки ({{ assessments.total }})</h6>
+
+        {% if assessments.rows is empty %}
+            <p class="text-muted mb-0">Оценок пока нет. Добавьте первую выше.</p>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-muted fw-normal">Вещество</th>
+                            <th class="text-muted fw-normal text-center">Оценка</th>
+                            <th class="text-muted fw-normal text-center">Макс. T</th>
+                            <th class="text-muted fw-normal">Примечания</th>
+                            <th class="text-muted fw-normal text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in assessments.rows %}
+                            <tr>
+                                <td>
+                                    <div>{{ row.canonicalName }}</div>
+                                    {% if row.cas or row.aliases|length > 0 %}
+                                        <div class="small text-muted">
+                                            {% if row.cas %}CAS {{ row.cas }}{% if row.aliases|length > 0 %} · {% endif %}{% endif %}
+                                            {% if row.aliases|length > 0 %}{{ row.aliases|first }}{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% set gradeClass = {
+                                        'R':  'text-bg-success',
+                                        'LR': 'text-bg-warning',
+                                        'NR': 'text-bg-danger',
+                                        'FS': 'text-bg-secondary',
+                                        'NT': 'text-bg-secondary'
+                                    }[row.grade] %}
+                                    <span class="badge {{ gradeClass }}">{{ row.grade }}</span>
+                                </td>
+                                <td class="text-center text-nowrap">{{ row.maxTemperatureCelsius }}°C</td>
+                                <td>
+                                    {% set userNotes = row.notes|filter(n => not n.isSystem) %}
+                                    {% if userNotes|length > 0 %}
+                                        {% for n in userNotes %}
+                                            <span class="badge text-bg-light fw-normal me-1"
+                                                  data-bs-toggle="tooltip"
+                                                  title="{{ n.title }}: {{ n.description }}">
+                                                {{ n.title }}
+                                            </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{{ path('app_cabinet_coating_chem_resistance_assessment_update', {
+                                        coatingId: coatingId,
+                                        assessmentId: row.assessmentId
+                                    }) }}"
+                                       class="btn btn-sm btn-outline-secondary me-1">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post"
+                                          action="{{ path('app_cabinet_coating_chem_resistance_assessment_delete', {
+                                              coatingId: coatingId,
+                                              assessmentId: row.assessmentId
+                                          }) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Удалить оценку для «{{ row.canonicalName }}»?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

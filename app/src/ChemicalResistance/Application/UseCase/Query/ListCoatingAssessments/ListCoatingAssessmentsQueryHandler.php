@@ -57,6 +57,8 @@ final class ListCoatingAssessmentsQueryHandler
                     ],
                     $noteViews,
                 ),
+                assessmentId: $a->getId(),
+                noteIds: $a->getNoteIds()->getList(),
             );
         }
 
