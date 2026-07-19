@@ -20,12 +20,15 @@ final class MatchSubstancesForSearchQueryHandler
             return [];
         }
 
-        // Normalize search words once; discard empty results
+        // Normalize search words once; keep a parallel list of raw words for CAS exact-match.
+        // CAS is not normalized (e.g. "7732-18-5" must not become "773218").
         $normalizedWords = [];
+        $rawWords        = [];
         foreach ($q->searchWords as $word) {
             $n = SubstanceNameNormalizer::normalize($word);
             if ($n !== '') {
                 $normalizedWords[] = $n;
+                $rawWords[]        = $word;
             }
         }
 
@@ -41,7 +44,7 @@ final class MatchSubstancesForSearchQueryHandler
                    sub.aliases::text   AS aliases_json
             FROM chemical_resistance_assessment a
             JOIN chemical_resistance_substance sub ON sub.id = a.substance_id
-            WHERE a.coating_id = ANY(:coatings)
+            WHERE a.coating_id IN (:coatings)
               AND chemical_resistance_is_suitable_grade(a.grade)
         ";
 
@@ -62,12 +65,13 @@ final class MatchSubstancesForSearchQueryHandler
             $cas         = $r['cas'];
 
             $matched = null;
-            foreach ($normalizedWords as $needle) {
+            foreach ($normalizedWords as $i => $needle) {
                 if ($needle === $canonNorm) {
                     $matched = 'canonical';
                     break;
                 }
-                if ($cas !== null && $cas === $needle) {
+                // CAS is compared raw (not normalized) — dashes are semantically significant
+                if ($cas !== null && $cas === $rawWords[$i]) {
                     $matched = 'cas';
                     break;
                 }
