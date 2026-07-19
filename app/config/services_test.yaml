@@ -42,3 +42,9 @@ services:
 
   App\ChemicalResistance\Application\Service\ChemicalResistanceImporter:
     public: true
+
+  App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler:
+    public: true
+
+  App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes:
+    public: true

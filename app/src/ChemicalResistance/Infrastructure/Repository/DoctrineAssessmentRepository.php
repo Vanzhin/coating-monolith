@@ -126,36 +126,99 @@ final class DoctrineAssessmentRepository implements AssessmentRepository
 
     public function paginateByCoating(Uuid $coatingId, ?string $search, int $page, int $pageSize): PaginationResult
     {
-        $qb = $this->em->createQueryBuilder()
-            ->select('a')
-            ->from(Assessment::class, 'a')
-            ->join(Substance::class, 's', 'WITH', 's.id = a.substanceId')
-            ->where('a.coatingId = :coatingId')
-            ->setParameter('coatingId', $coatingId->toRfc4122())
-            ->orderBy('s.canonicalName', 'ASC');
+        $conn   = $this->em->getConnection();
+        $cidStr = $coatingId->toRfc4122();
+        $offset = ($page - 1) * $pageSize;
+
+        $baseWhere = 'a.coating_id = :cid';
+        $baseParams = ['cid' => $cidStr];
 
         if ($search !== null && $search !== '') {
-            $qb->andWhere(
-                $qb->expr()->orX(
-                    'LOWER(s.canonicalName) LIKE LOWER(:search)',
-                    'LOWER(s.canonicalNameKey) LIKE LOWER(:search)',
-                    's.cas LIKE :search',
-                )
-            )
-            ->setParameter('search', '%' . $search . '%');
+            $baseWhere .= "
+                AND (
+                    s.canonical_name ILIKE :search
+                    OR s.cas ILIKE :search
+                    OR EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements_text(s.aliases) AS alias_val
+                        WHERE alias_val ILIKE :search
+                    )
+                )";
+            $baseParams['search'] = '%' . $search . '%';
         }
 
-        $qb->setFirstResult(($page - 1) * $pageSize)
-            ->setMaxResults($pageSize);
+        // Total count (no LIMIT/OFFSET).
+        $countSql = "
+            SELECT COUNT(*)
+            FROM chemical_resistance_assessment a
+            JOIN chemical_resistance_substance s ON s.id = a.substance_id
+            WHERE {$baseWhere}
+        ";
+        $total = (int) $conn->fetchOne($countSql, $baseParams);
 
-        $paginator = new Paginator($qb->getQuery(), false);
+        if ($total === 0) {
+            return new PaginationResult([], 0);
+        }
 
-        /** @var list<Assessment> $items */
-        $items = iterator_to_array($paginator->getIterator());
-        foreach ($items as $a) {
+        // Fetch page of IDs ordered by substance name.
+        $pageSql = "
+            SELECT a.id
+            FROM chemical_resistance_assessment a
+            JOIN chemical_resistance_substance s ON s.id = a.substance_id
+            WHERE {$baseWhere}
+            ORDER BY s.canonical_name ASC
+            LIMIT :limit OFFSET :offset
+        ";
+        $pageParams           = $baseParams;
+        $pageParams['limit']  = $pageSize;
+        $pageParams['offset'] = $offset;
+
+        $rows = $conn->fetchAllAssociative($pageSql, $pageParams);
+        $ids  = array_column($rows, 'id');
+
+        if ($ids === []) {
+            return new PaginationResult([], $total);
+        }
+
+        // Load Assessment entities, then re-order to match SQL result order.
+        /** @var list<Assessment> $unordered */
+        $unordered = $this->em->createQueryBuilder()
+            ->select('a')
+            ->from(Assessment::class, 'a')
+            ->where('a.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+
+        $byId = [];
+        foreach ($unordered as $a) {
             $this->reinject($a);
+            $byId[$a->getId()] = $a;
+        }
+        $items = [];
+        foreach ($ids as $id) {
+            if (isset($byId[$id])) {
+                $items[] = $byId[$id];
+            }
         }
 
-        return new PaginationResult($items, $paginator->count());
+        return new PaginationResult($items, $total);
+    }
+
+    /** @return array<string, int> */
+    public function countByCoatingGroupedByGrade(Uuid $coatingId): array
+    {
+        $rows = $this->em->getConnection()->fetchAllAssociative(
+            'SELECT grade, COUNT(*) AS cnt
+             FROM chemical_resistance_assessment
+             WHERE coating_id = :cid
+             GROUP BY grade',
+            ['cid' => $coatingId->toRfc4122()],
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[$r['grade']] = (int) $r['cnt'];
+        }
+        return $out;
     }
 }
