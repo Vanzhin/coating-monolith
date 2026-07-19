@@ -1,0 +1,38 @@
+{# _chem_resistance_row.html.twig — params: row (AssessmentRowDTO) #}
+<tr data-substance-id="{{ row.substanceId }}"
+    data-search-key="{{ (row.canonicalName ~ ' ' ~ (row.cas ?? '') ~ ' ' ~ row.aliases|join(' '))|lower }}">
+    <td>
+        <div>{{ row.canonicalName }}</div>
+        {% if row.cas or row.aliases|length > 0 %}
+            <div class="small text-muted">
+                {% if row.cas %}CAS {{ row.cas }}{% if row.aliases|length > 0 %} · {% endif %}{% endif %}
+                {% if row.aliases|length > 0 %}{{ row.aliases|first }}{% endif %}
+            </div>
+        {% endif %}
+    </td>
+    <td class="text-center">
+        {% set gradeClass = {
+            'R':  'text-bg-success',
+            'LR': 'text-bg-warning',
+            'NR': 'text-bg-danger',
+            'FS': 'text-bg-secondary',
+            'NT': 'text-bg-secondary'
+        }[row.grade] %}
+        <span class="badge {{ gradeClass }}">{{ row.grade }}</span>
+    </td>
+    <td class="text-center text-nowrap">{{ row.maxTemperatureCelsius }}°C</td>
+    <td>
+        {% set userNotes = row.notes|filter(n => not n.isSystem) %}
+        {% if userNotes|length > 0 %}
+            {% for n in userNotes %}
+                <span class="badge text-bg-light fw-normal me-1"
+                      data-bs-toggle="tooltip"
+                      title="{{ n.title }}: {{ n.description }}">
+                    ⓘ {{ n.title }}
+                </span>
+            {% endfor %}
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+</tr>

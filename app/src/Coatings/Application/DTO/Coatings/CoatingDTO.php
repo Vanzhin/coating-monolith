@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Application\DTO\Coatings;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
+use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\CoatingAssessmentsPage;
 use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
@@ -57,4 +58,7 @@ class CoatingDTO
 
     /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */
     public array $matchedSubstances = [];
+
+    /** Первая страница оценок химической стойкости (preload для модального окна). */
+    public ?CoatingAssessmentsPage $chemResistancePage = null;
 }

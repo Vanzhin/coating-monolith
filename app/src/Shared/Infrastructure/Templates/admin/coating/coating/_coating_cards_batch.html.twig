@@ -257,6 +257,8 @@
                             Верхняя граница интервала перекрытия не задана.
                         {% endif %}
                     </p>
+                    {% include 'admin/coating/coating/_chem_resistance_section.html.twig'
+                        with { coating: coating, assessments: coating.chemResistancePage } %}
                 </div>
                 <div class="modal-footer">
                     {% if canEdit %}
