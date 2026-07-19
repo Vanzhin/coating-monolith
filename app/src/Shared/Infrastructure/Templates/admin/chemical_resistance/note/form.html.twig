@@ -1,0 +1,66 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление примечания' : 'Добавление примечания' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_chemical_resistance_note_update', {id: inputData.id})
+    : path('app_cabinet_chemical_resistance_note_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <form method="post" action="{{ actionUrl }}" class="w-100">
+            {% if error is defined and error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_chemical_resistance_note_list') }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Данные примечания</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="inputTitle" class="form-label">Название <span class="text-danger">*</span></label>
+                        <input type="text"
+                               value="{{ inputData.title ?? '' }}"
+                               name="title"
+                               id="inputTitle"
+                               class="form-control"
+                               required
+                               autofocus
+                               maxlength="200"
+                               placeholder="Название примечания...">
+                        <div class="form-text">до 200 символов</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputDescription" class="form-label">Описание</label>
+                        <textarea name="description"
+                                  id="inputDescription"
+                                  class="form-control"
+                                  rows="8"
+                                  maxlength="2000"
+                                  placeholder="Описание примечания...">{{ inputData.description ?? '' }}</textarea>
+                        <div class="form-text">до 2000 символов</div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_chemical_resistance_note_list') }}"
+                   class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
