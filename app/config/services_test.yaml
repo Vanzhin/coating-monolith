@@ -46,5 +46,8 @@ services:
   App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler:
     public: true
 
+  App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler:
+    public: true
+
   App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes:
     public: true
