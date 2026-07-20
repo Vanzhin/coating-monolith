@@ -8,6 +8,57 @@
 
 **2. Бэк — единственный источник истины для валидации.** Любая бизнес-проверка живёт на сервере и при нарушении возвращает либо OK, либо ошибку, которую фронт рендерит. Дубликаты на фронте допустимы только ради UX (мгновенная подсказка), но при отсутствии JS форма обязана работать корректно через серверную валидацию. Фронт никогда не решает «можно ли сохранить» — только показывает то, что вернул бэк.
 
+
+## Главное правило
+
+**НЕ РЕАЛИЗУЙ БЕЗ ОБСУЖДЕНИЯ.** Перед любой реализацией обсуди детали с пользователем и получи подтверждение.
+
+## Стиль общения
+
+- **Никаких эмоджи** в ответах. Никаких ✅/❌/⚠️/🚀, ни декоративных, ни чек-маркеров «✓ сделано». Статусы передавать словами («готово», «накатил», «провалилось»). Мат допустим.
+- **Кратко и по делу.** Не писать лишнего, не растягивать ответы, не повторять очевидное. Отвечать по-деловому — без вступлений, без украшательств.
+
+## Режим работы: Plan → Code
+
+При получении новой задачи:
+1. **Автоматически входи в режим планирования** (`/plan`)
+2. Изучи задачу, задай вопросы, предложи подход
+3. Когда планирование завершено — **спроси разрешение**: "Переходим к коду?"
+4. После подтверждения — переключись в режим кода (`/code`) и реализуй
+5. **Сохраняй план** в `docs/plans/{название-задачи}.md` — чтобы можно было отложить и вернуться позже
+
+### Пошаговая реализация
+
+Реализацию делать **по шагам**. После каждого шага — показать результат и спросить, продолжать ли. **НЕ лететь нонстопом** через весь план.
+
+Пользователь — эксперт проекта, знает тонкости. Claude их не знает, любое расхождение с ожиданиями нужно ловить на первом же шаге, а не в конце.
+
+### Строго по плану
+
+План — источник правды. Если видишь расхождение плана с реальностью (в коде нет нужного, логика оказалась другой, и т.п.):
+
+1. Озвучить проблему пользователю.
+2. Спросить: «нужно ли обновить план?».
+3. Обновить план, если да.
+4. Реализовывать строго по обновлённому плану.
+
+**Никогда** не менять план самостоятельно и не отклоняться от написанного.
+
+### Многоэтапные задачи — отдельные планы
+
+Если задача требует более одного деплоя (например, «наполнить новый источник данных» → «переключить чтение»), **не** описывать её одним планом с разделами «Деплой 1 / Деплой 2». Создавать отдельные файлы планов — по одному на деплой:
+
+- `docs/plans/название-задачи-1.md`
+- `docs/plans/название-задачи-2.md`
+
+Каждый файл — самодостаточный: свой контекст, свои развилки, свой список файлов и тестов, перекрёстная ссылка на соседний план. Это позволяет работать с каждым деплоем как с независимой задачей: отдать в работу один план без остального контекста, отдельно отслеживать статус, независимо пересматривать развилки.
+
+## Документация — читать перед работой
+
+**Правило: в каждом каталоге, куда заходишь, ищи `README.md` (или аналогичный `.md`-файл документации — `CLAUDE.md`, `docs/*.md`) и читай его перед тем как работать с кодом этого каталога.** Это действует на всех уровнях без исключений — от корня репо до самого вложенного каталога. Если документа нет — пропускай и иди дальше. Если есть — читай **до** внесения изменений, а не после.
+
+Документ может содержать архитектурные решения, соглашения, потоки, ограничения — то, чего нет в самом коде и что не выводится из него. Пропускать уровни нельзя. На каждом уровне могут быть правила, отсутствующие на других. При сомнении — читать, а не гадать.
+
 ## Архитектура
 
 DDD + Hexagonal. Каждый bounded context (`Coatings`, `Documents`, `Notifications`, `Proposals`, `Users`) имеет три слоя:
@@ -131,3 +182,142 @@ cd app && bin/console doctrine:migrations:diff     # сгенерировать 
 - Прогнать тесты затронутых контекстов.
 - Пересобрать ассеты, если трогал JS/Twig.
 - НЕ делать commit без явной команды пользователя.
+
+<!-- rtk-instructions v2 -->
+# RTK (Rust Token Killer) - Token-Optimized Commands
+
+## Golden Rule
+
+**Always prefix commands with `rtk`**. If RTK has a dedicated filter, it uses it. If not, it passes through unchanged. This means RTK is always safe to use.
+
+**Important**: Even in command chains with `&&`, use `rtk`:
+```bash
+# ❌ Wrong
+git add . && git commit -m "msg" && git push
+
+# ✅ Correct
+rtk git add . && rtk git commit -m "msg" && rtk git push
+```
+
+## RTK Commands by Workflow
+
+### Build & Compile (80-90% savings)
+```bash
+rtk cargo build         # Cargo build output
+rtk cargo check         # Cargo check output
+rtk cargo clippy        # Clippy warnings grouped by file (80%)
+rtk tsc                 # TypeScript errors grouped by file/code (83%)
+rtk lint                # ESLint/Biome violations grouped (84%)
+rtk prettier --check    # Files needing format only (70%)
+rtk next build          # Next.js build with route metrics (87%)
+```
+
+### Test (60-99% savings)
+```bash
+rtk cargo test          # Cargo test failures only (90%)
+rtk go test             # Go test failures only (90%)
+rtk jest                # Jest failures only (99.5%)
+rtk vitest              # Vitest failures only (99.5%)
+rtk playwright test     # Playwright failures only (94%)
+rtk pytest              # Python test failures only (90%)
+rtk rake test           # Ruby test failures only (90%)
+rtk rspec               # RSpec test failures only (60%)
+rtk test <cmd>          # Generic test wrapper - failures only
+```
+
+### Git (59-80% savings)
+```bash
+rtk git status          # Compact status
+rtk git log             # Compact log (works with all git flags)
+rtk git diff            # Compact diff (80%)
+rtk git show            # Compact show (80%)
+rtk git add             # Ultra-compact confirmations (59%)
+rtk git commit          # Ultra-compact confirmations (59%)
+rtk git push            # Ultra-compact confirmations
+rtk git pull            # Ultra-compact confirmations
+rtk git branch          # Compact branch list
+rtk git fetch           # Compact fetch
+rtk git stash           # Compact stash
+rtk git worktree        # Compact worktree
+```
+
+Note: Git passthrough works for ALL subcommands, even those not explicitly listed.
+
+### GitHub (26-87% savings)
+```bash
+rtk gh pr view <num>    # Compact PR view (87%)
+rtk gh pr checks        # Compact PR checks (79%)
+rtk gh run list         # Compact workflow runs (82%)
+rtk gh issue list       # Compact issue list (80%)
+rtk gh api              # Compact API responses (26%)
+```
+
+### JavaScript/TypeScript Tooling (70-90% savings)
+```bash
+rtk pnpm list           # Compact dependency tree (70%)
+rtk pnpm outdated       # Compact outdated packages (80%)
+rtk pnpm install        # Compact install output (90%)
+rtk npm run <script>    # Compact npm script output
+rtk npx <cmd>           # Compact npx command output
+rtk prisma              # Prisma without ASCII art (88%)
+```
+
+### Files & Search (60-75% savings)
+```bash
+rtk ls <path>           # Tree format, compact (65%)
+rtk read <file>         # Code reading with filtering (60%)
+rtk grep <pattern>      # Search grouped by file (75%). Format flags (-c, -l, -L, -o, -Z) run raw.
+rtk find <pattern>      # Find grouped by directory (70%)
+```
+
+### Analysis & Debug (70-90% savings)
+```bash
+rtk err <cmd>           # Filter errors only from any command
+rtk log <file>          # Deduplicated logs with counts
+rtk json <file>         # JSON structure without values
+rtk deps                # Dependency overview
+rtk env                 # Environment variables compact
+rtk summary <cmd>       # Smart summary of command output
+rtk diff                # Ultra-compact diffs
+```
+
+### Infrastructure (85% savings)
+```bash
+rtk docker ps           # Compact container list
+rtk docker images       # Compact image list
+rtk docker logs <c>     # Deduplicated logs
+rtk kubectl get         # Compact resource list
+rtk kubectl logs        # Deduplicated pod logs
+```
+
+### Network (65-70% savings)
+```bash
+rtk curl <url>          # Compact HTTP responses (70%)
+rtk wget <url>          # Compact download output (65%)
+```
+
+### Meta Commands
+```bash
+rtk gain                # View token savings statistics
+rtk gain --history      # View command history with savings
+rtk discover            # Analyze Claude Code sessions for missed RTK usage
+rtk proxy <cmd>         # Run command without filtering (for debugging)
+rtk init                # Add RTK instructions to CLAUDE.md
+rtk init --global       # Add RTK to ~/.claude/CLAUDE.md
+```
+
+## Token Savings Overview
+
+| Category | Commands | Typical Savings |
+|----------|----------|-----------------|
+| Tests | vitest, playwright, cargo test | 90-99% |
+| Build | next, tsc, lint, prettier | 70-87% |
+| Git | status, log, diff, add, commit | 59-80% |
+| GitHub | gh pr, gh run, gh issue | 26-87% |
+| Package Managers | pnpm, npm, npx | 70-90% |
+| Files | ls, read, grep, find | 60-75% |
+| Infrastructure | docker, kubectl | 85% |
+| Network | curl, wget | 65-70% |
+
+Overall average: **60-90% token reduction** on common development operations.
+<!-- /rtk-instructions -->
