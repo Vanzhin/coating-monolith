@@ -79,6 +79,16 @@ jobs:
           path: app/tests/_output/junit-unit.xml
           if-no-files-found: ignore
 
+      - name: Publish junit to summary and annotations
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: app/tests/_output/junit-unit.xml
+          check_name: Unit tests (junit)
+          include_passed: false
+          detailed_summary: true
+          job_summary: true
+
       - name: Teardown
         if: always()
         run: docker compose -f docker-compose.test.yml down -v --remove-orphans
@@ -123,6 +133,16 @@ jobs:
           name: junit-functional
           path: app/tests/_output/junit-functional.xml
           if-no-files-found: ignore
+
+      - name: Publish junit to summary and annotations
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: app/tests/_output/junit-functional.xml
+          check_name: Functional tests (junit)
+          include_passed: false
+          detailed_summary: true
+          job_summary: true
 
       - name: Teardown
         if: always()
