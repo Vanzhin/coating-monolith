@@ -8,6 +8,13 @@ on:
   push:
     branches: [main]
 
+# Прокидываем в reusable tests.yml. Правило GitHub: called workflow может только
+# сузить permissions caller-а, поэтому нужное для mikepenz/action-junit-report
+# (checks: write) выдаём здесь.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
