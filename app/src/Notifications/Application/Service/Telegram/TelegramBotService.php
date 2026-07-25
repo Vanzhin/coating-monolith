@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Notifications\Application\Service\Telegram;
 
-use App\Shared\Application\Message\MessageBusInterface;
-use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use Longman\TelegramBot\Entities\ServerResponse;
 use Longman\TelegramBot\Exception\TelegramException;
 use Longman\TelegramBot\Request;
@@ -20,8 +18,6 @@ final readonly class TelegramBotService
         private string $secret,
         private Telegram $telegram,
         private LoggerInterface $logger,
-        private MessageBusInterface $messageBus,
-        private ChannelRepositoryInterface $channelRepository,
     ) {
         $this->addCommandsPath();
         $this->configureCommands();
@@ -41,6 +37,8 @@ final readonly class TelegramBotService
 
     /**
      * Отправка простого сообщения.
+     *
+     * @param array<string, mixed> $options
      */
     public function sendMessage(int $chatId, string $text, array $options = []): ServerResponse
     {
@@ -97,29 +95,8 @@ final readonly class TelegramBotService
 
     private function configureCommands(): void
     {
-        // Общие зависимости для всех команд
-        $commonConfig = [
-            //            'logger' => $this->logger,
-        ];
-
-        // Специфические зависимости для отдельных команд
-        $specificConfigs = [
-            //            'start' => [
-            //                'messageBus' => $this->messageBus,
-            //                'channelRepository' => $this->channelRepository,
-            //                'telegramBotService' => $this,
-            //                'queryBus' => $this,
-            //            ],
-        ];
-
         foreach ($this->telegram->getCommandsList() as $command) {
-            // Объединяем общие и специфические конфиги
-            $config = array_merge(
-                $commonConfig,
-                $specificConfigs[$command->getName()] ?? []
-            );
-
-            $this->telegram->setCommandConfig($command->getName(), $config);
+            $this->telegram->setCommandConfig($command->getName(), []);
         }
     }
 

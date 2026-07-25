@@ -36,7 +36,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         $coating = $this->coatingRepository->findOneById($command->coatingId);
         $dto = $command->coatingDTO;
 
-        if ($dto->manufacturer) {
+        if ($dto->manufacturer->id) {
             $coating->setManufacturer(
                 $this->manufacturerRepository->findOneById($dto->manufacturer->id),
             );

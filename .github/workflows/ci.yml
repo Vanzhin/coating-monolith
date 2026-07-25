@@ -1,0 +1,13 @@
+name: CI
+
+# Гейт: тесты + статика на каждом PR и push в main.
+# Тег v* обрабатывается в deploy.yml — этот workflow там не срабатывает.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml

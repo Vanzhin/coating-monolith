@@ -29,6 +29,9 @@ final readonly class CoatingMaker
     ) {
     }
 
+    /**
+     * @param list<string> $coatingTagIds
+     */
     public function make(
         string $title,
         string $description,

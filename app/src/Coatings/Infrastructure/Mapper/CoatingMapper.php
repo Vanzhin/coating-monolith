@@ -18,7 +18,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingMapper
 {
-    /** Раскладывает DTO в плоский набор для формы. */
+    /**
+     * Раскладывает DTO в плоский набор для формы.
+     *
+     * @return array<string, mixed>
+     */
     public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
@@ -47,7 +51,11 @@ class CoatingMapper
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
     }
 
-    /** Собирает DTO из плоских данных формы. */
+    /**
+     * Собирает DTO из плоских данных формы.
+     *
+     * @param array<string, mixed> $inputData
+     */
     public function buildCoatingDtoFromInputData(array $inputData): CoatingDTO
     {
         $manufacturer = new ManufacturerDTO();
@@ -103,6 +111,9 @@ class CoatingMapper
         return $dto;
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     */
     public function parseDurationInput(array $raw): int
     {
         $days = (int) ($raw['days'] ?? 0);
@@ -221,6 +232,9 @@ class CoatingMapper
      * попарные и содержательные инварианты (min<max, peak>max, duration>0) —
      * в ThermalExposureLimits::__construct.
      */
+    /**
+     * @param array<string, mixed> $raw
+     */
     private function buildExposureFromInput(array $raw, string $sectionLabel): ?ThermalExposureLimitsDTO
     {
         $min = $this->trimOrEmpty($raw['continuous_min'] ?? '');
@@ -264,7 +278,11 @@ class CoatingMapper
         return (bool) preg_match('/^-?\d+$/', $v);
     }
 
-    /** Раскладывает ThermalExposureLimitsDTO в плоский набор для формы (или пустой массив). */
+    /**
+     * Раскладывает ThermalExposureLimitsDTO в плоский набор для формы (или пустой массив).
+     *
+     * @return array<string, mixed>
+     */
     private function decomposeExposureForForm(?ThermalExposureLimitsDTO $dto): array
     {
         if (null === $dto) {
@@ -287,6 +305,9 @@ class CoatingMapper
     /**
      * Рекурсивно строит RecoatingIntervalTreeDTO из nested-array формы.
      * Чистый shape→DTO маппинг без бизнес-фильтрации (валидация — в домене через RecoatingTreeBuilder).
+     */
+    /**
+     * @param array<string, mixed> $raw
      */
     private function buildTreeDtoFromInput(array $raw): RecoatingIntervalTreeDTO
     {
@@ -317,7 +338,11 @@ class CoatingMapper
         return true;
     }
 
-    /** Декомпозит RecoatingIntervalTreeDTO в nested-array для шаблона. NULL → пустой узел. */
+    /**
+     * Декомпозит RecoatingIntervalTreeDTO в nested-array для шаблона. NULL → пустой узел.
+     *
+     * @return array<string, mixed>
+     */
     private function decomposeTreeDtoForForm(?RecoatingIntervalTreeDTO $node): array
     {
         if (null === $node) {
@@ -438,6 +463,9 @@ class CoatingMapper
      *  - kind = 'unknown' → null.
      *  - kind отсутствует (legacy / старый формат): парсим как duration; 0 → null.
      */
+    /**
+     * @param array<string, mixed> $raw
+     */
     private function resolveTimeInMinutes(array $raw): ?int
     {
         $kind = $raw['kind'] ?? null;
@@ -463,6 +491,9 @@ class CoatingMapper
     /**
      * Валидация одной температурно-зависимой серии.
      * required=true — поле обязательно (NotBlank); required=false — допускается пустой массив (нет точек).
+     */
+    /**
+     * @return list<\Symfony\Component\Validator\Constraint>
      */
     private function seriesFieldConstraints(bool $required): array
     {

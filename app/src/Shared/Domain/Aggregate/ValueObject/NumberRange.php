@@ -6,6 +6,9 @@ namespace App\Shared\Domain\Aggregate\ValueObject;
 
 use App\Shared\Infrastructure\Exception\AppException;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class NumberRange implements \JsonSerializable
 {
     // Свойства защищены (protected) и немутабельны (readonly)
@@ -80,6 +83,9 @@ abstract class NumberRange implements \JsonSerializable
         return $value >= $this->min && $value <= $this->max;
     }
 
+    /**
+     * @return array{min: int|float, max: int|float}
+     */
     public function jsonSerialize(): array
     {
         return [

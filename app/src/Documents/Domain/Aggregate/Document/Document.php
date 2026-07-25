@@ -67,6 +67,9 @@ class Document extends Aggregate
         return $this->link;
     }
 
+    /**
+     * @return DocumentProduct[]
+     */
     public function getProducts(): array
     {
         return $this->products;
@@ -94,6 +97,9 @@ class Document extends Aggregate
         }
     }
 
+    /**
+     * @return DocumentTag[]
+     */
     public function getTags(): array
     {
         return $this->tags;

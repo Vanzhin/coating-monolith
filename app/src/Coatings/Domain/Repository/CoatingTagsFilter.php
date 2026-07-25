@@ -8,6 +8,7 @@ use App\Shared\Domain\Repository\Pager;
 
 class CoatingTagsFilter
 {
+    /** @var list<string|null> */
     public array $types = [];
 
     public function __construct(

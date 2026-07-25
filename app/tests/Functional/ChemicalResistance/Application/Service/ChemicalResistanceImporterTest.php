@@ -185,11 +185,6 @@ final class ChemicalResistanceImporterTest extends KernelTestCase
             \App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer::normalize('Гексан-'.$suffix)
         );
         self::assertNull($sub, 'Dry-run must not persist a new substance');
-
-        if (null !== $sub) {
-            $assessment = $this->assessmentRepo->findByCoatingAndSubstance($coatingId, $sub->id);
-            self::assertNull($assessment, 'Dry-run must not persist a new assessment');
-        }
     }
 
     public function test_reimport_is_idempotent(): void

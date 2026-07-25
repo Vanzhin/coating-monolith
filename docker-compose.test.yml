@@ -1,0 +1,40 @@
+services:
+
+  test_db:
+    image: postgres:17-alpine
+    shm_size: 128mb
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: app_test
+      POSTGRES_PASSWORD: app_test
+      POSTGRES_DB: app_test
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "app_test", "-U", "app_test" ]
+      timeout: 45s
+      interval: 5s
+      retries: 20
+
+  test_redis:
+    image: redis:7.2.1
+
+  test_php-cli:
+    working_dir: /app
+    build:
+      context: .
+      dockerfile: docker/php-cli/Dockerfile
+    environment:
+      # APP_ENV=test заставляет composer post-install-cmd (cache:clear) и bin/console
+      # брать DATABASE_URL/REDIS_HOST из .env.test → test_db/test_redis, а не dev-манагера.
+      APP_ENV: test
+      # DATABASE_URL/REDIS_HOST в environment перекрывают любой .env.test.local,
+      # который может лежать локально (dev-порт 8001) и попадает в контейнер через bind-mount.
+      DATABASE_URL: "postgresql://app_test:app_test@test_db:5432/app_test?serverVersion=17&charset=utf8"
+      REDIS_HOST: test_redis
+    depends_on:
+      test_db:
+        condition: service_healthy
+      test_redis:
+        condition: service_started
+    volumes:
+      - ./app:/app:rw

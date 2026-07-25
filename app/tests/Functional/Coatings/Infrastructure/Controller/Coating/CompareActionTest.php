@@ -168,6 +168,7 @@ final class CompareActionTest extends WebTestCase
 
         self::assertResponseRedirects('/cabinet/coating/coating/list');
         $session = $this->client->getRequest()->getSession();
+        assert($session instanceof \Symfony\Component\HttpFoundation\Session\Session);
         self::assertContains(
             'Выберите минимум 2 покрытия для сравнения.',
             $session->getFlashBag()->peek('compare_error'),

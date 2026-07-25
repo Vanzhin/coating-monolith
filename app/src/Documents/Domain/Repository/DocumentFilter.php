@@ -11,14 +11,17 @@ class DocumentFilter implements \JsonSerializable
 {
     public const SEARCH_SEPARATOR = '+';
 
+    /** @var list<DocumentCategoryType> */
     private array $categoryTypes = [];
     private ?string $search = null;
     private ?string $title = null;
     private ?string $description = null;
     private ?string $category = null;
+    /** @var list<string>|null */
     private ?array $products = [];
     public ?Pager $pager = null;
     private ?string $index = null;
+    /** @var array<string, string> */
     private array $sort = [];
     private ?\DateTimeInterface $createdFrom = null;
     private ?\DateTimeInterface $createdTo = null;
@@ -73,11 +76,17 @@ class DocumentFilter implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @return list<string>|null
+     */
     public function getProducts(): ?array
     {
         return $this->products;
     }
 
+    /**
+     * @param list<string>|null $products
+     */
     public function setProducts(?array $products): self
     {
         $this->products = $products;
@@ -109,6 +118,9 @@ class DocumentFilter implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @return list<DocumentCategoryType>
+     */
     public function getCategoryTypes(): array
     {
         return $this->categoryTypes;
@@ -123,6 +135,9 @@ class DocumentFilter implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @param list<DocumentCategoryType> $categoryTypes
+     */
     public function setCategoryTypes(array $categoryTypes): self
     {
         $this->categoryTypes = [];
@@ -145,6 +160,9 @@ class DocumentFilter implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function getSort(): array
     {
         return $this->sort;
@@ -193,11 +211,17 @@ class DocumentFilter implements \JsonSerializable
             || null !== $this->createdTo;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return get_object_vars($this);

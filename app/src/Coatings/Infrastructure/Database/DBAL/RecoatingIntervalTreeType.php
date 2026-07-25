@@ -21,6 +21,9 @@ final class RecoatingIntervalTreeType extends AbstractJsonObjectType
         return RecoatingIntervalTree::class;
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     */
     protected function hydrate(array $raw): RecoatingIntervalTree
     {
         return RecoatingIntervalTree::fromArray($raw);

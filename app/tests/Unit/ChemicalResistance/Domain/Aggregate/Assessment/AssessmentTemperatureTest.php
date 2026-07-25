@@ -29,6 +29,9 @@ final class AssessmentTemperatureTest extends TestCase
         AssessmentTemperature::fromInt($v);
     }
 
+    /**
+     * @return list<array{int}>
+     */
     public static function outOfRange(): array
     {
         return [[0], [-5], [501], [1000]];

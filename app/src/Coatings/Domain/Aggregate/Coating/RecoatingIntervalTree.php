@@ -118,6 +118,9 @@ final class RecoatingIntervalTree implements \JsonSerializable
      * Ключ узла авторитетно живёт во внешнем ассоциативном ключе родительского children-словаря;
      * для корня — берётся 'default' при чтении.
      */
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return [
@@ -131,6 +134,9 @@ final class RecoatingIntervalTree implements \JsonSerializable
      *
      * @param string $key — ключ текущего узла (для корня — 'default'). Если в $raw присутствует
      *                    устаревшее поле 'key' (легаси-данные), оно игнорируется.
+     */
+    /**
+     * @param array<string, mixed> $raw
      */
     public static function fromArray(array $raw, string $key = 'default'): self
     {

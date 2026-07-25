@@ -11,7 +11,7 @@ trait ExceptionHelperTrait
     private function getOriginalException(\Exception $e): \Throwable
     {
         if ($e instanceof HandlerFailedException) {
-            return current($e->getWrappedExceptions()) ?? $e->getMessage();
+            return current($e->getWrappedExceptions()) ?: $e;
         }
 
         return $e;

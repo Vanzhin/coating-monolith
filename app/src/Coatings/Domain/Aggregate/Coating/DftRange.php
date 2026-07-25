@@ -20,6 +20,9 @@ class DftRange implements \JsonSerializable
         }
     }
 
+    /**
+     * @return array{min: int|float, max: int|float, tds_dft: int, type: string}
+     */
     public function jsonSerialize(): array
     {
         return [
@@ -30,6 +33,9 @@ class DftRange implements \JsonSerializable
         ];
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     */
     public static function fromArray(array $raw): self
     {
         return new self(

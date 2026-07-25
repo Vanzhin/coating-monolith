@@ -18,7 +18,9 @@ final class CasNumberTypeTest extends TestCase
         if (!\Doctrine\DBAL\Types\Type::hasType('cas_number')) {
             \Doctrine\DBAL\Types\Type::addType('cas_number', CasNumberType::class);
         }
-        $this->type = \Doctrine\DBAL\Types\Type::getType('cas_number');
+        $type = \Doctrine\DBAL\Types\Type::getType('cas_number');
+        assert($type instanceof CasNumberType);
+        $this->type = $type;
     }
 
     public function test_to_php_and_back(): void

@@ -9,7 +9,11 @@ use PHPUnit\Framework\TestCase;
 
 final class SubstanceNameNormalizerTest extends TestCase
 {
-    /** @dataProvider sameGroup */
+    /**
+     * @dataProvider sameGroup
+     *
+     * @param list<string> $variants
+     */
     public function test_all_in_group_normalize_same(array $variants): void
     {
         $first = SubstanceNameNormalizer::normalize($variants[0]);
@@ -18,6 +22,9 @@ final class SubstanceNameNormalizerTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, array{list<string>}>
+     */
     public static function sameGroup(): array
     {
         return [
@@ -52,6 +59,9 @@ final class SubstanceNameNormalizerTest extends TestCase
         );
     }
 
+    /**
+     * @return array<string, array{string, string}>
+     */
     public static function distinctGroup(): array
     {
         return [

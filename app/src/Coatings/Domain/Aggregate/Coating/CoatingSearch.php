@@ -12,6 +12,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class CoatingSearch
 {
+    // @phpstan-ignore-next-line — свойство читается только через DQL/ORM hydration
     private Uuid $coatingId;
+    // @phpstan-ignore-next-line — свойство читается только через DQL/ORM hydration
     private string $searchVector;
 }

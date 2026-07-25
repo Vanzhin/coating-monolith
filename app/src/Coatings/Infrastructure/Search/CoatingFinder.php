@@ -83,6 +83,7 @@ final class CoatingFinder
             return;
         }
 
+        // DEFAULT отфильтрован ранним return; остаются 3 case.
         match ($sort) {
             CoatingSort::TITLE_ASC => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'ASC'),
             CoatingSort::TITLE_DESC => $qb->resetDQLPart('orderBy')->orderBy('cc.title', 'DESC'),
@@ -90,7 +91,6 @@ final class CoatingFinder
                 ->leftJoin('cc.manufacturer', 'sortMf')
                 ->orderBy('sortMf.title', 'ASC')
                 ->addOrderBy('cc.title', 'ASC'),
-            default => null,
         };
     }
 
@@ -184,7 +184,7 @@ final class CoatingFinder
      */
     private function applyThermalExposureFacet(QueryBuilder $qb, CoatingsFilter $filter): void
     {
-        if (!$filter->hasThermalFacet()) {
+        if (!$filter->hasThermalFacet() || null === $filter->thermalEnvironment) {
             return;
         }
 

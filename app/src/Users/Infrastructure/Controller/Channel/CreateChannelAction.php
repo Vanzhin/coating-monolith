@@ -10,6 +10,7 @@ use App\Shared\Infrastructure\Helper\ExceptionHelperTrait;
 use App\Users\Application\DTO\Channel\ChannelDTO;
 use App\Users\Application\UseCase\Command\CreateChannel\CreateChannelCommand;
 use App\Users\Domain\Entity\ChannelType;
+use App\Users\Domain\Entity\User;
 use App\Users\Infrastructure\Form\CreateChannelFormType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +32,7 @@ class CreateChannelAction extends AbstractController
     public function __invoke(Request $request): Response
     {
         $user = $this->getUser();
+        assert($user instanceof User);
 
         if (!$user->isActive()) {
             return $this->redirectToRoute('app_user_channel_verification');
@@ -107,7 +109,10 @@ class CreateChannelAction extends AbstractController
         ]);
     }
 
-    private function createChannelFromFormData(array $data, $user): Response
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function createChannelFromFormData(array $data, User $user): Response
     {
         $channelDto = new ChannelDTO(
             id: UuidService::generate(),

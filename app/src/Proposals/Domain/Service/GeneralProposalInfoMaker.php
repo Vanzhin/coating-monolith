@@ -18,6 +18,9 @@ final readonly class GeneralProposalInfoMaker
     ) {
     }
 
+    /**
+     * @param list<GeneralProposalInfoItemDataInterface> $coats
+     */
     public function make(
         string $number,
         string $ownerId,

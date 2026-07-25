@@ -9,6 +9,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 readonly class CreateProposalDocumentTemplateCommand extends Command
 {
+    /**
+     * @param list<string> $availableTemplates
+     */
     public function __construct(public string $description, public array $availableTemplates, public UploadedFile $uploadedFile)
     {
     }

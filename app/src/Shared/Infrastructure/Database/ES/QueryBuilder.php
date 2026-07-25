@@ -10,6 +10,8 @@ use App\Shared\Infrastructure\Database\ES\Enum\Type;
 class QueryBuilder
 {
     private Query $query;
+
+    /** @var array<string, list<array<string, mixed>>> */
     private array $nestedPaths = [];
 
     public function __construct()
@@ -32,21 +34,33 @@ class QueryBuilder
         return $this->query;
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     */
     public function addMust(Type $type, string $key, mixed $value, ?array $options = null): self
     {
         return $this->add($type, $key, $value, Operator::MUST, $options);
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     */
     public function addShould(Type $type, string $key, mixed $value, ?array $options = null): self
     {
         return $this->add($type, $key, $value, Operator::SHOULD, $options);
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     */
     public function addFilter(Type $type, string $key, mixed $value, ?array $options = null): self
     {
         return $this->add($type, $key, $value, Operator::FILTER, $options);
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     */
     public function addMustNot(Type $type, string $key, mixed $value, ?array $options = null): self
     {
         return $this->add($type, $key, $value, Operator::MUST_NOT, $options);
@@ -82,6 +96,9 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * @param array<int|string, mixed> $aggregation
+     */
     public function addAggregation(array $aggregation): self
     {
         // Если передана одна агрегация без имени, используем ключ как имя
@@ -99,6 +116,10 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * @param array<string, mixed>|string $value
+     * @param array<string, mixed>|null   $options
+     */
     private function add(Type $type, string $key, array|string $value, Operator $operator, ?array $options = null): self
     {
         if (Type::MATCH === $type && is_string($value)) {
@@ -111,6 +132,9 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * @return array<string, list<string>>
+     */
     private function getTransliterationMap(): array
     {
         return [
@@ -130,6 +154,9 @@ class QueryBuilder
         ];
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     */
     private function handleMatchQuery(string $key, string $value, Operator $operator, ?array $options): self
     {
         // Extract numbers from the search query
@@ -216,6 +243,9 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * @return list<string>
+     */
     private function extractNumbers(string $value): array
     {
         preg_match_all('/\d+/', $value, $matches);
@@ -228,6 +258,9 @@ class QueryBuilder
         return preg_replace('/\d+/', '', $value);
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function generateSearchVariations(string $input): array
     {
         $variations = [mb_strtolower($input)];
@@ -245,33 +278,9 @@ class QueryBuilder
         return array_unique($variations);
     }
 
-    private function generateNumberLetterVariations(string $input): array
-    {
-        $variations = [];
-
-        // Генерируем варианты типа "750К", "750K", "750 к", "750 k"
-        if (preg_match('/(\d+)\s*([а-яa-z])/ui', $input, $matches)) {
-            $number = $matches[1];
-            $letter = mb_strtolower($matches[2]);
-
-            $variations = [
-                $number.$letter,
-                $number.' '.$letter,
-                $number.$this->transliterateLetter($letter),
-                $number.' '.$this->transliterateLetter($letter),
-            ];
-        }
-
-        return array_unique($variations);
-    }
-
-    private function transliterateLetter(string $letter): string
-    {
-        $map = $this->getTransliterationMap();
-
-        return $map[$letter][0] ?? $letter;
-    }
-
+    /**
+     * @return array<string, mixed>
+     */
     private function createPhraseQuery(string $key, string $value): array
     {
         return [
@@ -284,6 +293,9 @@ class QueryBuilder
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function createWildcardQuery(string $key, string $value): array
     {
         return [
@@ -296,6 +308,9 @@ class QueryBuilder
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function createFuzzyMatchQuery(string $key, string $value): array
     {
         return [
@@ -308,23 +323,24 @@ class QueryBuilder
         ];
     }
 
+    /**
+     * @param array<string, mixed> $queryPart
+     */
     private function addQueryPart(array $queryPart, Operator $operator): void
     {
         match ($operator) {
             Operator::MUST_NOT => $this->query->addMustNot($queryPart),
             Operator::FILTER => $this->query->addFilter($queryPart),
             Operator::SHOULD => $this->query->addShould($queryPart),
-            default => $this->query->addMust($queryPart),
+            Operator::MUST => $this->query->addMust($queryPart),
         };
     }
 
-    private function addRawQuery(array $query, Operator $operator): self
-    {
-        $this->addQueryPart($query, $operator);
-
-        return $this;
-    }
-
+    /**
+     * @param array<string, mixed>|null $options
+     *
+     * @return array<string, mixed>
+     */
     private function buildQueryPart(Type $type, string $key, mixed $value, ?array $options): array
     {
         return match ($type) {
@@ -335,10 +351,14 @@ class QueryBuilder
             Type::WILDCARD => $this->buildWildcardQuery($key, $value),
             Type::REGEXP => $this->buildRegexpQuery($key, $value),
             Type::BOOL => $this->buildBoolQuery($value),
-            default => throw new \InvalidArgumentException("Unsupported query type: {$type->value}"),
         };
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     *
+     * @return array<string, mixed>
+     */
     private function buildMatchQuery(string $key, mixed $value, ?array $options): array
     {
         $query = ['query' => $value];
@@ -351,6 +371,11 @@ class QueryBuilder
         return ['match' => [$key => $query]];
     }
 
+    /**
+     * @param array<string, mixed>|null $options
+     *
+     * @return array<string, mixed>
+     */
     private function buildTermQuery(string $key, mixed $value, ?array $options): array
     {
         $field = str_ends_with($key, '.keyword') ? $key : $key.'.keyword';
@@ -359,26 +384,45 @@ class QueryBuilder
         return ['term' => [$field => ($options ? array_merge($query, $options) : $query)]];
     }
 
+    /**
+     * @param array<string, mixed> $value
+     *
+     * @return array<string, mixed>
+     */
     private function buildRangeQuery(string $key, array $value): array
     {
         return ['range' => [$key => $value]];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildExistsQuery(string $key): array
     {
         return ['exists' => ['field' => $key]];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildWildcardQuery(string $key, string $value): array
     {
         return ['wildcard' => [$key => ['value' => $value]]];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildRegexpQuery(string $key, string $value): array
     {
         return ['regexp' => [$key => ['value' => $value]]];
     }
 
+    /**
+     * @param array<string, mixed> $value
+     *
+     * @return array<string, mixed>
+     */
     private function buildBoolQuery(array $value): array
     {
         return ['bool' => $value];

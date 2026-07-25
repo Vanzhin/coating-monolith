@@ -37,7 +37,7 @@ class StartCommand extends UserCommand
 
     private function buildDefaultTextMessage(Message $message): string
     {
-        $firstName = $message->getFrom()->getFirstName() ?? 'Пользователь';
+        $firstName = $message->getFrom()->getFirstName() ?: 'Пользователь';
 
         $text = "👋 Привет, {$firstName}!\n\n";
         $text .= "Я бот 1helper.\n";

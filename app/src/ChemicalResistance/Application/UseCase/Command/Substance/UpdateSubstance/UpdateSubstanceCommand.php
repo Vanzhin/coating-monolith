@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Command\Substance\UpdateSubstance;
 
-final readonly class UpdateSubstanceCommand
+use App\Shared\Application\Command\CommandInterface;
+
+final readonly class UpdateSubstanceCommand implements CommandInterface
 {
     /** @param list<string> $aliases */
     public function __construct(

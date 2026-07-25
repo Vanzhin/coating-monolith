@@ -23,6 +23,9 @@ readonly class Error implements \JsonSerializable
         return $this->property.' - '.$this->message;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return get_object_vars($this);

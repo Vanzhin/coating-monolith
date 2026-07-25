@@ -15,7 +15,7 @@ enum DocumentTagType: string
 
     case DEFAULT = 'общий';
 
-    public static function fromName(string $name)
+    public static function fromName(string $name): self
     {
         $name = mb_strtoupper($name);
 

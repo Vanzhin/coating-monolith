@@ -9,6 +9,12 @@ use App\Users\Domain\Service\Validation\ValidatorInterface;
 
 abstract class ListValidator implements ValidatorInterface
 {
+    /**
+     * @param list<string> $whitelist
+     * @param list<string> $blacklist
+     * @param list<string> $whitelistPatterns
+     * @param list<string> $blacklistPatterns
+     */
     public function __construct(
         protected array $whitelist = [],
         protected array $blacklist = [],

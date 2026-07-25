@@ -6,6 +6,7 @@ namespace App\Shared\Domain\Aggregate\Collection;
 
 readonly class StringCollection implements \IteratorAggregate, \JsonSerializable
 {
+    /** @var list<string> */
     public array $list;
 
     public function __construct(string ...$values)
@@ -23,6 +24,9 @@ readonly class StringCollection implements \IteratorAggregate, \JsonSerializable
         return $this->list[0] ?? null;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getList(): array
     {
         return $this->list;
@@ -33,6 +37,9 @@ readonly class StringCollection implements \IteratorAggregate, \JsonSerializable
         return new \ArrayIterator($this->getList());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return get_object_vars($this);

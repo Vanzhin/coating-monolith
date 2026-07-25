@@ -16,6 +16,8 @@ readonly class Validator
     }
 
     /**
+     * @param array<string, mixed> $request
+     *
      * @return Error[]
      */
     public function validate(array $request, Collection $constraint): array

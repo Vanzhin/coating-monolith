@@ -104,7 +104,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
      * Creates a fresh coating with exactly 3 assessments (R, LR, NR) so counts
      * can be asserted precisely without depending on production seed data.
      *
-     * @return array{Uuid, Uuid, Uuid, Uuid, Uuid, Uuid}
+     * @return array{Uuid, Uuid, Uuid, Uuid}
      */
     private function seedMiniCoating(): array
     {
@@ -141,7 +141,6 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
                 AssessmentTemperature::fromInt(40),
                 new StringCollection(),
                 self::getContainer()->get(AssessmentSpecification::class),
-                null,
             );
             $this->assessmentRepo->add($assessment);
             $this->createdAssessmentIds[] = $aid;

@@ -59,7 +59,7 @@ class RegistrationController extends AbstractController
                 ]);
             }
 
-            $user = $this->userRepository->find($result->ulid);
+            $user = $this->userRepository->getByUlid((string) $result->ulid);
 
             $this->addFlash('register_success', 'Регистрация прошла успешно.');
 

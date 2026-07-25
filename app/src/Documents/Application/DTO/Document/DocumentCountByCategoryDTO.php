@@ -6,6 +6,7 @@ namespace App\Documents\Application\DTO\Document;
 
 class DocumentCountByCategoryDTO
 {
+    /** @var list<DocumentCategoryCount> */
     public array $categories = [];
 
     public function __construct(DocumentCategoryCount ...$items)

@@ -105,6 +105,9 @@ class Substance extends Aggregate
         $this->aliases = new StringCollection(...$this->aliases->getList(), ...[$alias]);
     }
 
+    /**
+     * @param list<string> $aliases
+     */
     public function replaceAliases(array $aliases): void
     {
         $this->aliases = new StringCollection();

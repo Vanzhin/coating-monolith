@@ -1,0 +1,102 @@
+name: Tests
+
+# Reusable workflow. Вызывается из ci.yml (на PR/main) и deploy.yml (перед build/deploy).
+# Три параллельных job поверх docker-compose.test.yml.
+
+on:
+  workflow_call:
+
+jobs:
+  static:
+    name: Static (phpstan + php-cs-fixer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        run: docker compose -f docker-compose.test.yml build test_php-cli
+
+      - name: composer install
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+
+      - name: phpstan
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G --no-progress
+
+      - name: php-cs-fixer (dry-run)
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        run: docker compose -f docker-compose.test.yml build test_php-cli
+
+      - name: composer install
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+
+      - name: phpunit tests/Unit
+        run: |
+          mkdir -p app/tests/_output
+          docker compose -f docker-compose.test.yml run --rm test_php-cli \
+            vendor/bin/phpunit tests/Unit --colors=never --log-junit tests/_output/junit-unit.xml
+
+      - name: Upload junit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-unit
+          path: app/tests/_output/junit-unit.xml
+          if-no-files-found: ignore
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
+
+  functional:
+    name: Functional tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        run: docker compose -f docker-compose.test.yml build test_php-cli
+
+      - name: composer install
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+
+      - name: doctrine:migrations:migrate
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: phpunit tests/Functional
+        run: |
+          mkdir -p app/tests/_output
+          docker compose -f docker-compose.test.yml run --rm test_php-cli \
+            vendor/bin/phpunit tests/Functional --colors=never --log-junit tests/_output/junit-functional.xml
+
+      - name: Upload junit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-functional
+          path: app/tests/_output/junit-functional.xml
+          if-no-files-found: ignore
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans

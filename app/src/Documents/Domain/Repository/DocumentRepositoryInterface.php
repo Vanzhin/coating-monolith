@@ -9,6 +9,10 @@ use App\Shared\Domain\Repository\PaginationResult;
 
 interface DocumentRepositoryInterface
 {
+    /**
+     * @param array<string, mixed>|null $mappings
+     * @param array<string, mixed>|null $settings
+     */
     public function dbCreate(string $dbTitle, ?array $mappings = null, ?array $settings = null): bool;
 
     public function dbDelete(string $dbTitle): bool;
@@ -19,5 +23,8 @@ interface DocumentRepositoryInterface
 
     public function search(DocumentFilter $filter): PaginationResult;
 
+    /**
+     * @return array<string, int>
+     */
     public function findCountByCategory(DocumentFilter $filter): array;
 }

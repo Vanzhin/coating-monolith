@@ -127,7 +127,10 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         self::assertContains('Интервал перекрытия (мин), эксплуатация при погружении', $labels);
     }
 
-    /** @param list<DryingTimePointDTO> $dryToTouch */
+    /**
+     * @param list<DryingTimePointDTO> $dryToTouch
+     * @param list<DryingTimePointDTO> $fullCure
+     */
     private function coating(
         int $appMin,
         int $dryingMax,

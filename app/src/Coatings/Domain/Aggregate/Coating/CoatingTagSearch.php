@@ -10,6 +10,8 @@ namespace App\Coatings\Domain\Aggregate\Coating;
  */
 class CoatingTagSearch
 {
+    // @phpstan-ignore-next-line — свойство читается только через DQL/ORM hydration
     private string $tagId;
+    // @phpstan-ignore-next-line — свойство читается только через DQL/ORM hydration
     private string $searchVector;
 }

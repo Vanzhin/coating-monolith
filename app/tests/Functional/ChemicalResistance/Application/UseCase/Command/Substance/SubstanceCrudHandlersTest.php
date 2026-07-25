@@ -171,7 +171,6 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
             AssessmentTemperature::fromInt(20),
             new StringCollection(),
             self::getContainer()->get(AssessmentSpecification::class),
-            $noteRepo,
         );
         $assessments->add($assessment);
 

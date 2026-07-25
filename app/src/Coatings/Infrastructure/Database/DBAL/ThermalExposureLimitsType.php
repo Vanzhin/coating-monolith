@@ -21,6 +21,9 @@ final class ThermalExposureLimitsType extends AbstractJsonObjectType
         return ThermalExposureLimits::class;
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     */
     protected function hydrate(array $raw): ThermalExposureLimits
     {
         return ThermalExposureLimits::fromArray($raw);

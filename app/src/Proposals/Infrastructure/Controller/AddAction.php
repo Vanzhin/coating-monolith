@@ -15,6 +15,7 @@ use App\Proposals\Infrastructure\Mapper\GeneralProposalInfoMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Controller\BaseController;
 use App\Shared\Infrastructure\Validation\Validator;
+use App\Users\Domain\Entity\User;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,7 +48,9 @@ class AddAction extends BaseController
             ];
             if ($request->isMethod(Request::METHOD_POST)) {
                 $inputData = $request->getPayload()->all();
-                $inputData['ownerId'] = $this->getUser()->getUlid();
+                $user = $this->getUser();
+                assert($user instanceof User);
+                $inputData['ownerId'] = $user->getUlid();
                 $errors = $this->validator->validate($inputData,
                     $this->generalProposalInfoMapper->getValidationCollectionGeneralProposalInfo());
                 if ($errors) {

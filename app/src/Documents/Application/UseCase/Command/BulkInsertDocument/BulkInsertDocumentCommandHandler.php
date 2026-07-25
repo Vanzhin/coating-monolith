@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace App\Documents\Application\UseCase\Command\BulkInsertDocument;
 
-use App\Documents\Domain\Factory\DocumentFactory;
 use App\Documents\Domain\Repository\DocumentRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
-use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class BulkInsertDocumentCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private DocumentFactory $documentFactory,
         private DocumentRepositoryInterface $documentRepository,
-        private SerializerInterface $serializer
     ) {
     }
 

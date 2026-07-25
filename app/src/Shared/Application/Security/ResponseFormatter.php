@@ -8,6 +8,11 @@ use Symfony\Component\Form\FormInterface;
 
 class ResponseFormatter
 {
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
     public function formatSuccess(string $message, array $data = []): array
     {
         return [
@@ -17,6 +22,11 @@ class ResponseFormatter
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
     public function formatError(string $message, int $code = 400, array $data = []): array
     {
         return [
@@ -27,6 +37,9 @@ class ResponseFormatter
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function formatValidationErrors(FormInterface $form): array
     {
         $errors = [];

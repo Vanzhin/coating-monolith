@@ -16,6 +16,9 @@ use Symfony\Component\Uid\Uuid;
 
 class DocumentMapper
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function mapEntity(array $data): Document
     {
         $item = new Document(

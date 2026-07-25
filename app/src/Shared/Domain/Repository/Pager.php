@@ -16,7 +16,7 @@ readonly class Pager
         public int $perPage,
         public ?int $total_items = null
     ) {
-        $this->setTotalPages();
+        $this->total_pages = $this->total_items ? (int) ceil($this->total_items / $this->perPage) : null;
     }
 
     public static function emptySet(): self
@@ -41,14 +41,5 @@ readonly class Pager
     public function getLimit(): int
     {
         return $this->perPage;
-    }
-
-    private function setTotalPages(): void
-    {
-        if (!$this->total_items) {
-            $this->total_pages = null;
-        } else {
-            $this->total_pages = (int) ceil($this->total_items / $this->perPage);
-        }
     }
 }

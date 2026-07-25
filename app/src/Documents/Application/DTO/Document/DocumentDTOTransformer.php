@@ -40,6 +40,11 @@ class DocumentDTOTransformer
         return $dto;
     }
 
+    /**
+     * @param list<Document> $documents
+     *
+     * @return list<DocumentDTO>
+     */
     public function fromEntityList(array $documents): array
     {
         $documentDTOs = [];

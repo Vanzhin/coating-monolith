@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Application\Command\UseCase\Command\DeleteDb;
 
-class DeleteDbCommandResult
+readonly class DeleteDbCommandResult
 {
-    public function __construct(bool $isCreated)
+    public function __construct(public bool $isCreated)
     {
     }
 }

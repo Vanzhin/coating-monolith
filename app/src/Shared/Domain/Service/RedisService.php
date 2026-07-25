@@ -20,6 +20,9 @@ readonly class RedisService
         return sprintf('%s:%s', $this->prefix, $key);
     }
 
+    /**
+     * @param array<int|string, mixed> $data
+     */
     public function set(string $key, array $data, int $expire = 60 * 60 * 2): void
     {
         $this->redis->set($this->getKey($key), serialize($data));
@@ -28,11 +31,17 @@ readonly class RedisService
         }
     }
 
-    public function get(string $key, $defaultValue = null): ?array
+    /**
+     * @return array<int|string, mixed>|null
+     */
+    public function get(string $key, mixed $defaultValue = null): ?array
     {
         return ($cache = $this->redis->get($this->getKey($key))) ? unserialize($cache) : $defaultValue;
     }
 
+    /**
+     * @param array<int|string, mixed> $data
+     */
     public function add(string $key, array $data, int $expire = 60 * 60 * 2): void
     {
         if ($this->exists($key)) {
@@ -68,7 +77,10 @@ readonly class RedisService
         return $value ?: null;
     }
 
-    public function listRange(string $key, int $start = 0, int $end = -1, $default = []): array
+    /**
+     * @return array<int, string>
+     */
+    public function listRange(string $key, int $start = 0, int $end = -1, mixed $default = []): array
     {
         $value = $this->redis->lRange($this->getKey($key), $start, $end);
 

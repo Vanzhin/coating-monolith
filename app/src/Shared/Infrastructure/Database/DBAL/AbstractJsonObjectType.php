@@ -18,7 +18,12 @@ abstract class AbstractJsonObjectType extends JsonType
     /** Класс VO, который этот тип сериализует/гидрирует. */
     abstract protected function valueClass(): string;
 
-    /** Гидрация VO из ассоциативного массива (обычно `static::valueClass()::fromArray($raw)`). */
+    /**
+     * Гидрация VO из ассоциативного массива (обычно `static::valueClass()::fromArray($raw)`).
+     * Подклассы могут сузить тип $raw (map или list) — LSP допускает ковариантное расширение.
+     *
+     * @param array<mixed> $raw
+     */
     abstract protected function hydrate(array $raw): object;
 
     public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string

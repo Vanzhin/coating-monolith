@@ -11,6 +11,7 @@ class ProposalDocumentTemplate extends Aggregate
 {
     private readonly string $id;
 
+    /** @var list<string> */
     private array $availableFormats = [];
 
     public function __construct(
@@ -32,6 +33,9 @@ class ProposalDocumentTemplate extends Aggregate
         }
     }
 
+    /**
+     * @return list<string>
+     */
     public function getAvailableFormats(): array
     {
         return $this->availableFormats;

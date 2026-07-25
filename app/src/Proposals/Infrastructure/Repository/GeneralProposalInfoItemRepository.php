@@ -37,7 +37,7 @@ class GeneralProposalInfoItemRepository extends ServiceEntityRepository implemen
 
     public function findOneByNumber(string $number): ?GeneralProposalInfo
     {
-        // TODO: Implement findOneByNumber() method.
+        throw new \LogicException('findOneByNumber() not implemented');
     }
 
     public function remove(GeneralProposalInfoItem $proposalItem): void
@@ -48,6 +48,6 @@ class GeneralProposalInfoItemRepository extends ServiceEntityRepository implemen
 
     public function findByFilter(CoatingsFilter $filter): PaginationResult
     {
-        // TODO: Implement findByFilter() method.
+        throw new \LogicException('findByFilter() not implemented');
     }
 }

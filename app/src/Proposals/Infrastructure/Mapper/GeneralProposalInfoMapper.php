@@ -15,6 +15,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class GeneralProposalInfoMapper
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function buildInputDataFromDto(CoatingDTO $coatingDTO): array
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
@@ -25,6 +28,9 @@ class GeneralProposalInfoMapper
         return array_merge(get_object_vars($coatingDTO), compact('manufacturerId', 'coatingTagIds'));
     }
 
+    /**
+     * @param array<string, mixed> $inputData
+     */
     public function buildDtoFromInputData(array $inputData): GeneralProposalInfoDTO
     {
         $dto = new GeneralProposalInfoDTO();

@@ -49,7 +49,7 @@ class SendChannelTokenAction extends AbstractController
             );
         }
 
-        $channel = $this->channelRepository->find($channelId);
+        $channel = $this->channelRepository->findById((string) $channelId);
         if (!$channel) {
             return $this->json(
                 $this->responseFormatter->formatError('Канал не найден', Response::HTTP_NOT_FOUND),

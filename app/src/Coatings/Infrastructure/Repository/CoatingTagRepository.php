@@ -28,12 +28,12 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
 
     public function findByTitle(string $title): PaginationResult
     {
-        // TODO: Implement findByTitle() method.
+        throw new \LogicException('findByTitle() not implemented');
     }
 
     public function findByType(string $type): PaginationResult
     {
-        // TODO: Implement findByType() method.
+        throw new \LogicException('findByType() not implemented');
     }
 
     public function findOneById(string $id): ?CoatingTag

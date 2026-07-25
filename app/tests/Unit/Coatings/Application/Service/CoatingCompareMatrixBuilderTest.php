@@ -106,6 +106,11 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
         return new CoatingCompareMatrixBuilder(new CoatingTimeMatrixBuilder());
     }
 
+    /**
+     * @param list<array<string, mixed>> $sections
+     *
+     * @return array<string, mixed>|null
+     */
     private function findSection(array $sections, string $label): ?array
     {
         foreach ($sections as $s) {

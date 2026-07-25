@@ -9,6 +9,7 @@ use App\Proposals\Domain\Repository\GeneralProposalInfoFilter;
 use App\Proposals\Infrastructure\Adapter\CoatingsAdapter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Users\Domain\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +29,9 @@ class ListAction extends AbstractController
         $search = $request->query->get('search');
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
         $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
-        $query = new GetPagedGeneralProposalInfoQuery(new GeneralProposalInfoFilter($this->getUser()->getUlid(), $search, Pager::fromPage($page, $limit)));
+        $user = $this->getUser();
+        assert($user instanceof User);
+        $query = new GetPagedGeneralProposalInfoQuery(new GeneralProposalInfoFilter($user->getUlid(), $search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
         $coatings = $this->coatingsAdapter->getPagedCoatings();
 

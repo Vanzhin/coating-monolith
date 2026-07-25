@@ -100,6 +100,7 @@ class ManufacturerController extends AbstractController
     #[Route(path: '/{id}/delete', name: 'delete')]
     public function delete(string $id): Response
     {
+        $error = null;
         try {
             $command = new RemoveManufacturerCommand($id);
             $this->commandBus->execute($command);

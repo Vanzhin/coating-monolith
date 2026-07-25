@@ -78,6 +78,9 @@ final class SearchIntegrationTest extends KernelTestCase
         return Uuid::fromString($raw);
     }
 
+    /**
+     * @return array{Uuid, Uuid}
+     */
     private function createSubstanceAndAssessment(Uuid $coatingId, string $suffix): array
     {
         $substanceId = Uuid::v4();
@@ -100,7 +103,6 @@ final class SearchIntegrationTest extends KernelTestCase
             AssessmentTemperature::fromInt(40),
             new StringCollection(),
             self::getContainer()->get(AssessmentSpecification::class),
-            null,
         );
         $this->assessmentRepo->add($assessment);
         $this->assessmentIds[] = $assessmentId;

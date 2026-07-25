@@ -52,6 +52,7 @@ class UpdateAction extends AbstractController
         }
 
         if ($request->isMethod(Request::METHOD_POST)) {
+            $inputData = [];
             try {
                 $inputData = $request->getPayload()->all();
                 $inputData['id'] = $id;

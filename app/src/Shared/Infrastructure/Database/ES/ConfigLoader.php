@@ -13,6 +13,9 @@ readonly class ConfigLoader
     ) {
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function loadFromConfig(string $configName): array
     {
         $configPath = $this->params->get('elasticsearch.config_dir').'/'.$configName.'.php';

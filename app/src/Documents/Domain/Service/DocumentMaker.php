@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Documents\Domain\Service;
 
-use App\Documents\Domain\Repository\DocumentRepositoryInterface;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 use App\Proposals\Domain\Factory\GeneralProposalInfoFactory;
 use App\Proposals\Domain\Factory\GeneralProposalInfoItemFactory;
@@ -12,14 +11,16 @@ use App\Proposals\Domain\Service\GeneralProposalInfoItemDataInterface;
 
 final readonly class DocumentMaker
 {
-    // todo
+    // todo черновик — сервис пока не подключён к DI; persist в GeneralProposalInfoRepository ещё не пробрасывается
     public function __construct(
-        private DocumentRepositoryInterface $documentRepository,
         private GeneralProposalInfoFactory $generalProposalInfoFactory,
         private GeneralProposalInfoItemFactory $generalProposalInfoItemFactory,
     ) {
     }
 
+    /**
+     * @param list<GeneralProposalInfoItemDataInterface> $coats
+     */
     public function make(
         string $number,
         string $ownerId,
@@ -68,6 +69,7 @@ final readonly class DocumentMaker
             );
         }
 
+        // @phpstan-ignore-next-line — todo подключить GeneralProposalInfoRepository в конструктор
         $this->generalProposalInfoRepository->add($generalProposalInfo);
 
         return $generalProposalInfo;

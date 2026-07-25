@@ -32,6 +32,7 @@ class TelegramWebhookController extends AbstractController
     #[Route('/webhook/telegram', name: 'app_telegram_webhook', methods: ['POST'])]
     public function webhook(Request $request): Response
     {
+        $channelId = null;
         try {
             $secret = $request->headers->get('x-telegram-bot-api-secret-token');
             if (!$secret && !$this->telegramBotService->isSecretValid($secret)) {

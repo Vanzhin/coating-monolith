@@ -21,13 +21,20 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
         }
         $data = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
 
-        // 1. Fetch coating id — must exist before seeding.
+        // 1. Fetch coating id. Если покрытия нет в БД (пустая CI-БД или dev без базовых данных) —
+        // пропускаем seed и продолжаем цепочку миграций. Данные chemical_resistance опциональны.
         $coating = $this->connection->fetchAssociative(
             'SELECT id FROM coatings_coating WHERE title = ?',
             [$data['coating_title']],
         );
         if (false === $coating) {
-            throw new \RuntimeException("Coating «{$data['coating_title']}» must exist before seeding.");
+            $this->write(sprintf(
+                '<comment>Skipping %s: coating «%s» not found in DB (empty seed?).</comment>',
+                $this->seedFileName(),
+                $data['coating_title'],
+            ));
+
+            return;
         }
         $coatingId = $coating['id'];
 
@@ -105,7 +112,7 @@ abstract class AbstractChemicalResistanceSeedMigration extends AbstractMigration
             $noteIds = array_map(
                 function (string $label) use ($labelToId): string {
                     return $labelToId[$label]
-                        ?? throw new \RuntimeException("Note ref «$label» not resolved in {$this->seedFileName()}.");
+                        ?? throw new \RuntimeException("Note ref «{$label}» not resolved in {$this->seedFileName()}.");
                 },
                 $a['notes'] ?? [],
             );

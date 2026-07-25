@@ -10,7 +10,11 @@ use PHPUnit\Framework\TestCase;
 
 final class GradeCellParserTest extends TestCase
 {
-    /** @dataProvider cases */
+    /**
+     * @dataProvider cases
+     *
+     * @param list<string> $noteLabels
+     */
     public function test_parse(string $input, string $grade, ?int $maxT, array $noteLabels): void
     {
         $out = (new GradeCellParser())->parse($input);
@@ -19,6 +23,9 @@ final class GradeCellParserTest extends TestCase
         self::assertSame($noteLabels, $out->noteLabels);
     }
 
+    /**
+     * @return array<string, array{string, string, int|null, list<string>}>
+     */
     public static function cases(): array
     {
         return [

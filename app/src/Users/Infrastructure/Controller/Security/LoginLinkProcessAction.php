@@ -32,7 +32,7 @@ class LoginLinkProcessAction extends AbstractController
         if (!$userId) {
             return $this->invalidLinkResponse();
         }
-        $user = $this->userRepository->find($userId);
+        $user = $this->userRepository->getByUlid((string) $userId);
         if (!$user) {
             // Юзер удалён между отправкой ссылки и её использованием — стираем
             // hash тоже, чтобы висящий ключ не жил свой TTL зря.

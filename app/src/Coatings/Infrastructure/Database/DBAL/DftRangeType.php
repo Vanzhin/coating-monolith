@@ -21,6 +21,9 @@ final class DftRangeType extends AbstractJsonObjectType
         return DftRange::class;
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     */
     protected function hydrate(array $raw): DftRange
     {
         return DftRange::fromArray($raw);

@@ -8,6 +8,9 @@ use App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType;
 
 class DocumentCountByCategoryDTOTransformer
 {
+    /**
+     * @param array<string, int> $items
+     */
     public function fromArray(array $items): DocumentCountByCategoryDTO
     {
         $categories = [];

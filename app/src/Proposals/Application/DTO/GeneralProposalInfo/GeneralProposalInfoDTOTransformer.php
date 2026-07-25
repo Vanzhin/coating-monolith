@@ -39,6 +39,9 @@ readonly class GeneralProposalInfoDTOTransformer
         return $dto;
     }
 
+    /**
+     * @param array<string, mixed> $inputData
+     */
     public function fromArray(array $inputData): object
     {
         $dto = new GeneralProposalInfoDTO();

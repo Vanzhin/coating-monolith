@@ -18,7 +18,11 @@ final class CasNumberTest extends TestCase
         self::assertSame($input, (string) $cas);
     }
 
-    /** Проверенные CAS чистых веществ + checksum. */
+    /**
+     * Проверенные CAS чистых веществ + checksum.
+     *
+     * @return array<string, array{string}>
+     */
     public static function validCases(): array
     {
         return [
@@ -39,6 +43,9 @@ final class CasNumberTest extends TestCase
         CasNumber::fromString($input);
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
     public static function invalidCases(): array
     {
         return [

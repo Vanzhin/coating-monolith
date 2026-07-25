@@ -141,7 +141,6 @@ final class MatchSubstancesForSearchQueryHandlerTest extends KernelTestCase
             AssessmentTemperature::fromInt(20),
             new StringCollection(),
             self::getContainer()->get(AssessmentSpecification::class),
-            null,
         );
         $this->assessmentRepo->add($assessment);
         $this->createdAssessmentIds[] = $id;

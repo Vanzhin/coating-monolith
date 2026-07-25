@@ -15,6 +15,9 @@ final class GradeTest extends TestCase
         self::assertSame($expected, $g->isSuitable());
     }
 
+    /**
+     * @return array<string, array{Grade, bool}>
+     */
     public static function suitableCases(): array
     {
         return [

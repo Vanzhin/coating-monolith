@@ -24,8 +24,8 @@ readonly class CheckIsChannelVerifiedQueryHandler implements QueryHandlerInterfa
         $filter->type = $query->type;
         $result = $this->repository->findByFilter($filter);
 
-        /** @var Channel $channel */
-        $channel = current($result->items) ?? null;
+        /** @var Channel|false $channel */
+        $channel = current($result->items);
 
         if (!$channel) {
             return new CheckIsChannelVerifiedQueryResult(false);

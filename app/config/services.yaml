@@ -137,6 +137,10 @@ services:
         basicAuthentication: [ '%env(ELASTIC_USERNAME)%', '%env(ELASTIC_PASSWORD)%' ]
         sslVerification: false
 
+  # Алиас нужен, чтобы autowire сработал по конкретному Client (у него определены
+  # index/indices/bulk/search — а в ClientInterface их нет). Фабрика возвращает Client.
+  Elastic\Elasticsearch\Client: '@Elastic\Elasticsearch\ClientInterface'
+
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository
   App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface:

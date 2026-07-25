@@ -112,6 +112,9 @@ final readonly class ThermalExposureLimits implements \JsonSerializable
         );
     }
 
+    /**
+     * @return array{continuous_min: int|null, continuous_max: int|null, peak_max: int|null, peak_duration_minutes: int|null}
+     */
     public function jsonSerialize(): array
     {
         return [

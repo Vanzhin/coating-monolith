@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Proposals\Application\DTO\ProposalDocumentTemplate;
 
 use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTO;
+use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTO;
 use App\Proposals\Application\DTO\GeneralProposalInfoItem\GeneralProposalInfoItemDTOTransformer;
 use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
 
@@ -40,6 +41,9 @@ readonly class ProposalDocumentTemplateDTOTransformer
         return $dto;
     }
 
+    /**
+     * @param array<string, mixed> $inputData
+     */
     public function fromArray(array $inputData): object
     {
         $dto = new GeneralProposalInfoDTO();

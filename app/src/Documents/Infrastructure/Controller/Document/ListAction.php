@@ -39,10 +39,7 @@ class ListAction extends AbstractController
                 Pager::fromPage($page, $limit)
             );
             foreach ($inputData['categories'] ?? [] as $category) {
-                $category = DocumentCategoryType::fromName($category);
-                if ($category) {
-                    $filter->addCategoryType($category);
-                }
+                $filter->addCategoryType(DocumentCategoryType::fromName($category));
             }
             $query = new GetPagedDocumentsQuery($filter);
             $result = $this->queryBus->execute($query);

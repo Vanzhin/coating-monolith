@@ -38,7 +38,7 @@ enum DocumentCategoryType: string
 
     case COMPATIBLE = 'Таблица совместимости';
 
-    public static function fromName(string $name)
+    public static function fromName(string $name): self
     {
         return constant("self::$name");
     }

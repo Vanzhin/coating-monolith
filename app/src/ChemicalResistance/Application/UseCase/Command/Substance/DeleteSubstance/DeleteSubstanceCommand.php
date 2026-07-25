@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance;
 
-final readonly class DeleteSubstanceCommand
+use App\Shared\Application\Command\CommandInterface;
+
+final readonly class DeleteSubstanceCommand implements CommandInterface
 {
     public function __construct(public string $id)
     {

@@ -67,6 +67,9 @@ final readonly class Token
         return $this->token;
     }
 
+    /**
+     * @return array{token: string, subjectId: string, expiresAt: string}
+     */
     public function toArray(): array
     {
         return [
@@ -76,6 +79,9 @@ final readonly class Token
         ];
     }
 
+    /**
+     * @param array{token: string, subjectId: string, expiresAt: string} $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Application\Command\UseCase\Command\InitDb;
 
-class InitDbCommandResult
+readonly class InitDbCommandResult
 {
-    public function __construct(bool $isCreated)
+    public function __construct(public bool $isCreated)
     {
     }
 }

@@ -18,6 +18,7 @@ class CoatingTag extends Aggregate
     private readonly string $id;
     private string $title;
     private ?string $type = null;
+    private CoatingTagSpecification $specification;
 
     /**
      * @var Collection<Coating>

@@ -112,7 +112,6 @@ final class PersistenceRoundTripTest extends KernelTestCase
             AssessmentTemperature::fromInt(70),
             new StringCollection($note->getId()),
             self::getContainer()->get(AssessmentSpecification::class),
-            $this->notes,
         );
         $this->assessments->add($assessment);
 

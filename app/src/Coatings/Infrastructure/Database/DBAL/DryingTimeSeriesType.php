@@ -21,6 +21,9 @@ final class DryingTimeSeriesType extends AbstractJsonObjectType
         return DryingTimeSeries::class;
     }
 
+    /**
+     * @param list<array<string, mixed>> $raw
+     */
     protected function hydrate(array $raw): DryingTimeSeries
     {
         return DryingTimeSeries::fromArray($raw);

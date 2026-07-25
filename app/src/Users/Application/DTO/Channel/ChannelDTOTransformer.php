@@ -17,6 +17,11 @@ class ChannelDTOTransformer
         return $dto;
     }
 
+    /**
+     * @param list<Channel> $channels
+     *
+     * @return list<ChannelDTO>
+     */
     public function fromEntityList(array $channels): array
     {
         $channelDTOs = [];

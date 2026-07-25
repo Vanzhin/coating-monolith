@@ -211,7 +211,11 @@ final class CoatingMapperTest extends TestCase
         $this->assertNull($form[2]['time_in_minutes']);
     }
 
-    /** @param array<string, mixed> $overrides */
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
     private function validInput(array $overrides): array
     {
         return array_merge([
@@ -228,7 +232,11 @@ final class CoatingMapperTest extends TestCase
         ], $overrides);
     }
 
-    /** @param array<string, mixed> $overrides */
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
     private function minimalInput(array $overrides): array
     {
         return array_merge([

@@ -15,8 +15,9 @@ use Doctrine\Common\Collections\Collection;
 
 class CoatingSystem extends Aggregate
 {
-    // todo займусь попозже
+    // todo займусь попозже — черновик, пока не подключён к DI/ORM
     private readonly string $id;
+    private string $title;
     private string $description;
 
     private int $volumeSolid;
@@ -83,6 +84,7 @@ class CoatingSystem extends Aggregate
     {
         $this->title = $title;
         AssertService::maxLength($this->title, 100);
+        // @phpstan-ignore-next-line — todo satisfy() пока ждёт Coating; спецификация будет расширена под CoatingSystem
         $this->specification->uniqueTitleCoatingSpecification->satisfy($this);
     }
 

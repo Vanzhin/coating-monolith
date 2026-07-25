@@ -13,6 +13,8 @@ class DocumentDTO
     public ?string $link;
     public ?string $createdAt;
     public ?string $updatedAt;
+    /** @var list<DocumentProductDTO>|null */
     public ?array $products;
+    /** @var list<DocumentTagDTO>|null */
     public ?array $tags;
 }

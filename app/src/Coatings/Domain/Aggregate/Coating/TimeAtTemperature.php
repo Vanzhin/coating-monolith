@@ -38,6 +38,9 @@ final readonly class TimeAtTemperature implements \JsonSerializable
         return CarbonInterval::minutes($this->timeInMinutes);
     }
 
+    /**
+     * @return array{temperature_at: int|float, time_in_minutes: int|null, is_calculated: bool}
+     */
     public function jsonSerialize(): array
     {
         return [

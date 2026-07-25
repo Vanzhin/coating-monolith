@@ -154,7 +154,6 @@ final class NoteCrudHandlersTest extends KernelTestCase
             AssessmentTemperature::fromInt(20),
             new StringCollection($noteId),
             self::getContainer()->get(AssessmentSpecification::class),
-            $noteRepo,
         );
         $assessments->add($assessment);
 

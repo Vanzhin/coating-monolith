@@ -9,5 +9,6 @@ class ProposalDocumentTemplateDTO
     public ?string $id;
     public ?string $description = null;
     public ?string $path = null;
+    /** @var list<string> */
     public array $availableFormats = [];
 }

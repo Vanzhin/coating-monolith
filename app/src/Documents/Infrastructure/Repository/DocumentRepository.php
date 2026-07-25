@@ -12,7 +12,7 @@ use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Infrastructure\Database\ES\ConfigLoader;
 use App\Shared\Infrastructure\Database\ES\Enum\Type;
 use App\Shared\Infrastructure\Database\ES\QueryBuilder;
-use Elastic\Elasticsearch\ClientInterface;
+use Elastic\Elasticsearch\Client;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Elastic\Elasticsearch\Exception\MissingParameterException;
@@ -24,7 +24,7 @@ class DocumentRepository implements DocumentRepositoryInterface
     private string $default = 'documents';
 
     public function __construct(
-        private ClientInterface $client,
+        private Client $client,
         private QueryBuilder $queryBuilder,
         private ConfigLoader $defaultConfig,
         private DocumentMapper $documentMapper,
@@ -33,6 +33,9 @@ class DocumentRepository implements DocumentRepositoryInterface
     }
 
     /**
+     * @param array<string, mixed>|null $mappings
+     * @param array<string, mixed>|null $settings
+     *
      * @throws ClientResponseException
      * @throws ServerResponseException
      * @throws MissingParameterException
@@ -99,6 +102,9 @@ class DocumentRepository implements DocumentRepositoryInterface
         return $this->createPaginationResult($result);
     }
 
+    /**
+     * @return array<string, int>
+     */
     public function findCountByCategory(DocumentFilter $filter): array
     {
         $this->queryBuilder->reset();
@@ -129,6 +135,11 @@ class DocumentRepository implements DocumentRepositoryInterface
         return $this->formatCategoryStats($result);
     }
 
+    /**
+     * @param array<string, mixed> $result
+     *
+     * @return array<string, int>
+     */
     private function formatCategoryStats(array $result): array
     {
         $stats = [];
@@ -187,10 +198,6 @@ class DocumentRepository implements DocumentRepositoryInterface
         $mustQueries = [];
 
         foreach ($parts as $part) {
-            if (empty($part)) {
-                continue;
-            }
-
             // Для каждой части создаем should запрос
             $shouldQueries = $this->buildSearchQueryArray($part);
 
@@ -228,6 +235,9 @@ class DocumentRepository implements DocumentRepositoryInterface
         );
     }
 
+    /**
+     * @param list<\App\Documents\Domain\Aggregate\Document\ValueObject\DocumentCategoryType> $categoryTypes
+     */
     private function applyCategoryTypesFilter(array $categoryTypes): void
     {
         $types = array_map(fn ($item) => $item->value, $categoryTypes);
@@ -252,6 +262,9 @@ class DocumentRepository implements DocumentRepositoryInterface
             ->setOffset($filter->getPager()->getOffset());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function executeSearch(DocumentFilter $filter): array
     {
         try {
@@ -269,6 +282,9 @@ class DocumentRepository implements DocumentRepositoryInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $result
+     */
     private function createPaginationResult(array $result): PaginationResult
     {
         $total = $result['hits']['total']['value'] ?? 0;
@@ -280,6 +296,9 @@ class DocumentRepository implements DocumentRepositoryInterface
         return new PaginationResult($items, $total);
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function buildSearchQueryArray(string $searchTerm): array
     {
         $shouldQueries = [];

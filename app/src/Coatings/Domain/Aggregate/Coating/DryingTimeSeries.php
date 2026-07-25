@@ -55,7 +55,7 @@ final readonly class DryingTimeSeries implements TimeSeries
         );
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @return list<TimeAtTemperature> */
     public function jsonSerialize(): array
     {
         return $this->points;
