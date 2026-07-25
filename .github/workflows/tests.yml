@@ -16,11 +16,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create empty app/.env
+        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
+        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
+        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
+        # не бросил PathException.
+        run: touch app/.env
+
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
 
       - name: composer install
-        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+        # --no-scripts: post-install-cmd (cache:clear) требует app/.env, которого нет в CI-чекауте (в .gitignore).
+        # Тестам этот cache:clear не нужен — kernel бутстрапится через tests/bootstrap.php.
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist --no-scripts
 
       - name: phpstan
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G --no-progress
@@ -41,11 +50,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create empty app/.env
+        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
+        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
+        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
+        # не бросил PathException.
+        run: touch app/.env
+
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
 
       - name: composer install
-        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+        # --no-scripts: post-install-cmd (cache:clear) требует app/.env, которого нет в CI-чекауте (в .gitignore).
+        # Тестам этот cache:clear не нужен — kernel бутстрапится через tests/bootstrap.php.
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist --no-scripts
 
       - name: phpunit tests/Unit
         run: |
@@ -74,11 +92,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create empty app/.env
+        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
+        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
+        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
+        # не бросил PathException.
+        run: touch app/.env
+
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
 
       - name: composer install
-        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist
+        # --no-scripts: post-install-cmd (cache:clear) требует app/.env, которого нет в CI-чекауте (в .gitignore).
+        # Тестам этот cache:clear не нужен — kernel бутстрапится через tests/bootstrap.php.
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist --no-scripts
 
       - name: doctrine:migrations:migrate
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli bin/console doctrine:migrations:migrate --no-interaction
