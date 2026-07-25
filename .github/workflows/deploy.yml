@@ -11,7 +11,12 @@ env:
 
 jobs:
   # Тесты + статика — гейт для build/deploy. Если красные, дальше не пойдёт.
+  # permissions: checks: write нужен reusable-у tests.yml (mikepenz/action-junit-report
+  # публикует check-run с annotations). Reusable не может добрать себе прав — их выдаёт caller.
   test:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/tests.yml
 
   build:
