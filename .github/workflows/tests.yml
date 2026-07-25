@@ -19,12 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Create empty app/.env
-        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
-        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
-        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
-        # не бросил PathException.
-        run: touch app/.env
+      - name: Seed app/.env from example
+        # .env в .gitignore → в CI-чекауте отсутствует. Копируем .env.example как источник
+        # дефолтов всех переменных (единый список правды). Симфони каскадом накатит поверх
+        # .env.test (тестовые оверрайды: DATABASE_URL, REDIS_HOST, JWT_PASSPHRASE, ...).
+        # Реальные APP_ENV/DATABASE_URL/REDIS_HOST также приходят из environment: в
+        # docker-compose.test.yml — они выигрывают у .env.* (env vs Dotenv).
+        run: cp app/.env.example app/.env
 
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
@@ -50,12 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Create empty app/.env
-        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
-        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
-        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
-        # не бросил PathException.
-        run: touch app/.env
+      - name: Seed app/.env from example
+        # .env в .gitignore → в CI-чекауте отсутствует. Копируем .env.example как источник
+        # дефолтов всех переменных (единый список правды). Симфони каскадом накатит поверх
+        # .env.test (тестовые оверрайды: DATABASE_URL, REDIS_HOST, JWT_PASSPHRASE, ...).
+        # Реальные APP_ENV/DATABASE_URL/REDIS_HOST также приходят из environment: в
+        # docker-compose.test.yml — они выигрывают у .env.* (env vs Dotenv).
+        run: cp app/.env.example app/.env
 
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
@@ -99,12 +101,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Create empty app/.env
-        # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
-        # файла. Реальные APP_ENV/DATABASE_URL/REDIS_HOST заданы через environment: в
-        # docker-compose.test.yml и перекрывают пустой .env — сам файл нужен только чтобы Dotenv
-        # не бросил PathException.
-        run: touch app/.env
+      - name: Seed app/.env from example
+        # .env в .gitignore → в CI-чекауте отсутствует. Копируем .env.example как источник
+        # дефолтов всех переменных (единый список правды). Симфони каскадом накатит поверх
+        # .env.test (тестовые оверрайды: DATABASE_URL, REDIS_HOST, JWT_PASSPHRASE, ...).
+        # Реальные APP_ENV/DATABASE_URL/REDIS_HOST также приходят из environment: в
+        # docker-compose.test.yml — они выигрывают у .env.* (env vs Dotenv).
+        run: cp app/.env.example app/.env
 
       - name: Build test image
         run: docker compose -f docker-compose.test.yml build test_php-cli
@@ -116,6 +119,11 @@ jobs:
 
       - name: doctrine:migrations:migrate
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli bin/console doctrine:migrations:migrate --no-interaction
+
+      # lexik/jwt-authentication-bundle требует пары .pem-ключей по путям из JWT_SECRET_KEY/JWT_PUBLIC_KEY.
+      # Файлы в .gitignore → в CI их нет. Генерируем эфемерную пару с passphrase из .env.test.
+      - name: Generate JWT keypair
+        run: docker compose -f docker-compose.test.yml run --rm test_php-cli bin/console lexik:jwt:generate-keypair --skip-if-exists
 
       - name: phpunit tests/Functional
         run: |
