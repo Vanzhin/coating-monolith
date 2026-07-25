@@ -129,6 +129,10 @@ jobs:
       # любой рендер страницы отдаёт 500 (Asset RuntimeException). Собираем ассеты в одноразовом
       # node-контейнере (та же схема, что в deploy.yml). encore dev — быстрее production,
       # тестам достаточно наличия манифеста.
+      #
+      # apk add git + git config insteadOf: в yarn.lock есть git-зависимости
+      # (@symfony/stimulus-bridge через git+ssh://), а node:22-alpine без git.
+      # SSH-ключей у CI нет, поэтому переписываем ssh URL на https — как в deploy.yml.
       - name: Build webpack assets
         run: |
           docker run --rm \
@@ -136,7 +140,14 @@ jobs:
             -v "$(pwd)/app:/app" \
             -w /app \
             node:22-alpine \
-            sh -c "yarn install --frozen-lockfile && yarn dev"
+            sh -c "
+              set -e
+              apk add --no-cache git
+              git config --global --add url.'https://github.com/'.insteadOf 'ssh://git@github.com/'
+              git config --global --add url.'https://github.com/'.insteadOf 'git@github.com:'
+              yarn install --frozen-lockfile
+              yarn dev
+            "
 
       - name: phpunit tests/Functional
         run: |
