@@ -6,15 +6,18 @@ name: Tests
 on:
   workflow_call:
 
+# checks: write нужен mikepenz/action-junit-report для публикации check-run с annotations.
+# У reusable workflow дефолтные permissions read-only, поэтому объявляем явно.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   static:
     name: Static (phpstan + php-cs-fixer)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Create empty app/.env
         # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
@@ -46,9 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Create empty app/.env
         # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
@@ -98,9 +98,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Create empty app/.env
         # .env в .gitignore → в CI-чекауте отсутствует. Symfony Dotenv::bootEnv требует существование
