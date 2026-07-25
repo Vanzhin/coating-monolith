@@ -125,6 +125,19 @@ jobs:
       - name: Generate JWT keypair
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli bin/console lexik:jwt:generate-keypair --skip-if-exists
 
+      # Twig-шаблоны через WebpackEncoreBundle читают public/build/manifest.json — без него
+      # любой рендер страницы отдаёт 500 (Asset RuntimeException). Собираем ассеты в одноразовом
+      # node-контейнере (та же схема, что в deploy.yml). encore dev — быстрее production,
+      # тестам достаточно наличия манифеста.
+      - name: Build webpack assets
+        run: |
+          docker run --rm \
+            -e HOME=/tmp \
+            -v "$(pwd)/app:/app" \
+            -w /app \
+            node:22-alpine \
+            sh -c "yarn install --frozen-lockfile && yarn dev"
+
       - name: phpunit tests/Functional
         run: |
           mkdir -p app/tests/_output
