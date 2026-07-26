@@ -274,7 +274,8 @@ class CoatingSystem extends Aggregate
             $positions[] = $layer->getPosition();
         }
         sort($positions);
-        $expected = range(1, count($positions));
+        $n = count($positions);
+        $expected = $n > 0 ? range(1, $n) : [];
         if ($positions !== $expected) {
             throw new AppException(sprintf(
                 'Позиции слоёв нарушены: [%s], ожидалось [%s].',

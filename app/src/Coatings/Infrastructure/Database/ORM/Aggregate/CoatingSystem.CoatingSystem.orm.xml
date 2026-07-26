@@ -17,7 +17,8 @@
 
         <one-to-many field="layers"
                      target-entity="App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemLayer"
-                     mapped-by="system">
+                     mapped-by="system"
+                     orphan-removal="true">
             <cascade>
                 <cascade-persist/>
                 <cascade-remove/>
