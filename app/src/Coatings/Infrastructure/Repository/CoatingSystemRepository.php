@@ -89,6 +89,30 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->getQuery()->getResult();
     }
 
+    public function countByCompliance(
+        ComplianceStandard $standard,
+        string $category,
+        string $durability,
+        ?Substrate $substrate,
+    ): int {
+        $sql = <<<SQL
+            SELECT COUNT(*) FROM coating_system s
+            INNER JOIN coating_system_compliance c ON c.system_id = s.id
+            WHERE c.standard = :standard AND c.category = :category AND c.durability = :durability
+            SQL;
+        $params = [
+            'standard' => $standard->value,
+            'category' => $category,
+            'durability' => $durability,
+        ];
+        if (null !== $substrate) {
+            $sql .= ' AND s.substrate = :substrate';
+            $params['substrate'] = $substrate->value;
+        }
+
+        return (int) $this->em->getConnection()->fetchOne($sql, $params);
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {

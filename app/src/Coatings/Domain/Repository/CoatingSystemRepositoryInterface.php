@@ -31,4 +31,11 @@ interface CoatingSystemRepositoryInterface
         int $limit,
         int $offset,
     ): array;
+
+    public function countByCompliance(
+        ComplianceStandard $standard,
+        string $category,
+        string $durability,
+        ?Substrate $substrate,
+    ): int;
 }
