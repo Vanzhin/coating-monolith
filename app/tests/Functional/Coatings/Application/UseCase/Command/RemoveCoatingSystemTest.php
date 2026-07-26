@@ -123,8 +123,6 @@ final class RemoveCoatingSystemTest extends KernelTestCase
 
         $result = ($this->handler)(new RemoveCoatingSystemCommand((string) $systemId));
 
-        self::assertTrue($result->success);
-
         $this->em->clear();
         self::assertNull($this->repo->findById($systemId), 'Система должна быть удалена из БД.');
 

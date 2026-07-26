@@ -26,6 +26,6 @@ final readonly class RemoveCoatingSystemCommandHandler implements CommandHandler
 
         $this->repo->remove($system);
 
-        return new RemoveCoatingSystemCommandResult(true);
+        return new RemoveCoatingSystemCommandResult();
     }
 }

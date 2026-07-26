@@ -6,8 +6,7 @@ namespace App\Coatings\Application\UseCase\Command\RemoveCoatingSystem;
 
 final class RemoveCoatingSystemCommandResult
 {
-    public function __construct(
-        public bool $success,
-    ) {
+    public function __construct()
+    {
     }
 }
