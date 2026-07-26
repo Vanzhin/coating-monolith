@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
@@ -90,7 +91,7 @@ final class CoatingSystemChainValidatorTest extends TestCase
      */
     private function newSystemWithNeutralValidator(): CoatingSystem
     {
-        $neutral = new class extends CoatingSystemChainValidator {
+        $neutral = new class implements CoatingSystemChainValidatorInterface {
             public function validate(CoatingSystem $system): void
             {
                 // no-op

@@ -31,7 +31,7 @@ class CoatingSystem extends Aggregate
         string $description,
         Substrate $substrate,
         SurfacePreparation $surfacePreparation,
-        private readonly CoatingSystemChainValidator $chainValidator,
+        private readonly CoatingSystemChainValidatorInterface $chainValidator,
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();

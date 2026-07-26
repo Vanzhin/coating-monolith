@@ -110,9 +110,9 @@ final class CoatingSystemTest extends TestCase
         $akCoating  = $this->newCoatingWithBase(CoatingBase::AK);
         $esiCoating = $this->newCoatingWithBase(CoatingBase::ESI);
 
+        $sys->appendLayer($akCoating, 60); // должен пройти
         $this->expectException(AppException::class);
-        $sys->appendLayer($akCoating, 60);
-        $sys->appendLayer($esiCoating, 60);
+        $sys->appendLayer($esiCoating, 60); // должен кинуть
     }
 
     public function test_first_layer_throws_on_empty_system(): void
@@ -155,10 +155,12 @@ final class CoatingSystemTest extends TestCase
     {
         $sys = $this->newSystem();
         $before = $sys->getUpdatedAt();
-        // Sleep 1 ms to ensure timestamp differs
-        usleep(1000);
+        // Sleep 2 ms to ensure timestamp strictly advances
+        usleep(2000);
         $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        self::assertGreaterThanOrEqual($before, $sys->getUpdatedAt());
+        $after = $sys->getUpdatedAt();
+        self::assertNotSame($before, $after);
+        self::assertGreaterThan($before, $after);
     }
 
     public function test_set_title_empty_throws(): void

@@ -8,7 +8,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
-class CoatingSystemLayer
+final class CoatingSystemLayer
 {
     public readonly Uuid $id;
 

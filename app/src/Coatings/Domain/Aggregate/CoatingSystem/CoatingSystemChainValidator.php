@@ -6,7 +6,7 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Shared\Infrastructure\Exception\AppException;
 
-class CoatingSystemChainValidator
+final class CoatingSystemChainValidator implements CoatingSystemChainValidatorInterface
 {
     public function validate(CoatingSystem $system): void
     {
