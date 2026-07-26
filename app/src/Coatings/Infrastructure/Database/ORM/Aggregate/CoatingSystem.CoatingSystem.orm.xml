@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                    https://raw.githubusercontent.com/doctrine/orm/2.14.x/doctrine-mapping.xsd">
+    <entity name="App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem" table="coating_system">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="title"       type="string" length="100" nullable="false"/>
+        <field name="description" type="text"   nullable="false"/>
+        <field name="substrate"   type="string" length="32" nullable="false"
+               enum-type="App\Coatings\Domain\Aggregate\CoatingSystem\Substrate"/>
+        <field name="surfacePreparation" column="surface_preparation" type="surface_preparation" nullable="false"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable" nullable="false"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable" nullable="false"/>
+
+        <one-to-many field="layers"
+                     target-entity="App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemLayer"
+                     mapped-by="system">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+            <order-by>
+                <order-by-field name="position" direction="ASC"/>
+            </order-by>
+        </one-to-many>
+    </entity>
+</doctrine-mapping>

@@ -31,7 +31,7 @@ class CoatingSystem extends Aggregate
         string $description,
         Substrate $substrate,
         SurfacePreparation $surfacePreparation,
-        private readonly CoatingSystemChainValidatorInterface $chainValidator,
+        private ?CoatingSystemChainValidatorInterface $chainValidator = null,
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();
@@ -252,9 +252,17 @@ class CoatingSystem extends Aggregate
         throw new AppException(sprintf('Слой с позицией %d не найден.', $position));
     }
 
+    public function setChainValidator(CoatingSystemChainValidatorInterface $validator): void
+    {
+        $this->chainValidator = $validator;
+    }
+
     private function postMutate(): void
     {
         $this->assertPositionsAreDense();
+        if (null === $this->chainValidator) {
+            throw new AppException('Валидатор цепочки слоёв не установлен.');
+        }
         $this->chainValidator->validate($this);
         $this->touch();
     }

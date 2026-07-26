@@ -15,6 +15,7 @@ doctrine:
             thermal_exposure_limits: App\Coatings\Infrastructure\Database\DBAL\ThermalExposureLimitsType
             cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
             string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
+            surface_preparation: App\Coatings\Infrastructure\Database\DBAL\SurfacePreparationType
         mapping_types:
             jsonb: json
     orm:

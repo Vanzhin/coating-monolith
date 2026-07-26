@@ -141,6 +141,9 @@ services:
   # index/indices/bulk/search — а в ClientInterface их нет). Фабрика возвращает Client.
   Elastic\Elasticsearch\Client: '@Elastic\Elasticsearch\ClientInterface'
 
+  App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface:
+    alias: App\Coatings\Infrastructure\Repository\CoatingSystemRepository
+
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository
   App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface:
