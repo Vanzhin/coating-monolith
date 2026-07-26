@@ -73,6 +73,7 @@ final readonly class CoatingMaker
             $manufacturer,
             $this->coatingSpecification,
             $dryingMaxTemp,
+            $isZincRich,
         );
 
         foreach ($coatingTagIds as $coatingTagId) {
@@ -83,7 +84,6 @@ final readonly class CoatingMaker
         // делает flush, после него сеттеры не персистятся без нового flush'a.
         $coating->setDryHeatExposure($dryHeatExposure);
         $coating->setImmersionExposure($immersionExposure);
-        $coating->setIsZincRich($isZincRich);
 
         $this->coatingRepository->add($coating);
 
