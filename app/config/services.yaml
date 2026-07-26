@@ -144,6 +144,13 @@ services:
   App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface:
     alias: App\Coatings\Infrastructure\Repository\CoatingSystemRepository
 
+  App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory: ~
+
+  App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:
+    factory: ['App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory', 'create']
+
+  App\Coatings\Infrastructure\Projector\CoatingSystemComplianceProjector: ~
+
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository
   App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface:

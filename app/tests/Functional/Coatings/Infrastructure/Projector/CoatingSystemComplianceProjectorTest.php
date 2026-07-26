@@ -1,0 +1,238 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional\Coatings\Infrastructure\Projector;
+
+use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\DftRange;
+use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
+use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
+use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
+use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Shared\Domain\Aggregate\Enum\ThicknessType;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Service\UuidService;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
+
+final class CoatingSystemComplianceProjectorTest extends KernelTestCase
+{
+    private EntityManagerInterface $em;
+    private CoatingSystemRepository $repo;
+    private CoatingSystemChainValidator $chainValidator;
+
+    private ?Uuid $systemId = null;
+    private ?Uuid $coatingId = null;
+    private ?Uuid $manufacturerId = null;
+
+    protected function setUp(): void
+    {
+        self::bootKernel();
+        $container = static::getContainer();
+        $this->em = $container->get(EntityManagerInterface::class);
+        $this->repo = new CoatingSystemRepository($this->em);
+        $this->chainValidator = new CoatingSystemChainValidator();
+    }
+
+    protected function tearDown(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        try {
+            if (null !== $this->systemId) {
+                $s = $em->find(CoatingSystem::class, $this->systemId);
+                if (null !== $s) {
+                    $em->remove($s);
+                    $em->flush();
+                }
+            }
+            if (null !== $this->coatingId) {
+                $c = $em->find(Coating::class, $this->coatingId);
+                if (null !== $c) {
+                    $em->remove($c);
+                }
+            }
+            if (null !== $this->manufacturerId) {
+                $m = $em->find(Manufacturer::class, $this->manufacturerId);
+                if (null !== $m) {
+                    $em->remove($m);
+                }
+            }
+            $em->flush();
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
+        }
+        parent::tearDown();
+    }
+
+    /**
+     * Creates a coating with CoatingBase::EP and isZincRich=false (primerType=OTHER).
+     * Uses STEEL_GALVANIZED substrate + 1 layer with dft=80.
+     *
+     * Expected matching rules (mnoc=1, ndft<=80, primerBinders contains EP, substrate=GALVANIZED):
+     * - C2 / HIGH  (1, 80, EP-PUR)
+     * - C3 / MEDIUM (1, 80, EP-PUR)
+     * - C4 / LOW   (1, 80, EP-PUR)
+     */
+    public function test_projector_populates_compliance_rows_on_persist(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'ПроекторТест-'.$suffix,
+            '',
+            Substrate::STEEL_GALVANIZED,
+            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+
+        $this->repo->save($system);
+
+        $rows = $this->fetchComplianceRows($this->systemId);
+
+        self::assertGreaterThan(0, count($rows), 'После save() должны появиться строки compliance.');
+        $keys = array_map(static fn(array $r) => $r['category'].'/'.$r['durability'], $rows);
+        self::assertContains('C2/HIGH', $keys);
+        self::assertContains('C3/MEDIUM', $keys);
+        self::assertContains('C4/LOW', $keys);
+    }
+
+    public function test_projector_recalculates_on_update(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'ПроекторОбновление-'.$suffix,
+            '',
+            Substrate::STEEL_GALVANIZED,
+            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $this->repo->save($system);
+
+        $countBefore = count($this->fetchComplianceRows($this->systemId));
+        self::assertGreaterThan(0, $countBefore);
+
+        // Update title on the same in-memory entity to trigger postUpdate.
+        $system->setTitle('ПроекторОбновление-Updated-'.$suffix);
+        $this->repo->save($system);
+
+        $countAfter = count($this->fetchComplianceRows($this->systemId));
+        self::assertSame($countBefore, $countAfter, 'После update строки должны пересчитаться (то же число).');
+    }
+
+    public function test_compliance_rows_cascade_deleted_with_system(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $systemId,
+            'ПроекторКаскад-'.$suffix,
+            '',
+            Substrate::STEEL_GALVANIZED,
+            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $this->repo->save($system);
+
+        self::assertGreaterThan(0, count($this->fetchComplianceRows($systemId)));
+
+        $this->em->clear();
+        $loaded = $this->repo->findById($systemId);
+        self::assertNotNull($loaded);
+        $this->repo->remove($loaded);
+
+        self::assertCount(0, $this->fetchComplianceRows($systemId));
+
+        // Manual cleanup since tearDown's systemId is null for this test.
+        $c = $this->em->find(Coating::class, $this->coatingId);
+        if (null !== $c) {
+            $this->em->remove($c);
+        }
+        $m = $this->em->find(Manufacturer::class, $this->manufacturerId);
+        if (null !== $m) {
+            $this->em->remove($m);
+        }
+        $this->em->flush();
+
+        // Prevent tearDown from trying to remove again.
+        $this->systemId = null;
+        $this->coatingId = null;
+        $this->manufacturerId = null;
+    }
+
+    /**
+     * @return array{0: Coating}
+     */
+    private function buildCoating(object $container, string $suffix, CoatingBase $base): array
+    {
+        $manufacturer = new Manufacturer(
+            'МфрПроектор-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'ЛакПроектор-'.$suffix,
+            'Тестовое покрытие.',
+            50,
+            1.5,
+            $base,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+
+        return [$coating];
+    }
+
+    /** @return list<array<string,string>> */
+    private function fetchComplianceRows(Uuid $systemId): array
+    {
+        $rows = $this->em->getConnection()->fetchAllAssociative(
+            'SELECT standard, category, durability FROM coating_system_compliance WHERE system_id = ?',
+            [(string) $systemId],
+        );
+        return $rows;
+    }
+}
