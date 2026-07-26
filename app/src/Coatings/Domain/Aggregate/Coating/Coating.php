@@ -44,6 +44,8 @@ class Coating extends Aggregate
     private ?ThermalExposureLimits $dryHeatExposure = null;
     private ?ThermalExposureLimits $immersionExposure = null;
 
+    private bool $isZincRich = false;
+
     /** @var Collection<CoatingTag> */
     private Collection $tags;
 
@@ -65,6 +67,7 @@ class Coating extends Aggregate
         Manufacturer $manufacturer,
         CoatingSpecification $specification,
         int $dryingMaxTemp = 50,
+        bool $isZincRich = false,
     ) {
         $this->id = $id;
         $this->tags = new ArrayCollection();
@@ -87,6 +90,7 @@ class Coating extends Aggregate
         $this->setPack($pack);
         $this->setThinner($thinner);
         $this->setManufacturer($manufacturer);
+        $this->setIsZincRich($isZincRich);
     }
 
     public function getId(): string
@@ -272,6 +276,16 @@ class Coating extends Aggregate
     public function setManufacturer(Manufacturer $manufacturer): void
     {
         $this->manufacturer = $manufacturer;
+    }
+
+    public function isZincRich(): bool
+    {
+        return $this->isZincRich;
+    }
+
+    public function setIsZincRich(bool $value): void
+    {
+        $this->isZincRich = $value;
     }
 
     public function addTag(CoatingTag $tag): void

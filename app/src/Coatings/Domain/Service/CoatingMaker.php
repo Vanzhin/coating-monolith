@@ -51,6 +51,7 @@ final readonly class CoatingMaker
         int $dryingMaxTemp = 50,
         ?ThermalExposureLimits $dryHeatExposure = null,
         ?ThermalExposureLimits $immersionExposure = null,
+        bool $isZincRich = false,
     ): Coating {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
 
@@ -82,6 +83,7 @@ final readonly class CoatingMaker
         // делает flush, после него сеттеры не персистятся без нового flush'a.
         $coating->setDryHeatExposure($dryHeatExposure);
         $coating->setImmersionExposure($immersionExposure);
+        $coating->setIsZincRich($isZincRich);
 
         $this->coatingRepository->add($coating);
 

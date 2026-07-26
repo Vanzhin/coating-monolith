@@ -96,6 +96,7 @@ class CoatingMapper
 
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
+        $dto->isZincRich = (bool) ($inputData['isZincRich'] ?? false);
 
         $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
         $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
@@ -212,6 +213,7 @@ class CoatingMapper
                     'type' => new Assert\Optional(new Assert\Type('string')),
                 ])),
             ]),
+            'isZincRich' => new Assert\Optional([new Assert\Type('bool')]),
             // Температурные пределы валидируются не через Assert (тот бы выдавал
             // тех-сообщения типа "[dryHeatExposure][continuous_min] должно быть numeric"
             // при пустой строке), а через buildExposureFromInput → AppException с

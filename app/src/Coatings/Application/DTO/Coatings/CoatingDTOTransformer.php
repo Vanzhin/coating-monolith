@@ -53,6 +53,7 @@ class CoatingDTOTransformer
         $dto->dftRange = $dftRangeDto;
         $dto->massDensity = $entity->getMassDensity();
         $dto->base = $entity->getBase()->value;
+        $dto->isZincRich = $entity->isZincRich();
         $dto->volumeSolid = $entity->getVolumeSolid();
         $dto->pack = $entity->getPack();
         $dto->manufacturer = $manufacturerDto;

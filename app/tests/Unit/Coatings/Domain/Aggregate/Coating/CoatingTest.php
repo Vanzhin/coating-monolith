@@ -319,6 +319,27 @@ final class CoatingTest extends TestCase
         $this->makeCoating(min: $tree, max: null, applicationMinTemp: 5, dryingMaxTemp: 50);
     }
 
+    public function test_is_zinc_rich_defaults_to_false(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        self::assertFalse($coating->isZincRich());
+    }
+
+    public function test_is_zinc_rich_can_be_toggled(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $coating->setIsZincRich(true);
+        self::assertTrue($coating->isZincRich());
+        $coating->setIsZincRich(false);
+        self::assertFalse($coating->isZincRich());
+    }
+
     private function makeCoating(
         RecoatingIntervalTree $min,
         ?RecoatingIntervalTree $max,

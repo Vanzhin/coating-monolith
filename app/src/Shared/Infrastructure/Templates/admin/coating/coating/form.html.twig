@@ -90,6 +90,15 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="coating_is_zinc_rich"
+                                       name="isZincRich" {% if inputData.isZincRich ?? false %}checked{% endif %}>
+                                <label class="form-check-label" for="coating_is_zinc_rich">
+                                    Цинкнаполненная грунтовка (Zn(R), ≥80% Zn)
+                                </label>
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <div class="form-label">Вид покрытия</div>
                             {% for tag in pagedCoatingTags.coatingTags|filter(t => t.type == 'CoatingProtectionType') %}

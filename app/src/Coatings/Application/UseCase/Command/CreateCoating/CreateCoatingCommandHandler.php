@@ -53,6 +53,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $dto->dryingMaxTemp,
             $this->buildExposure($dto->dryHeatExposure),
             $this->buildExposure($dto->immersionExposure),
+            $dto->isZincRich,
         );
 
         return new CreateCoatingCommandResult($coating->getId());

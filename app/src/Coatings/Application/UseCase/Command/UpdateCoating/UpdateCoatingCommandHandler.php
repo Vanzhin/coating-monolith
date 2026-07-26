@@ -113,6 +113,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 
         $coating->setDryHeatExposure($this->buildExposure($dto->dryHeatExposure));
         $coating->setImmersionExposure($this->buildExposure($dto->immersionExposure));
+        $coating->setIsZincRich($dto->isZincRich);
 
         $this->coatingRepository->add($coating);
 

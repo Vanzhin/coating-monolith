@@ -44,6 +44,7 @@
                 <option name="jsonb">true</option>
             </options>
         </field>
+        <field name="isZincRich" column="is_zinc_rich" type="boolean" nullable="false"/>
         <field name="immersionExposure" column="immersion_exposure" type="thermal_exposure_limits" nullable="true">
             <options>
                 <option name="jsonb">true</option>

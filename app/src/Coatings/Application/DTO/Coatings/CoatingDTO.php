@@ -21,6 +21,8 @@ class CoatingDTO
     /** ISO 12944-5 аббревиатура. */
     public string $base;
 
+    public bool $isZincRich = false;
+
     public function getBaseEnum(): ?CoatingBase
     {
         return CoatingBase::tryFrom($this->base);
