@@ -145,7 +145,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             50,
             1.2,
             $base,
-            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int)(($dftMin + $dftMax) / 2), ThicknessType::MIC),
+            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int) (($dftMin + $dftMax) / 2), ThicknessType::MIC),
             5,
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),

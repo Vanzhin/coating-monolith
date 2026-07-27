@@ -187,10 +187,10 @@ final class SearchByComplianceActionTest extends WebTestCase
     public function test_get_with_valid_params_and_matches_shows_results(): void
     {
         $this->client->request('GET', '/cabinet/coating/coating-system/search-by-compliance', [
-            'standard'   => 'ISO_12944',
-            'category'   => 'C3',
+            'standard' => 'ISO_12944',
+            'category' => 'C3',
             'durability' => 'HIGH',
-            'substrate'  => 'steel_carbon',
+            'substrate' => 'steel_carbon',
         ]);
 
         self::assertResponseIsSuccessful();
@@ -201,10 +201,10 @@ final class SearchByComplianceActionTest extends WebTestCase
     public function test_get_with_valid_params_no_matches_shows_empty_table(): void
     {
         $this->client->request('GET', '/cabinet/coating/coating-system/search-by-compliance', [
-            'standard'   => 'ISO_12944',
-            'category'   => 'CX',
+            'standard' => 'ISO_12944',
+            'category' => 'CX',
             'durability' => 'VERY_HIGH',
-            'substrate'  => 'aluminum',
+            'substrate' => 'aluminum',
         ]);
 
         self::assertResponseIsSuccessful();
@@ -215,8 +215,8 @@ final class SearchByComplianceActionTest extends WebTestCase
     public function test_get_with_invalid_standard_shows_error(): void
     {
         $this->client->request('GET', '/cabinet/coating/coating-system/search-by-compliance', [
-            'standard'   => 'INVALID_STANDARD',
-            'category'   => 'C3',
+            'standard' => 'INVALID_STANDARD',
+            'category' => 'C3',
             'durability' => 'HIGH',
         ]);
 

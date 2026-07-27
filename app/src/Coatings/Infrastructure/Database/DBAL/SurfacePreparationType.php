@@ -23,6 +23,7 @@ final class SurfacePreparationType extends JsonType
             return null;
         }
         $data = parent::convertToPHPValue($value, $platform);
+
         return SurfacePreparation::fromArray($data);
     }
 
@@ -31,6 +32,7 @@ final class SurfacePreparationType extends JsonType
         if (null === $value) {
             return null;
         }
+
         return parent::convertToDatabaseValue($value->toArray(), $platform);
     }
 }

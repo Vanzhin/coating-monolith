@@ -6,7 +6,6 @@ namespace App\Tests\Functional\Coatings\Application\UseCase\Command\Layer;
 
 use App\Coatings\Application\UseCase\Command\AppendLayer\AppendLayerCommand;
 use App\Coatings\Application\UseCase\Command\AppendLayer\AppendLayerCommandHandler;
-use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\ORM\EntityManagerInterface;

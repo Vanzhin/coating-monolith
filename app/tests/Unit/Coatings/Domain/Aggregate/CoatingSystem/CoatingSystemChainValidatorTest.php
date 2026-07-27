@@ -91,7 +91,7 @@ final class CoatingSystemChainValidatorTest extends TestCase
      */
     private function newSystemWithNeutralValidator(): CoatingSystem
     {
-        $neutral = new class implements CoatingSystemChainValidatorInterface {
+        $neutral = new class() implements CoatingSystemChainValidatorInterface {
             public function validate(CoatingSystem $system): void
             {
                 // no-op

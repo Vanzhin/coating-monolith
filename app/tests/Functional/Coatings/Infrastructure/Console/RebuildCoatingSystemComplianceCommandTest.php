@@ -144,7 +144,7 @@ final class RebuildCoatingSystemComplianceCommandTest extends KernelTestCase
             'INSERT INTO coating_system_compliance (system_id, standard, category, durability)
              VALUES (:id, :std, :cat, :dur)',
             [
-                'id'  => $systemIdStr,
+                'id' => $systemIdStr,
                 'std' => 'GARBAGE_STANDARD',
                 'cat' => 'GARBAGE_CAT',
                 'dur' => 'GARBAGE_DUR',

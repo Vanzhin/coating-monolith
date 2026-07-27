@@ -29,16 +29,16 @@ class SearchByComplianceAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $standardRaw   = $request->query->get('standard');
-        $categoryRaw   = $request->query->get('category');
+        $standardRaw = $request->query->get('standard');
+        $categoryRaw = $request->query->get('category');
         $durabilityRaw = $request->query->get('durability');
-        $substrateRaw  = $request->query->get('substrate');
+        $substrateRaw = $request->query->get('substrate');
 
         $items = null;
         $total = 0;
         $error = null;
 
-        $hasParams = $standardRaw !== null && $categoryRaw !== null && $durabilityRaw !== null;
+        $hasParams = null !== $standardRaw && null !== $categoryRaw && null !== $durabilityRaw;
 
         if ($hasParams) {
             try {
@@ -68,17 +68,17 @@ class SearchByComplianceAction extends AbstractController
         }
 
         return $this->render('cabinet/coating/coating_system/search_by_compliance.html.twig', [
-            'items'      => $items,
-            'total'      => $total,
-            'error'      => $error,
-            'standards'  => ComplianceStandard::cases(),
+            'items' => $items,
+            'total' => $total,
+            'error' => $error,
+            'standards' => ComplianceStandard::cases(),
             'categories' => IsoCorrosivityCategory::cases(),
             'durabilities' => IsoDurability::cases(),
             'substrates' => Substrate::cases(),
-            'standard'   => $standardRaw ?? '',
-            'category'   => $categoryRaw ?? '',
+            'standard' => $standardRaw ?? '',
+            'category' => $categoryRaw ?? '',
             'durability' => $durabilityRaw ?? '',
-            'substrate'  => $substrateRaw ?? '',
+            'substrate' => $substrateRaw ?? '',
         ]);
     }
 }

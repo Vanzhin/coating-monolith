@@ -11,5 +11,6 @@ final readonly class CoatingSystemsFilter
     public function __construct(
         public ?string $titleLike = null,
         public ?Substrate $substrate = null,
-    ) {}
+    ) {
+    }
 }

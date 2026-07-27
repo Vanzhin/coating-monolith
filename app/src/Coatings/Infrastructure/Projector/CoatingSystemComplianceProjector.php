@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Projector;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\Event\PostPersistEventArgs;
@@ -16,7 +16,9 @@ use Doctrine\ORM\Events;
 #[AsDoctrineListener(event: Events::postUpdate)]
 final class CoatingSystemComplianceProjector
 {
-    public function __construct(private readonly ComplianceEvaluator $evaluator) {}
+    public function __construct(private readonly ComplianceEvaluator $evaluator)
+    {
+    }
 
     public function postPersist(PostPersistEventArgs $args): void
     {
@@ -48,7 +50,7 @@ final class CoatingSystemComplianceProjector
                 'INSERT INTO coating_system_compliance (system_id, standard, category, durability)
                  VALUES (:id, :std, :cat, :dur)',
                 [
-                    'id'  => $system->getId(),
+                    'id' => $system->getId(),
                     'std' => $m['standard']->value,
                     'cat' => $m['category'],
                     'dur' => $m['durability'],

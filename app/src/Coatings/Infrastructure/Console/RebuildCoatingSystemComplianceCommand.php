@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Console;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -46,16 +46,17 @@ final class RebuildCoatingSystemComplianceCommand extends Command
                     'INSERT INTO coating_system_compliance (system_id, standard, category, durability)
                      VALUES (:id, :std, :cat, :dur)',
                     [
-                        'id'  => $system->getId(),
+                        'id' => $system->getId(),
                         'std' => $m['standard']->value,
                         'cat' => $m['category'],
                         'dur' => $m['durability'],
                     ],
                 );
             }
-            $count++;
+            ++$count;
         }
         $output->writeln(sprintf('Rebuilt compliance for %d systems.', $count));
+
         return Command::SUCCESS;
     }
 }

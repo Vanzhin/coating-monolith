@@ -7,13 +7,13 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 enum PrimerType: string
 {
     case ZINC_RICH = 'zinc_rich';
-    case OTHER     = 'other';
+    case OTHER = 'other';
 
     public function title(): string
     {
         return match ($this) {
             self::ZINC_RICH => 'Zn(R)',
-            self::OTHER     => 'Прочие',
+            self::OTHER => 'Прочие',
         };
     }
 
@@ -21,7 +21,7 @@ enum PrimerType: string
     {
         return match ($this) {
             self::ZINC_RICH => 'Цинкнаполненная грунтовка (≥80% цинка по массе)',
-            self::OTHER     => 'Прочие типы грунтовок',
+            self::OTHER => 'Прочие типы грунтовок',
         };
     }
 }

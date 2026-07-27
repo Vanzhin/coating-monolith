@@ -73,10 +73,7 @@ class CoatingSystemLayer
     {
         $range = $coating->getDftRange()->range;
         if (!$range->isWithin($dft)) {
-            throw new AppException(sprintf(
-                'Толщина слоя %d мкм вне допустимого диапазона покрытия «%s» (%d–%d мкм).',
-                $dft, $coating->getTitle(), $range->getMin(), $range->getMax(),
-            ));
+            throw new AppException(sprintf('Толщина слоя %d мкм вне допустимого диапазона покрытия «%s» (%d–%d мкм).', $dft, $coating->getTitle(), $range->getMin(), $range->getMax()));
         }
     }
 }

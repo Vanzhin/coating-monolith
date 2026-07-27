@@ -196,8 +196,8 @@ final class SearchByComplianceApiActionTest extends WebTestCase
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$token);
 
         $this->client->request('GET', '/api/coating-systems/by-compliance', [
-            'standard'   => 'ISO_12944',
-            'category'   => 'C3',
+            'standard' => 'ISO_12944',
+            'category' => 'C3',
             'durability' => 'HIGH',
         ]);
 
@@ -225,8 +225,8 @@ final class SearchByComplianceApiActionTest extends WebTestCase
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$token);
 
         $this->client->request('GET', '/api/coating-systems/by-compliance', [
-            'standard'   => 'INVALID_STANDARD',
-            'category'   => 'C3',
+            'standard' => 'INVALID_STANDARD',
+            'category' => 'C3',
             'durability' => 'HIGH',
         ]);
 

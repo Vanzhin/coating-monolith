@@ -9,7 +9,9 @@ final class ComplianceEvaluator
     /**
      * @param iterable<ComplianceRule> $rules
      */
-    public function __construct(private readonly iterable $rules) {}
+    public function __construct(private readonly iterable $rules)
+    {
+    }
 
     /**
      * @return list<array{standard: ComplianceStandard, category: string, durability: string}>
@@ -58,8 +60,8 @@ final class ComplianceEvaluator
                 continue;
             }
             $result[] = [
-                'standard'   => $rule->standard,
-                'category'   => $rule->category,
+                'standard' => $rule->standard,
+                'category' => $rule->category,
                 'durability' => $rule->durability,
             ];
         }

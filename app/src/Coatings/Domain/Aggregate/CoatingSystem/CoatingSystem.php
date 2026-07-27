@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Order;
+use Doctrine\Common\Collections\Selectable;
 use Symfony\Component\Uid\Uuid;
 
 class CoatingSystem extends Aggregate
@@ -21,7 +22,7 @@ class CoatingSystem extends Aggregate
     private string $description;
     private Substrate $substrate;
     private SurfacePreparation $surfacePreparation;
-    /** @var Collection<int, CoatingSystemLayer> */
+    /** @var Collection<int, CoatingSystemLayer>&Selectable<int, CoatingSystemLayer> */
     private Collection $layers;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
@@ -120,6 +121,7 @@ class CoatingSystem extends Aggregate
     public function getLayers(): Collection
     {
         $criteria = Criteria::create()->orderBy(['position' => Order::Ascending]);
+
         return $this->layers->matching($criteria);
     }
 
@@ -134,6 +136,7 @@ class CoatingSystem extends Aggregate
         foreach ($this->layers as $layer) {
             $sum += $layer->getDft();
         }
+
         return $sum;
     }
 
@@ -143,6 +146,7 @@ class CoatingSystem extends Aggregate
         if ([] === $sorted) {
             throw new AppException('Система покрытий пуста, слоёв нет.');
         }
+
         return $sorted[0];
     }
 
@@ -150,6 +154,7 @@ class CoatingSystem extends Aggregate
     public function followupLayers(): iterable
     {
         $sorted = $this->getLayers()->toArray();
+
         return array_slice($sorted, 1);
     }
 
@@ -159,16 +164,14 @@ class CoatingSystem extends Aggregate
         $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft);
         $this->layers->add($layer);
         $this->postMutate();
+
         return $layer;
     }
 
     public function insertLayerAt(int $position, Coating $coating, int $dft): CoatingSystemLayer
     {
         if ($position < 1 || $position > $this->layerCount() + 1) {
-            throw new AppException(sprintf(
-                'Позиция вставки %d вне диапазона 1..%d.',
-                $position, $this->layerCount() + 1,
-            ));
+            throw new AppException(sprintf('Позиция вставки %d вне диапазона 1..%d.', $position, $this->layerCount() + 1));
         }
         foreach ($this->getLayers() as $existing) {
             if ($existing->getPosition() >= $position) {
@@ -178,6 +181,7 @@ class CoatingSystem extends Aggregate
         $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft);
         $this->layers->add($layer);
         $this->postMutate();
+
         return $layer;
     }
 
@@ -209,10 +213,7 @@ class CoatingSystem extends Aggregate
         }
         $count = $this->layerCount();
         if ($from < 1 || $from > $count || $to < 1 || $to > $count) {
-            throw new AppException(sprintf(
-                'Некорректные позиции move: from=%d, to=%d (диапазон 1..%d).',
-                $from, $to, $count,
-            ));
+            throw new AppException(sprintf('Некорректные позиции move: from=%d, to=%d (диапазон 1..%d).', $from, $to, $count));
         }
         $target = null;
         foreach ($this->layers as $layer) {
@@ -247,6 +248,7 @@ class CoatingSystem extends Aggregate
             if ($layer->getPosition() === $position) {
                 $layer->changeDft($dft);
                 $this->postMutate();
+
                 return;
             }
         }
@@ -278,10 +280,7 @@ class CoatingSystem extends Aggregate
         $n = count($positions);
         $expected = $n > 0 ? range(1, $n) : [];
         if ($positions !== $expected) {
-            throw new AppException(sprintf(
-                'Позиции слоёв нарушены: [%s], ожидалось [%s].',
-                implode(',', $positions), implode(',', $expected),
-            ));
+            throw new AppException(sprintf('Позиции слоёв нарушены: [%s], ожидалось [%s].', implode(',', $positions), implode(',', $expected)));
         }
     }
 

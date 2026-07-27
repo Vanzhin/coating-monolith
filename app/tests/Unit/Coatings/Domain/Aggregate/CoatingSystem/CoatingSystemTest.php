@@ -107,7 +107,7 @@ final class CoatingSystemTest extends TestCase
         // ESI.allowedPrimers = [ESI], поэтому AK → ESI несовместимо:
         // ESI::canBeAppliedOnTopOf(AK) === false → AK::canBecoveredBy(ESI) === false
         $sys = $this->newSystem();
-        $akCoating  = $this->newCoatingWithBase(CoatingBase::AK);
+        $akCoating = $this->newCoatingWithBase(CoatingBase::AK);
         $esiCoating = $this->newCoatingWithBase(CoatingBase::ESI);
 
         $sys->appendLayer($akCoating, 60); // должен пройти
@@ -225,7 +225,7 @@ final class CoatingSystemTest extends TestCase
             50,
             1.2,
             $base,
-            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int)(($dftMin + $dftMax) / 2), ThicknessType::MIC),
+            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int) (($dftMin + $dftMax) / 2), ThicknessType::MIC),
             5,
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
@@ -246,6 +246,7 @@ final class CoatingSystemTest extends TestCase
         foreach ($sys->getLayers() as $layer) {
             $positions[] = $layer->getPosition();
         }
+
         return $positions;
     }
 }

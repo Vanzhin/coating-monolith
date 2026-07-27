@@ -38,58 +38,58 @@ final class ComplianceRuleBook
      */
     private static function b2Rules(): array
     {
-        $substrate      = Substrate::STEEL_CARBON;
-        $primerZn       = [CoatingBase::ESI, CoatingBase::EP, CoatingBase::PUR];
+        $substrate = Substrate::STEEL_CARBON;
+        $primerZn = [CoatingBase::ESI, CoatingBase::EP, CoatingBase::PUR];
         $primerOtherEpe = [CoatingBase::EP, CoatingBase::PUR, CoatingBase::ESI];
         $primerOtherAkAy = [CoatingBase::AK, CoatingBase::AY];
         $followupEpPurAy = [CoatingBase::EP, CoatingBase::PUR, CoatingBase::AY];
-        $followupAkAy    = [CoatingBase::AK, CoatingBase::AY];
+        $followupAkAy = [CoatingBase::AK, CoatingBase::AY];
 
         $rules = [];
 
         // C2 — низкая (l) для всех трёх колонок отмечена «*»; средняя (m) Zn(R) и EP-PUR-ESI — «—».
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::MEDIUM,    PrimerType::OTHER,     1, 100, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH,      PrimerType::ZINC_RICH, 1, 60,  $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH,      PrimerType::OTHER,     1, 120, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH,      PrimerType::OTHER,     1, 160, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 160, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 180, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 200, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 100, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH, PrimerType::ZINC_RICH, 1, 60, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH, PrimerType::OTHER, 1, 120, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH, PrimerType::OTHER, 1, 160, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 160, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 180, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 200, $primerOtherAkAy, $followupAkAy);
 
         // C3 — низкая (l) Zn(R) и EP-PUR-ESI — «—».
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::LOW,       PrimerType::OTHER,     1, 100, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM,    PrimerType::ZINC_RICH, 1, 60,  $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM,    PrimerType::OTHER,     1, 120, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM,    PrimerType::OTHER,     1, 160, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::ZINC_RICH, 2, 160, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::OTHER,     2, 180, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::OTHER,     2, 200, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 200, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 240, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 260, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::LOW, PrimerType::OTHER, 1, 100, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM, PrimerType::ZINC_RICH, 1, 60, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 120, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 160, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::ZINC_RICH, 2, 160, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::OTHER, 2, 180, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::OTHER, 2, 200, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 200, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 240, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 260, $primerOtherAkAy, $followupAkAy);
 
         // C4 — vh/AK-AY отмечен «—».
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW,       PrimerType::ZINC_RICH, 1, 60,  $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW,       PrimerType::OTHER,     1, 120, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW,       PrimerType::OTHER,     1, 160, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM,    PrimerType::ZINC_RICH, 2, 160, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM,    PrimerType::OTHER,     2, 180, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM,    PrimerType::OTHER,     2, 200, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::ZINC_RICH, 2, 200, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::OTHER,     2, 240, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::OTHER,     2, 260, $primerOtherAkAy, $followupAkAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 3, 260, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 300, $primerOtherEpe,  $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW, PrimerType::ZINC_RICH, 1, 60, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW, PrimerType::OTHER, 1, 120, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW, PrimerType::OTHER, 1, 160, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM, PrimerType::ZINC_RICH, 2, 160, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 180, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 200, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::ZINC_RICH, 2, 200, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::OTHER, 2, 240, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::OTHER, 2, 260, $primerOtherAkAy, $followupAkAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 3, 260, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 300, $primerOtherEpe, $followupEpPurAy);
 
         // C5 — все колонки AK-AY отмечены «—» (для всех долговечностей).
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW,       PrimerType::ZINC_RICH, 2, 160, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW,       PrimerType::OTHER,     2, 180, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM,    PrimerType::ZINC_RICH, 2, 200, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM,    PrimerType::OTHER,     2, 240, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH,      PrimerType::ZINC_RICH, 3, 260, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH,      PrimerType::OTHER,     2, 300, $primerOtherEpe,  $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 3, 320, $primerZn,        $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::OTHER,     3, 360, $primerOtherEpe,  $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW, PrimerType::ZINC_RICH, 2, 160, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW, PrimerType::OTHER, 2, 180, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM, PrimerType::ZINC_RICH, 2, 200, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 240, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH, PrimerType::ZINC_RICH, 3, 260, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH, PrimerType::OTHER, 2, 300, $primerOtherEpe, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 3, 320, $primerZn, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::OTHER, 3, 360, $primerOtherEpe, $followupEpPurAy);
 
         return $rules;
     }
@@ -104,43 +104,43 @@ final class ComplianceRuleBook
      */
     private static function b3Rules(): array
     {
-        $substrate      = Substrate::STEEL_GALVANIZED;
-        $primerEpPur    = [CoatingBase::EP, CoatingBase::PUR];
-        $primerAy       = [CoatingBase::AY];
+        $substrate = Substrate::STEEL_GALVANIZED;
+        $primerEpPur = [CoatingBase::EP, CoatingBase::PUR];
+        $primerAy = [CoatingBase::AY];
         $followupEpPurAy = [CoatingBase::EP, CoatingBase::PUR, CoatingBase::AY];
-        $followupAy     = [CoatingBase::AY];
+        $followupAy = [CoatingBase::AY];
 
         $rules = [];
 
         // C2 — l и m отмечены «*».
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH,      PrimerType::OTHER, 1, 80,  $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH,      PrimerType::OTHER, 1, 80,  $primerAy,    $followupAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH, PrimerType::OTHER, 1, 80, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::HIGH, PrimerType::OTHER, 1, 80, $primerAy, $followupAy);
         $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 160, $primerAy,    $followupAy);
+        $rules[] = self::rule($substrate, 'C2', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 160, $primerAy, $followupAy);
 
         // C3 — l отмечена «*».
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM,    PrimerType::OTHER, 1, 80,  $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM,    PrimerType::OTHER, 1, 80,  $primerAy,    $followupAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::OTHER, 2, 160, $primerAy,    $followupAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 80, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 80, $primerAy, $followupAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::OTHER, 2, 160, $primerAy, $followupAy);
         $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 160, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 200, $primerAy,    $followupAy);
+        $rules[] = self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 200, $primerAy, $followupAy);
 
         // C4 — vh/AY отмечена «—».
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW,       PrimerType::OTHER, 1, 80,  $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW,       PrimerType::OTHER, 1, 80,  $primerAy,    $followupAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM,    PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM,    PrimerType::OTHER, 2, 160, $primerAy,    $followupAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::OTHER, 2, 160, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::OTHER, 2, 200, $primerAy,    $followupAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW, PrimerType::OTHER, 1, 80, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::LOW, PrimerType::OTHER, 1, 80, $primerAy, $followupAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM, PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 160, $primerAy, $followupAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::OTHER, 2, 160, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::OTHER, 2, 200, $primerAy, $followupAy);
         $rules[] = self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 200, $primerEpPur, $followupEpPurAy);
 
         // C5 — h/AY и vh/AY отмечены «—».
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW,       PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW,       PrimerType::OTHER, 2, 160, $primerAy,    $followupAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM,    PrimerType::OTHER, 2, 160, $primerEpPur, $followupEpPurAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM,    PrimerType::OTHER, 2, 200, $primerAy,    $followupAy);
-        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH,      PrimerType::OTHER, 2, 200, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW, PrimerType::OTHER, 1, 120, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::LOW, PrimerType::OTHER, 2, 160, $primerAy, $followupAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 160, $primerEpPur, $followupEpPurAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::MEDIUM, PrimerType::OTHER, 2, 200, $primerAy, $followupAy);
+        $rules[] = self::rule($substrate, 'C5', IsoDurability::HIGH, PrimerType::OTHER, 2, 200, $primerEpPur, $followupEpPurAy);
         $rules[] = self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 240, $primerEpPur, $followupEpPurAy);
 
         return $rules;
@@ -156,15 +156,15 @@ final class ComplianceRuleBook
      */
     private static function b4Rules(): array
     {
-        $substrate     = Substrate::STEEL_METALLIZED;
-        $binders       = [CoatingBase::EP, CoatingBase::PUR];
+        $substrate = Substrate::STEEL_METALLIZED;
+        $binders = [CoatingBase::EP, CoatingBase::PUR];
 
         return [
-            self::rule($substrate, 'C3', IsoDurability::HIGH,      PrimerType::OTHER, 1, 120, $binders, $binders),
+            self::rule($substrate, 'C3', IsoDurability::HIGH, PrimerType::OTHER, 1, 120, $binders, $binders),
             self::rule($substrate, 'C3', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 160, $binders, $binders),
-            self::rule($substrate, 'C4', IsoDurability::HIGH,      PrimerType::OTHER, 2, 160, $binders, $binders),
+            self::rule($substrate, 'C4', IsoDurability::HIGH, PrimerType::OTHER, 2, 160, $binders, $binders),
             self::rule($substrate, 'C4', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 200, $binders, $binders),
-            self::rule($substrate, 'C5', IsoDurability::HIGH,      PrimerType::OTHER, 2, 200, $binders, $binders),
+            self::rule($substrate, 'C5', IsoDurability::HIGH, PrimerType::OTHER, 2, 200, $binders, $binders),
             self::rule($substrate, 'C5', IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 240, $binders, $binders),
         ];
     }
@@ -180,19 +180,19 @@ final class ComplianceRuleBook
      */
     private static function b5Rules(): array
     {
-        $substrate  = Substrate::STEEL_CARBON;
-        $primerZn   = [CoatingBase::ESI, CoatingBase::EP, CoatingBase::PUR];
+        $substrate = Substrate::STEEL_CARBON;
+        $primerZn = [CoatingBase::ESI, CoatingBase::EP, CoatingBase::PUR];
         $primerEpPur = [CoatingBase::EP, CoatingBase::PUR];
-        $followup   = [CoatingBase::EP, CoatingBase::PUR];
+        $followup = [CoatingBase::EP, CoatingBase::PUR];
 
         $rules = [];
         foreach (['Im1', 'Im2', 'Im3'] as $category) {
-            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH,      PrimerType::ZINC_RICH, 2, 360, $primerZn,    $followup);
-            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH,      PrimerType::OTHER,     2, 380, $primerEpPur, $followup);
-            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH,      PrimerType::OTHER,     1, 400, $primerEpPur, $followup);
-            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 500, $primerZn,    $followup);
-            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::OTHER,     2, 540, $primerEpPur, $followup);
-            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::OTHER,     1, 600, $primerEpPur, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH, PrimerType::ZINC_RICH, 2, 360, $primerZn, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH, PrimerType::OTHER, 2, 380, $primerEpPur, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::HIGH, PrimerType::OTHER, 1, 400, $primerEpPur, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::ZINC_RICH, 2, 500, $primerZn, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::OTHER, 2, 540, $primerEpPur, $followup);
+            $rules[] = self::rule($substrate, $category, IsoDurability::VERY_HIGH, PrimerType::OTHER, 1, 600, $primerEpPur, $followup);
         }
 
         return $rules;

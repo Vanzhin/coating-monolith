@@ -28,10 +28,10 @@ class SearchByComplianceApiAction
 
     public function __invoke(Request $request): JsonResponse
     {
-        $standardRaw   = $request->query->get('standard');
-        $categoryRaw   = $request->query->get('category');
+        $standardRaw = $request->query->get('standard');
+        $categoryRaw = $request->query->get('category');
         $durabilityRaw = $request->query->get('durability');
-        $substrateRaw  = $request->query->get('substrate');
+        $substrateRaw = $request->query->get('substrate');
 
         if (null === $standardRaw || null === $categoryRaw || null === $durabilityRaw) {
             return new JsonResponse(
@@ -67,12 +67,12 @@ class SearchByComplianceApiAction
 
         $items = array_map(
             static fn (CoatingSystemDTO $dto): array => [
-                'id'             => $dto->id,
-                'title'          => $dto->title,
-                'substrate'      => $dto->substrate,
+                'id' => $dto->id,
+                'title' => $dto->title,
+                'substrate' => $dto->substrate,
                 'substrateTitle' => $dto->substrateTitle,
-                'totalDft'       => $dto->totalDft,
-                'layersCount'    => count($dto->layers),
+                'totalDft' => $dto->totalDft,
+                'layersCount' => count($dto->layers),
             ],
             $result['items'],
         );

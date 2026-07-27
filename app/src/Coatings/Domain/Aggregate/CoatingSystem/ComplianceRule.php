@@ -22,5 +22,6 @@ final readonly class ComplianceRule
         public int $ndft,
         public array $primerBinders,
         public array $otherBinders,
-    ) {}
+    ) {
+    }
 }

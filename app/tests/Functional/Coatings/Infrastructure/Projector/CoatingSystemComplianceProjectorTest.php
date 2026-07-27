@@ -107,7 +107,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
         $rows = $this->fetchComplianceRows($this->systemId);
 
         self::assertGreaterThan(0, count($rows), 'После save() должны появиться строки compliance.');
-        $keys = array_map(static fn(array $r) => $r['category'].'/'.$r['durability'], $rows);
+        $keys = array_map(static fn (array $r) => $r['category'].'/'.$r['durability'], $rows);
         self::assertContains('C2/HIGH', $keys);
         self::assertContains('C3/MEDIUM', $keys);
         self::assertContains('C4/LOW', $keys);
@@ -233,6 +233,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
             'SELECT standard, category, durability FROM coating_system_compliance WHERE system_id = ?',
             [(string) $systemId],
         );
+
         return $rows;
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Repository;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
@@ -15,7 +15,9 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
     public function save(CoatingSystem $system): void
     {

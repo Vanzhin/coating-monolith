@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Repository;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use Symfony\Component\Uid\Uuid;
 

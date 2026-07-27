@@ -117,6 +117,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertArrayHasKey('layers', $fields);
     }
 
+    /** @return array<string, mixed> */
     private function validInput(): array
     {
         return [
@@ -134,6 +135,7 @@ final class CoatingSystemMapperTest extends TestCase
     /**
      * Constructs a CoatingSystemDTO from flat input data (mirrors what the mapper produces).
      */
+    /** @param array<string, mixed> $input */
     private function buildDtoFromInput(array $input): CoatingSystemDTO
     {
         $dto = new CoatingSystemDTO();
