@@ -63,12 +63,6 @@ class SearchByComplianceApiAction
                 Response::HTTP_BAD_REQUEST,
                 ['Content-Type' => 'application/json'],
             );
-        } catch (\Exception $e) {
-            return new JsonResponse(
-                ['message' => $e->getMessage()],
-                Response::HTTP_BAD_REQUEST,
-                ['Content-Type' => 'application/json'],
-            );
         }
 
         $items = array_map(
