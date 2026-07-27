@@ -108,13 +108,8 @@ class CoatingSystem extends Aggregate
 
     public function setSubstrate(Substrate $substrate): void
     {
-        if ($this->surfaceTreatment !== null && !$this->surfaceTreatment->supportsSubstrate($substrate)) {
-            throw new AppException(sprintf(
-                'Подготовка «%s» применима к [%s], а выбранная подложка — %s.',
-                $this->surfaceTreatment->getCode() ?? $this->surfaceTreatment->getDescription(),
-                implode(', ', array_map(fn (Substrate $s) => $s->title(), $this->surfaceTreatment->getSubstrateScope())),
-                $substrate->title(),
-            ));
+        if (null !== $this->surfaceTreatment && !$this->surfaceTreatment->supportsSubstrate($substrate)) {
+            throw new AppException(sprintf('Подготовка «%s» применима к [%s], а выбранная подложка — %s.', $this->surfaceTreatment->getCode() ?? $this->surfaceTreatment->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $this->surfaceTreatment->getSubstrateScope())), $substrate->title()));
         }
         $this->substrate = $substrate;
         $this->touch();
@@ -123,12 +118,7 @@ class CoatingSystem extends Aggregate
     public function setSurfaceTreatment(SurfaceTreatment $t): void
     {
         if (!$t->supportsSubstrate($this->substrate)) {
-            throw new AppException(sprintf(
-                'Подготовка «%s» применима к [%s], а в системе выбрана %s.',
-                $t->getCode() ?? $t->getDescription(),
-                implode(', ', array_map(fn (Substrate $s) => $s->title(), $t->getSubstrateScope())),
-                $this->substrate->title(),
-            ));
+            throw new AppException(sprintf('Подготовка «%s» применима к [%s], а в системе выбрана %s.', $t->getCode() ?? $t->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $t->getSubstrateScope())), $this->substrate->title()));
         }
         $this->surfaceTreatment = $t;
         $this->touch();
@@ -137,12 +127,7 @@ class CoatingSystem extends Aggregate
     public function setSubstrateAndTreatment(Substrate $substrate, SurfaceTreatment $treatment): void
     {
         if (!$treatment->supportsSubstrate($substrate)) {
-            throw new AppException(sprintf(
-                'Подготовка «%s» применима к [%s], а выбрана подложка %s.',
-                $treatment->getCode() ?? $treatment->getDescription(),
-                implode(', ', array_map(fn (Substrate $s) => $s->title(), $treatment->getSubstrateScope())),
-                $substrate->title(),
-            ));
+            throw new AppException(sprintf('Подготовка «%s» применима к [%s], а выбрана подложка %s.', $treatment->getCode() ?? $treatment->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $treatment->getSubstrateScope())), $substrate->title()));
         }
         $this->substrate = $substrate;
         $this->surfaceTreatment = $treatment;

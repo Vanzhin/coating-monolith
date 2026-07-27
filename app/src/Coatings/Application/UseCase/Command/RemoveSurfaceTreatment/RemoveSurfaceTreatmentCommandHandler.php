@@ -30,11 +30,7 @@ final readonly class RemoveSurfaceTreatmentCommandHandler implements CommandHand
 
         if ($countUsing > 0) {
             $title = $treatment->getCode() ?? $treatment->getDescription();
-            throw new AppException(sprintf(
-                'Нельзя удалить подготовку поверхности «%s»: используется в %d системах покрытий.',
-                $title,
-                $countUsing,
-            ));
+            throw new AppException(sprintf('Нельзя удалить подготовку поверхности «%s»: используется в %d системах покрытий.', $title, $countUsing));
         }
 
         $this->repo->remove($treatment);

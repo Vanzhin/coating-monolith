@@ -292,6 +292,9 @@ final class SurfaceTreatmentTest extends TestCase
 
     // --- helpers ---
 
+    /**
+     * @param list<Substrate>|null $substrateScope
+     */
     private function newSurfaceTreatment(
         ?string $description = 'Abrasive blast cleaning',
         ?string $code = 'Sa 2.5',

@@ -11,7 +11,6 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\SurfaceTreatmentMapper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SurfaceTreatmentMapperTest extends TestCase
 {
@@ -22,7 +21,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->mapper = new SurfaceTreatmentMapper();
     }
 
-    public function testBuildCommandFromInputDataCreateCommand(): void
+    public function test_build_command_from_input_data_create_command(): void
     {
         $input = [
             'description' => 'Test treatment',
@@ -42,7 +41,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame(Substrate::ALUMINUM, $command->substrateScope[1]);
     }
 
-    public function testBuildCommandFromInputDataUpdateCommand(): void
+    public function test_build_command_from_input_data_update_command(): void
     {
         $id = Uuid::v4()->toRfc4122();
         $input = [
@@ -63,7 +62,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame(Substrate::CONCRETE, $command->substrateScope[0]);
     }
 
-    public function testBuildCommandEmptyCodeBecomesNull(): void
+    public function test_build_command_empty_code_becomes_null(): void
     {
         $input = [
             'description' => 'Test',
@@ -78,7 +77,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame('ISO 8501-1', $command->standardCode);
     }
 
-    public function testBuildCommandEmptyStandardCodeBecomesNull(): void
+    public function test_build_command_empty_standard_code_becomes_null(): void
     {
         $input = [
             'description' => 'Test',
@@ -93,7 +92,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertNull($command->standardCode);
     }
 
-    public function testBuildCommandEmptyCodeAndStandardCodeBothNull(): void
+    public function test_build_command_empty_code_and_standard_code_both_null(): void
     {
         $input = [
             'description' => 'Обмыв водой',
@@ -108,7 +107,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertNull($command->standardCode);
     }
 
-    public function testBuildInputDataFromDtoRoundTrip(): void
+    public function test_build_input_data_from_dto_round_trip(): void
     {
         $dto = new SurfaceTreatmentDTO();
         $dto->id = Uuid::v4()->toRfc4122();
@@ -129,7 +128,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame(['steel_carbon', 'aluminum'], $data['substrateScope']);
     }
 
-    public function testBuildInputDataFromDtoWithNullFields(): void
+    public function test_build_input_data_from_dto_with_null_fields(): void
     {
         $dto = new SurfaceTreatmentDTO();
         $dto->id = Uuid::v4()->toRfc4122();
@@ -150,7 +149,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame(['concrete'], $data['substrateScope']);
     }
 
-    public function testBuildInputDataFromDtoNull(): void
+    public function test_build_input_data_from_dto_null(): void
     {
         $data = $this->mapper->buildInputDataFromDto(null);
 
@@ -160,7 +159,7 @@ class SurfaceTreatmentMapperTest extends TestCase
         $this->assertSame([], $data['substrateScope']);
     }
 
-    public function testGetValidationCollectionConstraints(): void
+    public function test_get_validation_collection_constraints(): void
     {
         $collection = $this->mapper->getValidationCollection();
 

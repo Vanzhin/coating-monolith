@@ -46,6 +46,9 @@ final class SurfaceTreatmentRepositoryTest extends KernelTestCase
         parent::tearDown();
     }
 
+    /**
+     * @param list<Substrate> $scope
+     */
     private function make(
         string $description,
         ?string $code = null,
@@ -109,7 +112,7 @@ final class SurfaceTreatmentRepositoryTest extends KernelTestCase
         $filter = new SurfaceTreatmentsFilter(substrate: Substrate::STEEL_CARBON);
         $result = $this->repo->list($filter, 100, 0);
 
-        $ids = array_map(fn(SurfaceTreatment $t) => $t->getId(), $result);
+        $ids = array_map(fn (SurfaceTreatment $t) => $t->getId(), $result);
         self::assertContains($carbon->getId(), $ids);
         self::assertContains($both->getId(), $ids);
         self::assertNotContains($galvanized->getId(), $ids);

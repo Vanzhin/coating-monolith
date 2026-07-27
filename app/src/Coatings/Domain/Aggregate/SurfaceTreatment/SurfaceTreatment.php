@@ -83,10 +83,7 @@ class SurfaceTreatment extends Aggregate
             throw new AppException('Описание подготовки поверхности не может быть пустым.');
         }
         if (mb_strlen($description) > 2000) {
-            throw new AppException(sprintf(
-                'Описание подготовки поверхности не должно превышать 2000 символов, передано %d.',
-                mb_strlen($description),
-            ));
+            throw new AppException(sprintf('Описание подготовки поверхности не должно превышать 2000 символов, передано %d.', mb_strlen($description)));
         }
         $this->description = $description;
         $this->touch();
@@ -99,10 +96,7 @@ class SurfaceTreatment extends Aggregate
                 throw new AppException('Код подготовки поверхности не может быть пустой строкой; используйте null, если значение не задано.');
             }
             if (mb_strlen($code) > 30) {
-                throw new AppException(sprintf(
-                    'Код подготовки поверхности не должен превышать 30 символов, передано %d.',
-                    mb_strlen($code),
-                ));
+                throw new AppException(sprintf('Код подготовки поверхности не должен превышать 30 символов, передано %d.', mb_strlen($code)));
             }
         }
         $this->code = $code;
@@ -116,10 +110,7 @@ class SurfaceTreatment extends Aggregate
                 throw new AppException('Код стандарта подготовки поверхности не может быть пустой строкой; используйте null, если значение не задано.');
             }
             if (mb_strlen($standardCode) > 100) {
-                throw new AppException(sprintf(
-                    'Код стандарта подготовки поверхности не должен превышать 100 символов, передано %d.',
-                    mb_strlen($standardCode),
-                ));
+                throw new AppException(sprintf('Код стандарта подготовки поверхности не должен превышать 100 символов, передано %d.', mb_strlen($standardCode)));
             }
         }
         $this->standardCode = $standardCode;
@@ -137,10 +128,7 @@ class SurfaceTreatment extends Aggregate
         $seen = [];
         foreach ($substrateScope as $substrate) {
             if (isset($seen[$substrate->value])) {
-                throw new AppException(sprintf(
-                    'Дублирующаяся подложка в области применения: %s.',
-                    $substrate->value,
-                ));
+                throw new AppException(sprintf('Дублирующаяся подложка в области применения: %s.', $substrate->value));
             }
             $seen[$substrate->value] = true;
         }

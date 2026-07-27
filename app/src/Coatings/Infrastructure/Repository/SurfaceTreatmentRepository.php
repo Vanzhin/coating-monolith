@@ -41,7 +41,7 @@ final class SurfaceTreatmentRepository implements SurfaceTreatmentRepositoryInte
             return [];
         }
 
-        /** @var list<SurfaceTreatment> */
+        /* @var list<SurfaceTreatment> */
         return $this->em->createQueryBuilder()
             ->select('t')
             ->from(SurfaceTreatment::class, 't')

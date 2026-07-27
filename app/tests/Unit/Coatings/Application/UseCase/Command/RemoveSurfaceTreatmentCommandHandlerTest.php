@@ -31,11 +31,17 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
         );
 
         $treatmentRepo = new class($id, $treatment) implements SurfaceTreatmentRepositoryInterface {
-            public function __construct(private Uuid $id, private SurfaceTreatment $treatment) {}
+            public function __construct(private Uuid $id, private SurfaceTreatment $treatment)
+            {
+            }
 
-            public function save(SurfaceTreatment $t): void {}
+            public function save(SurfaceTreatment $t): void
+            {
+            }
 
-            public function remove(SurfaceTreatment $t): void {}
+            public function remove(SurfaceTreatment $t): void
+            {
+            }
 
             public function findById(Uuid $id): ?SurfaceTreatment
             {
@@ -53,10 +59,14 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             }
         };
 
-        $coatingSystemRepo = new class implements CoatingSystemRepositoryInterface {
-            public function save(CoatingSystem $system): void {}
+        $coatingSystemRepo = new class() implements CoatingSystemRepositoryInterface {
+            public function save(CoatingSystem $system): void
+            {
+            }
 
-            public function remove(CoatingSystem $system): void {}
+            public function remove(CoatingSystem $system): void
+            {
+            }
 
             public function findById(Uuid $id): ?CoatingSystem
             {

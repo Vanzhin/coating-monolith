@@ -37,7 +37,7 @@ final class SubstrateScopeType extends JsonType
         }
 
         return parent::convertToDatabaseValue(
-            array_map(fn(Substrate $s) => $s->value, $value),
+            array_map(fn (Substrate $s) => $s->value, $value),
             $platform,
         );
     }

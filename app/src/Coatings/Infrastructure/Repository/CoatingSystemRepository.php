@@ -119,7 +119,7 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 
     public function findComplianceRows(Uuid $systemId): array
     {
-        /** @var list<array{standard: string, category: string, durability: string}> */
+        /* @var list<array{standard: string, category: string, durability: string}> */
         return $this->em->getConnection()->fetchAllAssociative(
             'SELECT standard, category, durability FROM coating_system_compliance WHERE system_id = ?',
             [$systemId->toRfc4122()],

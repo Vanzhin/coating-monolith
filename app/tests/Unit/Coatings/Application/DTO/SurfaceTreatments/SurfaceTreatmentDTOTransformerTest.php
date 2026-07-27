@@ -19,7 +19,7 @@ class SurfaceTreatmentDTOTransformerTest extends TestCase
         $this->transformer = new SurfaceTreatmentDTOTransformer();
     }
 
-    public function testFromEntityHappyPath(): void
+    public function test_from_entity_happy_path(): void
     {
         $id = Uuid::v4();
         $treatment = new SurfaceTreatment(
@@ -43,7 +43,7 @@ class SurfaceTreatmentDTOTransformerTest extends TestCase
         $this->assertNotNull($dto->updatedAt);
     }
 
-    public function testFromEntityDescriptionOnly(): void
+    public function test_from_entity_description_only(): void
     {
         $id = Uuid::v4();
         $treatment = new SurfaceTreatment(
@@ -59,7 +59,7 @@ class SurfaceTreatmentDTOTransformerTest extends TestCase
         $this->assertSame('Обмыв водой', $dto->title);
     }
 
-    public function testFromEntityCodeAndStandardCode(): void
+    public function test_from_entity_code_and_standard_code(): void
     {
         $id = Uuid::v4();
         $treatment = new SurfaceTreatment(
@@ -75,7 +75,7 @@ class SurfaceTreatmentDTOTransformerTest extends TestCase
         $this->assertSame('Sa 3 (ISO 8501-1)', $dto->title);
     }
 
-    public function testFromEntityCodeWithoutStandardCode(): void
+    public function test_from_entity_code_without_standard_code(): void
     {
         $id = Uuid::v4();
         $treatment = new SurfaceTreatment(
@@ -91,7 +91,7 @@ class SurfaceTreatmentDTOTransformerTest extends TestCase
         $this->assertSame('Sa 2.5', $dto->title);
     }
 
-    public function testFromEntityMultipleSubstrates(): void
+    public function test_from_entity_multiple_substrates(): void
     {
         $id = Uuid::v4();
         $treatment = new SurfaceTreatment(

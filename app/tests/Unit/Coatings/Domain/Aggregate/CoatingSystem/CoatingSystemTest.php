@@ -177,7 +177,7 @@ final class CoatingSystemTest extends TestCase
         $sys->setTitle(str_repeat('x', 101));
     }
 
-    public function test_setSurfaceTreatment_throws_when_substrate_not_in_scope(): void
+    public function test_set_surface_treatment_throws_when_substrate_not_in_scope(): void
     {
         // treatment scope = CONCRETE only, but system substrate = STEEL_CARBON
         $treatment = $this->newTreatment([Substrate::CONCRETE]);
@@ -192,7 +192,7 @@ final class CoatingSystemTest extends TestCase
         );
     }
 
-    public function test_setSubstrate_throws_when_treatment_no_longer_matches(): void
+    public function test_set_substrate_throws_when_treatment_no_longer_matches(): void
     {
         // treatment scope = STEEL_CARBON only, system substrate = STEEL_CARBON
         $treatment = $this->newTreatment([Substrate::STEEL_CARBON]);
