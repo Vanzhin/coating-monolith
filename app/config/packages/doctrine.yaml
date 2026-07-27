@@ -16,6 +16,7 @@ doctrine:
             cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
             string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
             surface_preparation: App\Coatings\Infrastructure\Database\DBAL\SurfacePreparationType
+            substrate_scope: App\Coatings\Infrastructure\Database\DBAL\SubstrateScopeType
         mapping_types:
             jsonb: json
     orm:

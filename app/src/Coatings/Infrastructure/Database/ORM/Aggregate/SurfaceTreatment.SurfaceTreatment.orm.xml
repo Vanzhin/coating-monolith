@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                    https://raw.githubusercontent.com/doctrine/orm/2.14.x/doctrine-mapping.xsd">
+    <entity name="App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment" table="surface_treatment">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="description"     type="text"   nullable="false"/>
+        <field name="code"            type="string" length="30"  nullable="true"/>
+        <field name="standardCode"    column="standard_code" type="string" length="100" nullable="true"/>
+        <field name="substrateScope"  column="substrate_scope" type="substrate_scope" nullable="false"/>
+        <field name="createdAt"       column="created_at" type="datetime_immutable" nullable="false"/>
+        <field name="updatedAt"       column="updated_at" type="datetime_immutable" nullable="false"/>
+    </entity>
+</doctrine-mapping>

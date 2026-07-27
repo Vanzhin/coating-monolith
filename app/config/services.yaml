@@ -148,6 +148,10 @@ services:
   App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface:
     alias: App\Coatings\Infrastructure\Repository\CoatingSystemRepository
 
+  App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface:
+    alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
+    public: true
+
   App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface:
     alias: App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator
 
