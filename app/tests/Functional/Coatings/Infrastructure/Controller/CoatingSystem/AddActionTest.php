@@ -87,6 +87,12 @@ final class AddActionTest extends WebTestCase
         self::assertStringContainsString('Добавление системы покрытий', $content);
         self::assertStringContainsString('name="title"', $content);
         self::assertStringContainsString('name="substrate"', $content);
+        self::assertStringContainsString('name="surfaceTreatmentId"', $content);
+        // Проверяем, что treatment отрисован как select, а не input
+        self::assertStringContainsString('<select', $content);
+        self::assertStringContainsString('Выберите подготовку поверхности', $content);
+        // Проверяем, что созданный treatmentId присутствует в options
+        self::assertStringContainsString((string) $this->treatmentId, $content);
     }
 
     public function test_post_valid_data_creates_system_and_redirects(): void

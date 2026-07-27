@@ -6,7 +6,11 @@ namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
+use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQuery;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
+use App\Coatings\Domain\Repository\CoatingsFilter;
+use App\Coatings\Domain\Repository\SurfaceTreatmentsFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -25,6 +29,7 @@ class UpdateAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly Validator $validator,
         private readonly CoatingSystemMapper $mapper,
+        private readonly CoatingRepositoryInterface $coatingRepository,
     ) {
     }
 
@@ -36,6 +41,12 @@ class UpdateAction extends AbstractController
 
             return $this->redirectToRoute('app_cabinet_coating_system_list');
         }
+
+        $treatments = $this->queryBus->execute(
+            new ListSurfaceTreatmentsQuery(new SurfaceTreatmentsFilter(), 1, 1000)
+        )['items'];
+
+        $coatings = $this->buildCoatingOptions();
 
         if ($request->isMethod(Request::METHOD_POST)) {
             $inputData = [];
@@ -59,6 +70,8 @@ class UpdateAction extends AbstractController
                     'inputData' => $inputData,
                     'systemId' => $id,
                     'substrates' => Substrate::cases(),
+                    'treatments' => $treatments,
+                    'coatings' => $coatings,
                 ]);
             }
         }
@@ -69,6 +82,29 @@ class UpdateAction extends AbstractController
             'inputData' => $inputData,
             'systemId' => $id,
             'substrates' => Substrate::cases(),
+            'treatments' => $treatments,
+            'coatings' => $coatings,
         ]);
+    }
+
+    /**
+     * @return list<array{id: string, title: string, base_title: string, dft_min: int, dft_max: int}>
+     */
+    private function buildCoatingOptions(): array
+    {
+        $paginated = $this->coatingRepository->findByFilter(new CoatingsFilter());
+        $options = [];
+        foreach ($paginated->items as $coating) {
+            $dft = $coating->getDftRange();
+            $options[] = [
+                'id' => $coating->getId(),
+                'title' => $coating->getTitle(),
+                'base_title' => $coating->getBase()->value,
+                'dft_min' => (int) $dft->range->getMin(),
+                'dft_max' => (int) $dft->range->getMax(),
+            ];
+        }
+
+        return $options;
     }
 }

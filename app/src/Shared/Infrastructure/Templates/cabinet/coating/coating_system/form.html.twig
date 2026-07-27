@@ -61,14 +61,23 @@
                 <h6 class="fw-semibold mb-3">Подготовка поверхности</h6>
                 <div class="row g-3">
                     <div class="col-md-8">
-                        <label for="inputSurfaceTreatmentId" class="form-label">Метод подготовки (UUID)</label>
-                        <input type="text" value="{{ (inputData.surfaceTreatmentId ?? '')|default('') }}"
-                               name="surfaceTreatmentId" id="inputSurfaceTreatmentId"
-                               class="form-control" required maxlength="36"
-                               placeholder="UUID метода подготовки поверхности">
-                        {% if inputData.surfaceTreatmentTitle is defined and inputData.surfaceTreatmentTitle %}
-                            <div class="form-text">{{ inputData.surfaceTreatmentTitle }}</div>
-                        {% endif %}
+                        <label for="inputSurfaceTreatment" class="form-label">Метод подготовки</label>
+                        <div class="input-group">
+                            <select id="inputSurfaceTreatment" class="form-select" name="surfaceTreatmentId" required>
+                                <option value="">Выберите подготовку поверхности...</option>
+                                {% for t in treatments %}
+                                    <option value="{{ t.id }}"
+                                            data-substrate-scope="{{ t.substrateScope|json_encode }}"
+                                            {% if (inputData.surfaceTreatmentId ?? '') == t.id %} selected {% endif %}>
+                                        {{ t.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    data-action="click->surface-treatment-modal#open">
+                                + Создать
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -90,10 +99,15 @@
                         {% for i, layer in inputData.layers|default([]) %}
                             <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                                 <div class="col">
-                                    <input type="text" name="layers[{{ i }}][coatingId]"
-                                           value="{{ layer.coatingId|default('') }}"
-                                           class="form-control form-control-sm"
-                                           placeholder="UUID покрытия" required>
+                                    <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required>
+                                        <option value="">Выберите покрытие...</option>
+                                        {% for c in coatings %}
+                                            <option value="{{ c.id }}"
+                                                    {% if (layer.coatingId ?? '') == c.id %} selected {% endif %}>
+                                                {{ c.title }} ({{ c.base_title }}, {{ c.dft_min }}&ndash;{{ c.dft_max }} мкм)
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
@@ -117,10 +131,14 @@
                     <template data-coating-system-form-target="layerTemplate">
                         <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                             <div class="col">
-                                <input type="text" name="layers[__INDEX__][coatingId]"
-                                       value=""
-                                       class="form-control form-control-sm"
-                                       placeholder="UUID покрытия" required>
+                                <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required>
+                                    <option value="">Выберите покрытие...</option>
+                                    {% for c in coatings %}
+                                        <option value="{{ c.id }}">
+                                            {{ c.title }} ({{ c.base_title }}, {{ c.dft_min }}&ndash;{{ c.dft_max }} мкм)
+                                        </option>
+                                    {% endfor %}
+                                </select>
                             </div>
                             <div class="col-md-3">
                                 <div class="input-group input-group-sm">
@@ -154,5 +172,62 @@
                 <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
             </div>
         </form>
+    </div>
+
+    {# Bootstrap modal для inline-создания подготовки поверхности #}
+    <div class="modal fade" id="surfaceTreatmentModal" tabindex="-1" aria-labelledby="surfaceTreatmentModalLabel" aria-hidden="true"
+         data-controller="surface-treatment-modal"
+         data-surface-treatment-modal-endpoint-value="/api/surface-treatments"
+         data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
+         data-surface-treatment-modal-substrate-select-value="inputSubstrate">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="surfaceTreatmentModalLabel">Создать подготовку поверхности</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Описание <span class="text-danger">*</span></label>
+                        <textarea class="form-control" rows="3" maxlength="2000"
+                                  placeholder="Описание метода подготовки поверхности..."
+                                  data-surface-treatment-modal-target="descriptionInput"></textarea>
+                        <div class="form-text">до 2000 символов</div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Код</label>
+                            <input type="text" class="form-control" maxlength="30" placeholder="Sa 2"
+                                   data-surface-treatment-modal-target="codeInput">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Стандарт</label>
+                            <input type="text" class="form-control" maxlength="100" placeholder="ГОСТ Р ИСО 8501-1"
+                                   data-surface-treatment-modal-target="standardInput">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Применимые субстраты <span class="text-danger">*</span></label>
+                        <div>
+                            {% for s in substrates %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="modalScope_{{ s.value }}"
+                                           value="{{ s.value }}"
+                                           data-surface-treatment-modal-target="scopeCheckbox">
+                                    <label class="form-check-label" for="modalScope_{{ s.value }}">{{ s.title() }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="alert alert-danger d-none" data-surface-treatment-modal-target="errorBox"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary"
+                            data-action="click->surface-treatment-modal#submit">Сохранить</button>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

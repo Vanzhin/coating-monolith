@@ -98,6 +98,12 @@ final class UpdateActionTest extends WebTestCase
         $content = $this->client->getResponse()->getContent();
         self::assertStringContainsString('Обновление системы покрытий', $content);
         self::assertStringContainsString('Исходная система_', $content);
+        self::assertStringContainsString('name="surfaceTreatmentId"', $content);
+        // Проверяем, что treatment отрисован как select, а не input
+        self::assertStringContainsString('<select', $content);
+        self::assertStringContainsString('Выберите подготовку поверхности', $content);
+        // Проверяем, что созданный treatmentId присутствует в options и выбран
+        self::assertStringContainsString((string) $this->treatmentId, $content);
     }
 
     public function test_post_valid_data_updates_and_redirects(): void
