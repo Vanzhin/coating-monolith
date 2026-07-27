@@ -1,0 +1,239 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional\Coatings\Application\UseCase\Query;
+
+use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQuery;
+use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQueryHandler;
+use App\Coatings\Application\UseCase\Command\CreateSurfaceTreatment\CreateSurfaceTreatmentCommand;
+use App\Coatings\Application\UseCase\Command\CreateSurfaceTreatment\CreateSurfaceTreatmentCommandHandler;
+use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Repository\SurfaceTreatmentsFilter;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
+
+final class ListSurfaceTreatmentsTest extends KernelTestCase
+{
+    private ListSurfaceTreatmentsQueryHandler $queryHandler;
+    private CreateSurfaceTreatmentCommandHandler $createHandler;
+    private EntityManagerInterface $em;
+
+    protected function setUp(): void
+    {
+        self::bootKernel();
+        $c = static::getContainer();
+        $this->queryHandler = $c->get(ListSurfaceTreatmentsQueryHandler::class);
+        $this->createHandler = $c->get(CreateSurfaceTreatmentCommandHandler::class);
+        $this->em = $c->get(EntityManagerInterface::class);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->em->clear();
+        parent::tearDown();
+    }
+
+    public function test_filter_by_substrate_scope(): void
+    {
+        $t1 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-2.5',
+            standardCode: 'ISO 12944',
+            description: 'Blast cleaning of steel',
+            substrateScope: ['steel_carbon'],
+        );
+        $t2 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-3',
+            standardCode: 'ISO 12944',
+            description: 'Very thorough blast cleaning',
+            substrateScope: ['steel_galvanized'],
+        );
+        $t3 = new CreateSurfaceTreatmentCommand(
+            code: 'Grit',
+            standardCode: null,
+            description: 'Grit blasting for concrete',
+            substrateScope: ['concrete'],
+        );
+
+        ($this->createHandler)($t1);
+        ($this->createHandler)($t2);
+        ($this->createHandler)($t3);
+        $this->em->clear();
+
+        $result = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(substrate: Substrate::STEEL_CARBON),
+            page: 1,
+            perPage: 20,
+        ));
+
+        self::assertSame(1, $result['total']);
+        self::assertCount(1, $result['items']);
+        self::assertSame('Sa-2.5', $result['items'][0]->code);
+    }
+
+    public function test_filter_by_search_query(): void
+    {
+        $t1 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-2.5',
+            standardCode: 'ISO 12944',
+            description: 'Blast cleaning',
+            substrateScope: ['steel_carbon'],
+        );
+        $t2 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-3',
+            standardCode: 'ISO 12944',
+            description: 'Very thorough preparation',
+            substrateScope: ['steel_galvanized'],
+        );
+        $t3 = new CreateSurfaceTreatmentCommand(
+            code: 'Grit',
+            standardCode: null,
+            description: 'Grit blasting',
+            substrateScope: ['concrete'],
+        );
+
+        ($this->createHandler)($t1);
+        ($this->createHandler)($t2);
+        ($this->createHandler)($t3);
+        $this->em->clear();
+
+        $result = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(q: 'Sa'),
+            page: 1,
+            perPage: 20,
+        ));
+
+        self::assertSame(2, $result['total']);
+        self::assertCount(2, $result['items']);
+
+        $codes = array_map(fn ($dto) => $dto->code, $result['items']);
+        self::assertContains('Sa-2.5', $codes);
+        self::assertContains('Sa-3', $codes);
+    }
+
+    public function test_filter_substrate_and_search_combined(): void
+    {
+        $t1 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-2.5',
+            standardCode: 'ISO 12944',
+            description: 'Blast cleaning',
+            substrateScope: ['steel_carbon'],
+        );
+        $t2 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-3',
+            standardCode: 'ISO 12944',
+            description: 'Very thorough preparation',
+            substrateScope: ['steel_galvanized'],
+        );
+        $t3 = new CreateSurfaceTreatmentCommand(
+            code: 'Grit',
+            standardCode: null,
+            description: 'Grit blasting',
+            substrateScope: ['steel_carbon'],
+        );
+
+        ($this->createHandler)($t1);
+        ($this->createHandler)($t2);
+        ($this->createHandler)($t3);
+        $this->em->clear();
+
+        $result = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(
+                substrate: Substrate::STEEL_CARBON,
+                q: 'Sa',
+            ),
+            page: 1,
+            perPage: 20,
+        ));
+
+        self::assertSame(1, $result['total']);
+        self::assertCount(1, $result['items']);
+        self::assertSame('Sa-2.5', $result['items'][0]->code);
+    }
+
+    public function test_empty_filter_returns_all_with_pagination(): void
+    {
+        $t1 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-2.5',
+            standardCode: 'ISO 12944',
+            description: 'Blast cleaning',
+            substrateScope: ['steel_carbon'],
+        );
+        $t2 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-3',
+            standardCode: 'ISO 12944',
+            description: 'Very thorough preparation',
+            substrateScope: ['steel_galvanized'],
+        );
+        $t3 = new CreateSurfaceTreatmentCommand(
+            code: 'Grit',
+            standardCode: null,
+            description: 'Grit blasting',
+            substrateScope: ['concrete'],
+        );
+
+        ($this->createHandler)($t1);
+        ($this->createHandler)($t2);
+        ($this->createHandler)($t3);
+        $this->em->clear();
+
+        $result = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(),
+            page: 1,
+            perPage: 20,
+        ));
+
+        self::assertSame(3, $result['total']);
+        self::assertCount(3, $result['items']);
+    }
+
+    public function test_pagination(): void
+    {
+        $t1 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-2.5',
+            standardCode: 'ISO 12944',
+            description: 'Blast cleaning',
+            substrateScope: ['steel_carbon'],
+        );
+        $t2 = new CreateSurfaceTreatmentCommand(
+            code: 'Sa-3',
+            standardCode: 'ISO 12944',
+            description: 'Very thorough preparation',
+            substrateScope: ['steel_galvanized'],
+        );
+        $t3 = new CreateSurfaceTreatmentCommand(
+            code: 'Grit',
+            standardCode: null,
+            description: 'Grit blasting',
+            substrateScope: ['concrete'],
+        );
+
+        ($this->createHandler)($t1);
+        ($this->createHandler)($t2);
+        ($this->createHandler)($t3);
+        $this->em->clear();
+
+        $page1 = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(),
+            page: 1,
+            perPage: 1,
+        ));
+
+        self::assertSame(3, $page1['total']);
+        self::assertCount(1, $page1['items']);
+
+        $page2 = ($this->queryHandler)(new ListSurfaceTreatmentsQuery(
+            filter: new SurfaceTreatmentsFilter(),
+            page: 2,
+            perPage: 1,
+        ));
+
+        self::assertSame(3, $page2['total']);
+        self::assertCount(1, $page2['items']);
+
+        $page1Id = $page1['items'][0]->id;
+        $page2Id = $page2['items'][0]->id;
+        self::assertNotSame($page1Id, $page2Id, 'Page 2 must have different item than Page 1.');
+    }
+}
