@@ -1,0 +1,116 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | {{ system.title }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">{{ system.title }}</h1>
+            <div class="d-flex gap-2">
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}"
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                {% endif %}
+                <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+        </div>
+
+        {# Метаданные #}
+        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div class="row g-2 small">
+                <div class="col-md-4">
+                    <span class="text-muted">Субстрат:</span>
+                    <span class="ms-1 fw-semibold">{{ system.substrateTitle }}</span>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted">Подготовка поверхности:</span>
+                    <span class="ms-1 fw-semibold">{{ system.surfacePreparationGrade }}</span>
+                    {% if system.surfacePreparationStandard %}
+                        <span class="text-muted ms-1">({{ system.surfacePreparationStandard }})</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted">Суммарная ТСП:</span>
+                    <span class="ms-1 fw-semibold">{{ system.totalDft }} мкм</span>
+                </div>
+            </div>
+            {% if system.description %}
+                <p class="mt-2 mb-0 text-muted small">{{ system.description }}</p>
+            {% endif %}
+        </div>
+
+        <div class="row g-3">
+            {# Левая колонка: слои системы #}
+            <div class="col-lg-7">
+                <div class="p-3 rounded-3 bg-body-tertiary h-100">
+                    <h6 class="fw-semibold mb-3">Слои системы</h6>
+                    {% if system.layers is empty %}
+                        <p class="text-muted small mb-0">Слои не добавлены.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-muted fw-normal" style="width: 48px;">#</th>
+                                        <th class="text-muted fw-normal">Покрытие</th>
+                                        <th class="text-muted fw-normal">Основа</th>
+                                        <th class="text-muted fw-normal text-end">ТСП, мкм</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for layer in system.layers %}
+                                        <tr>
+                                            <td class="text-muted">{{ layer.position }}</td>
+                                            <td>
+                                                <span class="fw-semibold">{{ layer.coatingTitle }}</span>
+                                                {% if layer.isZincRich %}
+                                                    <span class="badge text-bg-warning ms-1 small">Zn(R)</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-muted small">{{ layer.coatingBaseTitle }}</td>
+                                            <td class="text-end fw-semibold">{{ layer.dft }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="border-top">
+                                        <td colspan="3" class="text-muted small">Итого</td>
+                                        <td class="text-end fw-bold">{{ system.totalDft }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Правая колонка: compliance #}
+            <div class="col-lg-5">
+                <div class="p-3 rounded-3 bg-body-tertiary h-100">
+                    <h6 class="fw-semibold mb-3">Соответствие стандартам</h6>
+                    {% if complianceByStandard is empty %}
+                        <p class="text-muted small mb-0">Нет данных о соответствии стандартам.</p>
+                    {% else %}
+                        {% for standard, group in complianceByStandard %}
+                            <div class="mb-3">
+                                <div class="fw-semibold small mb-2">{{ group.standardTitle }}</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for entry in group.entries %}
+                                        <span class="badge text-bg-success">
+                                            {{ entry.category }}
+                                            {% if entry.durability %}— {{ entry.durability }}{% endif %}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

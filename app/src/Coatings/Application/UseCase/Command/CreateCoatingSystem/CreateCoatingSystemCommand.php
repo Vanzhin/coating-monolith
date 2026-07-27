@@ -6,8 +6,9 @@ namespace App\Coatings\Application\UseCase\Command\CreateCoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
+use App\Shared\Application\Command\Command;
 
-final readonly class CreateCoatingSystemCommand
+final readonly class CreateCoatingSystemCommand extends Command
 {
     /**
      * @param array<int, array{coatingId: string, dft: int}> $initialLayers

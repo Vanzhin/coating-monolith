@@ -1,0 +1,172 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = systemId is defined and systemId %}
+{% set pageTitle = isUpdate ? 'Обновление системы покрытий' : 'Добавление системы покрытий' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_coating_system_update', {id: systemId})
+    : path('app_cabinet_coating_system_add') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3" data-controller="coating-system-form">
+        <form method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+            {% if error is defined and error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            {# 1. Метаданные #}
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Описание</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="inputTitle" class="form-label">Название</label>
+                        <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
+                               class="form-control" required autofocus maxlength="100"
+                               placeholder="Укажите название системы...">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="inputSubstrate" class="form-label">Субстрат</label>
+                        <select class="form-select" id="inputSubstrate" name="substrate" required>
+                            <option value="">Выберите субстрат...</option>
+                            {% for s in substrates %}
+                                <option value="{{ s.value }}"
+                                        {% if (inputData.substrate ?? '') == s.value %} selected {% endif %}>
+                                    {{ s.title() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputDescription" class="form-label">Описание</label>
+                        <textarea name="description" id="inputDescription" class="form-control"
+                                  rows="3" maxlength="2000"
+                                  placeholder="Описание системы покрытий...">{{ inputData.description|default('') }}</textarea>
+                        <div class="form-text">до 2000 символов</div>
+                    </div>
+                </div>
+            </div>
+
+            {# 2. Подготовка поверхности #}
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Подготовка поверхности</h6>
+                {% set sp = inputData.surfacePreparation|default({}) %}
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="inputSpGrade" class="form-label">Степень очистки</label>
+                        <input type="text" value="{{ sp.grade|default('') }}"
+                               name="surfacePreparation[grade]" id="inputSpGrade"
+                               class="form-control" required maxlength="30"
+                               placeholder="напр. Sa 2½">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="inputSpStandard" class="form-label">Стандарт</label>
+                        <input type="text" value="{{ sp.standard|default('') }}"
+                               name="surfacePreparation[standard]" id="inputSpStandard"
+                               class="form-control" maxlength="50"
+                               placeholder="напр. ISO 8501-1">
+                    </div>
+                    <div class="col-12">
+                        <label for="inputSpDescription" class="form-label">Описание</label>
+                        <input type="text" value="{{ sp.description|default('') }}"
+                               name="surfacePreparation[description]" id="inputSpDescription"
+                               class="form-control" maxlength="500"
+                               placeholder="Дополнительное описание...">
+                    </div>
+                </div>
+            </div>
+
+            {# 3. Слои системы (только при создании) #}
+            {% if not isUpdate %}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">Слои системы</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-action="click->coating-system-form#addLayer">
+                            <i class="bi bi-plus-lg"></i> Добавить слой
+                        </button>
+                    </div>
+                    <div class="form-text mb-3">
+                        Укажите покрытия и их проектную толщину (ТСП, мкм). Слои можно добавить и отредактировать после создания системы.
+                    </div>
+                    <div data-coating-system-form-target="layersList">
+                        {% for i, layer in inputData.layers|default([]) %}
+                            <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
+                                <div class="col">
+                                    <input type="text" name="layers[{{ i }}][coatingId]"
+                                           value="{{ layer.coatingId|default('') }}"
+                                           class="form-control form-control-sm"
+                                           placeholder="UUID покрытия" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" name="layers[{{ i }}][dft]"
+                                               value="{{ layer.dft|default('') }}"
+                                               class="form-control" min="1" max="9999" required
+                                               placeholder="ТСП">
+                                        <span class="input-group-text">мкм</span>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            data-action="click->coating-system-form#removeLayer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <template data-coating-system-form-target="layerTemplate">
+                        <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
+                            <div class="col">
+                                <input type="text" name="layers[__INDEX__][coatingId]"
+                                       value=""
+                                       class="form-control form-control-sm"
+                                       placeholder="UUID покрытия" required>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="input-group input-group-sm">
+                                    <input type="number" name="layers[__INDEX__][dft]"
+                                           value=""
+                                           class="form-control" min="1" max="9999" required
+                                           placeholder="ТСП">
+                                    <span class="input-group-text">мкм</span>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-action="click->coating-system-form#removeLayer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            {% else %}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Слои системы редактируются отдельно после сохранения метаданных.
+                    </p>
+                </div>
+            {% endif %}
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

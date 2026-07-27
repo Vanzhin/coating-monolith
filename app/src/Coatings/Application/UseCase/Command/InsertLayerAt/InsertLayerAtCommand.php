@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\InsertLayerAt;
 
-final readonly class InsertLayerAtCommand
+use App\Shared\Application\Command\Command;
+
+final readonly class InsertLayerAtCommand extends Command
 {
     public function __construct(
         public string $systemId,

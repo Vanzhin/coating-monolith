@@ -10,6 +10,7 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\Common\Collections\Order;
 use Symfony\Component\Uid\Uuid;
 
 class CoatingSystem extends Aggregate
@@ -118,7 +119,7 @@ class CoatingSystem extends Aggregate
     /** @return Collection<int, CoatingSystemLayer> */
     public function getLayers(): Collection
     {
-        $criteria = Criteria::create()->orderBy(['position' => Criteria::ASC]);
+        $criteria = Criteria::create()->orderBy(['position' => Order::Ascending]);
         return $this->layers->matching($criteria);
     }
 

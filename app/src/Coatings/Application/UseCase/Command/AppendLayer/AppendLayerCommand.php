@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\AppendLayer;
 
-final readonly class AppendLayerCommand
+use App\Shared\Application\Command\Command;
+
+final readonly class AppendLayerCommand extends Command
 {
     public function __construct(
         public string $systemId,
