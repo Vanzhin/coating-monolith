@@ -40,7 +40,7 @@ final class FindSurfaceTreatmentByIdTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Surface preparation by blast cleaning',
-            substrateScope: ['steel_carbon', 'steel_galvanized'],
+            substrateScope: [Substrate::STEEL_CARBON, Substrate::STEEL_GALVANIZED],
         );
 
         $result = ($this->createHandler)($cmd);

@@ -41,19 +41,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning of steel',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
             code: 'Sa-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough blast cleaning',
-            substrateScope: ['steel_galvanized'],
+            substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
             code: 'Grit',
             standardCode: null,
             description: 'Grit blasting for concrete',
-            substrateScope: ['concrete'],
+            substrateScope: [Substrate::CONCRETE],
         );
 
         ($this->createHandler)($t1);
@@ -78,19 +78,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
             code: 'Sa-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
-            substrateScope: ['steel_galvanized'],
+            substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
             code: 'Grit',
             standardCode: null,
             description: 'Grit blasting',
-            substrateScope: ['concrete'],
+            substrateScope: [Substrate::CONCRETE],
         );
 
         ($this->createHandler)($t1);
@@ -118,19 +118,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
             code: 'Sa-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
-            substrateScope: ['steel_galvanized'],
+            substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
             code: 'Grit',
             standardCode: null,
             description: 'Grit blasting',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
 
         ($this->createHandler)($t1);
@@ -158,19 +158,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
             code: 'Sa-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
-            substrateScope: ['steel_galvanized'],
+            substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
             code: 'Grit',
             standardCode: null,
             description: 'Grit blasting',
-            substrateScope: ['concrete'],
+            substrateScope: [Substrate::CONCRETE],
         );
 
         ($this->createHandler)($t1);
@@ -194,19 +194,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
             code: 'Sa-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
-            substrateScope: ['steel_carbon'],
+            substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
             code: 'Sa-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
-            substrateScope: ['steel_galvanized'],
+            substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
             code: 'Grit',
             standardCode: null,
             description: 'Grit blasting',
-            substrateScope: ['concrete'],
+            substrateScope: [Substrate::CONCRETE],
         );
 
         ($this->createHandler)($t1);
