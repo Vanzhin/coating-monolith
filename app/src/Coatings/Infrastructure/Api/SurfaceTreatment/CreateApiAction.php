@@ -72,6 +72,14 @@ class CreateApiAction
 
         $dto = $this->queryBus->execute(new FindSurfaceTreatmentByIdQuery($result->id));
 
+        if (null === $dto) {
+            return new JsonResponse(
+                ['message' => 'Не удалось получить созданную подготовку поверхности.'],
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                ['Content-Type' => 'application/json'],
+            );
+        }
+
         return new JsonResponse($dto, Response::HTTP_CREATED, ['Content-Type' => 'application/json']);
     }
 }
