@@ -8,7 +8,7 @@
 
 **Tech Stack:** PHP 8.3, Symfony 7.0, Doctrine ORM XML mapping, PostgreSQL 17 (partial unique index + JSONB), PHPUnit 9.6, Twig, Stimulus.
 
-**Spec:** `docs/plans/coating-system-surface-treatment/design.md` — читать перед началом каждой задачи.
+**Spec:** `docs/plans/coating-system-surface-treatment/surface-treatment-design.md` — читать перед началом каждой задачи.
 
 ## Global Constraints
 
