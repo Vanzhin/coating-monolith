@@ -161,8 +161,6 @@
                 </div>
             {% endif %}
 
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-
             <div class="d-flex justify-content-end gap-2">
                 <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary">Отмена</a>
                 <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>

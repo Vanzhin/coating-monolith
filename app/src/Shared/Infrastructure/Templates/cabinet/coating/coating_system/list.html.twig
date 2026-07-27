@@ -76,7 +76,9 @@
                                         <form method="post"
                                               action="{{ path('app_cabinet_coating_system_remove', {id: system.id}) }}"
                                               class="d-inline"
-                                              onsubmit="return confirm('Удалить систему «{{ system.title|e('js') }}»?');">
+                                              data-controller="confirm-form"
+                                              data-confirm-form-message-value="Удалить систему «{{ system.title|e('js') }}»?"
+                                              data-action="submit->confirm-form#confirm">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                                 <i class="bi bi-trash"></i>
                                             </button>

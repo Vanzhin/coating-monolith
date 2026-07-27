@@ -64,7 +64,6 @@ class UpdateAction extends AbstractController
         }
 
         $inputData = $this->mapper->buildInputDataFromDto($dto);
-        $inputData['id'] = $id;
 
         return $this->render('cabinet/coating/coating_system/form.html.twig', [
             'inputData' => $inputData,
