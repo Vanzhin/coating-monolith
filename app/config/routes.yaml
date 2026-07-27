@@ -22,6 +22,10 @@ coatings:
   resource: ../src/Coatings/Infrastructure/Controller
   type: attribute
 
+coatings_api:
+  resource: ../src/Coatings/Infrastructure/Api
+  type: attribute
+
 proposals:
   resource: ../src/Proposals/Infrastructure/Controller
   type: attribute
