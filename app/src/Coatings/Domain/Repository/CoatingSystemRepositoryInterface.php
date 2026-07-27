@@ -38,4 +38,9 @@ interface CoatingSystemRepositoryInterface
         string $durability,
         ?Substrate $substrate,
     ): int;
+
+    /**
+     * @return list<array{standard: string, category: string, durability: string}>
+     */
+    public function findComplianceRows(Uuid $systemId): array;
 }

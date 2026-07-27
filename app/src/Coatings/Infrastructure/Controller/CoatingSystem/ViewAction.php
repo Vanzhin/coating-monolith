@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route(path: '/cabinet/coating/coating-system/{id}', name: 'app_cabinet_coating_system_view', methods: ['GET'])]
+#[Route(path: '/cabinet/coating/coating-system/{id}', name: 'app_cabinet_coating_system_view', methods: ['GET'], requirements: ['id' => '[0-9a-f-]{36}'])]
 class ViewAction extends AbstractController
 {
     public function __construct(

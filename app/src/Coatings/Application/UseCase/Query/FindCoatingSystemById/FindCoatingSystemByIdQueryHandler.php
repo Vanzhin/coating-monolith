@@ -20,11 +20,14 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
 
     public function __invoke(FindCoatingSystemByIdQuery $query): ?CoatingSystemDTO
     {
-        $system = $this->repository->findById(Uuid::fromString($query->id));
+        $id = Uuid::fromString($query->id);
+        $system = $this->repository->findById($id);
         if (null === $system) {
             return null;
         }
 
-        return $this->transformer->fromEntity($system);
+        $complianceRows = $this->repository->findComplianceRows($id);
+
+        return $this->transformer->fromEntity($system, $complianceRows);
     }
 }

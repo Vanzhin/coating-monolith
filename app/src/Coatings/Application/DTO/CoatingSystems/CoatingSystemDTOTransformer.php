@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Coatings\Application\DTO\CoatingSystems;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 
 class CoatingSystemDTOTransformer
 {
-    public function fromEntity(CoatingSystem $system): CoatingSystemDTO
+    /**
+     * @param list<array{standard: string, category: string, durability: string}> $complianceRows
+     */
+    public function fromEntity(CoatingSystem $system, array $complianceRows = []): CoatingSystemDTO
     {
         $dto = new CoatingSystemDTO();
         $dto->id = $system->getId();
@@ -23,9 +27,30 @@ class CoatingSystemDTOTransformer
         $dto->updatedAt = $system->getUpdatedAt();
         $dto->totalDft = $system->totalDft();
         $dto->layers = $this->layersFromSystem($system);
-        $dto->compliance = [];
+        $dto->compliance = $this->normalizeComplianceRows($complianceRows);
 
         return $dto;
+    }
+
+    /**
+     * @param list<array{standard: string, category: string, durability: string}> $rows
+     *
+     * @return list<array{standard: string, standardTitle: string, category: string, durability: string}>
+     */
+    private function normalizeComplianceRows(array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            $standard = ComplianceStandard::from($row['standard']);
+            $result[] = [
+                'standard' => $row['standard'],
+                'standardTitle' => $standard->title(),
+                'category' => $row['category'],
+                'durability' => $row['durability'],
+            ];
+        }
+
+        return $result;
     }
 
     /** @return list<CoatingSystemLayerDTO> */

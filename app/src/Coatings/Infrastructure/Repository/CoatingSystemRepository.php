@@ -115,6 +115,15 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
         return (int) $this->em->getConnection()->fetchOne($sql, $params);
     }
 
+    public function findComplianceRows(Uuid $systemId): array
+    {
+        /** @var list<array{standard: string, category: string, durability: string}> */
+        return $this->em->getConnection()->fetchAllAssociative(
+            'SELECT standard, category, durability FROM coating_system_compliance WHERE system_id = ?',
+            [$systemId->toRfc4122()],
+        );
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {

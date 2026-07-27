@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\AppendLayer;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
@@ -16,7 +16,7 @@ final readonly class AppendLayerCommandHandler implements CommandHandlerInterfac
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
         private CoatingRepositoryInterface $coatingRepo,
-        private CoatingSystemChainValidator $chainValidator,
+        private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
 

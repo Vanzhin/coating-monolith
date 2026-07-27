@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateLayerDft;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -14,7 +14,7 @@ final readonly class UpdateLayerDftCommandHandler implements CommandHandlerInter
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
-        private CoatingSystemChainValidator $chainValidator,
+        private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
 
