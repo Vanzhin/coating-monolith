@@ -57,6 +57,10 @@ services:
     resource: '../src/Coatings/Infrastructure/Api/CoatingSystem'
     tags: [ 'controller.service_arguments' ]
 
+  App\Coatings\Infrastructure\Api\SurfaceTreatment\:
+    resource: '../src/Coatings/Infrastructure/Api/SurfaceTreatment'
+    tags: [ 'controller.service_arguments' ]
+
   #        add custom fields to jwt
   acme_api.event.jwt_created_listener:
     class: App\Shared\Application\EventListener\JWTCreatedListener
