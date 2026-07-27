@@ -38,7 +38,8 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 
     public function list(CoatingSystemsFilter $filter, int $limit, int $offset): array
     {
-        $qb = $this->em->createQueryBuilder()->select('s')->from(CoatingSystem::class, 's');
+        $qb = $this->em->createQueryBuilder()->select('s')->from(CoatingSystem::class, 's')
+            ->leftJoin('s.surfaceTreatment', 't')->addSelect('t');
         $this->applyFilter($qb, $filter);
         $qb->orderBy('s.updatedAt', 'DESC')->setFirstResult($offset)->setMaxResults($limit);
 
@@ -87,6 +88,7 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 
         return $this->em->createQueryBuilder()
             ->select('s')->from(CoatingSystem::class, 's')
+            ->leftJoin('s.surfaceTreatment', 't')->addSelect('t')
             ->where('s.id IN (:ids)')->setParameter('ids', $ids)
             ->getQuery()->getResult();
     }

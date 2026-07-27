@@ -51,7 +51,7 @@ final class ListApiActionTest extends WebTestCase
             [Substrate::STEEL_CARBON],
         );
         $this->em->persist($t1);
-        $this->treatmentIds[] = $t1->id;
+        $this->treatmentIds[] = Uuid::fromString($t1->getId());
 
         $t2 = new SurfaceTreatment(
             Uuid::v7(),
@@ -61,7 +61,7 @@ final class ListApiActionTest extends WebTestCase
             [Substrate::STEEL_GALVANIZED],
         );
         $this->em->persist($t2);
-        $this->treatmentIds[] = $t2->id;
+        $this->treatmentIds[] = Uuid::fromString($t2->getId());
 
         $this->em->flush();
     }

@@ -40,6 +40,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
+    private ?Uuid $secondTreatmentId = null;
 
     protected function setUp(): void
     {
@@ -75,6 +76,14 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
                 }
             }
             $em->flush();
+            if (null !== $this->secondTreatmentId) {
+                $t2 = $em->find(SurfaceTreatment::class, $this->secondTreatmentId);
+                if (null !== $t2) {
+                    $em->remove($t2);
+                    $em->flush();
+                }
+                $this->secondTreatmentId = null;
+            }
             $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
@@ -173,5 +182,101 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
         $this->expectExceptionMessageMatches('/не найдена/');
 
         ($this->handler)($cmd);
+    }
+
+    /**
+     * Critical: atomic substrate+treatment switch.
+     *
+     * System starts with STEEL_CARBON + treatment that covers all substrates.
+     * We switch to CONCRETE + treatment that covers only CONCRETE.
+     * The new treatment is incompatible with the old substrate (STEEL_CARBON),
+     * so sequential setSubstrate → setSurfaceTreatment would fail if setSubstrate
+     * checked old treatment. setSubstrateAndTreatment must handle both in one step.
+     */
+    public function test_atomic_substrate_and_treatment_update(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        // Treatment 1: covers all substrates (used for initial state)
+        $treatment1 = $this->createAndPersistTreatment($this->em, $suffix);
+
+        // Treatment 2: covers CONCRETE only (incompatible with STEEL_CARBON)
+        $this->secondTreatmentId = Uuid::v7();
+        $treatment2 = new SurfaceTreatment(
+            $this->secondTreatmentId,
+            'Только бетон '.$suffix,
+            substr('CON-'.$suffix, 0, 30),
+            null,
+            [Substrate::CONCRETE],
+        );
+        $this->em->persist($treatment2);
+        $this->em->flush();
+
+        $manufacturer = new Manufacturer(
+            'Мфр-atomic-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'Грунт-atomic-'.$suffix,
+            'Описание.',
+            50,
+            1.5,
+            CoatingBase::EP,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+
+        // Create system on STEEL_CARBON with treatment1 (all substrates)
+        $this->systemId = Uuid::v7();
+        $chainValidator = new CoatingSystemChainValidator();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'Система-atomic-'.$suffix,
+            'До смены.',
+            Substrate::STEEL_CARBON,
+            $treatment1,
+            $chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $this->repo->save($system);
+
+        // Switch to CONCRETE + treatment2 (CONCRETE-only).
+        // treatment2 is incompatible with old substrate STEEL_CARBON,
+        // so sequential setSubstrate/setSurfaceTreatment would throw.
+        $cmd = new UpdateCoatingSystemMetadataCommand(
+            id: (string) $this->systemId,
+            title: 'Система-atomic-'.$suffix,
+            description: 'После смены.',
+            substrate: Substrate::CONCRETE,
+            surfaceTreatmentId: $treatment2->getId(),
+        );
+
+        $result = ($this->handler)($cmd);
+
+        self::assertSame((string) $this->systemId, $result->id);
+
+        $this->em->clear();
+
+        $loaded = $this->em->find(CoatingSystem::class, $this->systemId);
+        self::assertNotNull($loaded);
+        self::assertSame(Substrate::CONCRETE, $loaded->getSubstrate());
+        self::assertSame($treatment2->getId(), $loaded->getSurfaceTreatment()->getId());
     }
 }

@@ -36,8 +36,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         $system->setChainValidator($this->chainValidator);
         $system->setTitle($cmd->title);
         $system->setDescription($cmd->description);
-        $system->setSubstrate($cmd->substrate);
-        $system->setSurfaceTreatment($treatment);
+        $system->setSubstrateAndTreatment($cmd->substrate, $treatment);
 
         $this->repo->save($system);
 

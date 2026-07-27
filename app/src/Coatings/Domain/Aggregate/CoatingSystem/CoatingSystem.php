@@ -134,6 +134,21 @@ class CoatingSystem extends Aggregate
         $this->touch();
     }
 
+    public function setSubstrateAndTreatment(Substrate $substrate, SurfaceTreatment $treatment): void
+    {
+        if (!$treatment->supportsSubstrate($substrate)) {
+            throw new AppException(sprintf(
+                'Подготовка «%s» применима к [%s], а выбрана подложка %s.',
+                $treatment->getCode() ?? $treatment->getDescription(),
+                implode(', ', array_map(fn (Substrate $s) => $s->title(), $treatment->getSubstrateScope())),
+                $substrate->title(),
+            ));
+        }
+        $this->substrate = $substrate;
+        $this->surfaceTreatment = $treatment;
+        $this->touch();
+    }
+
     /** @return Collection<int, CoatingSystemLayer> */
     public function getLayers(): Collection
     {
