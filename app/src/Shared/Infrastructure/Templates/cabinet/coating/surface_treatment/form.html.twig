@@ -1,0 +1,79 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = treatmentId is defined and treatmentId %}
+{% set pageTitle = isUpdate ? 'Редактирование подготовки поверхности' : 'Добавление подготовки поверхности' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_surface_treatment_update', {id: treatmentId})
+    : path('app_cabinet_surface_treatment_add') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <form method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+            {% if error is defined and error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Основные данные</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="inputCode" class="form-label">Код</label>
+                        <input type="text" value="{{ inputData.code|default('') }}" name="code" id="inputCode"
+                               class="form-control" maxlength="30"
+                               placeholder="напр. Sa 2½">
+                        <div class="form-text">до 30 символов</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="inputStandardCode" class="form-label">Код стандарта</label>
+                        <input type="text" value="{{ inputData.standardCode|default('') }}" name="standardCode" id="inputStandardCode"
+                               class="form-control" maxlength="100"
+                               placeholder="напр. ISO 8501-1">
+                        <div class="form-text">до 100 символов</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputDescription" class="form-label">Описание <span class="text-danger">*</span></label>
+                        <textarea name="description" id="inputDescription" class="form-control"
+                                  rows="4" maxlength="2000" required autofocus
+                                  placeholder="Описание способа подготовки поверхности...">{{ inputData.description|default('') }}</textarea>
+                        <div class="form-text">до 2000 символов</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Область применения по субстрату <span class="text-danger">*</span></h6>
+                <div class="row g-2">
+                    {% for s in substrates %}
+                        <div class="col-md-4 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="substrateScope[]" value="{{ s.value }}"
+                                       id="substrate_{{ s.value }}"
+                                       {% if s.value in (inputData.substrateScope|default([])) %}checked{% endif %}>
+                                <label class="form-check-label" for="substrate_{{ s.value }}">
+                                    {{ s.title() }}
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

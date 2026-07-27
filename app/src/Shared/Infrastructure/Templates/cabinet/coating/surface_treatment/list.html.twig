@@ -1,0 +1,122 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Подготовка поверхности{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Подготовка поверхности</h1>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('app_cabinet_surface_treatment_add') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg"></i> Добавить
+                </a>
+            {% endif %}
+        </div>
+
+        <form method="get" action="{{ path('app_cabinet_surface_treatment_list') }}" class="mb-3">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" name="q" value="{{ q }}" class="form-control"
+                           placeholder="Поиск по описанию, коду...">
+                </div>
+                <div class="col-md-4">
+                    <select name="substrate" class="form-select">
+                        <option value="">Все субстраты</option>
+                        {% for s in substrates %}
+                            <option value="{{ s.value }}" {% if substrate == s.value %}selected{% endif %}>
+                                {{ s.title() }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-outline-secondary w-100">Найти</button>
+                </div>
+            </div>
+        </form>
+
+        {% if items is empty %}
+            <div class="p-3 rounded-3 bg-body-tertiary text-center text-muted">
+                Записи не найдены.
+            </div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Код</th>
+                            <th>Стандарт</th>
+                            <th>Описание</th>
+                            <th>Субстраты</th>
+                            <th>Обновлено</th>
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <th></th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.code ?? '—' }}</td>
+                                <td class="text-muted small">{{ item.standardCode ?? '—' }}</td>
+                                <td>{{ item.description }}</td>
+                                <td class="text-muted small">{{ item.substrateScopeTitles|join(', ') }}</td>
+                                <td class="text-muted small">{{ item.updatedAt ? item.updatedAt|date('d.m.Y') : '—' }}</td>
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <td class="text-end">
+                                        <a href="{{ path('app_cabinet_surface_treatment_update', {id: item.id}) }}"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post"
+                                              action="{{ path('app_cabinet_surface_treatment_remove', {id: item.id}) }}"
+                                              class="d-inline"
+                                              data-controller="confirm-form"
+                                              data-confirm-form-message-value="Удалить «{{ item.description|slice(0, 40)|e('js') }}»?"
+                                              data-action="submit->confirm-form#confirm">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if total > perPage %}
+                <nav class="mt-3">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        {% if page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="{{ path('app_cabinet_surface_treatment_list', {page: page - 1, q: q, substrate: substrate}) }}">
+                                    Назад
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% set totalPages = (total / perPage)|round(0, 'ceil') %}
+                        {% for p in 1..totalPages %}
+                            <li class="page-item {% if p == page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ path('app_cabinet_surface_treatment_list', {page: p, q: q, substrate: substrate}) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        {% if page < totalPages %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="{{ path('app_cabinet_surface_treatment_list', {page: page + 1, q: q, substrate: substrate}) }}">
+                                    Вперёд
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}
