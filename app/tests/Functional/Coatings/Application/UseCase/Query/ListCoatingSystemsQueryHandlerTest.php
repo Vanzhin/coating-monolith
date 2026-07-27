@@ -16,19 +16,21 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private ListCoatingSystemsQueryHandler $handler;
     private EntityManagerInterface $em;
     private CoatingSystemChainValidator $chainValidator;
@@ -73,6 +75,7 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -83,6 +86,8 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             $suffix.'-Мфр-List',
@@ -121,7 +126,7 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             $suffix.'-СистемаList-A',
             'Описание A.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $s1->appendLayer($coating, 80);
@@ -135,7 +140,7 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             $suffix.'-СистемаList-B',
             'Описание B.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $s2->appendLayer($coating, 80);
@@ -149,7 +154,7 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             $suffix.'-СистемаList-C',
             'Описание C.',
             Substrate::CONCRETE,
-            new SurfacePreparation('CS 1', 'Ручная очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $s3->appendLayer($coating, 80);

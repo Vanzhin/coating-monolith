@@ -18,12 +18,13 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemDTOTransformerTest extends TestCase
 {
@@ -32,12 +33,13 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $coating1 = $this->makeCoating('Coating 1', CoatingBase::EP, 80, 150);
         $coating2 = $this->makeCoating('Coating 2', CoatingBase::PUR, 50, 120);
 
+        $treatment = $this->newTreatment('Sa 2.5', 'Blast clean', 'ISO 8501-1');
         $system = new CoatingSystem(
             UuidService::generateUuid(),
             'Test System',
             'System description',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2.5', 'Blast clean', 'ISO 8501-1'),
+            $treatment,
             new CoatingSystemChainValidator(),
         );
         $system->appendLayer($coating1, 100);
@@ -52,9 +54,11 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $this->assertSame('System description', $dto->description);
         $this->assertSame('steel_carbon', $dto->substrate);
         $this->assertSame('Углеродистая сталь', $dto->substrateTitle);
-        $this->assertSame('Sa 2.5', $dto->surfacePreparationGrade);
-        $this->assertSame('Blast clean', $dto->surfacePreparationDescription);
-        $this->assertSame('ISO 8501-1', $dto->surfacePreparationStandard);
+        $this->assertSame($treatment->getId(), $dto->surfaceTreatmentId);
+        $this->assertSame('Blast clean', $dto->surfaceTreatmentDescription);
+        $this->assertSame('Sa 2.5', $dto->surfaceTreatmentCode);
+        $this->assertSame('ISO 8501-1', $dto->surfaceTreatmentStandardCode);
+        $this->assertSame('Sa 2.5', $dto->surfaceTreatmentTitle);
         $this->assertSame(180, $dto->totalDft);
         $this->assertEquals($system->getCreatedAt(), $dto->createdAt);
         $this->assertEquals($system->getUpdatedAt(), $dto->updatedAt);
@@ -66,12 +70,13 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $coating = $this->makeCoating('EP White', CoatingBase::EP, 80, 150);
         $coating->setIsZincRich(true);
 
+        $treatment = $this->newTreatment('Sa 2', 'Surface prep', null);
         $system = new CoatingSystem(
             UuidService::generateUuid(),
             'System',
             'desc',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('Sa 2', 'Surface prep'),
+            $treatment,
             new CoatingSystemChainValidator(),
         );
         $layer = $system->appendLayer($coating, 120);
@@ -91,36 +96,51 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $this->assertTrue($layerDto->isZincRich);
     }
 
-    public function test_from_entity_surface_prep_without_standard(): void
+    public function test_from_entity_treatment_without_code_uses_description_as_title(): void
     {
+        $treatment = $this->newTreatment(null, 'Обмыв водой', null);
         $system = new CoatingSystem(
             UuidService::generateUuid(),
             'System',
             'desc',
             Substrate::ALUMINUM,
-            new SurfacePreparation('Sw', 'Solvent wipe', null),
+            $treatment,
             new CoatingSystemChainValidator(),
         );
 
         $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
 
-        $this->assertNull($dto->surfacePreparationStandard);
+        $this->assertNull($dto->surfaceTreatmentCode);
+        $this->assertNull($dto->surfaceTreatmentStandardCode);
+        $this->assertSame('Обмыв водой', $dto->surfaceTreatmentTitle);
     }
 
     public function test_from_entity_compliance_empty_by_default(): void
     {
+        $treatment = $this->newTreatment('Grade', 'Preparation', null);
         $system = new CoatingSystem(
             UuidService::generateUuid(),
             'System',
             'desc',
             Substrate::CONCRETE,
-            new SurfacePreparation('Grade', 'Preparation'),
+            $treatment,
             new CoatingSystemChainValidator(),
         );
 
         $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
 
         $this->assertSame([], $dto->compliance);
+    }
+
+    private function newTreatment(?string $code, string $description, ?string $standardCode): SurfaceTreatment
+    {
+        return new SurfaceTreatment(
+            Uuid::v7(),
+            $description,
+            $code,
+            $standardCode,
+            Substrate::cases(),
+        );
     }
 
     private function makeCoating(

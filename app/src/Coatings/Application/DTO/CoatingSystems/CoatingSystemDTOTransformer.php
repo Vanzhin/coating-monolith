@@ -14,15 +14,19 @@ class CoatingSystemDTOTransformer
      */
     public function fromEntity(CoatingSystem $system, array $complianceRows = []): CoatingSystemDTO
     {
+        $treatment = $system->getSurfaceTreatment();
+
         $dto = new CoatingSystemDTO();
         $dto->id = $system->getId();
         $dto->title = $system->getTitle();
         $dto->description = $system->getDescription();
         $dto->substrate = $system->getSubstrate()->value;
         $dto->substrateTitle = $system->getSubstrate()->title();
-        $dto->surfacePreparationGrade = $system->getSurfacePreparation()->grade;
-        $dto->surfacePreparationDescription = $system->getSurfacePreparation()->description;
-        $dto->surfacePreparationStandard = $system->getSurfacePreparation()->standard;
+        $dto->surfaceTreatmentId = $treatment->getId();
+        $dto->surfaceTreatmentDescription = $treatment->getDescription();
+        $dto->surfaceTreatmentCode = $treatment->getCode();
+        $dto->surfaceTreatmentStandardCode = $treatment->getStandardCode();
+        $dto->surfaceTreatmentTitle = $treatment->getCode() ?? $treatment->getDescription();
         $dto->createdAt = $system->getCreatedAt();
         $dto->updatedAt = $system->getUpdatedAt();
         $dto->totalDft = $system->totalDft();

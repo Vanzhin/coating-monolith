@@ -19,8 +19,8 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRule;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\PrimerType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -199,7 +199,7 @@ final class ComplianceEvaluatorTest extends TestCase
             'Test System',
             'description',
             $substrate,
-            new SurfacePreparation('Sa 2.5', 'Abrasive blast'),
+            new SurfaceTreatment(Uuid::v7(), 'Abrasive blast', 'Sa 2.5', null, Substrate::cases()),
             new CoatingSystemChainValidator(),
         );
 

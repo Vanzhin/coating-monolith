@@ -11,7 +11,7 @@ use Symfony\Component\Uid\Uuid;
 
 class SurfaceTreatment extends Aggregate
 {
-    public readonly Uuid $id;
+    public Uuid $id;
 
     private string $description;
     private ?string $code;

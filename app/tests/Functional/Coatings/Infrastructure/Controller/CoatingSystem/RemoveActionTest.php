@@ -7,7 +7,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -18,6 +18,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class RemoveActionTest extends WebTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -44,13 +46,15 @@ final class RemoveActionTest extends WebTestCase
 
         $this->em->persist($user);
 
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
         $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             Uuid::v7(),
             'Удалить-система-'.$suffix,
             'Система для удаления',
             Substrate::ALUMINUM,
-            new SurfacePreparation('P3', '', null),
+            $treatment,
             $chainValidator,
         );
         $this->em->persist($system);
@@ -78,6 +82,7 @@ final class RemoveActionTest extends WebTestCase
             }
 
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }

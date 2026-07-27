@@ -11,9 +11,11 @@ class CoatingSystemDTO
     public string $description;
     public string $substrate;
     public string $substrateTitle;
-    public string $surfacePreparationGrade;
-    public string $surfacePreparationDescription;
-    public ?string $surfacePreparationStandard = null;
+    public string $surfaceTreatmentId;
+    public string $surfaceTreatmentDescription;
+    public ?string $surfaceTreatmentCode = null;
+    public ?string $surfaceTreatmentStandardCode = null;
+    public string $surfaceTreatmentTitle;
     /** @var list<CoatingSystemLayerDTO> */
     public array $layers = [];
     public int $totalDft;

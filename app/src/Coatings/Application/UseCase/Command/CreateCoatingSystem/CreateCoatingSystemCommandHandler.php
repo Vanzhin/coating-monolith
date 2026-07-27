@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -17,18 +18,24 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
         private CoatingRepositoryInterface $coatingRepo,
+        private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
 
     public function __invoke(CreateCoatingSystemCommand $cmd): CreateCoatingSystemCommandResult
     {
+        $treatment = $this->surfaceTreatmentRepo->findById(Uuid::fromString($cmd->surfaceTreatmentId));
+        if (null === $treatment) {
+            throw new AppException(sprintf('Подготовка поверхности с id %s не найдена.', $cmd->surfaceTreatmentId));
+        }
+
         $system = new CoatingSystem(
             Uuid::v7(),
             $cmd->title,
             $cmd->description,
             $cmd->substrate,
-            $cmd->surfacePreparation,
+            $treatment,
             $this->chainValidator,
         );
 

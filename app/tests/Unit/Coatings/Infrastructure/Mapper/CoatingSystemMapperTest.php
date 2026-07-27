@@ -17,6 +17,8 @@ final class CoatingSystemMapperTest extends TestCase
 {
     private CoatingSystemMapper $mapper;
 
+    private const TREATMENT_UUID = '11111111-1111-1111-1111-111111111111';
+
     protected function setUp(): void
     {
         $this->mapper = new CoatingSystemMapper();
@@ -32,9 +34,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('Test System', $cmd->title);
         self::assertSame('Some description', $cmd->description);
         self::assertSame(Substrate::STEEL_CARBON, $cmd->substrate);
-        self::assertSame('Sa 2 1/2', $cmd->surfacePreparation->grade);
-        self::assertSame('Blast cleaning', $cmd->surfacePreparation->description);
-        self::assertSame('ИСО 8501-1', $cmd->surfacePreparation->standard);
+        self::assertSame(self::TREATMENT_UUID, $cmd->surfaceTreatmentId);
         self::assertCount(2, $cmd->initialLayers);
         self::assertSame('uuid-1', $cmd->initialLayers[0]['coatingId']);
         self::assertSame(60, $cmd->initialLayers[0]['dft']);
@@ -52,6 +52,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('system-uuid-1', $cmd->id);
         self::assertSame('Test System', $cmd->title);
         self::assertSame(Substrate::STEEL_CARBON, $cmd->substrate);
+        self::assertSame(self::TREATMENT_UUID, $cmd->surfaceTreatmentId);
     }
 
     public function test_round_trip(): void
@@ -60,7 +61,8 @@ final class CoatingSystemMapperTest extends TestCase
             'title' => 'Test',
             'description' => 'desc',
             'substrate' => 'steel_carbon',
-            'surfacePreparation' => ['grade' => 'Sa 2 1/2', 'description' => 'Blast', 'standard' => 'ИСО 8501-1'],
+            'surfaceTreatmentId' => self::TREATMENT_UUID,
+            'surfaceTreatmentTitle' => 'Sa 2½',
             'layers' => [
                 ['coatingId' => 'uuid-1', 'dft' => 60],
                 ['coatingId' => 'uuid-2', 'dft' => 100],
@@ -72,13 +74,14 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame($input, $this->mapper->buildInputDataFromDto($dto));
     }
 
-    public function test_round_trip_without_standard(): void
+    public function test_round_trip_without_treatment_title(): void
     {
         $input = [
             'title' => 'Test',
             'description' => '',
             'substrate' => 'concrete',
-            'surfacePreparation' => ['grade' => 'Sa 2', 'description' => '', 'standard' => null],
+            'surfaceTreatmentId' => self::TREATMENT_UUID,
+            'surfaceTreatmentTitle' => 'Обмыв водой',
             'layers' => [],
         ];
 
@@ -94,7 +97,8 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('', $result['title']);
         self::assertSame('', $result['description']);
         self::assertSame('', $result['substrate']);
-        self::assertSame(['grade' => '', 'description' => '', 'standard' => null], $result['surfacePreparation']);
+        self::assertSame('', $result['surfaceTreatmentId']);
+        self::assertSame('', $result['surfaceTreatmentTitle']);
         self::assertSame([], $result['layers']);
     }
 
@@ -113,7 +117,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertArrayHasKey('title', $fields);
         self::assertArrayHasKey('description', $fields);
         self::assertArrayHasKey('substrate', $fields);
-        self::assertArrayHasKey('surfacePreparation', $fields);
+        self::assertArrayHasKey('surfaceTreatmentId', $fields);
         self::assertArrayHasKey('layers', $fields);
     }
 
@@ -124,7 +128,7 @@ final class CoatingSystemMapperTest extends TestCase
             'title' => 'Test System',
             'description' => 'Some description',
             'substrate' => 'steel_carbon',
-            'surfacePreparation' => ['grade' => 'Sa 2 1/2', 'description' => 'Blast cleaning', 'standard' => 'ИСО 8501-1'],
+            'surfaceTreatmentId' => self::TREATMENT_UUID,
             'layers' => [
                 ['coatingId' => 'uuid-1', 'dft' => 60],
                 ['coatingId' => 'uuid-2', 'dft' => 100],
@@ -144,9 +148,9 @@ final class CoatingSystemMapperTest extends TestCase
         $dto->description = $input['description'];
         $dto->substrate = $input['substrate'];
         $dto->substrateTitle = Substrate::from($input['substrate'])->title();
-        $dto->surfacePreparationGrade = $input['surfacePreparation']['grade'];
-        $dto->surfacePreparationDescription = $input['surfacePreparation']['description'];
-        $dto->surfacePreparationStandard = $input['surfacePreparation']['standard'];
+        $dto->surfaceTreatmentId = $input['surfaceTreatmentId'];
+        $dto->surfaceTreatmentDescription = 'some description';
+        $dto->surfaceTreatmentTitle = $input['surfaceTreatmentTitle'];
         $dto->totalDft = 0;
         $dto->createdAt = new \DateTimeImmutable();
         $dto->updatedAt = new \DateTimeImmutable();

@@ -14,12 +14,13 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -30,6 +31,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class SearchByComplianceActionTest extends WebTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -59,6 +62,8 @@ final class SearchByComplianceActionTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
         (new \ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
         $this->em->persist($user);
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-Ctrl-'.$suffix,
@@ -123,7 +128,7 @@ final class SearchByComplianceActionTest extends WebTestCase
             $this->matchingSystemTitle,
             'Система ISO 12944 C3 HIGH для теста контроллера.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $matchingSystem->appendLayer($primer, 80);
@@ -167,6 +172,7 @@ final class SearchByComplianceActionTest extends WebTestCase
             }
 
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }

@@ -11,9 +11,14 @@
         <field name="description" type="text"   nullable="false"/>
         <field name="substrate"   type="string" length="32" nullable="false"
                enum-type="App\Coatings\Domain\Aggregate\CoatingSystem\Substrate"/>
-        <field name="surfacePreparation" column="surface_preparation" type="surface_preparation" nullable="false"/>
         <field name="createdAt" column="created_at" type="datetime_immutable" nullable="false"/>
         <field name="updatedAt" column="updated_at" type="datetime_immutable" nullable="false"/>
+
+        <many-to-one field="surfaceTreatment"
+                     target-entity="App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment"
+                     fetch="LAZY">
+            <join-column name="surface_treatment_id" nullable="false" on-delete="RESTRICT"/>
+        </many-to-one>
 
         <one-to-many field="layers"
                      target-entity="App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemLayer"

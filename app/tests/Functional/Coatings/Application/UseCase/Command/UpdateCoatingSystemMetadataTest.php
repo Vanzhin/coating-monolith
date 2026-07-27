@@ -16,20 +16,23 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class UpdateCoatingSystemMetadataTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private UpdateCoatingSystemMetadataCommandHandler $handler;
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
@@ -72,6 +75,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -83,6 +87,8 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-CS-Update-'.$suffix,
@@ -121,7 +127,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             'Система-CS-Update-'.$suffix,
             'Описание до.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -132,7 +138,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Система-CS-Update-НОВЫЙ-'.$suffix,
             description: 'Описание после.',
             substrate: Substrate::CONCRETE,
-            surfacePreparation: new SurfacePreparation('CS 1', 'Ручная очистка'),
+            surfaceTreatmentId: $treatment->getId(),
         );
 
         $result = ($this->handler)($cmd);
@@ -146,11 +152,13 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
         self::assertSame('Система-CS-Update-НОВЫЙ-'.$suffix, $loaded->getTitle());
         self::assertSame('Описание после.', $loaded->getDescription());
         self::assertSame(Substrate::CONCRETE, $loaded->getSubstrate());
-        self::assertSame('CS 1', $loaded->getSurfacePreparation()->grade);
+        self::assertSame($treatment->getId(), $loaded->getSurfaceTreatment()->getId());
     }
 
     public function test_update_throws_when_system_not_found(): void
     {
+        $suffix = bin2hex(random_bytes(3));
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
         $fakeId = (string) Uuid::v7();
 
         $cmd = new UpdateCoatingSystemMetadataCommand(
@@ -158,7 +166,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Не важно',
             description: '',
             substrate: Substrate::STEEL_CARBON,
-            surfacePreparation: new SurfacePreparation('Sa 1', 'Очистка'),
+            surfaceTreatmentId: $treatment->getId(),
         );
 
         $this->expectException(AppException::class);

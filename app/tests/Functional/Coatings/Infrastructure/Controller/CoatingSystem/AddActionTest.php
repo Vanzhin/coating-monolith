@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -16,6 +17,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class AddActionTest extends WebTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -42,6 +45,7 @@ final class AddActionTest extends WebTestCase
         $ref->setValue($user, true);
 
         $this->em->persist($user);
+        $this->createAndPersistTreatment($this->em, $suffix);
         $this->em->flush();
 
         $this->client->loginUser($user);
@@ -66,6 +70,7 @@ final class AddActionTest extends WebTestCase
             }
 
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -90,11 +95,7 @@ final class AddActionTest extends WebTestCase
             'title' => 'Тестовая система покрытий',
             'description' => 'Описание для теста',
             'substrate' => 'steel_carbon',
-            'surfacePreparation' => [
-                'grade' => 'Sa 2½',
-                'description' => 'Пескоструйная очистка',
-                'standard' => 'ISO 8501-1',
-            ],
+            'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
         self::assertResponseRedirects('/cabinet/coating/coating-system/list');
@@ -118,10 +119,7 @@ final class AddActionTest extends WebTestCase
             'title' => '',
             'description' => 'Описание',
             'substrate' => 'steel_carbon',
-            'surfacePreparation' => [
-                'grade' => 'Sa 2½',
-                'description' => '',
-            ],
+            'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
         self::assertResponseIsSuccessful();

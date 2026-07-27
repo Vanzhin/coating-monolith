@@ -59,28 +59,16 @@
             {# 2. Подготовка поверхности #}
             <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                 <h6 class="fw-semibold mb-3">Подготовка поверхности</h6>
-                {% set sp = inputData.surfacePreparation|default({}) %}
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label for="inputSpGrade" class="form-label">Степень очистки</label>
-                        <input type="text" value="{{ sp.grade|default('') }}"
-                               name="surfacePreparation[grade]" id="inputSpGrade"
-                               class="form-control" required maxlength="30"
-                               placeholder="напр. Sa 2½">
-                    </div>
-                    <div class="col-md-4">
-                        <label for="inputSpStandard" class="form-label">Стандарт</label>
-                        <input type="text" value="{{ sp.standard|default('') }}"
-                               name="surfacePreparation[standard]" id="inputSpStandard"
-                               class="form-control" maxlength="50"
-                               placeholder="напр. ISO 8501-1">
-                    </div>
-                    <div class="col-12">
-                        <label for="inputSpDescription" class="form-label">Описание</label>
-                        <input type="text" value="{{ sp.description|default('') }}"
-                               name="surfacePreparation[description]" id="inputSpDescription"
-                               class="form-control" maxlength="500"
-                               placeholder="Дополнительное описание...">
+                    <div class="col-md-8">
+                        <label for="inputSurfaceTreatmentId" class="form-label">Метод подготовки (UUID)</label>
+                        <input type="text" value="{{ (inputData.surfaceTreatmentId ?? '')|default('') }}"
+                               name="surfaceTreatmentId" id="inputSurfaceTreatmentId"
+                               class="form-control" required maxlength="36"
+                               placeholder="UUID метода подготовки поверхности">
+                        {% if inputData.surfaceTreatmentTitle is defined and inputData.surfaceTreatmentTitle %}
+                            <div class="form-text">{{ inputData.surfaceTreatmentTitle }}</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

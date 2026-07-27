@@ -7,7 +7,8 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -18,6 +19,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class UpdateActionTest extends WebTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -44,13 +47,15 @@ final class UpdateActionTest extends WebTestCase
 
         $this->em->persist($user);
 
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
         $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             Uuid::v7(),
             'Исходная система_'.$suffix,
             'Исходное описание',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2', 'Пескоструйная', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $this->em->persist($system);
@@ -77,6 +82,7 @@ final class UpdateActionTest extends WebTestCase
             }
 
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -100,11 +106,7 @@ final class UpdateActionTest extends WebTestCase
             'title' => 'Обновлённая система',
             'description' => 'Новое описание',
             'substrate' => 'concrete',
-            'surfacePreparation' => [
-                'grade' => 'CSP 3',
-                'description' => 'Механическая подготовка',
-                'standard' => 'ICRI 310.2',
-            ],
+            'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
         self::assertResponseRedirects('/cabinet/coating/coating-system/list');

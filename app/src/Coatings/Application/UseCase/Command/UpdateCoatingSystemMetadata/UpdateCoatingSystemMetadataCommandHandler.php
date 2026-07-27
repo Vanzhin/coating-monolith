@@ -6,6 +6,7 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -14,6 +15,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
+        private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
@@ -26,11 +28,16 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->id), 404);
         }
 
+        $treatment = $this->surfaceTreatmentRepo->findById(Uuid::fromString($cmd->surfaceTreatmentId));
+        if (null === $treatment) {
+            throw new AppException(sprintf('Подготовка поверхности с id %s не найдена.', $cmd->surfaceTreatmentId));
+        }
+
         $system->setChainValidator($this->chainValidator);
         $system->setTitle($cmd->title);
         $system->setDescription($cmd->description);
         $system->setSubstrate($cmd->substrate);
-        $system->setSurfacePreparation($cmd->surfacePreparation);
+        $system->setSurfaceTreatment($treatment);
 
         $this->repo->save($system);
 

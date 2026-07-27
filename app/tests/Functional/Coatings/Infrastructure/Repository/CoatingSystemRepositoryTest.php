@@ -14,20 +14,23 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemRepositoryTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
     private CoatingSystemChainValidator $chainValidator;
@@ -69,6 +72,7 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -79,6 +83,8 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Производитель-ксист-'.$suffix,
@@ -112,13 +118,12 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
 
         // Build CoatingSystem with one layer.
         $this->systemId = Uuid::v7();
-        $prep = new SurfacePreparation('Sa 2½', 'Очистка дробеструйная до степени Sa 2½', 'ISO 8501-1');
         $system = new CoatingSystem(
             $this->systemId,
             'Система-тест-'.$suffix,
             'Тестовая антикоррозионная система.',
             Substrate::STEEL_CARBON,
-            $prep,
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -135,10 +140,10 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
         self::assertSame('Тестовая антикоррозионная система.', $loaded->getDescription());
         self::assertSame(Substrate::STEEL_CARBON, $loaded->getSubstrate());
 
-        $loadedPrep = $loaded->getSurfacePreparation();
-        self::assertSame('Sa 2½', $loadedPrep->grade);
-        self::assertSame('Очистка дробеструйная до степени Sa 2½', $loadedPrep->description);
-        self::assertSame('ISO 8501-1', $loadedPrep->standard);
+        $loadedTreatment = $loaded->getSurfaceTreatment();
+        self::assertSame($treatment->getId(), $loadedTreatment->getId());
+        self::assertSame($treatment->getCode(), $loadedTreatment->getCode());
+        self::assertSame($treatment->getStandardCode(), $loadedTreatment->getStandardCode());
 
         self::assertSame(1, $loaded->layerCount());
         $layers = $loaded->getLayers()->toArray();
@@ -153,6 +158,8 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'МфрСписок-'.$suffix,
@@ -190,7 +197,7 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             'СистемаСписок-'.$suffix,
             'Описание.',
             Substrate::CONCRETE,
-            new SurfacePreparation('CS 1', 'Лёгкая очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -211,6 +218,16 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatmentId = Uuid::v7();
+        $treatment = new SurfaceTreatment(
+            $treatmentId,
+            'Тестовая подготовка-удаление '.$suffix,
+            'Sa 2½',
+            'ISO 8501-1',
+            Substrate::cases(),
+        );
+        $this->em->persist($treatment);
 
         $manufacturer = new Manufacturer(
             'МфрУдаление-'.$suffix,
@@ -246,7 +263,7 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             'СистемаУдаление-'.$suffix,
             'Описание.',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('St 3', 'Ручная очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -279,5 +296,10 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             $this->em->remove($m);
         }
         $this->em->flush();
+        $t = $this->em->find(SurfaceTreatment::class, $treatmentId);
+        if (null !== $t) {
+            $this->em->remove($t);
+            $this->em->flush();
+        }
     }
 }

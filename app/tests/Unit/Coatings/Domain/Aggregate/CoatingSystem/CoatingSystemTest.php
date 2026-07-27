@@ -15,8 +15,8 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -177,6 +177,39 @@ final class CoatingSystemTest extends TestCase
         $sys->setTitle(str_repeat('x', 101));
     }
 
+    public function test_setSurfaceTreatment_throws_when_substrate_not_in_scope(): void
+    {
+        // treatment scope = CONCRETE only, but system substrate = STEEL_CARBON
+        $treatment = $this->newTreatment([Substrate::CONCRETE]);
+        $this->expectException(AppException::class);
+        new CoatingSystem(
+            Uuid::v7(),
+            'Test',
+            '',
+            Substrate::STEEL_CARBON,
+            $treatment,
+            new CoatingSystemChainValidator(),
+        );
+    }
+
+    public function test_setSubstrate_throws_when_treatment_no_longer_matches(): void
+    {
+        // treatment scope = STEEL_CARBON only, system substrate = STEEL_CARBON
+        $treatment = $this->newTreatment([Substrate::STEEL_CARBON]);
+        $system = new CoatingSystem(
+            Uuid::v7(),
+            'Test',
+            '',
+            Substrate::STEEL_CARBON,
+            $treatment,
+            new CoatingSystemChainValidator(),
+        );
+
+        // now change substrate to CONCRETE → treatment scope does not include CONCRETE
+        $this->expectException(AppException::class);
+        $system->setSubstrate(Substrate::CONCRETE);
+    }
+
     // --- helpers ---
 
     private function newSystem(string $title = 'Test System'): CoatingSystem
@@ -186,8 +219,26 @@ final class CoatingSystemTest extends TestCase
             $title,
             'description',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2.5', 'Abrasive blast'),
+            $this->newTreatment([Substrate::STEEL_CARBON]),
             new CoatingSystemChainValidator(),
+        );
+    }
+
+    /**
+     * @param list<Substrate> $scope
+     */
+    private function newTreatment(array $scope = []): SurfaceTreatment
+    {
+        if ([] === $scope) {
+            $scope = Substrate::cases();
+        }
+
+        return new SurfaceTreatment(
+            Uuid::v7(),
+            'Абразивоструйная очистка',
+            'Sa 2½',
+            'ISO 8501-1',
+            $scope,
         );
     }
 

@@ -15,19 +15,22 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateCoatingSystemTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private CreateCoatingSystemCommandHandler $handler;
     private EntityManagerInterface $em;
 
@@ -68,6 +71,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -79,6 +83,8 @@ final class CreateCoatingSystemTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-CS-Create-'.$suffix,
@@ -114,7 +120,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             title: 'Система-CS-Create-'.$suffix,
             description: 'Тестовая система.',
             substrate: Substrate::STEEL_GALVANIZED,
-            surfacePreparation: new SurfacePreparation('Sa 2½', 'Дробеструйная очистка', 'ISO 8501-1'),
+            surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => (string) $coatingId, 'dft' => 80],
             ],
@@ -146,13 +152,14 @@ final class CreateCoatingSystemTest extends KernelTestCase
     public function test_create_throws_when_coating_not_found(): void
     {
         $suffix = bin2hex(random_bytes(3));
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
         $fakeId = (string) Uuid::v7();
 
         $cmd = new CreateCoatingSystemCommand(
             title: 'Система-notfound-'.$suffix,
             description: '',
             substrate: Substrate::CONCRETE,
-            surfacePreparation: new SurfacePreparation('CS 1', 'Ручная очистка'),
+            surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => $fakeId, 'dft' => 80],
             ],

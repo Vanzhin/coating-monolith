@@ -16,7 +16,6 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
@@ -24,12 +23,15 @@ use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class RemoveCoatingSystemTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private RemoveCoatingSystemCommandHandler $handler;
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
@@ -65,6 +67,7 @@ final class RemoveCoatingSystemTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -76,6 +79,8 @@ final class RemoveCoatingSystemTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-CS-Remove-'.$suffix,
@@ -114,7 +119,7 @@ final class RemoveCoatingSystemTest extends KernelTestCase
             'Система-CS-Remove-'.$suffix,
             'Описание.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $system->appendLayer($coating, 80);

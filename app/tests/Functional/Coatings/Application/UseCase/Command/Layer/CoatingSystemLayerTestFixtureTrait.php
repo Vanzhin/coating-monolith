@@ -14,9 +14,9 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -35,10 +35,22 @@ trait CoatingSystemLayerTestFixtureTrait
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
+    private ?Uuid $treatmentId = null;
 
     private function setUpFixture(ContainerInterface $container, EntityManagerInterface $em): void
     {
         $suffix = bin2hex(random_bytes(4));
+
+        $treatmentId = Uuid::v7();
+        $treatment = new SurfaceTreatment(
+            $treatmentId,
+            'Тестовая подготовка поверхности '.$suffix,
+            'Sa 2½',
+            'ISO 8501-1',
+            Substrate::cases(),
+        );
+        $em->persist($treatment);
+        $this->treatmentId = $treatmentId;
 
         $manufacturer = new Manufacturer(
             'Мфр-Layer-'.$suffix,
@@ -77,7 +89,7 @@ trait CoatingSystemLayerTestFixtureTrait
             'Система-Layer-'.$suffix,
             'Тестовая система для мутаций слоёв.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -111,6 +123,14 @@ trait CoatingSystemLayerTestFixtureTrait
                 }
             }
             $em->flush();
+            if (null !== $this->treatmentId) {
+                $t = $em->find(SurfaceTreatment::class, $this->treatmentId);
+                if (null !== $t) {
+                    $em->remove($t);
+                    $em->flush();
+                }
+                $this->treatmentId = null;
+            }
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }

@@ -14,13 +14,13 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -29,6 +29,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class RebuildCoatingSystemComplianceCommandTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private CommandTester $tester;
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
@@ -77,6 +79,7 @@ final class RebuildCoatingSystemComplianceCommandTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -88,6 +91,8 @@ final class RebuildCoatingSystemComplianceCommandTest extends KernelTestCase
         $container = static::getContainer();
         $conn = $this->em->getConnection();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         // Create a manufacturer
         $manufacturer = new Manufacturer(
@@ -128,7 +133,7 @@ final class RebuildCoatingSystemComplianceCommandTest extends KernelTestCase
             'Система-cmd-'.$suffix,
             'Тестовая система.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Очистка', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);

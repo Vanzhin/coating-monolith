@@ -14,19 +14,22 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemComplianceProjectorTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
     private CoatingSystemChainValidator $chainValidator;
@@ -69,6 +72,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -89,6 +93,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
 
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
         [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
 
         $this->systemId = Uuid::v7();
@@ -97,7 +102,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
             'ПроекторТест-'.$suffix,
             '',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -118,6 +123,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
 
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
         [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
 
         $this->systemId = Uuid::v7();
@@ -126,7 +132,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
             'ПроекторОбновление-'.$suffix,
             '',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -148,6 +154,17 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
 
+        $treatmentId = Uuid::v7();
+        $treatment = new SurfaceTreatment(
+            $treatmentId,
+            'Тестовая подготовка-каскад '.$suffix,
+            'Sa 2½',
+            'ISO 8501-1',
+            Substrate::cases(),
+        );
+        $this->em->persist($treatment);
+        $this->em->flush();
+
         [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
 
         $systemId = Uuid::v7();
@@ -156,7 +173,7 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
             'ПроекторКаскад-'.$suffix,
             '',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -181,6 +198,11 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
             $this->em->remove($m);
         }
         $this->em->flush();
+        $t = $this->em->find(SurfaceTreatment::class, $treatmentId);
+        if (null !== $t) {
+            $this->em->remove($t);
+            $this->em->flush();
+        }
 
         // Prevent tearDown from trying to remove again.
         $this->systemId = null;

@@ -17,18 +17,20 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private FindCoatingSystemByIdQueryHandler $handler;
     private EntityManagerInterface $em;
     private CoatingSystemChainValidator $chainValidator;
@@ -70,6 +72,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -80,6 +83,8 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-FindById-'.$suffix,
@@ -117,7 +122,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             'Система-FindById-'.$suffix,
             'Описание системы.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $system->appendLayer($coating, 100);
@@ -133,7 +138,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
         self::assertSame('Система-FindById-'.$suffix, $dto->title);
         self::assertSame('Описание системы.', $dto->description);
         self::assertSame(Substrate::STEEL_CARBON->value, $dto->substrate);
-        self::assertSame('Sa 2½', $dto->surfacePreparationGrade);
+        self::assertSame($treatment->getId(), $dto->surfaceTreatmentId);
         self::assertCount(1, $dto->layers);
         self::assertSame(100, $dto->totalDft);
     }

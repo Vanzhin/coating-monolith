@@ -14,12 +14,13 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -30,6 +31,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class ViewActionTest extends WebTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -56,13 +59,15 @@ final class ViewActionTest extends WebTestCase
 
         $this->em->persist($user);
 
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
         $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             Uuid::v7(),
             'Просмотр-система-'.$suffix,
             'Описание для теста просмотра',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('St 2', 'Ручная зачистка', null),
+            $treatment,
             $chainValidator,
         );
         $this->em->persist($system);
@@ -89,6 +94,7 @@ final class ViewActionTest extends WebTestCase
             }
 
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -119,6 +125,16 @@ final class ViewActionTest extends WebTestCase
     {
         $container = $this->client->getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatmentId = Uuid::v7();
+        $treatment = new SurfaceTreatment(
+            $treatmentId,
+            'Тестовая подготовка-badge '.$suffix,
+            'Sa 2½',
+            'ISO 8501-1',
+            Substrate::cases(),
+        );
+        $this->em->persist($treatment);
 
         $manufacturer = new Manufacturer(
             'Мфр-ViewBadge-'.$suffix,
@@ -154,7 +170,7 @@ final class ViewActionTest extends WebTestCase
             'Просмотр-Badge-'.$suffix,
             '',
             Substrate::STEEL_GALVANIZED,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная', 'ISO 8501-1'),
+            $treatment,
             $chainValidator,
         );
         $system->appendLayer($coating, 80);
@@ -168,7 +184,7 @@ final class ViewActionTest extends WebTestCase
         self::assertStringContainsString('ISO 12944', $content);
         self::assertStringContainsString('C2', $content);
 
-        // Cleanup — remove the extra system+coating+manufacturer created in this test
+        // Cleanup — remove the extra system+coating+manufacturer+treatment created in this test
         $this->em->clear();
         $s = $this->em->find(CoatingSystem::class, $systemId);
         if (null !== $s) {
@@ -183,5 +199,10 @@ final class ViewActionTest extends WebTestCase
             $this->em->remove($m);
         }
         $this->em->flush();
+        $t = $this->em->find(SurfaceTreatment::class, $treatmentId);
+        if (null !== $t) {
+            $this->em->remove($t);
+            $this->em->flush();
+        }
     }
 }

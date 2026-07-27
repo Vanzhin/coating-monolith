@@ -11,7 +11,7 @@ final class Version20260728000000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create surface_treatment table with partial unique index on (code, standard_code).';
+        return 'Create surface_treatment table; replace surface_preparation columns with surface_treatment_id FK in coating_system.';
     }
 
     public function up(Schema $schema): void
@@ -33,10 +33,22 @@ final class Version20260728000000 extends AbstractMigration
               ON surface_treatment (code, standard_code)
               WHERE code IS NOT NULL AND standard_code IS NOT NULL
         SQL);
+
+        $this->addSql('ALTER TABLE coating_system DROP COLUMN IF EXISTS surface_preparation');
+
+        $this->addSql(<<<SQL
+            ALTER TABLE coating_system
+              ADD COLUMN IF NOT EXISTS surface_treatment_id UUID NOT NULL
+              REFERENCES surface_treatment(id) ON DELETE RESTRICT
+        SQL);
     }
 
     public function down(Schema $schema): void
     {
+        $this->addSql('ALTER TABLE coating_system DROP COLUMN IF EXISTS surface_treatment_id');
+
+        $this->addSql('ALTER TABLE coating_system ADD COLUMN IF NOT EXISTS surface_preparation JSONB');
+
         $this->addSql('DROP INDEX IF EXISTS uniq_surface_treatment_code_std');
         $this->addSql('DROP TABLE IF EXISTS surface_treatment');
     }

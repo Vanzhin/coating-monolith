@@ -17,12 +17,12 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -38,6 +38,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestCase
 {
+    use SurfaceTreatmentFixtureTrait;
+
     private SearchCoatingSystemsByComplianceQueryHandler $handler;
     private EntityManagerInterface $em;
     private CoatingSystemChainValidator $chainValidator;
@@ -82,6 +84,7 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
                 }
             }
             $em->flush();
+            $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -92,6 +95,8 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
 
         $manufacturer = new Manufacturer(
             'Мфр-Compliance-'.$suffix,
@@ -180,7 +185,7 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
             'Система-C3-HIGH-'.$suffix,
             'Система ISO 12944 C3 HIGH.',
             Substrate::STEEL_CARBON,
-            new SurfacePreparation('Sa 2½', 'Дробеструйная очистка', 'ISO 8501-1'),
+            $treatment,
             $this->chainValidator,
         );
         $matchingSystem->appendLayer($primer, 80);
@@ -195,7 +200,7 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
             'Система-Бетон-'.$suffix,
             'Система для бетона (не попадает в C3/STEEL_CARBON).',
             Substrate::CONCRETE,
-            new SurfacePreparation('CS 1', 'Ручная очистка'),
+            $treatment,
             $this->chainValidator,
         );
         $nonMatchingSystem->appendLayer($concreteCoating, 80);

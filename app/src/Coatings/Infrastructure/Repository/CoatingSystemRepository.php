@@ -126,8 +126,13 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 
     public function countUsingSurfaceTreatment(string $treatmentId): int
     {
-        // TODO ST-Task 8: реализовать после добавления surface_treatment_id в coating_system
-        return 0;
+        return (int) $this->em->createQueryBuilder()
+            ->select('COUNT(cs.id)')
+            ->from(CoatingSystem::class, 'cs')
+            ->where('cs.surfaceTreatment = :tid')
+            ->setParameter('tid', $treatmentId)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void

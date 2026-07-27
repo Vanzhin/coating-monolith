@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -21,7 +22,7 @@ class CoatingSystem extends Aggregate
     private string $title;
     private string $description;
     private Substrate $substrate;
-    private SurfacePreparation $surfacePreparation;
+    private ?SurfaceTreatment $surfaceTreatment = null;
     /** @var Collection<int, CoatingSystemLayer>&Selectable<int, CoatingSystemLayer> */
     private Collection $layers;
     private \DateTimeImmutable $createdAt;
@@ -32,7 +33,7 @@ class CoatingSystem extends Aggregate
         string $title,
         string $description,
         Substrate $substrate,
-        SurfacePreparation $surfacePreparation,
+        SurfaceTreatment $surfaceTreatment,
         private ?CoatingSystemChainValidatorInterface $chainValidator = null,
     ) {
         $this->id = $id;
@@ -42,7 +43,7 @@ class CoatingSystem extends Aggregate
         $this->setTitle($title);
         $this->setDescription($description);
         $this->setSubstrate($substrate);
-        $this->setSurfacePreparation($surfacePreparation);
+        $this->setSurfaceTreatment($surfaceTreatment);
         // Reset updatedAt to match createdAt — setters above call touch() but that's
         // an implementation side-effect; the aggregate is "just created", not "mutated".
         $this->updatedAt = $this->createdAt;
@@ -68,9 +69,9 @@ class CoatingSystem extends Aggregate
         return $this->substrate;
     }
 
-    public function getSurfacePreparation(): SurfacePreparation
+    public function getSurfaceTreatment(): SurfaceTreatment
     {
-        return $this->surfacePreparation;
+        return $this->surfaceTreatment ?? throw new AppException('Подготовка поверхности не задана.');
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -107,13 +108,29 @@ class CoatingSystem extends Aggregate
 
     public function setSubstrate(Substrate $substrate): void
     {
+        if ($this->surfaceTreatment !== null && !$this->surfaceTreatment->supportsSubstrate($substrate)) {
+            throw new AppException(sprintf(
+                'Подготовка «%s» применима к [%s], а выбранная подложка — %s.',
+                $this->surfaceTreatment->getCode() ?? $this->surfaceTreatment->getDescription(),
+                implode(', ', array_map(fn (Substrate $s) => $s->title(), $this->surfaceTreatment->getSubstrateScope())),
+                $substrate->title(),
+            ));
+        }
         $this->substrate = $substrate;
         $this->touch();
     }
 
-    public function setSurfacePreparation(SurfacePreparation $surfacePreparation): void
+    public function setSurfaceTreatment(SurfaceTreatment $t): void
     {
-        $this->surfacePreparation = $surfacePreparation;
+        if (!$t->supportsSubstrate($this->substrate)) {
+            throw new AppException(sprintf(
+                'Подготовка «%s» применима к [%s], а в системе выбрана %s.',
+                $t->getCode() ?? $t->getDescription(),
+                implode(', ', array_map(fn (Substrate $s) => $s->title(), $t->getSubstrateScope())),
+                $this->substrate->title(),
+            ));
+        }
+        $this->surfaceTreatment = $t;
         $this->touch();
     }
 

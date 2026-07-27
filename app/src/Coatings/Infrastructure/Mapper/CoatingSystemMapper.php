@@ -9,7 +9,6 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\CoatingSystem\SurfacePreparation;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingSystemMapper
@@ -27,7 +26,7 @@ class CoatingSystemMapper
         ?string $systemId = null,
     ): CreateCoatingSystemCommand|UpdateCoatingSystemMetadataCommand {
         $substrate = Substrate::from($input['substrate']);
-        $surfacePreparation = $this->buildSurfacePreparation($input['surfacePreparation'] ?? []);
+        $surfaceTreatmentId = (string) ($input['surfaceTreatmentId'] ?? '');
 
         if (null === $systemId) {
             $layers = [];
@@ -42,7 +41,7 @@ class CoatingSystemMapper
                 title: (string) ($input['title'] ?? ''),
                 description: (string) ($input['description'] ?? ''),
                 substrate: $substrate,
-                surfacePreparation: $surfacePreparation,
+                surfaceTreatmentId: $surfaceTreatmentId,
                 initialLayers: $layers,
             );
         }
@@ -52,7 +51,7 @@ class CoatingSystemMapper
             title: (string) ($input['title'] ?? ''),
             description: (string) ($input['description'] ?? ''),
             substrate: $substrate,
-            surfacePreparation: $surfacePreparation,
+            surfaceTreatmentId: $surfaceTreatmentId,
         );
     }
 
@@ -68,11 +67,8 @@ class CoatingSystemMapper
                 'title' => '',
                 'description' => '',
                 'substrate' => '',
-                'surfacePreparation' => [
-                    'grade' => '',
-                    'description' => '',
-                    'standard' => null,
-                ],
+                'surfaceTreatmentId' => '',
+                'surfaceTreatmentTitle' => '',
                 'layers' => [],
             ];
         }
@@ -81,11 +77,8 @@ class CoatingSystemMapper
             'title' => $dto->title,
             'description' => $dto->description,
             'substrate' => $dto->substrate,
-            'surfacePreparation' => [
-                'grade' => $dto->surfacePreparationGrade,
-                'description' => $dto->surfacePreparationDescription,
-                'standard' => $dto->surfacePreparationStandard,
-            ],
+            'surfaceTreatmentId' => $dto->surfaceTreatmentId,
+            'surfaceTreatmentTitle' => $dto->surfaceTreatmentTitle,
             'layers' => array_map(
                 fn (CoatingSystemLayerDTO $layer) => [
                     'coatingId' => $layer->coatingId,
@@ -123,27 +116,10 @@ class CoatingSystemMapper
                     'message' => 'Недопустимое значение субстрата.',
                 ]),
             ],
-            'surfacePreparation' => new Assert\Collection([
-                'grade' => [
-                    new Assert\NotBlank(),
-                    new Assert\Length([
-                        'max' => 30,
-                        'maxMessage' => 'Обозначение подготовки не должно быть длиннее {{ limit }} символов.',
-                    ]),
-                ],
-                'description' => new Assert\Optional([
-                    new Assert\Length([
-                        'max' => 500,
-                        'maxMessage' => 'Описание подготовки не должно быть длиннее {{ limit }} символов.',
-                    ]),
-                ]),
-                'standard' => new Assert\Optional([
-                    new Assert\Length([
-                        'max' => 50,
-                        'maxMessage' => 'Обозначение стандарта не должно быть длиннее {{ limit }} символов.',
-                    ]),
-                ]),
-            ]),
+            'surfaceTreatmentId' => [
+                new Assert\NotBlank(),
+                new Assert\Uuid(),
+            ],
             'layers' => new Assert\Optional([
                 new Assert\All([
                     new Assert\Collection([
@@ -157,21 +133,5 @@ class CoatingSystemMapper
                 ]),
             ]),
         ], allowExtraFields: true);
-    }
-
-    /**
-     * @param array<string, mixed> $raw
-     */
-    private function buildSurfacePreparation(array $raw): SurfacePreparation
-    {
-        $standard = isset($raw['standard']) && '' !== (string) $raw['standard']
-            ? (string) $raw['standard']
-            : null;
-
-        return new SurfacePreparation(
-            grade: (string) ($raw['grade'] ?? ''),
-            description: (string) ($raw['description'] ?? ''),
-            standard: $standard,
-        );
     }
 }
