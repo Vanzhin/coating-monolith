@@ -124,6 +124,12 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
         );
     }
 
+    public function countUsingSurfaceTreatment(string $treatmentId): int
+    {
+        // TODO ST-Task 8: реализовать после добавления surface_treatment_id в coating_system
+        return 0;
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {

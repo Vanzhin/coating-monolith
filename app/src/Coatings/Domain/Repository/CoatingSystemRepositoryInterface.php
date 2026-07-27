@@ -43,4 +43,6 @@ interface CoatingSystemRepositoryInterface
      * @return list<array{standard: string, category: string, durability: string}>
      */
     public function findComplianceRows(Uuid $systemId): array;
+
+    public function countUsingSurfaceTreatment(string $treatmentId): int;
 }
