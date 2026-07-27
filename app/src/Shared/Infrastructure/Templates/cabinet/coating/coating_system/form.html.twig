@@ -11,7 +11,11 @@
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
 {% block content %}
-    <div class="p-2 p-md-3" data-controller="coating-system-form">
+    <div class="p-2 p-md-3"
+         data-controller="coating-system-form surface-treatment-modal"
+         data-surface-treatment-modal-endpoint-value="/api/surface-treatments"
+         data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
+         data-surface-treatment-modal-substrate-select-value="inputSubstrate">
         <form method="post" action="{{ actionUrl }}" class="w-100" novalidate>
             {% if error is defined and error %}
                 <div class="alert alert-danger">{{ error }}</div>
@@ -63,16 +67,21 @@
                     <div class="col-md-8">
                         <label for="inputSurfaceTreatment" class="form-label">Метод подготовки</label>
                         <div class="input-group">
-                            <select id="inputSurfaceTreatment" class="form-select" name="surfaceTreatmentId" required>
-                                <option value="">Выберите подготовку поверхности...</option>
-                                {% for t in treatments %}
-                                    <option value="{{ t.id }}"
-                                            data-substrate-scope="{{ t.substrateScope|json_encode }}"
-                                            {% if (inputData.surfaceTreatmentId ?? '') == t.id %} selected {% endif %}>
-                                        {{ t.title }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <div class="flex-grow-1"
+                                 data-controller="select-typeahead"
+                                 data-select-typeahead-placeholder-value="Поиск подготовки поверхности...">
+                                <select id="inputSurfaceTreatment" class="form-select" name="surfaceTreatmentId" required
+                                        data-select-typeahead-target="select">
+                                    <option value="">Выберите подготовку поверхности...</option>
+                                    {% for t in treatments %}
+                                        <option value="{{ t.id }}"
+                                                data-substrate-scope="{{ t.substrateScope|json_encode }}"
+                                                {% if (inputData.surfaceTreatmentId ?? '') == t.id %} selected {% endif %}>
+                                            {{ t.title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             <button type="button" class="btn btn-outline-secondary"
                                     data-action="click->surface-treatment-modal#open">
                                 + Создать
@@ -98,8 +107,11 @@
                     <div data-coating-system-form-target="layersList">
                         {% for i, layer in inputData.layers|default([]) %}
                             <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
-                                <div class="col">
-                                    <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required>
+                                <div class="col"
+                                     data-controller="select-typeahead"
+                                     data-select-typeahead-placeholder-value="Поиск покрытия...">
+                                    <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required
+                                            data-select-typeahead-target="select">
                                         <option value="">Выберите покрытие...</option>
                                         {% for c in coatings %}
                                             <option value="{{ c.id }}"
@@ -130,8 +142,11 @@
 
                     <template data-coating-system-form-target="layerTemplate">
                         <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
-                            <div class="col">
-                                <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required>
+                            <div class="col"
+                                 data-controller="select-typeahead"
+                                 data-select-typeahead-placeholder-value="Поиск покрытия...">
+                                <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required
+                                        data-select-typeahead-target="select">
                                     <option value="">Выберите покрытие...</option>
                                     {% for c in coatings %}
                                         <option value="{{ c.id }}">
@@ -175,11 +190,7 @@
     </div>
 
     {# Bootstrap modal для inline-создания подготовки поверхности #}
-    <div class="modal fade" id="surfaceTreatmentModal" tabindex="-1" aria-labelledby="surfaceTreatmentModalLabel" aria-hidden="true"
-         data-controller="surface-treatment-modal"
-         data-surface-treatment-modal-endpoint-value="/api/surface-treatments"
-         data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
-         data-surface-treatment-modal-substrate-select-value="inputSubstrate">
+    <div class="modal fade" id="surfaceTreatmentModal" tabindex="-1" aria-labelledby="surfaceTreatmentModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
