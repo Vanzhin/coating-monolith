@@ -490,6 +490,9 @@
                 <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
                     <i class="bi bi-grid me-2"></i>Покрытия
                 </a>
+                <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-layers me-2"></i>Системы покрытий
+                </a>
                 {# Производители — только для админа (справочник управления). #}
                 {% if is_granted('ROLE_ADMIN') %}
                     <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
