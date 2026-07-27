@@ -8,3 +8,7 @@ export const app = startStimulusApp(require.context(
 ));
 // register any custom, 3rd party controllers here
 // app.register('some_controller_name', SomeImportedController);
+
+// Глобальный доступ к Stimulus-приложению — используется surface_treatment_modal_controller
+// для вызова selectItem() на async-typeahead после inline-создания нового treatment.
+window.Stimulus = app;

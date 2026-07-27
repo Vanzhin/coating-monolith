@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
-use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQuery;
+use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
-use App\Coatings\Domain\Repository\CoatingsFilter;
-use App\Coatings\Domain\Repository\SurfaceTreatmentsFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -19,6 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Uid\Uuid;
 
 #[Route(path: '/cabinet/coating/coating-system/add', name: 'app_cabinet_coating_system_add')]
 class AddAction extends AbstractController
@@ -34,12 +33,6 @@ class AddAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $treatments = $this->queryBus->execute(
-            new ListSurfaceTreatmentsQuery(new SurfaceTreatmentsFilter(), 1, 1000)
-        )['items'];
-
-        $coatings = $this->buildCoatingOptions();
-
         if ($request->isMethod(Request::METHOD_POST)) {
             $inputData = [];
             try {
@@ -56,13 +49,12 @@ class AddAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_system_list');
             } catch (\Exception $e) {
                 $error = $e->getMessage();
+                $inputData = $this->enrichInputDataWithTitles($inputData);
 
                 return $this->render('cabinet/coating/coating_system/form.html.twig', [
                     'error' => $error,
                     'inputData' => $inputData,
                     'substrates' => Substrate::cases(),
-                    'treatments' => $treatments,
-                    'coatings' => $coatings,
                 ]);
             }
         }
@@ -70,29 +62,53 @@ class AddAction extends AbstractController
         return $this->render('cabinet/coating/coating_system/form.html.twig', [
             'inputData' => null,
             'substrates' => Substrate::cases(),
-            'treatments' => $treatments,
-            'coatings' => $coatings,
         ]);
     }
 
     /**
-     * @return list<array{id: string, title: string, base_title: string, dft_min: int, dft_max: int}>
+     * После POST-ошибки обогащаем inputData заголовками treatment и coatings,
+     * чтобы async-typeahead мог восстановить preselected-теги.
+     *
+     * @param array<string, mixed> $inputData
+     *
+     * @return array<string, mixed>
      */
-    private function buildCoatingOptions(): array
+    private function enrichInputDataWithTitles(array $inputData): array
     {
-        $paginated = $this->coatingRepository->findByFilter(new CoatingsFilter());
-        $options = [];
-        foreach ($paginated->items as $coating) {
-            $dft = $coating->getDftRange();
-            $options[] = [
-                'id' => $coating->getId(),
-                'title' => $coating->getTitle(),
-                'base_title' => $coating->getBase()->value,
-                'dft_min' => (int) $dft->range->getMin(),
-                'dft_max' => (int) $dft->range->getMax(),
-            ];
+        // Заголовок выбранной подготовки поверхности
+        $treatmentId = $inputData['surfaceTreatmentId'] ?? null;
+        if (is_string($treatmentId) && '' !== $treatmentId && Uuid::isValid($treatmentId)) {
+            $treatmentDto = $this->queryBus->execute(new FindSurfaceTreatmentByIdQuery($treatmentId));
+            if (null !== $treatmentDto) {
+                $inputData['surfaceTreatmentTitle'] = $treatmentDto->title;
+            }
         }
 
-        return $options;
+        // Заголовки покрытий в слоях
+        $layerCoatingIds = [];
+        foreach ($inputData['layers'] ?? [] as $layer) {
+            $cid = $layer['coatingId'] ?? null;
+            if (is_string($cid) && Uuid::isValid($cid)) {
+                $layerCoatingIds[] = $cid;
+            }
+        }
+
+        $coatingTitlesById = [];
+        if ([] !== $layerCoatingIds) {
+            foreach ($this->coatingRepository->findByIds($layerCoatingIds) as $coating) {
+                $dft = $coating->getDftRange();
+                $coatingTitlesById[$coating->getId()] = sprintf(
+                    '%s (%s, %d–%d мкм)',
+                    $coating->getTitle(),
+                    $coating->getBase()->value,
+                    (int) $dft->range->getMin(),
+                    (int) $dft->range->getMax(),
+                );
+            }
+        }
+
+        $inputData['coatingTitlesById'] = $coatingTitlesById;
+
+        return $inputData;
     }
 }

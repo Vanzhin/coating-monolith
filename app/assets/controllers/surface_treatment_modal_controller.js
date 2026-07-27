@@ -89,10 +89,31 @@ export default class extends Controller {
     _addOptionToSelect(data) {
         const select = document.getElementById(this.treatmentSelectValue);
         if (!select) return;
+
+        const id = data.data?.id ?? data.id;
+        const title = data.data?.title ?? data.title ?? data.description ?? data.data?.description ?? '';
+        const substrateScope = data.data?.substrateScope ?? data.substrateScope ?? [];
+
+        // Если поле управляется async-typeahead — программно добавляем тег
+        const wrapper = select.closest('[data-controller~="async-typeahead"]');
+        if (wrapper) {
+            const controllerEl = wrapper;
+            // Через Stimulus application
+            const app = window.Stimulus;
+            if (app) {
+                const ctrl = app.getControllerForElementAndIdentifier(controllerEl, 'async-typeahead');
+                if (ctrl) {
+                    ctrl.selectItem(id, title);
+                    return;
+                }
+            }
+        }
+
+        // Fallback: добавляем option напрямую в select (для select-typeahead и нативных select)
         const option = document.createElement('option');
-        option.value = data.id;
-        option.textContent = data.title ?? data.description;
-        option.dataset.substrateScope = JSON.stringify(data.substrateScope ?? []);
+        option.value = id;
+        option.textContent = title;
+        option.dataset.substrateScope = JSON.stringify(substrateScope);
         select.appendChild(option);
         option.selected = true;
     }

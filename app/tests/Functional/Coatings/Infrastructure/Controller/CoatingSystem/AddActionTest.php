@@ -87,12 +87,12 @@ final class AddActionTest extends WebTestCase
         self::assertStringContainsString('Добавление системы покрытий', $content);
         self::assertStringContainsString('name="title"', $content);
         self::assertStringContainsString('name="substrate"', $content);
-        self::assertStringContainsString('name="surfaceTreatmentId"', $content);
-        // Проверяем, что treatment отрисован как select, а не input
+        // После перехода на async-typeahead hidden input берёт name, а не select
+        // — проверяем наличие поля через data-атрибут или endpoint
         self::assertStringContainsString('<select', $content);
         self::assertStringContainsString('Выберите подготовку поверхности', $content);
-        // Проверяем, что созданный treatmentId присутствует в options
-        self::assertStringContainsString((string) $this->treatmentId, $content);
+        // Endpoint async-typeahead указывает на /api/surface-treatments
+        self::assertStringContainsString('data-async-typeahead-endpoint-value="/api/surface-treatments"', $content);
     }
 
     public function test_post_valid_data_creates_system_and_redirects(): void

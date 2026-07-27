@@ -68,18 +68,17 @@
                         <label for="inputSurfaceTreatment" class="form-label">Метод подготовки</label>
                         <div class="input-group">
                             <div class="flex-grow-1"
-                                 data-controller="select-typeahead"
-                                 data-select-typeahead-placeholder-value="Поиск подготовки поверхности...">
+                                 data-controller="async-typeahead"
+                                 data-async-typeahead-endpoint-value="/api/surface-treatments"
+                                 data-async-typeahead-placeholder-value="Поиск подготовки поверхности...">
                                 <select id="inputSurfaceTreatment" class="form-select" name="surfaceTreatmentId" required
-                                        data-select-typeahead-target="select">
+                                        data-async-typeahead-target="select">
                                     <option value="">Выберите подготовку поверхности...</option>
-                                    {% for t in treatments %}
-                                        <option value="{{ t.id }}"
-                                                data-substrate-scope="{{ t.substrateScope|json_encode }}"
-                                                {% if (inputData.surfaceTreatmentId ?? '') == t.id %} selected {% endif %}>
-                                            {{ t.title }}
+                                    {% if (inputData.surfaceTreatmentId ?? '') and (inputData.surfaceTreatmentTitle ?? '') %}
+                                        <option value="{{ inputData.surfaceTreatmentId }}" selected>
+                                            {{ inputData.surfaceTreatmentTitle }}
                                         </option>
-                                    {% endfor %}
+                                    {% endif %}
                                 </select>
                             </div>
                             <button type="button" class="btn btn-outline-secondary"
@@ -105,20 +104,21 @@
                         Укажите покрытия и их проектную толщину (ТСП, мкм). Слои можно добавить и отредактировать после создания системы.
                     </div>
                     <div data-coating-system-form-target="layersList">
+                        {% set coatingTitlesById = inputData.coatingTitlesById|default({}) %}
                         {% for i, layer in inputData.layers|default([]) %}
                             <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                                 <div class="col"
-                                     data-controller="select-typeahead"
-                                     data-select-typeahead-placeholder-value="Поиск покрытия...">
+                                     data-controller="async-typeahead"
+                                     data-async-typeahead-endpoint-value="/api/coatings"
+                                     data-async-typeahead-placeholder-value="Поиск покрытия...">
                                     <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required
-                                            data-select-typeahead-target="select">
+                                            data-async-typeahead-target="select">
                                         <option value="">Выберите покрытие...</option>
-                                        {% for c in coatings %}
-                                            <option value="{{ c.id }}"
-                                                    {% if (layer.coatingId ?? '') == c.id %} selected {% endif %}>
-                                                {{ c.title }} ({{ c.base_title }}, {{ c.dft_min }}&ndash;{{ c.dft_max }} мкм)
+                                        {% if (layer.coatingId ?? '') and (coatingTitlesById[layer.coatingId] ?? '') %}
+                                            <option value="{{ layer.coatingId }}" selected>
+                                                {{ coatingTitlesById[layer.coatingId] }}
                                             </option>
-                                        {% endfor %}
+                                        {% endif %}
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -143,16 +143,12 @@
                     <template data-coating-system-form-target="layerTemplate">
                         <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                             <div class="col"
-                                 data-controller="select-typeahead"
-                                 data-select-typeahead-placeholder-value="Поиск покрытия...">
+                                 data-controller="async-typeahead"
+                                 data-async-typeahead-endpoint-value="/api/coatings"
+                                 data-async-typeahead-placeholder-value="Поиск покрытия...">
                                 <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required
-                                        data-select-typeahead-target="select">
+                                        data-async-typeahead-target="select">
                                     <option value="">Выберите покрытие...</option>
-                                    {% for c in coatings %}
-                                        <option value="{{ c.id }}">
-                                            {{ c.title }} ({{ c.base_title }}, {{ c.dft_min }}&ndash;{{ c.dft_max }} мкм)
-                                        </option>
-                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-3">
