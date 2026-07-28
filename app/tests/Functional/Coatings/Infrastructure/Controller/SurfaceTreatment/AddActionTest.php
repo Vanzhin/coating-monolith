@@ -120,4 +120,18 @@ final class AddActionTest extends WebTestCase
         $content = $this->client->getResponse()->getContent();
         self::assertStringContainsString('alert-danger', $content);
     }
+
+    public function test_post_validation_error_shows_human_readable_message(): void
+    {
+        $this->client->request('POST', '/cabinet/coating/surface-treatment/add', [
+            'description' => '',
+            'substrateScope' => [Substrate::STEEL_CARBON->value],
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringContainsString('Описание:', $content);
+        self::assertStringNotContainsString('[description]', $content);
+    }
 }

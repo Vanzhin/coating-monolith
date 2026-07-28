@@ -8,6 +8,7 @@ use App\Coatings\Application\UseCase\Command\UpdateSurfaceTreatment\UpdateSurfac
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\SurfaceTreatmentMapper;
+use App\Coatings\Infrastructure\Validation\SurfaceTreatmentErrorFormatter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -25,6 +26,7 @@ class UpdateAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly Validator $validator,
         private readonly SurfaceTreatmentMapper $mapper,
+        private readonly SurfaceTreatmentErrorFormatter $errorFormatter,
     ) {
     }
 
@@ -43,7 +45,7 @@ class UpdateAction extends AbstractController
                 $inputData = $request->getPayload()->all();
                 $errors = $this->validator->validate($inputData, $this->mapper->getValidationCollection());
                 if ($errors) {
-                    throw new AppException(current($errors)->getFullMessage());
+                    throw new AppException($this->errorFormatter->format($errors));
                 }
                 /** @var UpdateSurfaceTreatmentCommand $command */
                 $command = $this->mapper->buildCommandFromInputData($inputData, $id);

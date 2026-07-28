@@ -133,6 +133,40 @@ final class AddActionTest extends WebTestCase
         self::assertStringContainsString('alert-danger', $content);
     }
 
+    public function test_post_validation_error_shows_human_readable_message(): void
+    {
+        $this->client->request('POST', '/cabinet/coating/coating-system/add', [
+            'title' => '',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringContainsString('Название:', $content);
+        self::assertStringNotContainsString('[title]', $content);
+    }
+
+    public function test_post_missing_coating_in_layer_shows_human_readable_message(): void
+    {
+        $fakeUuid = \Symfony\Component\Uid\Uuid::v7();
+        $this->client->request('POST', '/cabinet/coating/coating-system/add', [
+            'title' => 'Тест',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+            'layers' => [
+                ['coatingId' => '', 'dft' => '80'],
+            ],
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringContainsString('Слой №1: Покрытие', $content);
+        self::assertStringNotContainsString('[layers][0][coatingId]', $content);
+    }
+
     public function test_post_validation_error_preserves_form_fields(): void
     {
         $this->client->request('POST', '/cabinet/coating/coating-system/add', [

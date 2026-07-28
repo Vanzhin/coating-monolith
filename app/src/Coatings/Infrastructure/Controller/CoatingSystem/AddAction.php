@@ -9,6 +9,7 @@ use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceT
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
+use App\Coatings\Infrastructure\Validation\CoatingSystemErrorFormatter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -28,6 +29,7 @@ class AddAction extends AbstractController
         private readonly Validator $validator,
         private readonly CoatingSystemMapper $mapper,
         private readonly CoatingRepositoryInterface $coatingRepository,
+        private readonly CoatingSystemErrorFormatter $errorFormatter,
     ) {
     }
 
@@ -39,7 +41,7 @@ class AddAction extends AbstractController
                 $inputData = $request->getPayload()->all();
                 $errors = $this->validator->validate($inputData, $this->mapper->getValidationCollection());
                 if ($errors) {
-                    throw new AppException(current($errors)->getFullMessage());
+                    throw new AppException($this->errorFormatter->format($errors));
                 }
                 /** @var CreateCoatingSystemCommand $command */
                 $command = $this->mapper->buildCommandFromInputData($inputData);

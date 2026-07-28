@@ -60,7 +60,7 @@ export default class extends Controller {
         select.parentNode.insertBefore(this._hidden, select.nextSibling);
 
         this._tagify = new Tagify(this._input, {
-            whitelist: [],
+            whitelist: preselected ? [preselected] : [],
             enforceWhitelist: true,
             mode: 'select',
             dropdown: {

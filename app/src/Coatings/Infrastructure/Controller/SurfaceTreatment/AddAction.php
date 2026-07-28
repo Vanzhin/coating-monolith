@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Controller\SurfaceTreatment;
 use App\Coatings\Application\UseCase\Command\CreateSurfaceTreatment\CreateSurfaceTreatmentCommand;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\SurfaceTreatmentMapper;
+use App\Coatings\Infrastructure\Validation\SurfaceTreatmentErrorFormatter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Validation\Validator;
@@ -22,6 +23,7 @@ class AddAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly Validator $validator,
         private readonly SurfaceTreatmentMapper $mapper,
+        private readonly SurfaceTreatmentErrorFormatter $errorFormatter,
     ) {
     }
 
@@ -33,7 +35,7 @@ class AddAction extends AbstractController
                 $inputData = $request->getPayload()->all();
                 $errors = $this->validator->validate($inputData, $this->mapper->getValidationCollection());
                 if ($errors) {
-                    throw new AppException(current($errors)->getFullMessage());
+                    throw new AppException($this->errorFormatter->format($errors));
                 }
                 /** @var CreateSurfaceTreatmentCommand $command */
                 $command = $this->mapper->buildCommandFromInputData($inputData);
