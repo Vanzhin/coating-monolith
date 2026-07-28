@@ -50,7 +50,7 @@ export default class extends Controller {
         try {
             const response = await fetch(this.endpointValue, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(body),
             });
 
@@ -109,7 +109,7 @@ export default class extends Controller {
             }
         }
 
-        // Fallback: добавляем option напрямую в select (для select-typeahead и нативных select)
+        // Fallback: добавляем option напрямую в нативный select
         const option = document.createElement('option');
         option.value = id;
         option.textContent = title;
