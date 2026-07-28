@@ -69,7 +69,7 @@
                         <div class="input-group">
                             <div class="flex-grow-1"
                                  data-controller="async-typeahead"
-                                 data-async-typeahead-endpoint-value="/api/surface-treatments"
+                                 data-async-typeahead-endpoint-value="{{ path('app_cabinet_surface_treatment_suggest') }}"
                                  data-async-typeahead-placeholder-value="Поиск подготовки поверхности...">
                                 <select id="inputSurfaceTreatment" class="form-select" name="surfaceTreatmentId" required
                                         data-async-typeahead-target="select">
@@ -109,7 +109,7 @@
                             <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                                 <div class="col"
                                      data-controller="async-typeahead"
-                                     data-async-typeahead-endpoint-value="/api/coatings"
+                                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
                                      data-async-typeahead-placeholder-value="Поиск покрытия...">
                                     <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required
                                             data-async-typeahead-target="select">
@@ -144,7 +144,7 @@
                         <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
                             <div class="col"
                                  data-controller="async-typeahead"
-                                 data-async-typeahead-endpoint-value="/api/coatings"
+                                 data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
                                  data-async-typeahead-placeholder-value="Поиск покрытия...">
                                 <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required
                                         data-async-typeahead-target="select">

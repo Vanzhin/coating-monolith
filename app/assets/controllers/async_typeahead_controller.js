@@ -64,7 +64,7 @@ export default class extends Controller {
             enforceWhitelist: true,
             mode: 'select',
             dropdown: {
-                enabled: 0,
+                enabled: 1,
                 maxItems: 30,
                 highlightFirst: true,
                 closeOnSelect: true,
@@ -94,7 +94,7 @@ export default class extends Controller {
             return;
         }
 
-        this._tagify.whitelist = null;
+        this._tagify.whitelist = [];
         this._tagify.loading(true).dropdown.hide.call(this._tagify);
 
         try {
