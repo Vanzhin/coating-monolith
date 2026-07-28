@@ -13,7 +13,7 @@
 {% block content %}
     <div class="p-2 p-md-3"
          data-controller="coating-system-form surface-treatment-modal"
-         data-surface-treatment-modal-endpoint-value="/api/surface-treatments"
+         data-surface-treatment-modal-endpoint-value="{{ path('app_cabinet_surface_treatment_create_inline') }}"
          data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
          data-surface-treatment-modal-substrate-select-value="inputSubstrate">
         <form method="post" action="{{ actionUrl }}" class="w-100" novalidate>
@@ -183,9 +183,10 @@
                 <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
             </div>
         </form>
-    </div>
 
-    {# Bootstrap modal для inline-создания подготовки поверхности #}
+    {# Bootstrap modal для inline-создания подготовки поверхности.
+       Модалка ВНУТРИ внешнего div c data-controller="surface-treatment-modal",
+       чтобы её targets попадали в scope контроллера. #}
     <div class="modal fade" id="surfaceTreatmentModal" tabindex="-1" aria-labelledby="surfaceTreatmentModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -236,5 +237,6 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 {% endblock %}

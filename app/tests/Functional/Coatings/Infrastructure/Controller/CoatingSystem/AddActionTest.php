@@ -132,4 +132,74 @@ final class AddActionTest extends WebTestCase
         $content = $this->client->getResponse()->getContent();
         self::assertStringContainsString('alert-danger', $content);
     }
+
+    public function test_post_validation_error_preserves_form_fields(): void
+    {
+        $this->client->request('POST', '/cabinet/coating/coating-system/add', [
+            'title' => '',
+            'description' => 'Сохранённое описание',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+
+        // Ошибка показана
+        self::assertStringContainsString('alert-danger', $content);
+
+        // Поля восстановлены
+        self::assertStringContainsString('Сохранённое описание', $content);
+        self::assertStringContainsString('value="steel_carbon"', $content);
+        // surfaceTreatmentId — присутствует как option selected в async-typeahead select
+        self::assertStringContainsString((string) $this->treatmentId, $content);
+        self::assertStringContainsString('selected', $content);
+    }
+
+    public function test_post_domain_error_preserves_form_fields(): void
+    {
+        // Создаём treatment, применимый только к concrete, а в форме шлём steel_carbon
+        // — domain бросит AppException про несовместимость.
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+        $concreteTreatmentId = \Symfony\Component\Uid\Uuid::v7();
+        $concreteTreatment = new \App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment(
+            $concreteTreatmentId,
+            'Подготовка только для бетона',
+            'Test-Concrete',
+            null,
+            [\App\Coatings\Domain\Aggregate\CoatingSystem\Substrate::CONCRETE],
+        );
+        $em->persist($concreteTreatment);
+        $em->flush();
+
+        try {
+            $this->client->request('POST', '/cabinet/coating/coating-system/add', [
+                'title' => 'Моя система',
+                'description' => 'Описание системы',
+                'substrate' => 'steel_carbon',
+                'surfaceTreatmentId' => (string) $concreteTreatmentId,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $content = $this->client->getResponse()->getContent();
+
+            // Ошибка домена показана
+            self::assertStringContainsString('alert-danger', $content);
+
+            // Все поля восстановлены
+            self::assertStringContainsString('value="Моя система"', $content);
+            self::assertStringContainsString('Описание системы', $content);
+            self::assertStringContainsString('value="steel_carbon"', $content);
+            self::assertStringContainsString((string) $concreteTreatmentId, $content);
+            self::assertStringContainsString('selected', $content);
+        } finally {
+            $em2 = static::getContainer()->get(EntityManagerInterface::class);
+            $em2->clear();
+            $t = $em2->find(\App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment::class, $concreteTreatmentId);
+            if (null !== $t) {
+                $em2->remove($t);
+                $em2->flush();
+            }
+        }
+    }
 }

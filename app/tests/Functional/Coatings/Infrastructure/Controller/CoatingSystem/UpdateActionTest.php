@@ -124,4 +124,27 @@ final class UpdateActionTest extends WebTestCase
         self::assertSame('Обновлённая система', $system->getTitle());
         self::assertSame(Substrate::CONCRETE, $system->getSubstrate());
     }
+
+    public function test_post_validation_error_preserves_form_fields(): void
+    {
+        $this->client->request('POST', sprintf('/cabinet/coating/coating-system/%s/update', $this->systemId), [
+            'title' => '',
+            'description' => 'Сохранённое описание',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+
+        // Ошибка показана
+        self::assertStringContainsString('alert-danger', $content);
+
+        // Поля восстановлены из POST-данных
+        self::assertStringContainsString('Сохранённое описание', $content);
+        self::assertStringContainsString('value="steel_carbon"', $content);
+        // surfaceTreatmentId — присутствует как option selected
+        self::assertStringContainsString((string) $this->treatmentId, $content);
+        self::assertStringContainsString('selected', $content);
+    }
 }
