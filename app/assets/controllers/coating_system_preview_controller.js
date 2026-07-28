@@ -20,7 +20,6 @@ import { Controller } from '@hotwired/stimulus';
  *   modalLayersCount — счётчик слоёв
  *   modalCompliance — блок compliance-плашек
  *   modalDescription — блок описания
- *   modalViewLink   — ссылка «Открыть страницу»
  *   modalEditLink   — ссылка «Редактировать»
  *   modalDeleteLink — ссылка «Удалить»
  *   modalEditSection — блок admin-actions (скрываем если не admin)
@@ -35,7 +34,6 @@ export default class extends Controller {
         'modalLayersCount',
         'modalCompliance',
         'modalDescription',
-        'modalViewLink',
         'modalEditLink',
         'modalDeleteLink',
         'modalEditSection',
@@ -43,7 +41,6 @@ export default class extends Controller {
 
     static values = {
         modalId: String,
-        viewRoute: String,
         editRoute: String,
         deleteRoute: String,
     };
@@ -106,12 +103,11 @@ export default class extends Controller {
         }
 
         // Links
-        this.modalViewLinkTarget.href = this.viewRouteValue.replace('PLACEHOLDER', data.id);
         if (this.hasModalEditLinkTarget) {
-            this.modalEditLinkTarget.href = this.editRouteValue.replace('PLACEHOLDER', data.id);
+            this.modalEditLinkTarget.href = this.editRouteValue.replace('00000000-0000-0000-0000-000000000000', data.id);
         }
         if (this.hasModalDeleteLinkTarget) {
-            this.modalDeleteLinkTarget.href = this.deleteRouteValue.replace('PLACEHOLDER', data.id);
+            this.modalDeleteLinkTarget.href = this.deleteRouteValue.replace('00000000-0000-0000-0000-000000000000', data.id);
         }
     }
 

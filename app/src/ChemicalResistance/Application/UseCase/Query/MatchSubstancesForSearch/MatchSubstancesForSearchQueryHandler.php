@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
+use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -23,8 +24,10 @@ final class MatchSubstancesForSearchQueryHandler
 {
     private const FTS_LANG = 'russian';
 
-    public function __construct(private Connection $dbal)
-    {
+    public function __construct(
+        private Connection $dbal,
+        private PrefixTsQueryBuilder $tsQueryBuilder,
+    ) {
     }
 
     /**
@@ -36,7 +39,7 @@ final class MatchSubstancesForSearchQueryHandler
             return [];
         }
 
-        $tsquery = $this->buildPrefixTsQuery($q->searchWords);
+        $tsquery = $this->tsQueryBuilder->build(implode(' ', $q->searchWords), PrefixTsQueryBuilder::CONJUNCTION_OR);
         $rawWords = array_values(array_filter(array_map('trim', $q->searchWords), fn ($w) => '' !== $w));
 
         // Массивы передаём как JSON-скаляры и раскрываем через jsonb_array_elements_text —
@@ -95,25 +98,4 @@ final class MatchSubstancesForSearchQueryHandler
         return $out;
     }
 
-    /**
-     * «вода этанол» → «вода:* | этанол:*». Слова разбираются, санитайзятся,
-     * потом объединяются через OR — substance матчится по любому из стемов.
-     *
-     * @param list<string> $words
-     */
-    private function buildPrefixTsQuery(array $words): string
-    {
-        $tokens = [];
-        foreach ($words as $word) {
-            $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $word) ?? '';
-            $parts = preg_split('/[\s\-.,;]+/u', $sanitized, -1, PREG_SPLIT_NO_EMPTY);
-            if (is_array($parts)) {
-                foreach ($parts as $p) {
-                    $tokens[] = $p.':*';
-                }
-            }
-        }
-
-        return implode(' | ', $tokens);
-    }
 }

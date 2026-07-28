@@ -13,6 +13,7 @@ use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Domain\Repository\RangeFilter;
+use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -31,8 +32,10 @@ final class CoatingFinder
     private const FUZZY_SIMILARITY_THRESHOLD = 0.6;
     private const FUZZY_LIMIT = 10;
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly PrefixTsQueryBuilder $tsQueryBuilder,
+    ) {
     }
 
     public function fullText(CoatingsFilter $filter): PaginationResult
@@ -102,7 +105,7 @@ final class CoatingFinder
             return;
         }
 
-        $tsquery = $this->buildPrefixTsQuery($filter->search);
+        $tsquery = $this->tsQueryBuilder->build($filter->search->value, PrefixTsQueryBuilder::CONJUNCTION_AND);
         if ('' === $tsquery) {
             $qb->andWhere('1 = 0');
 
@@ -268,20 +271,6 @@ final class CoatingFinder
      * Слова берём из SearchQuery::words() — единственный источник разбиения,
      * тот же что и в CoatingRepository::hasSingleWord через SearchQuery.
      */
-    private function buildPrefixTsQuery(SearchQuery $search): string
-    {
-        // Санитайзим tsquery-мета до разбиения на слова, чтобы не пропустить
-        // «cc:special» → как один токен с двоеточием.
-        $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $search->value) ?? '';
-        // Разбиваем тем же splitter'ом, но уже из очищенной строки — иначе
-        // нельзя, потому что SearchQuery::words() читает исходный value.
-        $words = preg_split('/[\s\-.,;]+/u', $sanitized, -1, PREG_SPLIT_NO_EMPTY);
-        if (false === $words || [] === $words) {
-            return '';
-        }
-
-        return implode(' & ', array_map(static fn (string $word) => $word.':*', $words));
-    }
 
     private function coatingQueryBuilder(): QueryBuilder
     {

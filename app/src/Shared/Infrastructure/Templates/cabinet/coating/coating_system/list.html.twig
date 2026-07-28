@@ -10,7 +10,6 @@
 
     <div data-controller="coating-system-preview"
          data-coating-system-preview-modal-id-value="coatingSystemModal"
-         data-coating-system-preview-view-route-value="{{ path('app_cabinet_coating_system_view', {id: idPlaceholder}) }}"
          data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
          data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}">
 
@@ -101,6 +100,18 @@
                                     {% endif %}
                                 </span>
                             </div>
+                            {% if system.layers|length > 0 %}
+                                <div class="d-flex flex-wrap gap-1 mb-1 align-items-center">
+                                    {% for layer in system.layers %}
+                                        <span class="badge text-bg-light fw-normal text-body-secondary" title="{{ layer.coatingTitle }}">
+                                            {{ layer.coatingBaseTitle }} · {{ layer.coatingTitle }} · {{ layer.dft }} мкм
+                                        </span>
+                                        {% if not loop.last %}
+                                            <i class="bi bi-arrow-right text-body-secondary small"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                             {% if visibleBadges|length > 0 %}
                                 <div class="d-flex flex-wrap gap-1 mb-1">
                                     {% for badge in visibleBadges %}
@@ -233,10 +244,6 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <a href="#" class="btn btn-outline-secondary"
-                           data-coating-system-preview-target="modalViewLink">
-                            <i class="bi bi-box-arrow-up-right"></i> Открыть страницу
-                        </a>
                         {% if canEdit %}
                             <a href="#" class="btn btn-outline-primary"
                                data-coating-system-preview-target="modalEditLink">

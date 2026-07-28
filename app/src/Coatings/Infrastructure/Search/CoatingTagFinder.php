@@ -6,6 +6,7 @@ namespace App\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Aggregate\Coating\CoatingTagSearch;
+use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -18,8 +19,10 @@ final class CoatingTagFinder
     private const FTS_LANG = 'russian';
     private const FUZZY_SIMILARITY_THRESHOLD = 0.4;
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly PrefixTsQueryBuilder $tsQueryBuilder,
+    ) {
     }
 
     /**
@@ -45,7 +48,7 @@ final class CoatingTagFinder
      */
     private function fullText(string $query, ?string $type, int $limit): array
     {
-        $tsquery = $this->buildPrefixTsQuery($query);
+        $tsquery = $this->tsQueryBuilder->build($query, PrefixTsQueryBuilder::CONJUNCTION_AND);
         if ('' === $tsquery) {
             return [];
         }
@@ -99,17 +102,4 @@ final class CoatingTagFinder
             ->from(CoatingTag::class, 't');
     }
 
-    /**
-     * Превращает пользовательский ввод в безопасный tsquery с префиксным сопоставлением.
-     */
-    private function buildPrefixTsQuery(string $query): string
-    {
-        $sanitized = preg_replace('/[&|!()<>:\'"\\\\*]/u', ' ', $query) ?? '';
-        $words = preg_split('/[\s\-.,;]+/u', trim($sanitized), -1, PREG_SPLIT_NO_EMPTY);
-        if (false === $words || [] === $words) {
-            return '';
-        }
-
-        return implode(' & ', array_map(static fn (string $word) => $word.':*', $words));
-    }
 }
