@@ -3,21 +3,29 @@
 {% block title %}{{ parent() }} | Системы покрытий{% endblock %}
 
 {% block content %}
-    <div class="p-2 p-md-3">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">Системы покрытий</h1>
-            {% if is_granted('ROLE_ADMIN') %}
-                <a href="{{ path('app_cabinet_coating_system_add') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg"></i> Добавить
-                </a>
-            {% endif %}
-        </div>
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
 
-        <form method="get" action="{{ path('app_cabinet_coating_system_list') }}" class="mb-3">
+    {# UUID-placeholder для генерации route-шаблонов с id #}
+    {% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
+
+    <div data-controller="coating-system-preview"
+         data-coating-system-preview-modal-id-value="coatingSystemModal"
+         data-coating-system-preview-view-route-value="{{ path('app_cabinet_coating_system_view', {id: idPlaceholder}) }}"
+         data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
+         data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}">
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Системы покрытий',
+        create_route: 'app_cabinet_coating_system_add',
+        can_edit: canEdit,
+        is_empty: items is empty,
+    } %}
+    {% block above_list %}
+        <form method="get" action="{{ path('app_cabinet_coating_system_list') }}" class="mb-0">
             <div class="row g-2">
                 <div class="col-md-5">
-                    <input type="text" name="search" value="{{ search }}" class="form-control"
-                           placeholder="Поиск по названию...">
+                    <input type="search" name="search" value="{{ search }}" class="form-control"
+                           placeholder="По названию...">
                 </div>
                 <div class="col-md-4">
                     <select name="substrate" class="form-select">
@@ -30,98 +38,233 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-outline-secondary w-100">Найти</button>
+                    <button type="submit" class="btn btn-primary w-100">Найти</button>
                 </div>
             </div>
         </form>
+    {% endblock %}
 
-        {% if items is empty %}
-            <div class="p-3 rounded-3 bg-body-tertiary text-center text-muted">
-                Системы покрытий не найдены.
-            </div>
-        {% else %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Название</th>
-                            <th>Субстрат</th>
-                            <th class="text-end">Слоёв</th>
-                            <th class="text-end">Суммарная ТСП, мкм</th>
-                            <th>Обновлено</th>
-                            {% if is_granted('ROLE_ADMIN') %}
-                                <th></th>
+    {% block list_content %}
+        <div class="d-flex flex-column gap-2">
+            {% for system in items %}
+                {# Compliance-плашки для карточки — только первые 3 #}
+                {% set complianceBadges = [] %}
+                {% for entry in system.compliance %}
+                    {% set complianceBadges = complianceBadges|merge([entry.category ~ (entry.durability ? '-' ~ entry.durability : '')]) %}
+                {% endfor %}
+                {% set visibleBadges = complianceBadges|slice(0, 3) %}
+                {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}
+
+                {# Payload для модалки #}
+                {% set payload = {
+                    id: system.id,
+                    title: system.title,
+                    substrateTitle: system.substrateTitle,
+                    totalDft: system.totalDft,
+                    layerCount: system.layers|length,
+                    treatment: system.surfaceTreatmentCode
+                        ? (system.surfaceTreatmentCode ~ (system.surfaceTreatmentStandardCode ? ' (' ~ system.surfaceTreatmentStandardCode ~ ')' : ''))
+                        : system.surfaceTreatmentDescription,
+                    description: system.description,
+                    layers: system.layers|map(l => {
+                        position: l.position,
+                        coatingTitle: l.coatingTitle,
+                        coatingBaseTitle: l.coatingBaseTitle,
+                        isZincRich: l.isZincRich,
+                        dft: l.dft,
+                    }),
+                    compliance: system.compliance,
+                } %}
+
+                <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div style="cursor: pointer;"
+                             data-action="click->coating-system-preview#open"
+                             data-payload="{{ payload|json_encode }}">
+                            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ system.title }}</h6>
+                            <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
+                                <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
+                                <span class="badge text-bg-light fw-normal text-body-secondary">
+                                    <i class="bi bi-layers"></i> {{ system.layers|length }}
+                                </span>
+                                <span class="badge text-bg-light fw-normal text-body-secondary">
+                                    {{ system.totalDft }} мкм
+                                </span>
+                                <span class="text-muted small">
+                                    {% if system.surfaceTreatmentCode %}
+                                        {{ system.surfaceTreatmentCode }}
+                                        {% if system.surfaceTreatmentStandardCode %}
+                                            ({{ system.surfaceTreatmentStandardCode }})
+                                        {% endif %}
+                                    {% else %}
+                                        {{ system.surfaceTreatmentDescription }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if visibleBadges|length > 0 %}
+                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                    {% for badge in visibleBadges %}
+                                        <span class="badge text-bg-success fw-normal">{{ badge }}</span>
+                                    {% endfor %}
+                                    {% if hiddenBadgeCount > 0 %}
+                                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ hiddenBadgeCount }}</span>
+                                    {% endif %}
+                                </div>
                             {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for system in items %}
-                            <tr>
-                                <td>
-                                    <a href="{{ path('app_cabinet_coating_system_view', {id: system.id}) }}"
-                                       class="text-body fw-semibold text-decoration-none">
-                                        {{ system.title }}
-                                    </a>
-                                </td>
-                                <td class="text-muted small">{{ system.substrateTitle }}</td>
-                                <td class="text-end">{{ system.layers|length }}</td>
-                                <td class="text-end">{{ system.totalDft }}</td>
-                                <td class="text-muted small">{{ system.updatedAt|date('d.m.Y') }}</td>
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <td class="text-end">
-                                        <a href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}"
-                                           class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="post"
-                                              action="{{ path('app_cabinet_coating_system_remove', {id: system.id}) }}"
-                                              class="d-inline"
-                                              data-controller="confirm-form"
-                                              data-confirm-form-message-value="Удалить систему «{{ system.title|e('js') }}»?"
-                                              data-action="submit->confirm-form#confirm">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            <p class="mb-0 small text-muted">
+                                Обновлено: {{ system.updatedAt|date('d.m.Y') }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                        <button type="button" class="btn btn-outline-secondary"
+                                data-action="click->coating-system-preview#open"
+                                data-payload="{{ payload|json_encode }}"
+                                title="Показать">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        {% if canEdit %}
+                            {% include '/components/edit_delete.html.twig' with {
+                                'edit': 'app_cabinet_coating_system_update',
+                                'delete': 'app_cabinet_coating_system_remove',
+                                'id': system.id,
+                                'title': system.title,
+                            } %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
 
-            {% if total > perPage %}
-                <nav class="mt-3">
-                    <ul class="pagination pagination-sm justify-content-center">
-                        {% if page > 1 %}
-                            <li class="page-item">
-                                <a class="page-link"
-                                   href="{{ path('app_cabinet_coating_system_list', {page: page - 1, search: search, substrate: substrate}) }}">
-                                    Назад
-                                </a>
-                            </li>
-                        {% endif %}
-                        {% set totalPages = (total / perPage)|round(0, 'ceil') %}
-                        {% for p in 1..totalPages %}
-                            <li class="page-item {% if p == page %}active{% endif %}">
-                                <a class="page-link"
-                                   href="{{ path('app_cabinet_coating_system_list', {page: p, search: search, substrate: substrate}) }}">
-                                    {{ p }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                        {% if page < totalPages %}
-                            <li class="page-item">
-                                <a class="page-link"
-                                   href="{{ path('app_cabinet_coating_system_list', {page: page + 1, search: search, substrate: substrate}) }}">
-                                    Вперёд
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
+        {% if total > perPage %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center">
+                    {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="{{ path('app_cabinet_coating_system_list', {page: page - 1, search: search, substrate: substrate}) }}">
+                                Назад
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% set totalPages = (total / perPage)|round(0, 'ceil') %}
+                    {% for p in 1..totalPages %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link"
+                               href="{{ path('app_cabinet_coating_system_list', {page: p, search: search, substrate: substrate}) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                    {% if page < totalPages %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="{{ path('app_cabinet_coating_system_list', {page: page + 1, search: search, substrate: substrate}) }}">
+                                Вперёд
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
         {% endif %}
+
+        {# Модалка предпросмотра системы покрытий — одна на страницу, наполняется Stimulus-контроллером #}
+        <div class="modal fade" id="coatingSystemModal" tabindex="-1"
+             aria-labelledby="coatingSystemModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="coatingSystemModalLabel"
+                            data-coating-system-preview-target="modalTitle"></h5>
+                        <button type="button" class="btn-close"
+                                data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                            <div class="row g-2 small">
+                                <div class="col-md-4">
+                                    <span class="text-muted">Субстрат:</span>
+                                    <span class="ms-1 fw-semibold"
+                                          data-coating-system-preview-target="modalSubstrate"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted">Подготовка:</span>
+                                    <span class="ms-1 fw-semibold"
+                                          data-coating-system-preview-target="modalTreatment"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted">Суммарная ТСП:</span>
+                                    <span class="ms-1 fw-semibold"
+                                          data-coating-system-preview-target="modalDft"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-description-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
+                            <p class="text-body-secondary mb-0"
+                               data-coating-system-preview-target="modalDescription"></p>
+                        </div>
+
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                            <h6 class="fw-semibold mb-3">
+                                Слои системы
+                                (<span data-coating-system-preview-target="modalLayersCount"></span>)
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-muted fw-normal" style="width: 48px;">#</th>
+                                            <th class="text-muted fw-normal">Покрытие</th>
+                                            <th class="text-muted fw-normal">Основа</th>
+                                            <th class="text-muted fw-normal text-end">ТСП, мкм</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody data-coating-system-preview-target="modalLayers">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="modal-compliance-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
+                            <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
+                            <div class="d-flex flex-wrap gap-2"
+                                 data-coating-system-preview-target="modalCompliance"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-outline-secondary"
+                           data-coating-system-preview-target="modalViewLink">
+                            <i class="bi bi-box-arrow-up-right"></i> Открыть страницу
+                        </a>
+                        {% if canEdit %}
+                            <a href="#" class="btn btn-outline-primary"
+                               data-coating-system-preview-target="modalEditLink">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if canEdit %}
+            {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_coating_system_remove'} %}
+        {% endif %}
+    {% endblock %}
+
+    {% block empty_state %}
+        <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
+            <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
+            <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
+            {% if search or substrate %}
+                <p class="text-body-secondary mb-0">Попробуйте изменить параметры поиска.</p>
+            {% endif %}
+        </div>
+    {% endblock %}
+    {% endembed %}
+
     </div>
 {% endblock %}

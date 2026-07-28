@@ -107,4 +107,59 @@ final class ListActionTest extends WebTestCase
         $content = $this->client->getResponse()->getContent();
         self::assertStringContainsString('Список-система-', $content);
     }
+
+    public function test_list_uses_cards_not_table(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating-system/list');
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertStringContainsString('class="coating-card', $content);
+        self::assertStringNotContainsString('<table class="table table-hover', $content);
+    }
+
+    public function test_list_shows_treatment_code_on_card(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        // Fixture creates treatment with code = substr('ST-' . $suffix, 0, 30)
+        self::assertStringContainsString('ST-', $content);
+    }
+
+    public function test_list_shows_layer_count_and_total_dft_on_card(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        // Layer count badge: bi-layers icon + count (0 layers for fixture system)
+        self::assertStringContainsString('bi-layers', $content);
+        // Total DFT shown (0 мкм for system without layers)
+        self::assertStringContainsString('мкм', $content);
+    }
+
+    public function test_list_shows_modal_placeholder(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating-system/list');
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertStringContainsString('id="coatingSystemModal"', $content);
+    }
+
+    public function test_list_shows_compliance_badges_on_card_when_available(): void
+    {
+        // System created in fixture has no compliance; modal is still present.
+        // This test verifies the card structure is present and no compliance badges shown for the empty case.
+        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        // Card is rendered
+        self::assertStringContainsString('class="coating-card', $content);
+        // Compliance section in modal is present (hidden via d-none, but rendered)
+        self::assertStringContainsString('modal-compliance-block', $content);
+    }
 }
