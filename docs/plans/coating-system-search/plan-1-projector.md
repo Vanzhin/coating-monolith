@@ -19,7 +19,7 @@
 - **Инвариант: default DryingTimeSeries в RecoatingIntervalTree обязан содержать точку при 20°C с валидным `time_in_minutes` (>0)**. Без этой точки интерполировать по толщине слоя системы не с чего, поэтому такое покрытие не имеет смысла. Проверка живёт в конструкторе `RecoatingIntervalTree` (или `DryingTimeSeries` default-корне) — при нарушении бросает `AppException` с человекочитаемым сообщением. Автоматически действует при любом create/update покрытия.
 
 **Read-model**:
-- Существующая таблица `coating_system_compliance` (миграция `Version20260728000100`) расширяется ALTER-ом. Имя таблицы **не меняется** (риск ниже, чем от RENAME). Смысл таблицы теперь шире compliance, но название оставляем — переименование потом отдельной задачей, если критично.
+- Отдельная новая таблица `coating_system_search` — **одна строка на систему** (PK system_id). Существующая `coating_system_compliance` остаётся чисто compliance-таблицей: `(system_id, standard, category, durability)`. Причина разделения: у системы без совпадений с ISO/NORSOK compliance-строк нет, и если бы search-поля жили в compliance — такая система не находилась бы FTS. Плюс избежали бы дублирования одного tsvector на все compliance-строки одной системы.
 - Новые колонки:
   - `sum_min_recoat_20_minutes int null` — сумма мин.интервалов при 20°C по слоям кроме верхнего. **Placeholder-логика в этом плане**: `SUM(RECOATING_AT_20C(coating.minRecoatingInterval))` без интерполяции по толщине слоя. Интерполяция вклинивается позднее (см. открытый пункт).
   - `max_application_min_temp int null` — `MAX(coating.applicationMinTemp)` по всем слоям.
