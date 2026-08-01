@@ -339,8 +339,26 @@ class Coating extends Aggregate
     public function setMinRecoatingInterval(RecoatingIntervalTree $minRecoatingInterval): void
     {
         (new CoatingRecoatingTreeValidator())->validate($minRecoatingInterval);
+        $this->assertMinRecoatingHasBasePointAt20($minRecoatingInterval);
         $this->minRecoatingInterval = $minRecoatingInterval;
         $this->validateTemperatureRange();
+    }
+
+    /**
+     * Инвариант: default-корень минимального интервала перекрытия обязан содержать
+     * явную точку ровно при 20 °C с валидной длительностью (>0).
+     * Без такой точки интерполяция по толщине слоя системы невозможна — покрытие
+     * не может участвовать в расчётах.
+     */
+    private function assertMinRecoatingHasBasePointAt20(RecoatingIntervalTree $tree): void
+    {
+        $point = $tree->default->getPoint(20);
+        if (null === $point || $point->isCalculated) {
+            throw new AppException('Для покрытия обязательна точка минимального интервала перекрытия при +20 °C.');
+        }
+        if (null === $point->timeInMinutes || $point->timeInMinutes <= 0) {
+            throw new AppException('Точка минимального интервала перекрытия при +20 °C должна иметь положительное время.');
+        }
     }
 
     public function setMaxRecoatingInterval(?RecoatingIntervalTree $maxRecoatingInterval): void
