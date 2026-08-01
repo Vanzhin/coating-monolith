@@ -7,7 +7,9 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -17,6 +19,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         private CoatingSystemRepositoryInterface $repo,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private CoatingSystemChainValidatorInterface $chainValidator,
+        private TagRepositoryInterface $tagRepo,
     ) {
     }
 
@@ -37,6 +40,9 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         $system->setTitle($cmd->title);
         $system->setDescription($cmd->description);
         $system->setSubstrateAndTreatment($cmd->substrate, $treatment);
+
+        $tags = $this->tagRepo->findByIds(new StringCollection(...$cmd->tagIds));
+        $system->replaceTags($tags);
 
         $this->repo->save($system);
 

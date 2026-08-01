@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -25,6 +26,8 @@ class CoatingSystem extends Aggregate
     private ?SurfaceTreatment $surfaceTreatment = null;
     /** @var Collection<int, CoatingSystemLayer>&Selectable<int, CoatingSystemLayer> */
     private Collection $layers;
+    /** @var Collection<int, Tag> */
+    private Collection $tags;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
 
@@ -38,6 +41,7 @@ class CoatingSystem extends Aggregate
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();
+        $this->tags = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = $this->createdAt;
         $this->setTitle($title);
@@ -270,6 +274,39 @@ class CoatingSystem extends Aggregate
             }
         }
         throw new AppException(sprintf('Слой с позицией %d не найден.', $position));
+    }
+
+    /** @return Collection<int, Tag> */
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
+
+    public function addTag(Tag $tag): void
+    {
+        if (!$this->tags->contains($tag)) {
+            $this->tags->add($tag);
+            $this->touch();
+        }
+    }
+
+    public function removeTag(Tag $tag): void
+    {
+        if ($this->tags->removeElement($tag)) {
+            $this->touch();
+        }
+    }
+
+    /** @param list<Tag> $tags */
+    public function replaceTags(array $tags): void
+    {
+        $this->tags->clear();
+        foreach ($tags as $tag) {
+            if (!$this->tags->contains($tag)) {
+                $this->tags->add($tag);
+            }
+        }
+        $this->touch();
     }
 
     public function setChainValidator(CoatingSystemChainValidatorInterface $validator): void

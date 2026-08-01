@@ -17,6 +17,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -190,6 +191,62 @@ final class CoatingSystemTest extends TestCase
             $treatment,
             new CoatingSystemChainValidator(),
         );
+    }
+
+    public function test_tags_are_empty_after_construction(): void
+    {
+        $sys = $this->newSystem();
+        self::assertCount(0, $sys->getTags());
+    }
+
+    public function test_add_tag_puts_it_into_collection_and_touches(): void
+    {
+        $sys = $this->newSystem();
+        $initialUpdatedAt = $sys->getUpdatedAt();
+        // Ensure a measurable tick.
+        usleep(1000);
+        $tag = $this->createStub(Tag::class);
+
+        $sys->addTag($tag);
+
+        self::assertCount(1, $sys->getTags());
+        self::assertTrue($sys->getTags()->contains($tag));
+        self::assertGreaterThan($initialUpdatedAt, $sys->getUpdatedAt());
+    }
+
+    public function test_add_tag_is_idempotent(): void
+    {
+        $sys = $this->newSystem();
+        $tag = $this->createStub(Tag::class);
+        $sys->addTag($tag);
+        $sys->addTag($tag);
+        self::assertCount(1, $sys->getTags());
+    }
+
+    public function test_remove_tag_takes_it_out(): void
+    {
+        $sys = $this->newSystem();
+        $tag = $this->createStub(Tag::class);
+        $sys->addTag($tag);
+        $sys->removeTag($tag);
+        self::assertCount(0, $sys->getTags());
+    }
+
+    public function test_replace_tags_swaps_full_set(): void
+    {
+        $sys = $this->newSystem();
+        $t1 = $this->createStub(Tag::class);
+        $t2 = $this->createStub(Tag::class);
+        $t3 = $this->createStub(Tag::class);
+        $sys->addTag($t1);
+        $sys->addTag($t2);
+
+        $sys->replaceTags([$t2, $t3]);
+
+        self::assertCount(2, $sys->getTags());
+        self::assertTrue($sys->getTags()->contains($t2));
+        self::assertTrue($sys->getTags()->contains($t3));
+        self::assertFalse($sys->getTags()->contains($t1));
     }
 
     public function test_set_substrate_throws_when_treatment_no_longer_matches(): void

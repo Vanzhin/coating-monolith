@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\CoatingSystems;
 
+use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 
 class CoatingSystemDTOTransformer
 {
+    public function __construct(
+        private readonly TagDTOTransformer $tagTransformer = new TagDTOTransformer(),
+    ) {
+    }
+
     /**
      * @param list<array{standard: string, category: string, durability: string}> $complianceRows
      */
@@ -32,6 +38,7 @@ class CoatingSystemDTOTransformer
         $dto->totalDft = $system->totalDft();
         $dto->layers = $this->layersFromSystem($system);
         $dto->compliance = $this->normalizeComplianceRows($complianceRows);
+        $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
 
         return $dto;
     }

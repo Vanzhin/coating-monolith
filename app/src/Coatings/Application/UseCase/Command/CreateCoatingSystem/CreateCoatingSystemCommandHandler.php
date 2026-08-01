@@ -9,7 +9,9 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInter
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -20,6 +22,7 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
         private CoatingRepositoryInterface $coatingRepo,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private CoatingSystemChainValidatorInterface $chainValidator,
+        private TagRepositoryInterface $tagRepo,
     ) {
     }
 
@@ -45,6 +48,11 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
                 throw new AppException(sprintf('Покрытие с id %s не найдено.', $layerData['coatingId']));
             }
             $system->appendLayer($coating, $layerData['dft']);
+        }
+
+        if ([] !== $cmd->tagIds) {
+            $tags = $this->tagRepo->findByIds(new StringCollection(...$cmd->tagIds));
+            $system->replaceTags($tags);
         }
 
         $this->repo->save($system);

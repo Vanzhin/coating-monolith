@@ -67,6 +67,7 @@ final class CoatingSystemMapperTest extends TestCase
                 ['coatingId' => 'uuid-1', 'dft' => 60],
                 ['coatingId' => 'uuid-2', 'dft' => 100],
             ],
+            'tagIds' => [],
         ];
 
         $dto = $this->buildDtoFromInput($input);
@@ -83,6 +84,7 @@ final class CoatingSystemMapperTest extends TestCase
             'surfaceTreatmentId' => self::TREATMENT_UUID,
             'surfaceTreatmentTitle' => 'Обмыв водой',
             'layers' => [],
+            'tagIds' => [],
         ];
 
         $dto = $this->buildDtoFromInput($input);
@@ -100,6 +102,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('', $result['surfaceTreatmentId']);
         self::assertSame('', $result['surfaceTreatmentTitle']);
         self::assertSame([], $result['layers']);
+        self::assertSame([], $result['tagIds']);
     }
 
     public function test_validation_collection_is_collection_constraint(): void
