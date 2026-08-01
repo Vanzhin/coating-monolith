@@ -15,6 +15,8 @@ use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatches;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRule;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\PrimerType;
@@ -49,10 +51,13 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(1, $result);
-        self::assertSame(ComplianceStandard::ISO_12944, $result[0]['standard']);
-        self::assertSame('C3', $result[0]['category']);
-        self::assertSame('HIGH', $result[0]['durability']);
+        $matches = $result->toArray();
+        self::assertContainsEquals(
+            new ComplianceMatch(ComplianceStandard::ISO_12944, 'C3', 'HIGH'),
+            $matches,
+        );
     }
 
     public function test_no_match_when_ndft_insufficient(): void
@@ -75,6 +80,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -97,6 +103,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -120,6 +127,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -142,6 +150,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -164,6 +173,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -184,6 +194,7 @@ final class ComplianceEvaluatorTest extends TestCase
         $system = $this->makeSystem(Substrate::STEEL_CARBON, []);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 

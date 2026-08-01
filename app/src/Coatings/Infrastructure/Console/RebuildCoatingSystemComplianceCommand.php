@@ -47,9 +47,9 @@ final class RebuildCoatingSystemComplianceCommand extends Command
                      VALUES (:id, :std, :cat, :dur)',
                     [
                         'id' => $system->getId(),
-                        'std' => $m['standard']->value,
-                        'cat' => $m['category'],
-                        'dur' => $m['durability'],
+                        'std' => $m->standard->value,
+                        'cat' => $m->category,
+                        'dur' => $m->durability,
                     ],
                 );
             }
