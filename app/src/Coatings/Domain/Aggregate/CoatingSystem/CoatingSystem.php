@@ -234,7 +234,6 @@ class CoatingSystem extends Aggregate
         return $max;
     }
 
-
     public function firstLayer(): CoatingSystemLayer
     {
         $sorted = $this->getLayers()->toArray();
