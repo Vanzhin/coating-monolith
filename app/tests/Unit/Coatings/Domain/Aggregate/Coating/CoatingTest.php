@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Event\CoatingMutated;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -403,6 +404,108 @@ final class CoatingTest extends TestCase
         self::assertTrue($coating->isZincRich());
         $coating->setIsZincRich(false);
         self::assertFalse($coating->isZincRich());
+    }
+
+    public function test_set_title_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setTitle('New Title');
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_description_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setDescription('New description');
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_base_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setBase(CoatingBase::PUR);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_is_zinc_rich_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setIsZincRich(true);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_application_min_temp_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+        $c->pullEvents();
+        $c->setApplicationMinTemp(10);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_dft_range_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setDftRange(new DftRange(new PositiveNumberRange(120, 180), 150, ThicknessType::MIC));
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_min_recoating_interval_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setMinRecoatingInterval(
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 120)))
+        );
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
     }
 
     private function makeCoating(

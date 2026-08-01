@@ -7,6 +7,7 @@ namespace App\Coatings\Domain\Aggregate\Coating;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingMutated;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -208,12 +209,14 @@ class Coating extends Aggregate
         AssertService::maxLength($title, 100);
         $this->title = $title;
         $this->specification->uniqueTitleCoatingSpecification->satisfy($this);
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setDescription(string $description): void
     {
         AssertService::maxLength($description, 1500);
         $this->description = $description;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setVolumeSolid(int $volumeSolid): void
@@ -233,17 +236,20 @@ class Coating extends Aggregate
     public function setDftRange(DftRange $dftRange): void
     {
         $this->dftRange = $dftRange;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setBase(CoatingBase $base): void
     {
         $this->base = $base;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setApplicationMinTemp(int $applicationMinTemp): void
     {
         $this->applicationMinTemp = $applicationMinTemp;
         $this->validateTemperatureRange();
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setDryingMaxTemp(int $dryingMaxTemp): void
@@ -291,6 +297,7 @@ class Coating extends Aggregate
     public function setIsZincRich(bool $value): void
     {
         $this->isZincRich = $value;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function getRecoatingInterpolationModel(): RecoatingInterpolationModel
@@ -362,6 +369,7 @@ class Coating extends Aggregate
         $this->assertMinRecoatingHasBasePointAt20($minRecoatingInterval);
         $this->minRecoatingInterval = $minRecoatingInterval;
         $this->validateTemperatureRange();
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     /**
