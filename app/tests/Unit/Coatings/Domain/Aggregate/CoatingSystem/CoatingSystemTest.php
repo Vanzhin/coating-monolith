@@ -13,7 +13,6 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -190,7 +189,6 @@ final class CoatingSystemTest extends TestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
     }
 
@@ -260,7 +258,6 @@ final class CoatingSystemTest extends TestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
 
         // now change substrate to CONCRETE → treatment scope does not include CONCRETE
@@ -309,7 +306,6 @@ final class CoatingSystemTest extends TestCase
             'description',
             Substrate::STEEL_CARBON,
             $this->newTreatment([Substrate::STEEL_CARBON]),
-            new CoatingSystemChainValidator(),
         );
     }
 

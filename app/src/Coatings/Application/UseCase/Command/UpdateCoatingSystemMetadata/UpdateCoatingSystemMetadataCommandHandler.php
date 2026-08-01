@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
@@ -18,7 +17,6 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
-        private CoatingSystemChainValidatorInterface $chainValidator,
         private TagRepositoryInterface $tagRepo,
     ) {
     }
@@ -36,7 +34,6 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
             throw new AppException(sprintf('Подготовка поверхности с id %s не найдена.', $cmd->surfaceTreatmentId));
         }
 
-        $system->setChainValidator($this->chainValidator);
         $system->setTitle($cmd->title);
         $system->setDescription($cmd->description);
         $system->setSubstrateAndTreatment($cmd->substrate, $treatment);

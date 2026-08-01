@@ -12,7 +12,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -33,7 +32,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
 
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
-    private CoatingSystemChainValidator $chainValidator;
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
@@ -45,7 +43,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
         $container = static::getContainer();
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = new CoatingSystemRepository($this->em);
-        $this->chainValidator = new CoatingSystemChainValidator();
     }
 
     protected function tearDown(): void
@@ -124,7 +121,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             'Тестовая антикоррозионная система.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
 
@@ -198,7 +194,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             'Описание.',
             Substrate::CONCRETE,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
@@ -264,7 +259,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             'Описание.',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);

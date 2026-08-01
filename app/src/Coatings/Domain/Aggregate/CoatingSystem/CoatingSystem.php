@@ -38,7 +38,6 @@ class CoatingSystem extends Aggregate
         string $description,
         Substrate $substrate,
         SurfaceTreatment $surfaceTreatment,
-        private ?CoatingSystemChainValidatorInterface $chainValidator = null,
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();
@@ -368,11 +367,6 @@ class CoatingSystem extends Aggregate
         }
         $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
-    }
-
-    public function setChainValidator(CoatingSystemChainValidatorInterface $validator): void
-    {
-        $this->chainValidator = $validator;
     }
 
     private function assertLayersAreChainable(): void

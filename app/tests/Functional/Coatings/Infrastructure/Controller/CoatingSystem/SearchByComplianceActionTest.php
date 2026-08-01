@@ -12,7 +12,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -119,8 +118,6 @@ final class SearchByComplianceActionTest extends WebTestCase
 
         $this->em->flush();
 
-        $chainValidator = new CoatingSystemChainValidator();
-
         $matchId = Uuid::v7();
         $matchingSystem = new CoatingSystem(
             $matchId,
@@ -128,7 +125,6 @@ final class SearchByComplianceActionTest extends WebTestCase
             'Система ISO 12944 C3 HIGH для теста контроллера.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $chainValidator,
         );
         $matchingSystem->appendLayer($primer, 80);
         $matchingSystem->appendLayer($topcoat, 80);

@@ -14,7 +14,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
@@ -42,7 +41,6 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
 
     private SearchCoatingSystemsByComplianceQueryHandler $handler;
     private EntityManagerInterface $em;
-    private CoatingSystemChainValidator $chainValidator;
 
     /** @var list<Uuid> */
     private array $systemIds = [];
@@ -57,7 +55,6 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
         $container = static::getContainer();
         $this->handler = $container->get(SearchCoatingSystemsByComplianceQueryHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->chainValidator = new CoatingSystemChainValidator();
     }
 
     protected function tearDown(): void
@@ -186,7 +183,6 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
             'Система ISO 12944 C3 HIGH.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $matchingSystem->appendLayer($primer, 80);
         $matchingSystem->appendLayer($topcoat, 80);
@@ -201,7 +197,6 @@ final class SearchCoatingSystemsByComplianceQueryHandlerTest extends KernelTestC
             'Система для бетона (не попадает в C3/STEEL_CARBON).',
             Substrate::CONCRETE,
             $treatment,
-            $this->chainValidator,
         );
         $nonMatchingSystem->appendLayer($concreteCoating, 80);
         $this->em->persist($nonMatchingSystem);

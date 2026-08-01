@@ -16,7 +16,6 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -40,7 +39,6 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             'System description',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
         $system->appendLayer($coating1, 100);
         $system->appendLayer($coating2, 80);
@@ -77,7 +75,6 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             'desc',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
         $layer = $system->appendLayer($coating, 120);
 
@@ -105,7 +102,6 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             'desc',
             Substrate::ALUMINUM,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
 
         $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
@@ -124,7 +120,6 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             'desc',
             Substrate::CONCRETE,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
 
         $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);

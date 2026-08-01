@@ -12,7 +12,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -34,7 +33,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
 
     private EntityManagerInterface $em;
     private CoatingSystemRepository $repo;
-    private CoatingSystemChainValidator $chainValidator;
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
@@ -52,7 +50,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $container = static::getContainer();
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = new CoatingSystemRepository($this->em);
-        $this->chainValidator = new CoatingSystemChainValidator();
     }
 
     protected function tearDown(): void
@@ -132,7 +129,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             '',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
 
@@ -162,7 +158,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             '',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
@@ -203,7 +198,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             '',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
@@ -254,7 +248,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             'Тестовая система для поиска.',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
@@ -287,7 +280,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             '',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         // Слой A: tds=100, source_minutes=240, layer_dft=80 → LINEAR interpolate = 240*80/100 = 192.
         // Слой B — верхний, его интервал не участвует.
@@ -324,7 +316,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             'Описание системы.',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $system->replaceTags([$tag]);
@@ -359,7 +350,6 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             '',
             Substrate::STEEL_GALVANIZED,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);

@@ -14,7 +14,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -33,7 +32,6 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
 
     private ListCoatingSystemsQueryHandler $handler;
     private EntityManagerInterface $em;
-    private CoatingSystemChainValidator $chainValidator;
 
     /** @var list<Uuid> */
     private array $systemIds = [];
@@ -48,7 +46,6 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
         $container = static::getContainer();
         $this->handler = $container->get(ListCoatingSystemsQueryHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->chainValidator = new CoatingSystemChainValidator();
     }
 
     protected function tearDown(): void
@@ -127,7 +124,6 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             'Описание A.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $s1->appendLayer($coating, 80);
         $this->em->persist($s1);
@@ -141,7 +137,6 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             'Описание B.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $s2->appendLayer($coating, 80);
         $this->em->persist($s2);
@@ -155,7 +150,6 @@ final class ListCoatingSystemsQueryHandlerTest extends KernelTestCase
             'Описание C.',
             Substrate::CONCRETE,
             $treatment,
-            $this->chainValidator,
         );
         $s3->appendLayer($coating, 80);
         $this->em->persist($s3);

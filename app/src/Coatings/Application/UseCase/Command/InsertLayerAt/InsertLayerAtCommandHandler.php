@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\InsertLayerAt;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
@@ -16,7 +15,6 @@ final readonly class InsertLayerAtCommandHandler implements CommandHandlerInterf
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
         private CoatingRepositoryInterface $coatingRepo,
-        private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
 
@@ -34,7 +32,6 @@ final readonly class InsertLayerAtCommandHandler implements CommandHandlerInterf
             throw new AppException(sprintf('Покрытие с id %s не найдено.', $cmd->coatingId), 404);
         }
 
-        $system->setChainValidator($this->chainValidator);
         $layer = $system->insertLayerAt($cmd->position, $coating, $cmd->dft);
         $this->repo->save($system);
 

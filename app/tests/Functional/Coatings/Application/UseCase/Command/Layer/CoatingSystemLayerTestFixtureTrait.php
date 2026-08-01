@@ -12,7 +12,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -83,14 +82,12 @@ trait CoatingSystemLayerTestFixtureTrait
         $this->coatingId = $coatingId;
 
         $systemId = Uuid::v7();
-        $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             $systemId,
             'Система-Layer-'.$suffix,
             'Тестовая система для мутаций слоёв.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $chainValidator,
         );
         $system->appendLayer($coating, 80);
 

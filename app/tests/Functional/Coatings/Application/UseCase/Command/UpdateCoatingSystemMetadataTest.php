@@ -14,7 +14,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -141,14 +140,12 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
         $this->coatingId = $coatingId;
 
         $this->systemId = Uuid::v7();
-        $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             $this->systemId,
             'Система-CS-Update-'.$suffix,
             'Описание до.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
@@ -229,7 +226,6 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
         $system->appendLayer($coating, 80);
         $system->replaceTags([$tagA, $tagB]);
@@ -309,7 +305,6 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
         $system->appendLayer($coating, 80);
         $system->replaceTags([$tagX]);
@@ -416,14 +411,12 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
 
         // Create system on STEEL_CARBON with treatment1 (all substrates)
         $this->systemId = Uuid::v7();
-        $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             $this->systemId,
             'Система-atomic-'.$suffix,
             'До смены.',
             Substrate::STEEL_CARBON,
             $treatment1,
-            $chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);

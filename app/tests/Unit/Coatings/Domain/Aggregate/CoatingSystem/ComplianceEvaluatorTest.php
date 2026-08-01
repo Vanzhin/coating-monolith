@@ -13,7 +13,6 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatches;
@@ -211,7 +210,6 @@ final class ComplianceEvaluatorTest extends TestCase
             'description',
             $substrate,
             new SurfaceTreatment(Uuid::v7(), 'Abrasive blast', 'Sa 2.5', null, Substrate::cases()),
-            new CoatingSystemChainValidator(),
         );
 
         foreach ($layers as [$base, $dft, $isZincRich]) {

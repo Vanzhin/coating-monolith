@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Coatings\Application\UseCase\Command\CreateCoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
@@ -21,7 +20,6 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
         private CoatingSystemRepositoryInterface $repo,
         private CoatingRepositoryInterface $coatingRepo,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
-        private CoatingSystemChainValidatorInterface $chainValidator,
         private TagRepositoryInterface $tagRepo,
     ) {
     }
@@ -39,7 +37,6 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
             $cmd->description,
             $cmd->substrate,
             $treatment,
-            $this->chainValidator,
         );
 
         foreach ($cmd->initialLayers as $layerData) {

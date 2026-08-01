@@ -160,9 +160,6 @@ services:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
 
-  App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface:
-    alias: App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator
-
   App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory: ~
 
   App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:

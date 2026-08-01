@@ -14,7 +14,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -113,14 +112,12 @@ final class RemoveCoatingSystemTest extends KernelTestCase
         $this->coatingId = $coatingId;
 
         $systemId = Uuid::v7();
-        $chainValidator = new CoatingSystemChainValidator();
         $system = new CoatingSystem(
             $systemId,
             'Система-CS-Remove-'.$suffix,
             'Описание.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $chainValidator,
         );
         $system->appendLayer($coating, 80);
         $this->repo->save($system);

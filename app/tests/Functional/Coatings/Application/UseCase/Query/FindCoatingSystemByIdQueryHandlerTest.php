@@ -15,7 +15,6 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -35,7 +34,6 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
 
     private FindCoatingSystemByIdQueryHandler $handler;
     private EntityManagerInterface $em;
-    private CoatingSystemChainValidator $chainValidator;
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
@@ -49,7 +47,6 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
         $container = static::getContainer();
         $this->handler = $container->get(FindCoatingSystemByIdQueryHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->chainValidator = new CoatingSystemChainValidator();
     }
 
     protected function tearDown(): void
@@ -134,7 +131,6 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             'Описание системы.',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 100);
         $this->em->persist($system);
@@ -205,7 +201,6 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            $this->chainValidator,
         );
         $system->appendLayer($coating, 100);
         $system->replaceTags([$tag1, $tag2]);
