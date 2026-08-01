@@ -19,6 +19,8 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -41,6 +43,8 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
     private ?Uuid $secondTreatmentId = null;
+    /** @var list<string> */
+    private array $tagIds = [];
 
     protected function setUp(): void
     {
@@ -75,7 +79,14 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
                     $em->remove($m);
                 }
             }
+            foreach ($this->tagIds as $tagId) {
+                $t = $em->find(Tag::class, $tagId);
+                if (null !== $t) {
+                    $em->remove($t);
+                }
+            }
             $em->flush();
+            $this->tagIds = [];
             if (null !== $this->secondTreatmentId) {
                 $t2 = $em->find(SurfaceTreatment::class, $this->secondTreatmentId);
                 if (null !== $t2) {
@@ -162,6 +173,166 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
         self::assertSame('Описание после.', $loaded->getDescription());
         self::assertSame(Substrate::CONCRETE, $loaded->getSubstrate());
         self::assertSame($treatment->getId(), $loaded->getSurfaceTreatment()->getId());
+    }
+
+    public function test_update_replaces_tags(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
+        $manufacturer = new Manufacturer(
+            'Мфр-CS-UpdTags-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'Грунт-CS-UpdTags-'.$suffix,
+            'Описание.',
+            50,
+            1.5,
+            CoatingBase::EP,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+
+        $tagSpec = $container->get(TagSpecification::class);
+        $tagA = new Tag('Alpha-'.$suffix, $tagSpec);
+        $tagB = new Tag('Beta-'.$suffix, $tagSpec);
+        $tagC = new Tag('Gamma-'.$suffix, $tagSpec);
+        $this->em->persist($tagA);
+        $this->em->persist($tagB);
+        $this->em->persist($tagC);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+        $this->tagIds = [$tagA->getId(), $tagB->getId(), $tagC->getId()];
+
+        // Систему создаём с тегами [A, B]
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'Система-CS-UpdTags-'.$suffix,
+            '',
+            Substrate::STEEL_CARBON,
+            $treatment,
+            new CoatingSystemChainValidator(),
+        );
+        $system->appendLayer($coating, 80);
+        $system->replaceTags([$tagA, $tagB]);
+        $this->repo->save($system);
+
+        // Обновляем метаданные: подаём теги [B, C] — должно перезаписать: A уходит, C приходит.
+        $cmd = new UpdateCoatingSystemMetadataCommand(
+            id: (string) $this->systemId,
+            title: 'Система-CS-UpdTags-'.$suffix,
+            description: 'После правки.',
+            substrate: Substrate::STEEL_CARBON,
+            surfaceTreatmentId: $treatment->getId(),
+            tagIds: [$tagB->getId(), $tagC->getId()],
+        );
+
+        ($this->handler)($cmd);
+
+        $this->em->clear();
+
+        $joinRows = $this->em->getConnection()->fetchAllAssociative(
+            'SELECT tag_id FROM coating_system_tag WHERE coating_system_id = ? ORDER BY tag_id',
+            [(string) $this->systemId],
+        );
+        $persistedTagIds = array_column($joinRows, 'tag_id');
+        sort($persistedTagIds);
+        $expected = [$tagB->getId(), $tagC->getId()];
+        sort($expected);
+        self::assertSame($expected, $persistedTagIds);
+    }
+
+    public function test_update_with_empty_tag_ids_removes_all_tags(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
+        $manufacturer = new Manufacturer(
+            'Мфр-CS-ClrTags-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'Грунт-CS-ClrTags-'.$suffix,
+            'Описание.',
+            50,
+            1.5,
+            CoatingBase::EP,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+
+        $tagSpec = $container->get(TagSpecification::class);
+        $tagX = new Tag('Xray-'.$suffix, $tagSpec);
+        $this->em->persist($tagX);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+        $this->tagIds = [$tagX->getId()];
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'Система-CS-ClrTags-'.$suffix,
+            '',
+            Substrate::STEEL_CARBON,
+            $treatment,
+            new CoatingSystemChainValidator(),
+        );
+        $system->appendLayer($coating, 80);
+        $system->replaceTags([$tagX]);
+        $this->repo->save($system);
+
+        $cmd = new UpdateCoatingSystemMetadataCommand(
+            id: (string) $this->systemId,
+            title: 'Система-CS-ClrTags-'.$suffix,
+            description: '',
+            substrate: Substrate::STEEL_CARBON,
+            surfaceTreatmentId: $treatment->getId(),
+            tagIds: [],
+        );
+
+        ($this->handler)($cmd);
+
+        $this->em->clear();
+
+        $rows = $this->em->getConnection()->fetchAllAssociative(
+            'SELECT tag_id FROM coating_system_tag WHERE coating_system_id = ?',
+            [(string) $this->systemId],
+        );
+        self::assertSame([], $rows);
     }
 
     public function test_update_throws_when_system_not_found(): void

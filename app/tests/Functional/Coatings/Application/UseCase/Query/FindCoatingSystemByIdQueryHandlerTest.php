@@ -19,6 +19,8 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -38,6 +40,8 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
+    /** @var list<string> */
+    private array $tagIds = [];
 
     protected function setUp(): void
     {
@@ -71,7 +75,14 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
                     $em->remove($m);
                 }
             }
+            foreach ($this->tagIds as $tagId) {
+                $t = $em->find(Tag::class, $tagId);
+                if (null !== $t) {
+                    $em->remove($t);
+                }
+            }
             $em->flush();
+            $this->tagIds = [];
             $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
@@ -141,6 +152,75 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
         self::assertSame($treatment->getId(), $dto->surfaceTreatmentId);
         self::assertCount(1, $dto->layers);
         self::assertSame(100, $dto->totalDft);
+    }
+
+    public function test_dto_contains_tags_from_system(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
+        $manufacturer = new Manufacturer(
+            'Мфр-FindTags-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'Грунт-FindTags-'.$suffix,
+            'Описание.',
+            50,
+            1.5,
+            CoatingBase::EP,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+
+        $tagSpec = $container->get(TagSpecification::class);
+        $tag1 = new Tag('морской-'.$suffix, $tagSpec);
+        $tag2 = new Tag('пищевой-'.$suffix, $tagSpec);
+        $this->em->persist($tag1);
+        $this->em->persist($tag2);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+        $this->tagIds = [$tag1->getId(), $tag2->getId()];
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'Система-FindTags-'.$suffix,
+            '',
+            Substrate::STEEL_CARBON,
+            $treatment,
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 100);
+        $system->replaceTags([$tag1, $tag2]);
+        $this->em->persist($system);
+        $this->em->flush();
+
+        $this->em->clear();
+
+        $dto = ($this->handler)(new FindCoatingSystemByIdQuery((string) $this->systemId));
+
+        self::assertNotNull($dto);
+        self::assertCount(2, $dto->tags);
+        $tagTitles = array_map(fn ($t) => $t->title, $dto->tags);
+        sort($tagTitles);
+        self::assertSame(['морской-'.$suffix, 'пищевой-'.$suffix], $tagTitles);
     }
 
     public function test_returns_null_for_nonexistent_id(): void
