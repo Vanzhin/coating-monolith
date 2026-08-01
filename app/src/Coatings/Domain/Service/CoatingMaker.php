@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
@@ -52,6 +53,7 @@ final readonly class CoatingMaker
         ?ThermalExposureLimits $dryHeatExposure = null,
         ?ThermalExposureLimits $immersionExposure = null,
         bool $isZincRich = false,
+        RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR,
     ): Coating {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
 
@@ -74,6 +76,7 @@ final readonly class CoatingMaker
             $this->coatingSpecification,
             $dryingMaxTemp,
             $isZincRich,
+            $recoatingInterpolationModel,
         );
 
         foreach ($coatingTagIds as $coatingTagId) {

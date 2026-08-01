@@ -9,6 +9,7 @@ use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\Coat
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 
 class CoatingDTO
 {
@@ -22,6 +23,9 @@ class CoatingDTO
     public string $base;
 
     public bool $isZincRich = false;
+
+    /** Модель пересчёта мин.интервала перекрытия под фактическую толщину слоя (по умолчанию LINEAR). */
+    public RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR;
 
     public function getBaseEnum(): ?CoatingBase
     {

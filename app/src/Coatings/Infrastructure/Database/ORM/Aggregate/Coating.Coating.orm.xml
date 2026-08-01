@@ -45,6 +45,8 @@
             </options>
         </field>
         <field name="isZincRich" column="is_zinc_rich" type="boolean" nullable="false"/>
+        <field name="recoatingInterpolationModel" column="recoating_interpolation_model" type="string" length="32"
+               enum-type="App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel"/>
         <field name="immersionExposure" column="immersion_exposure" type="thermal_exposure_limits" nullable="true">
             <options>
                 <option name="jsonb">true</option>

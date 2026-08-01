@@ -61,6 +61,7 @@ class CoatingDTOTransformer
         $dto->dryHeatExposure = $this->exposureDto($entity->getDryHeatExposure());
         $dto->immersionExposure = $this->exposureDto($entity->getImmersionExposure());
         $dto->tags = $coatingTagDtos;
+        $dto->recoatingInterpolationModel = $entity->getRecoatingInterpolationModel();
 
         return $dto;
     }

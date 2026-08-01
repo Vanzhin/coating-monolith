@@ -47,6 +47,8 @@ class Coating extends Aggregate
 
     private bool $isZincRich = false;
 
+    private RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR;
+
     /** @var Collection<Tag> */
     private Collection $tags;
 
@@ -69,6 +71,7 @@ class Coating extends Aggregate
         CoatingSpecification $specification,
         int $dryingMaxTemp = 50,
         bool $isZincRich = false,
+        RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR,
     ) {
         $this->id = $id;
         $this->tags = new ArrayCollection();
@@ -92,6 +95,7 @@ class Coating extends Aggregate
         $this->setThinner($thinner);
         $this->setManufacturer($manufacturer);
         $this->setIsZincRich($isZincRich);
+        $this->setRecoatingInterpolationModel($recoatingInterpolationModel);
     }
 
     public function getId(): string
@@ -287,6 +291,16 @@ class Coating extends Aggregate
     public function setIsZincRich(bool $value): void
     {
         $this->isZincRich = $value;
+    }
+
+    public function getRecoatingInterpolationModel(): RecoatingInterpolationModel
+    {
+        return $this->recoatingInterpolationModel;
+    }
+
+    public function setRecoatingInterpolationModel(RecoatingInterpolationModel $model): void
+    {
+        $this->recoatingInterpolationModel = $model;
     }
 
     public function addTag(Tag $tag): void
