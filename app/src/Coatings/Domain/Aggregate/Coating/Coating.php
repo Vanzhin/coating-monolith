@@ -303,6 +303,26 @@ class Coating extends Aggregate
         $this->recoatingInterpolationModel = $model;
     }
 
+    /**
+     * Мин.интервал перекрытия при 20 °C, пересчитанный под фактическую толщину слоя `$layerDft`.
+     * Возвращает null, если у покрытия нет явной точки при 20 °C с положительной длительностью
+     * (legacy до инварианта — см. `assertMinRecoatingHasBasePointAt20`). Для нового покрытия
+     * ситуация невозможна, но проектор обязан безопасно работать с исторически накопленными данными.
+     */
+    public function interpolatedMinRecoatMinutesAt20(int $layerDft): ?int
+    {
+        $basePoint = $this->minRecoatingInterval->default->getPoint(20);
+        if (null === $basePoint || !$basePoint->isExplicitPositiveDuration()) {
+            return null;
+        }
+
+        return $this->recoatingInterpolationModel->interpolate(
+            sourceDft: $this->dftRange->tdsDft,
+            targetDft: $layerDft,
+            sourceMinutes: $basePoint->timeInMinutes,
+        );
+    }
+
     public function addTag(Tag $tag): void
     {
         if (!$this->tags->contains($tag)) {
@@ -356,7 +376,7 @@ class Coating extends Aggregate
         if (null === $point || $point->isCalculated) {
             throw new AppException('Для покрытия обязательна точка минимального интервала перекрытия при +20 °C.');
         }
-        if (null === $point->timeInMinutes || $point->timeInMinutes <= 0) {
+        if (!$point->isExplicitPositiveDuration()) {
             throw new AppException('Точка минимального интервала перекрытия при +20 °C должна иметь положительное время.');
         }
     }

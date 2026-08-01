@@ -39,6 +39,17 @@ final readonly class TimeAtTemperature implements \JsonSerializable
     }
 
     /**
+     * Явно заданная (не интерполированная) точка с конкретной положительной длительностью.
+     * Противоположность — легковесные состояния: unknown (null), unlimited (0), вычисленная (isCalculated).
+     */
+    public function isExplicitPositiveDuration(): bool
+    {
+        return !$this->isCalculated
+            && null !== $this->timeInMinutes
+            && $this->timeInMinutes > 0;
+    }
+
+    /**
      * @return array{temperature_at: int|float, time_in_minutes: int|null, is_calculated: bool}
      */
     public function jsonSerialize(): array
