@@ -17,6 +17,8 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -26,7 +28,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
-final class CoatingSystemComplianceProjectorTest extends KernelTestCase
+final class CoatingSystemSearchProjectorTest extends KernelTestCase
 {
     use SurfaceTreatmentFixtureTrait;
 
@@ -37,6 +39,12 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
+    /** @var list<string> */
+    private array $extraCoatingIds = [];
+    /** @var list<string> */
+    private array $extraManufacturerIds = [];
+    /** @var list<string> */
+    private array $tagIds = [];
 
     protected function setUp(): void
     {
@@ -65,13 +73,34 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
                     $em->remove($c);
                 }
             }
+            foreach ($this->extraCoatingIds as $id) {
+                $c = $em->find(Coating::class, Uuid::fromString($id));
+                if (null !== $c) {
+                    $em->remove($c);
+                }
+            }
             if (null !== $this->manufacturerId) {
                 $m = $em->find(Manufacturer::class, $this->manufacturerId);
                 if (null !== $m) {
                     $em->remove($m);
                 }
             }
+            foreach ($this->extraManufacturerIds as $id) {
+                $m = $em->find(Manufacturer::class, Uuid::fromString($id));
+                if (null !== $m) {
+                    $em->remove($m);
+                }
+            }
+            foreach ($this->tagIds as $id) {
+                $t = $em->find(Tag::class, $id);
+                if (null !== $t) {
+                    $em->remove($t);
+                }
+            }
             $em->flush();
+            $this->extraCoatingIds = [];
+            $this->extraManufacturerIds = [];
+            $this->tagIds = [];
             $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
@@ -208,6 +237,191 @@ final class CoatingSystemComplianceProjectorTest extends KernelTestCase
         $this->systemId = null;
         $this->coatingId = null;
         $this->manufacturerId = null;
+    }
+
+    public function test_search_row_populated_on_persist(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'ПоискПроектор-'.$suffix,
+            'Тестовая система для поиска.',
+            Substrate::STEEL_GALVANIZED,
+            $treatment,
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $this->repo->save($system);
+
+        $row = $this->fetchSearchRow($this->systemId);
+        self::assertNotNull($row, 'После save() должна появиться строка в coating_system_search.');
+        // 1 слой → нет переходов → sum = 0.
+        self::assertSame(0, (int) $row['sum_min_recoat_20_minutes']);
+        self::assertSame(5, (int) $row['max_application_min_temp']);
+        self::assertNotNull($row['search_tsvector']);
+        self::assertNotSame('', $row['search_tsvector']);
+    }
+
+    public function test_sum_min_recoat_20_excludes_last_layer(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+        [$coatingA] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+        $coatingB = $this->buildExtraCoating($container, $suffix.'-B', CoatingBase::EP, applicationMinTemp: 10, minRecoatMinutes: 480);
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'СуммаИнтервалов-'.$suffix,
+            '',
+            Substrate::STEEL_GALVANIZED,
+            $treatment,
+            $this->chainValidator,
+        );
+        // Два слоя: A (240 мин) + B (480 мин); последний = B, его интервал не считается.
+        // Ожидаем sum = 240 (только A).
+        $system->appendLayer($coatingA, 80);
+        $system->appendLayer($coatingB, 80);
+        $this->repo->save($system);
+
+        $row = $this->fetchSearchRow($this->systemId);
+        self::assertSame(240, (int) $row['sum_min_recoat_20_minutes']);
+        // max(applicationMinTemp) = max(5, 10) = 10
+        self::assertSame(10, (int) $row['max_application_min_temp']);
+    }
+
+    public function test_search_tsvector_contains_manufacturer_and_tag_titles(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $tagSpec = $container->get(TagSpecification::class);
+        $tag = new Tag('морской-'.$suffix, $tagSpec);
+        $this->em->persist($tag);
+        $this->em->flush();
+        $this->tagIds = [$tag->getId()];
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'ПоискТвектор-'.$suffix,
+            'Описание системы.',
+            Substrate::STEEL_GALVANIZED,
+            $treatment,
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $system->replaceTags([$tag]);
+        $this->repo->save($system);
+
+        // Проверяем FTS-совпадение через явный to_tsquery, без ILIKE — иначе не проверим настоящий tsvector.
+        $manufacturerMatches = (int) $this->em->getConnection()->fetchOne(
+            "SELECT COUNT(*) FROM coating_system_search WHERE system_id = ? AND search_tsvector @@ plainto_tsquery('russian', 'мфрпроектор')",
+            [(string) $this->systemId],
+        );
+        self::assertSame(1, $manufacturerMatches, 'tsvector должен содержать производителя слоя.');
+
+        $tagMatches = (int) $this->em->getConnection()->fetchOne(
+            "SELECT COUNT(*) FROM coating_system_search WHERE system_id = ? AND search_tsvector @@ plainto_tsquery('russian', 'морской')",
+            [(string) $this->systemId],
+        );
+        self::assertSame(1, $tagMatches, 'tsvector должен содержать теги системы.');
+    }
+
+    public function test_search_row_upserted_on_update(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+        [$coating] = $this->buildCoating($container, $suffix, CoatingBase::EP);
+
+        $this->systemId = Uuid::v7();
+        $system = new CoatingSystem(
+            $this->systemId,
+            'ПоискUpsert-'.$suffix,
+            '',
+            Substrate::STEEL_GALVANIZED,
+            $treatment,
+            $this->chainValidator,
+        );
+        $system->appendLayer($coating, 80);
+        $this->repo->save($system);
+
+        $rowBefore = $this->fetchSearchRow($this->systemId);
+        self::assertNotNull($rowBefore);
+
+        $system->setTitle('ПоискUpsert-NEW-'.$suffix);
+        $this->repo->save($system);
+
+        $rowsCount = (int) $this->em->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM coating_system_search WHERE system_id = ?',
+            [(string) $this->systemId],
+        );
+        self::assertSame(1, $rowsCount, 'После update строка должна остаться одна (UPSERT).');
+    }
+
+    private function buildExtraCoating(
+        object $container,
+        string $suffix,
+        CoatingBase $base,
+        int $applicationMinTemp,
+        int $minRecoatMinutes,
+    ): Coating {
+        $manufacturer = new Manufacturer(
+            'МфрExtra-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->extraManufacturerIds[] = $manufacturer->getId();
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'ЛакExtra-'.$suffix,
+            'Дополнительный слой.',
+            50,
+            1.5,
+            $base,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            $applicationMinTemp,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $minRecoatMinutes))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+        $this->em->flush();
+        $this->extraCoatingIds[] = (string) $coatingId;
+
+        return $coating;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function fetchSearchRow(Uuid $systemId): ?array
+    {
+        $row = $this->em->getConnection()->fetchAssociative(
+            'SELECT sum_min_recoat_20_minutes, max_application_min_temp, search_tsvector::text AS search_tsvector
+             FROM coating_system_search WHERE system_id = ?',
+            [(string) $systemId],
+        );
+
+        return false === $row ? null : $row;
     }
 
     /**
