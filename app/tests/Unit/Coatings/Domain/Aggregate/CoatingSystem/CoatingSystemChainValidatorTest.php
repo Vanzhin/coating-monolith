@@ -14,14 +14,12 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
-use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -56,21 +54,6 @@ final class CoatingSystemChainValidatorTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_incompatible_neighbors_throws(): void
-    {
-        // ESI.allowedPrimers = [ESI] → ESI не ложится поверх AK
-        // AK::canBecoveredBy(ESI) === ESI::canBeAppliedOnTopOf(AK) === false
-        $validator = new CoatingSystemChainValidator();
-
-        // Строим систему с нейтральным валидатором, который не мешает нам добавить несовместимую пару
-        $neutralSystem = $this->newSystemWithNeutralValidator();
-        $neutralSystem->appendLayer($this->makeCoating(CoatingBase::AK), 60);
-        $neutralSystem->appendLayer($this->makeCoating(CoatingBase::ESI), 60);
-
-        $this->expectException(AppException::class);
-        $validator->validate($neutralSystem);
-    }
-
     // --- helpers ---
 
     private function newSystem(): CoatingSystem
@@ -82,29 +65,6 @@ final class CoatingSystemChainValidatorTest extends TestCase
             Substrate::STEEL_CARBON,
             new SurfaceTreatment(Uuid::v7(), 'Abrasive blast', 'Sa 2.5', null, Substrate::cases()),
             new CoatingSystemChainValidator(),
-        );
-    }
-
-    /**
-     * Система с заглушкой-валидатором, которая всегда ok — нужна чтобы добавить
-     * несовместимую пару слоёв, а потом проверить реальный валидатор отдельно.
-     */
-    private function newSystemWithNeutralValidator(): CoatingSystem
-    {
-        $neutral = new class() implements CoatingSystemChainValidatorInterface {
-            public function validate(CoatingSystem $system): void
-            {
-                // no-op
-            }
-        };
-
-        return new CoatingSystem(
-            Uuid::v7(),
-            'Test System',
-            'description',
-            Substrate::STEEL_CARBON,
-            new SurfaceTreatment(Uuid::v7(), 'Abrasive blast', 'Sa 2.5', null, Substrate::cases()),
-            $neutral,
         );
     }
 

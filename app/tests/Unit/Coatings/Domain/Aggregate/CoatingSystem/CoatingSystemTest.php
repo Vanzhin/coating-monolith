@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingSystemMutated;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -267,6 +268,37 @@ final class CoatingSystemTest extends TestCase
         $system->setSubstrate(Substrate::CONCRETE);
     }
 
+    public function test_min_building_time_sums_interpolated_intervals_except_top(): void
+    {
+        $sys = $this->newSystem();
+        $coatingA = $this->makeCoating(sourceMinutes: 240, tdsDft: 100);
+        $coatingB = $this->makeCoating(applicationMinTemp: 10);
+        $sys->appendLayer($coatingA, 80);   // 240*80/100 = 192
+        $sys->appendLayer($coatingB, 80);   // top, не участвует
+        self::assertSame(192, $sys->minBuildingTimeAt20Minutes());
+        self::assertSame(10, $sys->maxLayerApplicationMinTemp());
+    }
+
+    public function test_mutation_raises_coating_system_mutated_event(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoating(), 80);
+        $events = $sys->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingSystemMutated::class, $events[0]);
+        self::assertSame($sys->getId(), $events[0]->systemId);
+    }
+
+    public function test_asserts_layers_are_chainable_via_can_becovered_by(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/несовместим/');
+        // ESI поверх FEVE не совместимо (по CoatingBase::allowedPrimers)
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->makeCoating(CoatingBase::FEVE), 80);
+        $sys->appendLayer($this->makeCoating(CoatingBase::ESI), 80);
+    }
+
     // --- helpers ---
 
     private function newSystem(string $title = 'Test System'): CoatingSystem
@@ -302,6 +334,11 @@ final class CoatingSystemTest extends TestCase
     /**
      * Покрытие EP с широким dft-диапазоном (50–500 мкм) и совместимое само с собой.
      */
+    private function newCoating(): Coating
+    {
+        return $this->makeCoating();
+    }
+
     private function newCoatingCompatibleAll(): Coating
     {
         return $this->makeCoating(CoatingBase::EP, 40, 500);
@@ -317,14 +354,22 @@ final class CoatingSystemTest extends TestCase
         return $this->makeCoating($base, 50, 500);
     }
 
-    private function makeCoating(CoatingBase $base, int $dftMin, int $dftMax): Coating
-    {
+    private function makeCoating(
+        CoatingBase $base = CoatingBase::EP,
+        int $dftMin = 40,
+        int $dftMax = 500,
+        int $applicationMinTemp = 5,
+        int $tdsDft = 0,
+        int $sourceMinutes = 60,
+    ): Coating {
         $manufacturer = $this->createMock(Manufacturer::class);
         $manufacturer->method('getId')->willReturn('00000000-0000-0000-0000-000000000001');
 
         $spec = new CoatingSpecification(
             $this->createMock(UniqueTitleCoatingSpecification::class),
         );
+
+        $resolvedTdsDft = $tdsDft > 0 ? $tdsDft : (int) (($dftMin + $dftMax) / 2);
 
         return new Coating(
             UuidService::generateUuid(),
@@ -333,11 +378,11 @@ final class CoatingSystemTest extends TestCase
             50,
             1.2,
             $base,
-            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int) (($dftMin + $dftMax) / 2), ThicknessType::MIC),
-            5,
+            new DftRange(new PositiveNumberRange($dftMin, $dftMax), $resolvedTdsDft, ThicknessType::MIC),
+            $applicationMinTemp,
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $sourceMinutes))),
             null,
             1.0,
             null,

@@ -263,8 +263,8 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $loaded = $this->em->find(CoatingSystem::class, $this->systemId);
         self::assertNotNull($loaded);
         // 1 слой → нет переходов → sum = 0.
-        self::assertSame(0, $loaded->getMinBuildingTimeAt20Minutes());
-        self::assertSame(5, $loaded->getMaxLayerApplicationMinTemp());
+        self::assertSame(0, $loaded->minBuildingTimeAt20Minutes());
+        self::assertSame(5, $loaded->maxLayerApplicationMinTemp());
 
         $tsvector = $this->fetchSearchTsvector($this->systemId);
         self::assertNotNull($tsvector);
@@ -298,9 +298,9 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $this->em->clear();
         $loaded = $this->em->find(CoatingSystem::class, $this->systemId);
         self::assertNotNull($loaded);
-        self::assertSame(192, $loaded->getMinBuildingTimeAt20Minutes());
+        self::assertSame(192, $loaded->minBuildingTimeAt20Minutes());
         // max(applicationMinTemp) = max(5, 10) = 10
-        self::assertSame(10, $loaded->getMaxLayerApplicationMinTemp());
+        self::assertSame(10, $loaded->maxLayerApplicationMinTemp());
     }
 
     public function test_search_tsvector_contains_manufacturer_and_tag_titles(): void

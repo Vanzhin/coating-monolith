@@ -7,6 +7,7 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingSystemMutated;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -28,10 +29,6 @@ class CoatingSystem extends Aggregate
     private Collection $layers;
     /** @var Collection<int, Tag> */
     private Collection $tags;
-    /** Кешируемая производная величина: время сборки системы при 20 °C, минут. */
-    private ?int $minBuildingTimeAt20Minutes = null;
-    /** Кешируемая производная величина: мин.температура нанесения системы (max по слоям), °C. */
-    private ?int $maxLayerApplicationMinTemp = null;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
 
@@ -52,9 +49,10 @@ class CoatingSystem extends Aggregate
         $this->setDescription($description);
         $this->setSubstrate($substrate);
         $this->setSurfaceTreatment($surfaceTreatment);
-        // Reset updatedAt to match createdAt — setters above call touch() but that's
-        // an implementation side-effect; the aggregate is "just created", not "mutated".
+        // Reset updatedAt and events — setters above emit side-effects but the aggregate
+        // is "just created", not yet "mutated" from external perspective.
         $this->updatedAt = $this->createdAt;
+        $this->pullEvents();
     }
 
     public function getId(): string
@@ -102,6 +100,7 @@ class CoatingSystem extends Aggregate
             throw new AppException('Название системы покрытий не должно превышать 100 символов.');
         }
         $this->title = $title;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -111,6 +110,7 @@ class CoatingSystem extends Aggregate
             throw new AppException('Описание системы покрытий не должно превышать 2000 символов.');
         }
         $this->description = $description;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -120,6 +120,7 @@ class CoatingSystem extends Aggregate
             throw new AppException(sprintf('Подготовка «%s» применима к [%s], а выбранная подложка — %s.', $this->surfaceTreatment->getCode() ?? $this->surfaceTreatment->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $this->surfaceTreatment->getSubstrateScope())), $substrate->title()));
         }
         $this->substrate = $substrate;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -129,6 +130,7 @@ class CoatingSystem extends Aggregate
             throw new AppException(sprintf('Подготовка «%s» применима к [%s], а в системе выбрана %s.', $t->getCode() ?? $t->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $t->getSubstrateScope())), $this->substrate->title()));
         }
         $this->surfaceTreatment = $t;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -139,6 +141,7 @@ class CoatingSystem extends Aggregate
         }
         $this->substrate = $substrate;
         $this->surfaceTreatment = $treatment;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -166,46 +169,21 @@ class CoatingSystem extends Aggregate
     }
 
     /**
-     * Кешированная величина, пересчитывается автоматически при любой мутации слоёв
-     * (см. `recalculateDerivedFields` из `postMutate`).
-     * Семантика — время сборки системы при 20 °C: сумма пересчитанных под фактическую
+     * Время сборки системы при 20 °C: сумма пересчитанных под фактическую
      * толщину интервалов перекрытия по слоям, поверх которых наносится следующий.
-     * Null, если у любого из этих слоёв нет базовой точки при 20 °C (legacy до инварианта Coating),
-     * либо система пуста. Один слой — 0.
+     * Null если система пуста или у любого из промежуточных слоёв нет точки при 20 °C.
      */
-    public function getMinBuildingTimeAt20Minutes(): ?int
-    {
-        return $this->minBuildingTimeAt20Minutes;
-    }
-
-    /**
-     * Кешированная величина, пересчитывается автоматически при мутации слоёв.
-     * Максимум мин.температуры нанесения по слоям: система работает при температуре,
-     * при которой можно наносить самый требовательный из её слоёв. Null для пустой системы.
-     */
-    public function getMaxLayerApplicationMinTemp(): ?int
-    {
-        return $this->maxLayerApplicationMinTemp;
-    }
-
-    private function recalculateDerivedFields(): void
-    {
-        $this->minBuildingTimeAt20Minutes = $this->computeMinBuildingTimeAt20Minutes();
-        $this->maxLayerApplicationMinTemp = $this->computeMaxLayerApplicationMinTemp();
-    }
-
-    private function computeMinBuildingTimeAt20Minutes(): ?int
+    public function minBuildingTimeAt20Minutes(): ?int
     {
         $ordered = $this->getLayers();
         if ($ordered->isEmpty()) {
             return null;
         }
         $topLayer = $ordered->last();
-
         $sum = 0;
         foreach ($ordered as $layer) {
             if ($layer === $topLayer) {
-                continue; // верхний слой ничем не покрывается — его интервал не участвует
+                continue;
             }
             $interval = $layer->getCoating()->interpolatedMinRecoatMinutesAt20($layer->getDft());
             if (null === $interval) {
@@ -217,12 +195,14 @@ class CoatingSystem extends Aggregate
         return $sum;
     }
 
-    private function computeMaxLayerApplicationMinTemp(): ?int
+    /**
+     * Максимум мин.температуры нанесения по слоям. Null для пустой системы.
+     */
+    public function maxLayerApplicationMinTemp(): ?int
     {
         if ($this->layers->isEmpty()) {
             return null;
         }
-
         $max = null;
         foreach ($this->layers as $layer) {
             $temp = $layer->getCoating()->getApplicationMinTemp();
@@ -232,6 +212,11 @@ class CoatingSystem extends Aggregate
         }
 
         return $max;
+    }
+
+    public function complianceMatches(ComplianceEvaluator $evaluator): ComplianceMatches
+    {
+        return $evaluator->evaluate($this);
     }
 
     public function firstLayer(): CoatingSystemLayer
@@ -359,6 +344,7 @@ class CoatingSystem extends Aggregate
     {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
+            $this->raise(new CoatingSystemMutated($this->getId()));
             $this->touch();
         }
     }
@@ -366,6 +352,7 @@ class CoatingSystem extends Aggregate
     public function removeTag(Tag $tag): void
     {
         if ($this->tags->removeElement($tag)) {
+            $this->raise(new CoatingSystemMutated($this->getId()));
             $this->touch();
         }
     }
@@ -379,6 +366,7 @@ class CoatingSystem extends Aggregate
                 $this->tags->add($tag);
             }
         }
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -387,14 +375,24 @@ class CoatingSystem extends Aggregate
         $this->chainValidator = $validator;
     }
 
+    private function assertLayersAreChainable(): void
+    {
+        $layers = array_values($this->getLayers()->toArray());
+        $n = count($layers);
+        for ($i = 0; $i < $n - 1; ++$i) {
+            $current = $layers[$i]->getCoating()->getBase();
+            $next = $layers[$i + 1]->getCoating()->getBase();
+            if (!$current->canBecoveredBy($next)) {
+                throw new AppException(sprintf('Слой %d (%s) несовместим со слоем %d (%s): поверх %s нельзя наносить %s.', $i + 1, $current->title(), $i + 2, $next->title(), $current->title(), $next->title()));
+            }
+        }
+    }
+
     private function postMutate(): void
     {
         $this->assertPositionsAreDense();
-        if (null === $this->chainValidator) {
-            throw new AppException('Валидатор цепочки слоёв не установлен.');
-        }
-        $this->chainValidator->validate($this);
-        $this->recalculateDerivedFields();
+        $this->assertLayersAreChainable();
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
