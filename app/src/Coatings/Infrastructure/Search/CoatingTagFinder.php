@@ -101,5 +101,4 @@ final class CoatingTagFinder
             ->select('t')
             ->from(CoatingTag::class, 't');
     }
-
 }

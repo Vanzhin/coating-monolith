@@ -271,7 +271,6 @@ final class CoatingFinder
      * Слова берём из SearchQuery::words() — единственный источник разбиения,
      * тот же что и в CoatingRepository::hasSingleWord через SearchQuery.
      */
-
     private function coatingQueryBuilder(): QueryBuilder
     {
         return $this->em->createQueryBuilder()

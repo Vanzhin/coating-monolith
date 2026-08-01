@@ -150,7 +150,7 @@ final class AddActionTest extends WebTestCase
 
     public function test_post_missing_coating_in_layer_shows_human_readable_message(): void
     {
-        $fakeUuid = \Symfony\Component\Uid\Uuid::v7();
+        $fakeUuid = Uuid::v7();
         $this->client->request('POST', '/cabinet/coating/coating-system/add', [
             'title' => 'Тест',
             'substrate' => 'steel_carbon',
@@ -195,7 +195,7 @@ final class AddActionTest extends WebTestCase
         // Создаём treatment, применимый только к concrete, а в форме шлём steel_carbon
         // — domain бросит AppException про несовместимость.
         $em = $this->client->getContainer()->get(EntityManagerInterface::class);
-        $concreteTreatmentId = \Symfony\Component\Uid\Uuid::v7();
+        $concreteTreatmentId = Uuid::v7();
         $concreteTreatment = new \App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment(
             $concreteTreatmentId,
             'Подготовка только для бетона',

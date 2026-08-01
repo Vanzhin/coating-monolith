@@ -27,7 +27,7 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
         $this->queryHandler = $c->get(ListSurfaceTreatmentsQueryHandler::class);
         $this->createHandler = $c->get(CreateSurfaceTreatmentCommandHandler::class);
         $this->em = $c->get(EntityManagerInterface::class);
-        $this->testPrefix = 'LST-' . substr(uniqid('', true), -8);
+        $this->testPrefix = 'LST-'.substr(uniqid('', true), -8);
     }
 
     protected function tearDown(): void
@@ -39,19 +39,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
     public function test_filter_by_substrate_scope(): void
     {
         $t1 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-2.5',
+            code: $this->testPrefix.'-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning of steel',
             substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-3',
+            code: $this->testPrefix.'-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough blast cleaning',
             substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-G',
+            code: $this->testPrefix.'-G',
             standardCode: null,
             description: 'Grit blasting for concrete',
             substrateScope: [Substrate::CONCRETE],
@@ -73,25 +73,25 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
 
         self::assertSame(1, $result['total']);
         self::assertCount(1, $result['items']);
-        self::assertSame($this->testPrefix . '-2.5', $result['items'][0]->code);
+        self::assertSame($this->testPrefix.'-2.5', $result['items'][0]->code);
     }
 
     public function test_filter_by_search_query(): void
     {
         $t1 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-2.5',
+            code: $this->testPrefix.'-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
             substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-3',
+            code: $this->testPrefix.'-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
             substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-G',
+            code: $this->testPrefix.'-G',
             standardCode: null,
             description: 'Grit blasting',
             substrateScope: [Substrate::CONCRETE],
@@ -112,26 +112,26 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
         self::assertCount(3, $result['items']);
 
         $codes = array_map(fn ($dto) => $dto->code, $result['items']);
-        self::assertContains($this->testPrefix . '-2.5', $codes);
-        self::assertContains($this->testPrefix . '-3', $codes);
+        self::assertContains($this->testPrefix.'-2.5', $codes);
+        self::assertContains($this->testPrefix.'-3', $codes);
     }
 
     public function test_filter_substrate_and_search_combined(): void
     {
         $t1 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-2.5',
+            code: $this->testPrefix.'-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
             substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-3',
+            code: $this->testPrefix.'-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
             substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-G',
+            code: $this->testPrefix.'-G',
             standardCode: null,
             description: 'Grit blasting',
             substrateScope: [Substrate::STEEL_CARBON],
@@ -154,25 +154,25 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
         self::assertSame(2, $result['total']);
         self::assertCount(2, $result['items']);
         $codes = array_map(fn ($dto) => $dto->code, $result['items']);
-        self::assertContains($this->testPrefix . '-2.5', $codes);
+        self::assertContains($this->testPrefix.'-2.5', $codes);
     }
 
     public function test_empty_filter_returns_all_with_pagination(): void
     {
         $t1 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-2.5',
+            code: $this->testPrefix.'-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
             substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-3',
+            code: $this->testPrefix.'-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
             substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-G',
+            code: $this->testPrefix.'-G',
             standardCode: null,
             description: 'Grit blasting',
             substrateScope: [Substrate::CONCRETE],
@@ -196,19 +196,19 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
     public function test_pagination(): void
     {
         $t1 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-2.5',
+            code: $this->testPrefix.'-2.5',
             standardCode: 'ISO 12944',
             description: 'Blast cleaning',
             substrateScope: [Substrate::STEEL_CARBON],
         );
         $t2 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-3',
+            code: $this->testPrefix.'-3',
             standardCode: 'ISO 12944',
             description: 'Very thorough preparation',
             substrateScope: [Substrate::STEEL_GALVANIZED],
         );
         $t3 = new CreateSurfaceTreatmentCommand(
-            code: $this->testPrefix . '-G',
+            code: $this->testPrefix.'-G',
             standardCode: null,
             description: 'Grit blasting',
             substrateScope: [Substrate::CONCRETE],

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\SurfaceTreatment;
 
-use App\Coatings\Application\DTO\SurfaceTreatments\SurfaceTreatmentDTOTransformer;
 use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQuery;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\SurfaceTreatmentsFilter;
@@ -27,7 +26,7 @@ final class SuggestAction extends AbstractController
     private const MAX_LIMIT = 25;
     private const DEFAULT_LIMIT = 10;
 
-    public function __construct(private readonly QueryBusInterface $queryBus, private readonly SurfaceTreatmentDTOTransformer $transformer)
+    public function __construct(private readonly QueryBusInterface $queryBus)
     {
     }
 

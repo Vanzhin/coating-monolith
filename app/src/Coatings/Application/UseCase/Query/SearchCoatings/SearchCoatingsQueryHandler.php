@@ -13,8 +13,6 @@ use App\Shared\Domain\Repository\Pager;
 /**
  * Лёгкий хендлер для поиска покрытий в typeahead.
  * Не загружает химстойкость, теги, производителей — только поля формы слоя.
- *
- * @return list<array{id: string, title: string, base: string, dftMin: int, dftMax: int}>
  */
 readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
 {
@@ -23,6 +21,9 @@ readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
     ) {
     }
 
+    /**
+     * @return list<array{id: string, title: string, base: string, dftMin: int, dftMax: int}>
+     */
     public function __invoke(SearchCoatingsQuery $query): array
     {
         $search = SearchQuery::tryFromString($query->q);

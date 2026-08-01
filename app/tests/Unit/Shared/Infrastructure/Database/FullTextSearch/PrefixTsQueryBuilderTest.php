@@ -16,61 +16,61 @@ final class PrefixTsQueryBuilderTest extends TestCase
         $this->builder = new PrefixTsQueryBuilder();
     }
 
-    public function testBuildWithAndConjunction(): void
+    public function test_build_with_and_conjunction(): void
     {
         $result = $this->builder->build('быстросох эпоксидн');
         self::assertSame('быстросох:* & эпоксидн:*', $result);
     }
 
-    public function testBuildWithOrConjunction(): void
+    public function test_build_with_or_conjunction(): void
     {
         $result = $this->builder->build('вода этанол', PrefixTsQueryBuilder::CONJUNCTION_OR);
         self::assertSame('вода:* | этанол:*', $result);
     }
 
-    public function testSanitizationRemovesMeta(): void
+    public function test_sanitization_removes_meta(): void
     {
         $result = $this->builder->build('!!! *foo* bar');
         self::assertSame('foo:* & bar:*', $result);
     }
 
-    public function testEmptyStringReturnsEmpty(): void
+    public function test_empty_string_returns_empty(): void
     {
         $result = $this->builder->build('');
         self::assertSame('', $result);
     }
 
-    public function testWhitespaceOnlyReturnsEmpty(): void
+    public function test_whitespace_only_returns_empty(): void
     {
         $result = $this->builder->build('   ');
         self::assertSame('', $result);
     }
 
-    public function testSeparatorsComa(): void
+    public function test_separators_coma(): void
     {
         $result = $this->builder->build('foo, bar; baz');
         self::assertSame('foo:* & bar:* & baz:*', $result);
     }
 
-    public function testSeparatorsDotAndDash(): void
+    public function test_separators_dot_and_dash(): void
     {
         $result = $this->builder->build('foo-bar.baz');
         self::assertSame('foo:* & bar:* & baz:*', $result);
     }
 
-    public function testUnknownConjunctionThrows(): void
+    public function test_unknown_conjunction_throws(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->builder->build('test', '~');
     }
 
-    public function testMixedMetaAndWords(): void
+    public function test_mixed_meta_and_words(): void
     {
         $result = $this->builder->build('hello&world|test');
         self::assertSame('hello:* & world:* & test:*', $result);
     }
 
-    public function testSingleWord(): void
+    public function test_single_word(): void
     {
         $result = $this->builder->build('word');
         self::assertSame('word:*', $result);
