@@ -13,15 +13,12 @@ use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
 
 /**
- * Обновляет две read-модели поиска систем при любом изменении CoatingSystem:
+ * Поисковые read-модели, не относящиеся к самому агрегату:
  *  1) `coating_system_compliance` — совпадения по стандартам (ISO 12944, NORSOK) для фильтра по требованиям.
- *  2) `coating_system_search`     — одна строка на систему: сумма мин.интервалов перекрытия при 20 °C
- *     по всем слоям кроме последнего, максимум мин.температуры нанесения по слоям и tsvector-документ
- *     (title + description + производители слоёв + теги).
+ *  2) `coating_system_search.search_tsvector` — tsvector-документ для FTS.
  *
- * Placeholder-логика для `sum_min_recoat_20_minutes`: суммирует точки при 20 °C напрямую без учёта
- * интерполяции по фактической толщине слоя (шаг 5а плана 1 внедряет интерполяцию через
- * `RecoatingInterpolationModel`).
+ * Бизнес-величины системы (`minBuildingTimeAt20Minutes`, `maxLayerApplicationMinTemp`,
+ * complianceMatches и т.п.) живут на самой CoatingSystem и пересчитываются в её `postMutate`.
  */
 #[AsDoctrineListener(event: Events::postPersist)]
 #[AsDoctrineListener(event: Events::postUpdate)]
@@ -49,10 +46,10 @@ final class CoatingSystemSearchProjector
         $this->rebuild($entity, $args->getObjectManager()->getConnection());
     }
 
-    public function rebuild(CoatingSystem $system, Connection $conn): void
+    private function rebuild(CoatingSystem $system, Connection $conn): void
     {
         $this->rebuildCompliance($system, $conn);
-        $this->rebuildSearch($system, $conn);
+        $this->rebuildSearchIndex($system, $conn);
     }
 
     private function rebuildCompliance(CoatingSystem $system, Connection $conn): void
@@ -76,71 +73,27 @@ final class CoatingSystemSearchProjector
         }
     }
 
-    private function rebuildSearch(CoatingSystem $system, Connection $conn): void
+    private function rebuildSearchIndex(CoatingSystem $system, Connection $conn): void
     {
-        $sumMinRecoat = $this->calculateSumMinRecoatAt20($system);
-        $maxAppMinTemp = $this->calculateMaxApplicationMinTemp($system);
-        $document = $this->buildSearchDocument($system);
-
         $conn->executeStatement(
             <<<'SQL'
-                INSERT INTO coating_system_search
-                    (system_id, sum_min_recoat_20_minutes, max_application_min_temp, search_tsvector)
-                VALUES
-                    (:id, :sum, :max_temp, to_tsvector('russian', :doc))
+                INSERT INTO coating_system_search (system_id, search_tsvector)
+                VALUES (:id, to_tsvector('russian', :doc))
                 ON CONFLICT (system_id) DO UPDATE
-                SET sum_min_recoat_20_minutes = EXCLUDED.sum_min_recoat_20_minutes,
-                    max_application_min_temp  = EXCLUDED.max_application_min_temp,
-                    search_tsvector           = EXCLUDED.search_tsvector
+                SET search_tsvector = EXCLUDED.search_tsvector
                 SQL,
             [
                 'id' => $system->getId(),
-                'sum' => $sumMinRecoat,
-                'max_temp' => $maxAppMinTemp,
-                'doc' => $document,
+                'doc' => $this->buildFullTextSearchDocument($system),
             ],
         );
     }
 
-    private function calculateSumMinRecoatAt20(CoatingSystem $system): ?int
-    {
-        $layers = $system->getLayers()->toArray();
-        $count = count($layers);
-        if ($count < 2) {
-            return 0 === $count ? null : 0;
-        }
-
-        $sum = 0;
-        // Верхний слой не покрывается ничем — его мин.интервал перекрытия не участвует в сборке.
-        for ($i = 0; $i < $count - 1; ++$i) {
-            $point = $layers[$i]->getCoating()->getMinRecoatingInterval()->default->getPoint(20);
-            if (null === $point || null === $point->timeInMinutes) {
-                continue;
-            }
-            $sum += $point->timeInMinutes;
-        }
-
-        return $sum;
-    }
-
-    private function calculateMaxApplicationMinTemp(CoatingSystem $system): ?int
-    {
-        $layers = $system->getLayers()->toArray();
-        if ([] === $layers) {
-            return null;
-        }
-        $max = null;
-        foreach ($layers as $layer) {
-            $temp = $layer->getCoating()->getApplicationMinTemp();
-            if (null === $max || $temp > $max) {
-                $max = $temp;
-            }
-        }
-
-        return $max;
-    }
-
-    private function buildSearchDocument(CoatingSystem $system): string
+    /**
+     * Что попадает в tsvector — инфраструктурное решение (какие поля индексируем).
+     * Собирается из публичных геттеров домена, без обращения к бизнес-правилам.
+     */
+    private function buildFullTextSearchDocument(CoatingSystem $system): string
     {
         $parts = [$system->getTitle(), $system->getDescription()];
         foreach ($system->getLayers() as $layer) {

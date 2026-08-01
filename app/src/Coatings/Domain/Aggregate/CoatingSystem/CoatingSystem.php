@@ -28,6 +28,10 @@ class CoatingSystem extends Aggregate
     private Collection $layers;
     /** @var Collection<int, Tag> */
     private Collection $tags;
+    /** Кешируемая производная величина: время сборки системы при 20 °C, минут. */
+    private ?int $minBuildingTimeAt20Minutes = null;
+    /** Кешируемая производная величина: мин.температура нанесения системы (max по слоям), °C. */
+    private ?int $maxLayerApplicationMinTemp = null;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
 
@@ -160,6 +164,76 @@ class CoatingSystem extends Aggregate
 
         return $sum;
     }
+
+    /**
+     * Кешированная величина, пересчитывается автоматически при любой мутации слоёв
+     * (см. `recalculateDerivedFields` из `postMutate`).
+     * Семантика — время сборки системы при 20 °C: сумма пересчитанных под фактическую
+     * толщину интервалов перекрытия по слоям, поверх которых наносится следующий.
+     * Null, если у любого из этих слоёв нет базовой точки при 20 °C (legacy до инварианта Coating),
+     * либо система пуста. Один слой — 0.
+     */
+    public function getMinBuildingTimeAt20Minutes(): ?int
+    {
+        return $this->minBuildingTimeAt20Minutes;
+    }
+
+    /**
+     * Кешированная величина, пересчитывается автоматически при мутации слоёв.
+     * Максимум мин.температуры нанесения по слоям: система работает при температуре,
+     * при которой можно наносить самый требовательный из её слоёв. Null для пустой системы.
+     */
+    public function getMaxLayerApplicationMinTemp(): ?int
+    {
+        return $this->maxLayerApplicationMinTemp;
+    }
+
+    private function recalculateDerivedFields(): void
+    {
+        $this->minBuildingTimeAt20Minutes = $this->computeMinBuildingTimeAt20Minutes();
+        $this->maxLayerApplicationMinTemp = $this->computeMaxLayerApplicationMinTemp();
+    }
+
+    private function computeMinBuildingTimeAt20Minutes(): ?int
+    {
+        $ordered = $this->getLayers();
+        if ($ordered->isEmpty()) {
+            return null;
+        }
+        $topLayer = $ordered->last();
+
+        $sum = 0;
+        foreach ($ordered as $layer) {
+            if ($layer === $topLayer) {
+                continue; // верхний слой ничем не покрывается — его интервал не участвует
+            }
+            $interval = $layer->getCoating()->interpolatedMinRecoatMinutesAt20($layer->getDft());
+            if (null === $interval) {
+                return null;
+            }
+            $sum += $interval;
+        }
+
+        return $sum;
+    }
+
+    private function computeMaxLayerApplicationMinTemp(): ?int
+    {
+        if ($this->layers->isEmpty()) {
+            return null;
+        }
+
+        $max = null;
+        foreach ($this->layers as $layer) {
+            $temp = $layer->getCoating()->getApplicationMinTemp();
+            if (null === $max || $temp > $max) {
+                $max = $temp;
+            }
+        }
+
+        return $max;
+    }
+
 
     public function firstLayer(): CoatingSystemLayer
     {
@@ -321,6 +395,7 @@ class CoatingSystem extends Aggregate
             throw new AppException('Валидатор цепочки слоёв не установлен.');
         }
         $this->chainValidator->validate($this);
+        $this->recalculateDerivedFields();
         $this->touch();
     }
 

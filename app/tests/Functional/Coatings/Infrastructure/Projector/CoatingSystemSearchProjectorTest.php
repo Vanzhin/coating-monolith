@@ -239,7 +239,7 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $this->manufacturerId = null;
     }
 
-    public function test_search_row_populated_on_persist(): void
+    public function test_derived_fields_saved_to_aggregate_on_persist(): void
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
@@ -259,16 +259,19 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
 
-        $row = $this->fetchSearchRow($this->systemId);
-        self::assertNotNull($row, 'После save() должна появиться строка в coating_system_search.');
+        $this->em->clear();
+        $loaded = $this->em->find(CoatingSystem::class, $this->systemId);
+        self::assertNotNull($loaded);
         // 1 слой → нет переходов → sum = 0.
-        self::assertSame(0, (int) $row['sum_min_recoat_20_minutes']);
-        self::assertSame(5, (int) $row['max_application_min_temp']);
-        self::assertNotNull($row['search_tsvector']);
-        self::assertNotSame('', $row['search_tsvector']);
+        self::assertSame(0, $loaded->getMinBuildingTimeAt20Minutes());
+        self::assertSame(5, $loaded->getMaxLayerApplicationMinTemp());
+
+        $tsvector = $this->fetchSearchTsvector($this->systemId);
+        self::assertNotNull($tsvector);
+        self::assertNotSame('', $tsvector);
     }
 
-    public function test_sum_min_recoat_20_excludes_last_layer(): void
+    public function test_min_building_time_uses_linear_interpolation_and_skips_top_layer(): void
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
@@ -286,16 +289,18 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
             $treatment,
             $this->chainValidator,
         );
-        // Два слоя: A (240 мин) + B (480 мин); последний = B, его интервал не считается.
-        // Ожидаем sum = 240 (только A).
+        // Слой A: tds=100, source_minutes=240, layer_dft=80 → LINEAR interpolate = 240*80/100 = 192.
+        // Слой B — верхний, его интервал не участвует.
         $system->appendLayer($coatingA, 80);
         $system->appendLayer($coatingB, 80);
         $this->repo->save($system);
 
-        $row = $this->fetchSearchRow($this->systemId);
-        self::assertSame(240, (int) $row['sum_min_recoat_20_minutes']);
+        $this->em->clear();
+        $loaded = $this->em->find(CoatingSystem::class, $this->systemId);
+        self::assertNotNull($loaded);
+        self::assertSame(192, $loaded->getMinBuildingTimeAt20Minutes());
         // max(applicationMinTemp) = max(5, 10) = 10
-        self::assertSame(10, (int) $row['max_application_min_temp']);
+        self::assertSame(10, $loaded->getMaxLayerApplicationMinTemp());
     }
 
     public function test_search_tsvector_contains_manufacturer_and_tag_titles(): void
@@ -359,8 +364,7 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         $system->appendLayer($coating, 80);
         $this->repo->save($system);
 
-        $rowBefore = $this->fetchSearchRow($this->systemId);
-        self::assertNotNull($rowBefore);
+        self::assertNotNull($this->fetchSearchTsvector($this->systemId));
 
         $system->setTitle('ПоискUpsert-NEW-'.$suffix);
         $this->repo->save($system);
@@ -412,16 +416,14 @@ final class CoatingSystemSearchProjectorTest extends KernelTestCase
         return $coating;
     }
 
-    /** @return array<string, mixed>|null */
-    private function fetchSearchRow(Uuid $systemId): ?array
+    private function fetchSearchTsvector(Uuid $systemId): ?string
     {
-        $row = $this->em->getConnection()->fetchAssociative(
-            'SELECT sum_min_recoat_20_minutes, max_application_min_temp, search_tsvector::text AS search_tsvector
-             FROM coating_system_search WHERE system_id = ?',
+        $value = $this->em->getConnection()->fetchOne(
+            'SELECT search_tsvector::text FROM coating_system_search WHERE system_id = ?',
             [(string) $systemId],
         );
 
-        return false === $row ? null : $row;
+        return false === $value ? null : (string) $value;
     }
 
     /**
