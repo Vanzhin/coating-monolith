@@ -6,19 +6,19 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingTagSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Repository\Pager;
@@ -61,12 +61,12 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         $this->em->persist($manufacturer);
 
         // Tag — уникальная лексема, прилетит в search_vector через триггер.
-        $tag = new CoatingTag(
+        $tag = new Tag(
             'тагунико'.$suffix,
-            $container->get(CoatingTagSpecification::class),
-            CoatingTag::TYPE_GENERAL,
+            $container->get(TagSpecification::class),
+            Tag::TYPE_GENERAL,
         );
-        $container->get(CoatingTagRepositoryInterface::class)->add($tag);
+        $container->get(TagRepositoryInterface::class)->add($tag);
 
         $coating = new Coating(
             UuidService::generateUuid(),
@@ -104,7 +104,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
             if (null !== $coating) {
                 $em->remove($coating);
             }
-            $tag = static::getContainer()->get(CoatingTagRepositoryInterface::class)->findOneById($this->tagId);
+            $tag = static::getContainer()->get(TagRepositoryInterface::class)->findOneById($this->tagId);
             if (null !== $tag) {
                 $em->remove($tag);
             }
@@ -164,7 +164,7 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
     private function getTagTitle(): string
     {
         return static::getContainer()
-            ->get(CoatingTagRepositoryInterface::class)
+            ->get(TagRepositoryInterface::class)
             ->findOneById($this->tagId)
             ->getTitle();
     }

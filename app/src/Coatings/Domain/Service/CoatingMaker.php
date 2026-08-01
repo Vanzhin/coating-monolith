@@ -24,7 +24,7 @@ final readonly class CoatingMaker
     public function __construct(
         private CoatingRepositoryInterface $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingTagFetcher $coatingTagFetcher,
+        private TagFetcher $coatingTagFetcher,
         private CoatingSpecification $coatingSpecification,
     ) {
     }

@@ -6,7 +6,7 @@ services:
     tags:
       - { "name": 'doctrine.fixture.orm' }
 
-  App\Coatings\Infrastructure\Search\CoatingTagFinder:
+  App\Coatings\Infrastructure\Search\TagFinder:
     public: true
 
   App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository:

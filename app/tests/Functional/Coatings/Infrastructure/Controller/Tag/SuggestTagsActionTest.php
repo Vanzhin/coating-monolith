@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingTag;
+namespace App\Tests\Functional\Coatings\Infrastructure\Controller\Tag;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingTagSpecification;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -53,7 +53,7 @@ final class SuggestTagsActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         try {
-            $repo = static::getContainer()->get(CoatingTagRepositoryInterface::class);
+            $repo = static::getContainer()->get(TagRepositoryInterface::class);
             foreach ($this->createdTagIds as $id) {
                 $tag = $repo->findOneById($id);
                 if (null !== $tag) {
@@ -73,8 +73,8 @@ final class SuggestTagsActionTest extends WebTestCase
 
     public function test_returns_general_tags_by_prefix(): void
     {
-        $this->makeTag('Для бетона test', CoatingTag::TYPE_GENERAL);
-        $this->makeTag('Для стали test', CoatingTag::TYPE_GENERAL);
+        $this->makeTag('Для бетона test', Tag::TYPE_GENERAL);
+        $this->makeTag('Для стали test', Tag::TYPE_GENERAL);
 
         $this->client->request('GET', '/cabinet/coating/coating-tag/suggest?q=для&type=general');
 
@@ -102,7 +102,7 @@ final class SuggestTagsActionTest extends WebTestCase
 
     public function test_each_item_has_id_and_title(): void
     {
-        $tag = $this->makeTag('Уникальный тег xyz', CoatingTag::TYPE_GENERAL);
+        $tag = $this->makeTag('Уникальный тег xyz', Tag::TYPE_GENERAL);
 
         $this->client->request('GET', '/cabinet/coating/coating-tag/suggest?q=уникальный&type=general');
 
@@ -117,12 +117,12 @@ final class SuggestTagsActionTest extends WebTestCase
         self::assertArrayHasKey('title', $first);
     }
 
-    private function makeTag(string $title, ?string $type): CoatingTag
+    private function makeTag(string $title, ?string $type): Tag
     {
         $container = $this->client->getContainer();
-        $spec = $container->get(CoatingTagSpecification::class);
-        $tag = new CoatingTag($title, $spec, $type);
-        $container->get(CoatingTagRepositoryInterface::class)->add($tag);
+        $spec = $container->get(TagSpecification::class);
+        $tag = new Tag($title, $spec, $type);
+        $container->get(TagRepositoryInterface::class)->add($tag);
         $this->createdTagIds[] = $tag->getId();
 
         return $tag;

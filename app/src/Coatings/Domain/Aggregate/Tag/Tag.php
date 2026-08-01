@@ -2,23 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\Coating;
+namespace App\Coatings\Domain\Aggregate\Tag;
 
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingTagSpecification;
+use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Service\UuidService;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-class CoatingTag extends Aggregate
+class Tag extends Aggregate
 {
     public const TYPE_GENERAL = 'general';
 
     private readonly string $id;
     private string $title;
     private ?string $type = null;
-    private CoatingTagSpecification $specification;
+    private TagSpecification $specification;
 
     /**
      * @var Collection<Coating>
@@ -27,7 +28,7 @@ class CoatingTag extends Aggregate
 
     public function __construct(
         string $title,
-        CoatingTagSpecification $specification,
+        TagSpecification $specification,
         ?string $type = null,
     ) {
         $this->id = UuidService::generate();
@@ -35,7 +36,7 @@ class CoatingTag extends Aggregate
         $this->coatings = new ArrayCollection();
         $this->setTitle($title);
         $this->setType($type);
-        $this->specification->titleAndTypeCoatingTagSpecification->satisfy($this);
+        $this->specification->titleAndTypeTagSpecification->satisfy($this);
     }
 
     public function getId(): string

@@ -18,7 +18,7 @@ use Twig\TwigFilter;
  * «бетон» всегда серый), добавим второй фильтр tag|tag_bootstrap_color с
  * override-map'ом по title. Пока хватает семантики по типу.
  */
-final class CoatingTagExtension extends AbstractExtension
+final class TagExtension extends AbstractExtension
 {
     /**
      * @var array<string, string>

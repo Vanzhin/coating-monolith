@@ -6,8 +6,8 @@ namespace App\Coatings\Application\DTO\Coatings;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\CoatingAssessmentsPage;
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 
 class CoatingDTO
@@ -55,7 +55,7 @@ class CoatingDTO
     public ?ThermalExposureLimitsDTO $dryHeatExposure = null;
     public ?ThermalExposureLimitsDTO $immersionExposure = null;
 
-    /** @var CoatingTagDTO[] */
+    /** @var TagDTO[] */
     public array $tags;
 
     /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */

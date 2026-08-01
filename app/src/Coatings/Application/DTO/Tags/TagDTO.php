@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Application\DTO\CoatingTags;
+namespace App\Coatings\Application\DTO\Tags;
 
-class CoatingTagDTO
+class TagDTO
 {
     public string $id;
     public ?string $title;

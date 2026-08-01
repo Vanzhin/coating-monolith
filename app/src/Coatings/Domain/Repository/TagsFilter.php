@@ -6,7 +6,7 @@ namespace App\Coatings\Domain\Repository;
 
 use App\Shared\Domain\Repository\Pager;
 
-class CoatingTagsFilter
+class TagsFilter
 {
     /** @var list<string|null> */
     public array $types = [];

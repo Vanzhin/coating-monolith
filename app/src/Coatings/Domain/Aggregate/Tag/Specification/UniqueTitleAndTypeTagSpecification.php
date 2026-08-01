@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\Coating\Specification;
+namespace App\Coatings\Domain\Aggregate\Tag\Specification;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Specification\SpecificationInterface;
 
-class UniqueTitleAndTypeCoatingTagSpecification implements SpecificationInterface
+class UniqueTitleAndTypeTagSpecification implements SpecificationInterface
 {
-    public function __construct(private readonly CoatingTagRepositoryInterface $coatingTagRepository)
+    public function __construct(private readonly TagRepositoryInterface $coatingTagRepository)
     {
     }
 
-    public function satisfy(CoatingTag $coatingTag): void
+    public function satisfy(Tag $coatingTag): void
     {
         $exist = $this->coatingTagRepository->findOneByTitleAndType($coatingTag->getTitle(), $coatingTag->getType());
         if (null !== $exist && $exist->getId() !== $coatingTag->getId()) {

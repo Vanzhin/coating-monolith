@@ -9,8 +9,8 @@ use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -27,7 +27,7 @@ class CoatingMapper
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
         $coatingTagIds = array_map(
-            fn (CoatingTagDTO $coatingTag) => $coatingTag->id,
+            fn (TagDTO $coatingTag) => $coatingTag->id,
             $coatingDTO->tags,
         );
 
@@ -103,7 +103,7 @@ class CoatingMapper
 
         $tags = [];
         foreach ($inputData['tags'] ?? [] as $tag) {
-            $coatingTagDto = new CoatingTagDTO();
+            $coatingTagDto = new TagDTO();
             $coatingTagDto->id = $tag['id'];
             $tags[] = $coatingTagDto;
         }

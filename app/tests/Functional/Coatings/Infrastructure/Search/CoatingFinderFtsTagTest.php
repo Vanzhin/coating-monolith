@@ -6,19 +6,19 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
-use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingTagSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Coatings\Infrastructure\Search\CoatingFinder;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -56,8 +56,8 @@ final class CoatingFinderFtsTagTest extends KernelTestCase
         $this->em->persist($manufacturer);
 
         // General tag — содержит уникальное слово «бетонxxx» которого нет в title/description.
-        $tag = new CoatingTag('Для бетона FTS_'.$suffix, $container->get(CoatingTagSpecification::class), CoatingTag::TYPE_GENERAL);
-        $container->get(CoatingTagRepositoryInterface::class)->add($tag);
+        $tag = new Tag('Для бетона FTS_'.$suffix, $container->get(TagSpecification::class), Tag::TYPE_GENERAL);
+        $container->get(TagRepositoryInterface::class)->add($tag);
 
         // Coating с нейтральным title/description — должно матчиться только за счёт тега.
         $coating = new Coating(
@@ -96,7 +96,7 @@ final class CoatingFinderFtsTagTest extends KernelTestCase
             if (null !== $coating) {
                 $em->remove($coating);
             }
-            $tag = static::getContainer()->get(CoatingTagRepositoryInterface::class)->findOneById($this->tagId);
+            $tag = static::getContainer()->get(TagRepositoryInterface::class)->findOneById($this->tagId);
             if (null !== $tag) {
                 $em->remove($tag);
             }

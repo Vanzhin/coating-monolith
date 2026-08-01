@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Repository;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
-use App\Coatings\Domain\Repository\CoatingTagsFilter;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
+use App\Coatings\Domain\Repository\TagsFilter;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
-class CoatingTagRepository extends ServiceEntityRepository implements CoatingTagRepositoryInterface
+class TagRepository extends ServiceEntityRepository implements TagRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, CoatingTag::class);
+        parent::__construct($registry, Tag::class);
     }
 
-    public function add(CoatingTag $coatingTag): void
+    public function add(Tag $coatingTag): void
     {
         $this->getEntityManager()->persist($coatingTag);
         $this->getEntityManager()->flush();
@@ -36,7 +36,7 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
         throw new \LogicException('findByType() not implemented');
     }
 
-    public function findOneById(string $id): ?CoatingTag
+    public function findOneById(string $id): ?Tag
     {
         return $this->findOneBy(['id' => $id]);
     }
@@ -50,12 +50,12 @@ class CoatingTagRepository extends ServiceEntityRepository implements CoatingTag
         return $this->findBy(['id' => $ids->getList()]);
     }
 
-    public function findOneByTitleAndType(string $title, ?string $type): ?CoatingTag
+    public function findOneByTitleAndType(string $title, ?string $type): ?Tag
     {
         return $this->findOneBy(['title' => $title, 'type' => $type]);
     }
 
-    public function findByFilter(CoatingTagsFilter $filter): PaginationResult
+    public function findByFilter(TagsFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('ct');
         $qb->orderBy('ct.title', 'ASC');

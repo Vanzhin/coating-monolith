@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingTag;
+namespace App\Tests\Functional\Coatings\Infrastructure\Controller\Tag;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -52,9 +52,9 @@ final class CreateGeneralTagActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         try {
-            $repo = static::getContainer()->get(CoatingTagRepositoryInterface::class);
+            $repo = static::getContainer()->get(TagRepositoryInterface::class);
             foreach ($this->titlesToCleanup as $title) {
-                $tag = $repo->findOneByTitleAndType($title, CoatingTag::TYPE_GENERAL);
+                $tag = $repo->findOneByTitleAndType($title, Tag::TYPE_GENERAL);
                 if (null !== $tag) {
                     $em->remove($tag);
                 }
@@ -92,10 +92,10 @@ final class CreateGeneralTagActionTest extends WebTestCase
         self::assertArrayHasKey('id', $data);
         self::assertSame($title, $data['title']);
 
-        $repo = static::getContainer()->get(CoatingTagRepositoryInterface::class);
-        $tag = $repo->findOneByTitleAndType($title, CoatingTag::TYPE_GENERAL);
+        $repo = static::getContainer()->get(TagRepositoryInterface::class);
+        $tag = $repo->findOneByTitleAndType($title, Tag::TYPE_GENERAL);
         self::assertNotNull($tag);
-        self::assertSame(CoatingTag::TYPE_GENERAL, $tag->getType());
+        self::assertSame(Tag::TYPE_GENERAL, $tag->getType());
     }
 
     public function test_rejects_duplicate(): void

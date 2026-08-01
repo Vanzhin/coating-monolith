@@ -15,7 +15,7 @@ use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
-use App\Coatings\Domain\Service\CoatingTagFetcher;
+use App\Coatings\Domain\Service\TagFetcher;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -26,7 +26,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
     public function __construct(
         private CoatingRepositoryInterface $coatingRepository,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingTagFetcher $coatingTagFetcher,
+        private TagFetcher $coatingTagFetcher,
         private RecoatingTreeBuilder $treeBuilder,
     ) {
     }

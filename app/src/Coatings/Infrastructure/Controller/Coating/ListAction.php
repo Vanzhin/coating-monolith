@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTOTransformer;
+use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedCoatings\GetPagedCoatingsQueryResult;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingSort;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -88,8 +88,8 @@ class ListAction extends AbstractController
 
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly CoatingTagRepositoryInterface $coatingTagRepository,
-        private readonly CoatingTagDTOTransformer $coatingTagDTOTransformer,
+        private readonly TagRepositoryInterface $coatingTagRepository,
+        private readonly TagDTOTransformer $coatingTagDTOTransformer,
     ) {
     }
 
@@ -197,7 +197,7 @@ class ListAction extends AbstractController
         return $this->render('admin/coating/coating/index.html.twig', [
             'search' => $search ?? '',
             'selectedManufacturerIds' => $manufacturerIds,
-            // list<CoatingTagDTO> с id+title+type; id'ы для URL-toggle
+            // list<TagDTO> с id+title+type; id'ы для URL-toggle
             // читаются через |map(t => t.id) в шаблоне.
             'selectedTags' => $selectedTags,
             'selectedBaseValues' => $baseValues,

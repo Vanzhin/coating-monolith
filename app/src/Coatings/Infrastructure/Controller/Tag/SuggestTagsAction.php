@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Infrastructure\Controller\CoatingTag;
+namespace App\Coatings\Infrastructure\Controller\Tag;
 
 use App\Coatings\Application\UseCase\Query\SuggestTags\SuggestTagsQuery;
 use App\Shared\Application\Query\QueryBusInterface;

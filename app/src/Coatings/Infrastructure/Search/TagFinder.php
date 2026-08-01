@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Search;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Aggregate\Coating\CoatingTagSearch;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Aggregate\Tag\TagSearch;
 use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
 /**
- * Search-сервис для CoatingTag: prefix-FTS по title + fuzzy-fallback (pg_trgm).
+ * Search-сервис для Tag: prefix-FTS по title + fuzzy-fallback (pg_trgm).
  * Используется suggest-эндпоинтом для Tagify-autocomplete.
  */
-final class CoatingTagFinder
+final class TagFinder
 {
     private const FTS_LANG = 'russian';
     private const FUZZY_SIMILARITY_THRESHOLD = 0.4;
@@ -26,7 +26,7 @@ final class CoatingTagFinder
     }
 
     /**
-     * @return list<CoatingTag>
+     * @return list<Tag>
      */
     public function suggest(string $query, ?string $type, int $limit = 10): array
     {
@@ -44,7 +44,7 @@ final class CoatingTagFinder
     }
 
     /**
-     * @return list<CoatingTag>
+     * @return list<Tag>
      */
     private function fullText(string $query, ?string $type, int $limit): array
     {
@@ -54,7 +54,7 @@ final class CoatingTagFinder
         }
 
         $qb = $this->coatingTagQueryBuilder();
-        $qb->innerJoin(CoatingTagSearch::class, 's', 'WITH', 's.tagId = t.id')
+        $qb->innerJoin(TagSearch::class, 's', 'WITH', 's.tagId = t.id')
             ->andWhere('TS_MATCH(s.searchVector, TO_TSQUERY(:lang, :tsquery)) = TRUE')
             ->addSelect('TS_RANK_CD(s.searchVector, TO_TSQUERY(:lang, :tsquery)) AS HIDDEN fts_rank')
             ->orderBy('fts_rank', 'DESC')
@@ -68,7 +68,7 @@ final class CoatingTagFinder
     }
 
     /**
-     * @return list<CoatingTag>
+     * @return list<Tag>
      */
     private function fuzzyTitle(string $query, ?string $type, int $limit): array
     {
@@ -99,6 +99,6 @@ final class CoatingTagFinder
     {
         return $this->em->createQueryBuilder()
             ->select('t')
-            ->from(CoatingTag::class, 't');
+            ->from(Tag::class, 't');
     }
 }

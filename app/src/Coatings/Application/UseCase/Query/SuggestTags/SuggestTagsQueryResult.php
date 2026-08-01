@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\SuggestTags;
 
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 
 final readonly class SuggestTagsQueryResult
 {
-    /** @param list<CoatingTagDTO> $tags */
+    /** @param list<TagDTO> $tags */
     public function __construct(public array $tags)
     {
     }

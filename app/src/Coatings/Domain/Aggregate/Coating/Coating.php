@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -46,7 +47,7 @@ class Coating extends Aggregate
 
     private bool $isZincRich = false;
 
-    /** @var Collection<CoatingTag> */
+    /** @var Collection<Tag> */
     private Collection $tags;
 
     public function __construct(
@@ -288,19 +289,19 @@ class Coating extends Aggregate
         $this->isZincRich = $value;
     }
 
-    public function addTag(CoatingTag $tag): void
+    public function addTag(Tag $tag): void
     {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
         }
     }
 
-    public function removeTag(CoatingTag $tag): void
+    public function removeTag(Tag $tag): void
     {
         $this->tags->removeElement($tag);
     }
 
-    /** @param list<CoatingTag> $tags */
+    /** @param list<Tag> $tags */
     public function replaceTags(array $tags): void
     {
         $this->tags->clear();

@@ -7,12 +7,12 @@ namespace App\Coatings\Infrastructure\Controller\Coating;
 use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\UpdateCoating\UpdateCoatingCommand;
 use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
-use App\Coatings\Application\UseCase\Query\GetPagedCoatingTags\GetPagedCoatingTagsQuery;
 use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufacturersQuery;
+use App\Coatings\Application\UseCase\Query\GetPagedTags\GetPagedTagsQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Repository\CoatingTagsFilter;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
+use App\Coatings\Domain\Repository\TagsFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -41,7 +41,7 @@ class UpdateAction extends AbstractController
             new GetPagedManufacturersQuery(new ManufacturersFilter(null, Pager::fromPage(1, 1000))),
         );
         $pagedCoatingTags = $this->queryBus->execute(
-            new GetPagedCoatingTagsQuery(new CoatingTagsFilter(Pager::fromPage(1, 1000), null, Coating::COAT_TYPE, Coating::PROTECTION_TYPE)),
+            new GetPagedTagsQuery(new TagsFilter(Pager::fromPage(1, 1000), null, Coating::COAT_TYPE, Coating::PROTECTION_TYPE)),
         );
 
         $coating = $this->queryBus->execute(new GetCoatingQuery($id));

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Application\DTO\CoatingTags;
+namespace App\Coatings\Application\DTO\Tags;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 
-class CoatingTagDTOTransformer
+class TagDTOTransformer
 {
-    public function fromEntity(CoatingTag $entity): object
+    public function fromEntity(Tag $entity): object
     {
-        $dto = new CoatingTagDTO();
+        $dto = new TagDTO();
         $dto->id = $entity->getId();
         $dto->title = $entity->getTitle();
         $dto->type = $entity->getType();
@@ -19,9 +19,9 @@ class CoatingTagDTOTransformer
     }
 
     /**
-     * @param array<CoatingTag> $coatingTags
+     * @param array<Tag> $coatingTags
      *
-     * @return array<CoatingTagDTO>
+     * @return array<TagDTO>
      */
     public function fromEntityList(array $coatingTags): array
     {
