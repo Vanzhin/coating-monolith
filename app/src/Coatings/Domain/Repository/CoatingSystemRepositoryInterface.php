@@ -45,4 +45,7 @@ interface CoatingSystemRepositoryInterface
     public function findComplianceRows(Uuid $systemId): array;
 
     public function countUsingSurfaceTreatment(string $treatmentId): int;
+
+    /** @return list<CoatingSystem> */
+    public function findByLayerCoatingId(string $coatingId): array;
 }

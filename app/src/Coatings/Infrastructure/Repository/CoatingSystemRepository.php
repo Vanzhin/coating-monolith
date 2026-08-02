@@ -137,6 +137,18 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->getSingleScalarResult();
     }
 
+    public function findByLayerCoatingId(string $coatingId): array
+    {
+        return $this->em->createQueryBuilder()
+            ->select('cs')
+            ->from(CoatingSystem::class, 'cs')
+            ->innerJoin('cs.layers', 'l')
+            ->where('l.coating = :coatingId')
+            ->setParameter('coatingId', $coatingId)
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {
