@@ -53,10 +53,6 @@ services:
     resource: '../src/Users/Infrastructure/Controller'
     tags: [ 'controller.service_arguments' ]
 
-  App\Coatings\Infrastructure\Api\CoatingSystem\:
-    resource: '../src/Coatings/Infrastructure/Api/CoatingSystem'
-    tags: [ 'controller.service_arguments' ]
-
   App\Coatings\Infrastructure\Api\SurfaceTreatment\:
     resource: '../src/Coatings/Infrastructure/Api/SurfaceTreatment'
     tags: [ 'controller.service_arguments' ]

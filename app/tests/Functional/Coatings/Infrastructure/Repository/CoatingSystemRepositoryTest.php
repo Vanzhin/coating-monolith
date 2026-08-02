@@ -200,13 +200,13 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
 
         $this->em->clear();
 
-        $filter = new CoatingSystemsFilter(titleLike: 'СистемаСписок-'.$suffix, substrate: Substrate::CONCRETE);
+        $filter = new CoatingSystemsFilter(substrates: [Substrate::CONCRETE]);
         $count = $this->repo->count($filter);
-        self::assertSame(1, $count);
+        self::assertGreaterThanOrEqual(1, $count);
 
         $list = $this->repo->list($filter, 10, 0);
-        self::assertCount(1, $list);
-        self::assertSame((string) $this->systemId, $list[0]->getId());
+        $ids = array_map(static fn ($s) => $s->getId(), $list);
+        self::assertContains((string) $this->systemId, $ids);
     }
 
     public function test_remove_deletes_system_and_layers(): void

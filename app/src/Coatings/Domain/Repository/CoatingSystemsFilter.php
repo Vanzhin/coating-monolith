@@ -30,9 +30,6 @@ final readonly class CoatingSystemsFilter
         public ?RangeFilter $minApplicationTimeAt20 = null,
         public CoatingSystemSort $sort = CoatingSystemSort::DEFAULT,
         public Pager $pager = new Pager(1, 20),
-        // Legacy — до уборки в Task 12
-        public ?string $titleLike = null,
-        public ?Substrate $substrate = null,
     ) {
     }
 }

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
@@ -128,9 +128,11 @@ final class AddActionTest extends WebTestCase
 
         /** @var CoatingSystemRepositoryInterface $repo */
         $repo = $container->get(CoatingSystemRepositoryInterface::class);
-        $systems = $repo->list(new \App\Coatings\Domain\Repository\CoatingSystemsFilter(titleLike: 'Тестовая система покрытий'), 1, 0);
+        $systems = $repo->list(new \App\Coatings\Domain\Repository\CoatingSystemsFilter(), 100, 0);
         foreach ($systems as $s) {
-            $this->createdSystemIds[] = $s->getId();
+            if ('Тестовая система покрытий' === $s->getTitle()) {
+                $this->createdSystemIds[] = $s->getId();
+            }
         }
     }
 
@@ -252,7 +254,7 @@ final class AddActionTest extends WebTestCase
         }
     }
 
-    public function test_post_with_tagIds_persists_tags_in_db(): void
+    public function test_post_with_tag_ids_persists_tags_in_db(): void
     {
         $container = $this->client->getContainer();
         $tagSpec = $container->get(TagSpecification::class);

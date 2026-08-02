@@ -197,11 +197,9 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
-        if (null !== $filter->titleLike && '' !== $filter->titleLike) {
-            $qb->andWhere('LOWER(s.title) LIKE LOWER(:t)')->setParameter('t', '%'.$filter->titleLike.'%');
-        }
-        if (null !== $filter->substrate) {
-            $qb->andWhere('s.substrate = :sub')->setParameter('sub', $filter->substrate->value);
+        if ([] !== $filter->substrates) {
+            $qb->andWhere('s.substrate IN (:substrates)')
+                ->setParameter('substrates', array_map(static fn (Substrate $s) => $s->value, $filter->substrates));
         }
     }
 }

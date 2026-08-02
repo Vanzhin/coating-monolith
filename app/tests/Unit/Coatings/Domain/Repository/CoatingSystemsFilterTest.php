@@ -61,17 +61,4 @@ final class CoatingSystemsFilterTest extends TestCase
         self::assertSame(1, $filter->pager->page);
         self::assertSame(20, $filter->pager->perPage);
     }
-
-    public function test_legacy_fields_still_work(): void
-    {
-        $filter = new CoatingSystemsFilter(
-            titleLike: 'Тестовая система',
-            substrate: Substrate::CONCRETE,
-        );
-
-        self::assertSame('Тестовая система', $filter->titleLike);
-        self::assertSame(Substrate::CONCRETE, $filter->substrate);
-        self::assertNull($filter->search);
-        self::assertSame([], $filter->substrates);
-    }
 }
