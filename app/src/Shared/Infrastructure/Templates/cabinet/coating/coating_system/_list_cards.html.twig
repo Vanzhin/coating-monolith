@@ -20,20 +20,33 @@
     {% set visibleBadges = complianceBadges|slice(0, 3) %}
     {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}
 
+    {% set payloadLayers = [] %}
+    {% for layer in system.layers %}
+        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft}]) %}
+    {% endfor %}
+    {% set payload = {
+        id: system.id,
+        title: system.title,
+        substrateTitle: system.substrateTitle,
+        treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
+        totalDft: system.totalDft,
+        description: system.description,
+        layerCount: system.layers|length,
+        layers: payloadLayers,
+        compliance: system.compliance,
+    } %}
+
     <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body"
          data-system-id="{{ system.id }}">
-        <div class="flex-grow-1 overflow-hidden">
+        <div class="flex-grow-1 overflow-hidden"
+             role="button"
+             data-action="click->coating-system-preview#open"
+             data-payload="{{ payload|json_encode|e('html_attr') }}">
             <h6 class="mb-1 fw-semibold" style="word-break: break-word;">
-                <a href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}"
-                   class="text-body text-decoration-none">
-                    {{ system.title }}
-                </a>
+                <span class="text-body">{{ system.title }}</span>
             </h6>
             <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
                 <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
-                <span class="badge text-bg-light fw-normal text-body-secondary">
-                    <i class="bi bi-layers"></i> {{ system.layers|length }}
-                </span>
                 <span class="badge text-bg-light fw-normal text-body-secondary">
                     {{ system.totalDft }} мкм
                 </span>
@@ -64,6 +77,13 @@
                     {% if hiddenBadgeCount > 0 %}
                         <span class="badge text-bg-light fw-normal text-body-secondary">+{{ hiddenBadgeCount }}</span>
                     {% endif %}
+                </div>
+            {% endif %}
+            {% if system.layers|length > 0 %}
+                <div class="small text-body-secondary mb-1">
+                    {% for layer in system.layers %}
+                        <div>{{ layer.coatingTitle }} {{ layer.dft }} мкм</div>
+                    {% endfor %}
                 </div>
             {% endif %}
             {% if system.tags|length > 0 %}
