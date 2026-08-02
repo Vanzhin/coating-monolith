@@ -39,9 +39,9 @@
                                placeholder="Укажите название системы...">
                     </div>
                     <div class="col-md-6">
-                        <label for="inputSubstrate" class="form-label">Субстрат</label>
+                        <label for="inputSubstrate" class="form-label">Подложка</label>
                         <select class="form-select" id="inputSubstrate" name="substrate" required>
-                            <option value="">Выберите субстрат...</option>
+                            <option value="">Выберите подложку...</option>
                             {% for s in substrates %}
                                 <option value="{{ s.value }}"
                                         {% if (inputData.substrate ?? '') == s.value %} selected {% endif %}>
@@ -170,12 +170,10 @@
                     </template>
                 </div>
             {% else %}
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <p class="text-muted mb-0 small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Слои системы редактируются отдельно после сохранения метаданных.
-                    </p>
-                </div>
+                {% include 'cabinet/coating/coating_system/_layers_edit.html.twig' with {
+                    system: layersDto,
+                    error: null,
+                } %}
             {% endif %}
 
             {# 4. Теги #}
@@ -229,7 +227,7 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Применимые субстраты <span class="text-danger">*</span></label>
+                        <label class="form-label">Применимые подложки <span class="text-danger">*</span></label>
                         <div>
                             {% for s in substrates %}
                                 <div class="form-check form-check-inline">

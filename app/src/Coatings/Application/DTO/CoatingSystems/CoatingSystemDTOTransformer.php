@@ -58,6 +58,9 @@ class CoatingSystemDTOTransformer
             $layerDto->coatingBase = $coating->getBase()->value;
             $layerDto->coatingBaseTitle = $coating->getBase()->title();
             $layerDto->isZincRich = $coating->isZincRich();
+            $layerDto->manufacturerTitle = $coating->getManufacturer()->getTitle();
+            $layerDto->dftMin = (int) $coating->getDftRange()->range->getMin();
+            $layerDto->dftMax = (int) $coating->getDftRange()->range->getMax();
 
             $layers[] = $layerDto;
         }

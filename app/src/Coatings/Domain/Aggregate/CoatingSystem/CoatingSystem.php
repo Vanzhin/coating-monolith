@@ -220,7 +220,7 @@ class CoatingSystem extends Aggregate
 
     public function firstLayer(): CoatingSystemLayer
     {
-        $sorted = $this->getLayers()->toArray();
+        $sorted = array_values($this->getLayers()->toArray());
         if ([] === $sorted) {
             throw new AppException('Система покрытий пуста, слоёв нет.');
         }
@@ -320,6 +320,22 @@ class CoatingSystem extends Aggregate
         $this->postMutate();
     }
 
+    /**
+     * Полностью заменяет состав слоёв. Порядок в $items — позиции 1..N.
+     * Doctrine удалит старые (orphan-removal="true" в маппинге) и вставит новые.
+     * Инварианты (совместимость, плотные позиции) проверяются в postMutate().
+     *
+     * @param list<array{coating: Coating, dft: int}> $items
+     */
+    public function replaceLayers(array $items): void
+    {
+        $this->layers->clear();
+        foreach ($items as $i => $item) {
+            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft']));
+        }
+        $this->postMutate();
+    }
+
     public function updateLayerDft(int $position, int $dft): void
     {
         foreach ($this->layers as $layer) {
@@ -382,12 +398,22 @@ class CoatingSystem extends Aggregate
         }
     }
 
+    private const MAX_LAYERS = 5;
+
     private function postMutate(): void
     {
+        $this->assertLayerCountWithinLimit();
         $this->assertPositionsAreDense();
         $this->assertLayersAreChainable();
         $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
+    }
+
+    private function assertLayerCountWithinLimit(): void
+    {
+        if ($this->layers->count() > self::MAX_LAYERS) {
+            throw new AppException(sprintf('Система покрытий не может содержать более %d слоёв.', self::MAX_LAYERS));
+        }
     }
 
     private function assertPositionsAreDense(): void

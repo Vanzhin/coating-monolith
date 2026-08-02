@@ -131,6 +131,86 @@ final class CoatingSystemTest extends TestCase
         self::assertSame($l1, $sys->firstLayer());
     }
 
+    public function test_first_layer_after_removing_first_returns_next(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->removeLayerAt(1);
+        self::assertSame($l2, $sys->firstLayer());
+    }
+
+    public function test_replace_layers_replaces_composition_and_renumbers(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+
+        $newA = $this->newCoatingCompatibleAll();
+        $newB = $this->newCoatingCompatibleAll();
+        $sys->replaceLayers([
+            ['coating' => $newA, 'dft' => 55],
+            ['coating' => $newB, 'dft' => 90],
+        ]);
+
+        self::assertSame(2, $sys->layerCount());
+        self::assertSame([1, 2], $this->positions($sys));
+        self::assertSame(145, $sys->totalDft());
+    }
+
+    public function test_replace_layers_with_empty_list_clears_system(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->replaceLayers([]);
+        self::assertSame(0, $sys->layerCount());
+    }
+
+    public function test_append_sixth_layer_throws(): void
+    {
+        $sys = $this->newSystem();
+        for ($i = 0; $i < 5; ++$i) {
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        }
+        $this->expectException(AppException::class);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+    }
+
+    public function test_insert_sixth_layer_throws(): void
+    {
+        $sys = $this->newSystem();
+        for ($i = 0; $i < 5; ++$i) {
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        }
+        $this->expectException(AppException::class);
+        $sys->insertLayerAt(3, $this->newCoatingCompatibleAll(), 60);
+    }
+
+    public function test_replace_with_six_layers_throws(): void
+    {
+        $sys = $this->newSystem();
+        $items = [];
+        for ($i = 0; $i < 6; ++$i) {
+            $items[] = ['coating' => $this->newCoatingCompatibleAll(), 'dft' => 60];
+        }
+        $this->expectException(AppException::class);
+        $sys->replaceLayers($items);
+    }
+
+    public function test_replace_layers_rejects_incompatible_chain(): void
+    {
+        $sys = $this->newSystem();
+        $ak = $this->newCoatingWithBase(CoatingBase::AK);
+        $esi = $this->newCoatingWithBase(CoatingBase::ESI);
+
+        $this->expectException(AppException::class);
+        $sys->replaceLayers([
+            ['coating' => $ak, 'dft' => 60],
+            ['coating' => $esi, 'dft' => 60],
+        ]);
+    }
+
     public function test_followup_layers_returns_all_except_first(): void
     {
         $sys = $this->newSystem();
