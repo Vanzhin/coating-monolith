@@ -86,7 +86,7 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
 
         $row = $this->fetchRow($system->getId());
         self::assertIsArray($row);
-        self::assertSame(0, (int) $row['min_building_time_at_20_minutes']);
+        self::assertSame(0, (int) $row['min_application_time_at_20_minutes']);
         self::assertSame(5, (int) $row['max_layer_application_min_temp']);
         self::assertNotEmpty($row['search_tsvector']);
     }
@@ -185,7 +185,7 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
     private function fetchRow(string $systemId): ?array
     {
         $row = $this->conn->fetchAssociative(
-            'SELECT system_id, min_building_time_at_20_minutes, max_layer_application_min_temp, search_tsvector::text AS search_tsvector FROM coating_system_search WHERE system_id = ?',
+            'SELECT system_id, min_application_time_at_20_minutes, max_layer_application_min_temp, search_tsvector::text AS search_tsvector FROM coating_system_search WHERE system_id = ?',
             [$systemId],
         );
 

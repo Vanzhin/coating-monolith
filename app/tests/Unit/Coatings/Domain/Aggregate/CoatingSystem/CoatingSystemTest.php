@@ -272,7 +272,7 @@ final class CoatingSystemTest extends TestCase
         $coatingB = $this->makeCoating(applicationMinTemp: 10);
         $sys->appendLayer($coatingA, 80);   // 240*80/100 = 192
         $sys->appendLayer($coatingB, 80);   // top, не участвует
-        self::assertSame(192, $sys->minBuildingTimeAt20Minutes());
+        self::assertSame(192, $sys->minApplicationTimeAt20Minutes());
         self::assertSame(10, $sys->maxLayerApplicationMinTemp());
     }
 

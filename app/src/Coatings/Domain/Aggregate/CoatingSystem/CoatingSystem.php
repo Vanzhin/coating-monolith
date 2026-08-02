@@ -172,7 +172,7 @@ class CoatingSystem extends Aggregate
      * толщину интервалов перекрытия по слоям, поверх которых наносится следующий.
      * Null если система пуста или у любого из промежуточных слоёв нет точки при 20 °C.
      */
-    public function minBuildingTimeAt20Minutes(): ?int
+    public function minApplicationTimeAt20Minutes(): ?int
     {
         $ordered = $this->getLayers();
         if ($ordered->isEmpty()) {

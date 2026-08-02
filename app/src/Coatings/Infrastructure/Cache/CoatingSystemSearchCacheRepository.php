@@ -18,17 +18,17 @@ final class CoatingSystemSearchCacheRepository
         $this->conn->executeStatement(
             <<<'SQL'
                 INSERT INTO coating_system_search
-                    (system_id, min_building_time_at_20_minutes, max_layer_application_min_temp, search_tsvector)
+                    (system_id, min_application_time_at_20_minutes, max_layer_application_min_temp, search_tsvector)
                 VALUES
                     (:id, :sum, :max_temp, to_tsvector('russian', :doc))
                 ON CONFLICT (system_id) DO UPDATE
-                SET min_building_time_at_20_minutes = EXCLUDED.min_building_time_at_20_minutes,
+                SET min_application_time_at_20_minutes = EXCLUDED.min_application_time_at_20_minutes,
                     max_layer_application_min_temp  = EXCLUDED.max_layer_application_min_temp,
                     search_tsvector                 = EXCLUDED.search_tsvector
             SQL,
             [
                 'id' => $system->getId(),
-                'sum' => $system->minBuildingTimeAt20Minutes(),
+                'sum' => $system->minApplicationTimeAt20Minutes(),
                 'max_temp' => $system->maxLayerApplicationMinTemp(),
                 'doc' => $this->buildFullTextSearchDocument($system),
             ],
