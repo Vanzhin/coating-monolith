@@ -17,7 +17,8 @@ final class PublishDomainEventsOnFlushListenerTest extends TestCase
     {
         $dispatched = [];
         $bus = new class($dispatched) implements EventBusInterface {
-            public function __construct(private array &$log)
+            /** @param list<mixed> $log */
+            public function __construct(private array &$log) // @phpstan-ignore-line
             {
             }
 
@@ -55,7 +56,8 @@ final class PublishDomainEventsOnFlushListenerTest extends TestCase
     {
         $dispatched = [];
         $bus = new class($dispatched) implements EventBusInterface {
-            public function __construct(private array &$log)
+            /** @param list<mixed> $log */
+            public function __construct(private array &$log) // @phpstan-ignore-line
             {
             }
 
@@ -89,7 +91,8 @@ final class PublishDomainEventsOnFlushListenerTest extends TestCase
     {
         $dispatched = [];
         $bus = new class($dispatched) implements EventBusInterface {
-            public function __construct(private array &$log)
+            /** @param list<mixed> $log */
+            public function __construct(private array &$log) // @phpstan-ignore-line
             {
             }
 
