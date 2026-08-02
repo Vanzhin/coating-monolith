@@ -24,18 +24,16 @@
         <form method="get" action="{{ path('app_cabinet_coating_coating_list') }}"
               id="coatingListForm" class="mb-3"
               data-controller="chip-facets">
-            <div class="input-group input-group-lg mb-3">
-                {# Строка поиска — только текст. Активные фасеты (производитель /
-                   ranges / thermal / теги) в chip-row показаны как value-чипы-ссылки,
-                   не как form-input'ы. Чтобы они не терялись при сабмите этой
-                   формы (через search-input, apply-кнопки в dropdown'ах пустых
-                   фасетов, range-preset auto-submit) — рендерим их как hidden ниже. #}
-                <input type="search" name="search" value="{{ search }}"
-                       class="form-control"
-                       placeholder="По названию и описанию (3-50 символов)"
-                       minlength="3" maxlength="50" autocomplete="off">
-                <button type="submit" class="btn btn-primary">Найти</button>
-            </div>
+            {# Строка поиска — только текст. Активные фасеты (производитель /
+               ranges / thermal / теги) в chip-row показаны как value-чипы-ссылки,
+               не как form-input'ы. Чтобы они не терялись при сабмите этой
+               формы (через search-input, apply-кнопки в dropdown'ах пустых
+               фасетов, range-preset auto-submit) — рендерим их как hidden ниже. #}
+            {% include 'components/_search_toolbar.html.twig' with {
+                q_value: search,
+                reset_url: path('app_cabinet_coating_coating_list'),
+                placeholder: 'По названию и описанию (3-50 символов)',
+            } %}
 
             {# Preserve-state: hidden input'ы всех текущих query-параметров
                (кроме search/page/partial — они у формы свои). Multi-value
