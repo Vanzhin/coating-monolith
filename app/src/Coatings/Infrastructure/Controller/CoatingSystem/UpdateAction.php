@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
+use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
@@ -29,6 +30,7 @@ class UpdateAction extends AbstractController
         private readonly Validator $validator,
         private readonly CoatingSystemMapper $mapper,
         private readonly CoatingSystemErrorFormatter $errorFormatter,
+        private readonly GeneralTagsJsonHydrator $tagsHydrator,
     ) {
     }
 
@@ -58,12 +60,17 @@ class UpdateAction extends AbstractController
             } catch (\Exception $e) {
                 $error = $e->getMessage();
                 $inputData = $this->enrichWithTreatmentTitle($inputData);
+                $rawTagIds = array_map(
+                    static fn (string $id) => ['id' => $id],
+                    (array) ($inputData['tagIds'] ?? []),
+                );
 
                 return $this->render('cabinet/coating/coating_system/form.html.twig', [
                     'error' => $error,
                     'inputData' => $inputData,
                     'systemId' => $id,
                     'substrates' => Substrate::cases(),
+                    'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($rawTagIds),
                 ]);
             }
         }
@@ -74,6 +81,7 @@ class UpdateAction extends AbstractController
             'inputData' => $inputData,
             'systemId' => $id,
             'substrates' => Substrate::cases(),
+            'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($dto->tags),
         ]);
     }
 

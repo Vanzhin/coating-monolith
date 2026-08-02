@@ -6,6 +6,9 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
@@ -23,6 +26,8 @@ final class UpdateActionTest extends WebTestCase
     private EntityManagerInterface $em;
     private string $userEmail;
     private string $systemId;
+    /** @var list<string> */
+    private array $createdTagIds = [];
 
     protected function setUp(): void
     {
@@ -79,6 +84,16 @@ final class UpdateActionTest extends WebTestCase
 
             $em->flush();
             $this->cleanUpTreatment($em);
+
+            foreach ($this->createdTagIds as $tagId) {
+                $tag = $em->find(Tag::class, $tagId);
+                if (null !== $tag) {
+                    $em->remove($tag);
+                }
+            }
+            if ([] !== $this->createdTagIds) {
+                $em->flush();
+            }
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -143,5 +158,35 @@ final class UpdateActionTest extends WebTestCase
         // surfaceTreatmentId — присутствует как option selected
         self::assertStringContainsString((string) $this->treatmentId, $content);
         self::assertStringContainsString('selected', $content);
+    }
+
+    public function test_post_with_tagIds_persists_tags_in_db(): void
+    {
+        $container = $this->client->getContainer();
+        $tagSpec = $container->get(TagSpecification::class);
+        $tag = new Tag('нефтяной-тест-'.uniqid('', true), $tagSpec);
+        $container->get(TagRepositoryInterface::class)->add($tag);
+        $this->createdTagIds[] = $tag->getId();
+
+        $this->client->request('POST', sprintf('/cabinet/coating/coating-system/%s/update', $this->systemId), [
+            'title' => 'Система с тегом',
+            'description' => '',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+            'tagIds' => [$tag->getId()],
+        ]);
+
+        self::assertResponseRedirects('/cabinet/coating/coating-system/list');
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+
+        $joinRows = $em->getConnection()->fetchAllAssociative(
+            'SELECT tag_id FROM coating_system_tag WHERE coating_system_id = ?',
+            [$this->systemId],
+        );
+
+        self::assertCount(1, $joinRows, 'Тег должен быть привязан к обновлённой системе покрытий.');
+        self::assertSame($tag->getId(), $joinRows[0]['tag_id']);
     }
 }
