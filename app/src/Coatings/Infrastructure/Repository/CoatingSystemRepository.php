@@ -162,6 +162,39 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->getResult();
     }
 
+    public function findByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        $systems = $this->em->createQueryBuilder()
+            ->select('cs')
+            ->from(CoatingSystem::class, 'cs')
+            ->leftJoin('cs.layers', 'l')->addSelect('l')
+            ->leftJoin('l.coating', 'c')->addSelect('c')
+            ->leftJoin('c.manufacturer', 'm')->addSelect('m')
+            ->leftJoin('cs.tags', 't')->addSelect('t')
+            ->where('cs.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+
+        // Восстановить порядок $ids
+        $byId = [];
+        foreach ($systems as $system) {
+            $byId[$system->getId()] = $system;
+        }
+        $ordered = [];
+        foreach ($ids as $id) {
+            if (isset($byId[$id])) {
+                $ordered[] = $byId[$id];
+            }
+        }
+
+        return $ordered;
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {

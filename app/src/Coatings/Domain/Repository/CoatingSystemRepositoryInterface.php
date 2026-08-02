@@ -51,4 +51,14 @@ interface CoatingSystemRepositoryInterface
 
     /** @return list<CoatingSystem> */
     public function findAll(): array;
+
+    /**
+     * Массовая выгрузка систем по id, порядок соответствует $ids.
+     * Отсутствующие id молча пропускаются.
+     *
+     * @param list<string> $ids
+     *
+     * @return list<CoatingSystem>
+     */
+    public function findByIds(array $ids): array;
 }
