@@ -159,6 +159,65 @@ final class CreateCoatingSystemTest extends KernelTestCase
         self::assertGreaterThan(0, count($complianceRows), 'coating_system_compliance должен быть заполнен после создания.');
     }
 
+    public function test_create_populates_coating_system_search_cache(): void
+    {
+        $container = static::getContainer();
+        $suffix = bin2hex(random_bytes(3));
+
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+
+        $manufacturer = new Manufacturer(
+            'Мфр-CS-SearchCache-'.$suffix,
+            $container->get(ManufacturerSpecification::class),
+        );
+        $this->em->persist($manufacturer);
+        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
+
+        $coatingId = UuidService::generateUuid();
+        $coating = new Coating(
+            $coatingId,
+            'Грунт-CS-SearchCache-'.$suffix,
+            'Описание тестового покрытия.',
+            50,
+            1.5,
+            CoatingBase::EP,
+            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            null,
+            1.0,
+            null,
+            $manufacturer,
+            $container->get(CoatingSpecification::class),
+        );
+        $this->em->persist($coating);
+        $this->em->flush();
+        $this->coatingId = $coatingId;
+
+        $cmd = new CreateCoatingSystemCommand(
+            title: 'Система-CS-SearchCache-'.$suffix,
+            description: 'Тестовая система.',
+            substrate: Substrate::STEEL_GALVANIZED,
+            surfaceTreatmentId: $treatment->getId(),
+            initialLayers: [
+                ['coatingId' => (string) $coatingId, 'dft' => 80],
+            ],
+        );
+
+        $result = ($this->handler)($cmd);
+        $this->systemId = Uuid::fromString($result->id);
+
+        $this->em->clear();
+
+        $row = $this->em->getConnection()->fetchAssociative(
+            'SELECT system_id FROM coating_system_search WHERE system_id = ?',
+            [(string) $this->systemId],
+        );
+        self::assertNotFalse($row, 'coating_system_search должна содержать строку для новой системы после создания.');
+    }
+
     public function test_create_persists_tags_via_m2m(): void
     {
         $container = static::getContainer();

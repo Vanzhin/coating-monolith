@@ -61,7 +61,23 @@ final class PublishDomainEventsOnFlushListener
         $events = $this->pendingEvents;
         $this->pendingEvents = [];
 
-        $this->eventBus->execute(...$events);
+        $deduped = [];
+        foreach ($events as $event) {
+            $key = $this->eventKey($event);
+            $deduped[$key] ??= $event;
+        }
+
+        $this->eventBus->execute(...array_values($deduped));
+    }
+
+    private function eventKey(object $event): string
+    {
+        $props = [];
+        foreach (get_object_vars($event) as $k => $v) {
+            $props[$k] = is_scalar($v) || null === $v ? (string) $v : spl_object_hash($v);
+        }
+
+        return $event::class.'#'.json_encode($props);
     }
 
     private function collectDomainEvents(object $entity): void
