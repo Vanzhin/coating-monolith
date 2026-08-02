@@ -16,7 +16,6 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
-use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -148,65 +147,6 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
         self::assertSame(1, $layer->getPosition());
         self::assertSame(80, $layer->getDft());
         self::assertSame((string) $this->coatingId, $layer->getCoating()->getId());
-    }
-
-    public function test_list_and_count_with_filter(): void
-    {
-        $container = static::getContainer();
-        $suffix = bin2hex(random_bytes(3));
-
-        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
-
-        $manufacturer = new Manufacturer(
-            'МфрСписок-'.$suffix,
-            $container->get(ManufacturerSpecification::class),
-        );
-        $this->em->persist($manufacturer);
-        $this->manufacturerId = Uuid::fromString($manufacturer->getId());
-
-        $coatingId = UuidService::generateUuid();
-        $coating = new Coating(
-            $coatingId,
-            'ЛакСписок-'.$suffix,
-            'Покрытие для теста list/count.',
-            50,
-            1.5,
-            CoatingBase::EP,
-            new DftRange(new PositiveNumberRange(60, 200), 100, ThicknessType::MIC),
-            5,
-            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
-            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
-            null,
-            1.0,
-            null,
-            $manufacturer,
-            $container->get(CoatingSpecification::class),
-        );
-        $this->em->persist($coating);
-        $this->em->flush();
-        $this->coatingId = $coatingId;
-
-        $this->systemId = Uuid::v7();
-        $system = new CoatingSystem(
-            $this->systemId,
-            'СистемаСписок-'.$suffix,
-            'Описание.',
-            Substrate::CONCRETE,
-            $treatment,
-        );
-        $system->appendLayer($coating, 80);
-        $this->repo->save($system);
-
-        $this->em->clear();
-
-        $filter = new CoatingSystemsFilter(substrates: [Substrate::CONCRETE]);
-        $count = $this->repo->count($filter);
-        self::assertGreaterThanOrEqual(1, $count);
-
-        $list = $this->repo->list($filter, 10, 0);
-        $ids = array_map(static fn ($s) => $s->getId(), $list);
-        self::assertContains((string) $this->systemId, $ids);
     }
 
     public function test_remove_deletes_system_and_layers(): void

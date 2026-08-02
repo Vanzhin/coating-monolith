@@ -7,11 +7,9 @@ namespace App\Tests\Unit\Coatings\Application\UseCase\Command;
 use App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment\RemoveSurfaceTreatmentCommand;
 use App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment\RemoveSurfaceTreatmentCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
-use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
@@ -71,41 +69,6 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             public function findById(Uuid $id): ?CoatingSystem
             {
                 return null;
-            }
-
-            public function list(CoatingSystemsFilter $filter, int $limit, int $offset): array
-            {
-                return [];
-            }
-
-            public function count(CoatingSystemsFilter $filter): int
-            {
-                return 0;
-            }
-
-            public function findByCompliance(
-                ComplianceStandard $standard,
-                string $category,
-                string $durability,
-                ?Substrate $substrate,
-                int $limit,
-                int $offset,
-            ): array {
-                return [];
-            }
-
-            public function countByCompliance(
-                ComplianceStandard $standard,
-                string $category,
-                string $durability,
-                ?Substrate $substrate,
-            ): int {
-                return 0;
-            }
-
-            public function findComplianceRows(Uuid $systemId): array
-            {
-                return [];
             }
 
             public function countUsingSurfaceTreatment(string $treatmentId): int

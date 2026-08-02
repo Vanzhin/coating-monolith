@@ -128,8 +128,7 @@ final class AddActionTest extends WebTestCase
 
         /** @var CoatingSystemRepositoryInterface $repo */
         $repo = $container->get(CoatingSystemRepositoryInterface::class);
-        $systems = $repo->list(new \App\Coatings\Domain\Repository\CoatingSystemsFilter(), 100, 0);
-        foreach ($systems as $s) {
+        foreach ($repo->findAll() as $s) {
             if ('Тестовая система покрытий' === $s->getTitle()) {
                 $this->createdSystemIds[] = $s->getId();
             }

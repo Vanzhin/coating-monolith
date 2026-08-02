@@ -24,24 +24,32 @@ final readonly class SearchCoatingSystemsForSuggestQueryHandler implements Query
         }
 
         $tsquery = $this->tsQueryBuilder->build($trimmed, PrefixTsQueryBuilder::CONJUNCTION_AND);
+        $ftsCondition = '' !== $tsquery
+            ? 'css.search_tsvector @@ TO_TSQUERY(:lang, :tsquery)'
+            : '1 = 0';
+
+        $params = [
+            'like' => '%'.$trimmed.'%',
+            'limit' => $q->limit,
+        ];
+        $types = ['limit' => \PDO::PARAM_INT];
+        if ('' !== $tsquery) {
+            $params['lang'] = 'russian';
+            $params['tsquery'] = $tsquery;
+        }
 
         $rows = $this->conn->fetchAllAssociative(
-            <<<'SQL'
+            <<<SQL
                 SELECT cs.id, cs.title
                 FROM coating_system cs
                 LEFT JOIN coating_system_search css ON css.system_id = cs.id
-                WHERE css.search_tsvector @@ TO_TSQUERY(:lang, :tsquery)
+                WHERE $ftsCondition
                    OR cs.title ILIKE :like
                 ORDER BY cs.title
                 LIMIT :limit
                 SQL,
-            [
-                'lang' => 'russian',
-                'tsquery' => $tsquery,
-                'like' => '%'.$trimmed.'%',
-                'limit' => $q->limit,
-            ],
-            ['limit' => \PDO::PARAM_INT],
+            $params,
+            $types,
         );
 
         $items = array_map(
