@@ -6,19 +6,17 @@ namespace App\Coatings\Application\DTO\CoatingSystems;
 
 use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 
 class CoatingSystemDTOTransformer
 {
     public function __construct(
+        private readonly ComplianceEvaluator $evaluator,
         private readonly TagDTOTransformer $tagTransformer = new TagDTOTransformer(),
     ) {
     }
 
-    /**
-     * @param list<array{standard: string, category: string, durability: string}> $complianceRows
-     */
-    public function fromEntity(CoatingSystem $system, array $complianceRows = []): CoatingSystemDTO
+    public function fromEntity(CoatingSystem $system): CoatingSystemDTO
     {
         $treatment = $system->getSurfaceTreatment();
 
@@ -36,32 +34,13 @@ class CoatingSystemDTOTransformer
         $dto->createdAt = $system->getCreatedAt();
         $dto->updatedAt = $system->getUpdatedAt();
         $dto->totalDft = $system->totalDft();
+        $dto->minApplicationTimeAt20Minutes = $system->minApplicationTimeAt20Minutes();
+        $dto->maxLayerApplicationMinTemp = $system->maxLayerApplicationMinTemp();
         $dto->layers = $this->layersFromSystem($system);
-        $dto->compliance = $this->normalizeComplianceRows($complianceRows);
+        $dto->compliance = $system->complianceMatches($this->evaluator)->jsonSerialize();
         $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
 
         return $dto;
-    }
-
-    /**
-     * @param list<array{standard: string, category: string, durability: string}> $rows
-     *
-     * @return list<array{standard: string, standardTitle: string, category: string, durability: string}>
-     */
-    private function normalizeComplianceRows(array $rows): array
-    {
-        $result = [];
-        foreach ($rows as $row) {
-            $standard = ComplianceStandard::from($row['standard']);
-            $result[] = [
-                'standard' => $row['standard'],
-                'standardTitle' => $standard->title(),
-                'category' => $row['category'],
-                'durability' => $row['durability'],
-            ];
-        }
-
-        return $result;
     }
 
     /** @return list<CoatingSystemLayerDTO> */

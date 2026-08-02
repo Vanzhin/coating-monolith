@@ -21,9 +21,11 @@ class CoatingSystemDTO
     /** @var list<CoatingSystemLayerDTO> */
     public array $layers = [];
     public int $totalDft;
+    public ?int $minApplicationTimeAt20Minutes = null;
+    public ?int $maxLayerApplicationMinTemp = null;
     public \DateTimeImmutable $createdAt;
     public \DateTimeImmutable $updatedAt;
-    /** @var list<array{standard: string, standardTitle: string, category: string, durability: string}> */
+    /** @var list<array{standard: string, category: string, durability: string}> */
     public array $compliance = [];
     /** @var list<TagDTO> */
     public array $tags = [];

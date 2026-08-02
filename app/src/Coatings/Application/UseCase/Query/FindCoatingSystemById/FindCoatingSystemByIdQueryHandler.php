@@ -26,8 +26,6 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
             return null;
         }
 
-        $complianceRows = $this->repository->findComplianceRows($id);
-
-        return $this->transformer->fromEntity($system, $complianceRows);
+        return $this->transformer->fromEntity($system);
     }
 }

@@ -16,9 +16,12 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRuleBook;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -27,6 +30,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemDTOTransformerTest extends TestCase
 {
+    private function makeTransformer(?ComplianceEvaluator $evaluator = null): CoatingSystemDTOTransformer
+    {
+        return new CoatingSystemDTOTransformer($evaluator ?? new ComplianceEvaluator([]));
+    }
+
     public function test_from_entity_populates_all_fields(): void
     {
         $coating1 = $this->makeCoating('Coating 1', CoatingBase::EP, 80, 150);
@@ -43,7 +51,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $system->appendLayer($coating1, 100);
         $system->appendLayer($coating2, 80);
 
-        $transformer = new CoatingSystemDTOTransformer();
+        $transformer = $this->makeTransformer();
         $dto = $transformer->fromEntity($system);
 
         $this->assertInstanceOf(CoatingSystemDTO::class, $dto);
@@ -78,7 +86,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         );
         $layer = $system->appendLayer($coating, 120);
 
-        $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
+        $dto = $this->makeTransformer()->fromEntity($system);
 
         $this->assertCount(1, $dto->layers);
         $layerDto = $dto->layers[0];
@@ -104,14 +112,14 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             $treatment,
         );
 
-        $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
+        $dto = $this->makeTransformer()->fromEntity($system);
 
         $this->assertNull($dto->surfaceTreatmentCode);
         $this->assertNull($dto->surfaceTreatmentStandardCode);
         $this->assertSame('Обмыв водой', $dto->surfaceTreatmentTitle);
     }
 
-    public function test_from_entity_compliance_empty_by_default(): void
+    public function test_from_entity_compliance_empty_for_system_without_layers(): void
     {
         $treatment = $this->newTreatment('Grade', 'Preparation', null);
         $system = new CoatingSystem(
@@ -122,9 +130,49 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             $treatment,
         );
 
-        $dto = (new CoatingSystemDTOTransformer())->fromEntity($system);
+        $dto = $this->makeTransformer(ComplianceEvaluatorFactory::create())->fromEntity($system);
 
         $this->assertSame([], $dto->compliance);
+    }
+
+    public function test_transformer_populates_runtime_min_max_and_compliance(): void
+    {
+        $system = $this->buildZincRichEpSystem();
+
+        $transformer = $this->makeTransformer(ComplianceEvaluatorFactory::create());
+        $dto = $transformer->fromEntity($system);
+
+        self::assertIsInt($dto->maxLayerApplicationMinTemp);
+        self::assertGreaterThanOrEqual(0, $dto->minApplicationTimeAt20Minutes);
+        self::assertGreaterThan(0, count($dto->compliance));
+        self::assertContains(
+            ['standard' => 'ISO_12944', 'category' => 'C4', 'durability' => 'HIGH'],
+            $dto->compliance,
+        );
+    }
+
+    private function buildZincRichEpSystem(): CoatingSystem
+    {
+        $treatment = $this->newTreatment('Sa 2.5', 'Abrasive blast', 'ISO 8501-1');
+        $system = new CoatingSystem(
+            UuidService::generateUuid(),
+            'Zinc-Rich EP System',
+            'Test system for ISO 12944 compliance',
+            Substrate::STEEL_CARBON,
+            $treatment,
+        );
+
+        $primer = $this->makeCoating('ZnEP Primer', CoatingBase::EP, 60, 80);
+        $primer->setIsZincRich(true);
+        $primer->setApplicationMinTemp(5);
+
+        $topcoat = $this->makeCoating('EP Topcoat', CoatingBase::EP, 80, 120);
+        $topcoat->setApplicationMinTemp(5);
+
+        $system->appendLayer($primer, 80);
+        $system->appendLayer($topcoat, 120);
+
+        return $system;
     }
 
     private function newTreatment(?string $code, string $description, ?string $standardCode): SurfaceTreatment
