@@ -1,0 +1,19 @@
+<div class="d-flex flex-column gap-2">
+    {% for system in items %}
+        <div class="coating-card d-flex align-items-start gap-2 p-3 rounded-3 bg-body"
+             data-system-id="{{ system.id }}">
+            <div class="flex-grow-1 overflow-hidden">
+                <h6 class="mb-1 fw-semibold">{{ system.title }}</h6>
+                <div class="d-flex flex-wrap gap-1 align-items-center">
+                    <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
+                    <span class="badge text-bg-light fw-normal text-body-secondary">
+                        <i class="bi bi-layers"></i> {{ system.layers|length }}
+                    </span>
+                    <span class="badge text-bg-light fw-normal text-body-secondary">
+                        {{ system.totalDft }} мкм
+                    </span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>

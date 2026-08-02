@@ -23,14 +23,14 @@
         <form method="get" action="{{ path('app_cabinet_coating_system_list') }}" class="mb-0">
             <div class="row g-2">
                 <div class="col-md-5">
-                    <input type="search" name="search" value="{{ search }}" class="form-control"
+                    <input type="search" name="q" value="{{ q }}" class="form-control"
                            placeholder="По названию...">
                 </div>
                 <div class="col-md-4">
-                    <select name="substrate" class="form-select">
+                    <select name="substrates[]" class="form-select">
                         <option value="">Все субстраты</option>
-                        {% for s in substrates %}
-                            <option value="{{ s.value }}" {% if substrate == s.value %}selected{% endif %}>
+                        {% for s in substrateOptions %}
+                            <option value="{{ s.value }}" {% if s in substrates %}selected{% endif %}>
                                 {{ s.title() }}
                             </option>
                         {% endfor %}
@@ -75,7 +75,8 @@
                     compliance: system.compliance,
                 } %}
 
-                <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
+                <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body"
+                     data-system-id="{{ system.id }}">
                     <div class="flex-grow-1 overflow-hidden">
                         <div style="cursor: pointer;"
                              data-action="click->coating-system-preview#open"
@@ -153,7 +154,7 @@
                     {% if page > 1 %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: page - 1, search: search, substrate: substrate}) }}">
+                               href="{{ path('app_cabinet_coating_system_list', {page: page - 1, q: q}) }}">
                                 Назад
                             </a>
                         </li>
@@ -162,7 +163,7 @@
                     {% for p in 1..totalPages %}
                         <li class="page-item {% if p == page %}active{% endif %}">
                             <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: p, search: search, substrate: substrate}) }}">
+                               href="{{ path('app_cabinet_coating_system_list', {page: p, q: q}) }}">
                                 {{ p }}
                             </a>
                         </li>
@@ -170,7 +171,7 @@
                     {% if page < totalPages %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: page + 1, search: search, substrate: substrate}) }}">
+                               href="{{ path('app_cabinet_coating_system_list', {page: page + 1, q: q}) }}">
                                 Вперёд
                             </a>
                         </li>
@@ -266,7 +267,7 @@
         <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
             <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
             <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
-            {% if search or substrate %}
+            {% if q or substrates %}
                 <p class="text-body-secondary mb-0">Попробуйте изменить параметры поиска.</p>
             {% endif %}
         </div>
