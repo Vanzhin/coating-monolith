@@ -197,6 +197,48 @@ final class ComplianceEvaluatorTest extends TestCase
         self::assertCount(0, $result);
     }
 
+    public function test_result_keeps_only_strongest_dominating_pairs(): void
+    {
+        // Пара правил, оба матчатся одной и той же мощной системой:
+        // C4-HIGH доминируется C5-VERY_HIGH и в результате должен исчезнуть.
+        $rules = [
+            $this->makeRule(
+                substrate: Substrate::STEEL_CARBON,
+                category: 'C4',
+                durability: 'HIGH',
+                primerType: PrimerType::OTHER,
+                mnoc: 2,
+                ndft: 160,
+                primerBinders: [CoatingBase::EP],
+                otherBinders: [CoatingBase::EP, CoatingBase::PUR],
+            ),
+            $this->makeRule(
+                substrate: Substrate::STEEL_CARBON,
+                category: 'C5',
+                durability: 'VERY_HIGH',
+                primerType: PrimerType::OTHER,
+                mnoc: 3,
+                ndft: 360,
+                primerBinders: [CoatingBase::EP],
+                otherBinders: [CoatingBase::EP, CoatingBase::PUR],
+            ),
+        ];
+
+        $evaluator = new ComplianceEvaluator($rules);
+        $system = $this->makeSystem(Substrate::STEEL_CARBON, [
+            [CoatingBase::EP, 150, false],
+            [CoatingBase::EP, 150, false],
+            [CoatingBase::PUR, 60, false],
+        ]);
+
+        $matches = $evaluator->evaluate($system)->toArray();
+        self::assertCount(1, $matches);
+        self::assertEquals(
+            new ComplianceMatch(ComplianceStandard::ISO_12944, 'C5', 'VERY_HIGH'),
+            $matches[0],
+        );
+    }
+
     // --- helpers ---
 
     /**

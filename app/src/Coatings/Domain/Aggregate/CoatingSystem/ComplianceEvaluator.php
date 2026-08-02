@@ -64,6 +64,6 @@ final class ComplianceEvaluator
             ));
         }
 
-        return $result;
+        return $result->strongestOnly();
     }
 }

@@ -196,6 +196,40 @@ final class CoatingSystemFinderTest extends KernelTestCase
         self::assertNotContains($sysWrongCat->getId(), $result->ids);
     }
 
+    public function test_compliance_filter_matches_stronger_categories_and_durabilities(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        // Система с максимумом C5-VERY_HIGH должна попадать под фильтр C3-HIGH.
+        $sysStrong = $this->buildAndSaveSystem('C5 VH '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysStrong->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C5', 'dur' => 'VERY_HIGH'],
+        );
+        // Слабая система с C2-LOW не должна попадать под фильтр C3-HIGH.
+        $sysWeak = $this->buildAndSaveSystem('C2 LOW '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysWeak->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C2', 'dur' => 'LOW'],
+        );
+        // Погружная категория Im2-VH не должна попадать под атмосферный фильтр C3.
+        $sysImmersion = $this->buildAndSaveSystem('Im2 VH '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysImmersion->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'Im2', 'dur' => 'VERY_HIGH'],
+        );
+
+        $filter = new CoatingSystemsFilter(
+            standard: ComplianceStandard::ISO_12944,
+            category: 'C3',
+            durability: 'HIGH',
+        );
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysStrong->getId(), $result->ids);
+        self::assertNotContains($sysWeak->getId(), $result->ids);
+        self::assertNotContains($sysImmersion->getId(), $result->ids);
+    }
+
     public function test_tag_filter(): void
     {
         $suffix = bin2hex(random_bytes(4));
