@@ -117,6 +117,11 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             {
                 return [];
             }
+
+            public function findAll(): array
+            {
+                return [];
+            }
         };
 
         $handler = new RemoveSurfaceTreatmentCommandHandler($treatmentRepo, $coatingSystemRepo);

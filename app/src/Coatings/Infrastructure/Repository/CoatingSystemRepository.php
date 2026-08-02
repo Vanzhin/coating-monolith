@@ -149,6 +149,19 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->getResult();
     }
 
+    public function findAll(): array
+    {
+        return $this->em->createQueryBuilder()
+            ->select('s')
+            ->from(CoatingSystem::class, 's')
+            ->leftJoin('s.layers', 'l')
+            ->leftJoin('l.coating', 'c')
+            ->addSelect('l')
+            ->addSelect('c')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function applyFilter(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null !== $filter->titleLike && '' !== $filter->titleLike) {

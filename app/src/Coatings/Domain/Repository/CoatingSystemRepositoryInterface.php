@@ -48,4 +48,7 @@ interface CoatingSystemRepositoryInterface
 
     /** @return list<CoatingSystem> */
     public function findByLayerCoatingId(string $coatingId): array;
+
+    /** @return list<CoatingSystem> */
+    public function findAll(): array;
 }
