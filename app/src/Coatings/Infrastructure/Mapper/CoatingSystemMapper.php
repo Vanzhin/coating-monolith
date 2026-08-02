@@ -122,7 +122,7 @@ class CoatingSystemMapper
                 new Assert\NotBlank(),
                 new Assert\Choice([
                     'choices' => array_map(fn (Substrate $s) => $s->value, Substrate::cases()),
-                    'message' => 'Недопустимое значение субстрата.',
+                    'message' => 'Недопустимое значение подложки.',
                 ]),
             ],
             'surfaceTreatmentId' => [

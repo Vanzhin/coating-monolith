@@ -11,7 +11,7 @@
          data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
          data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}">
 
-    {# Собираем значения активных субстратов для сравнения #}
+    {# Собираем значения активных подложек для сравнения #}
     {% set activeSubstrateValues = substrates|map(s => s.value) %}
 
     {# Активность фасетов #}
@@ -129,13 +129,13 @@
                 {# Скроллируемая часть chip-row #}
                 <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
 
-                {# --- Субстрат (multi) --- #}
+                {# --- Подложка (multi) --- #}
                 {% if not substratesActive %}
                     <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
                         <div class="dropdown">
                             <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Субстрат
+                                Подложка
                             </button>
                             <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
                                 {% for s in substrateOptions %}
@@ -156,7 +156,7 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
                             data-bs-toggle="offcanvas" data-bs-target="#chipFilterSubstrate"
                             aria-controls="chipFilterSubstrate">
-                        Субстрат
+                        Подложка
                     </button>
                 {% else %}
                     {% for s in substrateOptions|filter(s => s.value in activeSubstrateValues) %}
@@ -337,7 +337,7 @@
                         <div class="dropdown">
                             <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Время сборки
+                                Мин. время нанесения
                             </button>
                             <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
                                 <input type="hidden" name="minApplicationTimeAt20From" value=""
@@ -361,13 +361,13 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
                             data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppTime"
                             aria-controls="chipFilterAppTime">
-                        Время сборки
+                        Мин. время нанесения
                     </button>
                 {% else %}
                     <a href="{{ appTimeResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр">
-                        Время сборки: {{ appTimeSummary }} <i class="bi bi-x-lg"></i>
+                        Минимальное время нанесения: {{ appTimeSummary }} <i class="bi bi-x-lg"></i>
                     </a>
                 {% endif %}
 
@@ -383,7 +383,7 @@
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterSubstrate" aria-labelledby="chipFilterSubstrateLabel">
                     <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterSubstrateLabel">Субстрат</h6>
+                        <h6 class="offcanvas-title mb-0" id="chipFilterSubstrateLabel">Подложка</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
                     <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
@@ -514,7 +514,7 @@
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterAppTime" aria-labelledby="chipFilterAppTimeLabel">
                     <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterAppTimeLabel">Время сборки (при 20°C)</h6>
+                        <h6 class="offcanvas-title mb-0" id="chipFilterAppTimeLabel">Минимальное время нанесения (при 20°C)</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
                     <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
@@ -613,7 +613,7 @@
                                 {% if appTimeActive %}
                                     {% set qRemove = app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
-                                        Время сборки: {{ appTimeSummary }}
+                                        Минимальное время нанесения: {{ appTimeSummary }}
                                         <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
                                            class="btn-close btn-close-white btn-close-sm ms-1"
                                            aria-label="Убрать"></a>
@@ -623,9 +623,9 @@
                         </div>
                     {% endif %}
 
-                    {# === Секция: Субстрат === #}
+                    {# === Секция: Подложка === #}
                     <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
-                        <h6 class="fw-semibold mb-2">Субстрат</h6>
+                        <h6 class="fw-semibold mb-2">Подложка</h6>
                         <div class="row g-1">
                             {% for s in substrateOptions %}
                                 <div class="col-12">
@@ -757,9 +757,9 @@
                         reset_label: 'Любая',
                     } only %}
 
-                    {# === Секция: Время сборки при 20°C === #}
+                    {# === Секция: Минимальное время нанесения при 20°C === #}
                     {% include 'components/range_filter_card.html.twig' with {
-                        title: 'Время сборки (при 20°C)',
+                        title: 'Минимальное время нанесения (при 20°C)',
                         unit: 'ч',
                         name_from: 'minApplicationTimeAt20From',
                         name_to: 'minApplicationTimeAt20To',
@@ -841,7 +841,7 @@
                         <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                             <div class="row g-2 small">
                                 <div class="col-md-4">
-                                    <span class="text-muted">Субстрат:</span>
+                                    <span class="text-muted">Подложка:</span>
                                     <span class="ms-1 fw-semibold"
                                           data-coating-system-preview-target="modalSubstrate"></span>
                                 </div>

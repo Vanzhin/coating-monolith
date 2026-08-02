@@ -28,7 +28,7 @@ final class SurfaceTreatmentErrorFormatter
             '[description]' => 'Описание',
             '[code]' => 'Код',
             '[standardCode]' => 'Стандарт',
-            '[substrateScope]' => 'Применимые субстраты',
+            '[substrateScope]' => 'Применимые подложки',
         ];
 
         if (isset($map[$path])) {

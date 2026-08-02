@@ -21,7 +21,7 @@
                 </div>
                 <div class="col-md-4">
                     <select name="substrate" class="form-select">
-                        <option value="">Все субстраты</option>
+                        <option value="">Все подложки</option>
                         {% for s in substrates %}
                             <option value="{{ s.value }}" {% if substrate == s.value %}selected{% endif %}>
                                 {{ s.title() }}
@@ -47,7 +47,7 @@
                             <th>Код</th>
                             <th>Стандарт</th>
                             <th>Описание</th>
-                            <th>Субстраты</th>
+                            <th>Подложки</th>
                             <th>Обновлено</th>
                             {% if is_granted('ROLE_ADMIN') %}
                                 <th></th>

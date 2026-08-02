@@ -130,7 +130,7 @@ final class CreateApiActionTest extends WebTestCase
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
-                'description' => 'Очистка с неверным субстратом',
+                'description' => 'Очистка с неверной подложкой',
                 'substrateScope' => ['INVALID_SUBSTRATE_VALUE'],
             ]),
         );
