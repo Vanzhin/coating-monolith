@@ -8,8 +8,8 @@ use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSys
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
@@ -100,6 +100,12 @@ final class ListAction extends AbstractController
 
         $from = ('' !== (string) $fromRaw && null !== $fromRaw) ? ((int) $fromRaw) * $multiplier : null;
         $to = ('' !== (string) $toRaw && null !== $toRaw) ? ((int) $toRaw) * $multiplier : null;
+
+        // Инвертированный диапазон (from > to) игнорируем, возвращаем null.
+        // Это безопаснее, чем свапать или кидать ошибку в 500.
+        if (null !== $from && null !== $to && $from > $to) {
+            return null;
+        }
 
         return RangeFilter::tryFromNullable($from, $to);
     }

@@ -204,4 +204,13 @@ final class ListActionTest extends WebTestCase
         self::assertStringContainsString('class="coating-card', $content);
         self::assertStringContainsString('modal-compliance-block', $content);
     }
+
+    public function test_inverted_range_does_not_break(): void
+    {
+        $this->persistSystem();
+        // Инвертированный диапазон: from > to. Должны вернуть 200, игнорируя невалидный фильтр.
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?applicationMinTempFrom=100&applicationMinTempTo=10');
+
+        self::assertResponseIsSuccessful();
+    }
 }
