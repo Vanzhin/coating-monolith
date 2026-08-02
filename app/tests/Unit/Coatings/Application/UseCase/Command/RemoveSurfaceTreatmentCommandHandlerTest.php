@@ -112,6 +112,11 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             {
                 return 3;
             }
+
+            public function findByLayerCoatingId(string $coatingId): array
+            {
+                return [];
+            }
         };
 
         $handler = new RemoveSurfaceTreatmentCommandHandler($treatmentRepo, $coatingSystemRepo);

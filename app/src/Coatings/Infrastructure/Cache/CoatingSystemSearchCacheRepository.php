@@ -27,10 +27,10 @@ final class CoatingSystemSearchCacheRepository
                     search_tsvector                 = EXCLUDED.search_tsvector
             SQL,
             [
-                'id'       => $system->getId(),
-                'sum'      => $system->minBuildingTimeAt20Minutes(),
+                'id' => $system->getId(),
+                'sum' => $system->minBuildingTimeAt20Minutes(),
                 'max_temp' => $system->maxLayerApplicationMinTemp(),
-                'doc'      => $this->buildFullTextSearchDocument($system),
+                'doc' => $this->buildFullTextSearchDocument($system),
             ],
         );
     }

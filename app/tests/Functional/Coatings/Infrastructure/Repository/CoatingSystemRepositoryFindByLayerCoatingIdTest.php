@@ -77,7 +77,7 @@ final class CoatingSystemRepositoryFindByLayerCoatingIdTest extends KernelTestCa
         parent::tearDown();
     }
 
-    public function test_findByLayerCoatingId_returns_only_systems_containing_that_coating(): void
+    public function test_find_by_layer_coating_id_returns_only_systems_containing_that_coating(): void
     {
         $container = static::getContainer();
         $suffix = bin2hex(random_bytes(3));
