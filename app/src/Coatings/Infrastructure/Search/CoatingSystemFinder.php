@@ -37,9 +37,13 @@ final class CoatingSystemFinder
     public function find(CoatingSystemsFilter $filter): SearchResult
     {
         $qb = $this->conn->createQueryBuilder();
+        // INNER JOIN: каждая система синхронно получает строку coating_system_search
+        // при мутации (RefreshCacheOnCoatingSystemMutatedHandler, sync-шина). Система без
+        // строки в индексе не должна показываться в поиске вообще — иначе она мелькала бы
+        // при пустом фильтре и исчезала при любом q/range. INNER держит поведение единым.
         $qb->select('cs.id')
             ->from('coating_system', 'cs')
-            ->leftJoin('cs', 'coating_system_search', 'css', 'css.system_id = cs.id');
+            ->innerJoin('cs', 'coating_system_search', 'css', 'css.system_id = cs.id');
 
         $this->applyFts($qb, $filter);
         $this->applySubstrates($qb, $filter);
