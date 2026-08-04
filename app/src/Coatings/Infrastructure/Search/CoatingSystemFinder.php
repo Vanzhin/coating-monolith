@@ -6,8 +6,8 @@ namespace App\Coatings\Infrastructure\Search;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
-use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Domain\Repository\SearchResult;
 use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
@@ -49,6 +49,7 @@ final class CoatingSystemFinder
         $this->applySubstrates($qb, $filter);
         $this->applyCompliance($qb, $filter);
         $this->applyTags($qb, $filter);
+        $this->applyCoatings($qb, $filter);
         $this->applyRanges($qb, $filter);
 
         $countQb = clone $qb;
@@ -77,7 +78,7 @@ final class CoatingSystemFinder
             return;
         }
 
-        $qb->andWhere("css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery)")
+        $qb->andWhere('css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery)')
             ->setParameter('fts_lang', self::FTS_LANG)
             ->setParameter('fts_tsquery', $tsquery);
     }
@@ -132,12 +133,24 @@ final class CoatingSystemFinder
 
     private function applyTags(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
-        if ([] === $filter->tagIds) {
+        if (0 === $filter->tagIds->count()) {
             return;
         }
 
         $qb->andWhere('EXISTS (SELECT 1 FROM coating_system_tag cst WHERE cst.coating_system_id = cs.id AND cst.tag_id IN (:tag_ids))')
-            ->setParameter('tag_ids', $filter->tagIds, ArrayParameterType::STRING);
+            ->setParameter('tag_ids', $filter->tagIds->getList(), ArrayParameterType::STRING);
+    }
+
+    private function applyCoatings(QueryBuilder $qb, CoatingSystemsFilter $filter): void
+    {
+        if (0 === $filter->coatingIds->count()) {
+            return;
+        }
+
+        // OR: система проходит, если у неё есть слой с любым из выбранных покрытий.
+        // EXISTS (не JOIN) — чтобы не размножать строки cs и не ломать COUNT/пагинацию.
+        $qb->andWhere('EXISTS (SELECT 1 FROM coating_system_layer csl WHERE csl.system_id = cs.id AND csl.coating_id IN (:coating_ids))')
+            ->setParameter('coating_ids', $filter->coatingIds->getList(), ArrayParameterType::STRING);
     }
 
     private function applyRanges(QueryBuilder $qb, CoatingSystemsFilter $filter): void
@@ -167,7 +180,7 @@ final class CoatingSystemFinder
     {
         match ($filter->sort) {
             CoatingSystemSort::DEFAULT => null !== $filter->search
-                ? $qb->addSelect("TS_RANK_CD(css.search_tsvector, TO_TSQUERY(:fts_lang, :fts_tsquery)) AS fts_rank")
+                ? $qb->addSelect('TS_RANK_CD(css.search_tsvector, TO_TSQUERY(:fts_lang, :fts_tsquery)) AS fts_rank')
                       ->orderBy('fts_rank', 'DESC')
                       ->addOrderBy('cs.title', 'ASC')
                 : $qb->orderBy('cs.title', 'ASC'),

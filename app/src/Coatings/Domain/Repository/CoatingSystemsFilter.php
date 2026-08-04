@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 
@@ -17,7 +18,6 @@ final readonly class CoatingSystemsFilter
 {
     /**
      * @param list<Substrate> $substrates
-     * @param list<string>    $tagIds
      */
     public function __construct(
         public ?SearchQuery $search = null,
@@ -25,7 +25,9 @@ final readonly class CoatingSystemsFilter
         public ?ComplianceStandard $standard = null,
         public ?string $category = null,
         public ?string $durability = null,
-        public array $tagIds = [],
+        public StringCollection $tagIds = new StringCollection(),
+        // Покрытия в составе системы (OR: хотя бы одно из выбранных).
+        public StringCollection $coatingIds = new StringCollection(),
         public ?RangeFilter $applicationMinTemp = null,
         public ?RangeFilter $minApplicationTimeAt20 = null,
         public CoatingSystemSort $sort = CoatingSystemSort::DEFAULT,

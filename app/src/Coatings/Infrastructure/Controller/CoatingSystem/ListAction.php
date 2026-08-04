@@ -12,12 +12,14 @@ use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Uid\Uuid;
 
 #[Route(
     path: '/cabinet/coating/coating-system/list',
@@ -39,7 +41,11 @@ final class ListAction extends AbstractController
         $standard = ComplianceStandard::tryFrom((string) $request->query->get('standard', ''));
         $category = $request->query->get('category') ?: null;
         $durability = $request->query->get('durability') ?: null;
-        $tagIds = array_values(array_filter(array_map('strval', (array) $request->query->all('tagIds'))));
+        $tagIds = new StringCollection(...array_values(array_filter(array_map('strval', (array) $request->query->all('tagIds')))));
+        $coatingIds = new StringCollection(...array_values(array_filter(
+            array_map('strval', (array) $request->query->all('coatingIds')),
+            static fn (string $id) => Uuid::isValid($id),
+        )));
         $applicationMinTemp = $this->readRange($request, 'applicationMinTempFrom', 'applicationMinTempTo');
         $minApplicationTimeAt20 = $this->readRange(
             $request,
@@ -60,6 +66,7 @@ final class ListAction extends AbstractController
             category: null !== $standard ? $category : null,
             durability: null !== $standard ? $durability : null,
             tagIds: $tagIds,
+            coatingIds: $coatingIds,
             applicationMinTemp: $applicationMinTemp,
             minApplicationTimeAt20: $minApplicationTimeAt20,
             sort: $sort,
@@ -81,7 +88,8 @@ final class ListAction extends AbstractController
             'standard' => $standard,
             'category' => $category,
             'durability' => $durability,
-            'tagIds' => $tagIds,
+            'tagIds' => $tagIds->getList(),
+            'coatingIds' => $coatingIds->getList(),
             'applicationMinTemp' => $applicationMinTemp,
             'minApplicationTimeAt20Hours' => $this->rangeToHours($minApplicationTimeAt20),
             'sort' => $sort,
