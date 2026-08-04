@@ -30,6 +30,11 @@ export default class extends Controller {
         // На странице поиска — только выбор существующих. Создание тега — только
         // при создании/редактировании покрытия.
         allowCreate: { type: Boolean, default: true },
+        // Восстановление предвыбранных чипов из id — для shareable-URL, где в query
+        // лежат только id (без названий). На connect тянем названия с
+        // resolveUrl?ids[]=… и рисуем чипы. Пусто → поведение не меняется.
+        preselectedIds: { type: Array, default: [] },
+        resolveUrl: { type: String, default: '' },
     };
 
     connect() {
@@ -63,6 +68,45 @@ export default class extends Controller {
         this.tagify.on('change', this._renderHiddenInputs.bind(this));
 
         this._renderHiddenInputs();
+
+        // Предвыбор из id (shareable-URL): сразу проставляем hidden-инпуты, чтобы
+        // фильтр пережил повторный сабмит даже до догрузки названий, затем
+        // асинхронно тянем названия и рисуем чипы.
+        if (!this.existingValue.length && this.preselectedIdsValue.length && this.resolveUrlValue) {
+            this._renderHiddenInputsFromIds(this.preselectedIdsValue);
+            this._hydratePreselected();
+        }
+    }
+
+    async _hydratePreselected() {
+        try {
+            const url = new URL(this.resolveUrlValue, window.location.origin);
+            this.preselectedIdsValue.forEach(id => url.searchParams.append('ids[]', id));
+            const resp = await fetch(url, { credentials: 'same-origin' });
+            if (!resp.ok) return;
+            const jsonResponse = await resp.json();
+            const data = jsonResponse.data ?? jsonResponse;
+            const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+            if (items.length) {
+                this.tagify.addTags(items.map(t => ({ value: t.title, id: t.id })));
+            }
+        } catch (e) {
+            // Сеть недоступна — чипы не восстановятся, но фильтр из URL уже применён
+            // (hidden-инпуты проставлены из id выше).
+        }
+    }
+
+    _renderHiddenInputsFromIds(ids) {
+        const formGroup = this.element.closest('[data-coating-tags-group]') || this.element.parentElement;
+        formGroup.querySelectorAll('input.coating-tag-hidden').forEach(el => el.remove());
+        ids.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = this.hiddenInputNameValue;
+            input.value = id;
+            input.className = 'coating-tag-hidden';
+            formGroup.appendChild(input);
+        });
     }
 
     disconnect() {
@@ -112,7 +156,8 @@ export default class extends Controller {
             if (resp.ok) {
                 const jsonResponse = await resp.json();
                 const data = jsonResponse.data ?? jsonResponse;
-                raw = Array.isArray(data) ? data : [];
+                // Тег-suggest отдаёт голый массив, coating-suggest — {items:[…]}.
+                raw = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
             }
         } catch (e) {
             // Сетевая ошибка → только «+ Создать».

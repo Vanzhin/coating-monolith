@@ -20,6 +20,7 @@
     {% set categoryActive = standardActive and category is not null %}
     {% set durabilityActive = standardActive and durability is not null %}
     {% set tagsActive = tagIds|length > 0 %}
+    {% set coatingsActive = coatingIds|length > 0 %}
     {% set appMinTempActive = applicationMinTemp is not null %}
     {% set appTimeActive = minApplicationTimeAt20Hours is not null %}
 
@@ -28,6 +29,7 @@
         + (categoryActive ? 1 : 0)
         + (durabilityActive ? 1 : 0)
         + tagIds|length
+        + coatingIds|length
         + (appMinTempActive ? 1 : 0)
         + (appTimeActive ? 1 : 0) %}
 
@@ -771,6 +773,22 @@
                         reset_label: 'Любое',
                     } only %}
 
+                    {# === Секция: Покрытия в составе === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Покрытия в составе</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="[]"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                               data-coating-tags-create-url-value=""
+                               data-coating-tags-hidden-input-name-value="coatingIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               data-coating-tags-preselected-ids-value="{{ coatingIds|json_encode }}"
+                               data-coating-tags-resolve-url-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить покрытие...">
+                    </div>
+
                     {# === Секция: Теги === #}
                     <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Теги</h6>
@@ -898,7 +916,7 @@
         <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
             <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
             <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
-            {% if q or substratesActive or standardActive or tagsActive or appMinTempActive or appTimeActive %}
+            {% if q or substratesActive or standardActive or tagsActive or coatingsActive or appMinTempActive or appTimeActive %}
                 <p class="text-body-secondary mb-0">
                     По запросу с заданными фильтрами совпадений нет. Попробуйте изменить параметры поиска.
                 </p>
