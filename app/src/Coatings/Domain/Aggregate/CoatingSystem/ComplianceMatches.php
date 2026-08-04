@@ -85,6 +85,10 @@ final class ComplianceMatches implements \IteratorAggregate, \Countable, \JsonSe
 
     private function isStrictlyStrongerThan(ComplianceMatch $a, ComplianceMatch $b): bool
     {
+        // ComplianceStandard пока single-case (ISO_12944), поэтому phpstan считает
+        // сравнение всегда-false. Гард намеренный — сравнивать «сильнее» имеет смысл
+        // только внутри одного стандарта; заработает при добавлении новых стандартов.
+        // @phpstan-ignore-next-line
         if ($a->standard !== $b->standard) {
             return false;
         }
