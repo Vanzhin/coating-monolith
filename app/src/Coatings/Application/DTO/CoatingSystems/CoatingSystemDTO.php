@@ -25,7 +25,7 @@ class CoatingSystemDTO
     public ?int $maxLayerApplicationMinTemp = null;
     public \DateTimeImmutable $createdAt;
     public \DateTimeImmutable $updatedAt;
-    /** @var list<array{standard: string, category: string, durability: string}> */
+    /** @var list<ComplianceMatchDTO> */
     public array $compliance = [];
     /** @var list<TagDTO> */
     public array $tags = [];

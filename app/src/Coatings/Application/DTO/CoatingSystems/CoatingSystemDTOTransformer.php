@@ -7,6 +7,7 @@ namespace App\Coatings\Application\DTO\CoatingSystems;
 use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
 
 class CoatingSystemDTOTransformer
 {
@@ -37,7 +38,10 @@ class CoatingSystemDTOTransformer
         $dto->minApplicationTimeAt20Minutes = $system->minApplicationTimeAt20Minutes();
         $dto->maxLayerApplicationMinTemp = $system->maxLayerApplicationMinTemp();
         $dto->layers = $this->layersFromSystem($system);
-        $dto->compliance = $system->complianceMatches($this->evaluator)->jsonSerialize();
+        $dto->compliance = array_map(
+            static fn (ComplianceMatch $m) => new ComplianceMatchDTO($m->standard->value, $m->category, $m->durability),
+            $system->complianceMatches($this->evaluator)->toArray(),
+        );
         $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
 
         return $dto;
