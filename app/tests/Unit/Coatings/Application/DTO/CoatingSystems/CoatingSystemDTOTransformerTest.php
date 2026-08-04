@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Coatings\Application\DTO\CoatingSystems;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTOTransformer;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
+use App\Coatings\Application\DTO\CoatingSystems\ComplianceMatchDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -17,7 +18,6 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRuleBook;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -145,8 +145,8 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         self::assertIsInt($dto->maxLayerApplicationMinTemp);
         self::assertGreaterThanOrEqual(0, $dto->minApplicationTimeAt20Minutes);
         self::assertGreaterThan(0, count($dto->compliance));
-        self::assertContains(
-            ['standard' => 'ISO_12944', 'category' => 'C4', 'durability' => 'HIGH'],
+        self::assertContainsEquals(
+            new ComplianceMatchDTO('ISO_12944', 'C4', 'HIGH'),
             $dto->compliance,
         );
     }

@@ -21,12 +21,13 @@ use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
-use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Repository\Pager;
@@ -238,11 +239,46 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $sysWithTag = $this->buildAndSaveSystem('Tagged sys '.$suffix, Substrate::STEEL_CARBON, $tag);
         $sysNoTag = $this->buildAndSaveSystem('Plain sys '.$suffix, Substrate::STEEL_CARBON);
 
-        $filter = new CoatingSystemsFilter(tagIds: [$tag->getId()]);
+        $filter = new CoatingSystemsFilter(tagIds: new StringCollection($tag->getId()));
         $result = $this->finder->find($filter);
 
         self::assertContains($sysWithTag->getId(), $result->ids);
         self::assertNotContains($sysNoTag->getId(), $result->ids);
+    }
+
+    public function test_coating_filter_or_semantics(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $a = $this->persistCoating($this->persistManufacturer());
+        $b = $this->persistCoating($this->persistManufacturer());
+        $c = $this->persistCoating($this->persistManufacturer());
+
+        $s1 = $this->buildAndSaveSystemWithCoatings('CoatFacet A '.$suffix, Substrate::STEEL_CARBON, $a->getId());
+        $s2 = $this->buildAndSaveSystemWithCoatings('CoatFacet B '.$suffix, Substrate::STEEL_CARBON, $b->getId());
+        $s3 = $this->buildAndSaveSystemWithCoatings('CoatFacet AC '.$suffix, Substrate::STEEL_CARBON, $a->getId(), $c->getId());
+
+        // [A] → системы, где есть покрытие A: S1 и S3 (не S2).
+        $byA = $this->finder->find(new CoatingSystemsFilter(coatingIds: new StringCollection($a->getId())));
+        self::assertContains($s1->getId(), $byA->ids);
+        self::assertContains($s3->getId(), $byA->ids);
+        self::assertNotContains($s2->getId(), $byA->ids);
+
+        // [A, B] → OR: попадают S1, S2, S3.
+        $byAB = $this->finder->find(new CoatingSystemsFilter(coatingIds: new StringCollection($a->getId(), $b->getId())));
+        self::assertContains($s1->getId(), $byAB->ids);
+        self::assertContains($s2->getId(), $byAB->ids);
+        self::assertContains($s3->getId(), $byAB->ids);
+
+        // [C] → только S3.
+        $byC = $this->finder->find(new CoatingSystemsFilter(coatingIds: new StringCollection($c->getId())));
+        self::assertContains($s3->getId(), $byC->ids);
+        self::assertNotContains($s1->getId(), $byC->ids);
+        self::assertNotContains($s2->getId(), $byC->ids);
+
+        // [A, C] → S3 совпадает по обоим слоям, но в выдаче ровно один раз (EXISTS не размножает cs).
+        $byAC = $this->finder->find(new CoatingSystemsFilter(coatingIds: new StringCollection($a->getId(), $c->getId())));
+        self::assertSame(1, count(array_filter($byAC->ids, static fn ($id) => $id === $s3->getId())));
+        self::assertSame(count($byAC->ids), $byAC->total);
     }
 
     public function test_range_filter_min_application_time(): void
@@ -319,13 +355,16 @@ final class CoatingSystemFinderTest extends KernelTestCase
 
     public function test_total_is_independent_of_pagination(): void
     {
-        $suffix = bin2hex(random_bytes(4));
+        // Маркер — чисто алфавитное слово: russian-FTS токенизирует его стабильно.
+        // Раньше здесь был hex-суффикс (bin2hex) — смешанный буквенно-цифровой токен
+        // парсер FTS раскладывал через раз, и поиск иногда матчил 0 (флаки-тест).
+        $marker = $this->randomWord();
         for ($i = 1; $i <= 3; ++$i) {
-            $this->buildAndSaveSystem("Pager-{$i}-{$suffix}", Substrate::STEEL_CARBON);
+            $this->buildAndSaveSystem("Pager {$marker} {$i}", Substrate::STEEL_CARBON);
         }
 
         $filter = new CoatingSystemsFilter(
-            search: SearchQuery::tryFromString('Pager '.$suffix),
+            search: SearchQuery::tryFromString($marker),
             sort: CoatingSystemSort::DEFAULT,
             pager: Pager::fromPage(1, 1),
         );
@@ -333,6 +372,18 @@ final class CoatingSystemFinderTest extends KernelTestCase
 
         self::assertCount(1, $result->ids);
         self::assertSame(3, $result->total);
+    }
+
+    /** Случайное латинское слово фиксированной длины — стабильный FTS-маркер для тестов. */
+    private function randomWord(int $length = 12): string
+    {
+        $letters = 'abcdefghijklmnopqrstuvwxyz';
+        $word = '';
+        for ($i = 0; $i < $length; ++$i) {
+            $word .= $letters[random_int(0, 25)];
+        }
+
+        return $word;
     }
 
     /**
@@ -362,6 +413,36 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $this->em->clear();
 
         // Reload because clear detaches the entity.
+        $loaded = $this->repo->findById($id);
+        \assert(null !== $loaded);
+        $this->searchCache->upsert($loaded);
+
+        $this->systemIds[] = $id;
+
+        return $loaded;
+    }
+
+    /**
+     * Система с заданными покрытиями (по слою на каждое) — для проверки фасета покрытий.
+     * Покрытия принимаем по id и рефетчим managed внутри: так em->clear() в конце
+     * (как в buildAndSaveSystem) не оставляет detached-сущности между вызовами и не
+     * загрязняет соседние тесты. Наполняет `coating_system_search` — Finder делает
+     * INNER JOIN, без строки кэша система не найдётся.
+     */
+    private function buildAndSaveSystemWithCoatings(string $title, Substrate $substrate, string ...$coatingIds): CoatingSystem
+    {
+        $treatment = $this->persistTreatment();
+
+        $id = Uuid::v7();
+        $system = new CoatingSystem($id, $title, 'Описание для '.$title, $substrate, $treatment);
+        foreach ($coatingIds as $coatingId) {
+            $coating = $this->em->find(Coating::class, $coatingId);
+            \assert($coating instanceof Coating);
+            $system->appendLayer($coating, 80);
+        }
+        $this->repo->save($system);
+
+        $this->em->clear();
         $loaded = $this->repo->findById($id);
         \assert(null !== $loaded);
         $this->searchCache->upsert($loaded);

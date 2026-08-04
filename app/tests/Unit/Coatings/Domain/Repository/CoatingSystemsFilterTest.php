@@ -9,6 +9,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +24,8 @@ final class CoatingSystemsFilterTest extends TestCase
             standard: ComplianceStandard::ISO_12944,
             category: 'C4',
             durability: 'HIGH',
-            tagIds: ['tag-1', 'tag-2'],
+            tagIds: new StringCollection('tag-1', 'tag-2'),
+            coatingIds: new StringCollection('coating-1', 'coating-2'),
             applicationMinTemp: new RangeFilter(-5, 5),
             minApplicationTimeAt20: new RangeFilter(240, 1440),
             sort: CoatingSystemSort::TITLE_ASC,
@@ -35,7 +37,8 @@ final class CoatingSystemsFilterTest extends TestCase
         self::assertSame(ComplianceStandard::ISO_12944, $filter->standard);
         self::assertSame('C4', $filter->category);
         self::assertSame('HIGH', $filter->durability);
-        self::assertSame(['tag-1', 'tag-2'], $filter->tagIds);
+        self::assertSame(['tag-1', 'tag-2'], $filter->tagIds->getList());
+        self::assertSame(['coating-1', 'coating-2'], $filter->coatingIds->getList());
         self::assertNotNull($filter->applicationMinTemp);
         self::assertSame(-5, $filter->applicationMinTemp->from);
         self::assertSame(5, $filter->applicationMinTemp->to);
@@ -54,7 +57,8 @@ final class CoatingSystemsFilterTest extends TestCase
         self::assertNull($filter->standard);
         self::assertNull($filter->category);
         self::assertNull($filter->durability);
-        self::assertSame([], $filter->tagIds);
+        self::assertSame([], $filter->tagIds->getList());
+        self::assertSame([], $filter->coatingIds->getList());
         self::assertNull($filter->applicationMinTemp);
         self::assertNull($filter->minApplicationTimeAt20);
         self::assertSame(CoatingSystemSort::DEFAULT, $filter->sort);
