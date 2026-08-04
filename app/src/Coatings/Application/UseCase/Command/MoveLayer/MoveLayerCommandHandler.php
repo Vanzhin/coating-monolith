@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\MoveLayer;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -14,7 +13,6 @@ final readonly class MoveLayerCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
-        private CoatingSystemChainValidatorInterface $chainValidator,
     ) {
     }
 
@@ -26,7 +24,6 @@ final readonly class MoveLayerCommandHandler implements CommandHandlerInterface
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->systemId), 404);
         }
 
-        $system->setChainValidator($this->chainValidator);
         $system->moveLayer($cmd->from, $cmd->to);
         $this->repo->save($system);
 

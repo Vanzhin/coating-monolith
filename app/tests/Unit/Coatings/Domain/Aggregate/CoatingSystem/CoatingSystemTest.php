@@ -13,10 +13,11 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingSystemMutated;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -130,6 +131,86 @@ final class CoatingSystemTest extends TestCase
         self::assertSame($l1, $sys->firstLayer());
     }
 
+    public function test_first_layer_after_removing_first_returns_next(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->removeLayerAt(1);
+        self::assertSame($l2, $sys->firstLayer());
+    }
+
+    public function test_replace_layers_replaces_composition_and_renumbers(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+
+        $newA = $this->newCoatingCompatibleAll();
+        $newB = $this->newCoatingCompatibleAll();
+        $sys->replaceLayers([
+            ['coating' => $newA, 'dft' => 55],
+            ['coating' => $newB, 'dft' => 90],
+        ]);
+
+        self::assertSame(2, $sys->layerCount());
+        self::assertSame([1, 2], $this->positions($sys));
+        self::assertSame(145, $sys->totalDft());
+    }
+
+    public function test_replace_layers_with_empty_list_clears_system(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->replaceLayers([]);
+        self::assertSame(0, $sys->layerCount());
+    }
+
+    public function test_append_sixth_layer_throws(): void
+    {
+        $sys = $this->newSystem();
+        for ($i = 0; $i < 5; ++$i) {
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        }
+        $this->expectException(AppException::class);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+    }
+
+    public function test_insert_sixth_layer_throws(): void
+    {
+        $sys = $this->newSystem();
+        for ($i = 0; $i < 5; ++$i) {
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        }
+        $this->expectException(AppException::class);
+        $sys->insertLayerAt(3, $this->newCoatingCompatibleAll(), 60);
+    }
+
+    public function test_replace_with_six_layers_throws(): void
+    {
+        $sys = $this->newSystem();
+        $items = [];
+        for ($i = 0; $i < 6; ++$i) {
+            $items[] = ['coating' => $this->newCoatingCompatibleAll(), 'dft' => 60];
+        }
+        $this->expectException(AppException::class);
+        $sys->replaceLayers($items);
+    }
+
+    public function test_replace_layers_rejects_incompatible_chain(): void
+    {
+        $sys = $this->newSystem();
+        $ak = $this->newCoatingWithBase(CoatingBase::AK);
+        $esi = $this->newCoatingWithBase(CoatingBase::ESI);
+
+        $this->expectException(AppException::class);
+        $sys->replaceLayers([
+            ['coating' => $ak, 'dft' => 60],
+            ['coating' => $esi, 'dft' => 60],
+        ]);
+    }
+
     public function test_followup_layers_returns_all_except_first(): void
     {
         $sys = $this->newSystem();
@@ -188,8 +269,63 @@ final class CoatingSystemTest extends TestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
+    }
+
+    public function test_tags_are_empty_after_construction(): void
+    {
+        $sys = $this->newSystem();
+        self::assertCount(0, $sys->getTags());
+    }
+
+    public function test_add_tag_puts_it_into_collection_and_touches(): void
+    {
+        $sys = $this->newSystem();
+        $initialUpdatedAt = $sys->getUpdatedAt();
+        // Ensure a measurable tick.
+        usleep(1000);
+        $tag = $this->createStub(Tag::class);
+
+        $sys->addTag($tag);
+
+        self::assertCount(1, $sys->getTags());
+        self::assertTrue($sys->getTags()->contains($tag));
+        self::assertGreaterThan($initialUpdatedAt, $sys->getUpdatedAt());
+    }
+
+    public function test_add_tag_is_idempotent(): void
+    {
+        $sys = $this->newSystem();
+        $tag = $this->createStub(Tag::class);
+        $sys->addTag($tag);
+        $sys->addTag($tag);
+        self::assertCount(1, $sys->getTags());
+    }
+
+    public function test_remove_tag_takes_it_out(): void
+    {
+        $sys = $this->newSystem();
+        $tag = $this->createStub(Tag::class);
+        $sys->addTag($tag);
+        $sys->removeTag($tag);
+        self::assertCount(0, $sys->getTags());
+    }
+
+    public function test_replace_tags_swaps_full_set(): void
+    {
+        $sys = $this->newSystem();
+        $t1 = $this->createStub(Tag::class);
+        $t2 = $this->createStub(Tag::class);
+        $t3 = $this->createStub(Tag::class);
+        $sys->addTag($t1);
+        $sys->addTag($t2);
+
+        $sys->replaceTags([$t2, $t3]);
+
+        self::assertCount(2, $sys->getTags());
+        self::assertTrue($sys->getTags()->contains($t2));
+        self::assertTrue($sys->getTags()->contains($t3));
+        self::assertFalse($sys->getTags()->contains($t1));
     }
 
     public function test_set_substrate_throws_when_treatment_no_longer_matches(): void
@@ -202,12 +338,42 @@ final class CoatingSystemTest extends TestCase
             '',
             Substrate::STEEL_CARBON,
             $treatment,
-            new CoatingSystemChainValidator(),
         );
 
         // now change substrate to CONCRETE → treatment scope does not include CONCRETE
         $this->expectException(AppException::class);
         $system->setSubstrate(Substrate::CONCRETE);
+    }
+
+    public function test_min_building_time_sums_interpolated_intervals_except_top(): void
+    {
+        $sys = $this->newSystem();
+        $coatingA = $this->makeCoating(sourceMinutes: 240, tdsDft: 100);
+        $coatingB = $this->makeCoating(applicationMinTemp: 10);
+        $sys->appendLayer($coatingA, 80);   // 240*80/100 = 192
+        $sys->appendLayer($coatingB, 80);   // top, не участвует
+        self::assertSame(192, $sys->minApplicationTimeAt20Minutes());
+        self::assertSame(10, $sys->maxLayerApplicationMinTemp());
+    }
+
+    public function test_mutation_raises_coating_system_mutated_event(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->newCoating(), 80);
+        $events = $sys->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingSystemMutated::class, $events[0]);
+        self::assertSame($sys->getId(), $events[0]->systemId);
+    }
+
+    public function test_asserts_layers_are_chainable_via_can_becovered_by(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/несовместим/');
+        // ESI поверх FEVE не совместимо (по CoatingBase::allowedPrimers)
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->makeCoating(CoatingBase::FEVE), 80);
+        $sys->appendLayer($this->makeCoating(CoatingBase::ESI), 80);
     }
 
     // --- helpers ---
@@ -220,7 +386,6 @@ final class CoatingSystemTest extends TestCase
             'description',
             Substrate::STEEL_CARBON,
             $this->newTreatment([Substrate::STEEL_CARBON]),
-            new CoatingSystemChainValidator(),
         );
     }
 
@@ -245,6 +410,11 @@ final class CoatingSystemTest extends TestCase
     /**
      * Покрытие EP с широким dft-диапазоном (50–500 мкм) и совместимое само с собой.
      */
+    private function newCoating(): Coating
+    {
+        return $this->makeCoating();
+    }
+
     private function newCoatingCompatibleAll(): Coating
     {
         return $this->makeCoating(CoatingBase::EP, 40, 500);
@@ -260,14 +430,22 @@ final class CoatingSystemTest extends TestCase
         return $this->makeCoating($base, 50, 500);
     }
 
-    private function makeCoating(CoatingBase $base, int $dftMin, int $dftMax): Coating
-    {
+    private function makeCoating(
+        CoatingBase $base = CoatingBase::EP,
+        int $dftMin = 40,
+        int $dftMax = 500,
+        int $applicationMinTemp = 5,
+        int $tdsDft = 0,
+        int $sourceMinutes = 60,
+    ): Coating {
         $manufacturer = $this->createMock(Manufacturer::class);
         $manufacturer->method('getId')->willReturn('00000000-0000-0000-0000-000000000001');
 
         $spec = new CoatingSpecification(
             $this->createMock(UniqueTitleCoatingSpecification::class),
         );
+
+        $resolvedTdsDft = $tdsDft > 0 ? $tdsDft : (int) (($dftMin + $dftMax) / 2);
 
         return new Coating(
             UuidService::generateUuid(),
@@ -276,11 +454,11 @@ final class CoatingSystemTest extends TestCase
             50,
             1.2,
             $base,
-            new DftRange(new PositiveNumberRange($dftMin, $dftMax), (int) (($dftMin + $dftMax) / 2), ThicknessType::MIC),
-            5,
+            new DftRange(new PositiveNumberRange($dftMin, $dftMax), $resolvedTdsDft, ThicknessType::MIC),
+            $applicationMinTemp,
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $sourceMinutes))),
             null,
             1.0,
             null,

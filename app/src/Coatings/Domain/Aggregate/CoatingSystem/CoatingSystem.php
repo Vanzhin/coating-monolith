@@ -6,6 +6,8 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingSystemMutated;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -25,6 +27,8 @@ class CoatingSystem extends Aggregate
     private ?SurfaceTreatment $surfaceTreatment = null;
     /** @var Collection<int, CoatingSystemLayer>&Selectable<int, CoatingSystemLayer> */
     private Collection $layers;
+    /** @var Collection<int, Tag> */
+    private Collection $tags;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
 
@@ -34,19 +38,20 @@ class CoatingSystem extends Aggregate
         string $description,
         Substrate $substrate,
         SurfaceTreatment $surfaceTreatment,
-        private ?CoatingSystemChainValidatorInterface $chainValidator = null,
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();
+        $this->tags = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = $this->createdAt;
         $this->setTitle($title);
         $this->setDescription($description);
         $this->setSubstrate($substrate);
         $this->setSurfaceTreatment($surfaceTreatment);
-        // Reset updatedAt to match createdAt — setters above call touch() but that's
-        // an implementation side-effect; the aggregate is "just created", not "mutated".
+        // Reset updatedAt and events — setters above emit side-effects but the aggregate
+        // is "just created", not yet "mutated" from external perspective.
         $this->updatedAt = $this->createdAt;
+        $this->pullEvents();
     }
 
     public function getId(): string
@@ -94,6 +99,7 @@ class CoatingSystem extends Aggregate
             throw new AppException('Название системы покрытий не должно превышать 100 символов.');
         }
         $this->title = $title;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -103,6 +109,7 @@ class CoatingSystem extends Aggregate
             throw new AppException('Описание системы покрытий не должно превышать 2000 символов.');
         }
         $this->description = $description;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -112,6 +119,7 @@ class CoatingSystem extends Aggregate
             throw new AppException(sprintf('Подготовка «%s» применима к [%s], а выбранная подложка — %s.', $this->surfaceTreatment->getCode() ?? $this->surfaceTreatment->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $this->surfaceTreatment->getSubstrateScope())), $substrate->title()));
         }
         $this->substrate = $substrate;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -121,6 +129,7 @@ class CoatingSystem extends Aggregate
             throw new AppException(sprintf('Подготовка «%s» применима к [%s], а в системе выбрана %s.', $t->getCode() ?? $t->getDescription(), implode(', ', array_map(fn (Substrate $s) => $s->title(), $t->getSubstrateScope())), $this->substrate->title()));
         }
         $this->surfaceTreatment = $t;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -131,6 +140,7 @@ class CoatingSystem extends Aggregate
         }
         $this->substrate = $substrate;
         $this->surfaceTreatment = $treatment;
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
     }
 
@@ -157,9 +167,60 @@ class CoatingSystem extends Aggregate
         return $sum;
     }
 
+    /**
+     * Время сборки системы при 20 °C: сумма пересчитанных под фактическую
+     * толщину интервалов перекрытия по слоям, поверх которых наносится следующий.
+     * Null если система пуста или у любого из промежуточных слоёв нет точки при 20 °C.
+     */
+    public function minApplicationTimeAt20Minutes(): ?int
+    {
+        $ordered = $this->getLayers();
+        if ($ordered->isEmpty()) {
+            return null;
+        }
+        $topLayer = $ordered->last();
+        $sum = 0;
+        foreach ($ordered as $layer) {
+            if ($layer === $topLayer) {
+                continue;
+            }
+            $interval = $layer->getCoating()->interpolatedMinRecoatMinutesAt20($layer->getDft());
+            if (null === $interval) {
+                return null;
+            }
+            $sum += $interval;
+        }
+
+        return $sum;
+    }
+
+    /**
+     * Максимум мин.температуры нанесения по слоям. Null для пустой системы.
+     */
+    public function maxLayerApplicationMinTemp(): ?int
+    {
+        if ($this->layers->isEmpty()) {
+            return null;
+        }
+        $max = null;
+        foreach ($this->layers as $layer) {
+            $temp = $layer->getCoating()->getApplicationMinTemp();
+            if (null === $max || $temp > $max) {
+                $max = $temp;
+            }
+        }
+
+        return $max;
+    }
+
+    public function complianceMatches(ComplianceEvaluator $evaluator): ComplianceMatches
+    {
+        return $evaluator->evaluate($this);
+    }
+
     public function firstLayer(): CoatingSystemLayer
     {
-        $sorted = $this->getLayers()->toArray();
+        $sorted = array_values($this->getLayers()->toArray());
         if ([] === $sorted) {
             throw new AppException('Система покрытий пуста, слоёв нет.');
         }
@@ -259,6 +320,22 @@ class CoatingSystem extends Aggregate
         $this->postMutate();
     }
 
+    /**
+     * Полностью заменяет состав слоёв. Порядок в $items — позиции 1..N.
+     * Doctrine удалит старые (orphan-removal="true" в маппинге) и вставит новые.
+     * Инварианты (совместимость, плотные позиции) проверяются в postMutate().
+     *
+     * @param list<array{coating: Coating, dft: int}> $items
+     */
+    public function replaceLayers(array $items): void
+    {
+        $this->layers->clear();
+        foreach ($items as $i => $item) {
+            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft']));
+        }
+        $this->postMutate();
+    }
+
     public function updateLayerDft(int $position, int $dft): void
     {
         foreach ($this->layers as $layer) {
@@ -272,19 +349,71 @@ class CoatingSystem extends Aggregate
         throw new AppException(sprintf('Слой с позицией %d не найден.', $position));
     }
 
-    public function setChainValidator(CoatingSystemChainValidatorInterface $validator): void
+    /** @return Collection<int, Tag> */
+    public function getTags(): Collection
     {
-        $this->chainValidator = $validator;
+        return $this->tags;
     }
+
+    public function addTag(Tag $tag): void
+    {
+        if (!$this->tags->contains($tag)) {
+            $this->tags->add($tag);
+            $this->raise(new CoatingSystemMutated($this->getId()));
+            $this->touch();
+        }
+    }
+
+    public function removeTag(Tag $tag): void
+    {
+        if ($this->tags->removeElement($tag)) {
+            $this->raise(new CoatingSystemMutated($this->getId()));
+            $this->touch();
+        }
+    }
+
+    /** @param list<Tag> $tags */
+    public function replaceTags(array $tags): void
+    {
+        $this->tags->clear();
+        foreach ($tags as $tag) {
+            if (!$this->tags->contains($tag)) {
+                $this->tags->add($tag);
+            }
+        }
+        $this->raise(new CoatingSystemMutated($this->getId()));
+        $this->touch();
+    }
+
+    private function assertLayersAreChainable(): void
+    {
+        $layers = array_values($this->getLayers()->toArray());
+        $n = count($layers);
+        for ($i = 0; $i < $n - 1; ++$i) {
+            $current = $layers[$i]->getCoating()->getBase();
+            $next = $layers[$i + 1]->getCoating()->getBase();
+            if (!$current->canBecoveredBy($next)) {
+                throw new AppException(sprintf('Слой %d (%s) несовместим со слоем %d (%s): поверх %s нельзя наносить %s.', $i + 1, $current->title(), $i + 2, $next->title(), $current->title(), $next->title()));
+            }
+        }
+    }
+
+    private const MAX_LAYERS = 5;
 
     private function postMutate(): void
     {
+        $this->assertLayerCountWithinLimit();
         $this->assertPositionsAreDense();
-        if (null === $this->chainValidator) {
-            throw new AppException('Валидатор цепочки слоёв не установлен.');
-        }
-        $this->chainValidator->validate($this);
+        $this->assertLayersAreChainable();
+        $this->raise(new CoatingSystemMutated($this->getId()));
         $this->touch();
+    }
+
+    private function assertLayerCountWithinLimit(): void
+    {
+        if ($this->layers->count() > self::MAX_LAYERS) {
+            throw new AppException(sprintf('Система покрытий не может содержать более %d слоёв.', self::MAX_LAYERS));
+        }
     }
 
     private function assertPositionsAreDense(): void

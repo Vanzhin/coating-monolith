@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\Coatings;
 
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
@@ -23,7 +23,7 @@ class CoatingDTOTransformer
 
         $coatingTagDtos = [];
         foreach ($entity->getTags() as $tag) {
-            $coatingTagDto = new CoatingTagDTO();
+            $coatingTagDto = new TagDTO();
             $coatingTagDto->id = $tag->getId();
             $coatingTagDto->title = $tag->getTitle();
             $coatingTagDto->type = $tag->getType();
@@ -61,6 +61,7 @@ class CoatingDTOTransformer
         $dto->dryHeatExposure = $this->exposureDto($entity->getDryHeatExposure());
         $dto->immersionExposure = $this->exposureDto($entity->getImmersionExposure());
         $dto->tags = $coatingTagDtos;
+        $dto->recoatingInterpolationModel = $entity->getRecoatingInterpolationModel();
 
         return $dto;
     }

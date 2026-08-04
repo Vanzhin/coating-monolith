@@ -35,4 +35,46 @@ enum IsoCorrosivityCategory: string
             self::IM3 => 'Погружение в грунт',
         };
     }
+
+    public function family(): string
+    {
+        return match ($this) {
+            self::C1, self::C2, self::C3, self::C4, self::C5, self::CX => 'atmospheric',
+            self::IM1, self::IM2, self::IM3 => 'immersion',
+        };
+    }
+
+    public function rank(): int
+    {
+        return match ($this) {
+            self::C1 => 1,
+            self::C2 => 2,
+            self::C3 => 3,
+            self::C4 => 4,
+            self::C5 => 5,
+            self::CX => 6,
+            self::IM1 => 1,
+            self::IM2 => 2,
+            self::IM3 => 3,
+        };
+    }
+
+    /**
+     * Значения категорий той же семьи (атмосферные vs погружные), равные или большие
+     * текущей, в порядке возрастания. Используется для фильтра поиска «≥ выбранного»:
+     * система с максимумом C5 подходит и под фильтр C3.
+     *
+     * @return list<string>
+     */
+    public function atOrAboveInFamily(): array
+    {
+        $result = [];
+        foreach (self::cases() as $case) {
+            if ($case->family() === $this->family() && $case->rank() >= $this->rank()) {
+                $result[] = $case->value;
+            }
+        }
+
+        return $result;
+    }
 }

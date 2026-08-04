@@ -13,8 +13,9 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
+use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatches;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRule;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\PrimerType;
@@ -49,10 +50,13 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(1, $result);
-        self::assertSame(ComplianceStandard::ISO_12944, $result[0]['standard']);
-        self::assertSame('C3', $result[0]['category']);
-        self::assertSame('HIGH', $result[0]['durability']);
+        $matches = $result->toArray();
+        self::assertContainsEquals(
+            new ComplianceMatch(ComplianceStandard::ISO_12944, 'C3', 'HIGH'),
+            $matches,
+        );
     }
 
     public function test_no_match_when_ndft_insufficient(): void
@@ -75,6 +79,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -97,6 +102,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -120,6 +126,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -142,6 +149,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -164,6 +172,7 @@ final class ComplianceEvaluatorTest extends TestCase
         ]);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
     }
 
@@ -184,7 +193,50 @@ final class ComplianceEvaluatorTest extends TestCase
         $system = $this->makeSystem(Substrate::STEEL_CARBON, []);
 
         $result = $evaluator->evaluate($system);
+        self::assertInstanceOf(ComplianceMatches::class, $result);
         self::assertCount(0, $result);
+    }
+
+    public function test_result_keeps_only_strongest_dominating_pairs(): void
+    {
+        // Пара правил, оба матчатся одной и той же мощной системой:
+        // C4-HIGH доминируется C5-VERY_HIGH и в результате должен исчезнуть.
+        $rules = [
+            $this->makeRule(
+                substrate: Substrate::STEEL_CARBON,
+                category: 'C4',
+                durability: 'HIGH',
+                primerType: PrimerType::OTHER,
+                mnoc: 2,
+                ndft: 160,
+                primerBinders: [CoatingBase::EP],
+                otherBinders: [CoatingBase::EP, CoatingBase::PUR],
+            ),
+            $this->makeRule(
+                substrate: Substrate::STEEL_CARBON,
+                category: 'C5',
+                durability: 'VERY_HIGH',
+                primerType: PrimerType::OTHER,
+                mnoc: 3,
+                ndft: 360,
+                primerBinders: [CoatingBase::EP],
+                otherBinders: [CoatingBase::EP, CoatingBase::PUR],
+            ),
+        ];
+
+        $evaluator = new ComplianceEvaluator($rules);
+        $system = $this->makeSystem(Substrate::STEEL_CARBON, [
+            [CoatingBase::EP, 150, false],
+            [CoatingBase::EP, 150, false],
+            [CoatingBase::PUR, 60, false],
+        ]);
+
+        $matches = $evaluator->evaluate($system)->toArray();
+        self::assertCount(1, $matches);
+        self::assertEquals(
+            new ComplianceMatch(ComplianceStandard::ISO_12944, 'C5', 'VERY_HIGH'),
+            $matches[0],
+        );
     }
 
     // --- helpers ---
@@ -200,7 +252,6 @@ final class ComplianceEvaluatorTest extends TestCase
             'description',
             $substrate,
             new SurfaceTreatment(Uuid::v7(), 'Abrasive blast', 'Sa 2.5', null, Substrate::cases()),
-            new CoatingSystemChainValidator(),
         );
 
         foreach ($layers as [$base, $dft, $isZincRich]) {

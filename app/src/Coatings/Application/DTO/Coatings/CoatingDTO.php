@@ -6,9 +6,10 @@ namespace App\Coatings\Application\DTO\Coatings;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\CoatingAssessmentsPage;
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 
 class CoatingDTO
 {
@@ -22,6 +23,9 @@ class CoatingDTO
     public string $base;
 
     public bool $isZincRich = false;
+
+    /** Модель пересчёта мин.интервала перекрытия под фактическую толщину слоя (по умолчанию LINEAR). */
+    public RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR;
 
     public function getBaseEnum(): ?CoatingBase
     {
@@ -55,7 +59,7 @@ class CoatingDTO
     public ?ThermalExposureLimitsDTO $dryHeatExposure = null;
     public ?ThermalExposureLimitsDTO $immersionExposure = null;
 
-    /** @var CoatingTagDTO[] */
+    /** @var TagDTO[] */
     public array $tags;
 
     /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */

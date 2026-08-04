@@ -259,6 +259,8 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
             'manufacturer' => ['id' => $this->manufacturerId],
             'minRecoatingInterval' => [
                 'default' => ['points' => [
+                    // Инвариант: root.default обязан содержать точку +20 °C с положительной длительностью.
+                    ['temperature_at' => 20, 'kind' => 'duration', 'days' => 0, 'hours' => 4, 'minutes' => 0],
                     ['temperature_at' => 35, 'kind' => 'duration', 'days' => 0, 'hours' => 2, 'minutes' => 0],
                 ]],
                 'branches' => [

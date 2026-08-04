@@ -60,21 +60,13 @@ export default class extends Controller {
         this.modalDftTarget.textContent = data.totalDft + ' мкм';
         this.modalLayersCountTarget.textContent = data.layerCount;
 
-        // Layers table
-        const tbody = this.modalLayersTarget;
-        tbody.innerHTML = '';
+        // Layers list
+        const container = this.modalLayersTarget;
+        container.innerHTML = '';
         (data.layers ?? []).forEach(layer => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-muted">${layer.position}</td>
-                <td>
-                    <span class="fw-semibold">${layer.coatingTitle}</span>
-                    ${layer.isZincRich ? '<span class="badge text-bg-warning ms-1 small">Zn(R)</span>' : ''}
-                </td>
-                <td class="text-muted small">${layer.coatingBaseTitle}</td>
-                <td class="text-end fw-semibold">${layer.dft}</td>
-            `;
-            tbody.appendChild(tr);
+            const row = document.createElement('div');
+            row.textContent = `${layer.coatingTitle} ${layer.dft} мкм`;
+            container.appendChild(row);
         });
 
         // Compliance

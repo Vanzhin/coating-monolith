@@ -6,6 +6,8 @@ namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Event\CoatingMutated;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -46,7 +48,9 @@ class Coating extends Aggregate
 
     private bool $isZincRich = false;
 
-    /** @var Collection<CoatingTag> */
+    private RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR;
+
+    /** @var Collection<Tag> */
     private Collection $tags;
 
     public function __construct(
@@ -68,6 +72,7 @@ class Coating extends Aggregate
         CoatingSpecification $specification,
         int $dryingMaxTemp = 50,
         bool $isZincRich = false,
+        RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR,
     ) {
         $this->id = $id;
         $this->tags = new ArrayCollection();
@@ -91,6 +96,7 @@ class Coating extends Aggregate
         $this->setThinner($thinner);
         $this->setManufacturer($manufacturer);
         $this->setIsZincRich($isZincRich);
+        $this->setRecoatingInterpolationModel($recoatingInterpolationModel);
     }
 
     public function getId(): string
@@ -203,12 +209,14 @@ class Coating extends Aggregate
         AssertService::maxLength($title, 100);
         $this->title = $title;
         $this->specification->uniqueTitleCoatingSpecification->satisfy($this);
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setDescription(string $description): void
     {
         AssertService::maxLength($description, 1500);
         $this->description = $description;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setVolumeSolid(int $volumeSolid): void
@@ -228,17 +236,20 @@ class Coating extends Aggregate
     public function setDftRange(DftRange $dftRange): void
     {
         $this->dftRange = $dftRange;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setBase(CoatingBase $base): void
     {
         $this->base = $base;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setApplicationMinTemp(int $applicationMinTemp): void
     {
         $this->applicationMinTemp = $applicationMinTemp;
         $this->validateTemperatureRange();
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     public function setDryingMaxTemp(int $dryingMaxTemp): void
@@ -286,21 +297,52 @@ class Coating extends Aggregate
     public function setIsZincRich(bool $value): void
     {
         $this->isZincRich = $value;
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
-    public function addTag(CoatingTag $tag): void
+    public function getRecoatingInterpolationModel(): RecoatingInterpolationModel
+    {
+        return $this->recoatingInterpolationModel;
+    }
+
+    public function setRecoatingInterpolationModel(RecoatingInterpolationModel $model): void
+    {
+        $this->recoatingInterpolationModel = $model;
+    }
+
+    /**
+     * Мин.интервал перекрытия при 20 °C, пересчитанный под фактическую толщину слоя `$layerDft`.
+     * Возвращает null, если у покрытия нет явной точки при 20 °C с положительной длительностью
+     * (legacy до инварианта — см. `assertMinRecoatingHasBasePointAt20`). Для нового покрытия
+     * ситуация невозможна, но проектор обязан безопасно работать с исторически накопленными данными.
+     */
+    public function interpolatedMinRecoatMinutesAt20(int $layerDft): ?int
+    {
+        $basePoint = $this->minRecoatingInterval->default->getPoint(20);
+        if (null === $basePoint || !$basePoint->isExplicitPositiveDuration()) {
+            return null;
+        }
+
+        return $this->recoatingInterpolationModel->interpolate(
+            sourceDft: $this->dftRange->tdsDft,
+            targetDft: $layerDft,
+            sourceMinutes: $basePoint->timeInMinutes,
+        );
+    }
+
+    public function addTag(Tag $tag): void
     {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
         }
     }
 
-    public function removeTag(CoatingTag $tag): void
+    public function removeTag(Tag $tag): void
     {
         $this->tags->removeElement($tag);
     }
 
-    /** @param list<CoatingTag> $tags */
+    /** @param list<Tag> $tags */
     public function replaceTags(array $tags): void
     {
         $this->tags->clear();
@@ -324,8 +366,27 @@ class Coating extends Aggregate
     public function setMinRecoatingInterval(RecoatingIntervalTree $minRecoatingInterval): void
     {
         (new CoatingRecoatingTreeValidator())->validate($minRecoatingInterval);
+        $this->assertMinRecoatingHasBasePointAt20($minRecoatingInterval);
         $this->minRecoatingInterval = $minRecoatingInterval;
         $this->validateTemperatureRange();
+        $this->raise(new CoatingMutated($this->getId()));
+    }
+
+    /**
+     * Инвариант: default-корень минимального интервала перекрытия обязан содержать
+     * явную точку ровно при 20 °C с валидной длительностью (>0).
+     * Без такой точки интерполяция по толщине слоя системы невозможна — покрытие
+     * не может участвовать в расчётах.
+     */
+    private function assertMinRecoatingHasBasePointAt20(RecoatingIntervalTree $tree): void
+    {
+        $point = $tree->default->getPoint(20);
+        if (null === $point || $point->isCalculated) {
+            throw new AppException('Для покрытия обязательна точка минимального интервала перекрытия при +20 °C.');
+        }
+        if (!$point->isExplicitPositiveDuration()) {
+            throw new AppException('Точка минимального интервала перекрытия при +20 °C должна иметь положительное время.');
+        }
     }
 
     public function setMaxRecoatingInterval(?RecoatingIntervalTree $maxRecoatingInterval): void

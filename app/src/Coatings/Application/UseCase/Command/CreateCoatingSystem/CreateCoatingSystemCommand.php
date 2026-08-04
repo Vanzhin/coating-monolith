@@ -11,6 +11,7 @@ final readonly class CreateCoatingSystemCommand extends Command
 {
     /**
      * @param array<int, array{coatingId: string, dft: int}> $initialLayers
+     * @param list<string>                                   $tagIds
      */
     public function __construct(
         public string $title,
@@ -18,6 +19,7 @@ final readonly class CreateCoatingSystemCommand extends Command
         public Substrate $substrate,
         public string $surfaceTreatmentId,
         public array $initialLayers = [],
+        public array $tagIds = [],
     ) {
     }
 }

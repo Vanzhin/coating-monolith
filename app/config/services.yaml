@@ -53,10 +53,6 @@ services:
     resource: '../src/Users/Infrastructure/Controller'
     tags: [ 'controller.service_arguments' ]
 
-  App\Coatings\Infrastructure\Api\CoatingSystem\:
-    resource: '../src/Coatings/Infrastructure/Api/CoatingSystem'
-    tags: [ 'controller.service_arguments' ]
-
   App\Coatings\Infrastructure\Api\SurfaceTreatment\:
     resource: '../src/Coatings/Infrastructure/Api/SurfaceTreatment'
     tags: [ 'controller.service_arguments' ]
@@ -160,15 +156,10 @@ services:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
 
-  App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidatorInterface:
-    alias: App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator
-
   App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory: ~
 
   App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:
     factory: ['App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory', 'create']
-
-  App\Coatings\Infrastructure\Projector\CoatingSystemComplianceProjector: ~
 
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository

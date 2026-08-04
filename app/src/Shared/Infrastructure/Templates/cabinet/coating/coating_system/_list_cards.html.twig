@@ -1,0 +1,111 @@
+{# Батч карточек систем покрытий.
+   Используется:
+   - основным шаблоном list.html.twig для первой страницы;
+   - ListAction в режиме ?partial=1 для догрузки следующих страниц через
+     infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот
+     partial без layout'a.
+
+   Обязательные переменные:
+     items    — list<CoatingSystemDTO>
+     canEdit  — bool
+#}
+{% set canEdit = canEdit|default(false) %}
+
+{% for system in items %}
+    {% set complianceBadges = [] %}
+    {% for entry in system.compliance %}
+        {% set label = entry.category ~ (entry.durability ? '-' ~ entry.durability : '') %}
+        {% set complianceBadges = complianceBadges|merge([label]) %}
+    {% endfor %}
+    {% set visibleBadges = complianceBadges|slice(0, 3) %}
+    {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}
+
+    {% set payloadLayers = [] %}
+    {% for layer in system.layers %}
+        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft}]) %}
+    {% endfor %}
+    {% set payload = {
+        id: system.id,
+        title: system.title,
+        substrateTitle: system.substrateTitle,
+        treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
+        totalDft: system.totalDft,
+        description: system.description,
+        layerCount: system.layers|length,
+        layers: payloadLayers,
+        compliance: system.compliance,
+    } %}
+
+    <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body"
+         data-system-id="{{ system.id }}">
+        <div class="flex-grow-1 overflow-hidden"
+             role="button"
+             data-action="click->coating-system-preview#open"
+             data-payload="{{ payload|json_encode|e('html_attr') }}">
+            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">
+                <span class="text-body">{{ system.title }}</span>
+            </h6>
+            <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
+                <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
+                <span class="badge text-bg-light fw-normal text-body-secondary">
+                    {{ system.totalDft }} мкм
+                </span>
+                {% if system.surfaceTreatmentCode %}
+                    <span class="text-muted small">
+                        {{ system.surfaceTreatmentCode }}
+                        {% if system.surfaceTreatmentStandardCode %}({{ system.surfaceTreatmentStandardCode }}){% endif %}
+                    </span>
+                {% else %}
+                    <span class="text-muted small">{{ system.surfaceTreatmentDescription }}</span>
+                {% endif %}
+            </div>
+            {% if system.maxLayerApplicationMinTemp is not null %}
+                <div class="small text-muted mb-1">
+                    Мин.Т нанесения: {{ system.maxLayerApplicationMinTemp }} °C
+                </div>
+            {% endif %}
+            {% if system.minApplicationTimeAt20Minutes is not null %}
+                <div class="small text-muted mb-1">
+                    Мин. время нанесения: {{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}
+                </div>
+            {% endif %}
+            {% if visibleBadges|length > 0 %}
+                <div class="d-flex flex-wrap gap-1 mb-1">
+                    {% for badge in visibleBadges %}
+                        <span class="badge text-bg-success fw-normal">{{ badge }}</span>
+                    {% endfor %}
+                    {% if hiddenBadgeCount > 0 %}
+                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ hiddenBadgeCount }}</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if system.layers|length > 0 %}
+                <div class="small text-body-secondary mb-1">
+                    {% for layer in system.layers %}
+                        <div>{{ layer.coatingTitle }} {{ layer.dft }} мкм</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if system.tags|length > 0 %}
+                <div class="d-flex flex-wrap gap-1 mb-1">
+                    {% for tag in system.tags %}
+                        <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <p class="mb-0 small text-muted">
+                Обновлено: {{ system.updatedAt|date('d.m.Y') }}
+            </p>
+        </div>
+        {% if canEdit %}
+            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                {% include '/components/edit_delete.html.twig' with {
+                    'edit': 'app_cabinet_coating_system_update',
+                    'delete': 'app_cabinet_coating_system_remove',
+                    'id': system.id,
+                    'title': system.title,
+                } %}
+            </div>
+        {% endif %}
+    </div>
+{% endfor %}

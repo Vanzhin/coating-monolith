@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemChainValidator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
@@ -23,7 +23,8 @@ final class ListActionTest extends WebTestCase
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
-    private string $systemId;
+    /** @var list<string> */
+    private array $systemIds = [];
 
     protected function setUp(): void
     {
@@ -45,22 +46,8 @@ final class ListActionTest extends WebTestCase
         $ref->setValue($user, true);
 
         $this->em->persist($user);
-
-        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
-
-        $chainValidator = new CoatingSystemChainValidator();
-        $system = new CoatingSystem(
-            Uuid::v7(),
-            'Список-система-'.$suffix,
-            'Описание для теста листинга',
-            Substrate::CONCRETE,
-            $treatment,
-            $chainValidator,
-        );
-        $this->em->persist($system);
         $this->em->flush();
 
-        $this->systemId = $system->getId();
         $this->client->loginUser($user);
     }
 
@@ -70,9 +57,14 @@ final class ListActionTest extends WebTestCase
         $em->clear();
 
         try {
-            $system = $em->find(CoatingSystem::class, Uuid::fromString($this->systemId));
-            if (null !== $system) {
-                $em->remove($system);
+            /** @var CoatingSystemSearchCacheRepository $cacheRepo */
+            $cacheRepo = static::getContainer()->get(CoatingSystemSearchCacheRepository::class);
+            foreach ($this->systemIds as $id) {
+                $cacheRepo->delete($id);
+                $system = $em->find(CoatingSystem::class, Uuid::fromString($id));
+                if (null !== $system) {
+                    $em->remove($system);
+                }
             }
 
             $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
@@ -89,8 +81,33 @@ final class ListActionTest extends WebTestCase
         parent::tearDown();
     }
 
+    private function persistSystem(string $suffix = ''): CoatingSystem
+    {
+        if ('' === $suffix) {
+            $suffix = uniqid('', true);
+        }
+        $treatment = $this->createAndPersistTreatment($this->em, $suffix);
+        $system = new CoatingSystem(
+            Uuid::v7(),
+            'Список-система-'.$suffix,
+            'Описание для теста листинга',
+            Substrate::CONCRETE,
+            $treatment,
+        );
+        $this->em->persist($system);
+        $this->em->flush();
+        $this->systemIds[] = $system->getId();
+
+        /** @var CoatingSystemSearchCacheRepository $cacheRepo */
+        $cacheRepo = static::getContainer()->get(CoatingSystemSearchCacheRepository::class);
+        $cacheRepo->upsert($system);
+
+        return $system;
+    }
+
     public function test_get_shows_systems(): void
     {
+        $this->persistSystem();
         $this->client->request('GET', '/cabinet/coating/coating-system/list');
 
         self::assertResponseIsSuccessful();
@@ -99,67 +116,101 @@ final class ListActionTest extends WebTestCase
         self::assertStringContainsString('Список-система-', $content);
     }
 
-    public function test_get_with_search_filter(): void
+    public function test_returns_full_page_when_no_partial(): void
     {
-        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+        $sys = $this->persistSystem();
+        $this->client->request('GET', '/cabinet/coating/coating-system/list');
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
-        self::assertStringContainsString('Список-система-', $content);
+        self::assertStringContainsString($sys->getTitle(), (string) $this->client->getResponse()->getContent());
+    }
+
+    public function test_q_filters_results(): void
+    {
+        $suffix = uniqid('', true);
+        $sysA = $this->persistSystem('AlphaUniq'.$suffix);
+        $sysB = $this->persistSystem('BetaUniq'.$suffix);
+
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=AlphaUniq'.$suffix);
+
+        self::assertResponseIsSuccessful();
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('data-system-id="'.$sysA->getId().'"', $content);
+        self::assertStringNotContainsString('data-system-id="'.$sysB->getId().'"', $content);
+    }
+
+    public function test_partial_fragment_returns_only_cards(): void
+    {
+        $this->persistSystem();
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?partial=1');
+
+        self::assertResponseIsSuccessful();
+        $body = (string) $this->client->getResponse()->getContent();
+        self::assertStringNotContainsString('<html', $body);
     }
 
     public function test_list_uses_cards_not_table(): void
     {
+        $this->persistSystem();
         $this->client->request('GET', '/cabinet/coating/coating-system/list');
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('class="coating-card', $content);
         self::assertStringNotContainsString('<table class="table table-hover', $content);
     }
 
     public function test_list_shows_treatment_code_on_card(): void
     {
-        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+        $suffix = uniqid('', true);
+        $this->persistSystem($suffix);
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
-        // Fixture creates treatment with code = substr('ST-' . $suffix, 0, 30)
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('ST-', $content);
     }
 
     public function test_list_shows_layer_count_and_total_dft_on_card(): void
     {
-        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+        $suffix = uniqid('', true);
+        $this->persistSystem($suffix);
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
-        // Layer count badge: bi-layers icon + count (0 layers for fixture system)
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('bi-layers', $content);
-        // Total DFT shown (0 мкм for system without layers)
         self::assertStringContainsString('мкм', $content);
     }
 
     public function test_list_shows_modal_placeholder(): void
     {
+        $this->persistSystem();
         $this->client->request('GET', '/cabinet/coating/coating-system/list');
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('id="coatingSystemModal"', $content);
     }
 
     public function test_list_shows_compliance_badges_on_card_when_available(): void
     {
-        // System created in fixture has no compliance; modal is still present.
-        // This test verifies the card structure is present and no compliance badges shown for the empty case.
-        $this->client->request('GET', '/cabinet/coating/coating-system/list', ['search' => 'Список-система-']);
+        $suffix = uniqid('', true);
+        $this->persistSystem($suffix);
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
-        // Card is rendered
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('class="coating-card', $content);
-        // Compliance section in modal is present (hidden via d-none, but rendered)
         self::assertStringContainsString('modal-compliance-block', $content);
+    }
+
+    public function test_inverted_range_does_not_break(): void
+    {
+        $this->persistSystem();
+        // Инвертированный диапазон: from > to. Должны вернуть 200, игнорируя невалидный фильтр.
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?applicationMinTempFrom=100&applicationMinTempTo=10');
+
+        self::assertResponseIsSuccessful();
     }
 }

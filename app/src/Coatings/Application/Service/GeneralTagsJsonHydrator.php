@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\Service;
 
-use App\Coatings\Domain\Aggregate\Coating\CoatingTag;
-use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 
 /**
  * Builds a JSON array of general-type tags from either:
- *   - an array of CoatingTagDTO objects (from DTO transformer), or
+ *   - an array of TagDTO objects (from DTO transformer), or
  *   - a raw POST array with only 'id' keys (after validation error — title/type absent).
  *
  * In the raw-POST case each id is hydrated via the repository so that
@@ -18,7 +18,7 @@ use App\Coatings\Domain\Repository\CoatingTagRepositoryInterface;
 class GeneralTagsJsonHydrator
 {
     public function __construct(
-        private readonly CoatingTagRepositoryInterface $coatingTagRepository,
+        private readonly TagRepositoryInterface $coatingTagRepository,
     ) {
     }
 
@@ -48,7 +48,7 @@ class GeneralTagsJsonHydrator
                 $type = $entity->getType();
             }
 
-            if (CoatingTag::TYPE_GENERAL !== $type) {
+            if (Tag::TYPE_GENERAL !== $type) {
                 continue;
             }
 

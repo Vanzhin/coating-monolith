@@ -13,13 +13,12 @@ final class ComplianceEvaluator
     {
     }
 
-    /**
-     * @return list<array{standard: ComplianceStandard, category: string, durability: string}>
-     */
-    public function evaluate(CoatingSystem $system): array
+    public function evaluate(CoatingSystem $system): ComplianceMatches
     {
+        $result = new ComplianceMatches();
+
         if (0 === $system->layerCount()) {
-            return [];
+            return $result;
         }
 
         $first = $system->firstLayer()->getCoating();
@@ -32,7 +31,6 @@ final class ComplianceEvaluator
             $followupBases[] = $layer->getCoating()->getBase();
         }
 
-        $result = [];
         foreach ($this->rules as $rule) {
             if ($rule->substrate !== $system->getSubstrate()) {
                 continue;
@@ -59,13 +57,13 @@ final class ComplianceEvaluator
             if ($mismatch) {
                 continue;
             }
-            $result[] = [
-                'standard' => $rule->standard,
-                'category' => $rule->category,
-                'durability' => $rule->durability,
-            ];
+            $result->add(new ComplianceMatch(
+                $rule->standard,
+                $rule->category,
+                $rule->durability,
+            ));
         }
 
-        return $result;
+        return $result->strongestOnly();
     }
 }

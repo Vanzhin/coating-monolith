@@ -4,14 +4,64 @@
 
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
-
-    {# UUID-placeholder для генерации route-шаблонов с id #}
     {% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
 
     <div data-controller="coating-system-preview"
          data-coating-system-preview-modal-id-value="coatingSystemModal"
          data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
          data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}">
+
+    {# Собираем значения активных подложек для сравнения #}
+    {% set activeSubstrateValues = substrates|map(s => s.value) %}
+
+    {# Активность фасетов #}
+    {% set substratesActive = substrates|length > 0 %}
+    {% set standardActive = standard is not null %}
+    {% set categoryActive = standardActive and category is not null %}
+    {% set durabilityActive = standardActive and durability is not null %}
+    {% set tagsActive = tagIds|length > 0 %}
+    {% set coatingsActive = coatingIds|length > 0 %}
+    {% set appMinTempActive = applicationMinTemp is not null %}
+    {% set appTimeActive = minApplicationTimeAt20Hours is not null %}
+
+    {% set activeFacetsCount = substrates|length
+        + (standardActive ? 1 : 0)
+        + (categoryActive ? 1 : 0)
+        + (durabilityActive ? 1 : 0)
+        + tagIds|length
+        + coatingIds|length
+        + (appMinTempActive ? 1 : 0)
+        + (appTimeActive ? 1 : 0) %}
+
+    {# Summary-строки для активных range/single фасетов #}
+    {% set appMinTempSummary = appMinTempActive
+        ? (applicationMinTemp.from is not null and applicationMinTemp.to is not null
+            ? applicationMinTemp.from ~ '…' ~ applicationMinTemp.to ~ ' °C'
+            : (applicationMinTemp.from is not null ? '≥ ' ~ applicationMinTemp.from ~ ' °C' : '≤ ' ~ applicationMinTemp.to ~ ' °C'))
+        : null %}
+
+    {% set appTimeSummary = appTimeActive
+        ? (minApplicationTimeAt20Hours.from is not null and minApplicationTimeAt20Hours.to is not null
+            ? minApplicationTimeAt20Hours.from ~ '…' ~ minApplicationTimeAt20Hours.to ~ ' ч'
+            : (minApplicationTimeAt20Hours.from is not null ? '≥ ' ~ minApplicationTimeAt20Hours.from ~ ' ч' : '≤ ' ~ minApplicationTimeAt20Hours.to ~ ' ч'))
+        : null %}
+
+    {# Reset URL-ы для range-фасетов #}
+    {% set appMinTempResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({applicationMinTempFrom: null, applicationMinTempTo: null, page: null})|filter(v => v is not null)) %}
+    {% set appTimeResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null)) %}
+
+    {# Пресеты для range-чипов (отражают реальные диапазоны нанесения) #}
+    {% set appMinTempPresets = [
+        {from: -10, to: null, label: 'от −10 °C'},
+        {from: 5,   to: null, label: 'от +5 °C'},
+        {from: 10,  to: null, label: 'от +10 °C'},
+    ] %}
+
+    {% set appTimePresets = [
+        {from: null, to: 8,  label: 'до 8 ч'},
+        {from: null, to: 24, label: 'до 24 ч'},
+        {from: null, to: 72, label: 'до 3 сут'},
+    ] %}
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Системы покрытий',
@@ -20,166 +70,781 @@
         is_empty: items is empty,
     } %}
     {% block above_list %}
-        <form method="get" action="{{ path('app_cabinet_coating_system_list') }}" class="mb-0">
-            <div class="row g-2">
-                <div class="col-md-5">
-                    <input type="search" name="search" value="{{ search }}" class="form-control"
-                           placeholder="По названию...">
-                </div>
-                <div class="col-md-4">
-                    <select name="substrate" class="form-select">
-                        <option value="">Все субстраты</option>
-                        {% for s in substrates %}
-                            <option value="{{ s.value }}" {% if substrate == s.value %}selected{% endif %}>
-                                {{ s.title() }}
-                            </option>
+        <form method="get" action="{{ path('app_cabinet_coating_system_list') }}"
+              id="systemListForm" class="mb-3"
+              data-controller="chip-facets">
+
+            {% include 'components/_search_toolbar.html.twig' with {
+                q_value: q,
+                name: 'q',
+                reset_url: path('app_cabinet_coating_system_list'),
+                placeholder: 'По названию системы (от 3 символов)',
+                endpoint_typeahead: path('app_cabinet_coating_system_suggest'),
+            } %}
+
+            {# Сортировка #}
+            {% set defaultSort = constant('App\\Coatings\\Domain\\Repository\\CoatingSystemSort::DEFAULT') %}
+            {% set sortActive = sort != defaultSort %}
+
+            {# === Chip-row === #}
+            <div class="d-flex align-items-center gap-2 mb-3 chip-row">
+                <div class="d-flex gap-2 flex-shrink-0 chip-row-pinned">
+
+                {# --- Сортировка --- #}
+                <div class="dropdown">
+                    <button type="button"
+                            class="btn btn-sm {{ sortActive ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Сортировка">
+                        <i class="bi bi-sort-down"></i><span class="d-none d-md-inline"> {{ sortActive ? sort.title() : 'Сортировка' }}</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for opt in sortOptions %}
+                            {% set q2 = opt == defaultSort
+                                ? app.request.query.all|merge({sort: null, page: null})|filter(v => v is not null)
+                                : app.request.query.all|merge({sort: opt.value, page: null})|filter(v => v is not null) %}
+                            <li>
+                                <a class="dropdown-item {% if sort == opt %}active{% endif %}"
+                                   href="{{ path('app_cabinet_coating_system_list', q2) }}">
+                                    {{ opt.title() }}
+                                </a>
+                            </li>
                         {% endfor %}
-                    </select>
+                    </ul>
                 </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100">Найти</button>
+
+                {# --- Все фильтры (offcanvas) --- #}
+                <button type="button"
+                        class="btn btn-sm {{ activeFacetsCount > 0 ? 'btn-primary' : 'btn-outline-secondary' }} position-relative"
+                        data-bs-toggle="offcanvas" data-bs-target="#allFiltersOffcanvas"
+                        aria-controls="allFiltersOffcanvas"
+                        aria-label="Все фильтры">
+                    <i class="bi bi-sliders"></i><span class="d-none d-md-inline"> Все фильтры</span>
+                    {% if activeFacetsCount > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size: 0.65rem;">
+                            {{ activeFacetsCount }}
+                        </span>
+                    {% endif %}
+                </button>
                 </div>
-            </div>
+
+                {# Скроллируемая часть chip-row #}
+                <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
+
+                {# --- Подложка (multi) --- #}
+                {% if not substratesActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Подложка
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
+                                {% for s in substrateOptions %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="substrates[]" value="{{ s.value }}"
+                                               id="substrate-{{ s.value }}" form="systemListForm">
+                                        <label class="form-check-label" for="substrate-{{ s.value }}">
+                                            {{ s.title() }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                                <hr class="my-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100" form="systemListForm">Применить</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterSubstrate"
+                            aria-controls="chipFilterSubstrate">
+                        Подложка
+                    </button>
+                {% else %}
+                    {% for s in substrateOptions|filter(s => s.value in activeSubstrateValues) %}
+                        {% set valsAfterRemove = activeSubstrateValues|filter(v => v != s.value) %}
+                        {% set removeUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({substrates: valsAfterRemove, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать «{{ s.title() }}» из фильтра">
+                            {{ s.title() }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% endif %}
+
+                {# --- Стандарт (single) --- #}
+                {% if not standardActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Стандарт
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3">
+                                {% for s in standardOptions %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="standard" value="{{ s.value }}"
+                                               id="standard-{{ s.value }}" form="systemListForm"
+                                               onchange="this.form.submit()">
+                                        <label class="form-check-label" for="standard-{{ s.value }}">{{ s.title() }}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterStandard"
+                            aria-controls="chipFilterStandard">
+                        Стандарт
+                    </button>
+                {% else %}
+                    {% set standardResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({standard: null, category: null, durability: null, page: null})|filter(v => v is not null)) %}
+                    <a href="{{ standardResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр стандарта">
+                        {{ standard.title() }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Категория (single, только если стандарт выбран) --- #}
+                {% if standardActive %}
+                    {% if not categoryActive %}
+                        <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Категория
+                                </button>
+                                <div class="dropdown-menu chip-desktop-menu p-3">
+                                    {% for catVal, catLabel in {
+                                        'C1': 'C1', 'C2': 'C2', 'C3': 'C3',
+                                        'C4': 'C4', 'C5': 'C5', 'CX': 'CX',
+                                        'Im1': 'Im1', 'Im2': 'Im2', 'Im3': 'Im3'
+                                    } %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="category" value="{{ catVal }}"
+                                                   id="category-{{ catVal }}" form="systemListForm"
+                                                   onchange="this.form.submit()">
+                                            <label class="form-check-label" for="category-{{ catVal }}">{{ catLabel }}</label>
+                                        </div>
+                                    {% endfor %}
+                                    <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                                data-bs-toggle="offcanvas" data-bs-target="#chipFilterCategory"
+                                aria-controls="chipFilterCategory">
+                            Категория
+                        </button>
+                    {% else %}
+                        {% set categoryResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({category: null, durability: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ categoryResetUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать фильтр категории">
+                            {{ category }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+
+                    {# --- Долговечность (single, только если категория выбрана) --- #}
+                    {% if categoryActive %}
+                        {% if not durabilityActive %}
+                            <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                        Долговечность
+                                    </button>
+                                    <div class="dropdown-menu chip-desktop-menu p-3">
+                                        {% for durVal, durLabel in {
+                                            'LOW': 'L (менее 7 лет)',
+                                            'MEDIUM': 'M (7–15 лет)',
+                                            'HIGH': 'H (15–25 лет)',
+                                            'VERY_HIGH': 'VH (более 25 лет)'
+                                        } %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                       name="durability" value="{{ durVal }}"
+                                                       id="durability-{{ durVal }}" form="systemListForm"
+                                                       onchange="this.form.submit()">
+                                                <label class="form-check-label" for="durability-{{ durVal }}">{{ durLabel }}</label>
+                                            </div>
+                                        {% endfor %}
+                                        <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
+                                        <input type="hidden" name="category" value="{{ category }}" form="systemListForm">
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                                    data-bs-toggle="offcanvas" data-bs-target="#chipFilterDurability"
+                                    aria-controls="chipFilterDurability">
+                                Долговечность
+                            </button>
+                        {% else %}
+                            {% set durabilityResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({durability: null, page: null})|filter(v => v is not null)) %}
+                            <a href="{{ durabilityResetUrl }}"
+                               class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                               title="Убрать фильтр долговечности">
+                                Долг.: {{ durability }} <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+                {# --- Мин Т нанесения (range) --- #}
+                {% if not appMinTempActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Мин Т нанесения
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="applicationMinTempFrom" value=""
+                                       data-range-filter-target="fromInput" form="systemListForm">
+                                <input type="hidden" name="applicationMinTempTo" value=""
+                                       data-range-filter-target="toInput" form="systemListForm">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset" form="systemListForm">Любая</button>
+                                    {% for p in appMinTempPresets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="systemListForm">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppMinTemp"
+                            aria-controls="chipFilterAppMinTemp">
+                        Мин Т нанесения
+                    </button>
+                {% else %}
+                    <a href="{{ appMinTempResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Мин Т: {{ appMinTempSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Мин время нанесения при 20°C (range) --- #}
+                {% if not appTimeActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Мин. время нанесения
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
+                                <input type="hidden" name="minApplicationTimeAt20From" value=""
+                                       data-range-filter-target="fromInput" form="systemListForm">
+                                <input type="hidden" name="minApplicationTimeAt20To" value=""
+                                       data-range-filter-target="toInput" form="systemListForm">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            data-action="click->range-filter#reset" form="systemListForm">Любое</button>
+                                    {% for p in appTimePresets %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-action="click->range-filter#preset"
+                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="systemListForm">
+                                            {{ p.label }}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppTime"
+                            aria-controls="chipFilterAppTime">
+                        Мин. время нанесения
+                    </button>
+                {% else %}
+                    <a href="{{ appTimeResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Минимальное время нанесения: {{ appTimeSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# Теги — только через шторку «Все фильтры» #}
+                {% set selectedTagsJson = '[]' %}
+
+                </div>{# /.chip-scroll #}
+            </div>{# /.chip-row #}
+
+            {# === Mobile chip-offcanvas'ы === #}
+
+            {% if not substratesActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterSubstrate" aria-labelledby="chipFilterSubstrateLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterSubstrateLabel">Подложка</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for s in substrateOptions %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="substrates[]" value="{{ s.value }}"
+                                           id="substrateMob-{{ s.value }}">
+                                    <label class="form-check-label" for="substrateMob-{{ s.value }}">{{ s.title() }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not standardActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterStandard" aria-labelledby="chipFilterStandardLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterStandardLabel">Стандарт</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for s in standardOptions %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="standard" value="{{ s.value }}"
+                                           id="standardMob-{{ s.value }}">
+                                    <label class="form-check-label" for="standardMob-{{ s.value }}">{{ s.title() }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if standardActive and not categoryActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterCategory" aria-labelledby="chipFilterCategoryLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterCategoryLabel">Категория</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for catVal, catLabel in {
+                                'C1': 'C1', 'C2': 'C2', 'C3': 'C3',
+                                'C4': 'C4', 'C5': 'C5', 'CX': 'CX',
+                                'Im1': 'Im1', 'Im2': 'Im2', 'Im3': 'Im3'
+                            } %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="category" value="{{ catVal }}"
+                                           id="categoryMob-{{ catVal }}">
+                                    <label class="form-check-label" for="categoryMob-{{ catVal }}">{{ catLabel }}</label>
+                                </div>
+                            {% endfor %}
+                            <input type="hidden" name="standard" value="{{ standard.value }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if categoryActive and not durabilityActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterDurability" aria-labelledby="chipFilterDurabilityLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterDurabilityLabel">Долговечность</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for durVal, durLabel in {
+                                'LOW': 'L (менее 7 лет)',
+                                'MEDIUM': 'M (7–15 лет)',
+                                'HIGH': 'H (15–25 лет)',
+                                'VERY_HIGH': 'VH (более 25 лет)'
+                            } %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="durability" value="{{ durVal }}"
+                                           id="durabilityMob-{{ durVal }}">
+                                    <label class="form-check-label" for="durabilityMob-{{ durVal }}">{{ durLabel }}</label>
+                                </div>
+                            {% endfor %}
+                            <input type="hidden" name="standard" value="{{ standard.value }}">
+                            <input type="hidden" name="category" value="{{ category }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not appMinTempActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterAppMinTemp" aria-labelledby="chipFilterAppMinTempLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterAppMinTempLabel">Мин Т нанесения</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="applicationMinTempFrom" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="applicationMinTempTo" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любая</button>
+                            {% for p in appMinTempPresets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
+            {% if not appTimeActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterAppTime" aria-labelledby="chipFilterAppTimeLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterAppTimeLabel">Минимальное время нанесения (при 20°C)</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
+                        <input type="hidden" name="minApplicationTimeAt20From" value=""
+                               data-range-filter-target="fromInput">
+                        <input type="hidden" name="minApplicationTimeAt20To" value=""
+                               data-range-filter-target="toInput">
+                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    data-action="click->range-filter#reset">Любое</button>
+                            {% for p in appTimePresets %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-action="click->range-filter#preset"
+                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
+                                    {{ p.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </div>
+            {% endif %}
+
         </form>
+
+        {# === Offcanvas «Все фильтры» === #}
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="allFiltersOffcanvas" aria-labelledby="allFiltersOffcanvasLabel">
+            <div class="offcanvas-header border-bottom">
+                <button type="button" class="btn-close m-0 me-auto" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                <h5 class="offcanvas-title" id="allFiltersOffcanvasLabel">
+                    Фильтры
+                    {% if activeFacetsCount > 0 %}
+                        <span class="badge text-bg-primary ms-1">{{ activeFacetsCount }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <form method="get" action="{{ path('app_cabinet_coating_system_list') }}"
+                  id="allFiltersForm" class="offcanvas-body d-flex flex-column p-0">
+                {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+
+                <div class="flex-grow-1 overflow-auto p-3">
+
+                    {# Активные фильтры сверху #}
+                    {% if activeFacetsCount > 0 %}
+                        <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                            <div class="small text-muted mb-2">Активные фильтры</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% if substratesActive %}
+                                    {% for s in substrateOptions|filter(s => s.value in activeSubstrateValues) %}
+                                        {% set valsAfterRemove = activeSubstrateValues|filter(v => v != s.value) %}
+                                        {% set qRemove = app.request.query.all|merge({substrates: valsAfterRemove, page: null})|filter(v => v is not null) %}
+                                        <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                            {{ s.title() }}
+                                            <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                               class="btn-close btn-close-white btn-close-sm ms-1"
+                                               aria-label="Убрать"></a>
+                                        </span>
+                                    {% endfor %}
+                                {% endif %}
+                                {% if standardActive %}
+                                    {% set qRemove = app.request.query.all|merge({standard: null, category: null, durability: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        {{ standard.title() }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if categoryActive %}
+                                    {% set qRemove = app.request.query.all|merge({category: null, durability: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        {{ category }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if durabilityActive %}
+                                    {% set qRemove = app.request.query.all|merge({durability: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Долг.: {{ durability }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if appMinTempActive %}
+                                    {% set qRemove = app.request.query.all|merge({applicationMinTempFrom: null, applicationMinTempTo: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Мин Т: {{ appMinTempSummary }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if appTimeActive %}
+                                    {% set qRemove = app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Минимальное время нанесения: {{ appTimeSummary }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# === Секция: Подложка === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Подложка</h6>
+                        <div class="row g-1">
+                            {% for s in substrateOptions %}
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="substrates[]" value="{{ s.value }}"
+                                               id="substrateOff-{{ s.value }}"
+                                               {% if s.value in activeSubstrateValues %}checked{% endif %}>
+                                        <label class="form-check-label" for="substrateOff-{{ s.value }}">{{ s.title() }}</label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# === Секция: Стандарт === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Стандарт</h6>
+                        <div class="row g-1">
+                            {% for s in standardOptions %}
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="standard" value="{{ s.value }}"
+                                               id="standardOff-{{ s.value }}"
+                                               {% if standard and standard.value == s.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="standardOff-{{ s.value }}">{{ s.title() }}</label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="standard" value=""
+                                           id="standardOff-none"
+                                           {% if not standard %}checked{% endif %}>
+                                    <label class="form-check-label text-muted" for="standardOff-none">Любой</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# === Секция: Категория (только при стандарте) === #}
+                    {% if standardActive %}
+                        <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                            <h6 class="fw-semibold mb-2">Категория коррозионности</h6>
+                            <input type="hidden" name="standard" value="{{ standard.value }}">
+                            <div class="row g-1">
+                                {% for catVal, catLabel in {
+                                    'C1': 'C1 — Очень низкая',
+                                    'C2': 'C2 — Низкая',
+                                    'C3': 'C3 — Средняя',
+                                    'C4': 'C4 — Высокая',
+                                    'C5': 'C5 — Очень высокая',
+                                    'CX': 'CX — Экстремальная',
+                                    'Im1': 'Im1 — Пресная вода',
+                                    'Im2': 'Im2 — Морская вода',
+                                    'Im3': 'Im3 — Грунт'
+                                } %}
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="category" value="{{ catVal }}"
+                                                   id="categoryOff-{{ catVal }}"
+                                                   {% if category == catVal %}checked{% endif %}>
+                                            <label class="form-check-label" for="categoryOff-{{ catVal }}">{{ catLabel }}</label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="category" value=""
+                                               id="categoryOff-none"
+                                               {% if not category %}checked{% endif %}>
+                                        <label class="form-check-label text-muted" for="categoryOff-none">Любая</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# === Секция: Долговечность (только при категории) === #}
+                        {% if categoryActive %}
+                            <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                                <h6 class="fw-semibold mb-2">Долговечность</h6>
+                                <input type="hidden" name="category" value="{{ category }}">
+                                <div class="row g-1">
+                                    {% for durVal, durLabel in {
+                                        'LOW': 'L — менее 7 лет',
+                                        'MEDIUM': 'M — 7–15 лет',
+                                        'HIGH': 'H — 15–25 лет',
+                                        'VERY_HIGH': 'VH — более 25 лет'
+                                    } %}
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                       name="durability" value="{{ durVal }}"
+                                                       id="durabilityOff-{{ durVal }}"
+                                                       {% if durability == durVal %}checked{% endif %}>
+                                                <label class="form-check-label" for="durabilityOff-{{ durVal }}">{{ durLabel }}</label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio"
+                                                   name="durability" value=""
+                                                   id="durabilityOff-none"
+                                                   {% if not durability %}checked{% endif %}>
+                                            <label class="form-check-label text-muted" for="durabilityOff-none">Любая</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {# === Секция: Мин Т нанесения === #}
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Мин Т нанесения',
+                        unit: '°C',
+                        name_from: 'applicationMinTempFrom',
+                        name_to: 'applicationMinTempTo',
+                        from: applicationMinTemp ? applicationMinTemp.from : null,
+                        to: applicationMinTemp ? applicationMinTemp.to : null,
+                        presets: appMinTempPresets,
+                        min: -30,
+                        max: 50,
+                        reset_label: 'Любая',
+                    } only %}
+
+                    {# === Секция: Минимальное время нанесения при 20°C === #}
+                    {% include 'components/range_filter_card.html.twig' with {
+                        title: 'Минимальное время нанесения (при 20°C)',
+                        unit: 'ч',
+                        name_from: 'minApplicationTimeAt20From',
+                        name_to: 'minApplicationTimeAt20To',
+                        from: minApplicationTimeAt20Hours ? minApplicationTimeAt20Hours.from : null,
+                        to: minApplicationTimeAt20Hours ? minApplicationTimeAt20Hours.to : null,
+                        presets: appTimePresets,
+                        min: 0,
+                        max: 168,
+                        reset_label: 'Любое',
+                    } only %}
+
+                    {# === Секция: Покрытия в составе === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Покрытия в составе</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="[]"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                               data-coating-tags-create-url-value=""
+                               data-coating-tags-hidden-input-name-value="coatingIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               data-coating-tags-preselected-ids-value="{{ coatingIds|json_encode }}"
+                               data-coating-tags-resolve-url-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить покрытие...">
+                    </div>
+
+                    {# === Секция: Теги === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Теги</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="{{ selectedTagsJson }}"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_tag_suggest') }}"
+                               data-coating-tags-create-url-value=""
+                               data-coating-tags-hidden-input-name-value="tagIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить тег...">
+                    </div>
+                </div>
+
+                {# Sticky footer #}
+                <div class="border-top p-3 d-flex gap-2 bg-body">
+                    <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary flex-fill">
+                        Сбросить всё
+                    </a>
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        Показать
+                    </button>
+                </div>
+            </form>
+        </div>
+
     {% endblock %}
 
     {% block list_content %}
-        <div class="d-flex flex-column gap-2">
-            {% for system in items %}
-                {# Compliance-плашки для карточки — только первые 3 #}
-                {% set complianceBadges = [] %}
-                {% for entry in system.compliance %}
-                    {% set complianceBadges = complianceBadges|merge([entry.category ~ (entry.durability ? '-' ~ entry.durability : '')]) %}
-                {% endfor %}
-                {% set visibleBadges = complianceBadges|slice(0, 3) %}
-                {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}
-
-                {# Payload для модалки #}
-                {% set payload = {
-                    id: system.id,
-                    title: system.title,
-                    substrateTitle: system.substrateTitle,
-                    totalDft: system.totalDft,
-                    layerCount: system.layers|length,
-                    treatment: system.surfaceTreatmentCode
-                        ? (system.surfaceTreatmentCode ~ (system.surfaceTreatmentStandardCode ? ' (' ~ system.surfaceTreatmentStandardCode ~ ')' : ''))
-                        : system.surfaceTreatmentDescription,
-                    description: system.description,
-                    layers: system.layers|map(l => {
-                        position: l.position,
-                        coatingTitle: l.coatingTitle,
-                        coatingBaseTitle: l.coatingBaseTitle,
-                        isZincRich: l.isZincRich,
-                        dft: l.dft,
-                    }),
-                    compliance: system.compliance,
-                } %}
-
-                <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div style="cursor: pointer;"
-                             data-action="click->coating-system-preview#open"
-                             data-payload="{{ payload|json_encode }}">
-                            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ system.title }}</h6>
-                            <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
-                                <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
-                                <span class="badge text-bg-light fw-normal text-body-secondary">
-                                    <i class="bi bi-layers"></i> {{ system.layers|length }}
-                                </span>
-                                <span class="badge text-bg-light fw-normal text-body-secondary">
-                                    {{ system.totalDft }} мкм
-                                </span>
-                                <span class="text-muted small">
-                                    {% if system.surfaceTreatmentCode %}
-                                        {{ system.surfaceTreatmentCode }}
-                                        {% if system.surfaceTreatmentStandardCode %}
-                                            ({{ system.surfaceTreatmentStandardCode }})
-                                        {% endif %}
-                                    {% else %}
-                                        {{ system.surfaceTreatmentDescription }}
-                                    {% endif %}
-                                </span>
-                            </div>
-                            {% if system.layers|length > 0 %}
-                                <div class="d-flex flex-wrap gap-1 mb-1 align-items-center">
-                                    {% for layer in system.layers %}
-                                        <span class="badge text-bg-light fw-normal text-body-secondary" title="{{ layer.coatingTitle }}">
-                                            {{ layer.coatingBaseTitle }} · {{ layer.coatingTitle }} · {{ layer.dft }} мкм
-                                        </span>
-                                        {% if not loop.last %}
-                                            <i class="bi bi-arrow-right text-body-secondary small"></i>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if visibleBadges|length > 0 %}
-                                <div class="d-flex flex-wrap gap-1 mb-1">
-                                    {% for badge in visibleBadges %}
-                                        <span class="badge text-bg-success fw-normal">{{ badge }}</span>
-                                    {% endfor %}
-                                    {% if hiddenBadgeCount > 0 %}
-                                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ hiddenBadgeCount }}</span>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                            <p class="mb-0 small text-muted">
-                                Обновлено: {{ system.updatedAt|date('d.m.Y') }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                        <button type="button" class="btn btn-outline-secondary"
-                                data-action="click->coating-system-preview#open"
-                                data-payload="{{ payload|json_encode }}"
-                                title="Показать">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        {% if canEdit %}
-                            {% include '/components/edit_delete.html.twig' with {
-                                'edit': 'app_cabinet_coating_system_update',
-                                'delete': 'app_cabinet_coating_system_remove',
-                                'id': system.id,
-                                'title': system.title,
-                            } %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
+        <div class="d-inline-block p-2 px-3 mb-3 rounded-3 bg-body-tertiary small">
+            Найдено: <strong>{{ total }}</strong>
         </div>
 
-        {% if total > perPage %}
-            <nav class="mt-3">
-                <ul class="pagination pagination-sm justify-content-center">
-                    {% if page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: page - 1, search: search, substrate: substrate}) }}">
-                                Назад
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% set totalPages = (total / perPage)|round(0, 'ceil') %}
-                    {% for p in 1..totalPages %}
-                        <li class="page-item {% if p == page %}active{% endif %}">
-                            <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: p, search: search, substrate: substrate}) }}">
-                                {{ p }}
-                            </a>
-                        </li>
-                    {% endfor %}
-                    {% if page < totalPages %}
-                        <li class="page-item">
-                            <a class="page-link"
-                               href="{{ path('app_cabinet_coating_system_list', {page: page + 1, search: search, substrate: substrate}) }}">
-                                Вперёд
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
+        {% set totalPages = (total / perPage)|round(0, 'ceil') %}
+        {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
 
-        {# Модалка предпросмотра системы покрытий — одна на страницу, наполняется Stimulus-контроллером #}
+        {% include 'components/infinite_list.html.twig' with {
+            items_template: 'cabinet/coating/coating_system/_list_cards.html.twig',
+            items_params: {
+                items: items,
+                canEdit: canEdit,
+            },
+            total_pages: totalPages,
+            base_url: path('app_cabinet_coating_system_list', baseQuery),
+        } only %}
+
+        <noscript>
+            {% include 'components/pager.html.twig' with {pager: {
+                total_items: total,
+                page: page,
+                perPage: perPage,
+            }} %}
+        </noscript>
+
+        {# Модалка предпросмотра системы покрытий #}
         <div class="modal fade" id="coatingSystemModal" tabindex="-1"
              aria-labelledby="coatingSystemModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -194,7 +859,7 @@
                         <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                             <div class="row g-2 small">
                                 <div class="col-md-4">
-                                    <span class="text-muted">Субстрат:</span>
+                                    <span class="text-muted">Подложка:</span>
                                     <span class="ms-1 fw-semibold"
                                           data-coating-system-preview-target="modalSubstrate"></span>
                                 </div>
@@ -210,33 +875,18 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="modal-description-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
                             <p class="text-body-secondary mb-0"
                                data-coating-system-preview-target="modalDescription"></p>
                         </div>
-
                         <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                             <h6 class="fw-semibold mb-3">
                                 Слои системы
                                 (<span data-coating-system-preview-target="modalLayersCount"></span>)
                             </h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-muted fw-normal" style="width: 48px;">#</th>
-                                            <th class="text-muted fw-normal">Покрытие</th>
-                                            <th class="text-muted fw-normal">Основа</th>
-                                            <th class="text-muted fw-normal text-end">ТСП, мкм</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody data-coating-system-preview-target="modalLayers">
-                                    </tbody>
-                                </table>
-                            </div>
+                            <div class="small text-body-secondary"
+                                 data-coating-system-preview-target="modalLayers"></div>
                         </div>
-
                         <div class="modal-compliance-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
                             <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
                             <div class="d-flex flex-wrap gap-2"
@@ -266,12 +916,15 @@
         <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
             <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
             <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
-            {% if search or substrate %}
-                <p class="text-body-secondary mb-0">Попробуйте изменить параметры поиска.</p>
+            {% if q or substratesActive or standardActive or tagsActive or coatingsActive or appMinTempActive or appTimeActive %}
+                <p class="text-body-secondary mb-0">
+                    По запросу с заданными фильтрами совпадений нет. Попробуйте изменить параметры поиска.
+                </p>
             {% endif %}
         </div>
     {% endblock %}
     {% endembed %}
 
-    </div>
+    </div>{# /data-controller="coating-system-preview" #}
+
 {% endblock %}

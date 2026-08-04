@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
+use App\Coatings\Domain\Event\CoatingMutated;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -259,7 +260,11 @@ final class CoatingTest extends TestCase
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/вне допустимого диапазона/');
         $this->makeCoating(
-            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(80, 60))), // 80 > 50
+            // 20°C — обязательная base-точка (инвариант); 80°C > 50 dryingMax → падает validateTemperatureRange.
+            min: new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 240),
+                new TimeAtTemperature(80, 60),
+            )),
             max: null,
             applicationMinTemp: 5,
             dryingMaxTemp: 50,
@@ -269,7 +274,10 @@ final class CoatingTest extends TestCase
     public function test_widening_range_before_adding_higher_point_succeeds(): void
     {
         $coating = $this->makeCoating(
-            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
+            min: new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 240),
+                new TimeAtTemperature(50, 60),
+            )),
             max: null,
             applicationMinTemp: 5,
             dryingMaxTemp: 50,
@@ -280,7 +288,10 @@ final class CoatingTest extends TestCase
         // — temperature-границы должны устанавливаться раньше series-сеттеров.
         $coating->setDryingMaxTemp(80);
         $coating->setMinRecoatingInterval(
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(75, 60))),
+            new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 240),
+                new TimeAtTemperature(75, 60),
+            )),
         );
 
         $this->assertSame(80, $coating->getDryingMaxTemp());
@@ -289,7 +300,10 @@ final class CoatingTest extends TestCase
     public function test_adding_higher_point_before_widening_range_throws(): void
     {
         $coating = $this->makeCoating(
-            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(50, 60))),
+            min: new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 240),
+                new TimeAtTemperature(50, 60),
+            )),
             max: null,
             applicationMinTemp: 5,
             dryingMaxTemp: 50,
@@ -299,7 +313,10 @@ final class CoatingTest extends TestCase
         // UpdateCoatingCommandHandler: НЕ ставить series раньше temperature-границ.
         $this->expectException(AppException::class);
         $coating->setMinRecoatingInterval(
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(75, 60))),
+            new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 240),
+                new TimeAtTemperature(75, 60),
+            )),
         );
     }
 
@@ -317,6 +334,55 @@ final class CoatingTest extends TestCase
             $childBranch,
         );
         $this->makeCoating(min: $tree, max: null, applicationMinTemp: 5, dryingMaxTemp: 50);
+    }
+
+    public function test_min_recoating_requires_base_point_at_20(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/точка минимального интервала перекрытия при \+20 °C/u');
+        $this->makeCoating(
+            // Только 30 °C — база при 20 °C отсутствует, интерполировать нельзя.
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(30, 60))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+    }
+
+    public function test_min_recoating_at_20_must_have_positive_time(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/должна иметь положительное время/u');
+        $this->makeCoating(
+            // 20 °C с unknown-длительностью (null) — не позволяет считать интервал.
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, null))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+    }
+
+    public function test_min_recoating_at_20_rejects_unlimited(): void
+    {
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/должна иметь положительное время/u');
+        $this->makeCoating(
+            // 20 °C с 0 = unlimited — тоже не годится, нужна конкретная длительность.
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 0))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+    }
+
+    public function test_max_recoating_does_not_require_20c_base_point(): void
+    {
+        // Инвариант применяется только к min-tree; max — свободный.
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(30, 60))),
+        );
+        $this->assertNotNull($coating->getMaxRecoatingInterval());
     }
 
     public function test_is_zinc_rich_defaults_to_false(): void
@@ -338,6 +404,108 @@ final class CoatingTest extends TestCase
         self::assertTrue($coating->isZincRich());
         $coating->setIsZincRich(false);
         self::assertFalse($coating->isZincRich());
+    }
+
+    public function test_set_title_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setTitle('New Title');
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_description_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setDescription('New description');
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_base_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setBase(CoatingBase::PUR);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_is_zinc_rich_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setIsZincRich(true);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_application_min_temp_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+            applicationMinTemp: 5,
+            dryingMaxTemp: 50,
+        );
+        $c->pullEvents();
+        $c->setApplicationMinTemp(10);
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_dft_range_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setDftRange(new DftRange(new PositiveNumberRange(120, 180), 150, ThicknessType::MIC));
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_set_min_recoating_interval_raises_coating_mutated(): void
+    {
+        $c = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $c->pullEvents();
+        $c->setMinRecoatingInterval(
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 120)))
+        );
+        $events = $c->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+        self::assertSame($c->getId(), $events[0]->coatingId);
     }
 
     private function makeCoating(

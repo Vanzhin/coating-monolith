@@ -1,0 +1,29 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Теги{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Теги',
+        can_edit: canEdit,
+        is_empty: tags is empty,
+    } %}
+        {% block list_content %}
+            <div class="d-flex flex-column gap-2">
+                {% for tag in tags %}
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-body">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-semibold">{{ tag.title }}</h6>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

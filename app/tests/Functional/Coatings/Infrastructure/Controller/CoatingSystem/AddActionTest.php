@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
@@ -24,6 +27,8 @@ final class AddActionTest extends WebTestCase
     private string $userEmail;
     /** @var list<string> */
     private array $createdSystemIds = [];
+    /** @var list<string> */
+    private array $createdTagIds = [];
 
     protected function setUp(): void
     {
@@ -71,6 +76,16 @@ final class AddActionTest extends WebTestCase
 
             $em->flush();
             $this->cleanUpTreatment($em);
+
+            foreach ($this->createdTagIds as $tagId) {
+                $tag = $em->find(Tag::class, $tagId);
+                if (null !== $tag) {
+                    $em->remove($tag);
+                }
+            }
+            if ([] !== $this->createdTagIds) {
+                $em->flush();
+            }
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
@@ -113,9 +128,10 @@ final class AddActionTest extends WebTestCase
 
         /** @var CoatingSystemRepositoryInterface $repo */
         $repo = $container->get(CoatingSystemRepositoryInterface::class);
-        $systems = $repo->list(new \App\Coatings\Domain\Repository\CoatingSystemsFilter(titleLike: 'Тестовая система покрытий'), 1, 0);
-        foreach ($systems as $s) {
-            $this->createdSystemIds[] = $s->getId();
+        foreach ($repo->findAll() as $s) {
+            if ('Тестовая система покрытий' === $s->getTitle()) {
+                $this->createdSystemIds[] = $s->getId();
+            }
         }
     }
 
@@ -235,5 +251,39 @@ final class AddActionTest extends WebTestCase
                 $em2->flush();
             }
         }
+    }
+
+    public function test_post_with_tag_ids_persists_tags_in_db(): void
+    {
+        $container = $this->client->getContainer();
+        $tagSpec = $container->get(TagSpecification::class);
+        $tag = new Tag('морской-тест-'.uniqid('', true), $tagSpec);
+        $container->get(TagRepositoryInterface::class)->add($tag);
+        $this->createdTagIds[] = $tag->getId();
+
+        $this->client->request('POST', '/cabinet/coating/coating-system/add', [
+            'title' => 'Система с тегами '.uniqid('', true),
+            'description' => '',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+            'tagIds' => [$tag->getId()],
+        ]);
+
+        self::assertResponseRedirects('/cabinet/coating/coating-system/list');
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+
+        $joinRows = $em->getConnection()->fetchAllAssociative(
+            'SELECT cs.id FROM coating_system cs
+             INNER JOIN coating_system_tag cst ON cst.coating_system_id = cs.id
+             WHERE cst.tag_id = ?
+             ORDER BY cs.created_at DESC
+             LIMIT 1',
+            [$tag->getId()],
+        );
+
+        self::assertCount(1, $joinRows, 'Тег должен быть привязан к созданной системе покрытий.');
+        $this->createdSystemIds[] = $joinRows[0]['id'];
     }
 }

@@ -6,8 +6,21 @@ services:
     tags:
       - { "name": 'doctrine.fixture.orm' }
 
-  App\Coatings\Infrastructure\Search\CoatingTagFinder:
+  App\Coatings\Infrastructure\Search\TagFinder:
     public: true
+
+  App\Coatings\Infrastructure\Search\CoatingSystemFinder:
+    public: true
+
+  App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository:
+    public: true
+
+  App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository:
+    public: true
+
+  App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:
+    public: true
+    factory: ['App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory', 'create']
 
   App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository:
     public: true

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\SuggestTags;
 
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTOTransformer;
-use App\Coatings\Infrastructure\Search\CoatingTagFinder;
+use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
+use App\Coatings\Infrastructure\Search\TagFinder;
 use App\Shared\Application\Query\QueryHandlerInterface;
 
 final readonly class SuggestTagsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private CoatingTagFinder $finder,
-        private CoatingTagDTOTransformer $transformer,
+        private TagFinder $finder,
+        private TagDTOTransformer $transformer,
     ) {
     }
 

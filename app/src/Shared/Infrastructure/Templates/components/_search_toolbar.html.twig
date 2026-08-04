@@ -1,0 +1,30 @@
+{#
+  Параметры:
+    q_value            — string|null, текущее значение строки поиска
+    reset_url          — string, URL для кнопки «Сброс»
+    placeholder        — string, placeholder поля ввода
+    endpoint_typeahead — string|null (optional), endpoint для async-typeahead
+    minlength          — int|null (optional), минимальная длина (default 3)
+    maxlength          — int|null (optional), максимальная длина (default 50)
+    name               — string|null (optional), имя поля (default 'search')
+#}
+<div class="input-group input-group-lg mb-3">
+    <input type="search"
+           name="{{ name|default('search') }}"
+           value="{{ q_value|default('') }}"
+           class="form-control"
+           placeholder="{{ placeholder }}"
+           minlength="{{ minlength|default(3) }}"
+           maxlength="{{ maxlength|default(50) }}"
+           autocomplete="off"
+           {% if endpoint_typeahead is defined and endpoint_typeahead %}
+               data-controller="async-typeahead"
+               data-async-typeahead-endpoint-value="{{ endpoint_typeahead }}"
+           {% endif %}>
+    <button type="submit" class="btn btn-primary" title="Найти" aria-label="Найти">
+        <i class="bi bi-search"></i>
+    </button>
+    <a href="{{ reset_url }}" class="btn btn-outline-secondary" title="Сброс" aria-label="Сброс">
+        <i class="bi bi-x-lg"></i>
+    </a>
+</div>

@@ -64,6 +64,25 @@ final class AppendLayerTest extends KernelTestCase
         self::assertGreaterThan(0, count($rows), 'coating_system_compliance должен быть заполнен.');
     }
 
+    public function test_append_layer_updates_coating_system_search_cache(): void
+    {
+        $cmd = new AppendLayerCommand(
+            systemId: (string) $this->systemId,
+            coatingId: (string) $this->coatingId,
+            dft: 100,
+        );
+
+        ($this->handler)($cmd);
+
+        $this->em->clear();
+
+        $row = $this->em->getConnection()->fetchAssociative(
+            'SELECT system_id FROM coating_system_search WHERE system_id = ?',
+            [(string) $this->systemId],
+        );
+        self::assertNotFalse($row, 'coating_system_search должна содержать строку для системы после добавления слоя.');
+    }
+
     public function test_append_throws_when_system_not_found(): void
     {
         $cmd = new AppendLayerCommand(

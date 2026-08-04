@@ -6,6 +6,7 @@ namespace App\Coatings\Infrastructure\Mapper;
 
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
@@ -27,6 +28,10 @@ class CoatingSystemMapper
     ): CreateCoatingSystemCommand|UpdateCoatingSystemMetadataCommand {
         $substrate = Substrate::from($input['substrate']);
         $surfaceTreatmentId = (string) ($input['surfaceTreatmentId'] ?? '');
+        $tagIds = array_values(array_map(
+            static fn ($id) => (string) $id,
+            (array) ($input['tagIds'] ?? []),
+        ));
 
         if (null === $systemId) {
             $layers = [];
@@ -43,6 +48,7 @@ class CoatingSystemMapper
                 substrate: $substrate,
                 surfaceTreatmentId: $surfaceTreatmentId,
                 initialLayers: $layers,
+                tagIds: $tagIds,
             );
         }
 
@@ -52,6 +58,7 @@ class CoatingSystemMapper
             description: (string) ($input['description'] ?? ''),
             substrate: $substrate,
             surfaceTreatmentId: $surfaceTreatmentId,
+            tagIds: $tagIds,
         );
     }
 
@@ -70,6 +77,7 @@ class CoatingSystemMapper
                 'surfaceTreatmentId' => '',
                 'surfaceTreatmentTitle' => '',
                 'layers' => [],
+                'tagIds' => [],
             ];
         }
 
@@ -86,6 +94,7 @@ class CoatingSystemMapper
                 ],
                 $dto->layers,
             ),
+            'tagIds' => array_map(fn (TagDTO $tag) => $tag->id, $dto->tags),
         ];
     }
 
@@ -113,7 +122,7 @@ class CoatingSystemMapper
                 new Assert\NotBlank(),
                 new Assert\Choice([
                     'choices' => array_map(fn (Substrate $s) => $s->value, Substrate::cases()),
-                    'message' => 'Недопустимое значение субстрата.',
+                    'message' => 'Недопустимое значение подложки.',
                 ]),
             ],
             'surfaceTreatmentId' => [
@@ -131,6 +140,9 @@ class CoatingSystemMapper
                         ],
                     ]),
                 ]),
+            ]),
+            'tagIds' => new Assert\Optional([
+                new Assert\All([new Assert\Uuid()]),
             ]),
         ], allowExtraFields: true);
     }

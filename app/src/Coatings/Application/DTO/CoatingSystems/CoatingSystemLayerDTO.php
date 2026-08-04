@@ -14,4 +14,7 @@ class CoatingSystemLayerDTO
     public string $coatingBase;
     public string $coatingBaseTitle;
     public bool $isZincRich;
+    public string $manufacturerTitle;
+    public int $dftMin;
+    public int $dftMax;
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
+use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
+use App\Coatings\Application\UseCase\Command\ReplaceLayers\ReplaceLayersCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
@@ -29,6 +31,7 @@ class UpdateAction extends AbstractController
         private readonly Validator $validator,
         private readonly CoatingSystemMapper $mapper,
         private readonly CoatingSystemErrorFormatter $errorFormatter,
+        private readonly GeneralTagsJsonHydrator $tagsHydrator,
     ) {
     }
 
@@ -45,6 +48,11 @@ class UpdateAction extends AbstractController
             $inputData = [];
             try {
                 $inputData = $request->getPayload()->all();
+                // Слои приходят как list<{coatingId, dft}> в порядке DOM;
+                // валидатор метаданных не должен видеть эту секцию.
+                $layersInput = (array) ($inputData['layers'] ?? []);
+                unset($inputData['layers']);
+
                 $errors = $this->validator->validate($inputData, $this->mapper->getValidationCollection());
                 if ($errors) {
                     throw new AppException($this->errorFormatter->format($errors));
@@ -52,18 +60,32 @@ class UpdateAction extends AbstractController
                 /** @var UpdateCoatingSystemMetadataCommand $command */
                 $command = $this->mapper->buildCommandFromInputData($inputData, $id);
                 $this->commandBus->execute($command);
+
+                $this->commandBus->execute(new ReplaceLayersCommand(
+                    $id,
+                    $this->normalizeLayersInput($layersInput),
+                ));
+
                 $this->addFlash('coating_system_updated_success', sprintf('Система покрытий "%s" обновлена.', $command->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_system_list');
             } catch (\Exception $e) {
                 $error = $e->getMessage();
                 $inputData = $this->enrichWithTreatmentTitle($inputData);
+                $rawTagIds = array_map(
+                    static fn (string $id) => ['id' => $id],
+                    (array) ($inputData['tagIds'] ?? []),
+                );
+                // Перечитываем DTO — состояние могло измениться до исключения.
+                $freshDto = $this->queryBus->execute(new FindCoatingSystemByIdQuery($id)) ?? $dto;
 
                 return $this->render('cabinet/coating/coating_system/form.html.twig', [
                     'error' => $error,
                     'inputData' => $inputData,
                     'systemId' => $id,
                     'substrates' => Substrate::cases(),
+                    'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($rawTagIds),
+                    'layersDto' => $freshDto,
                 ]);
             }
         }
@@ -74,7 +96,35 @@ class UpdateAction extends AbstractController
             'inputData' => $inputData,
             'systemId' => $id,
             'substrates' => Substrate::cases(),
+            'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($dto->tags),
+            'layersDto' => $dto,
         ]);
+    }
+
+    /**
+     * @param array<mixed> $raw
+     *
+     * @return list<array{coatingId: string, dft: int}>
+     */
+    private function normalizeLayersInput(array $raw): array
+    {
+        $out = [];
+        foreach ($raw as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $coatingId = (string) ($item['coatingId'] ?? '');
+            $dft = (int) ($item['dft'] ?? 0);
+            if ('' === $coatingId || !Uuid::isValid($coatingId)) {
+                throw new AppException('Некорректный идентификатор покрытия в слое.');
+            }
+            if ($dft <= 0) {
+                throw new AppException('ТСП слоя должна быть положительной.');
+            }
+            $out[] = ['coatingId' => $coatingId, 'dft' => $dft];
+        }
+
+        return $out;
     }
 
     /**

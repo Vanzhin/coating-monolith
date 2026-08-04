@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\CoatingSystems;
 
+use App\Coatings\Application\DTO\Tags\TagDTO;
+
 class CoatingSystemDTO
 {
     public string $id;
@@ -19,8 +21,12 @@ class CoatingSystemDTO
     /** @var list<CoatingSystemLayerDTO> */
     public array $layers = [];
     public int $totalDft;
+    public ?int $minApplicationTimeAt20Minutes = null;
+    public ?int $maxLayerApplicationMinTemp = null;
     public \DateTimeImmutable $createdAt;
     public \DateTimeImmutable $updatedAt;
-    /** @var list<array{standard: string, standardTitle: string, category: string, durability: string}> */
+    /** @var list<ComplianceMatchDTO> */
     public array $compliance = [];
+    /** @var list<TagDTO> */
+    public array $tags = [];
 }

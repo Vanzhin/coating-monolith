@@ -9,9 +9,10 @@ use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
-use App\Coatings\Application\DTO\CoatingTags\CoatingTagDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
+use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -27,7 +28,7 @@ class CoatingMapper
     {
         $manufacturerId = $coatingDTO->manufacturer->id;
         $coatingTagIds = array_map(
-            fn (CoatingTagDTO $coatingTag) => $coatingTag->id,
+            fn (TagDTO $coatingTag) => $coatingTag->id,
             $coatingDTO->tags,
         );
 
@@ -97,13 +98,16 @@ class CoatingMapper
         $dto->manufacturer = $manufacturer;
         $dto->pack = (float) $inputData['pack'];
         $dto->isZincRich = (bool) ($inputData['isZincRich'] ?? false);
+        $dto->recoatingInterpolationModel = RecoatingInterpolationModel::tryFrom(
+            (string) ($inputData['recoatingInterpolationModel'] ?? '')
+        ) ?? RecoatingInterpolationModel::LINEAR;
 
         $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
         $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
 
         $tags = [];
         foreach ($inputData['tags'] ?? [] as $tag) {
-            $coatingTagDto = new CoatingTagDTO();
+            $coatingTagDto = new TagDTO();
             $coatingTagDto->id = $tag['id'];
             $tags[] = $coatingTagDto;
         }
@@ -214,6 +218,15 @@ class CoatingMapper
                 ])),
             ]),
             'isZincRich' => new Assert\Optional([new Assert\Type('bool')]),
+            'recoatingInterpolationModel' => new Assert\Optional([
+                new Assert\Choice([
+                    'choices' => array_map(
+                        static fn (RecoatingInterpolationModel $m) => $m->value,
+                        RecoatingInterpolationModel::cases(),
+                    ),
+                    'message' => 'Недопустимая модель интерполяции.',
+                ]),
+            ]),
             // Температурные пределы валидируются не через Assert (тот бы выдавал
             // тех-сообщения типа "[dryHeatExposure][continuous_min] должно быть numeric"
             // при пустой строке), а через buildExposureFromInput → AppException с
