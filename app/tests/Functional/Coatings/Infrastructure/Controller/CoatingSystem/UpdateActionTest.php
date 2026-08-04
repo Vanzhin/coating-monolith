@@ -6,8 +6,8 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
-use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use App\Users\Domain\Entity\User;
@@ -160,7 +160,7 @@ final class UpdateActionTest extends WebTestCase
         self::assertStringContainsString('selected', $content);
     }
 
-    public function test_post_with_tagIds_persists_tags_in_db(): void
+    public function test_post_with_tag_ids_persists_tags_in_db(): void
     {
         $container = $this->client->getContainer();
         $tagSpec = $container->get(TagSpecification::class);

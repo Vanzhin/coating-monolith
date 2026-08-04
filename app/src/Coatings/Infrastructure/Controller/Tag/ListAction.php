@@ -28,7 +28,7 @@ final class ListAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $page = (int) ($request->query->get('page', 1));
+        $page = (int) $request->query->get('page', 1);
         $perPage = 50;
 
         $filter = new TagsFilter(

@@ -245,7 +245,7 @@ final class ComplianceRuleBook
      * обработки. 6 систем I.01..I.06 × 3 категории = 18 правил.
      *   - I.01/I.02: Zn(R) primer EP/PUR/ESI + EP/PUR
      *   - I.03/I.04: Прочие primer EP/PUR/ESI + EP/PUR
-     *   - I.05/I.06: без отдельной грунтовки (первый слой EP/PUR сам служит грунтом)
+     *   - I.05/I.06: без отдельной грунтовки (первый слой EP/PUR сам служит грунтом).
      *
      * @return list<ComplianceRule>
      */
