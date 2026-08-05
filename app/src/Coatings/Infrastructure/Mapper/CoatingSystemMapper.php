@@ -34,20 +34,12 @@ class CoatingSystemMapper
         ));
 
         if (null === $systemId) {
-            $layers = [];
-            foreach ($input['layers'] ?? [] as $layer) {
-                $layers[] = [
-                    'coatingId' => (string) $layer['coatingId'],
-                    'dft' => (int) $layer['dft'],
-                ];
-            }
-
             return new CreateCoatingSystemCommand(
                 title: (string) ($input['title'] ?? ''),
                 description: (string) ($input['description'] ?? ''),
                 substrate: $substrate,
                 surfaceTreatmentId: $surfaceTreatmentId,
-                initialLayers: $layers,
+                initialLayers: $this->layersFromInput((array) ($input['layers'] ?? [])),
                 tagIds: $tagIds,
             );
         }
@@ -60,6 +52,32 @@ class CoatingSystemMapper
             surfaceTreatmentId: $surfaceTreatmentId,
             tagIds: $tagIds,
         );
+    }
+
+    /**
+     * Плоский список слоёв формы → нормализованный shape. Только форма данных:
+     * кривые строки отбрасываются, dft приводится к int. Бизнес-правила
+     * (валидность покрытия, положительность толщины) проверяет домен.
+     *
+     * @param array<mixed> $raw
+     *
+     * @return list<array{coatingId: string, dft: int}>
+     */
+    public function layersFromInput(array $raw): array
+    {
+        $out = [];
+        foreach ($raw as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $coatingId = (string) ($item['coatingId'] ?? '');
+            if ('' === $coatingId) {
+                continue;
+            }
+            $out[] = ['coatingId' => $coatingId, 'dft' => (int) ($item['dft'] ?? 0)];
+        }
+
+        return $out;
     }
 
     /**

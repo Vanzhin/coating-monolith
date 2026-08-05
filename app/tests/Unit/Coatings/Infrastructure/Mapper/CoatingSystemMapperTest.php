@@ -124,6 +124,34 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertArrayHasKey('layers', $fields);
     }
 
+    public function test_layers_from_input_is_pure_shape(): void
+    {
+        $raw = [
+            ['coatingId' => 'uuid-1', 'dft' => '60'],
+            ['coatingId' => '', 'dft' => '10'],       // без coatingId — отбрасываем
+            'garbage-not-array',                       // не массив — отбрасываем
+            ['coatingId' => 'uuid-2', 'dft' => 100],
+        ];
+
+        $layers = $this->mapper->layersFromInput($raw);
+
+        self::assertSame(
+            [
+                ['coatingId' => 'uuid-1', 'dft' => 60],
+                ['coatingId' => 'uuid-2', 'dft' => 100],
+            ],
+            $layers,
+        );
+    }
+
+    public function test_layers_from_input_does_not_throw_on_nonpositive_dft(): void
+    {
+        // dft <= 0 — НЕ дело мапера: инвариант живёт в CoatingSystemLayer.
+        $layers = $this->mapper->layersFromInput([['coatingId' => 'uuid-1', 'dft' => '0']]);
+
+        self::assertSame([['coatingId' => 'uuid-1', 'dft' => 0]], $layers);
+    }
+
     /** @return array<string, mixed> */
     private function validInput(): array
     {
