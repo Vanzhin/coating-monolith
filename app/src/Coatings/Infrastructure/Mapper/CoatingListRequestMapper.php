@@ -10,7 +10,6 @@ use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Repository\Pager;
-use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -43,14 +42,8 @@ final class CoatingListRequestMapper
                 $this->query->nullableInt($request, 'page'),
                 $this->query->nullableInt($request, 'limit'),
             ),
-            applicationMinTemp: RangeFilter::tryFromNullable(
-                $this->query->nullableInt($request, 'appMinTempFrom'),
-                $this->query->nullableInt($request, 'appMinTempTo'),
-            ),
-            volumeSolid: RangeFilter::tryFromNullable(
-                $this->query->nullableInt($request, 'volumeSolidFrom'),
-                $this->query->nullableInt($request, 'volumeSolidTo'),
-            ),
+            applicationMinTemp: $this->query->intRange($request, 'appMinTempFrom', 'appMinTempTo', dropInverted: false),
+            volumeSolid: $this->query->intRange($request, 'volumeSolidFrom', 'volumeSolidTo', dropInverted: false),
             tagIds: $this->query->stringCollection($request, 'tagIds'),
             thermalTemperature: $this->query->nullableInt($request, 'thermTemp'),
             thermalEnvironment: is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null,
@@ -62,21 +55,8 @@ final class CoatingListRequestMapper
                 static fn (string $v): bool => null !== CoatingBase::tryFrom($v),
                 unique: true,
             ),
-            minRecoating20: RangeFilter::tryFromNullable(
-                $this->minutes($request, 'minRecoat20From', self::MINUTES_PER_HOUR),
-                $this->minutes($request, 'minRecoat20To', self::MINUTES_PER_HOUR),
-            ),
-            maxRecoating20: RangeFilter::tryFromNullable(
-                $this->minutes($request, 'maxRecoat20From', self::MINUTES_PER_DAY),
-                $this->minutes($request, 'maxRecoat20To', self::MINUTES_PER_DAY),
-            ),
+            minRecoating20: $this->query->intRange($request, 'minRecoat20From', 'minRecoat20To', self::MINUTES_PER_HOUR, false),
+            maxRecoating20: $this->query->intRange($request, 'maxRecoat20From', 'maxRecoat20To', self::MINUTES_PER_DAY, false),
         );
-    }
-
-    private function minutes(Request $request, string $key, int $factor): ?int
-    {
-        $value = $this->query->nullableInt($request, $key);
-
-        return null !== $value ? $value * $factor : null;
     }
 }
