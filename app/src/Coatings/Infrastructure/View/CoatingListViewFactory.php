@@ -84,7 +84,7 @@ final class CoatingListViewFactory
             'maxRecoat20To' => $this->query->nullableInt($request, 'maxRecoat20To'),
             'thermTemp' => $this->query->nullableInt($request, 'thermTemp'),
             'thermEnv' => (is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null)?->value,
-            'thermIncludingPeak' => $request->query->getBoolean('thermPeak'),
+            'thermIncludingPeak' => (bool) $request->query->get('thermPeak'),
             'sort' => (is_string($sortRaw) ? CoatingSort::tryFrom($sortRaw) : null) ?? CoatingSort::DEFAULT,
             'sortOptions' => CoatingSort::cases(),
             'preservedParams' => $preservedParams,

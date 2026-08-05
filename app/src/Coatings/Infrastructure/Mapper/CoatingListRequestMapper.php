@@ -47,7 +47,7 @@ final class CoatingListRequestMapper
             tagIds: $this->query->stringCollection($request, 'tagIds'),
             thermalTemperature: $this->query->nullableInt($request, 'thermTemp'),
             thermalEnvironment: is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null,
-            thermalIncludingPeak: $request->query->getBoolean('thermPeak'),
+            thermalIncludingPeak: (bool) $request->query->get('thermPeak'),
             sort: (is_string($sortRaw) ? CoatingSort::tryFrom($sortRaw) : null) ?? CoatingSort::DEFAULT,
             baseValues: $this->query->stringCollection(
                 $request,
