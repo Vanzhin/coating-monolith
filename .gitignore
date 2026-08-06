@@ -4,3 +4,6 @@ app/.deptrac.cache
 /app/config/jwt/
 /.env
 tools/pubchem-cache.json
+
+# локальные дампы БД (снимаются db-pull-prod.sh)
+/db-dumps/
