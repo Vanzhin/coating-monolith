@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# Единая точка запуска команд проекта. Сюда складываем всё, что гоняем руками.
+#
+# Как добавить команду: добавь ветку в case ниже. Строка `#:` после `)` —
+# описание, оно само попадает в `./run help`.
+#
+set -euo pipefail
+cd "$(dirname "$0")"
+
+case "${1:-help}" in
+
+  db-pull-prod) #: Снять полный дамп прод-БД и раскатать локально (флаги: ./run db-pull-prod -h)
+    exec ./db-pull-prod.sh "${@:2}"
+    ;;
+
+  console) #: Symfony-консоль в php-fpm: ./run console cache:clear
+    exec docker compose exec -w /app manager_php-fpm php bin/console "${@:2}"
+    ;;
+
+  help|-h|--help|"")
+    echo "Использование: ./run <команда> [аргументы]"
+    echo
+    echo "Команды:"
+    awk -F') #: ' '/^[[:space:]]+[a-z0-9:_-]+\) #: /{c=$1; sub(/^[[:space:]]+/,"",c); printf "  %-16s %s\n", c, $2}' "$0"
+    ;;
+
+  *)
+    echo "Неизвестная команда: $1" >&2
+    echo
+    exec "$0" help
+    ;;
+
+esac
