@@ -14,6 +14,8 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -102,7 +104,10 @@ final class CoatingSystemFormRehydratorTest extends KernelTestCase
         $this->em->flush();
         $this->coatingId = $coatingId;
 
-        $rehydrator = $container->get(CoatingSystemFormRehydrator::class);
+        $rehydrator = new CoatingSystemFormRehydrator(
+            $container->get(QueryBusInterface::class),
+            $container->get(CoatingRepositoryInterface::class),
+        );
 
         $treatmentId = (string) $treatment->getId();
         $coatingIdString = (string) $coatingId;
@@ -123,7 +128,11 @@ final class CoatingSystemFormRehydratorTest extends KernelTestCase
 
     public function test_no_ids_leaves_input_without_lookups(): void
     {
-        $rehydrator = static::getContainer()->get(CoatingSystemFormRehydrator::class);
+        $container = static::getContainer();
+        $rehydrator = new CoatingSystemFormRehydrator(
+            $container->get(QueryBusInterface::class),
+            $container->get(CoatingRepositoryInterface::class),
+        );
 
         $out = $rehydrator->enrichInputDataWithTitles(['layers' => []]);
 
