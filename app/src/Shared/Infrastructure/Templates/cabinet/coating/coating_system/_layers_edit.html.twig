@@ -5,7 +5,7 @@
    Обязательные переменные:
      system  — CoatingSystemDTO
 #}
-{% set layers = system.layers|default([]) %}
+{% set layers = layers is defined ? layers : (system.layers|default([])) %}
 <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
      data-controller="coating-system-layers-edit"
      data-coating-system-layers-edit-coating-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}">
@@ -20,13 +20,17 @@
                 <div class="flex-grow-1 overflow-hidden">
                     <div class="fw-semibold text-truncate">
                         {{ layer.coatingTitle }}
-                        {% if layer.isZincRich %}
+                        {% if layer.isZincRich|default(false) %}
                             <span class="badge text-bg-warning ms-1 small">Zn(R)</span>
                         {% endif %}
                     </div>
-                    <div class="small text-muted text-truncate">
-                        {{ layer.manufacturerTitle }} · {{ layer.coatingBaseTitle }} · допустимо {{ layer.dftMin }}–{{ layer.dftMax }} мкм
-                    </div>
+                    {% if layer.manufacturerTitle is defined and layer.manufacturerTitle %}
+                        <div class="small text-muted text-truncate">
+                            {{ layer.manufacturerTitle }} · {{ layer.coatingBaseTitle }} · допустимо {{ layer.dftMin }}–{{ layer.dftMax }} мкм
+                        </div>
+                    {% else %}
+                        <div class="small text-muted text-truncate">слой системы</div>
+                    {% endif %}
                 </div>
                 <input type="hidden" name="layers[{{ loop.index0 }}][coatingId]" value="{{ layer.coatingId }}">
                 <div style="width: 130px;" class="flex-shrink-0">

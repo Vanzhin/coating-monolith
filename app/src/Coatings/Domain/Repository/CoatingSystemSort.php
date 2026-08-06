@@ -22,8 +22,8 @@ enum CoatingSystemSort: string
             self::DEFAULT => 'По релевантности',
             self::TITLE_ASC => 'Название А‑Я',
             self::TITLE_DESC => 'Название Я‑А',
-            self::MIN_APPLICATION_TIME_ASC => 'Быстрее собрать',
-            self::MIN_APPLICATION_TIME_DESC => 'Дольше собрать',
+            self::MIN_APPLICATION_TIME_ASC => 'Быстрее нанести',
+            self::MIN_APPLICATION_TIME_DESC => 'Дольше нанести',
         };
     }
 }

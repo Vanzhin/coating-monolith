@@ -12,7 +12,7 @@
 
 {% block content %}
     <div class="p-2 p-md-3"
-         data-controller="coating-system-form surface-treatment-modal"
+         data-controller="surface-treatment-modal"
          data-surface-treatment-modal-endpoint-value="{{ path('app_cabinet_surface_treatment_create_inline') }}"
          data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
          data-surface-treatment-modal-substrate-select-value="inputSubstrate">
@@ -90,91 +90,22 @@
                 </div>
             </div>
 
-            {# 3. Слои системы (только при создании) #}
+            {# 3. Слои системы — единый редактор для создания и редактирования #}
+            {% set editorLayers = isUpdate ? (layersDto.layers|default([])) : [] %}
             {% if not isUpdate %}
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-semibold mb-0">Слои системы</h6>
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                data-action="click->coating-system-form#addLayer">
-                            <i class="bi bi-plus-lg"></i> Добавить слой
-                        </button>
-                    </div>
-                    <div class="form-text mb-3">
-                        Укажите покрытия и их проектную толщину (ТСП, мкм). Слои можно добавить и отредактировать после создания системы.
-                    </div>
-                    <div data-coating-system-form-target="layersList">
-                        {% set coatingTitlesById = inputData.coatingTitlesById|default({}) %}
-                        {% for i, layer in inputData.layers|default([]) %}
-                            <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
-                                <div class="col"
-                                     data-controller="async-typeahead"
-                                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-                                     data-async-typeahead-placeholder-value="Поиск покрытия...">
-                                    <select name="layers[{{ i }}][coatingId]" class="form-select form-select-sm" required
-                                            data-async-typeahead-target="select">
-                                        <option value="">Выберите покрытие...</option>
-                                        {% if (layer.coatingId ?? '') and (coatingTitlesById[layer.coatingId] ?? '') %}
-                                            <option value="{{ layer.coatingId }}" selected>
-                                                {{ coatingTitlesById[layer.coatingId] }}
-                                            </option>
-                                        {% endif %}
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" name="layers[{{ i }}][dft]"
-                                               value="{{ layer.dft|default('') }}"
-                                               class="form-control" min="1" max="9999" required
-                                               placeholder="ТСП">
-                                        <span class="input-group-text">мкм</span>
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            data-action="click->coating-system-form#removeLayer">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <template data-coating-system-form-target="layerTemplate">
-                        <div class="row g-2 mb-2 align-items-center" data-coating-system-form-target="layerRow">
-                            <div class="col"
-                                 data-controller="async-typeahead"
-                                 data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-                                 data-async-typeahead-placeholder-value="Поиск покрытия...">
-                                <select name="layers[__INDEX__][coatingId]" class="form-select form-select-sm" required
-                                        data-async-typeahead-target="select">
-                                    <option value="">Выберите покрытие...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="input-group input-group-sm">
-                                    <input type="number" name="layers[__INDEX__][dft]"
-                                           value=""
-                                           class="form-control" min="1" max="9999" required
-                                           placeholder="ТСП">
-                                    <span class="input-group-text">мкм</span>
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-sm btn-outline-danger"
-                                        data-action="click->coating-system-form#removeLayer">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            {% else %}
-                {% include 'cabinet/coating/coating_system/_layers_edit.html.twig' with {
-                    system: layersDto,
-                    error: null,
-                } %}
+                {% set coatingTitlesById = inputData.coatingTitlesById|default({}) %}
+                {% for layer in inputData.layers|default([]) %}
+                    {% set editorLayers = editorLayers|merge([{
+                        coatingId: layer.coatingId,
+                        dft: layer.dft,
+                        coatingTitle: coatingTitlesById[layer.coatingId]|default(''),
+                    }]) %}
+                {% endfor %}
             {% endif %}
+            {% include 'cabinet/coating/coating_system/_layers_edit.html.twig' with {
+                layers: editorLayers,
+                error: null,
+            } %}
 
             {# 4. Теги #}
             <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-coating-tags-group>
@@ -183,9 +114,9 @@
                        data-controller="coating-tags"
                        data-coating-tags-existing-value="{{ existingTagsJson|default('[]') }}"
                        data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_tag_suggest') }}"
-                       data-coating-tags-create-url-value=""
+                       data-coating-tags-create-url-value="{{ path('app_cabinet_coating_coating_tag_create') }}"
                        data-coating-tags-hidden-input-name-value="tagIds[]"
-                       data-coating-tags-allow-create-value="false"
+                       data-coating-tags-allow-create-value="true"
                        class="form-control"
                        placeholder="Начните вводить тег...">
             </div>

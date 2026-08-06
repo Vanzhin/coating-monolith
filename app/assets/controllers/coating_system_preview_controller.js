@@ -30,6 +30,7 @@ export default class extends Controller {
         'modalSubstrate',
         'modalTreatment',
         'modalDft',
+        'modalAppTime',
         'modalLayers',
         'modalLayersCount',
         'modalCompliance',
@@ -58,6 +59,15 @@ export default class extends Controller {
         this.modalSubstrateTarget.textContent = data.substrateTitle;
         this.modalTreatmentTarget.textContent = data.treatment;
         this.modalDftTarget.textContent = data.totalDft + ' мкм';
+
+        // Мин. время нанесения — может быть null для легаси-систем без +20-точки у слоя.
+        if (data.minApplicationTime) {
+            this.modalAppTimeTarget.textContent = data.minApplicationTime;
+            this.modalAppTimeTarget.closest('.modal-apptime-col').classList.remove('d-none');
+        } else {
+            this.modalAppTimeTarget.closest('.modal-apptime-col').classList.add('d-none');
+        }
+
         this.modalLayersCountTarget.textContent = data.layerCount;
 
         // Layers list

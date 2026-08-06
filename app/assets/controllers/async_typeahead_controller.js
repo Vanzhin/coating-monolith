@@ -80,12 +80,36 @@ export default class extends Controller {
         this._tagify.on('input', e => this._onInput(e));
 
         this._tagify.on('add', e => {
-            this._hidden.value = e.detail.data.id ?? '';
+            const id = e.detail.data.id ?? '';
+            this._hidden.value = id;
+            this._syncSelect(id, e.detail.data.value ?? '');
         });
 
         this._tagify.on('remove', () => {
             this._hidden.value = '';
+            this._syncSelect('', '');
         });
+    }
+
+    /**
+     * Держит обёрнутый <select> в синхроне с выбором (id + видимый текст).
+     * Нужно потребителям, читающим select.value/selectedIndex напрямую
+     * (например, добавление слоя системы). Submit идёт через hidden-input,
+     * у select снят name — proxy-option на сабмит не влияет.
+     */
+    _syncSelect(id, title) {
+        const select = this.selectTarget;
+        Array.from(select.options).forEach(o => {
+            if (o.dataset.typeahead === '1') o.remove();
+        });
+        if (id && !Array.from(select.options).some(o => o.value === id)) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = title;
+            opt.dataset.typeahead = '1';
+            select.appendChild(opt);
+        }
+        select.value = id;
     }
 
     async _onInput(e) {
