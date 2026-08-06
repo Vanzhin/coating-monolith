@@ -156,6 +156,12 @@ services:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
 
+  # Пока не внедрён ни в один контроллер конструктором (появится в задаче про
+  # переиспользование в Add/UpdateAction) — без public:true DI-компилятор
+  # выпиливает неиспользуемый сервис ещё до того, как тест успевает его достать.
+  App\Coatings\Application\Service\CoatingSystemFormRehydrator:
+    public: true
+
   App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory: ~
 
   App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:
