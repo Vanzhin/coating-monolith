@@ -273,6 +273,7 @@ export default class extends Controller {
             return;
         }
         tr.remove();
+        this._reindexRows(tbody);
     }
 
     // --- Среды (env-вкладки) ---
@@ -419,6 +420,58 @@ export default class extends Controller {
 
     _hidden(name, suffix) {
         return this.element.querySelector(`input[type=hidden][name="${name}[${suffix}]"]`);
+    }
+
+    /**
+     * После удаления строки переиндексирует выжившие: имя каждой строки
+     * приводится к её позиции в tbody (0..n-1). Без этого addRow, берущий
+     * индекс как children.length, переиспользовал бы номер выжившей строки —
+     * два input'а с одинаковым name, и правка одной точки писалась бы в другую.
+     */
+    _reindexRows(tbody) {
+        if (!tbody) return;
+        const series = tbody.dataset.series ?? '';
+        const isRecoating = series.startsWith('recoating-');
+        const minPrefix = tbody.dataset.minPrefix || null;
+        const maxPrefix = tbody.dataset.maxPrefix || null;
+        const nodeId = isRecoating ? series.replace(/^recoating-/, '') : null;
+        const prefix = isRecoating ? minPrefix : series;
+
+        Array.from(tbody.children).forEach((tr, target) => {
+            const current = this._rowIndex(tr, prefix);
+            if (current === null || current === target) return;
+
+            if (isRecoating) {
+                this._replaceIndexInRow(tr, `${minPrefix}[${current}]`, `${minPrefix}[${target}]`);
+                this._replaceIndexInRow(tr, `${maxPrefix}[${current}]`, `${maxPrefix}[${target}]`);
+                this._replaceIndexInRow(tr, `${nodeId}-${current}`, `${nodeId}-${target}`);
+            } else {
+                this._replaceIndexInRow(tr, `${series}[${current}]`, `${series}[${target}]`);
+            }
+        });
+    }
+
+    /** Текущий индекс строки — из name первого temperature_at-инпута данной серии. */
+    _rowIndex(tr, prefix) {
+        if (!prefix) return null;
+        const input = tr.querySelector(`input[name^="${prefix}["][name$="[temperature_at]"]`);
+        if (!input) return null;
+        const m = input.name.slice(prefix.length).match(/^\[(\d+)\]/);
+        return m ? parseInt(m[1], 10) : null;
+    }
+
+    /** Заменяет литеральный токен индекса во всех индекс-несущих атрибутах строки. */
+    _replaceIndexInRow(tr, from, to) {
+        if (from === to) return;
+        const attrs = ['name', 'data-target-name', 'data-row', 'data-temp-mirror'];
+        tr.querySelectorAll('*').forEach(el => {
+            attrs.forEach(attr => {
+                const val = el.getAttribute(attr);
+                if (val && val.includes(from)) {
+                    el.setAttribute(attr, val.split(from).join(to));
+                }
+            });
+        });
     }
 
     _intVal(input) {
