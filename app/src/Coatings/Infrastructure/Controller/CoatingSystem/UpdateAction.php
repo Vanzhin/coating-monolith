@@ -48,11 +48,10 @@ class UpdateAction extends AbstractController
             $inputData = [];
             try {
                 $inputData = $request->getPayload()->all();
-                // Слои приходят как list<{coatingId, dft}> в порядке DOM;
-                // валидатор метаданных не должен видеть эту секцию.
-                $layersInput = (array) ($inputData['layers'] ?? []);
-                unset($inputData['layers']);
-
+                // Слои приходят как list<{coatingId, dft}> в порядке DOM. Валидируем
+                // их вместе с остальной формой — getValidationCollection() покрывает
+                // 'layers' узлом Assert\Uuid()/Assert\Positive(), иначе кривой
+                // coatingId долетает до репозитория и падает сырым Doctrine-исключением.
                 $errors = $this->validator->validate($inputData, $this->mapper->getValidationCollection());
                 if ($errors) {
                     throw new AppException($this->errorFormatter->format($errors));
@@ -63,7 +62,7 @@ class UpdateAction extends AbstractController
 
                 $this->commandBus->execute(new ReplaceLayersCommand(
                     $id,
-                    $this->mapper->layersFromInput($layersInput),
+                    $this->mapper->layersFromInput((array) ($inputData['layers'] ?? [])),
                 ));
 
                 $this->addFlash('coating_system_updated_success', sprintf('Система покрытий "%s" обновлена.', $command->title));
