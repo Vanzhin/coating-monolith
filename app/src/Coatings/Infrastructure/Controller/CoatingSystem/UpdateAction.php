@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
+use App\Coatings\Application\Service\CoatingSystemFormRehydrator;
 use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\ReplaceLayers\ReplaceLayersCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
-use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use App\Coatings\Infrastructure\Validation\CoatingSystemErrorFormatter;
@@ -20,7 +20,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route(path: '/cabinet/coating/coating-system/{id}/update', name: 'app_cabinet_coating_system_update', requirements: ['id' => '[0-9a-f-]{36}'])]
 class UpdateAction extends AbstractController
@@ -32,6 +31,7 @@ class UpdateAction extends AbstractController
         private readonly CoatingSystemMapper $mapper,
         private readonly CoatingSystemErrorFormatter $errorFormatter,
         private readonly GeneralTagsJsonHydrator $tagsHydrator,
+        private readonly CoatingSystemFormRehydrator $rehydrator,
     ) {
     }
 
@@ -63,7 +63,7 @@ class UpdateAction extends AbstractController
 
                 $this->commandBus->execute(new ReplaceLayersCommand(
                     $id,
-                    $this->normalizeLayersInput($layersInput),
+                    $this->mapper->layersFromInput($layersInput),
                 ));
 
                 $this->addFlash('coating_system_updated_success', sprintf('Система покрытий "%s" обновлена.', $command->title));
@@ -71,9 +71,9 @@ class UpdateAction extends AbstractController
                 return $this->redirectToRoute('app_cabinet_coating_system_list');
             } catch (\Exception $e) {
                 $error = $e->getMessage();
-                $inputData = $this->enrichWithTreatmentTitle($inputData);
+                $inputData = $this->rehydrator->enrichInputDataWithTitles($inputData);
                 $rawTagIds = array_map(
-                    static fn (string $id) => ['id' => $id],
+                    static fn (string $tagId) => ['id' => $tagId],
                     (array) ($inputData['tagIds'] ?? []),
                 );
                 // Перечитываем DTO — состояние могло измениться до исключения.
@@ -99,52 +99,5 @@ class UpdateAction extends AbstractController
             'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($dto->tags),
             'layersDto' => $dto,
         ]);
-    }
-
-    /**
-     * @param array<mixed> $raw
-     *
-     * @return list<array{coatingId: string, dft: int}>
-     */
-    private function normalizeLayersInput(array $raw): array
-    {
-        $out = [];
-        foreach ($raw as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-            $coatingId = (string) ($item['coatingId'] ?? '');
-            $dft = (int) ($item['dft'] ?? 0);
-            if ('' === $coatingId || !Uuid::isValid($coatingId)) {
-                throw new AppException('Некорректный идентификатор покрытия в слое.');
-            }
-            if ($dft <= 0) {
-                throw new AppException('ТСП слоя должна быть положительной.');
-            }
-            $out[] = ['coatingId' => $coatingId, 'dft' => $dft];
-        }
-
-        return $out;
-    }
-
-    /**
-     * После POST-ошибки подтягиваем заголовок выбранной подготовки поверхности,
-     * чтобы async-typeahead мог восстановить preselected-тег.
-     *
-     * @param array<string, mixed> $inputData
-     *
-     * @return array<string, mixed>
-     */
-    private function enrichWithTreatmentTitle(array $inputData): array
-    {
-        $treatmentId = $inputData['surfaceTreatmentId'] ?? null;
-        if (is_string($treatmentId) && '' !== $treatmentId && Uuid::isValid($treatmentId)) {
-            $treatmentDto = $this->queryBus->execute(new FindSurfaceTreatmentByIdQuery($treatmentId));
-            if (null !== $treatmentDto) {
-                $inputData['surfaceTreatmentTitle'] = $treatmentDto->title;
-            }
-        }
-
-        return $inputData;
     }
 }
