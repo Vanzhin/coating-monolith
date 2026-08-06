@@ -30,6 +30,7 @@
         substrateTitle: system.substrateTitle,
         treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
         totalDft: system.totalDft,
+        minApplicationTime: system.minApplicationTimeAt20Minutes is not null ? (system.minApplicationTimeAt20Minutes|duration_minutes_short) : null,
         description: system.description,
         layerCount: system.layers|length,
         layers: payloadLayers,
