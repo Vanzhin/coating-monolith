@@ -49,9 +49,11 @@ class CreateInlineAction extends AbstractController
             $standardCode = isset($payload['standardCode']) && '' !== trim((string) $payload['standardCode']) ? trim((string) $payload['standardCode']) : null;
 
             $rawScope = $payload['substrateScope'] ?? [];
-            if (!\is_array($rawScope) || [] === $rawScope) {
-                throw new AppException('Не указан scope subtrate.');
+            if (!\is_array($rawScope)) {
+                throw new AppException('Некорректный формат scope substrate.');
             }
+            // Пустой scope не проверяем здесь — инвариант "минимум одна подложка"
+            // уже кидает SurfaceTreatment::setSubstrateScope() при конструировании.
             $scope = [];
             foreach ($rawScope as $s) {
                 $scope[] = Substrate::from((string) $s);
