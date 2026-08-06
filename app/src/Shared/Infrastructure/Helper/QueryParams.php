@@ -27,6 +27,19 @@ final class QueryParams
     }
 
     /**
+     * Пейджер-параметры (page/limit): 0 или отрицательное — не валидная
+     * страница/лимит, трактуем как «не задано» (null), чтобы Pager подставил
+     * дефолт. Иначе page=0 дал бы Pager(0, …) с отрицательным offset и падением
+     * в Doctrine setFirstResult, а limit=0 — пустую выборку вместо дефолта.
+     */
+    public function positiveInt(Request $request, string $key): ?int
+    {
+        $value = $this->nullableInt($request, $key);
+
+        return null !== $value && $value > 0 ? $value : null;
+    }
+
+    /**
      * @param callable(string): bool|null $isValid
      */
     public function stringCollection(

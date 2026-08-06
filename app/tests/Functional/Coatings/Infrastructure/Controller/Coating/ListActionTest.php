@@ -88,4 +88,11 @@ final class ListActionTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
     }
+
+    public function test_page_zero_does_not_500(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/list?page=0');
+
+        self::assertResponseIsSuccessful();
+    }
 }

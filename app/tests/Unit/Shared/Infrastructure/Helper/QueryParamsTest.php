@@ -34,6 +34,32 @@ final class QueryParamsTest extends TestCase
         self::assertSame(42, $this->qp->nullableInt($request, 'n'));
     }
 
+    public function test_positive_int_returns_value_when_positive(): void
+    {
+        $request = Request::create('/', 'GET', ['n' => '5']);
+
+        self::assertSame(5, $this->qp->positiveInt($request, 'n'));
+    }
+
+    public function test_positive_int_returns_null_for_zero(): void
+    {
+        $request = Request::create('/', 'GET', ['n' => '0']);
+
+        self::assertNull($this->qp->positiveInt($request, 'n'));
+    }
+
+    public function test_positive_int_returns_null_for_negative(): void
+    {
+        $request = Request::create('/', 'GET', ['n' => '-1']);
+
+        self::assertNull($this->qp->positiveInt($request, 'n'));
+    }
+
+    public function test_positive_int_returns_null_when_missing(): void
+    {
+        self::assertNull($this->qp->positiveInt(Request::create('/', 'GET'), 'missing'));
+    }
+
     public function test_string_collection_filters_and_dedups(): void
     {
         $request = Request::create('/', 'GET', ['ids' => ['EP', 'ZZZ', 'EP', 'AY']]);

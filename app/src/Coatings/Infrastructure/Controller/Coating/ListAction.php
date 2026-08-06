@@ -38,8 +38,8 @@ class ListAction extends AbstractController
         } catch (AppException $e) {
             $error = $e->getMessage();
             $result = new GetPagedCoatingsQueryResult([], Pager::fromPage(
-                $this->queryParams->nullableInt($request, 'page'),
-                $this->queryParams->nullableInt($request, 'limit'),
+                $this->queryParams->positiveInt($request, 'page'),
+                $this->queryParams->positiveInt($request, 'limit'),
             ));
         }
 

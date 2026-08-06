@@ -39,8 +39,8 @@ final class CoatingListRequestMapper
             search: SearchQuery::tryFromString(is_string($search) ? $search : null),
             manufacturerIds: $this->query->stringCollection($request, 'manufacturerIds'),
             pager: Pager::fromPage(
-                $this->query->nullableInt($request, 'page'),
-                $this->query->nullableInt($request, 'limit'),
+                $this->query->positiveInt($request, 'page'),
+                $this->query->positiveInt($request, 'limit'),
             ),
             applicationMinTemp: $this->query->intRange($request, 'appMinTempFrom', 'appMinTempTo', dropInverted: false),
             volumeSolid: $this->query->intRange($request, 'volumeSolidFrom', 'volumeSolidTo', dropInverted: false),

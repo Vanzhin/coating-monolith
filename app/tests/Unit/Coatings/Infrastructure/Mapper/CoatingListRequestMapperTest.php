@@ -76,4 +76,23 @@ final class CoatingListRequestMapperTest extends TestCase
 
         self::assertSame(CoatingSort::DEFAULT, $this->mapper->filterFromRequest($request)->sort);
     }
+
+    public function test_page_and_limit_zero_fall_back_to_pager_defaults(): void
+    {
+        $request = Request::create('/', 'GET', ['page' => '0', 'limit' => '0']);
+
+        $filter = $this->mapper->filterFromRequest($request);
+
+        self::assertSame(0, $filter->pager->getOffset());
+        self::assertSame(10, $filter->pager->getLimit());
+    }
+
+    public function test_page_two_still_offsets_by_limit(): void
+    {
+        $request = Request::create('/', 'GET', ['page' => '2']);
+
+        $filter = $this->mapper->filterFromRequest($request);
+
+        self::assertSame(10, $filter->pager->getOffset());
+    }
 }
