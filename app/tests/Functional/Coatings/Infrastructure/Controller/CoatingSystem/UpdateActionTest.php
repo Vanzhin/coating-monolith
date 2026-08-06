@@ -160,6 +160,25 @@ final class UpdateActionTest extends WebTestCase
         self::assertStringContainsString('selected', $content);
     }
 
+    public function test_post_with_invalid_layer_coating_id_shows_validation_error_not_500(): void
+    {
+        $this->client->request('POST', sprintf('/cabinet/coating/coating-system/%s/update', $this->systemId), [
+            'title' => 'Система с кривым слоем',
+            'description' => '',
+            'substrate' => 'steel_carbon',
+            'surfaceTreatmentId' => (string) $this->treatmentId,
+            'layers' => [
+                ['coatingId' => 'not-a-uuid', 'dft' => '100'],
+            ],
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringNotContainsString('Could not convert', $content);
+    }
+
     public function test_post_with_tag_ids_persists_tags_in_db(): void
     {
         $container = $this->client->getContainer();
