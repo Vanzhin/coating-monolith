@@ -217,7 +217,9 @@ class CoatingMapper
                     'type' => new Assert\Optional(new Assert\Type('string')),
                 ])),
             ]),
-            'isZincRich' => new Assert\Optional([new Assert\Type('bool')]),
+            // HTML-чекбокс шлёт строку "on" при отметке и не шлётся вовсе при снятой.
+            // Структурно это опциональная строка; в bool её кастит buildCoatingDtoFromInputData.
+            'isZincRich' => new Assert\Optional([new Assert\Type('string')]),
             'recoatingInterpolationModel' => new Assert\Optional([
                 new Assert\Choice([
                     'choices' => array_map(
