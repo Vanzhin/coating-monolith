@@ -102,10 +102,10 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
 
     public function test_search_by_title_returns_matching_system(): void
     {
-        $suffix = 'FTS-'.bin2hex(random_bytes(4));
-        $sys = $this->persistSystem('Эпоксидная '.$suffix);
+        $marker = $this->randomWord();
+        $sys = $this->persistSystem('Эпоксидная '.$marker);
 
-        $filter = new CoatingSystemsFilter(search: SearchQuery::tryFromString($suffix));
+        $filter = new CoatingSystemsFilter(search: SearchQuery::tryFromString($marker));
         $result = ($this->handler)(new SearchCoatingSystemsQuery($filter));
 
         self::assertInstanceOf(SearchCoatingSystemsQueryResult::class, $result);
@@ -123,6 +123,23 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
         foreach ($result->items as $item) {
             self::assertInstanceOf(CoatingSystemDTO::class, $item);
         }
+    }
+
+    /**
+     * Случайное латинское слово фиксированной длины — стабильный FTS-маркер.
+     * Раньше тут был hex-суффикс (bin2hex): смешанный буквенно-цифровой токен
+     * russian-FTS раскладывал через раз (напр. «370e24f8» → float 370e24 + f8),
+     * поиск иногда матчил 0 — флаки-тест. Зеркалит CoatingSystemFinderTest::randomWord.
+     */
+    private function randomWord(int $length = 12): string
+    {
+        $letters = 'abcdefghijklmnopqrstuvwxyz';
+        $word = '';
+        for ($i = 0; $i < $length; ++$i) {
+            $word .= $letters[random_int(0, 25)];
+        }
+
+        return $word;
     }
 
     private function persistSystem(string $title): CoatingSystem
