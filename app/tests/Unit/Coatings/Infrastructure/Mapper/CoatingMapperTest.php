@@ -8,6 +8,7 @@ use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Validator\Validation;
 
 final class CoatingMapperTest extends TestCase
 {
@@ -16,6 +17,37 @@ final class CoatingMapperTest extends TestCase
     protected function setUp(): void
     {
         $this->mapper = new CoatingMapper();
+    }
+
+    public function test_zinc_rich_checkbox_string_value_passes_validation(): void
+    {
+        $validator = Validation::createValidator();
+        $collection = $this->mapper->getValidationCollectionCoating();
+
+        // HTML-чекбокс без value-атрибута шлёт строку "on" при отметке (и ничего —
+        // при снятой). Структурная валидация не должна отвергать это как «не bool».
+        $violations = $validator->validate(['isZincRich' => 'on'], $collection);
+
+        $zincViolations = array_filter(
+            iterator_to_array($violations),
+            static fn ($v) => str_contains($v->getPropertyPath(), 'isZincRich'),
+        );
+        self::assertSame([], $zincViolations, 'Чекбокс isZincRich="on" не должен валиться на проверке типа.');
+    }
+
+    public function test_absent_zinc_rich_passes_validation(): void
+    {
+        $validator = Validation::createValidator();
+        $collection = $this->mapper->getValidationCollectionCoating();
+
+        // Снятый чекбокс не отправляется вовсе — поле опционально.
+        $violations = $validator->validate([], $collection);
+
+        $zincViolations = array_filter(
+            iterator_to_array($violations),
+            static fn ($v) => str_contains($v->getPropertyPath(), 'isZincRich'),
+        );
+        self::assertSame([], $zincViolations);
     }
 
     public function test_parse_duration_from_input_adds_up_days_hours_minutes(): void
