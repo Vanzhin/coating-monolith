@@ -9,8 +9,10 @@ enum Substrate: string
     case STEEL_CARBON = 'steel_carbon';
     case STEEL_GALVANIZED = 'steel_galvanized';
     case STEEL_METALLIZED = 'steel_metallized';
+    case STAINLESS_STEEL = 'stainless_steel';
     case CONCRETE = 'concrete';
     case ALUMINUM = 'aluminum';
+    case EXISTING_COATING = 'existing_coating';
 
     public function title(): string
     {
@@ -18,8 +20,10 @@ enum Substrate: string
             self::STEEL_CARBON => 'Углеродистая сталь',
             self::STEEL_GALVANIZED => 'Оцинкованная сталь',
             self::STEEL_METALLIZED => 'Сталь с термически напылённым металлом',
+            self::STAINLESS_STEEL => 'Нержавеющая сталь',
             self::CONCRETE => 'Бетон',
             self::ALUMINUM => 'Алюминий',
+            self::EXISTING_COATING => 'Существующее покрытие',
         };
     }
 
