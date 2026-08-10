@@ -9,6 +9,7 @@ use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\ReplaceLayers\ReplaceLayersCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use App\Coatings\Infrastructure\Validation\CoatingSystemErrorFormatter;
@@ -83,6 +84,7 @@ class UpdateAction extends AbstractController
                     'inputData' => $inputData,
                     'systemId' => $id,
                     'substrates' => Substrate::cases(),
+                    'environments' => EnvironmentType::cases(),
                     'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($rawTagIds),
                     'layersDto' => $freshDto,
                 ]);
@@ -95,6 +97,7 @@ class UpdateAction extends AbstractController
             'inputData' => $inputData,
             'systemId' => $id,
             'substrates' => Substrate::cases(),
+            'environments' => EnvironmentType::cases(),
             'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($dto->tags),
             'layersDto' => $dto,
         ]);

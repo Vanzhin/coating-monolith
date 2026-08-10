@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Infrastructure\Mapper;
 
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemListRequestMapper;
@@ -26,9 +27,28 @@ final class CoatingSystemListRequestMapperTest extends TestCase
 
         self::assertNull($filter->search);
         self::assertSame([], $filter->substrates);
+        self::assertNull($filter->environment);
         self::assertNull($filter->standard);
         self::assertNull($filter->category);
         self::assertSame(CoatingSystemSort::DEFAULT, $filter->sort);
+    }
+
+    public function test_environment_parsed_from_enum(): void
+    {
+        $filter = $this->mapper->filterFromRequest(
+            Request::create('/', 'GET', ['environment' => 'immersion']),
+        );
+
+        self::assertSame(EnvironmentType::Immersion, $filter->environment);
+    }
+
+    public function test_invalid_environment_dropped_to_null(): void
+    {
+        $filter = $this->mapper->filterFromRequest(
+            Request::create('/', 'GET', ['environment' => 'GARBAGE']),
+        );
+
+        self::assertNull($filter->environment);
     }
 
     public function test_substrates_are_enum_filtered(): void

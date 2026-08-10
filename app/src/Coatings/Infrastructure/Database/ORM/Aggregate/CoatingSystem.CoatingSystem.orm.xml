@@ -11,6 +11,8 @@
         <field name="description" type="text"   nullable="false"/>
         <field name="substrate"   type="string" length="32" nullable="false"
                enum-type="App\Coatings\Domain\Aggregate\CoatingSystem\Substrate"/>
+        <field name="environment" type="string" length="32" nullable="false"
+               enum-type="App\Coatings\Domain\Aggregate\Coating\EnvironmentType"/>
         <field name="createdAt" column="created_at" type="datetime_immutable" nullable="false"/>
         <field name="updatedAt" column="updated_at" type="datetime_immutable" nullable="false"/>
 

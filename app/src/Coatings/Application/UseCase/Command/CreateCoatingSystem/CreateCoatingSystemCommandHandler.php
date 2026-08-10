@@ -37,6 +37,7 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
             $cmd->description,
             $cmd->substrate,
             $treatment,
+            $cmd->environment,
         );
 
         foreach ($cmd->initialLayers as $layerData) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Event\CoatingSystemMutated;
@@ -24,6 +25,8 @@ class CoatingSystem extends Aggregate
     private string $title;
     private string $description;
     private Substrate $substrate;
+    /** Среда эксплуатации системы — измерение интервалов перекрытия (см. Coating::minRecoatingFor). */
+    private EnvironmentType $environment;
     private ?SurfaceTreatment $surfaceTreatment = null;
     /** @var Collection<int, CoatingSystemLayer>&Selectable<int, CoatingSystemLayer> */
     private Collection $layers;
@@ -38,6 +41,7 @@ class CoatingSystem extends Aggregate
         string $description,
         Substrate $substrate,
         SurfaceTreatment $surfaceTreatment,
+        EnvironmentType $environment = EnvironmentType::Atmospheric,
     ) {
         $this->id = $id;
         $this->layers = new ArrayCollection();
@@ -48,6 +52,7 @@ class CoatingSystem extends Aggregate
         $this->setDescription($description);
         $this->setSubstrate($substrate);
         $this->setSurfaceTreatment($surfaceTreatment);
+        $this->setEnvironment($environment);
         // Reset updatedAt and events — setters above emit side-effects but the aggregate
         // is "just created", not yet "mutated" from external perspective.
         $this->updatedAt = $this->createdAt;
@@ -72,6 +77,18 @@ class CoatingSystem extends Aggregate
     public function getSubstrate(): Substrate
     {
         return $this->substrate;
+    }
+
+    public function getEnvironment(): EnvironmentType
+    {
+        return $this->environment;
+    }
+
+    public function setEnvironment(EnvironmentType $environment): void
+    {
+        $this->environment = $environment;
+        $this->raise(new CoatingSystemMutated($this->getId()));
+        $this->touch();
     }
 
     public function getSurfaceTreatment(): SurfaceTreatment
@@ -168,23 +185,24 @@ class CoatingSystem extends Aggregate
     }
 
     /**
-     * Время сборки системы при 20 °C: сумма пересчитанных под фактическую
-     * толщину интервалов перекрытия по слоям, поверх которых наносится следующий.
-     * Null если система пуста или у любого из промежуточных слоёв нет точки при 20 °C.
+     * Время сборки системы при 20 °C: сумма минимальных интервалов перекрытия между каждой
+     * парой соседних слоёв (нижний ждёт перед нанесением верхнего). Интервал учитывает основание
+     * верхнего слоя (топкоата), среду эксплуатации системы и пересчитывается под фактическую
+     * толщину нижнего слоя. Null, если система пуста или для какой-то пары интервал неизвестен.
      */
     public function minApplicationTimeAt20Minutes(): ?int
     {
-        $ordered = $this->getLayers();
-        if ($ordered->isEmpty()) {
+        if ($this->layers->isEmpty()) {
             return null;
         }
-        $topLayer = $ordered->last();
+
         $sum = 0;
-        foreach ($ordered as $layer) {
-            if ($layer === $topLayer) {
-                continue;
-            }
-            $interval = $layer->getCoating()->interpolatedMinRecoatMinutesAt20($layer->getDft());
+        foreach ($this->adjacentLayerPairs() as [$under, $over]) {
+            $interval = $under->getCoating()->minRecoatingFor(
+                $over->getCoating()->getBase(),
+                $this->environment,
+                $under->getDft(),
+            );
             if (null === $interval) {
                 return null;
             }
@@ -192,6 +210,21 @@ class CoatingSystem extends Aggregate
         }
 
         return $sum;
+    }
+
+    /**
+     * Пары соседних слоёв снизу вверх: [нижний, верхний]. Нижний ждёт интервал перекрытия
+     * перед нанесением верхнего. Пусто для системы менее чем из двух слоёв.
+     *
+     * @return \Generator<array{0: CoatingSystemLayer, 1: CoatingSystemLayer}>
+     */
+    private function adjacentLayerPairs(): \Generator
+    {
+        $layers = array_values($this->getLayers()->toArray());
+        $lastIndex = count($layers) - 1;
+        for ($i = 0; $i < $lastIndex; ++$i) {
+            yield [$layers[$i], $layers[$i + 1]];
+        }
     }
 
     /**

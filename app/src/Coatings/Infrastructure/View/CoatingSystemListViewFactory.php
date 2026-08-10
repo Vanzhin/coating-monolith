@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\View;
 
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
@@ -40,6 +41,8 @@ final class CoatingSystemListViewFactory
             $request->query->all('substrates'),
         )));
 
+        $environment = EnvironmentType::tryFrom((string) $request->query->get('environment', ''));
+
         $tagIds = $this->query->stringCollection($request, 'tagIds');
         $coatingIds = $this->query->stringCollection(
             $request,
@@ -55,6 +58,7 @@ final class CoatingSystemListViewFactory
             'total' => $result->total,
             'q' => trim((string) $request->query->get('q', '')),
             'substrates' => $substrates,
+            'environment' => $environment,
             'standard' => $standard,
             'category' => $category,
             'durability' => $durability,
@@ -67,6 +71,7 @@ final class CoatingSystemListViewFactory
             'perPage' => self::DEFAULT_LIMIT,
             'sortOptions' => CoatingSystemSort::cases(),
             'substrateOptions' => Substrate::cases(),
+            'environmentOptions' => EnvironmentType::cases(),
             'standardOptions' => ComplianceStandard::cases(),
         ];
     }
