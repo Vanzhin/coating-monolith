@@ -123,6 +123,7 @@ final class UpdateActionTest extends WebTestCase
             'title' => 'Обновлённая система',
             'description' => 'Новое описание',
             'substrate' => 'concrete',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -143,6 +144,7 @@ final class UpdateActionTest extends WebTestCase
             'title' => '',
             'description' => 'Сохранённое описание',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -166,6 +168,7 @@ final class UpdateActionTest extends WebTestCase
             'title' => 'Система с кривым слоем',
             'description' => '',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
             'layers' => [
                 ['coatingId' => 'not-a-uuid', 'dft' => '100'],
@@ -191,6 +194,7 @@ final class UpdateActionTest extends WebTestCase
             'title' => 'Система с тегом',
             'description' => '',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
             'tagIds' => [$tag->getId()],
         ]);

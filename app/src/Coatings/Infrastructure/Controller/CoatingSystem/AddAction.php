@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 use App\Coatings\Application\Service\CoatingSystemFormRehydrator;
 use App\Coatings\Application\Service\GeneralTagsJsonHydrator;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use App\Coatings\Infrastructure\Validation\CoatingSystemErrorFormatter;
@@ -59,6 +60,7 @@ class AddAction extends AbstractController
                     'error' => $error,
                     'inputData' => $inputData,
                     'substrates' => Substrate::cases(),
+                    'environments' => EnvironmentType::cases(),
                     'existingTagsJson' => $this->tagsHydrator->hydrateAsJson($rawTagIds),
                 ]);
             }
@@ -67,6 +69,7 @@ class AddAction extends AbstractController
         return $this->render('cabinet/coating/coating_system/form.html.twig', [
             'inputData' => null,
             'substrates' => Substrate::cases(),
+            'environments' => EnvironmentType::cases(),
             'existingTagsJson' => '[]',
         ]);
     }

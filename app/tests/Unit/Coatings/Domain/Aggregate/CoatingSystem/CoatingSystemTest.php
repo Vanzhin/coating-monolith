@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
@@ -356,6 +357,53 @@ final class CoatingSystemTest extends TestCase
         self::assertSame(10, $sys->maxLayerApplicationMinTemp());
     }
 
+    public function test_min_building_time_uses_topcoat_specific_branch(): void
+    {
+        // Нижнее покрытие: под atmospheric интервал зависит от основания топкоата — EP=60, PUR=180.
+        $branchedMin = new RecoatingIntervalTree(
+            new DryingTimeSeries(new TimeAtTemperature(20, 300)),
+            'default',
+            new RecoatingIntervalTree(
+                new DryingTimeSeries(new TimeAtTemperature(20, 300)),
+                'atmospheric',
+                new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60)), 'EP'),
+                new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 180)), 'PUR'),
+            ),
+        );
+        // tdsDft = толщина слоя = 100 → пересчёт по толщине identity.
+        $under = $this->makeCoating(CoatingBase::EP, 40, 500, tdsDft: 100, minTree: $branchedMin);
+
+        $sysEp = $this->newSystem();
+        $sysEp->appendLayer($under, 100);
+        $sysEp->appendLayer($this->makeCoating(CoatingBase::EP), 100); // топкоат EP
+        self::assertSame(60, $sysEp->minApplicationTimeAt20Minutes());
+
+        $sysPur = $this->newSystem();
+        $sysPur->appendLayer($under, 100);
+        $sysPur->appendLayer($this->makeCoating(CoatingBase::PUR), 100); // топкоат PUR
+        self::assertSame(180, $sysPur->minApplicationTimeAt20Minutes());
+    }
+
+    public function test_min_building_time_uses_system_environment_for_lookup(): void
+    {
+        // Ветка есть только под atmospheric. Система в среде Immersion → корневой default (300).
+        $branchedMin = new RecoatingIntervalTree(
+            new DryingTimeSeries(new TimeAtTemperature(20, 300)),
+            'default',
+            new RecoatingIntervalTree(
+                new DryingTimeSeries(new TimeAtTemperature(20, 300)),
+                'atmospheric',
+                new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60)), 'EP'),
+            ),
+        );
+        $under = $this->makeCoating(CoatingBase::EP, 40, 500, tdsDft: 100, minTree: $branchedMin);
+
+        $sys = $this->newSystem(environment: EnvironmentType::Immersion);
+        $sys->appendLayer($under, 100);
+        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 100);
+        self::assertSame(300, $sys->minApplicationTimeAt20Minutes());
+    }
+
     public function test_mutation_raises_coating_system_mutated_event(): void
     {
         $sys = $this->newSystem();
@@ -378,14 +426,17 @@ final class CoatingSystemTest extends TestCase
 
     // --- helpers ---
 
-    private function newSystem(string $title = 'Test System'): CoatingSystem
-    {
+    private function newSystem(
+        string $title = 'Test System',
+        EnvironmentType $environment = EnvironmentType::Atmospheric,
+    ): CoatingSystem {
         return new CoatingSystem(
             Uuid::v7(),
             $title,
             'description',
             Substrate::STEEL_CARBON,
             $this->newTreatment([Substrate::STEEL_CARBON]),
+            $environment,
         );
     }
 
@@ -437,6 +488,7 @@ final class CoatingSystemTest extends TestCase
         int $applicationMinTemp = 5,
         int $tdsDft = 0,
         int $sourceMinutes = 60,
+        ?RecoatingIntervalTree $minTree = null,
     ): Coating {
         $manufacturer = $this->createMock(Manufacturer::class);
         $manufacturer->method('getId')->willReturn('00000000-0000-0000-0000-000000000001');
@@ -458,7 +510,7 @@ final class CoatingSystemTest extends TestCase
             $applicationMinTemp,
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             new DryingTimeSeries(new TimeAtTemperature(20, 24 * 60)),
-            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $sourceMinutes))),
+            $minTree ?? new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $sourceMinutes))),
             null,
             1.0,
             null,

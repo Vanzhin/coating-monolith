@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -130,6 +131,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             title: 'Система-CS-Create-'.$suffix,
             description: 'Тестовая система.',
             substrate: Substrate::STEEL_GALVANIZED,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => (string) $coatingId, 'dft' => 80],
@@ -200,6 +202,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             title: 'Система-CS-SearchCache-'.$suffix,
             description: 'Тестовая система.',
             substrate: Substrate::STEEL_GALVANIZED,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => (string) $coatingId, 'dft' => 80],
@@ -266,6 +269,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             title: 'Система-CS-CreateTags-'.$suffix,
             description: '',
             substrate: Substrate::STEEL_CARBON,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => (string) $coatingId, 'dft' => 80],
@@ -306,6 +310,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             title: 'Система-notfound-'.$suffix,
             description: '',
             substrate: Substrate::CONCRETE,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
                 ['coatingId' => $fakeId, 'dft' => 80],

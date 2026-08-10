@@ -8,6 +8,7 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemMapper;
 use PHPUnit\Framework\TestCase;
@@ -34,6 +35,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('Test System', $cmd->title);
         self::assertSame('Some description', $cmd->description);
         self::assertSame(Substrate::STEEL_CARBON, $cmd->substrate);
+        self::assertSame(EnvironmentType::Atmospheric, $cmd->environment);
         self::assertSame(self::TREATMENT_UUID, $cmd->surfaceTreatmentId);
         self::assertCount(2, $cmd->initialLayers);
         self::assertSame('uuid-1', $cmd->initialLayers[0]['coatingId']);
@@ -52,6 +54,7 @@ final class CoatingSystemMapperTest extends TestCase
         self::assertSame('system-uuid-1', $cmd->id);
         self::assertSame('Test System', $cmd->title);
         self::assertSame(Substrate::STEEL_CARBON, $cmd->substrate);
+        self::assertSame(EnvironmentType::Atmospheric, $cmd->environment);
         self::assertSame(self::TREATMENT_UUID, $cmd->surfaceTreatmentId);
     }
 
@@ -61,6 +64,7 @@ final class CoatingSystemMapperTest extends TestCase
             'title' => 'Test',
             'description' => 'desc',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => self::TREATMENT_UUID,
             'surfaceTreatmentTitle' => 'Sa 2½',
             'layers' => [
@@ -81,6 +85,7 @@ final class CoatingSystemMapperTest extends TestCase
             'title' => 'Test',
             'description' => '',
             'substrate' => 'concrete',
+            'environment' => 'immersion',
             'surfaceTreatmentId' => self::TREATMENT_UUID,
             'surfaceTreatmentTitle' => 'Обмыв водой',
             'layers' => [],
@@ -159,6 +164,7 @@ final class CoatingSystemMapperTest extends TestCase
             'title' => 'Test System',
             'description' => 'Some description',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => self::TREATMENT_UUID,
             'layers' => [
                 ['coatingId' => 'uuid-1', 'dft' => 60],
@@ -179,6 +185,8 @@ final class CoatingSystemMapperTest extends TestCase
         $dto->description = $input['description'];
         $dto->substrate = $input['substrate'];
         $dto->substrateTitle = Substrate::from($input['substrate'])->title();
+        $dto->environment = $input['environment'];
+        $dto->environmentTitle = EnvironmentType::from($input['environment'])->title();
         $dto->surfaceTreatmentId = $input['surfaceTreatmentId'];
         $dto->surfaceTreatmentDescription = 'some description';
         $dto->surfaceTreatmentTitle = $input['surfaceTreatmentTitle'];

@@ -37,6 +37,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         $system->setTitle($cmd->title);
         $system->setDescription($cmd->description);
         $system->setSubstrateAndTreatment($cmd->substrate, $treatment);
+        $system->setEnvironment($cmd->environment);
 
         $tags = $this->tagRepo->findByIds(new StringCollection(...$cmd->tagIds));
         $system->replaceTags($tags);

@@ -32,13 +32,13 @@
             <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                 <h6 class="fw-semibold mb-3">Описание</h6>
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="inputTitle" class="form-label">Название</label>
                         <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
                                class="form-control" required autofocus maxlength="100"
                                placeholder="Укажите название системы...">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="inputSubstrate" class="form-label">Подложка</label>
                         <select class="form-select" id="inputSubstrate" name="substrate" required>
                             <option value="">Выберите подложку...</option>
@@ -46,6 +46,17 @@
                                 <option value="{{ s.value }}"
                                         {% if (inputData.substrate ?? '') == s.value %} selected {% endif %}>
                                     {{ s.title() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="inputEnvironment" class="form-label">Среда эксплуатации</label>
+                        <select class="form-select" id="inputEnvironment" name="environment" required>
+                            {% for e in environments %}
+                                <option value="{{ e.value }}"
+                                        {% if (inputData.environment ?? 'atmospheric') == e.value %} selected {% endif %}>
+                                    {{ e.title() }}
                                 </option>
                             {% endfor %}
                         </select>

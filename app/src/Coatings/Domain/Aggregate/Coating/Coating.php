@@ -310,26 +310,6 @@ class Coating extends Aggregate
         $this->recoatingInterpolationModel = $model;
     }
 
-    /**
-     * Мин.интервал перекрытия при 20 °C, пересчитанный под фактическую толщину слоя `$layerDft`.
-     * Возвращает null, если у покрытия нет явной точки при 20 °C с положительной длительностью
-     * (legacy до инварианта — см. `assertMinRecoatingHasBasePointAt20`). Для нового покрытия
-     * ситуация невозможна, но проектор обязан безопасно работать с исторически накопленными данными.
-     */
-    public function interpolatedMinRecoatMinutesAt20(int $layerDft): ?int
-    {
-        $basePoint = $this->minRecoatingInterval->default->getPoint(20);
-        if (null === $basePoint || !$basePoint->isExplicitPositiveDuration()) {
-            return null;
-        }
-
-        return $this->recoatingInterpolationModel->interpolate(
-            sourceDft: $this->dftRange->tdsDft,
-            targetDft: $layerDft,
-            sourceMinutes: $basePoint->timeInMinutes,
-        );
-    }
-
     public function addTag(Tag $tag): void
     {
         if (!$this->tags->contains($tag)) {
@@ -459,20 +439,40 @@ class Coating extends Aggregate
 
     /* --- БИЗНЕС-ЛОГИКА РАСЧЕТА ИНТЕРВАЛОВ (СТРОГАЯ ТИПИЗАЦИЯ) --- */
 
-    public function minRecoatingFor(EnvironmentType $env, CoatingBase $topcoat): DryingTimeSeries
-    {
-        // RecoatingIntervalTree::find сам нормализует ключи (trim + mb_strtolower).
-        return $this->minRecoatingInterval->find($env->value, $topcoat->value)->series;
+    /**
+     * Минимальный интервал перекрытия ЭТОГО покрытия (в минутах) перед нанесением поверх него
+     * $topcoat, в среде $env, при температуре $temperature (по умолчанию +20 °C).
+     *
+     * $actualDft — фактическая толщина, с которой нанесено САМО ЭТО покрытие (нижний слой);
+     * интервал пересчитывается с эталонной tdsDft на неё. null → tdsDft (без пересчёта).
+     * Это толщина именно этого покрытия, а не топкоата.
+     *
+     * Дерево проходится вглубь (RecoatingIntervalTree::find): правило под (среда, основание
+     * топкоата) → дефолт среды → общий default покрытия. Null — если для температуры длительность
+     * неизвестна (вне диапазона точек / unknown / unlimited).
+     */
+    public function minRecoatingFor(
+        CoatingBase $topcoat,
+        EnvironmentType $env,
+        ?int $actualDft = null,
+        int $temperature = 20,
+    ): ?int {
+        // find сам нормализует ключи (trim + mb_strtolower).
+        $wait = $this->minRecoatingInterval->find($env->value, $topcoat->value)->series->getPoint($temperature);
+        if (null === $wait || !$wait->hasPositiveDuration()) {
+            return null;
+        }
+
+        return $this->recoatingInterpolationModel->interpolate(
+            sourceDft: $this->dftRange->tdsDft,
+            targetDft: $actualDft ?? $this->dftRange->tdsDft,
+            sourceMinutes: $wait->timeInMinutes,
+        );
     }
 
     public function maxRecoatingFor(EnvironmentType $env, CoatingBase $topcoat): ?DryingTimeSeries
     {
         return $this->maxRecoatingInterval?->find($env->value, $topcoat->value)->series;
-    }
-
-    public function minRecoatingPointAt(EnvironmentType $env, CoatingBase $topcoat, int $temperature): ?TimeAtTemperature
-    {
-        return $this->minRecoatingFor($env, $topcoat)->getPoint($temperature);
     }
 
     public function maxRecoatingPointAt(EnvironmentType $env, CoatingBase $topcoat, int $temperature): ?TimeAtTemperature

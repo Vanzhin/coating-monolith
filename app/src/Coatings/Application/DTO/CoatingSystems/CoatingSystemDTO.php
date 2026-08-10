@@ -13,6 +13,8 @@ class CoatingSystemDTO
     public string $description;
     public string $substrate;
     public string $substrateTitle;
+    public string $environment;
+    public string $environmentTitle;
     public string $surfaceTreatmentId;
     public string $surfaceTreatmentDescription;
     public ?string $surfaceTreatmentCode = null;

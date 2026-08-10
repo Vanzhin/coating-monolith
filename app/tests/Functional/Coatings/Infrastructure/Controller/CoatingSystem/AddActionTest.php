@@ -116,6 +116,7 @@ final class AddActionTest extends WebTestCase
             'title' => 'Тестовая система покрытий',
             'description' => 'Описание для теста',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -141,6 +142,7 @@ final class AddActionTest extends WebTestCase
             'title' => '',
             'description' => 'Описание',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -154,6 +156,7 @@ final class AddActionTest extends WebTestCase
         $this->client->request('POST', '/cabinet/coating/coating-system/add', [
             'title' => '',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -170,6 +173,7 @@ final class AddActionTest extends WebTestCase
         $this->client->request('POST', '/cabinet/coating/coating-system/add', [
             'title' => 'Тест',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
             'layers' => [
                 ['coatingId' => '', 'dft' => '80'],
@@ -189,6 +193,7 @@ final class AddActionTest extends WebTestCase
             'title' => '',
             'description' => 'Сохранённое описание',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
         ]);
 
@@ -227,6 +232,7 @@ final class AddActionTest extends WebTestCase
                 'title' => 'Моя система',
                 'description' => 'Описание системы',
                 'substrate' => 'steel_carbon',
+                'environment' => 'atmospheric',
                 'surfaceTreatmentId' => (string) $concreteTreatmentId,
             ]);
 
@@ -265,6 +271,7 @@ final class AddActionTest extends WebTestCase
             'title' => 'Система с тегами '.uniqid('', true),
             'description' => '',
             'substrate' => 'steel_carbon',
+            'environment' => 'atmospheric',
             'surfaceTreatmentId' => (string) $this->treatmentId,
             'tagIds' => [$tag->getId()],
         ]);

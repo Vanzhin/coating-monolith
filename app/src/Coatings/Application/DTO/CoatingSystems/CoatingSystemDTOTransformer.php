@@ -27,6 +27,8 @@ class CoatingSystemDTOTransformer
         $dto->description = $system->getDescription();
         $dto->substrate = $system->getSubstrate()->value;
         $dto->substrateTitle = $system->getSubstrate()->title();
+        $dto->environment = $system->getEnvironment()->value;
+        $dto->environmentTitle = $system->getEnvironment()->title();
         $dto->surfaceTreatmentId = $treatment->getId();
         $dto->surfaceTreatmentDescription = $treatment->getDescription();
         $dto->surfaceTreatmentCode = $treatment->getCode();

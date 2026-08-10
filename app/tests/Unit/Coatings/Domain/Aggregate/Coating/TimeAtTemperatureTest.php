@@ -69,6 +69,26 @@ final class TimeAtTemperatureTest extends TestCase
         $this->assertNull($point->getInterval());
     }
 
+    public function test_has_positive_duration_true_for_positive_minutes(): void
+    {
+        $this->assertTrue((new TimeAtTemperature(20, 10))->hasPositiveDuration());
+    }
+
+    public function test_has_positive_duration_true_for_calculated_positive_minutes(): void
+    {
+        $this->assertTrue((new TimeAtTemperature(20, 10, isCalculated: true))->hasPositiveDuration());
+    }
+
+    public function test_has_positive_duration_false_for_unlimited(): void
+    {
+        $this->assertFalse((new TimeAtTemperature(20, 0))->hasPositiveDuration());
+    }
+
+    public function test_has_positive_duration_false_for_unknown(): void
+    {
+        $this->assertFalse((new TimeAtTemperature(20, null))->hasPositiveDuration());
+    }
+
     public function test_json_serialize_keeps_duration_minutes(): void
     {
         $point = new TimeAtTemperature(20, 10);

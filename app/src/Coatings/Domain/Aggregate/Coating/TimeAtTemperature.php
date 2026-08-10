@@ -50,6 +50,16 @@ final readonly class TimeAtTemperature implements \JsonSerializable
     }
 
     /**
+     * Есть ли у точки положительная длительность (в т.ч. вычисленная интерполяцией).
+     * В отличие от isExplicitPositiveDuration() не смотрит на isCalculated: unlimited (0)
+     * и unknown (null) — false, любая положительная длительность — true.
+     */
+    public function hasPositiveDuration(): bool
+    {
+        return null !== $this->timeInMinutes && $this->timeInMinutes > 0;
+    }
+
+    /**
      * @return array{temperature_at: int|float, time_in_minutes: int|null, is_calculated: bool}
      */
     public function jsonSerialize(): array

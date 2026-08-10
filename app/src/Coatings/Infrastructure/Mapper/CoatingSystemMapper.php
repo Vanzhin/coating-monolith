@@ -9,6 +9,7 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -27,6 +28,7 @@ class CoatingSystemMapper
         ?string $systemId = null,
     ): CreateCoatingSystemCommand|UpdateCoatingSystemMetadataCommand {
         $substrate = Substrate::from($input['substrate']);
+        $environment = EnvironmentType::from($input['environment']);
         $surfaceTreatmentId = (string) ($input['surfaceTreatmentId'] ?? '');
         $tagIds = array_values(array_map(
             static fn ($id) => (string) $id,
@@ -38,6 +40,7 @@ class CoatingSystemMapper
                 title: (string) ($input['title'] ?? ''),
                 description: (string) ($input['description'] ?? ''),
                 substrate: $substrate,
+                environment: $environment,
                 surfaceTreatmentId: $surfaceTreatmentId,
                 initialLayers: $this->layersFromInput((array) ($input['layers'] ?? [])),
                 tagIds: $tagIds,
@@ -49,6 +52,7 @@ class CoatingSystemMapper
             title: (string) ($input['title'] ?? ''),
             description: (string) ($input['description'] ?? ''),
             substrate: $substrate,
+            environment: $environment,
             surfaceTreatmentId: $surfaceTreatmentId,
             tagIds: $tagIds,
         );
@@ -92,6 +96,7 @@ class CoatingSystemMapper
                 'title' => '',
                 'description' => '',
                 'substrate' => '',
+                'environment' => EnvironmentType::Atmospheric->value,
                 'surfaceTreatmentId' => '',
                 'surfaceTreatmentTitle' => '',
                 'layers' => [],
@@ -103,6 +108,7 @@ class CoatingSystemMapper
             'title' => $dto->title,
             'description' => $dto->description,
             'substrate' => $dto->substrate,
+            'environment' => $dto->environment,
             'surfaceTreatmentId' => $dto->surfaceTreatmentId,
             'surfaceTreatmentTitle' => $dto->surfaceTreatmentTitle,
             'layers' => array_map(
@@ -141,6 +147,13 @@ class CoatingSystemMapper
                 new Assert\Choice([
                     'choices' => array_map(fn (Substrate $s) => $s->value, Substrate::cases()),
                     'message' => 'Недопустимое значение подложки.',
+                ]),
+            ],
+            'environment' => [
+                new Assert\NotBlank(),
+                new Assert\Choice([
+                    'choices' => array_map(fn (EnvironmentType $e) => $e->value, EnvironmentType::cases()),
+                    'message' => 'Недопустимое значение среды эксплуатации.',
                 ]),
             ],
             'surfaceTreatmentId' => [

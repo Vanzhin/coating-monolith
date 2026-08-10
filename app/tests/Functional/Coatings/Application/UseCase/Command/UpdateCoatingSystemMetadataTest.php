@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
@@ -155,6 +156,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Система-CS-Update-НОВЫЙ-'.$suffix,
             description: 'Описание после.',
             substrate: Substrate::CONCRETE,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
         );
 
@@ -237,6 +239,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Система-CS-UpdTags-'.$suffix,
             description: 'После правки.',
             substrate: Substrate::STEEL_CARBON,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             tagIds: [$tagB->getId(), $tagC->getId()],
         );
@@ -315,6 +318,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Система-CS-ClrTags-'.$suffix,
             description: '',
             substrate: Substrate::STEEL_CARBON,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             tagIds: [],
         );
@@ -341,6 +345,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Не важно',
             description: '',
             substrate: Substrate::STEEL_CARBON,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
         );
 
@@ -429,6 +434,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             title: 'Система-atomic-'.$suffix,
             description: 'После смены.',
             substrate: Substrate::CONCRETE,
+            environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment2->getId(),
         );
 

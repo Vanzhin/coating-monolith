@@ -205,7 +205,8 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $this->assertNotNull($coating, 'Coating was not found after update.');
 
         // Assertion 1: atmospheric -> ep leaf must return 2 h = 120 min
-        $epSeries = $coating->minRecoatingFor(EnvironmentType::Atmospheric, CoatingBase::EP);
+        $epSeries = $coating->getMinRecoatingInterval()
+            ->find(EnvironmentType::Atmospheric->value, CoatingBase::EP->value)->series;
         $this->assertSame(
             120,
             $epSeries->points[0]->timeInMinutes,
@@ -214,7 +215,8 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
 
         // Assertion 2: immersion -> ep must fallback to the root default = 4 h = 240 min
         // The immersion branch was never submitted, so the tree falls back to the root default.
-        $immersionSeries = $coating->minRecoatingFor(EnvironmentType::Immersion, CoatingBase::EP);
+        $immersionSeries = $coating->getMinRecoatingInterval()
+            ->find(EnvironmentType::Immersion->value, CoatingBase::EP->value)->series;
         $this->assertSame(
             240,
             $immersionSeries->points[0]->timeInMinutes,

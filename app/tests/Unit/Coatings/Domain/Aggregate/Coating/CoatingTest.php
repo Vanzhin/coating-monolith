@@ -25,86 +25,89 @@ final class CoatingTest extends TestCase
 {
     public function test_min_recoating_for_falls_back_to_root_default_when_no_branches(): void
     {
-        $globalDefault = new DryingTimeSeries(new TimeAtTemperature(20, 14 * 24 * 60));
         $coating = $this->makeCoating(
-            min: new RecoatingIntervalTree($globalDefault),
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
             max: null,
         );
 
-        $series = $coating->minRecoatingFor(EnvironmentType::Atmospheric, CoatingBase::EP);
-
-        $this->assertSame($globalDefault, $series);
+        // Плоское дерево: любой топкоат/среда → корневой default. tdsDft=100, actualDft=null → без пересчёта.
+        $this->assertSame(60, $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric));
     }
 
     public function test_min_recoating_for_returns_topcoat_leaf_when_present(): void
     {
-        $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 30));
-        $epDef = new DryingTimeSeries(new TimeAtTemperature(20, 15));
-        $min = new RecoatingIntervalTree(
-            $rootDef,
-            'default',
-            new RecoatingIntervalTree(
-                $atmDef,
-                'atmospheric',
-                new RecoatingIntervalTree($epDef, 'EP'),
-            ),
-        );
-        $coating = $this->makeCoating(
-            min: $min,
-            max: null,
-        );
-
-        $this->assertSame(
-            $epDef,
-            $coating->minRecoatingFor(EnvironmentType::Atmospheric, CoatingBase::EP),
-        );
-    }
-
-    public function test_min_recoating_for_uses_env_default_when_topcoat_missing(): void
-    {
-        $rootDef = new DryingTimeSeries(new TimeAtTemperature(20, 60));
-        $atmDef = new DryingTimeSeries(new TimeAtTemperature(20, 30));
-        $min = new RecoatingIntervalTree(
-            $rootDef,
-            'default',
-            new RecoatingIntervalTree($atmDef, 'atmospheric'),
-        );
-        $coating = $this->makeCoating(
-            min: $min,
-            max: null,
-        );
-
-        $this->assertSame(
-            $atmDef,
-            $coating->minRecoatingFor(EnvironmentType::Atmospheric, CoatingBase::EP),
-            'EP не задан → возвращаем дефолт среды',
-        );
-    }
-
-    public function test_min_recoating_point_at_applies_get_point_to_found_series(): void
-    {
-        $epSeries = new DryingTimeSeries(
-            new TimeAtTemperature(20, 30),
-            new TimeAtTemperature(30, 15),
-        );
         $min = new RecoatingIntervalTree(
             new DryingTimeSeries(new TimeAtTemperature(20, 60)),
             'default',
             new RecoatingIntervalTree(
-                new DryingTimeSeries(new TimeAtTemperature(20, 45)),
+                new DryingTimeSeries(new TimeAtTemperature(20, 30)),
                 'atmospheric',
-                new RecoatingIntervalTree($epSeries, 'EP'),
+                new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 15)), 'EP'),
             ),
         );
+        $coating = $this->makeCoating(min: $min, max: null);
+
+        // Спускаемся до листа основания топкоата (EP = 15), а не берём дефолт среды/корня.
+        $this->assertSame(15, $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric));
+    }
+
+    public function test_min_recoating_for_uses_env_default_when_topcoat_missing(): void
+    {
+        $min = new RecoatingIntervalTree(
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            'default',
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 30)), 'atmospheric'),
+        );
+        $coating = $this->makeCoating(min: $min, max: null);
+
+        // PUR-ветки под atmospheric нет → дефолт среды (30), не корневой (60).
+        $this->assertSame(30, $coating->minRecoatingFor(CoatingBase::PUR, EnvironmentType::Atmospheric));
+    }
+
+    public function test_min_recoating_for_interpolates_by_temperature(): void
+    {
         $coating = $this->makeCoating(
-            min: $min,
+            min: new RecoatingIntervalTree(new DryingTimeSeries(
+                new TimeAtTemperature(20, 30),
+                new TimeAtTemperature(30, 15),
+            )),
             max: null,
         );
 
-        $point = $coating->minRecoatingPointAt(EnvironmentType::Atmospheric, CoatingBase::EP, 20);
-        $this->assertNotNull($point);
-        $this->assertSame(30, $point->timeInMinutes);
+        // 25 °C между точками 20→30 и 30→15: линейно 22.5 → round 23.
+        $this->assertSame(
+            23,
+            $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric, temperature: 25),
+        );
+    }
+
+    public function test_min_recoating_for_scales_by_actual_thickness(): void
+    {
+        // tdsDft=100, серия при 20 °C = 240 мин, модель LINEAR по умолчанию.
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+            max: null,
+        );
+
+        // actualDft=null → эталон tdsDft, без пересчёта.
+        $this->assertSame(240, $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric));
+        // 240 * 150/100 = 360.
+        $this->assertSame(360, $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric, actualDft: 150));
+        // 240 * 80/100 = 192.
+        $this->assertSame(192, $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric, actualDft: 80));
+    }
+
+    public function test_min_recoating_for_returns_null_when_temperature_out_of_series_range(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+
+        // Единственная точка серии при 20 °C; для −10 °C данных нет → null.
+        $this->assertNull(
+            $coating->minRecoatingFor(CoatingBase::EP, EnvironmentType::Atmospheric, temperature: -10),
+        );
     }
 
     public function test_max_recoating_for_returns_null_when_max_is_absent(): void
