@@ -50,11 +50,12 @@
     {% set appMinTempResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({applicationMinTempFrom: null, applicationMinTempTo: null, page: null})|filter(v => v is not null)) %}
     {% set appTimeResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null)) %}
 
-    {# Пресеты для range-чипов (отражают реальные диапазоны нанесения) #}
+    {# Пресеты температурных чипов: «нанесение возможно при T и ниже» —
+       фильтр по верхней границе (max_layer_application_min_temp <= T). #}
     {% set appMinTempPresets = [
-        {from: -10, to: null, label: 'от −10 °C'},
-        {from: 5,   to: null, label: 'от +5 °C'},
-        {from: 10,  to: null, label: 'от +10 °C'},
+        {from: null, to: -10, label: '−10 °C и ниже'},
+        {from: null, to: 5,   label: '+5 °C и ниже'},
+        {from: null, to: 10,  label: '+10 °C и ниже'},
     ] %}
 
     {% set appTimePresets = [
