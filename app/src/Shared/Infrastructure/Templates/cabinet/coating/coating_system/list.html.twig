@@ -16,6 +16,7 @@
 
     {# Активность фасетов #}
     {% set substratesActive = substrates|length > 0 %}
+    {% set environmentActive = environment is not null %}
     {% set standardActive = standard is not null %}
     {% set categoryActive = standardActive and category is not null %}
     {% set durabilityActive = standardActive and durability is not null %}
@@ -25,6 +26,7 @@
     {% set appTimeActive = minApplicationTimeAt20Hours is not null %}
 
     {% set activeFacetsCount = substrates|length
+        + (environmentActive ? 1 : 0)
         + (standardActive ? 1 : 0)
         + (categoryActive ? 1 : 0)
         + (durabilityActive ? 1 : 0)
@@ -171,6 +173,41 @@
                             {{ s.title() }} <i class="bi bi-x-lg"></i>
                         </a>
                     {% endfor %}
+                {% endif %}
+
+                {# --- Среда (single) --- #}
+                {% if not environmentActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Среда
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3">
+                                {% for e in environmentOptions %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="environment" value="{{ e.value }}"
+                                               id="environment-{{ e.value }}" form="systemListForm"
+                                               onchange="this.form.submit()">
+                                        <label class="form-check-label" for="environment-{{ e.value }}">{{ e.title() }}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterEnvironment"
+                            aria-controls="chipFilterEnvironment">
+                        Среда
+                    </button>
+                {% else %}
+                    {% set environmentResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({environment: null, page: null})|filter(v => v is not null)) %}
+                    <a href="{{ environmentResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр среды">
+                        {{ environment.title() }} <i class="bi bi-x-lg"></i>
+                    </a>
                 {% endif %}
 
                 {# --- Стандарт (single) --- #}
@@ -405,6 +442,29 @@
                 </div>
             {% endif %}
 
+            {% if not environmentActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterEnvironment" aria-labelledby="chipFilterEnvironmentLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterEnvironmentLabel">Среда</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            {% for e in environmentOptions %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="environment" value="{{ e.value }}"
+                                           id="environmentMob-{{ e.value }}">
+                                    <label class="form-check-label" for="environmentMob-{{ e.value }}">{{ e.title() }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
             {% if not standardActive %}
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterStandard" aria-labelledby="chipFilterStandardLabel">
@@ -577,6 +637,15 @@
                                         </span>
                                     {% endfor %}
                                 {% endif %}
+                                {% if environmentActive %}
+                                    {% set qRemove = app.request.query.all|merge({environment: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        {{ environment.title() }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
                                 {% if standardActive %}
                                     {% set qRemove = app.request.query.all|merge({standard: null, category: null, durability: null, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
@@ -641,6 +710,33 @@
                                     </div>
                                 </div>
                             {% endfor %}
+                        </div>
+                    </div>
+
+                    {# === Секция: Среда === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Среда</h6>
+                        <div class="row g-1">
+                            {% for e in environmentOptions %}
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="environment" value="{{ e.value }}"
+                                               id="environmentOff-{{ e.value }}"
+                                               {% if environment and environment.value == e.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="environmentOff-{{ e.value }}">{{ e.title() }}</label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="environment" value=""
+                                           id="environmentOff-none"
+                                           {% if not environment %}checked{% endif %}>
+                                    <label class="form-check-label text-muted" for="environmentOff-none">Любая</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

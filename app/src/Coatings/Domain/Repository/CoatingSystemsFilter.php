@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Repository;
 
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -22,6 +23,7 @@ final readonly class CoatingSystemsFilter
     public function __construct(
         public ?SearchQuery $search = null,
         public array $substrates = [],
+        public ?EnvironmentType $environment = null,
         public ?ComplianceStandard $standard = null,
         public ?string $category = null,
         public ?string $durability = null,

@@ -47,6 +47,7 @@ final class CoatingSystemFinder
 
         $this->applyFts($qb, $filter);
         $this->applySubstrates($qb, $filter);
+        $this->applyEnvironment($qb, $filter);
         $this->applyCompliance($qb, $filter);
         $this->applyTags($qb, $filter);
         $this->applyCoatings($qb, $filter);
@@ -92,6 +93,16 @@ final class CoatingSystemFinder
         $values = array_map(static fn ($s) => $s->value, $filter->substrates);
         $qb->andWhere('cs.substrate IN (:substrates)')
             ->setParameter('substrates', $values, ArrayParameterType::STRING);
+    }
+
+    private function applyEnvironment(QueryBuilder $qb, CoatingSystemsFilter $filter): void
+    {
+        if (null === $filter->environment) {
+            return;
+        }
+
+        $qb->andWhere('cs.environment = :environment')
+            ->setParameter('environment', $filter->environment->value);
     }
 
     private function applyCompliance(QueryBuilder $qb, CoatingSystemsFilter $filter): void

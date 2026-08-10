@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Repository;
 
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
@@ -21,6 +22,7 @@ final class CoatingSystemsFilterTest extends TestCase
         $filter = new CoatingSystemsFilter(
             search: SearchQuery::tryFromString('эпоксид'),
             substrates: [Substrate::STEEL_CARBON, Substrate::CONCRETE],
+            environment: EnvironmentType::Immersion,
             standard: ComplianceStandard::ISO_12944,
             category: 'C4',
             durability: 'HIGH',
@@ -34,6 +36,7 @@ final class CoatingSystemsFilterTest extends TestCase
 
         self::assertSame('эпоксид', $filter->search?->value);
         self::assertSame([Substrate::STEEL_CARBON, Substrate::CONCRETE], $filter->substrates);
+        self::assertSame(EnvironmentType::Immersion, $filter->environment);
         self::assertSame(ComplianceStandard::ISO_12944, $filter->standard);
         self::assertSame('C4', $filter->category);
         self::assertSame('HIGH', $filter->durability);
@@ -54,6 +57,7 @@ final class CoatingSystemsFilterTest extends TestCase
 
         self::assertNull($filter->search);
         self::assertSame([], $filter->substrates);
+        self::assertNull($filter->environment);
         self::assertNull($filter->standard);
         self::assertNull($filter->category);
         self::assertNull($filter->durability);

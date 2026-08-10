@@ -23,9 +23,9 @@ final class CoatingSystemListViewFactoryTest extends TestCase
         );
 
         foreach ([
-            'items', 'total', 'q', 'substrates', 'standard', 'category', 'durability',
+            'items', 'total', 'q', 'substrates', 'environment', 'standard', 'category', 'durability',
             'tagIds', 'coatingIds', 'applicationMinTemp', 'minApplicationTimeAt20Hours',
-            'sort', 'page', 'perPage', 'sortOptions', 'substrateOptions', 'standardOptions',
+            'sort', 'page', 'perPage', 'sortOptions', 'substrateOptions', 'environmentOptions', 'standardOptions',
         ] as $key) {
             self::assertArrayHasKey($key, $payload);
         }

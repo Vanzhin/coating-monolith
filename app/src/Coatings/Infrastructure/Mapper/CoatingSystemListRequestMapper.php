@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Mapper;
 
+use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
@@ -42,6 +43,7 @@ final class CoatingSystemListRequestMapper
         return new CoatingSystemsFilter(
             search: '' !== $q ? SearchQuery::tryFromString($q) : null,
             substrates: $substrates,
+            environment: EnvironmentType::tryFrom((string) $request->query->get('environment', '')),
             standard: $standard,
             category: null !== $standard ? ($request->query->get('category') ?: null) : null,
             durability: null !== $standard ? ($request->query->get('durability') ?: null) : null,
