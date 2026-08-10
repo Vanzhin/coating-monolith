@@ -64,20 +64,15 @@
                                 <td class="text-muted small">{{ item.updatedAt ? item.updatedAt|date('d.m.Y') : '—' }}</td>
                                 {% if is_granted('ROLE_ADMIN') %}
                                     <td class="text-end">
-                                        <a href="{{ path('app_cabinet_surface_treatment_update', {id: item.id}) }}"
-                                           class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="post"
-                                              action="{{ path('app_cabinet_surface_treatment_remove', {id: item.id}) }}"
-                                              class="d-inline"
-                                              data-controller="confirm-form"
-                                              data-confirm-form-message-value="Удалить «{{ item.description|slice(0, 40)|e('js') }}»?"
-                                              data-action="submit->confirm-form#confirm">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            {% include '/components/edit_delete.html.twig' with {
+                                                'edit': 'app_cabinet_surface_treatment_update',
+                                                'delete': 'app_cabinet_surface_treatment_remove',
+                                                'id': item.id,
+                                                'title': item.code ?? item.description|slice(0, 40),
+                                                'name': 'подготовку поверхности'
+                                            } %}
+                                        </div>
                                     </td>
                                 {% endif %}
                             </tr>
@@ -119,4 +114,8 @@
             {% endif %}
         {% endif %}
     </div>
+
+    {% if is_granted('ROLE_ADMIN') %}
+        {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_surface_treatment_remove'} %}
+    {% endif %}
 {% endblock %}
