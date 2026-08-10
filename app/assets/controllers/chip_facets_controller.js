@@ -29,12 +29,50 @@ export default class extends Controller {
         this._dropdownCleanups = [];
         this._initPortalDropdowns();
         this._initViewportAdaptive();
+        this._initMergeSubmit();
     }
 
     disconnect() {
         this._mediaQuery?.removeEventListener('change', this._applyViewport);
+        this.element.removeEventListener('submit', this._onSubmit);
         this._dropdownCleanups.forEach(cleanup => cleanup());
         this._dropdownCleanups = [];
+    }
+
+    /**
+     * Chip-row — форма ТОЛЬКО для добавления фасетов: активные фасеты
+     * отрисованы чипами-ссылками (снятие — через merge-URL), а не полями формы.
+     * Нативный submit собрал бы query лишь из видимых полей и стёр бы активные
+     * фасеты («второй чип перебивает первый»). Поэтому мёрджим значения формы
+     * поверх текущего URL: ключи, что есть в форме, заменяем целиком; остальные
+     * (активные фасеты, sort, теги/покрытия) сохраняем. Пустые значения =
+     * очистка. `#allFiltersForm` — отдельная полноформатная форма, её это не
+     * касается.
+     */
+    _initMergeSubmit() {
+        this._onSubmit = this._onSubmit.bind(this);
+        this.element.addEventListener('submit', this._onSubmit);
+    }
+
+    _onSubmit(event) {
+        event.preventDefault();
+
+        const params = new URLSearchParams(window.location.search);
+        const formData = new FormData(this.element);
+
+        for (const key of new Set(formData.keys())) {
+            params.delete(key);
+        }
+        for (const [key, value] of formData.entries()) {
+            if ('' !== value) {
+                params.append(key, value);
+            }
+        }
+        params.delete('page');
+
+        const action = this.element.getAttribute('action') || window.location.pathname;
+        const qs = params.toString();
+        window.location.assign(qs ? `${action}?${qs}` : action);
     }
 
     _initPortalDropdowns() {
