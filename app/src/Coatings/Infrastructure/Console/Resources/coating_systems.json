@@ -1,0 +1,2734 @@
+[
+ {
+  "title": "Гидротехника №1",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в среднеагрессивной атмосфере С4, 7-15 лет;С3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №2",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №3",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №4",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере С5, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №5",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ - 15-25 летС5 - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №6",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №7",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш"
+    ],
+    "dft": "30"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №8",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №9",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "9",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №10",
+  "object": "Бетонные сооружения",
+  "sourceNo": "1",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Атмосферная эксплуатация бетон, жб ХЛ1(УХЛ1) - более 20 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "110"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №11",
+  "object": "Бетонные сооружения",
+  "sourceNo": "2",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Эксплуатация в условиях увлажнения и погружения бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №12",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "2",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С3 15-25 летС4 7-15 летС5 до 7 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №13",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "3",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С4 более 25 летС5 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №14",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "4",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С5 более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №15",
+  "object": "Оборудование, работающее в погружении, шпунты и сваи",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее в погружении, шпунты и сваи». Погружение в воду и почву Im1…Im3 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №16",
+  "object": "Оборудование, работающее в погружении, шпунты и сваи",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее в погружении, шпунты и сваи». Погружение в воду и почву Im1…Im3 более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №17",
+  "object": "Оборудование, работающее в погружении, шпунты и сваи",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее в погружении, шпунты и сваи». Погружение в воду зона заплеска",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "320"
+   }
+  ]
+ },
+ {
+  "title": "Гидротехника №18",
+  "object": "Оборудование, работающее в погружении, шпунты и сваи",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее в погружении, шпунты и сваи». Погружение в воду и почвуЗона переменного смачивания и высокоагрессивные условия Im1…Im3 более 25 летIm4, CX 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №1",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфереВходит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60-80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100-140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №2",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат Входит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1, ОМ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "160-180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №3",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфереВходит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80-100"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "80-100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №4",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат Входит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1, ОМ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "100-120"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "160-180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №5",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере Входит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "160-180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №6",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфереВходит в СТО-01393674-007-2022 АО ЦНИИТС 15-25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "75-90"
+   },
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "75-90"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "50-60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №7",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере Входит в СТО-01393674-007-2022 АО ЦНИИТС 15-25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "150-180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "50-60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №8",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 3-слойная система для эксплуатации в сильноагрессивной атмосфереВходит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "110-120"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "110-120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №9",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "9",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере Входит в СТО-01393674-007-2022 АО ЦНИИТС Свыше 25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "220-240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №10",
+  "object": "Металлоконструкции мостов",
+  "sourceNo": "10",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции мостов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере Входит в СТО-01393674-007-2022 АО ЦНИИТС 15-25 летУ1, ХЛ1, УХЛ1",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "100-120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №11",
+  "object": "Бетонные сооружения",
+  "sourceNo": "1",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Входит в СТО-01393674-008-2024 АО ЦНИИТС 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "55-60"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "55-60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №12",
+  "object": "Бетонные сооружения",
+  "sourceNo": "2",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Входит в СТО-01393674-008-2024 АО ЦНИИТС Свыше 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "130-150"
+   },
+   {
+    "materials": [
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №13",
+  "object": "Бетонные сооружения",
+  "sourceNo": "3",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Входит в СТО-01393674-008-2024 АО ЦНИИТС Свыше 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "160-175"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "160-175"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №14",
+  "object": "Бетонные сооружения",
+  "sourceNo": "4",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Входит в СТО-01393674-008-2024 АО ЦНИИТС Свыше 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "350"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №15",
+  "object": "Металлоконструкции железнодорожных мостов",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции железнодорожных мостов». Соответствует технологическим указаний по окраске металлических конструкций железнодорожных мостов № 729/р от 16.04.2019г ОАО «РЖД» на основании заключения АО «ВНИИЖТ» С4 более 25 лет, С5 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "120-140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Мосты №16",
+  "object": "Металлоконструкции железнодорожных мостов",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции железнодорожных мостов». Соответствует технологическим указаний по окраске металлических конструкций железнодорожных мостов № 729/р от 16.04.2019г ОАО «РЖД» на основании заключения АО «ВНИИЖТ» С4 более 25 летС5 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №1",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в среднеагрессивной атмосфере С4, 7-15 лет;С3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №2",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №3",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №4",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 3-слойная система для эксплуатации в сильноагрессивной атмосфере С5, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №5",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ - 15-25 летС5 - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №6",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №7",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №8",
+  "object": "Наружная поверхность РВС, технологического оборудования и трубопроводов",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружная поверхность РВС, технологического оборудования и трубопроводов». 2-слойная система для эксплуатации в сильноагрессивной атмосфере УХЛ1(ХЛ1), 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №9",
+  "object": "Внутренняя поверхность РВС и технологического оборудования",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренняя поверхность РВС и технологического оборудования». внутреннее покрытие емкостей нефтегазовых объектов, включая авиатопливо. Хранение нефти и нефтепродуктов до 120℃. Пропарка. Сильноагрессивная среда 10 летСТО ..035 Газпром",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №10",
+  "object": "Внутренняя поверхность РВС и технологического оборудования",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренняя поверхность РВС и технологического оборудования». внутреннее покрытие емкостей нефтегазовых объектов, хранение нефти и нефтепродуктов до 90℃. Пропарка. Сильноагрессивная среда 10 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "110"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "110"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №11",
+  "object": "Внутренняя поверхность РВС и технологического оборудования",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренняя поверхность РВС и технологического оборудования». внутреннее покрытие емкостей нефтегазовых объектов, включая авиатопливо. Токопроводящее покрытие Сильноагрессивная среда 10 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк АС"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк АС"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №12",
+  "object": "Внутренняя поверхность РВС и технологического оборудования",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренняя поверхность РВС и технологического оборудования». на соответствие ГОСТ Р 58346 (трубы нефтяной промышленности)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стронг"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №13",
+  "object": "Оборудование, работающее при повышенных температурах",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах». термостойкость до 250℃  (по ASTM D 2485-18)Криогеника -196…+120℃ -196…+250℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №14",
+  "object": "Оборудование, работающее при повышенных температурах",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах». термостойкость до 425℃  (по ASTM D 2485-18) -60…+425℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм Цинк ЭС"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "30"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "30"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №15",
+  "object": "Оборудование, работающее при повышенных температурах",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах». До +540℃ без заключения",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм Цинк 540"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "25"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "25"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №16",
+  "object": "Металлоконструкции",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 1-слойная система покрытия в слабо- и среднеагрессивных средах ХЛ1(УХЛ1) – более 15 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "100-120"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №17",
+  "object": "Металлоконструкции",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в среднеагрессивной атмосфере С4, 7-15 лет;С3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №18",
+  "object": "Металлоконструкции",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №19",
+  "object": "Металлоконструкции",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №20",
+  "object": "Металлоконструкции",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 3-слойная система для эксплуатации в сильноагрессивной атмосфере С5, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №21",
+  "object": "Металлоконструкции",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ - 15-25 летС5 - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №22",
+  "object": "Металлоконструкции",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №23",
+  "object": "Металлоконструкции",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №24",
+  "object": "Металлоконструкции",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере УХЛ1(ХЛ1), 25 летС4, 15-25 лет;С3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №25",
+  "object": "Металлоконструкции",
+  "sourceNo": "9",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Нефтегаз №26",
+  "object": "Металлоконструкции",
+  "sourceNo": "10",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №1",
+  "object": "Однокомпонентная Огнезащита",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Однокомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Акрил"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №2",
+  "object": "Однокомпонентная Огнезащита",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Однокомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Акрил"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №3",
+  "object": "Однокомпонентная Огнезащита",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Однокомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Алкид"
+    ],
+    "dft": "70"
+   },
+   {
+    "materials": [
+     "Литачар Акрил"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №4",
+  "object": "Однокомпонентная Огнезащита",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Однокомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Акрил"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №5",
+  "object": "Двухкомпонентная Огнезащита",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Двухкомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №6",
+  "object": "Двухкомпонентная Огнезащита",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Двухкомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №7",
+  "object": "Двухкомпонентная Огнезащита",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Двухкомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Огнезащита №8",
+  "object": "Двухкомпонентная Огнезащита",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Двухкомпонентная Огнезащита». До R120",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Изотерм Э",
+     "Литачар Эпокс"
+    ],
+    "dft": "По ПТМ"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Промка №1",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Промка №2",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». ХЛ1(УХЛ1) – более 15 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №3",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». Система толерантная к подготовки поверхности St2-3 или по ГОСТ Более 12 лет ГОСТ 9.401 -91 УХЛ-УХЛ1 II тип атмосферы",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "160-200"
+   }
+  ]
+ },
+ {
+  "title": "Промка №4",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в среднеагрессивной атмосфере С4, 15-25 лет;С3, более 25 летХЛ1(УХЛ1) – более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №5",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "5",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере С5, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №6",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "6",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ - 15-25 летС5 - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Промка №7",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "7",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №8",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "8",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №9",
+  "object": "Металлоконструкции и оборудование",
+  "sourceNo": "9",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции и оборудование». 1-слойная система (грунт-эмаль)  для эксплуатации в слабоагрессивной и среднеагрессивной атмосфере, альтернатива ГФ021+ПФ115 ХЛ1(УХЛ1) – более 15 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "100-120"
+   }
+  ]
+ },
+ {
+  "title": "Промка №10",
+  "object": "Оборудование, работающее при повышенных температурах",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах». термостойкость до 250℃  (по ASTM D 2485-18)Криогеника -196…+120℃ -196…+250℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Промка №11",
+  "object": "Оборудование, работающее при повышенных температурах",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах». термостойкость до 425℃  (по ASTM D 2485-18) -60…+425℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм Цинк ЭС"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш"
+    ],
+    "dft": "30"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш"
+    ],
+    "dft": "30"
+   }
+  ]
+ },
+ {
+  "title": "Промка №12",
+  "object": "Бетонные сооружения",
+  "sourceNo": "1",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Наружная поверхность градирен, в т.ч. АЭС бетон, жб ХЛ1(УХЛ1) - более 20 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "110"
+   }
+  ]
+ },
+ {
+  "title": "Промка №13",
+  "object": "Бетонные сооружения",
+  "sourceNo": "2",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения». Внутренняя поверхность градирен, в т.ч. АЭС бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Промка №14",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "2",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С3 15-25 летС4 7-15 летС5 до 7 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №15",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "3",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С4 более 25 летС5 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Промка №16",
+  "object": "Оцинкованные металлоконструкции",
+  "sourceNo": "4",
+  "substrate": "steel_galvanized",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оцинкованные металлоконструкции». Система по ГОСТ 34667.5 D1Без заключений С5 более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №1",
+  "object": "Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.». 2-слойная система для эксплуатации в среднеагрессивной атмосфере С4, 7-15 лет;С3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №2",
+  "object": "Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.». 2-слойная система для эксплуатации в сильноагрессивной атмосфере С5, 15-25 лет;С4, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №3",
+  "object": "Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.». 3-слойная система для эксплуатации в сильноагрессивной атмосфере, включая морской климат СХ - 15-25 летС5 - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №4",
+  "object": "Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.",
+  "sourceNo": "4",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Металлоконструкции котла, главный корпус электростанции, угольный склад и система топливоподачи; подъемники, наружная поверхность воздухопроводов холодного воздуха; наружные стенки подвесных трубопроводов холодной воды, резервуары обессоленной воды, резервуары воды для пожаротушения, резервуары для сточных вод, резервуары с питьевой водой и резервуары для дизельного топлива; стальные рамы оборудования сероочистки.». 1-слойная система покрытия в слабо- и среднеагрессивных средах ХЛ1(УХЛ1) – более 15 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "100-120"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №5",
+  "object": "Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.». 2-слойная система для эксплуатации в условиях погружения в почву/воду вода, почва Im1-3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290 СТ"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290 СТ"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №6",
+  "object": "Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.». 2-слойная система для эксплуатации в условия погружения в почву/воду вода, почва Im1-3, 15-25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №7",
+  "object": "Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Наружные и внутренние стенки заглубленных циркводоводов с морской и пресной водой, водопроводов оборотной воды, элементы заглубленных металлоконструкций.». 2-слойная усиленная система для эксплуатации в условиях в почву/воду вода, почва Im1-3, более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №8",
+  "object": "Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.». 2-слойная система для защиты внутренних стенок резервуаров с мазутом и технической воды, трубопроводы и резервуары отфильтрованной пожарной воды, баки хранения конденсата, баки системы деионизации; Темные нефтепродукты, техническая вода, отфильтрованная пожарная вода, конденсат",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №9",
+  "object": "Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.». 2-слойная система для защиты внутренних стенок резервуаров с трансформаторным маслом, химическими веществами, пожарные жидкости. Трансформаторное масло, химические вещества, бетонный шлам, пожарные жидкости и буровой раствор.",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №10",
+  "object": "Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.",
+  "sourceNo": "3",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Внутренние стенки резервуаров с питьевой и технической водой, резервуаров для хранения мазута, трансформаторного масла, резервуаров противопожарной защиты.». 1-слойная система для защиты внутренних стенок резервуаров и трубопроводов с питьевой водой. Питьевая вода",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стронг"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №11",
+  "object": "Стальные трубчатые сваи угольных причалов, волнозащитные затворы, водозаборные сооружения, напорные трубопроводы, сороудерживающие решетки.",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "immersion",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Стальные трубчатые сваи угольных причалов, волнозащитные затворы, водозаборные сооружения, напорные трубопроводы, сороудерживающие решетки.». 1-слойная система для защиты конструкций в зонах заплеска воды или приливных зонах. А также в погружениях в грунт. зона заплеска воды или приливная зона. C2 - C5, CX, среда погружения lm1-lm4, 15-25 лет.",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №12",
+  "object": "Оборудование, работающее при повышенных температурах. Наружные стенки высокотемпературных трубопроводов и паропроводов. (120-600°C)",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах. Наружные стенки высокотемпературных трубопроводов и паропроводов. (120-600°C)». термостойкость до 250℃ (по ASTM D 2485-18)Криогеника -196…+120℃ -196…+250℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №13",
+  "object": "Оборудование, работающее при повышенных температурах. Наружные стенки высокотемпературных трубопроводов и паропроводов. (120-600°C)",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "special",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Оборудование, работающее при повышенных температурах. Наружные стенки высокотемпературных трубопроводов и паропроводов. (120-600°C)». термостойкость до 425℃ (по ASTM D 2485-18) -60…+425℃",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм Цинк ЭС"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш"
+    ],
+    "dft": "30"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш"
+    ],
+    "dft": "30"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №14",
+  "object": "Бетонные сооружения.",
+  "sourceNo": "1",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения.». Бетонные сооружения, контактирующие с атмосферой. Наружная поверхность башенных испарительных градирен, в т.ч. АЭС бетон, жб ХЛ1(УХЛ1) - более 20 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "110"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №15",
+  "object": "Бетонные сооружения.",
+  "sourceNo": "2",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения.». Бетонные сооружения контактирующие с пресной водой.Внутренняя поверхность башенных испарительных градирен, в т.ч. АЭС бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №16",
+  "object": "Бетонные сооружения.",
+  "sourceNo": "3",
+  "substrate": "concrete",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Бетонные сооружения.». Бетонные конструкции каналов с морской водой (функция охлаждения). Бетон, жбзона заплеска воды или приливная зона. C2 - C5, CX, среда погружения lm1-lm4, 15-25 лет.",
+  "layers": [
+   {
+    "materials": [
+     "Литалак сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №17",
+  "object": "Конструкции из нержавеющей стали, оцинкованной стали и алюминия. Поверхности с цинковой металлизацией.",
+  "sourceNo": "1",
+  "substrate": "steel_metallized",
+  "substrateAmbiguous": true,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Конструкции из нержавеющей стали, оцинкованной стали и алюминия. Поверхности с цинковой металлизацией.». Система по ГОСТ 34667.5 D1Без заключений С3 15-25 летС4 7-15 летС5 до 7 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №18",
+  "object": "Конструкции из нержавеющей стали, оцинкованной стали и алюминия. Поверхности с цинковой металлизацией.",
+  "sourceNo": "2",
+  "substrate": "steel_metallized",
+  "substrateAmbiguous": true,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Конструкции из нержавеющей стали, оцинкованной стали и алюминия. Поверхности с цинковой металлизацией.». Система по ГОСТ 34667.5 D1Без заключений С4 более 25 летС5 15-25 лет/более 25 лет",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Сил"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80-120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №19",
+  "object": "Маркировочная окраска дымовых труб.",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Маркировочная окраска дымовых труб.». Маркировочная окраска бетонной дымовой трубы. Атмосферное воздействие. Бетон, жб",
+  "layers": [
+   {
+    "materials": [
+     "Литалак сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литалак Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №20",
+  "object": "Применение на атомных объектах. Соответствие требованиям ГОСТ Р 51102-97 «Покрытия полимерные защитные дезактивируемые».",
+  "sourceNo": "1",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Применение на атомных объектах. Соответствие требованиям ГОСТ Р 51102-97 «Покрытия полимерные защитные дезактивируемые».». Соответствует для всех типов помещений.",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "title": "Энергетика №21",
+  "object": "Применение на атомных объектах. Соответствие требованиям ГОСТ Р 51102-97 «Покрытия полимерные защитные дезактивируемые».",
+  "sourceNo": "2",
+  "substrate": "steel_carbon",
+  "substrateAmbiguous": false,
+  "environment": "atmospheric",
+  "surfaceTreatmentCode": "Sa 2 1/2",
+  "description": "«Применение на атомных объектах. Соответствие требованиям ГОСТ Р 51102-97 «Покрытия полимерные защитные дезактивируемые».».",
+  "layers": [
+   {
+    "materials": [
+     "Литакоут Эпокс"
+    ],
+    "dft": "60"
+   }
+  ]
+ }
+]
