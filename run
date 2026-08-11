@@ -8,14 +8,24 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Compose-файл выбираем по окружению — чтобы одна и та же `./run console ...`
+# работала и на машине разработчика, и на проде без флагов:
+#   • прод   — репо развёрнут в /var/www/… , поднят docker-compose.prod.yml;
+#   • локаль — dev-стек docker-compose.yaml (docker compose берёт по умолчанию).
+# Префикс прод-пути переопределяется переменной PROD_DIR_PREFIX.
+COMPOSE=(docker compose)
+if [[ "$PWD" == "${PROD_DIR_PREFIX:-/var/www}"/* ]]; then
+  COMPOSE=(docker compose -f docker-compose.prod.yml)
+fi
+
 case "${1:-help}" in
 
   db-pull-prod) #: Снять полный дамп прод-БД и раскатать локально (флаги: ./run db-pull-prod -h)
     exec ./db-pull-prod.sh "${@:2}"
     ;;
 
-  console) #: Symfony-консоль в php-fpm: ./run console cache:clear
-    exec docker compose exec -w /app manager_php-fpm php bin/console "${@:2}"
+  console) #: Symfony-консоль в php-fpm (авто локаль/прод): ./run console cache:clear
+    exec "${COMPOSE[@]}" exec -w /app manager_php-fpm php bin/console "${@:2}"
     ;;
 
   help|-h|--help|"")
