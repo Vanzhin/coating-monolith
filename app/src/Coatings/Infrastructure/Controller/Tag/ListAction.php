@@ -38,7 +38,7 @@ final class ListAction extends AbstractController
         $result = $this->queryBus->execute(new GetPagedTagsQuery($filter));
 
         return $this->render('admin/coating/tag/list.html.twig', [
-            'tags' => $result->tags,
+            'tags' => $result->coatingTags,
             'pager' => $result->pager,
         ]);
     }

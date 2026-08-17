@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route(path: '/cabinet/coating/surface-treatment/{id}/remove', name: 'app_cabinet_surface_treatment_remove', methods: ['POST'], requirements: ['id' => '[0-9a-f-]{36}'])]
+#[Route(path: '/cabinet/coating/surface-treatment/{id}/remove', name: 'app_cabinet_surface_treatment_remove', requirements: ['id' => '[0-9a-f-]{36}'])]
 #[IsGranted('ROLE_ADMIN')]
 class RemoveAction extends AbstractController
 {
