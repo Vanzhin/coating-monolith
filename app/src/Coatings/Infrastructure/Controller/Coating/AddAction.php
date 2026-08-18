@@ -11,6 +11,7 @@ use App\Coatings\Application\UseCase\Query\GetPagedManufacturers\GetPagedManufac
 use App\Coatings\Application\UseCase\Query\GetPagedTags\GetPagedTagsQuery;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Coatings\Domain\Repository\TagsFilter;
 use App\Coatings\Infrastructure\Mapper\CoatingMapper;
@@ -66,6 +67,7 @@ class AddAction extends AbstractController
                     'admin/coating/coating/form.html.twig',
                     array_merge(compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'), [
                         'coatingBases' => CoatingBase::cases(),
+                        'glossOptions' => Gloss::cases(),
                         'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? []),
                     ]),
                 );
@@ -88,6 +90,7 @@ class AddAction extends AbstractController
             'admin/coating/coating/form.html.twig',
             array_merge(compact('inputData', 'pagedManufacturers', 'pagedCoatingTags'), [
                 'coatingBases' => CoatingBase::cases(),
+                'glossOptions' => Gloss::cases(),
                 'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? []),
             ]),
         );
