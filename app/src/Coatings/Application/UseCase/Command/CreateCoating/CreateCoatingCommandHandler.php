@@ -7,14 +7,17 @@ namespace App\Coatings\Application\UseCase\Command\CreateCoating;
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
+use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Service\CoatingMaker;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -55,6 +58,9 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $this->buildExposure($dto->immersionExposure),
             $dto->isZincRich,
             $dto->recoatingInterpolationModel,
+            new StringCollection(...array_map(fn (ColorDTO $color) => $color->id, $dto->possibleColors)),
+            null !== $dto->gloss ? Gloss::tryFrom($dto->gloss) : null,
+            $dto->isTintable,
         );
 
         return new CreateCoatingCommandResult($coating->getId());

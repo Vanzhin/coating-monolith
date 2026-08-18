@@ -9,10 +9,12 @@ use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Event\CoatingMutated;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
@@ -20,6 +22,7 @@ use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class CoatingTest extends TestCase
 {
@@ -509,6 +512,76 @@ final class CoatingTest extends TestCase
         self::assertCount(1, $events);
         self::assertInstanceOf(CoatingMutated::class, $events[0]);
         self::assertSame($c->getId(), $events[0]->coatingId);
+    }
+
+    public function test_non_tintable_requires_at_least_one_color(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/хотя бы один возможный цвет/u');
+        $coating->applyColorScheme(false);
+    }
+
+    public function test_tintable_allows_empty_color_list(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+
+        $coating->applyColorScheme(true);
+
+        self::assertTrue($coating->isTintable());
+        self::assertCount(0, $coating->getPossibleColors());
+    }
+
+    public function test_non_tintable_with_colors_is_accepted(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+
+        $coating->applyColorScheme(false, $this->color());
+
+        self::assertFalse($coating->isTintable());
+        self::assertCount(1, $coating->getPossibleColors());
+    }
+
+    public function test_apply_color_scheme_raises_coating_mutated(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+        $coating->pullEvents();
+
+        $coating->applyColorScheme(true);
+
+        $events = $coating->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(CoatingMutated::class, $events[0]);
+    }
+
+    public function test_gloss_defaults_to_null_and_can_be_set(): void
+    {
+        $coating = $this->makeCoating(
+            min: new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60))),
+            max: null,
+        );
+
+        self::assertNull($coating->getGloss());
+        $coating->setGloss(Gloss::MATTE);
+        self::assertSame(Gloss::MATTE, $coating->getGloss());
+    }
+
+    private function color(): Color
+    {
+        return new Color(Uuid::v4(), 'Серый', null, '#9DA3A6');
     }
 
     private function makeCoating(

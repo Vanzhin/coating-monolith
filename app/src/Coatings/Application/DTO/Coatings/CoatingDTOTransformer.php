@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\DTO\Coatings;
 
+use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
@@ -62,6 +63,20 @@ class CoatingDTOTransformer
         $dto->immersionExposure = $this->exposureDto($entity->getImmersionExposure());
         $dto->tags = $coatingTagDtos;
         $dto->recoatingInterpolationModel = $entity->getRecoatingInterpolationModel();
+
+        $colorDtos = [];
+        foreach ($entity->getPossibleColors() as $color) {
+            $colorDto = new ColorDTO();
+            $colorDto->id = $color->getId();
+            $colorDto->name = $color->getName();
+            $colorDto->ral = $color->getRal();
+            $colorDto->hex = $color->getHex();
+
+            $colorDtos[] = $colorDto;
+        }
+        $dto->possibleColors = $colorDtos;
+        $dto->gloss = $entity->getGloss()?->value;
+        $dto->isTintable = $entity->isTintable();
 
         return $dto;
     }

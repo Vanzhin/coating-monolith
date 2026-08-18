@@ -45,6 +45,9 @@
             </options>
         </field>
         <field name="isZincRich" column="is_zinc_rich" type="boolean" nullable="false"/>
+        <field name="gloss" column="gloss" type="string" length="16"
+               enum-type="App\Coatings\Domain\Aggregate\Coating\Gloss" nullable="true"/>
+        <field name="isTintable" column="is_tintable" type="boolean" nullable="false"/>
         <field name="recoatingInterpolationModel" column="recoating_interpolation_model" type="string" length="32"
                enum-type="App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel"/>
         <field name="immersionExposure" column="immersion_exposure" type="thermal_exposure_limits" nullable="true">
@@ -63,6 +66,19 @@
             </join-table>
             <order-by>
                 <order-by-field name="type" direction="ASC"/>
+            </order-by>
+        </many-to-many>
+        <many-to-many field="possibleColors" target-entity="App\Coatings\Domain\Aggregate\Color\Color">
+            <join-table name="coatings_coating_coating_color">
+                <join-columns>
+                    <join-column name="coating_id" referenced-column-name="id"/>
+                </join-columns>
+                <inverse-join-columns>
+                    <join-column name="color_id" referenced-column-name="id"/>
+                </inverse-join-columns>
+            </join-table>
+            <order-by>
+                <order-by-field name="name" direction="ASC"/>
             </order-by>
         </many-to-many>
         <many-to-one field="manufacturer" target-entity="App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer">

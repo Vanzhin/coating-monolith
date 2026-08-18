@@ -9,9 +9,11 @@ use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
+use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -48,6 +50,14 @@ class CoatingMapper
 
         $vars['dryHeatExposure'] = $this->decomposeExposureForForm($coatingDTO->dryHeatExposure);
         $vars['immersionExposure'] = $this->decomposeExposureForForm($coatingDTO->immersionExposure);
+
+        // Возможные цвета — полными записями (id/name/ral/hex), чтобы форма рисовала чипы со свотчами
+        // без отдельного гидратора. gloss/isTintable уже скаляры в $vars.
+        $vars['colors'] = array_map(
+            static fn (ColorDTO $color) => ['id' => $color->id, 'name' => $color->name, 'ral' => $color->ral, 'hex' => $color->hex],
+            $coatingDTO->possibleColors,
+        );
+        unset($vars['possibleColors']);
 
         return array_merge($vars, compact('manufacturerId', 'coatingTagIds'));
     }
@@ -112,6 +122,19 @@ class CoatingMapper
             $tags[] = $coatingTagDto;
         }
         $dto->tags = $tags;
+
+        $colors = [];
+        foreach ($inputData['colors'] ?? [] as $color) {
+            $colorDto = new ColorDTO();
+            $colorDto->id = $color['id'];
+            $colorDto->name = (string) ($color['name'] ?? '');
+            $colorDto->ral = '' !== ($color['ral'] ?? '') ? $color['ral'] : null;
+            $colorDto->hex = (string) ($color['hex'] ?? '');
+            $colors[] = $colorDto;
+        }
+        $dto->possibleColors = $colors;
+        $dto->gloss = '' !== ($inputData['gloss'] ?? '') ? $inputData['gloss'] : null;
+        $dto->isTintable = (bool) ($inputData['isTintable'] ?? false);
 
         return $dto;
     }
@@ -217,6 +240,24 @@ class CoatingMapper
                     'type' => new Assert\Optional(new Assert\Type('string')),
                 ])),
             ]),
+            // Возможные цвета: структурно — валидный id + name/hex (форма шлёт полные данные).
+            // Инвариант «не-колеруемое ⇒ ≥1 цвет» — в домене (Coating::applyColorScheme).
+            'colors' => new Assert\Optional([
+                new Assert\All(new Assert\Collection([
+                    'id' => [new Assert\NotBlank(), new Assert\Uuid()],
+                    'name' => [new Assert\NotBlank(), new Assert\Type('string')],
+                    'ral' => new Assert\Optional([new Assert\Type('string')]),
+                    'hex' => [new Assert\NotBlank(), new Assert\Type('string')],
+                ])),
+            ]),
+            'gloss' => new Assert\Optional([
+                new Assert\Choice([
+                    'choices' => array_map(static fn (Gloss $g) => $g->value, Gloss::cases()),
+                    'message' => 'Недопустимая степень блеска.',
+                ]),
+            ]),
+            // HTML-чекбокс: строка "on"/отсутствует; в bool кастит buildCoatingDtoFromInputData.
+            'isTintable' => new Assert\Optional([new Assert\Type('string')]),
             // HTML-чекбокс шлёт строку "on" при отметке и не шлётся вовсе при снятой.
             // Структурно это опциональная строка; в bool её кастит buildCoatingDtoFromInputData.
             'isZincRich' => new Assert\Optional([new Assert\Type('string')]),
