@@ -22,7 +22,7 @@
 
     {% set payloadLayers = [] %}
     {% for layer in system.layers %}
-        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft}]) %}
+        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft, coatingId: layer.coatingId}]) %}
     {% endfor %}
     {% set payload = {
         id: system.id,
@@ -81,9 +81,15 @@
                 </div>
             {% endif %}
             {% if system.layers|length > 0 %}
-                <div class="small text-body-secondary mb-1">
+                <div class="small text-body-secondary mb-1 d-flex flex-column gap-1">
                     {% for layer in system.layers %}
-                        <div>{{ layer.coatingTitle }} {{ layer.dft }} мкм</div>
+                        <div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary rounded-pill"
+                                    data-coating-id="{{ layer.coatingId }}"
+                                    data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
+                            {{ layer.dft }} мкм
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
