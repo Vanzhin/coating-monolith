@@ -42,10 +42,11 @@
   химстойкость → футер). Макрос `thermalRange` переезжает сюда.
 - `app/src/Coatings/Infrastructure/Controller/Coating/PreviewAction.php` — тонкий экшен,
   route `app_cabinet_coating_coating_preview`, path `/cabinet/coating/coating/{id}/preview`,
-  GET. Диспатчит query → отдаёт `_coating_preview.html.twig` фрагментом.
-- `app/src/Coatings/Application/UseCase/Query/GetCoatingPreview/` — `GetCoatingPreviewQuery`
-  (id), `...Handler` (repo.findOneById + `CoatingDTOTransformer::fromEntity`, 404 если нет),
-  `...Result` (CoatingDTO). Если подходящий query уже есть — переиспользуем его, новый не плодим.
+  GET. Диспатчит `GetCoatingQuery` → 404 если `coatingDTO` null → иначе рендерит
+  `_coating_preview.html.twig` фрагментом (`coating`, `canEdit = is_granted('ROLE_ADMIN')`).
+- Query — **переиспользуем существующий `GetCoatingQuery`** (`findOneById` +
+  `CoatingDTOTransformer::fromEntity` → `?CoatingDTO`, ровно то, что нужно превью). Новый
+  `GetCoatingPreview`-query НЕ плодим (стабы, что были в дереве, удалены как дубль).
 - `app/assets/controllers/coating_preview_loader_controller.js` — Stimulus: `open(event)`
   → `stopPropagation`, читает `data-coating-id`, фетчит `/preview`, кладёт HTML в
   `container`-target, `new bootstrap.Modal(el).show()`. Лоадер/ошибку показывает минимально.
