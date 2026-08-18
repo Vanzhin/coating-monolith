@@ -28,6 +28,76 @@ case "${1:-help}" in
     exec "${COMPOSE[@]}" exec -w /app manager_php-fpm php bin/console "${@:2}"
     ;;
 
+  check) #: Проверки в изолированном тест-стеке (стадии аргументами): ./run check phpstan unit
+    # Всё гоняем в docker-compose.test.yml → test_php-cli: верный PHP, APP_ENV=test,
+    # эфемерная БД test_db/test_redis. Без аргументов — style, phpstan, unit, functional.
+    # Конкретные стадии: ./run check phpstan functional. Починить стиль: ./run check style:fix.
+    shift
+    COMPOSE_TEST=(docker compose -f docker-compose.test.yml)
+
+    ALLOWED="style style:fix phpstan unit functional"
+    if [[ $# -eq 0 ]]; then
+      STAGES=(style phpstan unit functional)
+    else
+      STAGES=()
+      for arg in "$@"; do
+        if [[ " $ALLOWED " == *" $arg "* ]]; then
+          STAGES+=("$arg")
+        else
+          echo "Неизвестная стадия: $arg (допустимо: $ALLOWED)" >&2
+          exit 1
+        fi
+      done
+    fi
+
+    # Статические стадии и unit к БД не ходят — гоняем без зависимостей, чтобы не
+    # поднимать postgres ради cs-fixer/phpstan. functional поднимает test_db сам.
+    nodb()   { "${COMPOSE_TEST[@]}" run --rm --no-deps test_php-cli "$@"; }
+    withdb() { "${COMPOSE_TEST[@]}" run --rm          test_php-cli "$@"; }
+
+    RESULTS=()
+    FAILED=0
+    START=$(date +%s)
+
+    run_stage() {
+      local label=$1
+      shift
+      echo "==> $label"
+      set +e
+      "$@"
+      local rc=$?
+      set -e
+      if [[ $rc -eq 0 ]]; then
+        RESULTS+=("  OK    $label")
+      else
+        RESULTS+=("  FAIL  $label")
+        FAILED=$((FAILED + 1))
+      fi
+      echo
+    }
+
+    for stage in "${STAGES[@]}"; do
+      case "$stage" in
+        style)      run_stage "style (php-cs-fixer --dry-run)" nodb   vendor/bin/php-cs-fixer fix --dry-run --diff ;;
+        style:fix)  run_stage "style:fix (php-cs-fixer)"       nodb   vendor/bin/php-cs-fixer fix ;;
+        phpstan)    run_stage "phpstan (level 6)"              nodb   vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G ;;
+        unit)       run_stage "unit"                           nodb   vendor/bin/phpunit tests/Unit ;;
+        functional) run_stage "functional"                     withdb vendor/bin/phpunit tests/Functional ;;
+      esac
+    done
+
+    END=$(date +%s)
+    echo "────────────────────────────"
+    echo "Итог ($((END - START))s):"
+    for r in "${RESULTS[@]}"; do echo "$r"; done
+    if [[ $FAILED -eq 0 ]]; then
+      echo "Все проверки пройдены."
+    else
+      echo "Провалено стадий: $FAILED"
+      exit 1
+    fi
+    ;;
+
   help|-h|--help|"")
     echo "Использование: ./run <команда> [аргументы]"
     echo
