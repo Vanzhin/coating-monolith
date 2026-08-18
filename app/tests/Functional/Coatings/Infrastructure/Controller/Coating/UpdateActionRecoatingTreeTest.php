@@ -161,6 +161,9 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
             'tdsDft' => 100,
             'applicationMinTemp' => 5,
             'pack' => 1.0,
+            // Покрытие помечено колеруемым, чтобы удовлетворить инвариант «не-колеруемое ⇒ ≥1 цвет»
+            // (тест про дерево перекрытия, цвета к нему не относятся).
+            'isTintable' => 'on',
             'dryToTouch' => [
                 ['temperature_at' => 20, 'days' => 0, 'hours' => 1, 'minutes' => 0],
             ],
@@ -252,6 +255,9 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
             'tdsDft' => 100,
             'applicationMinTemp' => 5,
             'pack' => 1.0,
+            // Покрытие помечено колеруемым, чтобы удовлетворить инвариант «не-колеруемое ⇒ ≥1 цвет»
+            // (тест про дерево перекрытия, цвета к нему не относятся).
+            'isTintable' => 'on',
             'dryToTouch' => [
                 ['temperature_at' => 20, 'kind' => 'duration', 'days' => 0, 'hours' => 1, 'minutes' => 0],
             ],
