@@ -6,10 +6,11 @@
     {% set canEdit = is_granted('ROLE_ADMIN') %}
     {% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
 
-    <div data-controller="coating-system-preview"
+    <div data-controller="coating-system-preview coating-preview-loader"
          data-coating-system-preview-modal-id-value="coatingSystemModal"
          data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
-         data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}">
+         data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}"
+         data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
 
     {# Собираем значения активных подложек для сравнения #}
     {% set activeSubstrateValues = substrates|map(s => s.value) %}
@@ -986,7 +987,7 @@
                                 Слои системы
                                 (<span data-coating-system-preview-target="modalLayersCount"></span>)
                             </h6>
-                            <div class="small text-body-secondary"
+                            <div class="small text-body-secondary d-flex flex-column gap-1"
                                  data-coating-system-preview-target="modalLayers"></div>
                         </div>
                         <div class="modal-compliance-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
@@ -1026,6 +1027,10 @@
         </div>
     {% endblock %}
     {% endembed %}
+
+    {# Хост для ленивой модалки покрытия: клик по слою системы фетчит сюда фрагмент
+       _coating_preview.html.twig и показывает его поверх (стек модалок Bootstrap). #}
+    <div data-coating-preview-loader-target="container"></div>
 
     </div>{# /data-controller="coating-system-preview" #}
 

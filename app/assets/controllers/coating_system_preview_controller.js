@@ -70,12 +70,24 @@ export default class extends Controller {
 
         this.modalLayersCountTarget.textContent = data.layerCount;
 
-        // Layers list
+        // Layers list — выделяем чип-пилюлей только название покрытия (клик открывает
+        // полную модалку покрытия поверх), dft остаётся обычным текстом рядом.
         const container = this.modalLayersTarget;
         container.innerHTML = '';
         (data.layers ?? []).forEach(layer => {
             const row = document.createElement('div');
-            row.textContent = `${layer.coatingTitle} ${layer.dft} мкм`;
+
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'btn btn-sm btn-outline-secondary rounded-pill';
+            chip.textContent = layer.coatingTitle;
+            if (layer.coatingId) {
+                chip.dataset.coatingId = layer.coatingId;
+                chip.dataset.action = 'click->coating-preview-loader#open';
+            }
+
+            row.appendChild(chip);
+            row.appendChild(document.createTextNode(` ${layer.dft} мкм`));
             container.appendChild(row);
         });
 
