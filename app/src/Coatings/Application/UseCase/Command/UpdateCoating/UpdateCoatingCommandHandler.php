@@ -7,16 +7,20 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
+use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
+use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Domain\Repository\ManufacturerRepositoryInterface;
 use App\Coatings\Domain\Service\TagFetcher;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -28,6 +32,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         private ManufacturerRepositoryInterface $manufacturerRepository,
         private TagFetcher $coatingTagFetcher,
         private RecoatingTreeBuilder $treeBuilder,
+        private ColorRepositoryInterface $colorRepository,
     ) {
     }
 
@@ -115,6 +120,11 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         $coating->setImmersionExposure($this->buildExposure($dto->immersionExposure));
         $coating->setIsZincRich($dto->isZincRich);
         $coating->setRecoatingInterpolationModel($dto->recoatingInterpolationModel);
+
+        $colorIds = array_map(fn (ColorDTO $color) => $color->id, $dto->possibleColors);
+        $colors = $this->colorRepository->findByIds(new StringCollection(...$colorIds));
+        $coating->applyColorScheme($dto->isTintable, ...$colors);
+        $coating->setGloss(null !== $dto->gloss ? Gloss::tryFrom($dto->gloss) : null);
 
         $this->coatingRepository->add($coating);
 

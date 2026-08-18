@@ -1,0 +1,72 @@
+/* Визуальный образец цвета (свотч) — кружок с реальным hex. Используется в
+   typeahead-чипах, подсказках, карточке покрытия, превью и в модалке выбора RAL. */
+.color-swatch {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.25);
+    vertical-align: middle;
+    margin-right: 0.35rem;
+    flex: 0 0 auto;
+}
+
+.color-swatch--lg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+/* Сетка выбора RAL в модалке создания цвета. */
+.ral-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.ral-palette-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-body-bg);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.ral-palette-item:hover {
+    border-color: var(--bs-primary);
+}
+
+.ral-palette-item.active {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 1px var(--bs-primary);
+}
+
+.ral-palette-item .color-swatch {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.ral-palette-item__meta {
+    min-width: 0;
+}
+
+.ral-palette-item__name {
+    display: block;
+    font-size: 0.875rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ral-palette-item__code {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+}

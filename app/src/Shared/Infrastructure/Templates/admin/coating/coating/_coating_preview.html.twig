@@ -107,6 +107,28 @@
                                         <td>{{ _self.thermalRange(coating.immersionExposure) }}</td>
                                     </tr>
                                 {% endif %}
+                                {% if coating.glossEnum %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal">Блеск</th>
+                                        <td>{{ coating.glossEnum.title }}</td>
+                                    </tr>
+                                {% endif %}
+                                {% if coating.isTintable or coating.possibleColors|length > 0 %}
+                                    <tr>
+                                        <th scope="row" class="text-muted fw-normal">Возможные цвета</th>
+                                        <td>
+                                            {% if coating.isTintable %}
+                                                <span class="badge text-bg-secondary fw-normal me-1">Колеруемое (любой цвет)</span>
+                                            {% endif %}
+                                            {% for color in coating.possibleColors %}
+                                                <span class="d-inline-flex align-items-center me-2">
+                                                    <span class="color-swatch" style="background: {{ color.hex }}"></span>{{ color.name }}
+                                                    {%- if color.ral %} <span class="text-muted small ms-1">{{ color.ral }}</span>{% endif %}
+                                                </span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% endif %}
                                 <tr>
                                     <th scope="row" class="text-muted fw-normal">Упаковка, л</th>
                                     <td>{{ coating.pack }}</td>

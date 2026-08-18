@@ -1,0 +1,16 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Coatings\Domain\Aggregate\Color\Color" table="coatings_coating_color">
+        <id name="id" type="uuid">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="name" type="string" length="100"/>
+        <field name="ral" type="string" length="20" nullable="true"/>
+        <field name="hex" type="string" length="7"/>
+        <many-to-many field="coatings" mapped-by="possibleColors" target-entity="App\Coatings\Domain\Aggregate\Coating\Coating"/>
+    </entity>
+
+</doctrine-mapping>

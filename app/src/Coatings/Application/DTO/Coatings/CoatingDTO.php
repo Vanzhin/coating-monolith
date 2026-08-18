@@ -6,9 +6,11 @@ namespace App\Coatings\Application\DTO\Coatings;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\CoatingAssessmentsPage;
+use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 
 class CoatingDTO
@@ -30,6 +32,11 @@ class CoatingDTO
     public function getBaseEnum(): ?CoatingBase
     {
         return CoatingBase::tryFrom($this->base);
+    }
+
+    public function getGlossEnum(): ?Gloss
+    {
+        return null !== $this->gloss ? Gloss::tryFrom($this->gloss) : null;
     }
 
     public DftRangeDTO $dftRange;
@@ -61,6 +68,19 @@ class CoatingDTO
 
     /** @var TagDTO[] */
     public array $tags;
+
+    /**
+     * Возможные цвета покрытия — полные DTO (id+name+ral+hex), не id-список.
+     *
+     * @var list<ColorDTO>
+     */
+    public array $possibleColors = [];
+
+    /** Степень блеска (enum-значение) — единственное на покрытие; null = не указан. */
+    public ?string $gloss = null;
+
+    /** Колеруемое покрытие (любой цвет). При true список возможных цветов может быть пустым. */
+    public bool $isTintable = false;
 
     /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */
     public array $matchedSubstances = [];

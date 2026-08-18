@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Event\CoatingMutated;
@@ -53,6 +54,13 @@ class Coating extends Aggregate
     /** @var Collection<Tag> */
     private Collection $tags;
 
+    private ?Gloss $gloss = null;
+
+    private bool $isTintable = false;
+
+    /** @var Collection<Color> */
+    private Collection $possibleColors;
+
     public function __construct(
         Uuid $id,
         string $title,
@@ -76,6 +84,7 @@ class Coating extends Aggregate
     ) {
         $this->id = $id;
         $this->tags = new ArrayCollection();
+        $this->possibleColors = new ArrayCollection();
         $this->specification = $specification;
 
         $this->setTitle($title);
@@ -329,6 +338,51 @@ class Coating extends Aggregate
         foreach ($tags as $tag) {
             $this->addTag($tag);
         }
+    }
+
+    public function getGloss(): ?Gloss
+    {
+        return $this->gloss;
+    }
+
+    public function setGloss(?Gloss $gloss): void
+    {
+        $this->gloss = $gloss;
+        $this->raise(new CoatingMutated($this->getId()));
+    }
+
+    public function isTintable(): bool
+    {
+        return $this->isTintable;
+    }
+
+    /** @return Collection<Color> */
+    public function getPossibleColors(): Collection
+    {
+        return $this->possibleColors;
+    }
+
+    /**
+     * Атомарно задаёт колеруемость и список возможных цветов, проверяя инвариант
+     * «не-колеруемое покрытие обязано иметь хотя бы один цвет» ровно один раз.
+     * Отдельные сеттеры не годятся: дефолт (isTintable=false, пустой список) — транзитно
+     * невалиден, и эагерная проверка сломала бы порядок конструирования.
+     */
+    public function applyColorScheme(bool $isTintable, Color ...$colors): void
+    {
+        if (!$isTintable && [] === $colors) {
+            throw new AppException('У не-колеруемого покрытия должен быть хотя бы один возможный цвет.');
+        }
+
+        $this->isTintable = $isTintable;
+        $this->possibleColors->clear();
+        foreach ($colors as $color) {
+            if (!$this->possibleColors->contains($color)) {
+                $this->possibleColors->add($color);
+            }
+        }
+
+        $this->raise(new CoatingMutated($this->getId()));
     }
 
     /** Можно ли это покрытие наносить поверх $primer (делегирует в основание). */

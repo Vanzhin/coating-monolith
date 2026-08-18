@@ -139,6 +139,44 @@
                     </div>
             </div>
 
+            {# 2b. Внешний вид — блеск, колеруемость, возможные цвета #}
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <h6 class="fw-semibold mb-3">Внешний вид</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="inputGloss" class="form-label">Блеск</label>
+                        <select class="form-select" id="inputGloss" name="gloss">
+                            <option value="">Не указан</option>
+                            {% for g in glossOptions %}
+                                <option value="{{ g.value }}" {% if (inputData.gloss ?? '') == g.value %} selected {% endif %}>
+                                    {{ g.title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="inputIsTintable"
+                                   name="isTintable" {% if inputData.isTintable ?? false %}checked{% endif %}>
+                            <label class="form-check-label" for="inputIsTintable">
+                                Колеруемое (можно получить любой цвет)
+                            </label>
+                        </div>
+                        <div class="form-text">У колеруемого покрытия список возможных цветов можно не указывать.</div>
+                    </div>
+                    <div class="col-12" data-coating-colors-group>
+                        <label class="form-label">Возможные цвета</label>
+                        <input type="text"
+                               data-controller="coating-colors"
+                               data-coating-colors-existing-value="{{ (inputData.colors ?? [])|json_encode }}"
+                               data-coating-colors-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
+                               class="form-control"
+                               placeholder="Начните вводить название или код RAL...">
+                        <div class="form-text">Autocomplete покажет похожие цвета со свотчами; если нужного нет — «+ Создать» откроет выбор из каталога RAL или кастомный цвет.</div>
+                    </div>
+                </div>
+            </div>
+
             {# 3. Состав и упаковка #}
             <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                 <h6 class="fw-semibold mb-3">Состав и упаковка</h6>
@@ -532,6 +570,71 @@
                                     title="Применить" aria-label="Применить">
                                 <i class="bi bi-check-lg"></i>
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {# ─── Модалка создания цвета (вне <form>, чтобы её поля не уходили в submit покрытия) ─── #}
+        <div data-controller="color-create-modal"
+             data-color-create-modal-create-url-value="{{ path('app_cabinet_coating_color_create') }}"
+             data-color-create-modal-ral-url-value="{{ path('app_cabinet_coating_color_ral') }}">
+            <div class="modal fade" id="colorCreateModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Создать цвет</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger d-none" data-color-create-modal-target="errorBox"></div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Название</label>
+                                <input type="text" class="form-control" data-color-create-modal-target="nameInput"
+                                       placeholder="Название цвета">
+                            </div>
+
+                            <div class="btn-group btn-group-sm w-100 mb-3" role="group" aria-label="Режим">
+                                <input type="radio" class="btn-check" name="colorCreateMode" id="colorModeRal" value="ral"
+                                       data-color-create-modal-target="modeRadio"
+                                       data-action="change->color-create-modal#onModeChange" checked>
+                                <label class="btn btn-outline-primary" for="colorModeRal">Из каталога RAL</label>
+
+                                <input type="radio" class="btn-check" name="colorCreateMode" id="colorModeCustom" value="custom"
+                                       data-color-create-modal-target="modeRadio"
+                                       data-action="change->color-create-modal#onModeChange">
+                                <label class="btn btn-outline-primary" for="colorModeCustom">Кастомный</label>
+                            </div>
+
+                            <div data-color-create-modal-target="ralSection">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control"
+                                           placeholder="Поиск по коду или названию (напр. 7040 или «серый»)"
+                                           data-color-create-modal-target="ralSearch"
+                                           data-action="input->color-create-modal#onRalSearch">
+                                </div>
+                                <div class="mb-2" data-color-create-modal-target="selectedRalLabel"></div>
+                                <div class="ral-palette-grid" data-color-create-modal-target="ralGrid"></div>
+                            </div>
+
+                            <div class="d-none" data-color-create-modal-target="customSection">
+                                <label class="form-label">Цвет</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" value="#888888"
+                                           data-color-create-modal-target="customHex"
+                                           data-action="input->color-create-modal#onCustomHexChange">
+                                    <span class="color-swatch color-swatch--lg" data-color-create-modal-target="customSwatch"
+                                          style="background:#888888"></span>
+                                </div>
+                                <div class="form-text">У кастомного цвета нет кода RAL — задайте оттенок вручную.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary"
+                                    data-action="click->color-create-modal#submit">Создать</button>
                         </div>
                     </div>
                 </div>
