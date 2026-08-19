@@ -30,21 +30,55 @@
 - **Цвет слоя обязателен** для каждого слоя (на запись).
 - **Источник**: не колеруемое → только из списка покрытия; колеруемое → любой цвет справочника.
 - **Существующие слои**: колонка `color_id` в БД **nullable** (легаси-слои без цвета переживают миграцию),
-  но домен требует цвет при любом create/replace слоёв. Старые системы показывают «цвет не выбран», пока их не
-  пересохранят — осознанный технический долг, не ломает данные.
+  но обязательность форсится на записи (маппер `colorId` NotBlank). Старые системы показывают «цвет не выбран», пока
+  их не пересохранят — осознанный технический долг, не ломает данные.
+- **Выкат — сразу строго** (без мягкой фазы). ВАЖНАЯ ПРЕДПОСЫЛКА: цвет слоя не-колеруемого покрытия обязан быть из
+  `possibleColors` этого покрытия. Легаси-покрытия без цветов делают свои системы **несохраняемыми** (слой не раскрасить
+  → NotBlank не удовлетворить). Поэтому покрытия должны быть обогащены цветами ПЕРВЫМИ (авто-бэкфилл невозможен — цвета
+  вводит человек). Годится, если систем со слоем на легаси-покрытии мало/нет.
+- **Отвязка цвета от покрытия при использовании в системе** — оставляем как есть (не каскадим, не запрещаем). Цвет
+  create-only, `Color` не удаляется, FK цел, система показывает старый цвет. Инвариант `assertColorAllowed` сработает
+  при следующем сохранении системы → админ перевыберет. Самолечащаяся рассинхронизация.
+- **Контрол цвета в строке слоя** — единый одиночный typeahead (Tagify `mode:'select'`) со свотчами: не-колеруемое →
+  подсказки только из цветов покрытия; колеруемое → глобальный справочник `/color/suggest` + «+ Создать» (общая модалка).
+
+## Актуализация под текущий код (сверено на ветке feat/coating-system-layer-color)
+
+Точные текущие сигнатуры (в них вплетаем цвет):
+- `CoatingSystemLayer::__construct(Uuid $id, CoatingSystem $system, Coating $coating, int $position, int $dft)` — добавить `Color $color` (перед position, как в задумке).
+- `CoatingSystem::appendLayer(Coating $coating, int $dft)`, `insertLayerAt(int $position, Coating $coating, int $dft)`,
+  `replaceLayers(array $items)` где item = `{coating: Coating, dft: int}` — во все добавить `Color`/`color`.
+- `ReplaceLayersCommand->items` = `list<{coatingId, dft}>`, `CreateCoatingSystemCommand->initialLayers` то же — добавить `colorId`.
+- Оба хендлера резолвят `Coating` через `CoatingRepositoryInterface::findOneById`; рядом резолвим `Color` через
+  `ColorRepositoryInterface::findOneById` (уже есть).
+- ORM слоя `coating_system_layer` (table), `many-to-one coating fetch=EAGER` — добавить `many-to-one color` + колонка `color_id`.
+
+**Две ловушки (важно):**
+1. Обязательный `colorId` в слоях сломает существующие functional-тесты систем (создают слои без цвета) — по аналогии
+   с Планом 1. Обновить: `CreateCoatingSystemTest`, `CoatingSystemRepositoryTest`-фикстуры, `UpdateAction`-тесты систем,
+   `ReplaceLayers`-тесты — дать каждому слою валидный `colorId` (создать `Color` в фикстуре и привязать к покрытию слоя,
+   т.к. для не-колеруемого покрытия цвет обязан быть из его `possibleColors`).
+2. JS `coating_system_layers_edit_controller.js::_renumber()` ищет скрытый инпут по `input[type="hidden"]` — со вторым
+   hidden (`colorId`) сломается (возьмёт первый). Переписать выбор инпутов на `data-role` (`[data-role="coatingId"]`,
+   `[data-role="colorId"]`, `[data-role="dft"]`), а не по типу.
 
 ## Домен и инварианты
 
-- **`CoatingSystemLayer`** — новое поле `Color $color` (конструктор `(..., Coating $coating, Color $color, int $position,
-  int $dft)`), геттер `getColor()`, метод `changeColor(Color)`. Инвариант `assertColorAllowed(Color $color, Coating
-  $coating)`:
+- **`CoatingSystemLayer`** — новое поле **`?Color $color`** (nullable ради легаси-слоёв). Конструктор получает
+  `?Color $color = null` **последним параметром** (`(Uuid, CoatingSystem, Coating, int $position, int $dft, ?Color
+  $color = null)`) — чтобы не ломать существующие вызовы. Геттер `getColor(): ?Color`, метод `changeColor(?Color)`.
+  Инвариант `assertColorAllowed(?Color $color, Coating $coating)`:
+  - `if (null === $color) return;` — легаси/не задан: пропускаем (обязательность форсится на записи, не в домене).
   - `if ($coating->isTintable()) return;` — колеруемое: любой цвет ок.
   - иначе `$color` должен присутствовать в `$coating->getPossibleColors()` по id, иначе `AppException('Цвет «…» не
     входит в возможные цвета покрытия «…».')`.
   Вызывается из конструктора и `changeColor`.
-- **`CoatingSystem`** — методы работы со слоями получают цвет: `appendLayer(Coating, Color, dft)`, `insertLayerAt`,
-  `replaceLayers(array $items)` (item = `{coating, color, dft}`), `updateLayerColor` (если нужно точечно). Инварианты
-  агрегата (`postMutate`) не меняются — цвет проверяется на уровне слоя.
+- **`CoatingSystem`** — методы получают цвет **опционально, последним параметром** (не ломая 30+ существующих вызовов):
+  `appendLayer(Coating $coating, int $dft, ?Color $color = null)`, `insertLayerAt(int, Coating, int, ?Color = null)`,
+  `replaceLayers(array $items)` где item = `{coating, dft, color?}` (ключ `color` опционален). Инварианты агрегата
+  (`postMutate`) не меняются — цвет проверяется на уровне слоя.
+- **Обязательность** цвета — на **записи**: `CoatingSystemMapper::getValidationCollection` требует `layers[*][colorId]`
+  `NotBlank + Uuid`. Домен допускает null (легаси), но всякий новый submit несёт colorId.
 
 ## Файлы
 
