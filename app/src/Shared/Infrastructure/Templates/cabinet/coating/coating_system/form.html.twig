@@ -110,6 +110,11 @@
                         coatingId: layer.coatingId,
                         dft: layer.dft,
                         coatingTitle: coatingTitlesById[layer.coatingId]|default(''),
+                        colorId: layer.colorId|default(null),
+                        colorName: layer.colorName|default(null),
+                        colorRal: layer.colorRal|default(null),
+                        colorHex: layer.colorHex|default(null),
+                        colorLabel: layer.colorLabel|default(null),
                     }]) %}
                 {% endfor %}
             {% endif %}
@@ -192,5 +197,7 @@
             </div>
         </div>
     </div>
+
+    {% include 'components/color_create_modal.html.twig' %}
     </div>
 {% endblock %}

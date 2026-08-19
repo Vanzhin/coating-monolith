@@ -67,6 +67,7 @@ export default class extends Controller {
             id: color.id,
             ral: color.ral || '',
             hex: color.hex || '',
+            label: color.label || color.name,
         };
     }
 
@@ -204,12 +205,13 @@ export default class extends Controller {
         const swatch = tagData.hex
             ? `<span class="color-swatch" style="background:${this._escape(tagData.hex)}"></span>`
             : '';
+        const label = tagData.label || tagData.value;
 
-        return `<tag title="${this._escape(tagData.value)}" contenteditable="false" spellcheck="false"
+        return `<tag title="${this._escape(label)}" contenteditable="false" spellcheck="false"
                      tabindex="-1" class="${cn.tag} ${tagData.class || ''}" ${this.tagify.getAttributes(tagData)}>
             <x title="" class="${cn.tagX}" role="button" aria-label="remove tag"></x>
             <div class="d-inline-flex align-items-center">
-                ${swatch}<span class="${cn.tagText}">${this._escape(tagData.value)}</span>
+                ${swatch}<span class="${cn.tagText}">${this._escape(label)}</span>
             </div>
         </tag>`;
     }

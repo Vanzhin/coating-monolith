@@ -23,8 +23,13 @@ export default class extends Controller {
         const fragment = this.rowTemplateTarget.content.cloneNode(true);
         const row = fragment.querySelector('[data-coating-system-layers-edit-target="row"]');
         row.querySelector('[data-role="coatingId"]').value = coatingId;
-        row.querySelector('input[type="number"]').value = dft;
+        row.querySelector('[data-role="dft"]').value = dft;
         row.querySelector('[data-role="title"]').textContent = coatingTitle;
+        // Прокидываем покрытие в контрол цвета до вставки — на connect он подтянет /colors.
+        const layerColor = row.querySelector('[data-controller~="layer-color"]');
+        if (layerColor) {
+            layerColor.setAttribute('data-layer-color-coating-id-value', coatingId);
+        }
         this.listTarget.appendChild(fragment);
 
         this.appendCoatingTarget.value = '';
@@ -62,13 +67,20 @@ export default class extends Controller {
             if (positionEl) {
                 positionEl.textContent = String(i + 1);
             }
-            const coatingIdInput = row.querySelector('input[type="hidden"]');
+            // Выбор инпутов по data-role, а НЕ по типу: у слоя теперь два hidden
+            // (coatingId + colorId у layer-color), input[type=hidden] брал бы первый.
+            const coatingIdInput = row.querySelector('[data-role="coatingId"]');
             if (coatingIdInput) {
                 coatingIdInput.name = `layers[${i}][coatingId]`;
             }
-            const dftInput = row.querySelector('input[type="number"]');
+            const dftInput = row.querySelector('[data-role="dft"]');
             if (dftInput) {
                 dftInput.name = `layers[${i}][dft]`;
+            }
+            // Имя скрытого colorId держит сам layer-color по value `field`.
+            const layerColor = row.querySelector('[data-controller~="layer-color"]');
+            if (layerColor) {
+                layerColor.setAttribute('data-layer-color-field-value', `layers[${i}][colorId]`);
             }
         });
     }

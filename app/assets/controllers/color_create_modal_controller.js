@@ -24,7 +24,10 @@ export default class extends Controller {
         this._selectedRal = null;
     }
 
-    open(prefillName) {
+    open(prefillName, requester = null) {
+        // requester — контроллер, куда вернуть созданный цвет (layer-color).
+        // Без него по умолчанию цвет уходит в coating-colors (форма покрытия).
+        this._requester = requester && typeof requester.addColor === 'function' ? requester : null;
         this._resetForm();
         this.nameInputTarget.value = (prefillName || '').trim();
         this._setMode('ral');
@@ -134,6 +137,10 @@ export default class extends Controller {
     }
 
     _pushToTypeahead(color) {
+        if (this._requester) {
+            this._requester.addColor(color);
+            return;
+        }
         const el = document.querySelector('[data-controller~="coating-colors"]');
         const app = window.Stimulus;
         if (el && app) {
