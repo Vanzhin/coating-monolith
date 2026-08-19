@@ -11,8 +11,8 @@ use App\Shared\Application\Command\Command;
 final readonly class CreateCoatingSystemCommand extends Command
 {
     /**
-     * @param array<int, array{coatingId: string, dft: int}> $initialLayers
-     * @param list<string>                                   $tagIds
+     * @param array<int, array{coatingId: string, dft: int, colorId?: ?string}> $initialLayers
+     * @param list<string>                                                      $tagIds
      */
     public function __construct(
         public string $title,

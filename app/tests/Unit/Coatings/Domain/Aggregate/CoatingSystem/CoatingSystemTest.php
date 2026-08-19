@@ -15,6 +15,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
@@ -425,6 +426,47 @@ final class CoatingSystemTest extends TestCase
     }
 
     // --- helpers ---
+
+    public function test_append_layer_with_color_from_coating_list_is_accepted(): void
+    {
+        $color = new Color(Uuid::v4(), 'Серый', null, '#111111');
+        $coating = $this->newCoatingCompatibleAll();
+        $coating->applyColorScheme(false, $color);
+
+        $layer = $this->newSystem()->appendLayer($coating, 120, $color);
+
+        self::assertSame($color, $layer->getColor());
+    }
+
+    public function test_append_layer_with_foreign_color_on_non_tintable_throws(): void
+    {
+        $listed = new Color(Uuid::v4(), 'Серый', null, '#111111');
+        $foreign = new Color(Uuid::v4(), 'Синий', null, '#0000FF');
+        $coating = $this->newCoatingCompatibleAll();
+        $coating->applyColorScheme(false, $listed);
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessageMatches('/не входит в возможные цвета/u');
+        $this->newSystem()->appendLayer($coating, 120, $foreign);
+    }
+
+    public function test_append_layer_with_any_color_on_tintable_is_accepted(): void
+    {
+        $coating = $this->newCoatingCompatibleAll();
+        $coating->applyColorScheme(true);
+        $any = new Color(Uuid::v4(), 'Любой', null, '#123456');
+
+        $layer = $this->newSystem()->appendLayer($coating, 120, $any);
+
+        self::assertSame($any, $layer->getColor());
+    }
+
+    public function test_append_layer_without_color_is_accepted_for_legacy(): void
+    {
+        $layer = $this->newSystem()->appendLayer($this->newCoatingCompatibleAll(), 120);
+
+        self::assertNull($layer->getColor());
+    }
 
     private function newSystem(
         string $title = 'Test System',

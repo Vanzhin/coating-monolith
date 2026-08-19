@@ -70,3 +70,32 @@
     font-size: 0.75rem;
     color: var(--bs-secondary-color);
 }
+
+/* Одиночный typeahead выбора цвета в строке слоя системы — компактный, в ширину колонки. */
+[data-layer-color-group] .tagify {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+[data-layer-color-group] .tagify__tag {
+    margin: 2px 0 2px 4px;
+    max-width: calc(100% - 0.5rem);
+}
+
+[data-layer-color-group] .tagify__tag > div {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+[data-layer-color-group] .tagify__tag-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Цвет выбран → блокируем ввод (виден только чип): слой = один цвет.
+   Сменить — крестик на чипе, поле ввода вернётся. Класс вешает layer_color_controller. */
+.layer-color--filled .tagify__input {
+    display: none;
+}

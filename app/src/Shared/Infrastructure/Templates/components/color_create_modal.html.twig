@@ -1,0 +1,66 @@
+{# Переиспользуемая модалка создания цвета (форма покрытия и форма системы).
+   Открывается из coating-colors (форма покрытия) или layer-color (слой системы). #}
+<div data-controller="color-create-modal"
+     data-color-create-modal-create-url-value="{{ path('app_cabinet_coating_color_create') }}"
+     data-color-create-modal-ral-url-value="{{ path('app_cabinet_coating_color_ral') }}">
+    <div class="modal fade" id="colorCreateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать цвет</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" data-color-create-modal-target="errorBox"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" data-color-create-modal-target="nameInput"
+                               placeholder="Название цвета">
+                    </div>
+
+                    <div class="btn-group btn-group-sm w-100 mb-3" role="group" aria-label="Режим">
+                        <input type="radio" class="btn-check" name="colorCreateMode" id="colorModeRal" value="ral"
+                               data-color-create-modal-target="modeRadio"
+                               data-action="change->color-create-modal#onModeChange" checked>
+                        <label class="btn btn-outline-primary" for="colorModeRal">Из каталога RAL</label>
+
+                        <input type="radio" class="btn-check" name="colorCreateMode" id="colorModeCustom" value="custom"
+                               data-color-create-modal-target="modeRadio"
+                               data-action="change->color-create-modal#onModeChange">
+                        <label class="btn btn-outline-primary" for="colorModeCustom">Кастомный</label>
+                    </div>
+
+                    <div data-color-create-modal-target="ralSection">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control"
+                                   placeholder="Поиск по коду или названию (напр. 7040 или «серый»)"
+                                   data-color-create-modal-target="ralSearch"
+                                   data-action="input->color-create-modal#onRalSearch">
+                        </div>
+                        <div class="mb-2" data-color-create-modal-target="selectedRalLabel"></div>
+                        <div class="ral-palette-grid" data-color-create-modal-target="ralGrid"></div>
+                    </div>
+
+                    <div class="d-none" data-color-create-modal-target="customSection">
+                        <label class="form-label">Цвет</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" class="form-control form-control-color" value="#888888"
+                                   data-color-create-modal-target="customHex"
+                                   data-action="input->color-create-modal#onCustomHexChange">
+                            <span class="color-swatch color-swatch--lg" data-color-create-modal-target="customSwatch"
+                                  style="background:#888888"></span>
+                        </div>
+                        <div class="form-text">У кастомного цвета нет кода RAL — задайте оттенок вручную.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary"
+                            data-action="click->color-create-modal#submit">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

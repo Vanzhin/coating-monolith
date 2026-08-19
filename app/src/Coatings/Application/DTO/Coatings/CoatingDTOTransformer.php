@@ -71,6 +71,7 @@ class CoatingDTOTransformer
             $colorDto->name = $color->getName();
             $colorDto->ral = $color->getRal();
             $colorDto->hex = $color->getHex();
+            $colorDto->label = $color->label();
 
             $colorDtos[] = $colorDto;
         }

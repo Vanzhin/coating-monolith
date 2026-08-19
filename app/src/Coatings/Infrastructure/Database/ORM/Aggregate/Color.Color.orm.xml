@@ -10,7 +10,6 @@
         <field name="name" type="string" length="100"/>
         <field name="ral" type="string" length="20" nullable="true"/>
         <field name="hex" type="string" length="7"/>
-        <many-to-many field="coatings" mapped-by="possibleColors" target-entity="App\Coatings\Domain\Aggregate\Coating\Coating"/>
     </entity>
 
 </doctrine-mapping>

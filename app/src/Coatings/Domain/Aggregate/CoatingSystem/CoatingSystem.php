@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Event\CoatingSystemMutated;
@@ -269,17 +270,17 @@ class CoatingSystem extends Aggregate
         return array_slice($sorted, 1);
     }
 
-    public function appendLayer(Coating $coating, int $dft): CoatingSystemLayer
+    public function appendLayer(Coating $coating, int $dft, ?Color $color = null): CoatingSystemLayer
     {
         $position = $this->layerCount() + 1;
-        $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft);
+        $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft, $color);
         $this->layers->add($layer);
         $this->postMutate();
 
         return $layer;
     }
 
-    public function insertLayerAt(int $position, Coating $coating, int $dft): CoatingSystemLayer
+    public function insertLayerAt(int $position, Coating $coating, int $dft, ?Color $color = null): CoatingSystemLayer
     {
         if ($position < 1 || $position > $this->layerCount() + 1) {
             throw new AppException(sprintf('Позиция вставки %d вне диапазона 1..%d.', $position, $this->layerCount() + 1));
@@ -289,7 +290,7 @@ class CoatingSystem extends Aggregate
                 $existing->changePosition($existing->getPosition() + 1);
             }
         }
-        $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft);
+        $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft, $color);
         $this->layers->add($layer);
         $this->postMutate();
 
@@ -358,13 +359,13 @@ class CoatingSystem extends Aggregate
      * Doctrine удалит старые (orphan-removal="true" в маппинге) и вставит новые.
      * Инварианты (совместимость, плотные позиции) проверяются в postMutate().
      *
-     * @param list<array{coating: Coating, dft: int}> $items
+     * @param list<array{coating: Coating, dft: int, color?: ?Color}> $items
      */
     public function replaceLayers(array $items): void
     {
         $this->layers->clear();
         foreach ($items as $i => $item) {
-            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft']));
+            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft'], $item['color'] ?? null));
         }
         $this->postMutate();
     }

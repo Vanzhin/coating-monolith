@@ -11,6 +11,7 @@ final readonly class CreateColorCommandResult
         public string $name,
         public ?string $ral,
         public string $hex,
+        public string $label,
     ) {
     }
 }

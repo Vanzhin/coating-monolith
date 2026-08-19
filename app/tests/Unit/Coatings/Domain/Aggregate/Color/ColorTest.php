@@ -61,6 +61,20 @@ final class ColorTest extends TestCase
         new Color($this->id(), '   ', null, '#123456');
     }
 
+    public function test_label_appends_ral_code_when_present(): void
+    {
+        $color = new Color($this->id(), 'Светло-серый', 'RAL 7040');
+
+        self::assertSame('Светло-серый (RAL 7040)', $color->label());
+    }
+
+    public function test_label_is_bare_name_for_custom_color(): void
+    {
+        $color = new Color($this->id(), 'Кастомный', null, '#123abc');
+
+        self::assertSame('Кастомный', $color->label());
+    }
+
     private function id(): Uuid
     {
         return Uuid::v4();

@@ -15,4 +15,6 @@ final class ColorDTO
     public string $name;
     public ?string $ral = null;
     public string $hex;
+    /** Готовая подпись «Название (RAL XXXX)» — единый формат отображения (см. Color::label()). */
+    public string $label = '';
 }

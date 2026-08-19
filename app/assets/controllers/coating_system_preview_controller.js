@@ -88,6 +88,14 @@ export default class extends Controller {
 
             row.appendChild(chip);
             row.appendChild(document.createTextNode(` ${layer.dft} мкм`));
+            if (layer.colorHex) {
+                const swatch = document.createElement('span');
+                swatch.className = 'color-swatch ms-1';
+                swatch.style.background = layer.colorHex;
+                swatch.title = layer.colorLabel || layer.colorName || '';
+                row.appendChild(swatch);
+                row.appendChild(document.createTextNode(layer.colorLabel || layer.colorName || ''));
+            }
             container.appendChild(row);
         });
 

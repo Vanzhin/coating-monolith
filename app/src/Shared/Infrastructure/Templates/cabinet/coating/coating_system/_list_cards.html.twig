@@ -22,7 +22,7 @@
 
     {% set payloadLayers = [] %}
     {% for layer in system.layers %}
-        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft, coatingId: layer.coatingId}]) %}
+        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft, coatingId: layer.coatingId, colorName: layer.colorName, colorRal: layer.colorRal, colorHex: layer.colorHex, colorLabel: layer.colorLabel}]) %}
     {% endfor %}
     {% set payload = {
         id: system.id,
@@ -89,6 +89,10 @@
                                     data-coating-id="{{ layer.coatingId }}"
                                     data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
                             {{ layer.dft }} мкм
+                            {% if layer.colorHex %}
+                                <span class="color-swatch ms-1" style="background: {{ layer.colorHex }}"
+                                      title="{{ layer.colorLabel }}"></span>{{ layer.colorLabel }}
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>

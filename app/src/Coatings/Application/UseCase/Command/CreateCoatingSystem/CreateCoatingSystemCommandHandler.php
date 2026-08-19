@@ -7,6 +7,7 @@ namespace App\Coatings\Application\UseCase\Command\CreateCoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
@@ -21,6 +22,7 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
         private CoatingRepositoryInterface $coatingRepo,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private TagRepositoryInterface $tagRepo,
+        private ColorRepositoryInterface $colorRepo,
     ) {
     }
 
@@ -45,7 +47,17 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
             if (null === $coating) {
                 throw new AppException(sprintf('Покрытие с id %s не найдено.', $layerData['coatingId']));
             }
-            $system->appendLayer($coating, $layerData['dft']);
+
+            $color = null;
+            $colorId = $layerData['colorId'] ?? null;
+            if (null !== $colorId && '' !== $colorId) {
+                $color = $this->colorRepo->findOneById($colorId);
+                if (null === $color) {
+                    throw new AppException(sprintf('Цвет с id %s не найден.', $colorId), 404);
+                }
+            }
+
+            $system->appendLayer($coating, $layerData['dft'], $color);
         }
 
         if ([] !== $cmd->tagIds) {

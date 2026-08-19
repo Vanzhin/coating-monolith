@@ -32,15 +32,28 @@
                         <div class="small text-muted text-truncate">слой системы</div>
                     {% endif %}
                 </div>
-                <input type="hidden" name="layers[{{ loop.index0 }}][coatingId]" value="{{ layer.coatingId }}">
-                <div style="width: 130px;" class="flex-shrink-0">
+                <input type="hidden" name="layers[{{ loop.index0 }}][coatingId]" value="{{ layer.coatingId }}"
+                       data-role="coatingId">
+                <div style="width: 110px;" class="flex-shrink-0">
                     <div class="input-group input-group-sm">
                         <input type="number" min="1" max="9999" required
                                value="{{ layer.dft }}"
                                name="layers[{{ loop.index0 }}][dft]"
+                               data-role="dft"
                                class="form-control">
                         <span class="input-group-text">мкм</span>
                     </div>
+                </div>
+                <div class="flex-shrink-0" style="width: 170px;" data-layer-color-group>
+                    <input type="text"
+                           data-controller="layer-color"
+                           data-layer-color-coating-id-value="{{ layer.coatingId }}"
+                           data-layer-color-field-value="layers[{{ loop.index0 }}][colorId]"
+                           data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
+                           data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
+                           data-layer-color-selected-value="{{ {id: layer.colorId, name: layer.colorName, ral: layer.colorRal, hex: layer.colorHex, label: layer.colorLabel}|json_encode }}"
+                           class="form-control form-control-sm"
+                           placeholder="Цвет...">
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
                     <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -109,7 +122,7 @@
             </div>
             <input type="hidden" name="layers[0][coatingId]" value=""
                    data-role="coatingId">
-            <div style="width: 130px;" class="flex-shrink-0">
+            <div style="width: 110px;" class="flex-shrink-0">
                 <div class="input-group input-group-sm">
                     <input type="number" min="1" max="9999" required
                            value=""
@@ -118,6 +131,17 @@
                            class="form-control">
                     <span class="input-group-text">мкм</span>
                 </div>
+            </div>
+            <div class="flex-shrink-0" style="width: 170px;" data-layer-color-group>
+                <input type="text"
+                       data-controller="layer-color"
+                       data-layer-color-coating-id-value=""
+                       data-layer-color-field-value="layers[0][colorId]"
+                       data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
+                       data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
+                       data-layer-color-selected-value="{}"
+                       class="form-control form-control-sm"
+                       placeholder="Цвет...">
             </div>
             <div class="d-flex gap-1 flex-shrink-0">
                 <button type="button" class="btn btn-sm btn-outline-secondary"
