@@ -68,8 +68,8 @@ final class CoatingSystemMapperTest extends TestCase
             'surfaceTreatmentId' => self::TREATMENT_UUID,
             'surfaceTreatmentTitle' => 'Sa 2½',
             'layers' => [
-                ['coatingId' => 'uuid-1', 'dft' => 60],
-                ['coatingId' => 'uuid-2', 'dft' => 100],
+                ['coatingId' => 'uuid-1', 'dft' => 60, 'colorId' => 'color-1', 'colorName' => 'Серый', 'colorRal' => 'RAL 7040', 'colorHex' => '#9DA3A6', 'colorLabel' => 'Серый (RAL 7040)'],
+                ['coatingId' => 'uuid-2', 'dft' => 100, 'colorId' => null, 'colorName' => null, 'colorRal' => null, 'colorHex' => null, 'colorLabel' => null],
             ],
             'tagIds' => [],
         ];
@@ -132,18 +132,18 @@ final class CoatingSystemMapperTest extends TestCase
     public function test_layers_from_input_is_pure_shape(): void
     {
         $raw = [
-            ['coatingId' => 'uuid-1', 'dft' => '60'],
+            ['coatingId' => 'uuid-1', 'dft' => '60', 'colorId' => 'color-x'],
             ['coatingId' => '', 'dft' => '10'],       // без coatingId — отбрасываем
             'garbage-not-array',                       // не массив — отбрасываем
-            ['coatingId' => 'uuid-2', 'dft' => 100],
+            ['coatingId' => 'uuid-2', 'dft' => 100],  // без colorId — null
         ];
 
         $layers = $this->mapper->layersFromInput($raw);
 
         self::assertSame(
             [
-                ['coatingId' => 'uuid-1', 'dft' => 60],
-                ['coatingId' => 'uuid-2', 'dft' => 100],
+                ['coatingId' => 'uuid-1', 'dft' => 60, 'colorId' => 'color-x'],
+                ['coatingId' => 'uuid-2', 'dft' => 100, 'colorId' => null],
             ],
             $layers,
         );
@@ -154,7 +154,7 @@ final class CoatingSystemMapperTest extends TestCase
         // dft <= 0 — НЕ дело мапера: инвариант живёт в CoatingSystemLayer.
         $layers = $this->mapper->layersFromInput([['coatingId' => 'uuid-1', 'dft' => '0']]);
 
-        self::assertSame([['coatingId' => 'uuid-1', 'dft' => 0]], $layers);
+        self::assertSame([['coatingId' => 'uuid-1', 'dft' => 0, 'colorId' => null]], $layers);
     }
 
     /** @return array<string, mixed> */
@@ -204,6 +204,11 @@ final class CoatingSystemMapperTest extends TestCase
             $layerDto->coatingBase = '';
             $layerDto->coatingBaseTitle = '';
             $layerDto->isZincRich = false;
+            $layerDto->colorId = $layer['colorId'] ?? null;
+            $layerDto->colorName = $layer['colorName'] ?? null;
+            $layerDto->colorRal = $layer['colorRal'] ?? null;
+            $layerDto->colorHex = $layer['colorHex'] ?? null;
+            $layerDto->colorLabel = $layer['colorLabel'] ?? null;
             $dto->layers[] = $layerDto;
         }
 

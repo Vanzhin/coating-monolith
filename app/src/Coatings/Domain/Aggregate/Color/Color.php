@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Aggregate\Color;
 
-use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Infrastructure\Exception\AppException;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -25,15 +22,9 @@ class Color extends Aggregate
     private ?string $ral;
     private string $hex;
 
-    /**
-     * @var Collection<Coating>
-     */
-    private Collection $coatings;
-
     public function __construct(Uuid $id, string $name, ?string $ralCode = null, ?string $hex = null)
     {
         $this->id = $id;
-        $this->coatings = new ArrayCollection();
 
         $this->setName($name);
         $this->applyColor($ralCode, $hex);
@@ -64,11 +55,15 @@ class Color extends Aggregate
         return null !== $this->ral;
     }
 
-    public function addCoating(Coating $coating): void
+    /**
+     * Человекочитаемая подпись цвета: «Светло-серый (RAL 7040)» при наличии RAL,
+     * иначе только название. Единый формат отображения для карточек, превью и чипов.
+     */
+    public function label(): string
     {
-        if (!$this->coatings->contains($coating)) {
-            $this->coatings->add($coating);
-        }
+        return null !== $this->ral
+            ? sprintf('%s (%s)', $this->name, $this->ral)
+            : $this->name;
     }
 
     private function setName(string $name): void

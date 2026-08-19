@@ -44,7 +44,7 @@ final class CreateColorAction extends AbstractController
         }
 
         return new JsonResponse(
-            ['id' => $result->id, 'name' => $result->name, 'ral' => $result->ral, 'hex' => $result->hex],
+            ['id' => $result->id, 'name' => $result->name, 'ral' => $result->ral, 'hex' => $result->hex, 'label' => $result->label],
             Response::HTTP_CREATED,
         );
     }

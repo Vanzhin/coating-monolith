@@ -78,7 +78,12 @@ class CoatingSystemMapper
             if ('' === $coatingId) {
                 continue;
             }
-            $out[] = ['coatingId' => $coatingId, 'dft' => (int) ($item['dft'] ?? 0)];
+            $colorId = (string) ($item['colorId'] ?? '');
+            $out[] = [
+                'coatingId' => $coatingId,
+                'dft' => (int) ($item['dft'] ?? 0),
+                'colorId' => '' !== $colorId ? $colorId : null,
+            ];
         }
 
         return $out;
@@ -115,6 +120,11 @@ class CoatingSystemMapper
                 fn (CoatingSystemLayerDTO $layer) => [
                     'coatingId' => $layer->coatingId,
                     'dft' => $layer->dft,
+                    'colorId' => $layer->colorId,
+                    'colorName' => $layer->colorName,
+                    'colorRal' => $layer->colorRal,
+                    'colorHex' => $layer->colorHex,
+                    'colorLabel' => $layer->colorLabel,
                 ],
                 $dto->layers,
             ),
@@ -169,6 +179,8 @@ class CoatingSystemMapper
                             new Assert\Positive(),
                             new Assert\GreaterThan(0),
                         ],
+                        // Цвет слоя обязателен на запись; членство/колеруемость — в домене.
+                        'colorId' => [new Assert\NotBlank(), new Assert\Uuid()],
                     ]),
                 ]),
             ]),

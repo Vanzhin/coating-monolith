@@ -42,7 +42,7 @@ final class SuggestColorsAction extends AbstractController
         $result = $this->queryBus->execute(new SuggestColorsQuery($q, $limit));
 
         $payload = array_map(
-            static fn ($dto) => ['id' => $dto->id, 'name' => $dto->name, 'ral' => $dto->ral, 'hex' => $dto->hex],
+            static fn ($dto) => ['id' => $dto->id, 'name' => $dto->name, 'ral' => $dto->ral, 'hex' => $dto->hex, 'label' => $dto->label],
             $result->colors,
         );
 

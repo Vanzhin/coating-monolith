@@ -15,6 +15,7 @@ final readonly class ColorDTOTransformer
         $dto->name = $color->getName();
         $dto->ral = $color->getRal();
         $dto->hex = $color->getHex();
+        $dto->label = $color->label();
 
         return $dto;
     }

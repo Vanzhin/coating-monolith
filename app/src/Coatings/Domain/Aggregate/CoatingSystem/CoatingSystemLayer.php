@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\CoatingSystem;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -18,10 +19,14 @@ class CoatingSystemLayer
         private Coating $coating,
         private int $position,
         private int $dft,
+        // Цвет слоя nullable ради легаси-слоёв (колонка color_id может быть пустой).
+        // Обязательность форсится на записи (валидация формы), домен проверяет членство.
+        private ?Color $color = null,
     ) {
         $this->id = $id;
         $this->assertPositionValid($position);
         $this->assertDftInCoatingRange($dft, $coating);
+        $this->assertColorAllowed($color, $coating);
     }
 
     public function getId(): string
@@ -47,6 +52,11 @@ class CoatingSystemLayer
     public function getDft(): int
     {
         return $this->dft;
+    }
+
+    public function getColor(): ?Color
+    {
+        return $this->color;
     }
 
     /** @internal вызывается только агрегатом */
@@ -75,5 +85,25 @@ class CoatingSystemLayer
         if (!$range->isWithin($dft)) {
             throw new AppException(sprintf('Толщина слоя %d мкм вне допустимого диапазона покрытия «%s» (%d–%d мкм).', $dft, $coating->getTitle(), $range->getMin(), $range->getMax()));
         }
+    }
+
+    /**
+     * Цвет слоя должен принадлежать возможным цветам покрытия. Исключения:
+     *  - цвет не задан (null) — легаси-слой, обязательность форсится на записи;
+     *  - покрытие колеруемое — допустим любой цвет.
+     */
+    private function assertColorAllowed(?Color $color, Coating $coating): void
+    {
+        if (null === $color || $coating->isTintable()) {
+            return;
+        }
+
+        foreach ($coating->getPossibleColors() as $possible) {
+            if ($possible->getId() === $color->getId()) {
+                return;
+            }
+        }
+
+        throw new AppException(sprintf('Цвет «%s» не входит в возможные цвета покрытия «%s».', $color->getName(), $coating->getTitle()));
     }
 }

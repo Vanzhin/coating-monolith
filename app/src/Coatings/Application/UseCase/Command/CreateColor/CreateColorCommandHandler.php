@@ -29,6 +29,6 @@ final readonly class CreateColorCommandHandler implements CommandHandlerInterfac
 
         $this->repository->add($color);
 
-        return new CreateColorCommandResult($color->getId(), $color->getName(), $color->getRal(), $color->getHex());
+        return new CreateColorCommandResult($color->getId(), $color->getName(), $color->getRal(), $color->getHex(), $color->label());
     }
 }

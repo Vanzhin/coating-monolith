@@ -62,8 +62,10 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->from(CoatingSystem::class, 's')
             ->leftJoin('s.layers', 'l')
             ->leftJoin('l.coating', 'c')
+            ->leftJoin('l.color', 'lc')
             ->addSelect('l')
             ->addSelect('c')
+            ->addSelect('lc')
             ->getQuery()
             ->getResult();
     }
@@ -79,6 +81,7 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->from(CoatingSystem::class, 'cs')
             ->leftJoin('cs.layers', 'l')->addSelect('l')
             ->leftJoin('l.coating', 'c')->addSelect('c')
+            ->leftJoin('l.color', 'lc')->addSelect('lc')
             ->leftJoin('c.manufacturer', 'm')->addSelect('m')
             ->leftJoin('cs.tags', 't')->addSelect('t')
             ->where('cs.id IN (:ids)')
