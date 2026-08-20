@@ -190,7 +190,7 @@
                                         <input class="form-check-input" type="radio"
                                                name="environment" value="{{ e.value }}"
                                                id="environment-{{ e.value }}" form="systemListForm"
-                                               onchange="this.form.submit()">
+                                               onchange="this.form.requestSubmit()">
                                         <label class="form-check-label" for="environment-{{ e.value }}">{{ e.title() }}</label>
                                     </div>
                                 {% endfor %}
@@ -225,7 +225,7 @@
                                         <input class="form-check-input" type="radio"
                                                name="standard" value="{{ s.value }}"
                                                id="standard-{{ s.value }}" form="systemListForm"
-                                               onchange="this.form.submit()">
+                                               onchange="this.form.requestSubmit()">
                                         <label class="form-check-label" for="standard-{{ s.value }}">{{ s.title() }}</label>
                                     </div>
                                 {% endfor %}
@@ -265,7 +265,7 @@
                                             <input class="form-check-input" type="radio"
                                                    name="category" value="{{ catVal }}"
                                                    id="category-{{ catVal }}" form="systemListForm"
-                                                   onchange="this.form.submit()">
+                                                   onchange="this.form.requestSubmit()">
                                             <label class="form-check-label" for="category-{{ catVal }}">{{ catLabel }}</label>
                                         </div>
                                     {% endfor %}
@@ -307,7 +307,7 @@
                                                 <input class="form-check-input" type="radio"
                                                        name="durability" value="{{ durVal }}"
                                                        id="durability-{{ durVal }}" form="systemListForm"
-                                                       onchange="this.form.submit()">
+                                                       onchange="this.form.requestSubmit()">
                                                 <label class="form-check-label" for="durability-{{ durVal }}">{{ durLabel }}</label>
                                             </div>
                                         {% endfor %}
@@ -960,6 +960,11 @@
                                     <span class="text-muted">Подложка:</span>
                                     <span class="ms-1 fw-semibold"
                                           data-coating-system-preview-target="modalSubstrate"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted">Среда:</span>
+                                    <span class="ms-1 fw-semibold"
+                                          data-coating-system-preview-target="modalEnvironment"></span>
                                 </div>
                                 <div class="col-md-4">
                                     <span class="text-muted">Подготовка:</span>

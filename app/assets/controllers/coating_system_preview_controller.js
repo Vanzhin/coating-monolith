@@ -28,6 +28,7 @@ export default class extends Controller {
     static targets = [
         'modalTitle',
         'modalSubstrate',
+        'modalEnvironment',
         'modalTreatment',
         'modalDft',
         'modalAppTime',
@@ -57,6 +58,7 @@ export default class extends Controller {
     _fill(data) {
         this.modalTitleTarget.textContent = data.title;
         this.modalSubstrateTarget.textContent = data.substrateTitle;
+        this.modalEnvironmentTarget.textContent = data.environmentTitle;
         this.modalTreatmentTarget.textContent = data.treatment;
         this.modalDftTarget.textContent = data.totalDft + ' мкм';
 
