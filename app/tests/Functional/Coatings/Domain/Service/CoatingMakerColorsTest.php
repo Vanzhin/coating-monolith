@@ -128,7 +128,7 @@ final class CoatingMakerColorsTest extends KernelTestCase
             new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
             null,
             $manufacturerId,
-            [],
+            new StringCollection(),
             1.0,
             null,
             colorIds: new StringCollection(...$colorIds),

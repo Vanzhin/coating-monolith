@@ -11,6 +11,7 @@ use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSy
 use App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata\UpdateCoatingSystemMetadataCommand;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingSystemMapper
@@ -30,10 +31,10 @@ class CoatingSystemMapper
         $substrate = Substrate::from($input['substrate']);
         $environment = EnvironmentType::from($input['environment']);
         $surfaceTreatmentId = (string) ($input['surfaceTreatmentId'] ?? '');
-        $tagIds = array_values(array_map(
+        $tagIds = new StringCollection(...array_values(array_map(
             static fn ($id) => (string) $id,
             (array) ($input['tagIds'] ?? []),
-        ));
+        )));
 
         if (null === $systemId) {
             return new CreateCoatingSystemCommand(

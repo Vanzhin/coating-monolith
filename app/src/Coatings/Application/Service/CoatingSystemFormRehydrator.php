@@ -7,6 +7,7 @@ namespace App\Coatings\Application\Service;
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -66,7 +67,7 @@ final readonly class CoatingSystemFormRehydrator
         }
 
         $titles = [];
-        foreach ($this->coatingRepository->findByIds($ids) as $coating) {
+        foreach ($this->coatingRepository->findByIds(new StringCollection(...$ids)) as $coating) {
             $dft = $coating->getDftRange();
             $titles[$coating->getId()] = sprintf(
                 '%s (%s, %d–%d мкм)',

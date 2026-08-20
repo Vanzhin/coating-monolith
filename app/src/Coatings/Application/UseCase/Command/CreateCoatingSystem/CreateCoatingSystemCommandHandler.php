@@ -11,7 +11,6 @@ use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
-use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -60,8 +59,8 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
             $system->appendLayer($coating, $layerData['dft'], $color);
         }
 
-        if ([] !== $cmd->tagIds) {
-            $tags = $this->tagRepo->findByIds(new StringCollection(...$cmd->tagIds));
+        if ($cmd->tagIds->count() > 0) {
+            $tags = $this->tagRepo->findByIds($cmd->tagIds);
             $system->replaceTags($tags);
         }
 

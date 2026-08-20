@@ -8,7 +8,6 @@ use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
-use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -39,7 +38,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         $system->setSubstrateAndTreatment($cmd->substrate, $treatment);
         $system->setEnvironment($cmd->environment);
 
-        $tags = $this->tagRepo->findByIds(new StringCollection(...$cmd->tagIds));
+        $tags = $this->tagRepo->findByIds($cmd->tagIds);
         $system->replaceTags($tags);
 
         $this->repo->save($system);

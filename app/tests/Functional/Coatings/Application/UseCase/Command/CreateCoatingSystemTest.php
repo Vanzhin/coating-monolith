@@ -20,6 +20,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -274,7 +275,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             initialLayers: [
                 ['coatingId' => (string) $coatingId, 'dft' => 80],
             ],
-            tagIds: [$tag1->getId(), $tag2->getId()],
+            tagIds: new StringCollection($tag1->getId(), $tag2->getId()),
         );
 
         $result = ($this->handler)($cmd);

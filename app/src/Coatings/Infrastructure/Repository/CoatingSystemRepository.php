@@ -6,6 +6,7 @@ namespace App\Coatings\Infrastructure\Repository;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -70,9 +71,9 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->getResult();
     }
 
-    public function findByIds(array $ids): array
+    public function findByIds(StringCollection $ids): array
     {
-        if ([] === $ids) {
+        if (0 === $ids->count()) {
             return [];
         }
 
@@ -85,7 +86,7 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->leftJoin('c.manufacturer', 'm')->addSelect('m')
             ->leftJoin('cs.tags', 't')->addSelect('t')
             ->where('cs.id IN (:ids)')
-            ->setParameter('ids', $ids)
+            ->setParameter('ids', $ids->getList())
             ->getQuery()
             ->getResult();
 
@@ -95,7 +96,7 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             $byId[$system->getId()] = $system;
         }
         $ordered = [];
-        foreach ($ids as $id) {
+        foreach ($ids->getList() as $id) {
             if (isset($byId[$id])) {
                 $ordered[] = $byId[$id];
             }

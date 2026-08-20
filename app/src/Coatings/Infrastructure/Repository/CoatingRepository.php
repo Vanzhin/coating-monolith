@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Infrastructure\Search\CoatingFinder;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -62,18 +63,18 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
         return $this->findOneBy(['title' => $title]);
     }
 
-    public function findByIds(array $ids): array
+    public function findByIds(StringCollection $ids): array
     {
-        if ([] === $ids) {
+        if (0 === $ids->count()) {
             return [];
         }
         /** @var array<string, Coating> $byId */
         $byId = [];
-        foreach ($this->findBy(['id' => $ids]) as $coating) {
+        foreach ($this->findBy(['id' => $ids->getList()]) as $coating) {
             $byId[$coating->getId()] = $coating;
         }
         $ordered = [];
-        foreach ($ids as $id) {
+        foreach ($ids->getList() as $id) {
             if (isset($byId[$id])) {
                 $ordered[] = $byId[$id];
             }
