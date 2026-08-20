@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 
 interface CoatingRepositoryInterface
@@ -20,9 +21,7 @@ interface CoatingRepositoryInterface
     public function findByFilter(CoatingsFilter $filter): PaginationResult;
 
     /**
-     * @param list<string> $ids
-     *
      * @return list<Coating> возвращает в том же порядке, что и $ids; отсутствующие id просто опущены
      */
-    public function findByIds(array $ids): array;
+    public function findByIds(StringCollection $ids): array;
 }

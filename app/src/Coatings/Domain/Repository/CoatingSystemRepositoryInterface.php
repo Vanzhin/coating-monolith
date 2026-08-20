@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 interface CoatingSystemRepositoryInterface
@@ -27,9 +28,7 @@ interface CoatingSystemRepositoryInterface
      * Массовая выгрузка систем по id, порядок соответствует $ids.
      * Отсутствующие id молча пропускаются.
      *
-     * @param list<string> $ids
-     *
      * @return list<CoatingSystem>
      */
-    public function findByIds(array $ids): array;
+    public function findByIds(StringCollection $ids): array;
 }

@@ -50,7 +50,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
                 ? $this->treeBuilder->build($dto->maxRecoatingInterval)
                 : null,
             $dto->manufacturer->id,
-            array_map(fn ($tag) => $tag->id, $dto->tags),
+            new StringCollection(...array_map(fn ($tag) => $tag->id, $dto->tags)),
             $dto->pack,
             $dto->thinner,
             $dto->dryingMaxTemp,

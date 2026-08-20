@@ -271,8 +271,8 @@ final class CoatingSystemFinderTest extends KernelTestCase
 
         // [A, C] → S3 совпадает по обоим слоям, но в выдаче ровно один раз (EXISTS не размножает cs).
         $byAC = $this->finder->find(new CoatingSystemsFilter(coatingIds: new StringCollection($a->getId(), $c->getId())));
-        self::assertSame(1, count(array_filter($byAC->ids, static fn ($id) => $id === $s3->getId())));
-        self::assertSame(count($byAC->ids), $byAC->total);
+        self::assertSame(1, count(array_filter($byAC->ids->getList(), static fn ($id) => $id === $s3->getId())));
+        self::assertSame($byAC->ids->count(), $byAC->total);
     }
 
     public function test_range_filter_min_application_time(): void
@@ -307,8 +307,8 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $filter = new CoatingSystemsFilter(sort: CoatingSystemSort::TITLE_ASC);
         $result = $this->finder->find($filter);
 
-        $posA = array_search($sysA->getId(), $result->ids, true);
-        $posB = array_search($sysB->getId(), $result->ids, true);
+        $posA = array_search($sysA->getId(), $result->ids->getList(), true);
+        $posB = array_search($sysB->getId(), $result->ids->getList(), true);
         self::assertNotFalse($posA);
         self::assertNotFalse($posB);
         self::assertLessThan($posB, $posA, 'Aaa должна идти раньше Bbb при сортировке TITLE_ASC');
@@ -323,8 +323,8 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $filter = new CoatingSystemsFilter(sort: CoatingSystemSort::TITLE_DESC);
         $result = $this->finder->find($filter);
 
-        $posA = array_search($sysA->getId(), $result->ids, true);
-        $posB = array_search($sysB->getId(), $result->ids, true);
+        $posA = array_search($sysA->getId(), $result->ids->getList(), true);
+        $posB = array_search($sysB->getId(), $result->ids->getList(), true);
         self::assertNotFalse($posA);
         self::assertNotFalse($posB);
         self::assertLessThan($posA, $posB, 'Zzz должна идти раньше Aaa при сортировке TITLE_DESC');

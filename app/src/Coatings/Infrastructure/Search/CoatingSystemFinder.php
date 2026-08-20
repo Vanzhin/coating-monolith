@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Domain\Repository\SearchResult;
 use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
@@ -63,7 +64,7 @@ final class CoatingSystemFinder
 
         $ids = array_values(array_map('strval', $qb->executeQuery()->fetchFirstColumn()));
 
-        return new SearchResult($ids, $total);
+        return new SearchResult(new StringCollection(...$ids), $total);
     }
 
     private function applyFts(QueryBuilder $qb, CoatingSystemsFilter $filter): void

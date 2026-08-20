@@ -34,9 +34,6 @@ final readonly class CoatingMaker
     ) {
     }
 
-    /**
-     * @param list<string> $coatingTagIds
-     */
     public function make(
         string $title,
         string $description,
@@ -50,7 +47,7 @@ final readonly class CoatingMaker
         RecoatingIntervalTree $minRecoatingInterval,
         ?RecoatingIntervalTree $maxRecoatingInterval,
         string $manufacturerId,
-        array $coatingTagIds,
+        StringCollection $coatingTagIds,
         float $pack,
         ?string $thinner,
         int $dryingMaxTemp = 50,

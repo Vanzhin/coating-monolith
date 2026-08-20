@@ -11,6 +11,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -86,7 +87,7 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
                 return [];
             }
 
-            public function findByIds(array $ids): array
+            public function findByIds(StringCollection $ids): array
             {
                 return [];
             }

@@ -22,6 +22,7 @@ use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -241,7 +242,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             substrate: Substrate::STEEL_CARBON,
             environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
-            tagIds: [$tagB->getId(), $tagC->getId()],
+            tagIds: new StringCollection($tagB->getId(), $tagC->getId()),
         );
 
         ($this->handler)($cmd);
@@ -320,7 +321,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             substrate: Substrate::STEEL_CARBON,
             environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
-            tagIds: [],
+            tagIds: new StringCollection(),
         );
 
         ($this->handler)($cmd);
