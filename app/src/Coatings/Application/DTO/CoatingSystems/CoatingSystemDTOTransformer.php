@@ -6,18 +6,19 @@ namespace App\Coatings\Application\DTO\CoatingSystems;
 
 use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
+use App\Coatings\Domain\Compliance\Compliance;
 
 class CoatingSystemDTOTransformer
 {
     public function __construct(
-        private readonly ComplianceEvaluator $evaluator,
         private readonly TagDTOTransformer $tagTransformer = new TagDTOTransformer(),
     ) {
     }
 
-    public function fromEntity(CoatingSystem $system): CoatingSystemDTO
+    /**
+     * @param list<Compliance> $compliance соответствия системы из read-model (снапшота)
+     */
+    public function fromEntity(CoatingSystem $system, array $compliance = []): CoatingSystemDTO
     {
         $treatment = $system->getSurfaceTreatment();
 
@@ -41,8 +42,8 @@ class CoatingSystemDTOTransformer
         $dto->maxLayerApplicationMinTemp = $system->maxLayerApplicationMinTemp();
         $dto->layers = $this->layersFromSystem($system);
         $dto->compliance = array_map(
-            static fn (ComplianceMatch $m) => new ComplianceMatchDTO($m->standard->value, $m->category, $m->durability),
-            $system->complianceMatches($this->evaluator)->toArray(),
+            static fn (Compliance $c) => new ComplianceMatchDTO($c->standard->value, $c->primary, $c->secondary ?? ''),
+            $compliance,
         );
         $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
 

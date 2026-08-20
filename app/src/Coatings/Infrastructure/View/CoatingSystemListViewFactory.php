@@ -6,8 +6,8 @@ namespace App\Coatings\Infrastructure\View;
 
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Infrastructure\Helper\QueryParams;

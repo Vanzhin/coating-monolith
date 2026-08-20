@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Console;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
@@ -21,7 +21,7 @@ final class RebuildCoatingSystemSearchCacheCommand extends Command
         private readonly CoatingSystemRepositoryInterface $repo,
         private readonly CoatingSystemSearchCacheRepository $searchCache,
         private readonly CoatingSystemComplianceCacheRepository $complianceCache,
-        private readonly ComplianceEvaluator $evaluator,
+        private readonly SystemComplianceEvaluator $evaluator,
     ) {
         parent::__construct();
     }
@@ -32,7 +32,7 @@ final class RebuildCoatingSystemSearchCacheCommand extends Command
         $count = 0;
         foreach ($this->repo->findAll() as $system) {
             $this->searchCache->upsert($system);
-            $this->complianceCache->rewrite($system, $this->evaluator);
+            $this->complianceCache->rewrite($system->getId(), $this->evaluator->evaluate($system));
             ++$count;
         }
         $io->success(sprintf('Пересобрано систем: %d', $count));

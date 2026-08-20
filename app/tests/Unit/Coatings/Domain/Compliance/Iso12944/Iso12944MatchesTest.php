@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Tests\Unit\Coatings\Domain\Compliance\Iso12944;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatch;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceMatches;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Match;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Matches;
 use PHPUnit\Framework\TestCase;
 
-final class ComplianceMatchesTest extends TestCase
+final class Iso12944MatchesTest extends TestCase
 {
     public function test_collects_matches_and_serializes(): void
     {
-        $matches = new ComplianceMatches();
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C4', 'HIGH'));
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C3', 'MEDIUM'));
+        $matches = new Iso12944Matches();
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C4', 'HIGH'));
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C3', 'MEDIUM'));
 
         self::assertCount(2, $matches);
         self::assertCount(2, iterator_to_array($matches));
@@ -27,10 +27,10 @@ final class ComplianceMatchesTest extends TestCase
 
     public function test_strongest_only_keeps_only_dominating_pairs_within_atmospheric_family(): void
     {
-        $matches = new ComplianceMatches();
+        $matches = new Iso12944Matches();
         foreach (['C2', 'C3', 'C4', 'C5'] as $category) {
             foreach (['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH'] as $durability) {
-                $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, $category, $durability));
+                $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, $category, $durability));
             }
         }
 
@@ -43,9 +43,9 @@ final class ComplianceMatchesTest extends TestCase
 
     public function test_strongest_only_keeps_incomparable_pairs(): void
     {
-        $matches = new ComplianceMatches();
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C4', 'VERY_HIGH'));
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C5', 'MEDIUM'));
+        $matches = new Iso12944Matches();
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C4', 'VERY_HIGH'));
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C5', 'MEDIUM'));
 
         $result = $matches->strongestOnly();
 
@@ -57,10 +57,10 @@ final class ComplianceMatchesTest extends TestCase
 
     public function test_strongest_only_treats_immersion_categories_as_separate_family(): void
     {
-        $matches = new ComplianceMatches();
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C5', 'VERY_HIGH'));
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'Im1', 'HIGH'));
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'Im3', 'VERY_HIGH'));
+        $matches = new Iso12944Matches();
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C5', 'VERY_HIGH'));
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'Im1', 'HIGH'));
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'Im3', 'VERY_HIGH'));
 
         $result = $matches->strongestOnly();
 
@@ -72,9 +72,9 @@ final class ComplianceMatchesTest extends TestCase
 
     public function test_strongest_only_dedupes_exact_duplicates(): void
     {
-        $matches = new ComplianceMatches();
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C3', 'HIGH'));
-        $matches->add(new ComplianceMatch(ComplianceStandard::ISO_12944, 'C3', 'HIGH'));
+        $matches = new Iso12944Matches();
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C3', 'HIGH'));
+        $matches->add(new Iso12944Match(ComplianceStandard::ISO_12944, 'C3', 'HIGH'));
 
         $result = $matches->strongestOnly();
 

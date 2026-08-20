@@ -43,6 +43,9 @@ services:
       public: true
       tags: ['app.specification']
 
+    App\Coatings\Domain\Compliance\StandardEvaluator:
+      tags: ['app.standard_evaluator']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -156,10 +159,9 @@ services:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
 
-  App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory: ~
-
-  App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator:
-    factory: ['App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory', 'create']
+  App\Coatings\Domain\Compliance\SystemComplianceEvaluator:
+    arguments:
+      - !tagged_iterator app.standard_evaluator
 
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository

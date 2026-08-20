@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Search;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
+use App\Coatings\Domain\Compliance\Iso12944\IsoCorrosivityCategory;
+use App\Coatings\Domain\Compliance\Iso12944\IsoDurability;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -115,7 +115,7 @@ final class CoatingSystemFinder
         $sub = 'SELECT 1 FROM coating_system_compliance csc WHERE csc.system_id = cs.id AND csc.standard = :csc_standard';
         $qb->setParameter('csc_standard', $filter->standard->value);
 
-        // Кеш содержит только сильнейшие пары (см. ComplianceMatches::strongestOnly);
+        // Кеш содержит только сильнейшие пары (см. Iso12944Matches::strongestOnly);
         // фильтр «C3-HIGH» должен находить и системы с максимумом C5-VERY_HIGH, поэтому
         // ищем по всем категориям той же семьи ≥ выбранной и всем долговечностям ≥ выбранной.
         if (null !== $filter->category) {

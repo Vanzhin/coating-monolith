@@ -247,11 +247,6 @@ class CoatingSystem extends Aggregate
         return $max;
     }
 
-    public function complianceMatches(ComplianceEvaluator $evaluator): ComplianceMatches
-    {
-        return $evaluator->evaluate($this);
-    }
-
     public function firstLayer(): CoatingSystemLayer
     {
         $sorted = array_values($this->getLayers()->toArray());

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Tests\Unit\Coatings\Domain\Compliance\Iso12944;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRule;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceRuleBook;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
-use App\Coatings\Domain\Aggregate\CoatingSystem\PrimerType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Rule;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944RuleBook;
+use App\Coatings\Domain\Compliance\Iso12944\PrimerType;
 use PHPUnit\Framework\TestCase;
 
-final class ComplianceRuleBookTest extends TestCase
+final class Iso12944RuleBookTest extends TestCase
 {
     public function test_rule_book_is_not_empty(): void
     {
-        self::assertNotEmpty(ComplianceRuleBook::rules());
+        self::assertNotEmpty(Iso12944RuleBook::rules());
     }
 
     /**
@@ -48,8 +48,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_b2_c5_very_high_other_ep_pur_esi_present(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => ComplianceStandard::ISO_12944 === $r->standard
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => ComplianceStandard::ISO_12944 === $r->standard
                 && Substrate::STEEL_CARBON === $r->substrate
                 && 'C5' === $r->category
                 && 'VERY_HIGH' === $r->durability
@@ -69,8 +69,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_d1_c3_high_ep_pur_present(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => ComplianceStandard::ISO_12944 === $r->standard
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => ComplianceStandard::ISO_12944 === $r->standard
                 && Substrate::STEEL_GALVANIZED === $r->substrate
                 && 'C3' === $r->category
                 && 'HIGH' === $r->durability
@@ -93,8 +93,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_d1_g4_01_primer_only_row_present(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => ComplianceStandard::ISO_12944 === $r->standard
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => ComplianceStandard::ISO_12944 === $r->standard
                 && Substrate::STEEL_GALVANIZED === $r->substrate
                 && 'C4' === $r->category
                 && 'LOW' === $r->durability
@@ -114,8 +114,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_d1_c5_very_high_present(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => ComplianceStandard::ISO_12944 === $r->standard
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => ComplianceStandard::ISO_12944 === $r->standard
                 && Substrate::STEEL_GALVANIZED === $r->substrate
                 && 'C5' === $r->category
                 && 'VERY_HIGH' === $r->durability,
@@ -133,8 +133,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_d1_has_no_zinc_rich_rules(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => Substrate::STEEL_GALVANIZED === $r->substrate
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => Substrate::STEEL_GALVANIZED === $r->substrate
                 && PrimerType::ZINC_RICH === $r->primerType,
         ));
         self::assertSame([], $rules);
@@ -164,8 +164,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_e1_has_no_c3_rules(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => Substrate::STEEL_METALLIZED === $r->substrate
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => Substrate::STEEL_METALLIZED === $r->substrate
                 && 'C3' === $r->category,
         ));
         self::assertSame([], $rules);
@@ -266,8 +266,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_c5_i03_primer_includes_esi(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => Substrate::STEEL_CARBON === $r->substrate
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => Substrate::STEEL_CARBON === $r->substrate
                 && 'Im1' === $r->category
                 && 'HIGH' === $r->durability
                 && PrimerType::OTHER === $r->primerType
@@ -286,8 +286,8 @@ final class ComplianceRuleBookTest extends TestCase
     public function test_c5_i04_primer_includes_esi(): void
     {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => Substrate::STEEL_CARBON === $r->substrate
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => Substrate::STEEL_CARBON === $r->substrate
                 && 'Im2' === $r->category
                 && 'VERY_HIGH' === $r->durability
                 && PrimerType::OTHER === $r->primerType
@@ -304,10 +304,10 @@ final class ComplianceRuleBookTest extends TestCase
         string $category,
         string $durability,
         PrimerType $primerType,
-    ): ComplianceRule {
+    ): Iso12944Rule {
         $rules = array_values(array_filter(
-            ComplianceRuleBook::rules(),
-            static fn (ComplianceRule $r) => ComplianceStandard::ISO_12944 === $r->standard
+            Iso12944RuleBook::rules(),
+            static fn (Iso12944Rule $r) => ComplianceStandard::ISO_12944 === $r->standard
                 && $r->substrate === $substrate
                 && $r->category === $category
                 && $r->durability === $durability

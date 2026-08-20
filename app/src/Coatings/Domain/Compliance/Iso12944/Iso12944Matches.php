@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Coatings\Domain\Compliance\Iso12944;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 
-final class ComplianceMatches implements \IteratorAggregate, \Countable, \JsonSerializable
+final class Iso12944Matches implements \IteratorAggregate, \Countable, \JsonSerializable
 {
-    /** @var list<ComplianceMatch> */
+    /** @var list<Iso12944Match> */
     private array $items = [];
 
-    public function add(ComplianceMatch $m): void
+    public function add(Iso12944Match $m): void
     {
         $this->items[] = $m;
     }
@@ -36,7 +35,7 @@ final class ComplianceMatches implements \IteratorAggregate, \Countable, \JsonSe
     }
 
     /**
-     * @return list<ComplianceMatch>
+     * @return list<Iso12944Match>
      */
     public function toArray(): array
     {
@@ -69,7 +68,7 @@ final class ComplianceMatches implements \IteratorAggregate, \Countable, \JsonSe
         return $result;
     }
 
-    private function hasStrictlyStronger(ComplianceMatch $candidate): bool
+    private function hasStrictlyStronger(Iso12944Match $candidate): bool
     {
         foreach ($this->items as $other) {
             if ($other === $candidate) {
@@ -83,7 +82,7 @@ final class ComplianceMatches implements \IteratorAggregate, \Countable, \JsonSe
         return false;
     }
 
-    private function isStrictlyStrongerThan(ComplianceMatch $a, ComplianceMatch $b): bool
+    private function isStrictlyStrongerThan(Iso12944Match $a, Iso12944Match $b): bool
     {
         // ComplianceStandard пока single-case (ISO_12944), поэтому phpstan считает
         // сравнение всегда-false. Гард намеренный — сравнивать «сильнее» имеет смысл

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Coatings\Domain\Compliance\Iso12944;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
+use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 
 /**
  * Правила соответствия защитных лакокрасочных систем требованиям ISO 12944-5:2019
@@ -22,11 +23,11 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
  *
  * Для строк с несколькими «+»-долговечностями создаётся только правило с максимальной
  * долговечностью: меньшие покрываются автоматически, если ComplianceEvaluator свернёт
- * результат до сильнейших пар (ComplianceMatches::strongestOnly).
+ * результат до сильнейших пар (Iso12944Matches::strongestOnly).
  */
-final class ComplianceRuleBook
+final class Iso12944RuleBook
 {
-    /** @return list<ComplianceRule> */
+    /** @return list<Iso12944Rule> */
     public static function rules(): array
     {
         return array_merge(
@@ -49,7 +50,7 @@ final class ComplianceRuleBook
      * Zn(R) primer» (C2.07, C3.08, C4.08) followup = [] — правило подходит лишь для систем
      * без последующих слоёв. Пропущены строки, отмеченные «*» в стандарте.
      *
-     * @return list<ComplianceRule>
+     * @return list<Iso12944Rule>
      */
     private static function b2Rules(): array
     {
@@ -156,7 +157,7 @@ final class ComplianceRuleBook
      * NDFT/MNOC — минимальные значения из ячейки «Общее число слоёв / Общий NDFT».
      * Пустой followup ([]) означает системы без последующих слоёв.
      *
-     * @return list<ComplianceRule>
+     * @return list<Iso12944Rule>
      */
     private static function d1Rules(): array
     {
@@ -220,7 +221,7 @@ final class ComplianceRuleBook
      * Проникающая грунтовка EP/PUR (заполняет поры металла) + последующие слои EP/PUR.
      * Общее число слоёв = 2. primerType = OTHER (не Zn(R)).
      *
-     * @return list<ComplianceRule>
+     * @return list<Iso12944Rule>
      */
     private static function e1Rules(): array
     {
@@ -247,7 +248,7 @@ final class ComplianceRuleBook
      *   - I.03/I.04: Прочие primer EP/PUR/ESI + EP/PUR
      *   - I.05/I.06: без отдельной грунтовки (первый слой EP/PUR сам служит грунтом).
      *
-     * @return list<ComplianceRule>
+     * @return list<Iso12944Rule>
      */
     private static function b5Rules(): array
     {
@@ -289,8 +290,8 @@ final class ComplianceRuleBook
         int $ndft,
         array $primerBinders,
         array $otherBinders,
-    ): ComplianceRule {
-        return new ComplianceRule(
+    ): Iso12944Rule {
+        return new Iso12944Rule(
             standard: ComplianceStandard::ISO_12944,
             substrate: $substrate,
             category: $category,

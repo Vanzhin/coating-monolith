@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Coatings\Domain\Compliance\Iso12944;
 
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
+use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 
-final readonly class ComplianceRule
+final readonly class Iso12944Rule
 {
     /**
      * @param list<CoatingBase> $primerBinders

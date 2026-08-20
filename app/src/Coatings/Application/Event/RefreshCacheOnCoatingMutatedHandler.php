@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\Event;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
+use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Domain\Event\CoatingMutated;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
@@ -17,7 +17,7 @@ final readonly class RefreshCacheOnCoatingMutatedHandler implements EventHandler
         private CoatingSystemRepositoryInterface $repo,
         private CoatingSystemSearchCacheRepository $searchCache,
         private CoatingSystemComplianceCacheRepository $complianceCache,
-        private ComplianceEvaluator $evaluator,
+        private SystemComplianceEvaluator $evaluator,
     ) {
     }
 
@@ -25,7 +25,7 @@ final readonly class RefreshCacheOnCoatingMutatedHandler implements EventHandler
     {
         foreach ($this->repo->findByLayerCoatingId($event->coatingId) as $system) {
             $this->searchCache->upsert($system);
-            $this->complianceCache->rewrite($system, $this->evaluator);
+            $this->complianceCache->rewrite($system->getId(), $this->evaluator->evaluate($system));
         }
     }
 }
