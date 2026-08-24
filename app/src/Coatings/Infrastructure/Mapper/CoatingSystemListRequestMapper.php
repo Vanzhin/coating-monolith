@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Coatings\Infrastructure\Mapper;
 
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;

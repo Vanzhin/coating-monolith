@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Search;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -32,6 +31,7 @@ final class CoatingSystemFinder
     public function __construct(
         private readonly Connection $conn,
         private readonly PrefixTsQueryBuilder $tsQueryBuilder,
+        private readonly ComplianceFacetsRegistry $facetsRegistry,
     ) {
     }
 
@@ -112,32 +112,26 @@ final class CoatingSystemFinder
             return;
         }
 
+        $facets = $this->facetsRegistry->facetsFor($filter->standard);
+        if (null === $facets) {
+            $qb->andWhere('1 = 0');
+
+            return;
+        }
+
         $sub = 'SELECT 1 FROM coating_system_compliance csc WHERE csc.system_id = cs.id AND csc.standard = :csc_standard';
         $qb->setParameter('csc_standard', $filter->standard->value);
 
-        // Кеш содержит только сильнейшие пары (см. ComplianceMatches::strongestOnly);
-        // фильтр «C3-HIGH» должен находить и системы с максимумом C5-VERY_HIGH, поэтому
-        // ищем по всем категориям той же семьи ≥ выбранной и всем долговечностям ≥ выбранной.
+        // Кеш хранит только сильнейшие пары (strongestOnly); фильтр раскрываем самоописанием
+        // стандарта: ISO — категория той же семьи ≥ и долговечность ≥; СП — степень ≥, условия точно.
         if (null !== $filter->category) {
-            $category = IsoCorrosivityCategory::tryFrom($filter->category);
-            if (null === $category) {
-                $qb->andWhere('1 = 0');
-
-                return;
-            }
             $sub .= ' AND csc.category IN (:csc_category_list)';
-            $qb->setParameter('csc_category_list', $category->atOrAboveInFamily(), ArrayParameterType::STRING);
+            $qb->setParameter('csc_category_list', $facets->expandPrimary($filter->category), ArrayParameterType::STRING);
         }
 
         if (null !== $filter->durability) {
-            $durability = IsoDurability::tryFrom($filter->durability);
-            if (null === $durability) {
-                $qb->andWhere('1 = 0');
-
-                return;
-            }
             $sub .= ' AND csc.durability IN (:csc_durability_list)';
-            $qb->setParameter('csc_durability_list', $durability->atOrAbove(), ArrayParameterType::STRING);
+            $qb->setParameter('csc_durability_list', $facets->expandSecondary($filter->durability), ArrayParameterType::STRING);
         }
 
         $qb->andWhere("EXISTS ($sub)");

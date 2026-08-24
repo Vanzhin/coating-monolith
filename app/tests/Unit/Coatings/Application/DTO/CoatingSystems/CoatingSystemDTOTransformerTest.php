@@ -17,11 +17,14 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
-use App\Coatings\Infrastructure\Factory\ComplianceEvaluatorFactory;
+use App\Coatings\Domain\Compliance\Compliance;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Evaluator;
+use App\Coatings\Domain\Compliance\Sp28\Sp28Evaluator;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -30,9 +33,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemDTOTransformerTest extends TestCase
 {
-    private function makeTransformer(?ComplianceEvaluator $evaluator = null): CoatingSystemDTOTransformer
+    private function makeTransformer(): CoatingSystemDTOTransformer
     {
-        return new CoatingSystemDTOTransformer($evaluator ?? new ComplianceEvaluator([]));
+        return new CoatingSystemDTOTransformer(
+            new ComplianceFacetsRegistry([new Iso12944Evaluator(), new Sp28Evaluator()]),
+        );
     }
 
     public function test_from_entity_populates_all_fields(): void
@@ -130,23 +135,22 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             $treatment,
         );
 
-        $dto = $this->makeTransformer(ComplianceEvaluatorFactory::create())->fromEntity($system);
+        $dto = $this->makeTransformer()->fromEntity($system);
 
         $this->assertSame([], $dto->compliance);
     }
 
-    public function test_transformer_populates_runtime_min_max_and_compliance(): void
+    public function test_transformer_maps_passed_compliance_and_runtime_min_max(): void
     {
         $system = $this->buildZincRichEpSystem();
+        $compliance = [new Compliance(ComplianceStandard::ISO_12944, 'C4', 'HIGH')];
 
-        $transformer = $this->makeTransformer(ComplianceEvaluatorFactory::create());
-        $dto = $transformer->fromEntity($system);
+        $dto = $this->makeTransformer()->fromEntity($system, $compliance);
 
         self::assertIsInt($dto->maxLayerApplicationMinTemp);
         self::assertGreaterThanOrEqual(0, $dto->minApplicationTimeAt20Minutes);
-        self::assertGreaterThan(0, count($dto->compliance));
         self::assertContainsEquals(
-            new ComplianceMatchDTO('ISO_12944', 'C4', 'HIGH'),
+            new ComplianceMatchDTO('ISO_12944', 'ISO 12944', 'C4-H', 'C4', 'HIGH'),
             $dto->compliance,
         );
     }

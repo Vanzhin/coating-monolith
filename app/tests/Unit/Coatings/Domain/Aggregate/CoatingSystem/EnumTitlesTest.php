@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Domain\Aggregate\CoatingSystem;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoDurability;
-use App\Coatings\Domain\Aggregate\CoatingSystem\PrimerType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Iso12944\IsoCorrosivityCategory;
+use App\Coatings\Domain\Compliance\Iso12944\IsoDurability;
+use App\Coatings\Domain\Compliance\Iso12944\PrimerType;
 use PHPUnit\Framework\TestCase;
 
 final class EnumTitlesTest extends TestCase

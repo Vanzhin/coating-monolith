@@ -160,6 +160,21 @@ final class ListActionTest extends WebTestCase
         self::assertStringNotContainsString('<table class="table table-hover', $content);
     }
 
+    public function test_sp_standard_renders_sp_cascade_not_iso(): void
+    {
+        // Каскад фильтра ветвится по стандарту: при СП показываем оси СП (среда/условия),
+        // а не ISO-категории/долговечность.
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?standard=SP_28&category=weak');
+
+        self::assertResponseIsSuccessful();
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Условия эксплуатации', $content);
+        self::assertStringContainsString('Среднеагрессивная', $content);
+        self::assertStringContainsString('В помещении', $content);
+        self::assertStringNotContainsString('C1 — Очень низкая', $content);
+        self::assertStringNotContainsString('менее 7 лет', $content);
+    }
+
     public function test_list_shows_treatment_code_on_card(): void
     {
         $suffix = uniqid('', true);

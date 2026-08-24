@@ -6,8 +6,10 @@ namespace App\Coatings\Infrastructure\View;
 
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Facet\FacetOption;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Infrastructure\Helper\QueryParams;
@@ -23,8 +25,10 @@ final class CoatingSystemListViewFactory
     private const MINUTES_PER_HOUR = 60;
     private const DEFAULT_LIMIT = 20;
 
-    public function __construct(private readonly QueryParams $query)
-    {
+    public function __construct(
+        private readonly QueryParams $query,
+        private readonly ComplianceFacetsRegistry $facetsRegistry,
+    ) {
     }
 
     /**
@@ -53,7 +57,12 @@ final class CoatingSystemListViewFactory
         $applicationMinTemp = $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo');
         $minAppTime = $this->query->intRange($request, 'minApplicationTimeAt20From', 'minApplicationTimeAt20To', self::MINUTES_PER_HOUR);
 
+        $facets = null !== $standard ? $this->facetsRegistry->facetsFor($standard) : null;
+
         return [
+            'complianceFacets' => $facets,
+            'categoryTitle' => self::optionTitle($facets?->primaryOptions() ?? [], $category),
+            'durabilityTitle' => self::optionTitle($facets?->secondaryOptions() ?? [], $durability),
             'items' => $result->items,
             'total' => $result->total,
             'q' => trim((string) $request->query->get('q', '')),
@@ -74,6 +83,23 @@ final class CoatingSystemListViewFactory
             'environmentOptions' => EnvironmentType::cases(),
             'standardOptions' => ComplianceStandard::cases(),
         ];
+    }
+
+    /**
+     * @param list<FacetOption> $options
+     */
+    private static function optionTitle(array $options, ?string $value): ?string
+    {
+        if (null === $value) {
+            return null;
+        }
+        foreach ($options as $option) {
+            if ($option->value === $value) {
+                return $option->title;
+            }
+        }
+
+        return $value;
     }
 
     /** @return array{from: int, to: int}|null */

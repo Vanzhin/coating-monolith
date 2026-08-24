@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944;
+namespace App\Coatings\Domain\Compliance\Iso12944;
 
 enum IsoDurability: string
 {

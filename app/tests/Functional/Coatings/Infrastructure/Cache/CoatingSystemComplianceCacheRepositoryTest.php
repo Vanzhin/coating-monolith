@@ -12,10 +12,11 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceEvaluator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Evaluator;
+use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -33,7 +34,7 @@ final class CoatingSystemComplianceCacheRepositoryTest extends KernelTestCase
     private EntityManagerInterface $em;
     private Connection $conn;
     private CoatingSystemComplianceCacheRepository $repo;
-    private ComplianceEvaluator $evaluator;
+    private SystemComplianceEvaluator $evaluator;
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
@@ -46,7 +47,7 @@ final class CoatingSystemComplianceCacheRepositoryTest extends KernelTestCase
         $this->em = $container->get(EntityManagerInterface::class);
         $this->conn = $this->em->getConnection();
         $this->repo = new CoatingSystemComplianceCacheRepository($this->conn);
-        $this->evaluator = $container->get(ComplianceEvaluator::class);
+        $this->evaluator = new SystemComplianceEvaluator([new Iso12944Evaluator()]);
     }
 
     protected function tearDown(): void
@@ -85,7 +86,7 @@ final class CoatingSystemComplianceCacheRepositoryTest extends KernelTestCase
     public function test_rewrite_replaces_all_rows_for_system(): void
     {
         $system = $this->buildZincRichEpSystemAndPersist();
-        $this->repo->rewrite($system, $this->evaluator);
+        $this->repo->rewrite($system->getId(), $this->evaluator->evaluate($system));
 
         $rows = $this->conn->fetchAllAssociative(
             'SELECT standard, category, durability FROM coating_system_compliance WHERE system_id = ? ORDER BY category, durability',
@@ -99,7 +100,7 @@ final class CoatingSystemComplianceCacheRepositoryTest extends KernelTestCase
     public function test_rewrite_removes_stale_rows(): void
     {
         $system = $this->buildZincRichEpSystemAndPersist();
-        $this->repo->rewrite($system, $this->evaluator);
+        $this->repo->rewrite($system->getId(), $this->evaluator->evaluate($system));
 
         $countBefore = (int) $this->conn->fetchOne(
             'SELECT COUNT(*) FROM coating_system_compliance WHERE system_id = ?',
@@ -108,7 +109,7 @@ final class CoatingSystemComplianceCacheRepositoryTest extends KernelTestCase
         self::assertGreaterThan(0, $countBefore);
 
         // Rewrite again — rows should not double.
-        $this->repo->rewrite($system, $this->evaluator);
+        $this->repo->rewrite($system->getId(), $this->evaluator->evaluate($system));
 
         $countAfter = (int) $this->conn->fetchOne(
             'SELECT COUNT(*) FROM coating_system_compliance WHERE system_id = ?',

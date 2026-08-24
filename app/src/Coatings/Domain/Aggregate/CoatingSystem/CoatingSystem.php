@@ -247,11 +247,6 @@ class CoatingSystem extends Aggregate
         return $max;
     }
 
-    public function complianceMatches(ComplianceEvaluator $evaluator): ComplianceMatches
-    {
-        return $evaluator->evaluate($this);
-    }
-
     public function firstLayer(): CoatingSystemLayer
     {
         $sorted = array_values($this->getLayers()->toArray());
@@ -260,6 +255,16 @@ class CoatingSystem extends Aggregate
         }
 
         return $sorted[0];
+    }
+
+    public function finishLayer(): CoatingSystemLayer
+    {
+        $sorted = array_values($this->getLayers()->toArray());
+        if ([] === $sorted) {
+            throw new AppException('Система покрытий пуста, слоёв нет.');
+        }
+
+        return $sorted[array_key_last($sorted)];
     }
 
     /** @return iterable<CoatingSystemLayer> */

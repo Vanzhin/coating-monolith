@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Coatings\Infrastructure\View;
 
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Evaluator;
+use App\Coatings\Domain\Compliance\Sp28\Sp28Evaluator;
 use App\Coatings\Infrastructure\View\CoatingSystemListViewFactory;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use PHPUnit\Framework\TestCase;
@@ -14,7 +17,10 @@ final class CoatingSystemListViewFactoryTest extends TestCase
 {
     public function test_build_payload_keys_and_hours_conversion(): void
     {
-        $factory = new CoatingSystemListViewFactory(new QueryParams());
+        $factory = new CoatingSystemListViewFactory(
+            new QueryParams(),
+            new ComplianceFacetsRegistry([new Iso12944Evaluator(), new Sp28Evaluator()]),
+        );
         $result = new SearchCoatingSystemsQueryResult([], 0);
 
         $payload = $factory->build(

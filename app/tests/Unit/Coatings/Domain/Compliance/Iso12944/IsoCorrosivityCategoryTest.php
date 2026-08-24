@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Coatings\Domain\Aggregate\CoatingSystem\Iso12944;
+namespace App\Tests\Unit\Coatings\Domain\Compliance\Iso12944;
 
-use App\Coatings\Domain\Aggregate\CoatingSystem\Iso12944\IsoCorrosivityCategory;
+use App\Coatings\Domain\Compliance\Iso12944\IsoCorrosivityCategory;
 use PHPUnit\Framework\TestCase;
 
 final class IsoCorrosivityCategoryTest extends TestCase

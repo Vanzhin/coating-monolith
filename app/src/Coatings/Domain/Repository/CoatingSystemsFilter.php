@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
-use App\Coatings\Domain\Aggregate\CoatingSystem\ComplianceStandard;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;

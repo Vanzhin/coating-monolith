@@ -14,8 +14,7 @@
 {% for system in items %}
     {% set complianceBadges = [] %}
     {% for entry in system.compliance %}
-        {% set label = entry.category ~ (entry.durability ? '-' ~ entry.durability : '') %}
-        {% set complianceBadges = complianceBadges|merge([label]) %}
+        {% set complianceBadges = complianceBadges|merge([entry.label]) %}
     {% endfor %}
     {% set visibleBadges = complianceBadges|slice(0, 3) %}
     {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}

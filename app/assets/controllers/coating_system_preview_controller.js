@@ -106,11 +106,28 @@ export default class extends Controller {
         complianceEl.innerHTML = '';
         const compliance = data.compliance ?? [];
         if (compliance.length > 0) {
+            const groups = new Map();
             compliance.forEach(entry => {
-                const badge = document.createElement('span');
-                badge.className = 'badge text-bg-success';
-                badge.textContent = entry.category + (entry.durability ? ' — ' + entry.durability : '');
-                complianceEl.appendChild(badge);
+                const key = entry.standardTitle || entry.standard;
+                if (!groups.has(key)) {
+                    groups.set(key, []);
+                }
+                groups.get(key).push(entry.label);
+            });
+            groups.forEach((labels, standardTitle) => {
+                const row = document.createElement('div');
+                row.className = 'd-flex flex-wrap align-items-center gap-2 w-100';
+                const name = document.createElement('span');
+                name.className = 'text-body-secondary small';
+                name.textContent = standardTitle + ':';
+                row.appendChild(name);
+                labels.forEach(label => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge text-bg-success fw-normal';
+                    badge.textContent = label;
+                    row.appendChild(badge);
+                });
+                complianceEl.appendChild(row);
             });
             complianceEl.closest('.modal-compliance-block').classList.remove('d-none');
         } else {

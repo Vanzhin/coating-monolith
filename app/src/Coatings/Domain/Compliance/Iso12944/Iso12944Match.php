@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Aggregate\CoatingSystem;
+namespace App\Coatings\Domain\Compliance\Iso12944;
 
-final readonly class ComplianceMatch implements \JsonSerializable
+use App\Coatings\Domain\Compliance\ComplianceStandard;
+
+final readonly class Iso12944Match implements \JsonSerializable
 {
     public function __construct(
         public ComplianceStandard $standard,

@@ -7,6 +7,7 @@ namespace App\Coatings\Application\UseCase\Query\FindCoatingSystemById;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTOTransformer;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -14,6 +15,7 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repository,
+        private CoatingSystemComplianceCacheRepository $complianceCache,
         private CoatingSystemDTOTransformer $transformer,
     ) {
     }
@@ -26,6 +28,6 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
             return null;
         }
 
-        return $this->transformer->fromEntity($system);
+        return $this->transformer->fromEntity($system, $this->complianceCache->findBySystem($query->id));
     }
 }
