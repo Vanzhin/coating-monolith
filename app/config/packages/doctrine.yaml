@@ -65,6 +65,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/ChemicalResistance/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\ChemicalResistance\Domain\Aggregate'
                 alias: ChemicalResistance
+            Certificates:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Certificates/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Certificates\Domain\Aggregate'
+                alias: Certificates
 
 
 #            App:
