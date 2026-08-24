@@ -253,20 +253,16 @@
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                         data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                    Категория
+                                    {{ complianceFacets.primaryLabel }}
                                 </button>
                                 <div class="dropdown-menu chip-desktop-menu p-3">
-                                    {% for catVal, catLabel in {
-                                        'C1': 'C1', 'C2': 'C2', 'C3': 'C3',
-                                        'C4': 'C4', 'C5': 'C5', 'CX': 'CX',
-                                        'Im1': 'Im1', 'Im2': 'Im2', 'Im3': 'Im3'
-                                    } %}
+                                    {% for opt in complianceFacets.primaryOptions %}
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio"
-                                                   name="category" value="{{ catVal }}"
-                                                   id="category-{{ catVal }}" form="systemListForm"
+                                                   name="category" value="{{ opt.value }}"
+                                                   id="category-{{ opt.value }}" form="systemListForm"
                                                    onchange="this.form.submit()">
-                                            <label class="form-check-label" for="category-{{ catVal }}">{{ catLabel }}</label>
+                                            <label class="form-check-label" for="category-{{ opt.value }}">{{ opt.title }}</label>
                                         </div>
                                     {% endfor %}
                                     <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
@@ -276,14 +272,14 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
                                 data-bs-toggle="offcanvas" data-bs-target="#chipFilterCategory"
                                 aria-controls="chipFilterCategory">
-                            Категория
+                            {{ complianceFacets.primaryLabel }}
                         </button>
                     {% else %}
                         {% set categoryResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({category: null, durability: null, page: null})|filter(v => v is not null)) %}
                         <a href="{{ categoryResetUrl }}"
                            class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                            title="Убрать фильтр категории">
-                            {{ category }} <i class="bi bi-x-lg"></i>
+                            {{ categoryTitle }} <i class="bi bi-x-lg"></i>
                         </a>
                     {% endif %}
 
@@ -294,21 +290,16 @@
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                             data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                        Долговечность
+                                        {{ complianceFacets.secondaryLabel }}
                                     </button>
                                     <div class="dropdown-menu chip-desktop-menu p-3">
-                                        {% for durVal, durLabel in {
-                                            'LOW': 'L (менее 7 лет)',
-                                            'MEDIUM': 'M (7–15 лет)',
-                                            'HIGH': 'H (15–25 лет)',
-                                            'VERY_HIGH': 'VH (более 25 лет)'
-                                        } %}
+                                        {% for opt in complianceFacets.secondaryOptions %}
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio"
-                                                       name="durability" value="{{ durVal }}"
-                                                       id="durability-{{ durVal }}" form="systemListForm"
+                                                       name="durability" value="{{ opt.value }}"
+                                                       id="durability-{{ opt.value }}" form="systemListForm"
                                                        onchange="this.form.submit()">
-                                                <label class="form-check-label" for="durability-{{ durVal }}">{{ durLabel }}</label>
+                                                <label class="form-check-label" for="durability-{{ opt.value }}">{{ opt.title }}</label>
                                             </div>
                                         {% endfor %}
                                         <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
@@ -319,14 +310,14 @@
                             <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
                                     data-bs-toggle="offcanvas" data-bs-target="#chipFilterDurability"
                                     aria-controls="chipFilterDurability">
-                                Долговечность
+                                {{ complianceFacets.secondaryLabel }}
                             </button>
                         {% else %}
                             {% set durabilityResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({durability: null, page: null})|filter(v => v is not null)) %}
                             <a href="{{ durabilityResetUrl }}"
                                class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                                title="Убрать фильтр долговечности">
-                                Долг.: {{ durability }} <i class="bi bi-x-lg"></i>
+                                {{ durabilityTitle }} <i class="bi bi-x-lg"></i>
                             </a>
                         {% endif %}
                     {% endif %}
@@ -493,21 +484,17 @@
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterCategory" aria-labelledby="chipFilterCategoryLabel">
                     <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterCategoryLabel">Категория</h6>
+                        <h6 class="offcanvas-title mb-0" id="chipFilterCategoryLabel">{{ complianceFacets.primaryLabel }}</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
                     <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
                         <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for catVal, catLabel in {
-                                'C1': 'C1', 'C2': 'C2', 'C3': 'C3',
-                                'C4': 'C4', 'C5': 'C5', 'CX': 'CX',
-                                'Im1': 'Im1', 'Im2': 'Im2', 'Im3': 'Im3'
-                            } %}
+                            {% for opt in complianceFacets.primaryOptions %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio"
-                                           name="category" value="{{ catVal }}"
-                                           id="categoryMob-{{ catVal }}">
-                                    <label class="form-check-label" for="categoryMob-{{ catVal }}">{{ catLabel }}</label>
+                                           name="category" value="{{ opt.value }}"
+                                           id="categoryMob-{{ opt.value }}">
+                                    <label class="form-check-label" for="categoryMob-{{ opt.value }}">{{ opt.title }}</label>
                                 </div>
                             {% endfor %}
                             <input type="hidden" name="standard" value="{{ standard.value }}">
@@ -521,22 +508,17 @@
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterDurability" aria-labelledby="chipFilterDurabilityLabel">
                     <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterDurabilityLabel">Долговечность</h6>
+                        <h6 class="offcanvas-title mb-0" id="chipFilterDurabilityLabel">{{ complianceFacets.secondaryLabel }}</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
                     </div>
                     <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
                         <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for durVal, durLabel in {
-                                'LOW': 'L (менее 7 лет)',
-                                'MEDIUM': 'M (7–15 лет)',
-                                'HIGH': 'H (15–25 лет)',
-                                'VERY_HIGH': 'VH (более 25 лет)'
-                            } %}
+                            {% for opt in complianceFacets.secondaryOptions %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio"
-                                           name="durability" value="{{ durVal }}"
-                                           id="durabilityMob-{{ durVal }}">
-                                    <label class="form-check-label" for="durabilityMob-{{ durVal }}">{{ durLabel }}</label>
+                                           name="durability" value="{{ opt.value }}"
+                                           id="durabilityMob-{{ opt.value }}">
+                                    <label class="form-check-label" for="durabilityMob-{{ opt.value }}">{{ opt.title }}</label>
                                 </div>
                             {% endfor %}
                             <input type="hidden" name="standard" value="{{ standard.value }}">
@@ -659,7 +641,7 @@
                                 {% if categoryActive %}
                                     {% set qRemove = app.request.query.all|merge({category: null, durability: null, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
-                                        {{ category }}
+                                        {{ categoryTitle }}
                                         <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
                                            class="btn-close btn-close-white btn-close-sm ms-1"
                                            aria-label="Убрать"></a>
@@ -668,7 +650,7 @@
                                 {% if durabilityActive %}
                                     {% set qRemove = app.request.query.all|merge({durability: null, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
-                                        Долг.: {{ durability }}
+                                        {{ durabilityTitle }}
                                         <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
                                            class="btn-close btn-close-white btn-close-sm ms-1"
                                            aria-label="Убрать"></a>
@@ -771,27 +753,17 @@
                     {# === Секция: Категория (только при стандарте) === #}
                     {% if standardActive %}
                         <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
-                            <h6 class="fw-semibold mb-2">Категория коррозионности</h6>
+                            <h6 class="fw-semibold mb-2">{{ complianceFacets.primaryLabel }}</h6>
                             <input type="hidden" name="standard" value="{{ standard.value }}">
                             <div class="row g-1">
-                                {% for catVal, catLabel in {
-                                    'C1': 'C1 — Очень низкая',
-                                    'C2': 'C2 — Низкая',
-                                    'C3': 'C3 — Средняя',
-                                    'C4': 'C4 — Высокая',
-                                    'C5': 'C5 — Очень высокая',
-                                    'CX': 'CX — Экстремальная',
-                                    'Im1': 'Im1 — Пресная вода',
-                                    'Im2': 'Im2 — Морская вода',
-                                    'Im3': 'Im3 — Грунт'
-                                } %}
+                                {% for opt in complianceFacets.primaryOptions %}
                                     <div class="col-12">
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio"
-                                                   name="category" value="{{ catVal }}"
-                                                   id="categoryOff-{{ catVal }}"
-                                                   {% if category == catVal %}checked{% endif %}>
-                                            <label class="form-check-label" for="categoryOff-{{ catVal }}">{{ catLabel }}</label>
+                                                   name="category" value="{{ opt.value }}"
+                                                   id="categoryOff-{{ opt.value }}"
+                                                   {% if category == opt.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="categoryOff-{{ opt.value }}">{{ opt.title }}</label>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -810,22 +782,17 @@
                         {# === Секция: Долговечность (только при категории) === #}
                         {% if categoryActive %}
                             <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
-                                <h6 class="fw-semibold mb-2">Долговечность</h6>
+                                <h6 class="fw-semibold mb-2">{{ complianceFacets.secondaryLabel }}</h6>
                                 <input type="hidden" name="category" value="{{ category }}">
                                 <div class="row g-1">
-                                    {% for durVal, durLabel in {
-                                        'LOW': 'L — менее 7 лет',
-                                        'MEDIUM': 'M — 7–15 лет',
-                                        'HIGH': 'H — 15–25 лет',
-                                        'VERY_HIGH': 'VH — более 25 лет'
-                                    } %}
+                                    {% for opt in complianceFacets.secondaryOptions %}
                                         <div class="col-12">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio"
-                                                       name="durability" value="{{ durVal }}"
-                                                       id="durabilityOff-{{ durVal }}"
-                                                       {% if durability == durVal %}checked{% endif %}>
-                                                <label class="form-check-label" for="durabilityOff-{{ durVal }}">{{ durLabel }}</label>
+                                                       name="durability" value="{{ opt.value }}"
+                                                       id="durabilityOff-{{ opt.value }}"
+                                                       {% if durability == opt.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="durabilityOff-{{ opt.value }}">{{ opt.title }}</label>
                                             </div>
                                         </div>
                                     {% endfor %}

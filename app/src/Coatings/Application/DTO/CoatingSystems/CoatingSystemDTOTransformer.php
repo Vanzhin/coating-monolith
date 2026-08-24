@@ -7,10 +7,12 @@ namespace App\Coatings\Application\DTO\CoatingSystems;
 use App\Coatings\Application\DTO\Tags\TagDTOTransformer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Compliance\Compliance;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
 
 class CoatingSystemDTOTransformer
 {
     public function __construct(
+        private readonly ComplianceFacetsRegistry $facetsRegistry,
         private readonly TagDTOTransformer $tagTransformer = new TagDTOTransformer(),
     ) {
     }
@@ -42,12 +44,26 @@ class CoatingSystemDTOTransformer
         $dto->maxLayerApplicationMinTemp = $system->maxLayerApplicationMinTemp();
         $dto->layers = $this->layersFromSystem($system);
         $dto->compliance = array_map(
-            static fn (Compliance $c) => new ComplianceMatchDTO($c->standard->value, $c->primary, $c->secondary ?? ''),
+            fn (Compliance $c) => $this->complianceDto($c),
             $compliance,
         );
         $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
 
         return $dto;
+    }
+
+    private function complianceDto(Compliance $c): ComplianceMatchDTO
+    {
+        $facets = $this->facetsRegistry->facetsFor($c->standard);
+        $label = null !== $facets ? $facets->badgeLabel($c->primary, $c->secondary) : $c->primary;
+
+        return new ComplianceMatchDTO(
+            $c->standard->value,
+            $c->standard->title(),
+            $label,
+            $c->primary,
+            $c->secondary ?? '',
+        );
     }
 
     /** @return list<CoatingSystemLayerDTO> */

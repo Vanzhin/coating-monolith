@@ -21,7 +21,10 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Compliance\Compliance;
+use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Evaluator;
+use App\Coatings\Domain\Compliance\Sp28\Sp28Evaluator;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -32,7 +35,9 @@ final class CoatingSystemDTOTransformerTest extends TestCase
 {
     private function makeTransformer(): CoatingSystemDTOTransformer
     {
-        return new CoatingSystemDTOTransformer();
+        return new CoatingSystemDTOTransformer(
+            new ComplianceFacetsRegistry([new Iso12944Evaluator(), new Sp28Evaluator()]),
+        );
     }
 
     public function test_from_entity_populates_all_fields(): void
@@ -145,7 +150,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         self::assertIsInt($dto->maxLayerApplicationMinTemp);
         self::assertGreaterThanOrEqual(0, $dto->minApplicationTimeAt20Minutes);
         self::assertContainsEquals(
-            new ComplianceMatchDTO('ISO_12944', 'C4', 'HIGH'),
+            new ComplianceMatchDTO('ISO_12944', 'ISO 12944', 'C4-H', 'C4', 'HIGH'),
             $dto->compliance,
         );
     }
