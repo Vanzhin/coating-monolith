@@ -8,6 +8,7 @@ use App\Coatings\Application\UseCase\Query\GetCoatingsByIds\GetCoatingsByIdsQuer
 use App\Shared\Application\Comparison\ComparisonConfig;
 use App\Shared\Application\Comparison\ObjectComparator;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -62,7 +63,7 @@ final class CompareAction extends AbstractController
         }
 
         /** @var \App\Coatings\Application\UseCase\Query\GetCoatingsByIds\GetCoatingsByIdsQueryResult $result */
-        $result = $this->queryBus->execute(new GetCoatingsByIdsQuery($ids));
+        $result = $this->queryBus->execute(new GetCoatingsByIdsQuery(new StringCollection(...$ids)));
         $subjects = $result->coatings;
 
         if (count($subjects) < 2) {

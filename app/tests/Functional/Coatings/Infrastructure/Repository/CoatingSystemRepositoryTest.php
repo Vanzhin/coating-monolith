@@ -19,6 +19,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecifi
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -266,7 +267,7 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
 
         // Путь списка: fetch-join слоёв+coating, цвет — LAZY. На общем цвете не должно быть
         // пере-гидрации readonly Color::$id.
-        $loaded = $this->repo->findByIds([(string) $s1->id, (string) $s2->id]);
+        $loaded = $this->repo->findByIds(new StringCollection((string) $s1->id, (string) $s2->id));
         self::assertCount(2, $loaded);
         foreach ($loaded as $system) {
             $layer = $system->getLayers()->toArray()[0];

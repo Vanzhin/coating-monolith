@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Controller\Coating;
 use App\Coatings\Application\UseCase\Query\GetCoatingsByIds\GetCoatingsByIdsQuery;
 use App\Coatings\Application\UseCase\Query\GetCoatingsByIds\GetCoatingsByIdsQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,7 +45,7 @@ final class ByIdsAction extends AbstractController
         }
 
         /** @var GetCoatingsByIdsQueryResult $result */
-        $result = $this->queryBus->execute(new GetCoatingsByIdsQuery(array_slice($ids, 0, self::MAX_IDS)));
+        $result = $this->queryBus->execute(new GetCoatingsByIdsQuery(new StringCollection(...array_slice($ids, 0, self::MAX_IDS))));
 
         $items = array_map(
             static fn ($coating) => ['id' => $coating->id, 'title' => $coating->title],

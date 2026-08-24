@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Repository;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -55,7 +56,7 @@ final class CoatingSystemRepositoryFindByIdsTest extends KernelTestCase
         $sysB = $this->persistSystem('B');
         $sysC = $this->persistSystem('C');
 
-        $result = $this->repo->findByIds([$sysC->getId(), $sysA->getId(), $sysB->getId()]);
+        $result = $this->repo->findByIds(new StringCollection($sysC->getId(), $sysA->getId(), $sysB->getId()));
 
         self::assertCount(3, $result);
         self::assertSame($sysC->getId(), $result[0]->getId());
@@ -68,14 +69,14 @@ final class CoatingSystemRepositoryFindByIdsTest extends KernelTestCase
         $sysA = $this->persistSystem('A');
         $fakeId = (string) Uuid::v7();
 
-        $result = $this->repo->findByIds([$sysA->getId(), $fakeId]);
+        $result = $this->repo->findByIds(new StringCollection($sysA->getId(), $fakeId));
 
         self::assertCount(1, $result);
     }
 
     public function test_empty_input_returns_empty_array(): void
     {
-        self::assertSame([], $this->repo->findByIds([]));
+        self::assertSame([], $this->repo->findByIds(new StringCollection()));
     }
 
     private function persistSystem(string $suffix): CoatingSystem
