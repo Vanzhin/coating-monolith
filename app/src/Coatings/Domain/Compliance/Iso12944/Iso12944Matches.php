@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Domain\Compliance\Iso12944;
 
-use App\Coatings\Domain\Compliance\ComplianceStandard;
-
 final class Iso12944Matches implements \IteratorAggregate, \Countable, \JsonSerializable
 {
     /** @var list<Iso12944Match> */
@@ -84,10 +82,7 @@ final class Iso12944Matches implements \IteratorAggregate, \Countable, \JsonSeri
 
     private function isStrictlyStrongerThan(Iso12944Match $a, Iso12944Match $b): bool
     {
-        // ComplianceStandard пока single-case (ISO_12944), поэтому phpstan считает
-        // сравнение всегда-false. Гард намеренный — сравнивать «сильнее» имеет смысл
-        // только внутри одного стандарта; заработает при добавлении новых стандартов.
-        // @phpstan-ignore-next-line
+        // Сравнивать «сильнее» имеет смысл только внутри одного стандарта.
         if ($a->standard !== $b->standard) {
             return false;
         }

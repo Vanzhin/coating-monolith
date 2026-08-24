@@ -7,6 +7,7 @@ namespace App\Coatings\Domain\Compliance\Iso12944;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Compliance\Compliance;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Facet\StandardFacets;
 use App\Coatings\Domain\Compliance\StandardEvaluator;
 
 /**
@@ -32,6 +33,11 @@ final readonly class Iso12944Evaluator implements StandardEvaluator
     public function supports(ComplianceStandard $standard): bool
     {
         return ComplianceStandard::ISO_12944 === $standard;
+    }
+
+    public function facets(): StandardFacets
+    {
+        return new Iso12944Facets();
     }
 
     /**

@@ -163,6 +163,10 @@ services:
     arguments:
       - !tagged_iterator app.standard_evaluator
 
+  App\Coatings\Domain\Compliance\ComplianceFacetsRegistry:
+    arguments:
+      - !tagged_iterator app.standard_evaluator
+
   App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\NoteRepository
   App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface:

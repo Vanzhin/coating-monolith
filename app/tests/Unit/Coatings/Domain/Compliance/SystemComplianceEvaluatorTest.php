@@ -9,6 +9,8 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Compliance\Compliance;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Facet\StandardFacets;
+use App\Coatings\Domain\Compliance\Iso12944\Iso12944Facets;
 use App\Coatings\Domain\Compliance\StandardEvaluator;
 use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use PHPUnit\Framework\TestCase;
@@ -56,6 +58,11 @@ final class SystemComplianceEvaluatorTest extends TestCase
             public function evaluate(CoatingSystem $system): array
             {
                 return $this->out;
+            }
+
+            public function facets(): StandardFacets
+            {
+                return new Iso12944Facets();
             }
         };
     }
