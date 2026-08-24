@@ -27,6 +27,7 @@
         id: system.id,
         title: system.title,
         substrateTitle: system.substrateTitle,
+        environmentTitle: system.environmentTitle,
         treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
         totalDft: system.totalDft,
         minApplicationTime: system.minApplicationTimeAt20Minutes is not null ? (system.minApplicationTimeAt20Minutes|duration_minutes_short) : null,
@@ -47,6 +48,7 @@
             </h6>
             <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
                 <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
+                <span class="badge text-bg-secondary fw-normal">{{ system.environmentTitle }}</span>
                 <span class="badge text-bg-light fw-normal text-body-secondary">
                     {{ system.totalDft }} мкм
                 </span>

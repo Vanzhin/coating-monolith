@@ -28,9 +28,19 @@ export default class extends Controller {
      * form="formId" — актуально, когда меню перенесено в document.body
      * portal'ом и уже не имеет form-ancestor'а в DOM), потом fallback на
      * closest ancestor.
+     *
+     * requestSubmit(), а НЕ submit(): submit() (JS-метод) не порождает
+     * событие 'submit', и merge-обработчик chip-facets (на addEventListener
+     * 'submit') не срабатывает → форма уходит нативно и стирает активные
+     * фасеты-чипы. requestSubmit() событие порождает — фасеты накапливаются.
      */
     _submitVia(btn) {
         const form = btn.form || this.element.closest('form');
-        if (form) form.submit();
+        if (!form) return;
+        if ('function' === typeof form.requestSubmit) {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
     }
 }
