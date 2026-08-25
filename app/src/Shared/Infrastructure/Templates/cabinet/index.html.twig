@@ -77,6 +77,25 @@
                         </div>
                     </div>
 
+                    {# ─── Документы и сертификаты ─── #}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3 bg-body-tertiary h-100 d-flex flex-column">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-file-earmark-text me-1"></i> Документы систем
+                            </h6>
+                            <ul class="small ps-3 mb-3">
+                                <li>К системе покрытий прикрепляются документы — заключения, сертификаты, протоколы испытаний.</li>
+                                <li>На карточке системы — счётчик документов; в быстром просмотре — список с видом, издателем, сроком действия (действует / просрочен) и скачиванием PDF.</li>
+                                <li>В поиске систем — фильтр «есть документы: да / нет».</li>
+                                <li>Система с привязанным документом заморожена: чтобы изменить состав — создайте новую систему.</li>
+                            </ul>
+                            <a href="{{ path('app_cabinet_coating_system_list') }}"
+                               class="btn btn-sm btn-outline-primary mt-auto align-self-start">
+                                К системам <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
                     {# ─── Управление (админ) ─── #}
                     {% if is_granted('ROLE_ADMIN') %}
                     <div class="col-md-6 col-lg-4">
@@ -90,6 +109,7 @@
                                 <li>Справочник производителей.</li>
                                 <li>Управление тегами через autocomplete-подсказки в форме покрытия.</li>
                                 <li>Ввод пределов эксплуатации (сухое тепло / погружение), интервалов перекрытия по средам и основаниям ЛКМ.</li>
+                                <li>Документы систем (заключения / сертификаты / протоколы) и справочник издателей; импорт перечня заключений консольной командой.</li>
                             </ul>
                             <div class="mt-auto d-flex gap-2 flex-wrap">
                                 <a href="{{ path('app_cabinet_coating_coating_list') }}"
@@ -99,6 +119,14 @@
                                 <a href="{{ path('app_cabinet_coating_manufacturer_list') }}"
                                    class="btn btn-sm btn-outline-primary">
                                     Производители
+                                </a>
+                                <a href="{{ path('app_cabinet_certificate_document_list') }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Документы
+                                </a>
+                                <a href="{{ path('app_cabinet_certificate_issuer_list') }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Издатели
                                 </a>
                             </div>
                         </div>
