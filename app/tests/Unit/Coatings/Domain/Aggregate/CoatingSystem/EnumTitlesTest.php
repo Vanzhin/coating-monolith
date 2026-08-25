@@ -22,7 +22,7 @@ final class EnumTitlesTest extends TestCase
 
     public function test_compliance_standard_titles(): void
     {
-        self::assertSame('ISO 12944', ComplianceStandard::ISO_12944->title());
+        self::assertSame('ГОСТ 34667.5 (ISO 12944-5)', ComplianceStandard::ISO_12944->title());
         self::assertStringContainsString('ГОСТ 34667.5', ComplianceStandard::ISO_12944->description());
     }
 
