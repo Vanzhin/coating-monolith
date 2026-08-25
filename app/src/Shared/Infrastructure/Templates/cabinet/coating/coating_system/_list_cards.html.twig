@@ -35,6 +35,8 @@
         layerCount: system.layers|length,
         layers: payloadLayers,
         compliance: system.compliance,
+        documentCount: system.documentCount,
+        documentsUrl: path('app_cabinet_coating_system_documents', {id: system.id}),
     } %}
 
     <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body"
@@ -52,6 +54,11 @@
                 <span class="badge text-bg-light fw-normal text-body-secondary">
                     {{ system.totalDft }} мкм
                 </span>
+                {% if system.documentCount > 0 %}
+                    <span class="badge text-bg-info fw-normal" title="Документы (сертификаты/заключения)">
+                        <i class="bi bi-file-earmark-text"></i> {{ system.documentCount }}
+                    </span>
+                {% endif %}
                 {% if system.surfaceTreatmentCode %}
                     <span class="text-muted small">
                         {{ system.surfaceTreatmentCode }}

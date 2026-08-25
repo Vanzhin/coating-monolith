@@ -6,6 +6,7 @@ namespace App\Coatings\Application\UseCase\Query\SearchCoatingSystems;
 
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTOTransformer;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Service\SystemCertificatesGateway;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Application\Query\QueryHandlerInterface;
@@ -17,6 +18,7 @@ final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInt
         private CoatingSystemRepositoryInterface $repo,
         private CoatingSystemComplianceCacheRepository $complianceCache,
         private CoatingSystemDTOTransformer $transformer,
+        private SystemCertificatesGateway $certificates,
     ) {
     }
 
@@ -25,8 +27,13 @@ final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInt
         $searchResult = $this->finder->find($q->filter);
         $systems = $this->repo->findByIds($searchResult->ids);
         $complianceBySystem = $this->complianceCache->findBySystemIds($searchResult->ids->getList());
+        $documentCounts = $this->certificates->countBySystemIds($searchResult->ids);
         $items = array_map(
-            fn ($s) => $this->transformer->fromEntity($s, $complianceBySystem[$s->getId()] ?? []),
+            fn ($s) => $this->transformer->fromEntity(
+                $s,
+                $complianceBySystem[$s->getId()] ?? [],
+                $documentCounts[$s->getId()] ?? 0,
+            ),
             $systems,
         );
 

@@ -62,6 +62,11 @@ final class CoatingSystemListRequestMapper
             ),
             sort: CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,
             pager: Pager::fromPage(max(1, (int) $request->query->get('page', 1)), self::DEFAULT_LIMIT),
+            hasDocuments: match ((string) $request->query->get('hasDocuments', '')) {
+                '1' => true,
+                '0' => false,
+                default => null,
+            },
         );
     }
 }

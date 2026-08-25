@@ -35,6 +35,7 @@ export default class extends Controller {
         'modalLayers',
         'modalLayersCount',
         'modalCompliance',
+        'modalDocuments',
         'modalDescription',
         'modalEditLink',
         'modalDeleteLink',
@@ -134,6 +135,9 @@ export default class extends Controller {
             complianceEl.closest('.modal-compliance-block').classList.add('d-none');
         }
 
+        // Documents (lazy fetch from Certificates via the Coatings port endpoint)
+        this._fillDocuments(data);
+
         // Description
         const descEl = this.modalDescriptionTarget;
         if (data.description) {
@@ -150,6 +154,68 @@ export default class extends Controller {
         if (this.hasModalDeleteLinkTarget) {
             this.modalDeleteLinkTarget.href = this.deleteRouteValue.replace('00000000-0000-0000-0000-000000000000', data.id);
         }
+    }
+
+    async _fillDocuments(data) {
+        const el = this.modalDocumentsTarget;
+        const block = el.closest('.modal-documents-block');
+        el.innerHTML = '';
+
+        if (!data.documentCount || data.documentCount < 1 || !data.documentsUrl) {
+            block.classList.add('d-none');
+            return;
+        }
+
+        block.classList.remove('d-none');
+        el.innerHTML = '<span class="text-muted small">Загрузка…</span>';
+
+        try {
+            const resp = await fetch(data.documentsUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const json = await resp.json();
+            const items = json.data?.items ?? json.items ?? [];
+            el.innerHTML = '';
+            items.forEach(doc => el.appendChild(this._documentRow(doc)));
+        } catch {
+            el.innerHTML = '<span class="text-danger small">Не удалось загрузить документы.</span>';
+        }
+    }
+
+    _documentRow(doc) {
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 flex-wrap';
+
+        const title = document.createElement('span');
+        title.className = 'fw-semibold';
+        title.textContent = doc.title;
+        row.appendChild(title);
+
+        const kind = document.createElement('span');
+        kind.className = 'badge text-bg-secondary fw-normal';
+        kind.textContent = doc.kindLabel;
+        row.appendChild(kind);
+
+        if (doc.expiresAt) {
+            const exp = document.createElement('span');
+            exp.className = 'badge fw-normal ' + (doc.isExpired ? 'text-bg-danger' : 'text-bg-success');
+            exp.textContent = (doc.isExpired ? 'Просрочен' : 'Действует') + ' до ' + doc.expiresAt;
+            row.appendChild(exp);
+        }
+
+        const meta = document.createElement('span');
+        meta.className = 'text-muted small';
+        meta.textContent = [doc.issuerTitle, doc.issuedAt, doc.testStandard].filter(Boolean).join(' · ');
+        row.appendChild(meta);
+
+        if (doc.downloadUrl) {
+            const link = document.createElement('a');
+            link.href = doc.downloadUrl;
+            link.className = 'btn btn-sm btn-outline-secondary';
+            link.title = 'Скачать PDF';
+            link.innerHTML = '<i class="bi bi-file-earmark-arrow-down"></i>';
+            row.appendChild(link);
+        }
+
+        return row;
     }
 
     _getModal() {

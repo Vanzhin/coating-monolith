@@ -34,7 +34,8 @@
         + tagIds|length
         + coatingIds|length
         + (appMinTempActive ? 1 : 0)
-        + (appTimeActive ? 1 : 0) %}
+        + (appTimeActive ? 1 : 0)
+        + (hasDocuments != '' ? 1 : 0) %}
 
     {# Summary-строки для активных range/single фасетов #}
     {% set appMinTempSummary = appMinTempActive
@@ -208,6 +209,35 @@
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр среды">
                         {{ environment.title() }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
+                {# --- Документы (single: есть/нет) --- #}
+                {% if hasDocuments == '' %}
+                    <div class="dropdown d-inline-block">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Документы
+                        </button>
+                        <div class="dropdown-menu p-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="hasDocuments" value="1"
+                                       id="hasDocuments-1" form="systemListForm" onchange="this.form.requestSubmit()">
+                                <label class="form-check-label" for="hasDocuments-1">С документами</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="hasDocuments" value="0"
+                                       id="hasDocuments-0" form="systemListForm" onchange="this.form.requestSubmit()">
+                                <label class="form-check-label" for="hasDocuments-0">Без документов</label>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    {% set docsResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({hasDocuments: null, page: null})|filter(v => v is not null)) %}
+                    <a href="{{ docsResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр документов">
+                        {{ hasDocuments == '1' ? 'С документами' : 'Без документов' }} <i class="bi bi-x-lg"></i>
                     </a>
                 {% endif %}
 
@@ -966,6 +996,11 @@
                             <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
                             <div class="d-flex flex-wrap gap-2"
                                  data-coating-system-preview-target="modalCompliance"></div>
+                        </div>
+                        <div class="modal-documents-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
+                            <h6 class="fw-semibold mb-2">Документы</h6>
+                            <div class="d-flex flex-column gap-2"
+                                 data-coating-system-preview-target="modalDocuments"></div>
                         </div>
                     </div>
                     <div class="modal-footer">

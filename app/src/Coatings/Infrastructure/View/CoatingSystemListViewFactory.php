@@ -76,6 +76,7 @@ final class CoatingSystemListViewFactory
             'applicationMinTemp' => $applicationMinTemp,
             'minApplicationTimeAt20Hours' => $this->rangeToHours($minAppTime),
             'sort' => CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,
+            'hasDocuments' => (string) $request->query->get('hasDocuments', ''),
             'page' => max(1, (int) $request->query->get('page', 1)),
             'perPage' => self::DEFAULT_LIMIT,
             'sortOptions' => CoatingSystemSort::cases(),
