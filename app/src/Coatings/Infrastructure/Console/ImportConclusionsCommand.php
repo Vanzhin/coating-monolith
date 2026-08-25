@@ -272,14 +272,25 @@ final class ImportConclusionsCommand extends Command
     }
 
     /**
-     * Первая подготовка, чей substrate_scope покрывает подложку системы (сталь → Sa 2½,
-     * бетон → бетонная подготовка). Null + $reason, если подходящей нет.
+     * Подготовка под подложку: для стали — Sa 2½ (код «Sa 2 1/2»); для прочих — первая,
+     * чей substrate_scope покрывает подложку (бетон → бескодовая бетонная).
+     * Null + $reason, если подходящей нет.
      *
      * @param list<SurfaceTreatment> $all
      */
     private function resolveTreatmentId(Substrate $substrate, array $all, ?string &$reason): ?string
     {
         $reason = null;
+
+        $preferredCode = Substrate::STEEL_CARBON === $substrate ? 'Sa 2 1/2' : null;
+        if (null !== $preferredCode) {
+            foreach ($all as $treatment) {
+                if ($preferredCode === $treatment->getCode() && $treatment->supportsSubstrate($substrate)) {
+                    return $treatment->getId();
+                }
+            }
+        }
+
         foreach ($all as $treatment) {
             if ($treatment->supportsSubstrate($substrate)) {
                 return $treatment->getId();
