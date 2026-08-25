@@ -37,6 +37,7 @@ export default class extends Controller {
         'modalCompliance',
         'modalDocuments',
         'modalDescription',
+        'modalUpdatedAt',
         'modalEditLink',
         'modalDeleteLink',
         'modalEditSection',
@@ -82,7 +83,7 @@ export default class extends Controller {
 
             const chip = document.createElement('button');
             chip.type = 'button';
-            chip.className = 'btn btn-sm btn-outline-secondary rounded-pill';
+            chip.className = 'btn btn-sm btn-outline-secondary';
             chip.textContent = layer.coatingTitle;
             if (layer.coatingId) {
                 chip.dataset.coatingId = layer.coatingId;
@@ -146,6 +147,9 @@ export default class extends Controller {
         } else {
             descEl.closest('.modal-description-block').classList.add('d-none');
         }
+
+        // Updated
+        this.modalUpdatedAtTarget.textContent = data.updatedAt ?? '';
 
         // Links
         if (this.hasModalEditLinkTarget) {

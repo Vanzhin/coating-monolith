@@ -212,27 +212,8 @@
                     </a>
                 {% endif %}
 
-                {# --- Документы (single: есть/нет) --- #}
-                {% if hasDocuments == '' %}
-                    <div class="dropdown d-inline-block">
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            Документы
-                        </button>
-                        <div class="dropdown-menu p-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="hasDocuments" value="1"
-                                       id="hasDocuments-1" form="systemListForm" onchange="this.form.requestSubmit()">
-                                <label class="form-check-label" for="hasDocuments-1">С документами</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="hasDocuments" value="0"
-                                       id="hasDocuments-0" form="systemListForm" onchange="this.form.requestSubmit()">
-                                <label class="form-check-label" for="hasDocuments-0">Без документов</label>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
+                {# --- Документы: выбор в шторке «Все фильтры»; здесь — только активный чип для сброса --- #}
+                {% if hasDocuments != '' %}
                     {% set docsResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({hasDocuments: null, page: null})|filter(v => v is not null)) %}
                     <a href="{{ docsResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
@@ -753,6 +734,37 @@
                         </div>
                     </div>
 
+                    {# === Секция: Документы === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Документы</h6>
+                        <div class="row g-1">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="hasDocuments" value="1"
+                                           id="hasDocumentsOff-1"
+                                           {% if hasDocuments == '1' %}checked{% endif %}>
+                                    <label class="form-check-label" for="hasDocumentsOff-1">С документами</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="hasDocuments" value="0"
+                                           id="hasDocumentsOff-0"
+                                           {% if hasDocuments == '0' %}checked{% endif %}>
+                                    <label class="form-check-label" for="hasDocumentsOff-0">Без документов</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="hasDocuments" value=""
+                                           id="hasDocumentsOff-none"
+                                           {% if hasDocuments == '' %}checked{% endif %}>
+                                    <label class="form-check-label text-muted" for="hasDocumentsOff-none">Любые</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {# === Секция: Стандарт === #}
                     <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Стандарт</h6>
@@ -1001,6 +1013,9 @@
                             <h6 class="fw-semibold mb-2">Документы</h6>
                             <div class="d-flex flex-column gap-2"
                                  data-coating-system-preview-target="modalDocuments"></div>
+                        </div>
+                        <div class="small text-muted">
+                            Обновлено: <span data-coating-system-preview-target="modalUpdatedAt"></span>
                         </div>
                     </div>
                     <div class="modal-footer">
