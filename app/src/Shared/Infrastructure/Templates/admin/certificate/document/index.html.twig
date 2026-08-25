@@ -1,0 +1,95 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Документы{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Документы',
+        create_route: 'app_cabinet_certificate_document_create',
+        can_edit: canEdit,
+        is_empty: result.documents is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_certificate_document_list') }}" class="row g-2">
+                <div class="col-md-5">
+                    <input type="search" name="q" value="{{ search }}" class="form-control"
+                           placeholder="Поиск по номеру / среде / описанию...">
+                </div>
+                <div class="col-md-3">
+                    <select name="kind" class="form-select" onchange="this.form.requestSubmit()">
+                        <option value="">Все виды</option>
+                        {% for k in kinds %}
+                            <option value="{{ k.value }}" {{ kind == k.value ? 'selected' : '' }}>{{ k.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="issuerId" class="form-select" onchange="this.form.requestSubmit()">
+                        <option value="">Все издатели</option>
+                        {% for i in issuers %}
+                            <option value="{{ i.id }}" {{ issuerId == i.id ? 'selected' : '' }}>{{ i.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-outline-secondary w-100" type="submit" title="Искать">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="d-flex flex-column gap-2">
+                {% for doc in result.documents %}
+                    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <h6 class="mb-0 fw-semibold" style="word-break: break-word;">{{ doc.title }}</h6>
+                                <span class="badge text-bg-secondary">{{ doc.kindLabel }}</span>
+                                {% if doc.expiresAt %}
+                                    <span class="badge {{ doc.isExpired ? 'text-bg-danger' : 'text-bg-success' }}">
+                                        {{ doc.isExpired ? 'Просрочен' : 'Действует' }} до {{ doc.expiresAt|date('d.m.Y') }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1 small text-muted">
+                                {{ doc.issuerTitle ?? '—' }} · {{ doc.issuedAt|date('d.m.Y') }}
+                                {% if doc.testStandard %} · {{ doc.testStandard }}{% endif %}
+                                · систем: {{ doc.references|length }}
+                            </p>
+                            <p class="mb-0 small">{{ doc.subject }}</p>
+                        </div>
+                        <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                            {% if doc.hasFile %}
+                                <a href="{{ path('app_cabinet_certificate_document_download', {id: doc.id}) }}"
+                                   class="btn btn-outline-secondary" title="Скачать PDF">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </a>
+                            {% endif %}
+                            {% if canEdit %}
+                                {% include '/components/edit_delete.html.twig' with {
+                                    'edit': 'app_cabinet_certificate_document_update',
+                                    'delete': 'app_cabinet_certificate_document_delete',
+                                    'id': doc.id,
+                                    'title': doc.title,
+                                    'name': 'документ'
+                                } %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if canEdit %}
+                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_certificate_document_delete'} %}
+            {% endif %}
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

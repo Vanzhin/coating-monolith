@@ -1,0 +1,31 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Certificates\Domain\Aggregate\Document\Document" table="certificates_document">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+
+        <field name="references" column="owner_refs" type="document_references"/>
+        <field name="kind" type="string" length="32"
+               enum-type="App\Certificates\Domain\Aggregate\Document\DocumentKind"/>
+        <field name="title" type="string" length="255"/>
+        <field name="issuerId" column="issuer_id" type="uuid"/>
+        <field name="issuedAt" column="issued_at" type="datetime_immutable"/>
+        <field name="expiresAt" column="expires_at" type="datetime_immutable" nullable="true"/>
+        <field name="subject" type="text"/>
+        <field name="description" type="text" nullable="true"/>
+        <field name="testStandard" column="test_standard" type="string" length="255" nullable="true"/>
+        <field name="file" type="string" length="512" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+
+        <indexes>
+            <index name="idx_certificates_document_issuer" columns="issuer_id"/>
+            <index name="idx_certificates_document_kind" columns="kind"/>
+        </indexes>
+    </entity>
+
+</doctrine-mapping>

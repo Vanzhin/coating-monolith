@@ -1,0 +1,141 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление документа' : 'Добавление документа' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_certificate_document_update', {id: inputData.id})
+    : path('app_cabinet_certificate_document_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <form method="post" action="{{ actionUrl }}" enctype="multipart/form-data" class="w-100">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="{{ path('app_cabinet_certificate_document_list') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> К списку
+                </a>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="inputKind" class="form-label">Вид</label>
+                        <select name="kind" id="inputKind" class="form-select" required>
+                            {% for k in kinds %}
+                                <option value="{{ k.value }}" {{ inputData.kind|default('') == k.value ? 'selected' : '' }}>{{ k.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="inputTitle" class="form-label">Номер заключения/протокола</label>
+                        <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
+                               class="form-control" required maxlength="255" placeholder="напр. 55-2023/ЦС ГСМ-ПК">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="inputIssuer" class="form-label">Издатель</label>
+                        <select name="issuerId" id="inputIssuer" class="form-select" required>
+                            <option value="">Выберите...</option>
+                            {% for i in issuers %}
+                                <option value="{{ i.id }}" {{ inputData.issuerId|default('') == i.id ? 'selected' : '' }}>{{ i.title }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            <a href="{{ path('app_cabinet_certificate_issuer_create') }}" target="_blank">Создать издателя</a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="inputIssuedAt" class="form-label">Дата выдачи</label>
+                        <input type="date" value="{{ inputData.issuedAt|default('') }}" name="issuedAt" id="inputIssuedAt"
+                               class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="inputExpiresAt" class="form-label">Действует до</label>
+                        <input type="date" value="{{ inputData.expiresAt|default('') }}" name="expiresAt" id="inputExpiresAt"
+                               class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="inputStandard" class="form-label">Стандарт испытания</label>
+                        <input type="text" value="{{ inputData.testStandard|default('') }}" name="testStandard" id="inputStandard"
+                               class="form-control" maxlength="255" placeholder="напр. ГОСТ Р 58346 / R120">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="inputSubject" class="form-label">Что подтверждает (срок экспл., среда)</label>
+                        <textarea name="subject" id="inputSubject" class="form-control" rows="2" required
+                                  maxlength="1000" placeholder="напр. С5, 15-25 лет">{{ inputData.subject|default('') }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="inputDescription" class="form-label">Описание</label>
+                        <textarea name="description" id="inputDescription" class="form-control" rows="3"
+                                  maxlength="2000">{{ inputData.description|default('') }}</textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="inputFile" class="form-label">Скан PDF</label>
+                        <input type="file" name="file" id="inputFile" class="form-control" accept="application/pdf">
+                        {% if inputData.hasFile|default(false) %}
+                            <div class="form-text">Файл уже загружен — новый заменит его.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-controller="document-references">
+                <h6 class="fw-semibold mb-3">Системы</h6>
+                <div data-document-references-target="list">
+                    {% for ref in inputData.references|default([]) %}
+                        <div class="d-flex gap-2 mb-2 align-items-center" data-document-references-target="row">
+                            <div class="flex-grow-1" data-controller="async-typeahead"
+                                 data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
+                                 data-async-typeahead-placeholder-value="Поиск системы...">
+                                <select name="references[][id]" data-async-typeahead-target="select">
+                                    <option value=""></option>
+                                    <option value="{{ ref.id }}" selected>{{ ref.id }}</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger" data-action="document-references#remove" title="Убрать">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <template data-document-references-target="template">
+                    <div class="d-flex gap-2 mb-2 align-items-center" data-document-references-target="row">
+                        <div class="flex-grow-1" data-controller="async-typeahead"
+                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
+                             data-async-typeahead-placeholder-value="Поиск системы...">
+                            <select name="references[][id]" data-async-typeahead-target="select">
+                                <option value=""></option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger" data-action="document-references#remove" title="Убрать">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </template>
+
+                <button type="button" class="btn btn-outline-primary btn-sm" data-action="document-references#add">
+                    <i class="bi bi-plus-lg"></i> Добавить систему
+                </button>
+                <div class="form-text">Пока привязываем к системам покрытий. Нужна хотя бы одна.</div>
+            </div>
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ path('app_cabinet_certificate_document_list') }}" class="btn btn-outline-secondary">Отмена</a>
+                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
