@@ -7,6 +7,7 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
+use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -15,6 +16,7 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
+        private SystemLockGuard $lockGuard,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private TagRepositoryInterface $tagRepo,
     ) {
@@ -27,6 +29,8 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         if (null === $system) {
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->id), 404);
         }
+
+        $this->lockGuard->assertModifiable($cmd->id);
 
         $treatment = $this->surfaceTreatmentRepo->findById(Uuid::fromString($cmd->surfaceTreatmentId));
         if (null === $treatment) {
