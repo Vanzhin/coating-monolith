@@ -12,31 +12,27 @@ Coatings, часть которых сейчас в незакоммиченно
   действует/просрочен, ссылка на скачивание);
 - **поиск систем** — boolean-фильтр «есть документы: да/нет».
 
-## Кросс-контекстный доступ (ACL, зеркаль Proposals→Coatings)
+## Кросс-контекстный доступ (ACL, единый адаптер — ациклично)
 
-Направление: `Coatings` (потребитель) читает `Certificates` (провайдер). Ациклично —
-`Certificates` код `Coatings` не тянет. Паттерн — как `CoatingsServiceInterface` +
-`CoatingsAdapter` + `CoatingsApiInterface` + `CoatingsApi`:
+Направление строго `Coatings` (потребитель) → `Certificates` (провайдер). `Certificates` код
+`Coatings` НЕ тянет. Вместо двухслойного ACL (Proposals↔Coatings, он цикличен на инфра-уровне)
+берём один адаптер:
 
-- **Доменный порт потребителя** — `Coatings/Domain/Service/SystemCertificatesServiceInterface.php`,
+- **Доменный порт потребителя** — `Coatings/Domain/Service/SystemCertificatesGateway.php`,
   выражен в СОБСТВЕННЫХ типах Coatings (никаких типов Certificates):
+  - `hasCertificates(string $systemId): bool` — для guard заморозки (see below).
   - `countBySystemIds(StringCollection $systemIds): array<string,int>` — id системы → число документов.
-  - `listBySystem(string $systemId): array` (`list<SystemDocumentData>`).
-  - `systemIdsWithDocuments(StringCollection $candidateIds): StringCollection` — для фильтра-фасета.
-  - `hasCertificates(string $systemId): bool` — для guard заморозки слоёв (see below).
-  - `SystemDocumentData` (`Coatings/Domain/Service/`) — плоский DTO: `id`, `title`, `kindLabel`,
-    `issuerTitle`, `issuedAt`, `expiresAt`, `isExpired`, `testStandard`, `downloadUrl`.
-- **Инфра-адаптер потребителя** — `Coatings/Infrastructure/Adapter/CertificatesAdapter.php`
-  `implements SystemCertificatesServiceInterface`, маппит результаты провайдера → `SystemDocumentData`,
-  зависит от `CertificatesApiInterface`.
-- **Инфра-интерфейс API провайдера** — `Coatings/Infrastructure/Adapter/CertificatesApiInterface.php`,
-  выражен в query-result типах `Certificates` (методы `documentsForSystem(string)`,
-  `documentCountsForSystems(list<string>)`).
-- **Реализация на стороне провайдера** — `Certificates/Infrastructure/Api/CertificatesApi.php`
-  `implements CertificatesApiInterface`, через публичный фасад `Certificates\...\PublicUseCaseInteractor`
-  (запросы `findByReference`/`countByReferences` из Плана 2, с `ReferenceType::CoatingSystem`;
-  внутри — jsonb-containment по коллекции `references`). Биндинг — автоваулинг (один имплементор),
-  как `CoatingsApi`.
+  - `listBySystem(string $systemId): list<SystemCertificate>`.
+  - `SystemCertificate` (`Coatings/Domain/Service/`) — read-VO Coatings: `id`, `title`, `kindLabel`,
+    `issuerTitle`, `issuedAt`, `expiresAt`, `isExpired`, `testStandard`, `hasFile`, `downloadUrl`.
+- **Адаптер** — `Coatings/Infrastructure/Adapter/CertificatesGateway.php` `implements SystemCertificatesGateway`.
+  Напрямую зависит от `Certificates\Domain\Repository\DocumentRepositoryInterface` (+ `IssuerRepositoryInterface`
+  для titles, `UrlGeneratorInterface` для downloadUrl). Зовёт `findByReference`/`countByReferences`
+  (jsonb-containment по `references` с `ReferenceType::CoatingSystem`), маппит `Document` → `SystemCertificate`.
+  Ациклично: Coatings-инфра зависит от Certificates-домена через интерфейс; Certificates ничего про Coatings не знает.
+
+Фасет «есть документы» тоже через порт: handler зовёт `countBySystemIds(candidateIds)` и ограничивает
+finder по id (`IN`/`NOT IN`) — таблицу `certificates_document` в SQL Coatings не тянем.
 
 Следствие many-to-many: один документ (напр. сертификат на несколько покрытий/систем) может
 числиться и показываться у нескольких систем; счётчик системы = число документов, чья коллекция
