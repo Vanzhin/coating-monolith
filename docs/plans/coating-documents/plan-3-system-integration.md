@@ -23,6 +23,7 @@ Coatings, часть которых сейчас в незакоммиченно
   - `countBySystemIds(StringCollection $systemIds): array<string,int>` — id системы → число документов.
   - `listBySystem(string $systemId): array` (`list<SystemDocumentData>`).
   - `systemIdsWithDocuments(StringCollection $candidateIds): StringCollection` — для фильтра-фасета.
+  - `hasCertificates(string $systemId): bool` — для guard заморозки слоёв (see below).
   - `SystemDocumentData` (`Coatings/Domain/Service/`) — плоский DTO: `id`, `title`, `kindLabel`,
     `issuerTitle`, `issuedAt`, `expiresAt`, `isExpired`, `testStandard`, `downloadUrl`.
 - **Инфра-адаптер потребителя** — `Coatings/Infrastructure/Adapter/CertificatesAdapter.php`
@@ -73,6 +74,29 @@ Coatings, часть которых сейчас в незакоммиченно
     (desktop ~180-212 + mobile ~437-458, образец `environment`), `+ (hasDocuments ? 1 : 0)` в
     `activeFacetsCount` (~29-31), reset-чип `merge({hasDocuments: null, page: null})`.
     Программный сабмит — только `requestSubmit()` (память: `form.submit()` обходит chip-facets merge).
+
+## Заморозка сертифицированной системы целиком (write-side guard)
+
+Если к системе привязан ≥1 документ (`Reference` типа `CoatingSystem`), её нельзя менять ВООБЩЕ —
+ни слои (состав/толщина/цвет), ни подложку/подготовку/среду/название/теги. Удаление такой системы
+тоже запрещено, пока документы не отвязаны/удалены.
+
+Механизм: перед любой мутацией системы командный хендлер Coatings спрашивает порт
+`hasCertificates(systemId)`; если true — `AppException` (422):
+«К системе привязан сертификат — систему менять нельзя. Создайте новую систему (при необходимости
+дублированием) и правьте её сколько угодно.» Без денормализованного флага — источник истины
+таблица документов Certificates.
+
+Точки-хендлеры Coatings, куда ставим guard (ВСЕ мутации системы):
+- обновление системы (`UpdateCoatingSystem`: title/description/substrate/treatment/environment/теги/состав);
+- операции со слоями (append/insert/remove/move, `updateLayerDft`, `replaceLayers`, смена цвета слоя),
+  если они идут отдельными хендлерами (AJAX-редактирование слоёв);
+- удаление системы (`DeleteCoatingSystem`).
+Не трогаем только read/query. Аудит всех write-хендлеров `CoatingSystem` — часть Плана 3.
+
+Guard выносим в один хелпер (доменный сервис `App\Coatings\Domain\Service\SystemLockGuard`,
+инжектящий порт), чтобы не дублировать проверку по хендлерам. Правило кросс-контекстное, поэтому
+в самом агрегате `CoatingSystem` его нет.
 
 ## Тесты
 - Functional: `SearchCoatingSystemsQueryHandler` заполняет `documentCount`/`documents` из порта;
