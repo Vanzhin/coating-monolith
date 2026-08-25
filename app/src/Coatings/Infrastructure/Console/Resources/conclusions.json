@@ -1,0 +1,2806 @@
+[
+ {
+  "conclusion": "55-2023/ЦС ГСМ-ПК",
+  "author": "ГосНИИГА",
+  "issuedAt": "2023-04-25",
+  "expiresAt": "2026-04-25",
+  "subject": "авиатопливо (ТС-1)",
+  "description": "стойкость. срок действия до 25.04.2026",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 55-2023/ЦС ГСМ-ПК)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "56-2023/ЦС ГСМ-ПК",
+  "author": "ГосНИИГА",
+  "issuedAt": "2023-04-25",
+  "expiresAt": "2026-04-25",
+  "subject": "авиатопливо (ТС-1)",
+  "description": "стойкость. срок действия до 25.04.2026",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 56-2023/ЦС ГСМ-ПК)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк АС"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк АС"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "21-01/23",
+  "author": "НПЦ Самара",
+  "issuedAt": "2023-01-18",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 21-01/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "310-05/23",
+  "author": "НПЦ Самара",
+  "issuedAt": "2023-05-16",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет;\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 310-05/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "conclusion": "311-05/23",
+  "author": "НПЦ Самара",
+  "issuedAt": "2023-05-16",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет;\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 311-05/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Плюс"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "420-06/23",
+  "author": "НПЦ Самара",
+  "issuedAt": "2023-06-21",
+  "expiresAt": null,
+  "subject": "метанол,\nпропарка",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 420-06/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "537-08/23",
+  "author": "НПЦ Самара",
+  "issuedAt": "2023-08-01",
+  "expiresAt": null,
+  "subject": "метанол,\nпропарка",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 537-08/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "572-07/24",
+  "author": "НПЦ Самара",
+  "issuedAt": "2024-07-31",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет;\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 572-07/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Классик",
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "690-09/24",
+  "author": "НПЦ Самара",
+  "issuedAt": "2024-09-16",
+  "expiresAt": null,
+  "subject": "С5, 7-15 лет;\nС4, 15-25 лет;\nС3, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 690-09/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "541-07/24",
+  "author": "НПЦ Самара",
+  "issuedAt": "2024-07-17",
+  "expiresAt": null,
+  "subject": "5% NaCl, 5МПа, 40С, 24ч, сброс 5 сек",
+  "description": "автоклав. на соответствие ГОСТ Р 58346 (трубы нефтянной промышленности)",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 541-07/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стронг"
+    ],
+    "dft": ""
+   }
+  ]
+ },
+ {
+  "conclusion": "300-04/24",
+  "author": "НПЦ Самара",
+  "issuedAt": "2024-04-27",
+  "expiresAt": null,
+  "subject": "пропарка 160С",
+  "description": "пропарка",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 300-04/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": ""
+   }
+  ]
+ },
+ {
+  "conclusion": "192-10/24",
+  "author": "НПЦ Самара",
+  "issuedAt": "2024-10-16",
+  "expiresAt": null,
+  "subject": "нефть,нп, сильноагрессивные среды - 15 лет",
+  "description": "стойкость. по требованиям РН-БашНИПИнефть",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 192-10/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "160"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "160"
+   }
+  ]
+ },
+ {
+  "conclusion": "128-02/25",
+  "author": "НПЦ Самара",
+  "issuedAt": "2025-02-13",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1), 15 лет",
+  "description": "климатика. продлеваем испытания до 20 (далее 25 лет)",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 128-02/25)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "347-05-25",
+  "author": "НПЦ Самара",
+  "issuedAt": "2025-05-15",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1), 20 лет",
+  "description": "климатика. продлеваем испытания до далее 25 лет",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 347-05-25)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "113-07/25",
+  "author": "НПЦ Самара",
+  "issuedAt": "2025-06-17",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1), 25 лет",
+  "description": "климатика. результаты на пределе",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 113-07/25)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "844-10/25",
+  "author": "НПЦ Самара",
+  "issuedAt": "2025-10-03",
+  "expiresAt": null,
+  "subject": "пропарка 170 °С",
+  "description": "стойкость. толщина покрытия в протоколе не указана",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 844-10/25)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "262-195ЗЕ-2022",
+  "author": "ЛКП",
+  "issuedAt": "2022-12-06",
+  "expiresAt": null,
+  "subject": "С4, 7-15 лет;\nС3, 15-25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 262-195ЗЕ-2022)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "267-193ЗЕ-2022",
+  "author": "ЛКП",
+  "issuedAt": "2022-12-13",
+  "expiresAt": null,
+  "subject": "С4, 15-25 лет;\nС3, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 267-193ЗЕ-2022)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "268-194ЗЕ-2022",
+  "author": "ЛКП",
+  "issuedAt": "2022-12-13",
+  "expiresAt": null,
+  "subject": "С4, 15-25 лет;\nС3, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 268-194ЗЕ-2022)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Классик"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "138-009ЗЕ-2023",
+  "author": "ЛКП",
+  "issuedAt": "2023-05-29",
+  "expiresAt": null,
+  "subject": "С5, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 138-009ЗЕ-2023)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "208-0693Е-2023",
+  "author": "ЛКП",
+  "issuedAt": "2023-08-15",
+  "expiresAt": null,
+  "subject": "Im1,2,3, 15-25 лет",
+  "description": "вода, почва",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 208-0693Е-2023)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "conclusion": "248-0683Е-2023",
+  "author": "ЛКП",
+  "issuedAt": "2023-09-13",
+  "expiresAt": null,
+  "subject": "Im1,2,3, более 25 лет",
+  "description": "вода, почва",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 248-0683Е-2023)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "conclusion": "194-169ПИ-2024",
+  "author": "ЛКП",
+  "issuedAt": "2024-10-17",
+  "expiresAt": null,
+  "subject": "удар, истираемость TA, диэлектрика",
+  "description": "физ-мех",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 194-169ПИ-2024)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "350"
+   }
+  ]
+ },
+ {
+  "conclusion": "036-021ЗЕ-2026",
+  "author": "ЛКП",
+  "issuedAt": "2026-03-12",
+  "expiresAt": null,
+  "subject": "термостойкость 200 С",
+  "description": "термостойкость 200 С. в рамках испытаний для применения под изоляцией",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 036-021ЗЕ-2026)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "162-22/3",
+  "author": "РГУ",
+  "issuedAt": "2023-03-20",
+  "expiresAt": null,
+  "subject": "425°С",
+  "description": "термостойкость. по ASTM D 2485-18",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 162-22/3)",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм Цинк ЭС"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "30"
+   },
+   {
+    "materials": [
+     "Литатерм Финиш Алюминиевый"
+    ],
+    "dft": "30"
+   }
+  ]
+ },
+ {
+  "conclusion": "162-22/2",
+  "author": "РГУ",
+  "issuedAt": "2023-05-15",
+  "expiresAt": null,
+  "subject": "нефть и нефтепродукты",
+  "description": "стойкость. по СТО …035…Газпрома",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 162-22/2)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "162-22/6",
+  "author": "РГУ",
+  "issuedAt": "2023-06-21",
+  "expiresAt": null,
+  "subject": "250°С",
+  "description": "термостойкость. по ASTM D 2485-18",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 162-22/6)",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "162-22/5/1",
+  "author": "РГУ",
+  "issuedAt": "2023-07-07",
+  "expiresAt": null,
+  "subject": "минус 196°С",
+  "description": "криогеника. 6 циклов минус 196…120°С",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. 162-22/5/1)",
+  "layers": [
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатерм 250"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-4",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-14",
+  "expiresAt": null,
+  "subject": "С4, 15-25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-4)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-3",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-20",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-3)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-1",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-10",
+  "expiresAt": null,
+  "subject": "Im1-3, 15-25 лет",
+  "description": "вода, почва",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-1)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290 Ст"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290 Ст"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-18",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-12-08",
+  "expiresAt": null,
+  "subject": "СХ (морск.) - 15-25 лет\nC5 - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-18)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-14",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-17",
+  "expiresAt": null,
+  "subject": "КАС, ЖКУ",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-14)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-14",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-17",
+  "expiresAt": null,
+  "subject": "КАС, ЖКУ",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-14)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-13",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-14",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - 3 года",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-13)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-7",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-13",
+  "expiresAt": null,
+  "subject": "бетон, жб ХЛ1(УХЛ1) - более 20 лет",
+  "description": "климатика",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-7)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "80"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-10",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-04",
+  "expiresAt": null,
+  "subject": "бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-10)",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-2",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-10",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 17 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-2)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут 9006"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-12",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-13",
+  "expiresAt": null,
+  "subject": "бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-12)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "250"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-12",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-13",
+  "expiresAt": null,
+  "subject": "бетон, жб ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-12)",
+  "layers": [
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "350"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-8",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-07-20",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 35 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-8)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-8",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-07-20",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 32 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-8)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-9",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-07-31",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 35 лет\nОМ1 - более 15 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-9)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-9",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-07-31",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 35 лет\nОМ1 - более 15 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-9)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-5",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-15",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 22 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-5)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Матт"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-5",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-15",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 22 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-5)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Матт"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-5",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-03-15",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-5)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Флекси"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-11",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-10",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-11)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Матт"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-11",
+  "author": "ЦНИИТС",
+  "issuedAt": "2023-04-10",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-11)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Матт"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-19",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-04-24",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 30 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-19)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-21",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-06-05",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 15 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-21)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Спринт 43140"
+    ],
+    "dft": "120"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-20",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-05-31",
+  "expiresAt": null,
+  "subject": "ХЛ1(УХЛ1) - более 25 лет",
+  "description": "климатика. без воздействия УФ допускается без финиша",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-20)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-25",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-07-30",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-25)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-26",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-09-09",
+  "expiresAt": null,
+  "subject": "минудобрения, БР-2, И-20А, вода пресная",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-26)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290",
+     "Литамастик 190"
+    ],
+    "dft": "160"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-22-334-28",
+  "author": "ЦНИИТС",
+  "issuedAt": "2024-09-12",
+  "expiresAt": null,
+  "subject": "CX, 15-25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-22-334-28)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-24-231-7",
+  "author": "ЦНИИТС",
+  "issuedAt": "2026-02-02",
+  "expiresAt": null,
+  "subject": "С4-vh",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-24-231-7)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "500"
+   },
+   {
+    "materials": [
+     "Литакоут Классик",
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-24-231-8",
+  "author": "ЦНИИТС",
+  "issuedAt": "2026-02-09",
+  "expiresAt": null,
+  "subject": "С4-vh",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-24-231-8)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "500"
+   },
+   {
+    "materials": [
+     "Литакоут Классик",
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-24-231-9",
+  "author": "ЦНИИТС",
+  "issuedAt": "2026-02-09",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1) - более 25 лет",
+  "description": "климатика. допускается с полиуретановым финишем\nдопускается в сильноагрессивных средах по СП28.1333",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-24-231-9)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290 Норд"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "350"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-24-231-10",
+  "author": "ЦНИИТС",
+  "issuedAt": "2026-02-12",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1) - более 25 лет",
+  "description": "климатика. допускается без полиуретанового финиша\nдопускается в сильноагрессивных средах по СП28.1333",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-24-231-10)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290 Норд"
+    ],
+    "dft": "120"
+   },
+   {
+    "materials": [
+     "Литачар Изотерм Э"
+    ],
+    "dft": "300"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "2000"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "ТС-НМГАЗ-24-231-11",
+  "author": "ЦНИИТС",
+  "issuedAt": "2026-02-20",
+  "expiresAt": null,
+  "subject": "УХЛ1(ХЛ1) - более 25 лет",
+  "description": "климатика. допускается в сильноагрессивных средах по СП28.1333",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ТС-НМГАЗ-24-231-11)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литачар Эпокс"
+    ],
+    "dft": "350"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост",
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "3277",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2023-06-07",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД. в качестве грунта в системе Литапрайм Цинк 80 + Литапрайм Экспресс МИО + Литакоут Фрост",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3277)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "3278",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2024-02-08",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД. без УФ",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3278)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   }
+  ]
+ },
+ {
+  "conclusion": "3279",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2023-06-07",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД. в системе Литапрайм Цинк 80 + Литапрайм Экспресс МИО + Литакоут Фрост",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3279)",
+  "layers": [
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "3280",
+  "author": "ВНИЖТ",
+  "issuedAt": "2024-02-08",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3280)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "3281",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2024-02-08",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД. в системе Литапрайм Цинк 80 + Литапрайм Экспресс МИО + Литакоут Фрост",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3281)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   }
+  ]
+ },
+ {
+  "conclusion": "3789",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2024-08-15",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3789)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "3790",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2024-08-15",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3790)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "180"
+   }
+  ]
+ },
+ {
+  "conclusion": "3791",
+  "author": "ВНИИЖТ",
+  "issuedAt": "2024-08-15",
+  "expiresAt": null,
+  "subject": "РЖД",
+  "description": "РЖД",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 3791)",
+  "layers": [
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "05-22-810/З",
+  "author": "НИТИ",
+  "issuedAt": "2022-11-23",
+  "expiresAt": "2024-07-01",
+  "subject": "—",
+  "description": "деактив. срок действия до 01.07.2024",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 05-22-810/З)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "05-23-723/З",
+  "author": "НИТИ",
+  "issuedAt": "2023-10-31",
+  "expiresAt": "2026-12-14",
+  "subject": "—",
+  "description": "деактив. срок действия до 14.12.2026",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 05-23-723/З)",
+  "layers": [
+   {
+    "materials": [
+     "Литакоут Эпокс"
+    ],
+    "dft": ""
+   }
+  ]
+ },
+ {
+  "conclusion": "05-23-722",
+  "author": "НИТИ",
+  "issuedAt": "2023-11-20",
+  "expiresAt": null,
+  "subject": "—",
+  "description": "деактив. протокол испытаний",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 05-23-722)",
+  "layers": [
+   {
+    "materials": [
+     "Литакоут Эпокс"
+    ],
+    "dft": ""
+   }
+  ]
+ },
+ {
+  "conclusion": "05-24-777/3",
+  "author": "НИТИ",
+  "issuedAt": "2024-12-06",
+  "expiresAt": "2027-12-11",
+  "subject": "—",
+  "description": "деактив. срок действия до 11.12.2027",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 05-24-777/3)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литалак Сил"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "51-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2023-04-14",
+  "expiresAt": null,
+  "subject": "Im2 - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 51-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "conclusion": "66-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2023-05-15",
+  "expiresAt": null,
+  "subject": "Im4 - более 25 лет\nCX - более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 66-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "conclusion": "69-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2023-05-15",
+  "expiresAt": null,
+  "subject": "Taber Abraser, удар при 20С и минус 20С",
+  "description": "истираемость, удар",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 69-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "conclusion": "202-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2023-11-20",
+  "expiresAt": null,
+  "subject": "УХЛ1 (ХЛ1), тип II - 15 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 202-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Мульти"
+    ],
+    "dft": "97"
+   }
+  ]
+ },
+ {
+  "conclusion": "109-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2024-05-21",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет;\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 109-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "240"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "65/1-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2023-05-10",
+  "expiresAt": null,
+  "subject": "Im3, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 65/1-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "conclusion": "215-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2024-10-14",
+  "expiresAt": null,
+  "subject": "физмех после выдержек по ОТТ Трансефти внутрянка",
+  "description": "отдельные. проверка 300 мкм в один слой",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 215-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "conclusion": "40-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2025-03-24",
+  "expiresAt": null,
+  "subject": "С5, 15-25 лет;\nС4, более 25 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 40-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "180"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "125-Р",
+  "author": "РУТИЛ",
+  "issuedAt": "2025-07-30",
+  "expiresAt": null,
+  "subject": "Im4, 15-25 лет",
+  "description": "климатика. по ГОСТ 3466.9",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 125-Р)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "conclusion": "07.05.04.-07/27",
+  "author": "УРАЛКАЛИЙ",
+  "issuedAt": "2023-11-15",
+  "expiresAt": null,
+  "subject": "С4, более 15 лет",
+  "description": "климатика. письмо о прохождении испытаний",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 07.05.04.-07/27)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "07.05.04.-07/27",
+  "author": "УРАЛКАЛИЙ",
+  "issuedAt": "2023-11-15",
+  "expiresAt": null,
+  "subject": "С5-I, более 15 лет",
+  "description": "климатика. письмо о прохождении испытаний",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 07.05.04.-07/27)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "70"
+   }
+  ]
+ },
+ {
+  "conclusion": "43К/23",
+  "author": "ГродноАзот",
+  "issuedAt": "2023-09-26",
+  "expiresAt": null,
+  "subject": "метанол, влияние на качество продукта",
+  "description": "стойкость. 816 ч.",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 43К/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "27К/23",
+  "author": "ГродноАзот",
+  "issuedAt": "2023-06-12",
+  "expiresAt": null,
+  "subject": "КАС, ЖКУ, метанол, влияние на качество продукта",
+  "description": "стойкость. покрытие выдерживает контакт с КАС, ЖКУ и метанолом\nfail - оказывает влияние на качество метанола",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 27К/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Плюс"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "27К/23",
+  "author": "ГродноАзот",
+  "issuedAt": "2023-06-12",
+  "expiresAt": null,
+  "subject": "КАС, ЖКУ, метанол, влияние на качество продукта",
+  "description": "стойкость. покрытие выдерживает контакт с КАС, ЖКУ и метанолом\nfail - оказывает влияние на качество метанола",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 27К/23)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-24-028",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-01-15",
+  "expiresAt": null,
+  "subject": "С4 - более 25 лет,\nС5 - 15-25 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-24-028)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-24-029",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-01-15",
+  "expiresAt": null,
+  "subject": "С4 - более 25 лет,\nС5 - 15-25 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-24-029)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-24-030",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-01-15",
+  "expiresAt": null,
+  "subject": "С4 - более 25 лет,\nС5 - 15-25 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021\nдля ДИМ - первый слой выдерживали при 180С",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-24-030)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-24-031",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-01-15",
+  "expiresAt": null,
+  "subject": "С4 - более 25 лет,\nС5 - 15-25 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021\nдля ДИМ - первый и второй слой выдерживали при 180С",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-24-031)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Цинк 80"
+    ],
+    "dft": "60"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-23-024",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2023-11-30",
+  "expiresAt": null,
+  "subject": "С2 - 15-25 лет\nС3 - до 7 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-23-024)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-23-025",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2023-12-07",
+  "expiresAt": null,
+  "subject": "С3 - более 25 лет\nС4 - 15-25 лет,\nС5 - 7-15 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-23-025)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-23-026",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2023-12-07",
+  "expiresAt": null,
+  "subject": "С3 - более 25 лет\nС4 - 15-25 лет,\nС5 - 7-15 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021\nдля ДИМ - первый слой выдерживали при 180С",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-23-026)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-23-027",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2023-12-07",
+  "expiresAt": null,
+  "subject": "С3 - более 25 лет\nС4 - 15-25 лет,\nС5 - 7-15 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021\nдля ДИМ - первый и второй слой выдерживали при 180С",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-23-027)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "СК-23-057",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-08-09",
+  "expiresAt": null,
+  "subject": "С4 - более 25 лет,\nС5 - 15-25 лет",
+  "description": "климатика. по ГОСТ 34667.6-2021\nдля ДИМ - первый и второй слой выдерживали при 180С",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. СК-23-057)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс Ф"
+    ],
+    "dft": "80"
+   },
+   {
+    "materials": [
+     "Литапрайм Экспресс МИО"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "60"
+   }
+  ]
+ },
+ {
+  "conclusion": "И-24-55",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-08-23",
+  "expiresAt": null,
+  "subject": "С5 - 15-25 лет, С4 - более 25 лет, адгезия, удар, Табер, раствор аммиака",
+  "description": "климатика, физмех, стойкость",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. И-24-55)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290 Ст"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "conclusion": "И-24-54",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-08-23",
+  "expiresAt": null,
+  "subject": "минудобрения:\nкарбамид, сульфат аммония, аммофос, нитроаммофоска,хлористый калий",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. И-24-54)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "200"
+   },
+   {
+    "materials": [
+     "Литамастик 290 Ст"
+    ],
+    "dft": "200"
+   }
+  ]
+ },
+ {
+  "conclusion": "ЖС-24-56",
+  "author": "ЦНИИПСК",
+  "issuedAt": "2024-08-23",
+  "expiresAt": null,
+  "subject": "аммиак",
+  "description": "стойкость",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ЖС-24-56)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "ССЛ-020-056",
+  "author": "УРАЛХИМ-ССЛ",
+  "issuedAt": "2024-02-07",
+  "expiresAt": null,
+  "subject": "бетон в средах Уралхим,\nОМ1, ОМ3 - 15 лет",
+  "description": "климатика",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ССЛ-020-056)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "100"
+   },
+   {
+    "materials": [
+     "Литакоут Плюс"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ССЛ-020-1516",
+  "author": "УРАЛХИМ-ССЛ",
+  "issuedAt": "2023-12-07",
+  "expiresAt": null,
+  "subject": "металл в средах Уралхим,\nОМ1, ОМ3 - 10 лет",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ССЛ-020-1516)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "130"
+   },
+   {
+    "materials": [
+     "Литакоут Плюс"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ССЛ-020-1518",
+  "author": "УРАЛХИМ-ССЛ",
+  "issuedAt": "2024-01-31",
+  "expiresAt": null,
+  "subject": "металл в средах Уралхим,\nОМ1, ОМ3 - 15 лет\nIm1 - vh",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ССЛ-020-1518)",
+  "layers": [
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   },
+   {
+    "materials": [
+     "Литатанк Стандарт"
+    ],
+    "dft": "150"
+   }
+  ]
+ },
+ {
+  "conclusion": "ССЛ-020-057",
+  "author": "УРАЛХИМ-ССЛ",
+  "issuedAt": "2024-02-09",
+  "expiresAt": null,
+  "subject": "металл в средах Уралхим,\nОМ1, ОМ3 - 15 лет\nIm1 - vh",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ССЛ-020-057)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "130"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "ССЛ-020-058",
+  "author": "УРАЛХИМ-ССЛ",
+  "issuedAt": "2024-02-13",
+  "expiresAt": null,
+  "subject": "металл в средах Уралхим,\nОМ1, ОМ3 - 15 лет\nIm1 - vh",
+  "description": "климатика",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. ССЛ-020-058)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 280"
+    ],
+    "dft": "130"
+   },
+   {
+    "materials": [
+     "Литакоут Плюс"
+    ],
+    "dft": "50"
+   }
+  ]
+ },
+ {
+  "conclusion": "1643.И-1",
+  "author": "НИЦ СМиТ",
+  "issuedAt": "2024-04-19",
+  "expiresAt": null,
+  "subject": "на бетонной подложке",
+  "description": "трещиностойкость",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 1643.И-1)",
+  "layers": [
+   {
+    "materials": [
+     "Литаталак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литапрайм Гидро"
+    ],
+    "dft": "500"
+   }
+  ]
+ },
+ {
+  "conclusion": "1372-1.ОТ",
+  "author": "НИЦ СМиТ",
+  "issuedAt": "2024-05-21",
+  "expiresAt": null,
+  "subject": "на бетонной подложке",
+  "description": "требования АЭС. градирни АЭС - внутрянка",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 1372-1.ОТ)",
+  "layers": [
+   {
+    "materials": [
+     "Литаталак Сил"
+    ],
+    "dft": "50"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   },
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "125"
+   }
+  ]
+ },
+ {
+  "conclusion": "1372-2.ОТ",
+  "author": "НИЦ СМиТ",
+  "issuedAt": "2024-05-21",
+  "expiresAt": null,
+  "subject": "на бетонной подложке",
+  "description": "требования АЭС. градирни АЭС - наружка",
+  "substrate": "concrete",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 1372-2.ОТ)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "90"
+   },
+   {
+    "materials": [
+     "Литапрайм Акрил"
+    ],
+    "dft": "110"
+   }
+  ]
+ },
+ {
+  "conclusion": "042-ЛИАТ/ЛКП/06/24/24",
+  "author": "БашНИПИ",
+  "issuedAt": "2024-04-15",
+  "expiresAt": null,
+  "subject": "внутреннее покрытие емкостей нефтегазовых объектов, сильноагрессивная среда - 10 лет",
+  "description": "стойкость. ГОСТ 31385, ГОСТ 9.409, СП 28.13330.2017",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 042-ЛИАТ/ЛКП/06/24/24)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "220"
+   },
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "220"
+   }
+  ]
+ },
+ {
+  "conclusion": "бн",
+  "author": "Сколтех",
+  "issuedAt": "2025-01-01",
+  "expiresAt": null,
+  "subject": "три типа грунта при трех температурах",
+  "description": "морозное пучение",
+  "substrate": "steel_carbon",
+  "environment": "special",
+  "systemTitle": "Система (закл. бн)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик 290"
+    ],
+    "dft": "860"
+   }
+  ]
+ },
+ {
+  "conclusion": "7К/26",
+  "author": "ЛУКОЙЛ",
+  "issuedAt": "2026-04-20",
+  "expiresAt": null,
+  "subject": "нефть, нефтепродукты,  подтоварная вода\nдо 60С. 20лет",
+  "description": "внутрянка. по требованиям ООО ЛУКОЙЛ-Пермь",
+  "substrate": "steel_carbon",
+  "environment": "immersion",
+  "systemTitle": "Система (закл. 7К/26)",
+  "layers": [
+   {
+    "materials": [
+     "Литамастик Универсал 20"
+    ],
+    "dft": "300"
+   }
+  ]
+ },
+ {
+  "conclusion": "8К/26",
+  "author": "ЛУКОЙЛ",
+  "issuedAt": "2026-04-20",
+  "expiresAt": null,
+  "subject": "С4 - 7-15 лет\nС3 - более 15 лет",
+  "description": "климатика. по требованиям ООО ЛУКОЙЛ-Пермь",
+  "substrate": "steel_carbon",
+  "environment": "atmospheric",
+  "systemTitle": "Система (закл. 8К/26)",
+  "layers": [
+   {
+    "materials": [
+     "Литапрайм Экспресс"
+    ],
+    "dft": "140"
+   },
+   {
+    "materials": [
+     "Литакоут Фрост У"
+    ],
+    "dft": "60"
+   }
+  ]
+ }
+]
