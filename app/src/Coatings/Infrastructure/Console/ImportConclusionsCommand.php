@@ -10,6 +10,7 @@ use App\Certificates\Application\UseCase\Command\CreateIssuer\CreateIssuerComman
 use App\Certificates\Domain\Aggregate\Document\DocumentKind;
 use App\Certificates\Domain\Aggregate\Document\Reference;
 use App\Certificates\Domain\Aggregate\Document\ReferenceType;
+use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
 use App\Certificates\Domain\Repository\IssuerRepositoryInterface;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommand;
 use App\Coatings\Application\UseCase\Command\CreateCoatingSystem\CreateCoatingSystemCommandResult;
@@ -34,7 +35,8 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Импорт заключений из «перечня заключений» (Resources/conclusions.json). На каждую запись
  * создаётся НОВАЯ система покрытий (не матчим существующие) и документ-заключение на неё;
- * издатель резолвится/создаётся по «автору». Идемпотентно по названию системы, с --dry-run.
+ * издатель резолвится/создаётся по «автору». Идемпотентно по названию системы И номеру заключения
+ * (повторный прогон не плодит документы, даже если системы были удалены), с --dry-run.
  * Подложка/среда/даты запечены в JSON при парсинге xlsx (цветов слоёв нет — вариант A).
  */
 #[AsCommand(
@@ -50,6 +52,7 @@ final class ImportConclusionsCommand extends Command
         private readonly SurfaceTreatmentRepositoryInterface $treatmentRepo,
         private readonly CoatingSystemRepositoryInterface $systemRepo,
         private readonly IssuerRepositoryInterface $issuerRepo,
+        private readonly DocumentRepositoryInterface $documentRepo,
         private readonly CommandBusInterface $commandBus,
     ) {
         parent::__construct();
@@ -75,14 +78,16 @@ final class ImportConclusionsCommand extends Command
         $coatingByTitle = $this->coatingIdByNormalizedTitle();
         $treatments = $this->loadTreatments();
         $existingTitles = $this->existingSystemTitles();
+        $existingDocNumbers = array_fill_keys($this->documentRepo->existingTitles(), true);
 
         $issuerCache = [];
         $created = $skipped = $blocked = $failed = [];
 
         foreach ($entries as $entry) {
             $title = (string) ($entry['systemTitle'] ?? '');
+            $conclusion = (string) ($entry['conclusion'] ?? '');
 
-            if (isset($existingTitles[$title])) {
+            if ($this->alreadyImported($title, $conclusion, $existingTitles, $existingDocNumbers)) {
                 $skipped[] = $title;
                 continue;
             }
@@ -113,6 +118,7 @@ final class ImportConclusionsCommand extends Command
             if ($dryRun) {
                 $created[] = $title;
                 $existingTitles[$title] = true;
+                $existingDocNumbers[$conclusion] = true;
                 continue;
             }
 
@@ -131,7 +137,7 @@ final class ImportConclusionsCommand extends Command
 
                 $this->commandBus->execute(new CreateDocumentCommand(
                     kind: DocumentKind::Conclusion,
-                    title: (string) $entry['conclusion'],
+                    title: $conclusion,
                     issuerId: $issuerId,
                     issuedAt: new \DateTimeImmutable((string) $entry['issuedAt']),
                     expiresAt: null !== ($entry['expiresAt'] ?? null) ? new \DateTimeImmutable((string) $entry['expiresAt']) : null,
@@ -143,6 +149,7 @@ final class ImportConclusionsCommand extends Command
 
                 $created[] = $title;
                 $existingTitles[$title] = true;
+                $existingDocNumbers[$conclusion] = true;
             } catch (\Throwable $e) {
                 $failed[] = [$title, $e->getMessage()];
             }
@@ -310,6 +317,23 @@ final class ImportConclusionsCommand extends Command
         }
 
         return $titles;
+    }
+
+    /**
+     * Заключение уже импортировано: есть система с таким названием ИЛИ документ с таким номером
+     * (последнее ловит дубли даже при удалённых системах — повторный прогон безопасен).
+     *
+     * @param array<string, true> $existingSystemTitles
+     * @param array<string, true> $existingDocNumbers
+     */
+    private function alreadyImported(
+        string $systemTitle,
+        string $conclusion,
+        array $existingSystemTitles,
+        array $existingDocNumbers,
+    ): bool {
+        return isset($existingSystemTitles[$systemTitle])
+            || ('' !== $conclusion && isset($existingDocNumbers[$conclusion]));
     }
 
     /**
