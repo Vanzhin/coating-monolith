@@ -33,4 +33,26 @@ interface DocumentRepositoryInterface
      * @return array<string, int> ключ — referenceId владельца, значение — число документов
      */
     public function countByReferences(ReferenceType $type, StringCollection $referenceIds): array;
+
+    /**
+     * Один скачиваемый документ (с файлом) на каждого владельца заданного типа — для кнопки
+     * скачивания на карточке. Берём самый свежий по дате выдачи.
+     *
+     * @return array<string, string> ключ — referenceId владельца, значение — id документа
+     */
+    public function downloadableByReferences(ReferenceType $type, StringCollection $referenceIds): array;
+
+    /**
+     * Уникальные непустые значения «стандарт испытания» — источник опций фасета списка.
+     *
+     * @return list<string>
+     */
+    public function distinctTestStandards(): array;
+
+    /**
+     * Номера (title) всех существующих документов — для идемпотентности импорта заключений.
+     *
+     * @return list<string>
+     */
+    public function existingTitles(): array;
 }

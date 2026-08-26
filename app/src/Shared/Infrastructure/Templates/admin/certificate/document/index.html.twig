@@ -3,93 +3,334 @@
 {% block title %}{{ parent() }} | Документы{% endblock %}
 
 {% block content %}
-    {% set canEdit = is_granted('ROLE_ADMIN') %}
+    {# canEdit приходит из ListAction (единый источник — контроллер). #}
+    {% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
+    {% set listRoute = 'app_cabinet_certificate_document_list' %}
+
+    {# Активность фасетов #}
+    {% set kindActive = kind != '' %}
+    {% set issuerActive = issuerId != '' %}
+    {% set statusActive = status != '' %}
+    {% set testStandardActive = testStandard != '' %}
+
+    <div data-controller="document-preview"
+         data-document-preview-modal-id-value="documentModal"
+         data-document-preview-edit-route-value="{{ path('app_cabinet_certificate_document_update', {id: idPlaceholder}) }}"
+         data-document-preview-by-ids-system-value="{{ path('app_cabinet_coating_system_by_ids') }}"
+         data-document-preview-by-ids-coating-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+         data-document-preview-preview-system-value="{{ path('app_cabinet_coating_system_preview', {id: idPlaceholder}) }}"
+         data-document-preview-preview-coating-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Документы',
         create_route: 'app_cabinet_certificate_document_create',
         can_edit: canEdit,
-        is_empty: result.documents is empty,
+        is_empty: documents is empty,
     } %}
-        {% block above_list %}
-            <form method="get" action="{{ path('app_cabinet_certificate_document_list') }}" class="row g-2">
-                <div class="col-md-5">
-                    <input type="search" name="q" value="{{ search }}" class="form-control"
-                           placeholder="Поиск по номеру / среде / описанию...">
-                </div>
-                <div class="col-md-3">
-                    <select name="kind" class="form-select" onchange="this.form.requestSubmit()">
-                        <option value="">Все виды</option>
-                        {% for k in kinds %}
-                            <option value="{{ k.value }}" {{ kind == k.value ? 'selected' : '' }}>{{ k.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="issuerId" class="form-select" onchange="this.form.requestSubmit()">
-                        <option value="">Все издатели</option>
-                        {% for i in issuers %}
-                            <option value="{{ i.id }}" {{ issuerId == i.id ? 'selected' : '' }}>{{ i.title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-1">
-                    <button class="btn btn-outline-secondary w-100" type="submit" title="Искать">
-                        <i class="bi bi-search"></i>
+    {% block above_list %}
+        <form method="get" action="{{ path(listRoute) }}"
+              id="documentListForm" class="mb-3"
+              data-controller="chip-facets">
+
+            {% include 'components/_search_toolbar.html.twig' with {
+                q_value: q,
+                name: 'q',
+                reset_url: path(listRoute),
+                placeholder: 'По номеру / теме / описанию (от 3 символов)',
+            } %}
+
+            {% set defaultSort = constant('App\\Certificates\\Domain\\Repository\\DocumentSort::DEFAULT') %}
+            {% set sortActive = sort != defaultSort %}
+
+            {# === Chip-row === #}
+            <div class="d-flex align-items-center gap-2 mb-3 chip-row">
+                <div class="d-flex gap-2 flex-shrink-0 chip-row-pinned">
+
+                    {# --- Сортировка --- #}
+                    <div class="dropdown">
+                        <button type="button"
+                                class="btn btn-sm {{ sortActive ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Сортировка">
+                            <i class="bi bi-sort-down"></i><span class="d-none d-md-inline"> {{ sortActive ? sort.title() : 'Сортировка' }}</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for opt in sortOptions %}
+                                {% set sortParam = (opt == defaultSort) ? null : opt.value %}
+                                {% set q2 = app.request.query.all|merge({sort: sortParam, page: null})|filter(v => v is not null) %}
+                                <li>
+                                    <a class="dropdown-item {% if sort == opt %}active{% endif %}"
+                                       href="{{ path(listRoute, q2) }}">{{ opt.title() }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    {# --- Все фильтры (offcanvas) --- #}
+                    <button type="button"
+                            class="btn btn-sm {{ activeFacetsCount > 0 ? 'btn-primary' : 'btn-outline-secondary' }} position-relative"
+                            data-bs-toggle="offcanvas" data-bs-target="#allDocsFiltersOffcanvas"
+                            aria-controls="allDocsFiltersOffcanvas" aria-label="Все фильтры">
+                        <i class="bi bi-sliders"></i><span class="d-none d-md-inline"> Все фильтры</span>
+                        {% if activeFacetsCount > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size: 0.65rem;">
+                                {{ activeFacetsCount }}
+                            </span>
+                        {% endif %}
                     </button>
                 </div>
-            </form>
-        {% endblock %}
 
-        {% block list_content %}
-            <div class="d-flex flex-column gap-2">
-                {% for doc in result.documents %}
-                    <div class="d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
-                        <div class="flex-grow-1 overflow-hidden">
-                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                <h6 class="mb-0 fw-semibold" style="word-break: break-word;">{{ doc.title }}</h6>
-                                <span class="badge text-bg-secondary">{{ doc.kindLabel }}</span>
-                                {% if doc.expiresAt %}
-                                    <span class="badge {{ doc.isExpired ? 'text-bg-danger' : 'text-bg-success' }}">
-                                        {{ doc.isExpired ? 'Просрочен' : 'Действует' }} до {{ doc.expiresAt|date('d.m.Y') }}
-                                    </span>
-                                {% endif %}
+                {# Скроллируемая часть chip-row #}
+                <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
+
+                    {# --- Вид (single) --- #}
+                    {% if not kindActive %}
+                        <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Вид</button>
+                                <div class="dropdown-menu chip-desktop-menu p-3">
+                                    {% for k in kinds %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="kind" value="{{ k.value }}"
+                                                   id="kind-{{ k.value }}" form="documentListForm"
+                                                   onchange="this.form.requestSubmit()">
+                                            <label class="form-check-label" for="kind-{{ k.value }}">{{ k.label }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             </div>
-                            <p class="mb-1 small text-muted">
-                                {{ doc.issuerTitle ?? '—' }} · {{ doc.issuedAt|date('d.m.Y') }}
-                                {% if doc.testStandard %} · {{ doc.testStandard }}{% endif %}
-                                · систем: {{ doc.references|length }}
-                            </p>
-                            <p class="mb-0 small">{{ doc.subject }}</p>
-                        </div>
-                        <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                            {% if doc.hasFile %}
-                                <a href="{{ path('app_cabinet_certificate_document_download', {id: doc.id}) }}"
-                                   class="btn btn-outline-secondary" title="Скачать PDF">
-                                    <i class="bi bi-file-earmark-arrow-down"></i>
-                                </a>
-                            {% endif %}
-                            {% if canEdit %}
-                                {% include '/components/edit_delete.html.twig' with {
-                                    'edit': 'app_cabinet_certificate_document_update',
-                                    'delete': 'app_cabinet_certificate_document_delete',
-                                    'id': doc.id,
-                                    'title': doc.title,
-                                    'name': 'документ'
-                                } %}
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
+                        </fieldset>
+                    {% else %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({kind: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр вида">
+                            {% for k in kinds|filter(k => k.value == kind) %}{{ k.label }}{% endfor %} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+
+                    {# --- Статус срока (single) --- #}
+                    {% if not statusActive %}
+                        <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">Статус</button>
+                                <div class="dropdown-menu chip-desktop-menu p-3">
+                                    {% for s in statusOptions %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="status" value="{{ s.value }}"
+                                                   id="status-{{ s.value }}" form="documentListForm"
+                                                   onchange="this.form.requestSubmit()">
+                                            <label class="form-check-label" for="status-{{ s.value }}">{{ s.label }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </fieldset>
+                    {% else %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({status: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр статуса">
+                            {% for s in statusOptions|filter(s => s.value == status) %}{{ s.label }}{% endfor %} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+
+                    {# --- Организация: выбор в шторке; здесь активный чип --- #}
+                    {% if issuerActive %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({issuerId: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр организации">
+                            {% for i in issuers|filter(i => i.id == issuerId) %}{{ i.title }}{% endfor %} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+
+                    {# --- Стандарт испытания: выбор в шторке; здесь активный чип --- #}
+                    {% if testStandardActive %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({testStandard: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр стандарта">
+                            {{ testStandard }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+
+        {# === Шторка «Все фильтры» === #}
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="allDocsFiltersOffcanvas" aria-labelledby="allDocsFiltersOffcanvasLabel">
+            <div class="offcanvas-header border-bottom">
+                <button type="button" class="btn-close m-0 me-auto" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                <h5 class="offcanvas-title" id="allDocsFiltersOffcanvasLabel">
+                    Фильтры
+                    {% if activeFacetsCount > 0 %}<span class="badge text-bg-primary ms-1">{{ activeFacetsCount }}</span>{% endif %}
+                </h5>
             </div>
 
-            {% if canEdit %}
-                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_certificate_document_delete'} %}
-            {% endif %}
-        {% endblock %}
+            <form method="get" action="{{ path(listRoute) }}" id="allDocsFiltersForm" class="offcanvas-body d-flex flex-column p-0">
+                {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+                {% if sort != defaultSort %}<input type="hidden" name="sort" value="{{ sort.value }}">{% endif %}
 
-        {% block below_list %}
-            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
-        {% endblock %}
+                <div class="flex-grow-1 overflow-auto p-3">
+                    {# Вид #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Вид</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="kind" value="" id="kindOff-none" {% if not kindActive %}checked{% endif %}>
+                            <label class="form-check-label" for="kindOff-none">Любой</label>
+                        </div>
+                        {% for k in kinds %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="kind" value="{{ k.value }}"
+                                       id="kindOff-{{ k.value }}" {% if kind == k.value %}checked{% endif %}>
+                                <label class="form-check-label" for="kindOff-{{ k.value }}">{{ k.label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {# Статус срока #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Статус срока</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" value="" id="statusOff-none" {% if not statusActive %}checked{% endif %}>
+                            <label class="form-check-label" for="statusOff-none">Любой</label>
+                        </div>
+                        {% for s in statusOptions %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" value="{{ s.value }}"
+                                       id="statusOff-{{ s.value }}" {% if status == s.value %}checked{% endif %}>
+                                <label class="form-check-label" for="statusOff-{{ s.value }}">{{ s.label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {# Организация #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Организация</h6>
+                        <select name="issuerId" class="form-select">
+                            <option value="">Все организации</option>
+                            {% for i in issuers %}
+                                <option value="{{ i.id }}" {{ issuerId == i.id ? 'selected' : '' }}>{{ i.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# Стандарт испытания #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Стандарт испытания</h6>
+                        <select name="testStandard" class="form-select">
+                            <option value="">Любой</option>
+                            {% for ts in testStandards %}
+                                <option value="{{ ts }}" {{ testStandard == ts ? 'selected' : '' }}>{{ ts }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# Покрытие: документы, привязанные к выбранным покрытиям (id в URL, имена — by-ids) #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Покрытие</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="[]"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                               data-coating-tags-create-url-value=""
+                               data-coating-tags-hidden-input-name-value="coatingIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               data-coating-tags-preselected-ids-value="{{ coatingIds|json_encode }}"
+                               data-coating-tags-resolve-url-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить покрытие...">
+                    </div>
+                </div>
+
+                {# Sticky footer #}
+                <div class="border-top p-3 d-flex gap-2 bg-body">
+                    <a href="{{ path(listRoute) }}" class="btn btn-outline-secondary flex-fill">Сбросить всё</a>
+                    <button type="submit" class="btn btn-primary flex-fill">Показать</button>
+                </div>
+            </form>
+        </div>
+    {% endblock %}
+
+    {% block list_content %}
+        <div class="d-inline-block p-2 px-3 mb-3 rounded-3 bg-body-tertiary small">
+            Найдено: <strong>{{ total }}</strong>
+        </div>
+
+        {% set totalPages = (total / perPage)|round(0, 'ceil') %}
+        {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
+
+        {% include 'components/infinite_list.html.twig' with {
+            items_template: 'admin/certificate/document/_list_cards.html.twig',
+            items_params: {documents: documents, canEdit: canEdit},
+            total_pages: totalPages,
+            base_url: path(listRoute, baseQuery),
+        } only %}
+
+        <noscript>
+            {% include 'components/pager.html.twig' with {pager: {total_items: total, page: page, perPage: perPage}} %}
+        </noscript>
+
+        {% if canEdit %}
+            {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_certificate_document_delete'} %}
+        {% endif %}
+
+        {# Модалка предпросмотра документа — единственная, заполняется JS из data-payload карточки. #}
+        <div class="modal fade" id="documentModal" tabindex="-1" aria-labelledby="documentModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-0" id="documentModalLabel" data-document-preview-target="modalTitle"></h5>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                <span class="badge text-bg-secondary fw-normal" data-document-preview-target="modalKind"></span>
+                                <span class="badge fw-normal" data-document-preview-target="modalStatus"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary small" data-document-preview-target="modalMeta"></div>
+
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                            <div class="small text-muted mb-1">Что подтверждает</div>
+                            <div data-document-preview-target="modalSubject"></div>
+                        </div>
+
+                        <div class="modal-doc-description p-3 mb-3 rounded-3 bg-body-tertiary d-none">
+                            <p class="text-body-secondary mb-0" data-document-preview-target="modalDescription"></p>
+                        </div>
+
+                        <div class="modal-doc-references p-3 mb-3 rounded-3 bg-body-tertiary d-none">
+                            <h6 class="fw-semibold mb-2">Распространяется на</h6>
+                            <div class="d-flex flex-wrap gap-1" data-document-preview-target="modalReferences"></div>
+                        </div>
+
+                        <div class="small text-muted">Обновлено: <span data-document-preview-target="modalUpdatedAt"></span></div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-outline-secondary d-none" data-document-preview-target="modalDownload">
+                            <i class="bi bi-file-earmark-arrow-down"></i> Скачать PDF
+                        </a>
+                        {% if canEdit %}
+                            <a href="#" class="btn btn-outline-primary" data-document-preview-target="modalEditLink">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Хост для ленивой модалки превью привязанного объекта (система/покрытие). #}
+        <div data-document-preview-target="previewHost"></div>
+    {% endblock %}
+
+    {% block empty_state %}
+        <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
+            <i class="bi bi-file-earmark-text fs-1 d-block mb-2 text-body-secondary"></i>
+            <h5 class="fw-semibold mb-2">Документы не найдены</h5>
+            {% if q or kindActive or issuerActive or statusActive or testStandardActive or coatingIds|length > 0 %}
+                <p class="text-body-secondary mb-0">По запросу с заданными фильтрами совпадений нет. Измените параметры поиска.</p>
+            {% endif %}
+        </div>
+    {% endblock %}
     {% endembed %}
+
+    </div>{# /data-controller="document-preview" #}
 {% endblock %}

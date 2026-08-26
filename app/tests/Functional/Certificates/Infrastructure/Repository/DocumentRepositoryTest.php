@@ -60,6 +60,7 @@ final class DocumentRepositoryTest extends KernelTestCase
         ?string $description = null,
         DocumentKind $kind = DocumentKind::Conclusion,
         ?Uuid $issuerId = null,
+        ?string $file = null,
     ): Document {
         $id = Uuid::v7();
         $doc = new Document(
@@ -72,7 +73,7 @@ final class DocumentRepositoryTest extends KernelTestCase
             $subject,
             $description,
             'ГОСТ Р 58346',
-            null,
+            $file,
             ...$refs,
         );
         $this->repo->add($doc);
@@ -163,6 +164,46 @@ final class DocumentRepositoryTest extends KernelTestCase
 
         $byIssuer = $this->repo->findByFilter(new DocumentsFilter(pager: Pager::fromPage(1, 50), issuerId: (string) $issuer));
         self::assertSame(2, $byIssuer->total);
+    }
+
+    public function test_find_by_filter_by_coating(): void
+    {
+        $coatA = Uuid::v7();
+        $coatB = Uuid::v7();
+        $this->makeDoc([new Reference(ReferenceType::Coating, $coatA)], title: 'has-coatA');
+        // Тот же id, но тип СИСТЕМА — фильтр покрытий его матчить не должен.
+        $this->makeDoc([new Reference(ReferenceType::CoatingSystem, $coatA)], title: 'system-not-coating');
+        $this->makeDoc([new Reference(ReferenceType::Coating, $coatB)], title: 'has-coatB');
+
+        $this->em->clear();
+
+        $result = $this->repo->findByFilter(new DocumentsFilter(
+            pager: Pager::fromPage(1, 50),
+            coatingIds: new StringCollection((string) $coatA),
+        ));
+
+        $titles = array_map(static fn (Document $d) => $d->getTitle(), $result->items);
+        self::assertContains('has-coatA', $titles);
+        self::assertNotContains('system-not-coating', $titles);
+        self::assertNotContains('has-coatB', $titles);
+    }
+
+    public function test_downloadable_by_references_returns_only_docs_with_file(): void
+    {
+        $sysWithFile = Uuid::v7();
+        $sysNoFile = Uuid::v7();
+        $withFile = $this->makeDoc([new Reference(ReferenceType::CoatingSystem, $sysWithFile)], title: 'has-file', file: 'scan-a.pdf');
+        $this->makeDoc([new Reference(ReferenceType::CoatingSystem, $sysNoFile)], title: 'no-file');
+
+        $this->em->clear();
+
+        $map = $this->repo->downloadableByReferences(
+            ReferenceType::CoatingSystem,
+            new StringCollection((string) $sysWithFile, (string) $sysNoFile),
+        );
+
+        self::assertSame($withFile->getId(), $map[(string) $sysWithFile] ?? null);
+        self::assertArrayNotHasKey((string) $sysNoFile, $map);
     }
 
     public function test_remove(): void

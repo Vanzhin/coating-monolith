@@ -128,7 +128,7 @@ final class DocumentControllerTest extends WebTestCase
             'issuerId' => $this->issuerId,
             'issuedAt' => '2023-01-01',
             'subject' => 'С5, 15-25 лет',
-            'references' => [['id' => (string) Uuid::v7()]],
+            'references' => [['type' => 'coating_system', 'id' => (string) Uuid::v7()]],
         ]);
 
         self::assertResponseRedirects('/cabinet/certificate/document');
@@ -160,6 +160,20 @@ final class DocumentControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame('application/pdf', $this->client->getResponse()->headers->get('Content-Type'));
+    }
+
+    public function test_download_with_cyrillic_title_succeeds(): void
+    {
+        // Кириллическое название → Content-Disposition требует ASCII-фолбэк, иначе 500.
+        $id = $this->createViaBus('Заключение ЦС-'.bin2hex(random_bytes(3)), withFile: true);
+
+        $this->em->clear();
+        $this->writtenFiles[] = (string) $this->repo->findOneById($id)?->getFile();
+
+        $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/download');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
     }
 
     private function createViaBus(string $title, bool $withFile = false): string

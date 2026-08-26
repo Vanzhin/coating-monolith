@@ -42,10 +42,13 @@ final class DownloadAction extends AbstractController
         $response = new StreamedResponse(static function () use ($stream): void {
             fpassthru($stream);
         });
+        $fileName = $this->fileName($document->title);
         $response->headers->set('Content-Type', 'application/pdf');
         $response->headers->set(
             'Content-Disposition',
-            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $this->fileName($document->title)),
+            // Человекочитаемое имя (может быть кириллицей) идёт в filename*=UTF-8'';
+            // ASCII-фолбэк обязателен для filename= (старые клиенты) — иначе Symfony бросает.
+            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $fileName, $this->asciiFallback($fileName)),
         );
 
         return $response;
@@ -57,5 +60,14 @@ final class DownloadAction extends AbstractController
         $safe = trim($safe);
 
         return ('' === $safe ? 'document' : $safe).'.pdf';
+    }
+
+    private function asciiFallback(string $fileName): string
+    {
+        // Оставляем только печатные ASCII, убираем запрещённые в filename= символы (/ \ % ").
+        $ascii = preg_replace('/[^\x20-\x7E]/', '', $fileName) ?? '';
+        $ascii = trim(str_replace(['/', '\\', '%', '"'], '', $ascii));
+
+        return '' === $ascii ? 'document.pdf' : $ascii;
     }
 }
