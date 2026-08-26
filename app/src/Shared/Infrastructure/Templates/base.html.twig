@@ -523,13 +523,13 @@
                 <div class="list-group list-group-flush">
                     {# Покрытия / Системы / Подготовка — для всех авторизованных, каталог общего доступа. #}
                     <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-grid me-2"></i>Покрытия
+                        <i class="bi bi-circle-square me-2"></i>Покрытия
                     </a>
                     <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-layers me-2"></i>Системы покрытий
                     </a>
                     <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-brush me-2"></i>Подготовка поверхности
+                        <i class="bi bi-chevron-bar-contract me-2"></i>Подготовка поверхности
                     </a>
                     {# Производители / Химстойкость — только для админа (справочники управления).
                        Оценки и примечания химстойкости правятся in-context на странице покрытия. #}
@@ -538,7 +538,7 @@
                             <i class="bi bi-building me-2"></i>Производители
                         </a>
                         <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-droplet me-2"></i>Химстойкость
+                            <i class="bi bi-eyedropper me-2"></i>Химстойкость
                         </a>
                     {% endif %}
                 </div>
@@ -557,9 +557,6 @@
                     <div class="list-group list-group-flush">
                         <a href="{{ path('app_cabinet_certificate_document_list') }}" class="list-group-item list-group-item-action">
                             <i class="bi bi-file-earmark-text me-2"></i>Документы
-                        </a>
-                        <a href="{{ path('app_cabinet_certificate_issuer_list') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-award me-2"></i>Организации
                         </a>
                     </div>
                 </div>
