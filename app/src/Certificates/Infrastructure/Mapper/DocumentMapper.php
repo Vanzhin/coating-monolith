@@ -16,12 +16,12 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Pure shape: форма ↔ команда/DTO. Бизнес-правила — в домене (Document), файл — валидация типа/размера
- * делается в контроллере/здесь как структурная. Пока UI привязывает документ только к системам —
- * все ссылки типа CoatingSystem; поддержка Coating есть в модели, в форму добавим позже.
+ * делается в контроллере/здесь как структурная. Ссылки (references) полиморфны: строка формы несёт
+ * type (ReferenceType: система/покрытие) + id; тип берём из формы, не хардкодим.
  */
 final class DocumentMapper
 {
-    private const MAX_FILE_BYTES = 15 * 1024 * 1024;
+    private const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
     /**
      * @param array<string, mixed> $input
@@ -63,18 +63,20 @@ final class DocumentMapper
     }
 
     /**
-     * DTO → форма (префилл редактирования). referenceIds — только системы; заголовки систем
-     * не резолвим (кросс-контекст), показываем как есть — typeahead отдаёт id, метку заменит выбор.
+     * DTO → форма (префилл редактирования). Ссылки отдаём как {type, id} для всех типов
+     * (система/покрытие); заголовки НЕ резолвим (кросс-контекст) — метку по id подтянет JS
+     * (by-ids Coatings), typeahead отдаёт id.
      *
      * @return array<string, mixed>
      */
     public function buildInputDataFromDto(DocumentDTO $dto): array
     {
-        $systemIds = [];
+        $references = [];
         foreach ($dto->references as $reference) {
-            if (ReferenceType::CoatingSystem->value === $reference->referenceType) {
-                $systemIds[] = ['id' => $reference->referenceId];
-            }
+            $references[] = [
+                'type' => $reference->referenceType,
+                'id' => $reference->referenceId,
+            ];
         }
 
         return [
@@ -87,7 +89,7 @@ final class DocumentMapper
             'subject' => $dto->subject,
             'description' => $dto->description ?? '',
             'testStandard' => $dto->testStandard ?? '',
-            'references' => $systemIds,
+            'references' => $references,
             'hasFile' => $dto->hasFile,
         ];
     }
@@ -106,15 +108,19 @@ final class DocumentMapper
 
         $references = [];
         foreach ($rows as $row) {
-            $id = is_array($row) ? (string) ($row['id'] ?? '') : (string) $row;
-            $id = trim($id);
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = trim((string) ($row['id'] ?? ''));
             if ('' === $id) {
                 continue;
             }
             if (!Uuid::isValid($id)) {
-                throw new AppException('Некорректная ссылка на систему.');
+                throw new AppException('Некорректная ссылка на систему/покрытие.');
             }
-            $references[] = new Reference(ReferenceType::CoatingSystem, Uuid::fromString($id));
+            $type = ReferenceType::tryFrom((string) ($row['type'] ?? ''))
+                ?? throw new AppException('Некорректный тип ссылки.');
+            $references[] = new Reference($type, Uuid::fromString($id));
         }
 
         return $references;
@@ -187,8 +193,12 @@ final class DocumentMapper
         if (null === $file) {
             return null;
         }
+        // Загрузка оборвалась PHP-лимитом (upload_max_filesize) — трактуем как «слишком большой».
+        if (!$file->isValid()) {
+            throw new AppException('Файл слишком большой (макс. 8 МБ).');
+        }
         if ($file->getSize() > self::MAX_FILE_BYTES) {
-            throw new AppException('Файл слишком большой (макс. 15 МБ).');
+            throw new AppException('Файл слишком большой (макс. 8 МБ).');
         }
         if ('application/pdf' !== $file->getMimeType()) {
             throw new AppException('Разрешён только PDF.');

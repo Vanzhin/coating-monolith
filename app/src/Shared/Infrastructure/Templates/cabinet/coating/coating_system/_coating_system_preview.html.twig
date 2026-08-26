@@ -1,0 +1,124 @@
+{# Фрагмент модалки предпросмотра системы покрытий по id.
+   Рендерится эндпоинтом app_cabinet_coating_system_preview и всплывает по клику
+   на ссылку-референс в форме/списке документов (кросс-контекст: названия и превью
+   систем тянутся из Coatings по HTTP, не в PHP Certificates).
+   Переменные: system (CoatingSystemDTO), canEdit (bool). #}
+
+{% set complianceByStandard = {} %}
+{% for entry in system.compliance %}
+    {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
+{% endfor %}
+
+<div class="modal fade" id="coatingSystemPreview-{{ system.id }}" tabindex="-1"
+     aria-labelledby="coatingSystemPreviewLabel-{{ system.id }}" aria-hidden="true"
+     data-controller="coating-preview-loader"
+     data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="coatingSystemPreviewLabel-{{ system.id }}">{{ system.title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <div class="row g-2 small">
+                        <div class="col-md-4">
+                            <span class="text-muted">Подложка:</span>
+                            <span class="ms-1 fw-semibold">{{ system.substrateTitle }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted">Среда:</span>
+                            <span class="ms-1 fw-semibold">{{ system.environmentTitle }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted">Подготовка:</span>
+                            <span class="ms-1 fw-semibold">{{ system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription }}{% if system.surfaceTreatmentStandardCode %} ({{ system.surfaceTreatmentStandardCode }}){% endif %}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted">Суммарная ТСП:</span>
+                            <span class="ms-1 fw-semibold">{{ system.totalDft }} мкм</span>
+                        </div>
+                        {% if system.maxLayerApplicationMinTemp is not null %}
+                            <div class="col-md-4">
+                                <span class="text-muted">Мин. Т нанесения:</span>
+                                <span class="ms-1 fw-semibold">{{ system.maxLayerApplicationMinTemp }} °C</span>
+                            </div>
+                        {% endif %}
+                        {% if system.minApplicationTimeAt20Minutes is not null %}
+                            <div class="col-md-4">
+                                <span class="text-muted">Мин. время нанесения:</span>
+                                <span class="ms-1 fw-semibold">{{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if system.description %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <p class="text-body-secondary mb-0">{{ system.description }}</p>
+                    </div>
+                {% endif %}
+
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <h6 class="fw-semibold mb-3">Слои системы ({{ system.layers|length }})</h6>
+                    {% if system.layers|length > 0 %}
+                        <div class="small text-body-secondary d-flex flex-column gap-1">
+                            {% for layer in system.layers %}
+                                <div class="d-flex align-items-center flex-wrap gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-coating-id="{{ layer.coatingId }}"
+                                            data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
+                                    <span>{{ layer.dft }} мкм</span>
+                                    {% if layer.colorHex %}
+                                        <span class="color-swatch ms-1" style="background: {{ layer.colorHex }}"
+                                              title="{{ layer.colorLabel }}"></span>{{ layer.colorLabel }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="small text-muted">Слоёв нет</div>
+                    {% endif %}
+                </div>
+
+                {% if complianceByStandard|length > 0 %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
+                        <div class="d-flex flex-column gap-2">
+                            {% for standard, entries in complianceByStandard %}
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="text-body-secondary small">{{ (entries|first).standardTitle }}:</span>
+                                    {% for entry in entries %}
+                                        <span class="badge text-bg-success fw-normal">{{ entry.label }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if system.tags|length > 0 %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for tag in system.tags %}
+                                <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted">Обновлено: {{ system.updatedAt|date('d.m.Y') }}</div>
+            </div>
+            <div class="modal-footer">
+                {% if canEdit %}
+                    <a href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    {# Хост для ленивой модалки покрытия: клик по слою фетчит сюда фрагмент и показывает поверх. #}
+    <div data-coating-preview-loader-target="container"></div>
+</div>

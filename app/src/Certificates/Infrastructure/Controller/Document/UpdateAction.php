@@ -7,6 +7,7 @@ namespace App\Certificates\Infrastructure\Controller\Document;
 use App\Certificates\Application\UseCase\Query\GetDocument\GetDocumentQuery;
 use App\Certificates\Application\UseCase\Query\GetPagedIssuers\GetPagedIssuersQuery;
 use App\Certificates\Domain\Aggregate\Document\DocumentKind;
+use App\Certificates\Domain\Aggregate\Document\ReferenceType;
 use App\Certificates\Domain\Repository\IssuersFilter;
 use App\Certificates\Infrastructure\Mapper\DocumentMapper;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -78,6 +79,7 @@ final class UpdateAction extends AbstractController
             'error' => $error,
             'issuers' => $issuers->issuers,
             'kinds' => DocumentKind::cases(),
+            'referenceTypes' => ReferenceType::cases(),
         ];
     }
 }
