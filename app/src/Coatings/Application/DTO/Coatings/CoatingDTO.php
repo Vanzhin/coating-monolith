@@ -6,6 +6,7 @@ namespace App\Coatings\Application\DTO\Coatings;
 
 use App\ChemicalResistance\Application\DTO\SubstanceMatchDTO;
 use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\CoatingAssessmentsPage;
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemTitleDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
@@ -84,6 +85,9 @@ class CoatingDTO
 
     /** @var list<SubstanceMatchDTO> Вещества, совпавшие с поисковым запросом (пусто вне поискового контекста). */
     public array $matchedSubstances = [];
+
+    /** @var list<CoatingSystemTitleDTO> системы, куда покрытие входит слоем */
+    public array $systems = [];
 
     /** Первая страница оценок химической стойкости (preload для модального окна). */
     public ?CoatingAssessmentsPage $chemResistancePage = null;

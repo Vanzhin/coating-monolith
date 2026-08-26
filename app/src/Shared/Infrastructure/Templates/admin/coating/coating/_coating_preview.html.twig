@@ -5,7 +5,9 @@
    Переменные: coating (CoatingDTO), canEdit (bool). #}
 
     <div class="modal fade" id="coatingPreview-{{ coating.id }}" tabindex="-1"
-         aria-labelledby="coatingPreviewLabel-{{ coating.id }}" aria-hidden="true">
+         aria-labelledby="coatingPreviewLabel-{{ coating.id }}" aria-hidden="true"
+         data-controller="coating-system-preview-loader"
+         data-coating-system-preview-loader-endpoint-value="{{ path('app_cabinet_coating_system_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -31,6 +33,30 @@
                             {% if coating.description %}
                                 <p class="text-body-secondary mb-0">{{ coating.description }}</p>
                             {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {# Входит в системы — кликабельные чипы (превью системы поверх). Систем может быть
+                       много: сворачиваем в один ряд, остальное — по кнопке (expandable-chips). #}
+                    {% if coating.systems|length > 0 %}
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-controller="expandable-chips">
+                            <h6 class="fw-semibold mb-2">Входит в системы</h6>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for system in coating.systems %}
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                            data-expandable-chips-target="chip"
+                                            data-system-id="{{ system.id }}"
+                                            data-action="click->coating-system-preview-loader#open">
+                                        <i class="bi bi-layers"></i>{{ system.title }}
+                                    </button>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 mt-1 d-none"
+                                    data-expandable-chips-target="toggle"
+                                    data-action="expandable-chips#toggle">
+                                <span data-expandable-chips-target="label"></span>
+                            </button>
                         </div>
                     {% endif %}
 
@@ -200,4 +226,6 @@
                 </div>
             </div>
         </div>
+        {# Хост для ленивой модалки системы (клик по чипу «входит в системы»). #}
+        <div data-coating-system-preview-loader-target="container"></div>
     </div>

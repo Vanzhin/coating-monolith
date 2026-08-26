@@ -21,6 +21,14 @@ interface CoatingSystemRepositoryInterface
     /** @return list<CoatingSystem> */
     public function findByLayerCoatingId(string $coatingId): array;
 
+    /**
+     * Системы (id+title), содержащие указанные покрытия слоями. Ключ — coatingId. Батчем, без N+1 —
+     * для блока «входит в системы» в превью покрытия.
+     *
+     * @return array<string, list<array{id: string, title: string}>>
+     */
+    public function findSystemTitlesByCoatingIds(StringCollection $coatingIds): array;
+
     /** @return list<CoatingSystem> */
     public function findAll(): array;
 

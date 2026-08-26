@@ -82,6 +82,11 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
                 return [];
             }
 
+            public function findSystemTitlesByCoatingIds(StringCollection $coatingIds): array
+            {
+                return [];
+            }
+
             public function findAll(): array
             {
                 return [];
