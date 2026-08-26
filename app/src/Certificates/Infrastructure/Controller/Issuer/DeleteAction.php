@@ -26,7 +26,7 @@ final class DeleteAction extends AbstractController
     {
         try {
             $this->commandBus->execute(new DeleteIssuerCommand($id));
-            $this->addFlash('issuer_removed_success', 'Издатель удалён.');
+            $this->addFlash('issuer_removed_success', 'Организация удалена.');
         } catch (\Exception|\Error $e) {
             $this->addFlash('issuer_removed_error', $e->getMessage());
         }

@@ -2,7 +2,7 @@
 
 {% set inputData = inputData|default({}) %}
 {% set isUpdate = inputData.id is defined and inputData.id %}
-{% set pageTitle = isUpdate ? 'Обновление издателя' : 'Добавление издателя' %}
+{% set pageTitle = isUpdate ? 'Обновление организации' : 'Добавление организации' %}
 {% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
 {% set actionUrl = isUpdate
     ? path('app_cabinet_certificate_issuer_update', {id: inputData.id})

@@ -32,7 +32,7 @@ final class AddAction extends AbstractController
             $inputData = $request->getPayload()->all();
             try {
                 $this->commandBus->execute(new CreateIssuerCommand((string) ($inputData['title'] ?? '')));
-                $this->addFlash('issuer_created_success', sprintf('Издатель «%s» добавлен.', $inputData['title'] ?? ''));
+                $this->addFlash('issuer_created_success', sprintf('Организация «%s» добавлена.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_certificate_issuer_list');
             } catch (\Exception|\Error $e) {

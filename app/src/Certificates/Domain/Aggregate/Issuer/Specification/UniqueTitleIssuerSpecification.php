@@ -19,7 +19,7 @@ class UniqueTitleIssuerSpecification implements SpecificationInterface
     {
         $existing = $this->repository->findOneByTitle($issuer->getTitle());
         if (null !== $existing && $existing->getId() !== $issuer->getId()) {
-            throw new AppException(sprintf('Издатель «%s» уже существует.', $issuer->getTitle()));
+            throw new AppException(sprintf('Организация «%s» уже существует.', $issuer->getTitle()));
         }
     }
 }

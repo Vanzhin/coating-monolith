@@ -1,12 +1,12 @@
 {% extends '/cabinet/index.html.twig' %}
 
-{% block title %}{{ parent() }} | Издатели{% endblock %}
+{% block title %}{{ parent() }} | Организации{% endblock %}
 
 {% block content %}
     {% set canEdit = is_granted('ROLE_ADMIN') %}
 
     {% embed 'components/list_page.html.twig' with {
-        title: 'Издатели',
+        title: 'Организации',
         create_route: 'app_cabinet_certificate_issuer_create',
         can_edit: canEdit,
         is_empty: result.issuers is empty,
@@ -35,7 +35,7 @@
                                     'delete': 'app_cabinet_certificate_issuer_delete',
                                     'id': issuer.id,
                                     'title': issuer.title,
-                                    'name': 'издателя'
+                                    'name': 'организацию'
                                 } %}
                             </div>
                         {% endif %}

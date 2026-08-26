@@ -22,7 +22,7 @@ final readonly class UpdateIssuerCommandHandler implements CommandHandlerInterfa
     {
         $issuer = $this->repository->findOneById($command->id);
         if (null === $issuer) {
-            throw new AppException('Издатель не найден.', Response::HTTP_NOT_FOUND);
+            throw new AppException('Организация не найдена.', Response::HTTP_NOT_FOUND);
         }
 
         $issuer->setTitle($command->title);

@@ -32,7 +32,7 @@ final class UpdateAction extends AbstractController
     {
         $result = $this->queryBus->execute(new GetIssuerQuery($id));
         if (null === $result->issuer) {
-            $this->addFlash('issuer_updated_error', sprintf('Издатель «%s» не найден.', $id));
+            $this->addFlash('issuer_updated_error', sprintf('Организация «%s» не найдена.', $id));
 
             return $this->redirectToRoute('app_cabinet_certificate_issuer_list');
         }
@@ -43,7 +43,7 @@ final class UpdateAction extends AbstractController
             $inputData['id'] = $id;
             try {
                 $this->commandBus->execute(new UpdateIssuerCommand($id, (string) ($inputData['title'] ?? '')));
-                $this->addFlash('issuer_updated_success', sprintf('Издатель «%s» обновлён.', $inputData['title'] ?? ''));
+                $this->addFlash('issuer_updated_success', sprintf('Организация «%s» обновлена.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_certificate_issuer_list');
             } catch (\Exception|\Error $e) {

@@ -92,7 +92,7 @@ final class IssuerControllerTest extends WebTestCase
         $this->client->request('GET', '/cabinet/certificate/issuer');
 
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('Издатели', (string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('Организации', (string) $this->client->getResponse()->getContent());
     }
 
     public function test_create_form_renders(): void
@@ -100,7 +100,7 @@ final class IssuerControllerTest extends WebTestCase
         $this->client->request('GET', '/cabinet/certificate/issuer/create');
 
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('Добавление издателя', (string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('Добавление организации', (string) $this->client->getResponse()->getContent());
     }
 
     public function test_create_persists_and_redirects_to_list(): void

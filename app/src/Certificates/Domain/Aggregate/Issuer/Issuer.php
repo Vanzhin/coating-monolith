@@ -42,10 +42,10 @@ class Issuer extends Aggregate
     {
         $trimmed = trim($title);
         if ('' === $trimmed) {
-            throw new AppException('Название издателя не может быть пустым.');
+            throw new AppException('Название организации не может быть пустым.');
         }
         if (mb_strlen($trimmed) > self::MAX_TITLE_LENGTH) {
-            throw new AppException(sprintf('Название издателя не должно превышать %d символов.', self::MAX_TITLE_LENGTH));
+            throw new AppException(sprintf('Название организации не должно превышать %d символов.', self::MAX_TITLE_LENGTH));
         }
         $this->title = $trimmed;
     }
