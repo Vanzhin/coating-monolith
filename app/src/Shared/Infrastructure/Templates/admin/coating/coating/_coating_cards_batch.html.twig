@@ -29,8 +29,8 @@
                (stopPropagation на inline onclick был fragile из-за event
                delegation в Bootstrap 5). #}
             <div style="cursor: pointer;"
-                 data-bs-toggle="modal"
-                 data-bs-target="#coatingPreview-{{ coating.id }}">
+                 data-action="click->coating-preview-loader#open"
+                 data-coating-id="{{ coating.id }}">
                 <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
                 <p class="mb-1 small text-muted coating-card-desc">
                     {{ coating.description }}
@@ -44,10 +44,9 @@
                     <span class="small text-success-emphasis fw-medium me-1">✓ Стойкое к:</span>
                     {% for m in visible %}
                         <a href="#"
-                           data-bs-toggle="modal"
-                           data-bs-target="#coatingPreview-{{ coating.id }}"
-                           data-controller="substance-badge"
-                           data-substance-badge-id-value="{{ m.substanceId }}"
+                           data-action="click->coating-preview-loader#open"
+                           data-coating-id="{{ coating.id }}"
+                           data-highlight-substance-id="{{ m.substanceId }}"
                            class="badge text-bg-success bg-opacity-25 text-body-emphasis fw-normal text-decoration-none">
                             {{ m.canonicalName }}
                         </a>
@@ -96,6 +95,4 @@
             </div>
         {% endif %}
     </div>
-
-    {% include 'admin/coating/coating/_coating_preview.html.twig' with { coating: coating, canEdit: canEdit } only %}
 {% endfor %}

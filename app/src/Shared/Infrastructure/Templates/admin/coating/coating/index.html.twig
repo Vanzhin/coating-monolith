@@ -10,10 +10,11 @@
        on/off, toggle-url'ы, empty-state chip-row'а внутри offcanvas'a). #}
     {% set selectedTagIdList = selectedTags|map(t => t.id) %}
 
-    <div data-controller="compare-tray"
+    <div data-controller="compare-tray coating-preview-loader"
          data-compare-tray-storage-key-value="compare:Coating"
          data-compare-tray-compare-url-value="{{ path('app_cabinet_coating_coating_compare') }}"
-         data-compare-tray-max-value="4">
+         data-compare-tray-max-value="4"
+         data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
     {% embed 'components/list_page.html.twig' with {
         title: 'Покрытия',
         create_route: 'app_cabinet_coating_coating_create',
