@@ -74,6 +74,11 @@
             </div>
             {% if canEdit %}
                 <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                    {% if system.documentDownloadUrl %}
+                        <a href="{{ system.documentDownloadUrl }}" class="btn btn-outline-secondary" title="Скачать документ (PDF)">
+                            <i class="bi bi-file-earmark-arrow-down"></i>
+                        </a>
+                    {% endif %}
                     {% include '/components/edit_delete.html.twig' with {
                         'edit': 'app_cabinet_coating_system_update',
                         'delete': 'app_cabinet_coating_system_remove',

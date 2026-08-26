@@ -28,11 +28,13 @@ final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInt
         $systems = $this->repo->findByIds($searchResult->ids);
         $complianceBySystem = $this->complianceCache->findBySystemIds($searchResult->ids->getList());
         $documentCounts = $this->certificates->countBySystemIds($searchResult->ids);
+        $downloadUrls = $this->certificates->downloadUrlsBySystemIds($searchResult->ids);
         $items = array_map(
             fn ($s) => $this->transformer->fromEntity(
                 $s,
                 $complianceBySystem[$s->getId()] ?? [],
                 $documentCounts[$s->getId()] ?? 0,
+                $downloadUrls[$s->getId()] ?? null,
             ),
             $systems,
         );

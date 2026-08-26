@@ -20,6 +20,11 @@ interface SystemCertificatesGateway
     public function countBySystemIds(StringCollection $systemIds): array;
 
     /**
+     * @return array<string, string> id системы → URL скачивания её документа (только у кого есть файл)
+     */
+    public function downloadUrlsBySystemIds(StringCollection $systemIds): array;
+
+    /**
      * @return list<SystemCertificate>
      */
     public function listBySystem(string $systemId): array;

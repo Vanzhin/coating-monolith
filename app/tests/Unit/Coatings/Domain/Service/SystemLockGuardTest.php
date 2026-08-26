@@ -48,6 +48,11 @@ class SystemLockGuardTest extends TestCase
                 return [];
             }
 
+            public function downloadUrlsBySystemIds(StringCollection $systemIds): array
+            {
+                return [];
+            }
+
             public function listBySystem(string $systemId): array
             {
                 return [];

@@ -44,6 +44,25 @@ final readonly class CertificatesGateway implements SystemCertificatesGateway
         return $this->documents->countByReferences(ReferenceType::CoatingSystem, $systemIds);
     }
 
+    public function downloadUrlsBySystemIds(StringCollection $systemIds): array
+    {
+        if (0 === $systemIds->count()) {
+            return [];
+        }
+
+        $documentIds = $this->documents->downloadableByReferences(ReferenceType::CoatingSystem, $systemIds);
+
+        $urls = [];
+        foreach ($documentIds as $systemId => $documentId) {
+            $urls[$systemId] = $this->urlGenerator->generate(
+                'app_cabinet_certificate_document_download',
+                ['id' => $documentId],
+            );
+        }
+
+        return $urls;
+    }
+
     public function listBySystem(string $systemId): array
     {
         $documents = $this->documents->findByReference(
