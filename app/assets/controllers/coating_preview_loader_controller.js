@@ -1,31 +1,23 @@
 import { Controller } from '@hotwired/stimulus';
+import { openFragmentModal } from '../reference_helpers';
+
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 
 /**
- * Ленивая загрузка полной модалки покрытия по клику на слой системы.
+ * Ленивая загрузка модалки покрытия по клику на слой (data-coating-id). Фетчит серверный
+ * фрагмент _coating_preview.html.twig и показывает поверх стека.
  *
- * Слой несёт data-coating-id. По клику контроллер фетчит серверный фрагмент
- * (партиал _coating_preview.html.twig) с эндпоинта
- * app_cabinet_coating_coating_preview, кладёт его в общий контейнер и
- * показывает поверх — если клик был из модалки системы, модалка покрытия
- * встаёт стеком сверху (Bootstrap 5), закрытие возвращает к системе.
- *
- * Никакой разметки покрытия в JS не строим — она приходит с сервера единым
- * партиалом (тот же, что инлайном на вьюхе покрытий).
+ * Модалка кладётся в <body> (см. openFragmentModal), а не вложенно в текущую модалку —
+ * иначе ESC и клик вне закрывали бы весь стек, а не только верхнюю.
  *
  * Values:
- *   endpoint  — URL-шаблон превью с плейсхолдером id
- *               (напр. /cabinet/coating/coating/00000000-…-000/preview)
- * Targets:
- *   container — пустой <div>, куда кладётся фрагмент модалки
+ *   endpoint — URL-шаблон превью покрытия с плейсхолдером id.
  */
 export default class extends Controller {
     static values = { endpoint: String };
 
-    static targets = ['container'];
-
     async open(event) {
-        // Слой лежит внутри триггера модалки системы — гасим всплытие,
-        // иначе поверх откроются обе модалки.
+        // Слой лежит внутри триггера модалки системы — гасим всплытие.
         event.stopPropagation();
 
         const coatingId = event.currentTarget.dataset.coatingId;
@@ -33,31 +25,21 @@ export default class extends Controller {
             return;
         }
 
+        // Deep-link по бейджу «стойкое к»: подсветить вещество в chem-секции фрагмента.
+        const highlightSubstanceId = event.currentTarget.dataset.highlightSubstanceId;
+
         this._loading = true;
         try {
-            const url = this.endpointValue.replace('00000000-0000-0000-0000-000000000000', coatingId);
-            const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            this.containerTarget.innerHTML = await response.text();
-            this._showFragmentModal();
-        } catch (e) {
-            this.containerTarget.innerHTML = '';
+            await openFragmentModal(
+                this.endpointValue.replace(ZERO_UUID, coatingId),
+                highlightSubstanceId
+                    ? (modalEl) => modalEl.setAttribute('data-highlight-substance-id', highlightSubstanceId)
+                    : null,
+            );
+        } catch {
             alert('Не удалось загрузить покрытие. Попробуйте ещё раз.');
         } finally {
             this._loading = false;
         }
-    }
-
-    _showFragmentModal() {
-        const modalEl = this.containerTarget.querySelector('.modal');
-        if (!modalEl) {
-            return;
-        }
-        // Чистим контейнер после закрытия — не копим осиротевшие фрагменты/backdrop'ы.
-        modalEl.addEventListener('hidden.bs.modal', () => { this.containerTarget.innerHTML = ''; }, { once: true });
-        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
     }
 }

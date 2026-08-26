@@ -30,40 +30,59 @@ export async function fetchTitlesByIds(endpoint, ids) {
 }
 
 /**
- * Фетчит серверный HTML-фрагмент модалки и показывает его поверх (стек Bootstrap).
- * Контейнер очищается после закрытия. Бросает при HTTP-ошибке — вызывающий решает, что показать.
+ * Фетчит серверный HTML-фрагмент модалки и показывает его поверх стека.
  *
- * @param {HTMLElement} host
+ * Модалку кладём отдельным узлом прямо в <body> (НЕ вложенно в текущую модалку) — иначе ESC и
+ * клик вне всплывали бы в нижние модалки и закрывали весь стек; сиблинги в body этого не делают.
+ * Каждый следующий уровень смещаем вниз, чтобы был виден край нижней модалки — пользователь
+ * понимает глубину. После закрытия узел удаляется.
+ *
  * @param {string} url
+ * @param {(modalEl: HTMLElement) => void} [onModal] хук до показа (напр. проставить data-атрибут)
  */
-export async function openFragmentModal(host, url) {
+export async function openFragmentModal(url, onModal = null) {
     const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
-    host.innerHTML = await response.text();
 
-    const modalEl = host.querySelector('.modal');
+    const template = document.createElement('template');
+    template.innerHTML = (await response.text()).trim();
+    const modalEl = template.content.querySelector('.modal');
     if (!modalEl) {
         return;
     }
-    modalEl.addEventListener('hidden.bs.modal', () => { host.innerHTML = ''; }, { once: true });
+
+    document.body.appendChild(modalEl);
+
+    // Смещение по глубине стека (сколько модалок уже открыто) — видно край нижней.
+    const depth = document.querySelectorAll('.modal.show').length;
+    if (depth > 0) {
+        const dialog = modalEl.querySelector('.modal-dialog');
+        if (dialog) {
+            dialog.style.marginTop = `${1.75 + depth * 1.5}rem`;
+        }
+    }
+
+    if (onModal) {
+        onModal(modalEl);
+    }
+
+    modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
     window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 /**
- * Открывает превью объекта-референса: подставляет id в шаблон URL и показывает фрагмент-модалку.
- * При ошибке чистит host и показывает alert. Единая точка для document-preview/document-references.
+ * Открывает превью объекта: подставляет id в шаблон URL и показывает фрагмент-модалку.
+ * Единая точка для document-preview / document-references / *-preview-loader.
  *
- * @param {HTMLElement} host
  * @param {string} urlTemplate шаблон URL с плейсхолдером id (ZERO_UUID)
  * @param {string} id
  */
-export async function openReferencePreview(host, urlTemplate, id) {
+export async function openReferencePreview(urlTemplate, id) {
     try {
-        await openFragmentModal(host, urlTemplate.replace(ZERO_UUID, id));
+        await openFragmentModal(urlTemplate.replace(ZERO_UUID, id));
     } catch {
-        host.innerHTML = '';
         alert('Не удалось загрузить превью. Попробуйте ещё раз.');
     }
 }

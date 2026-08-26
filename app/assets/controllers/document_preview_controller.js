@@ -134,7 +134,7 @@ export default class extends Controller {
 
     async _openRefPreview(type, id) {
         const template = 'coating' === type ? this.previewCoatingValue : this.previewSystemValue;
-        await openReferencePreview(this.previewHostTarget, template, id);
+        await openReferencePreview(template, id);
     }
 
     _modal() {

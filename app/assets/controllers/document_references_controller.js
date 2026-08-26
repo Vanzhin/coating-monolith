@@ -80,7 +80,7 @@ export default class extends Controller {
             return;
         }
         const template = 'coating' === row.dataset.refType ? this.previewCoatingValue : this.previewSystemValue;
-        await openReferencePreview(this.previewHostTarget, template, row.dataset.refId);
+        await openReferencePreview(template, row.dataset.refId);
     }
 
     async _hydrate() {
