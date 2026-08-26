@@ -248,23 +248,47 @@
             overflow: hidden;
         }
 
+        /* Резервируем место под вертикальный скроллбар шторки всегда, иначе при
+           сворачивании/разворачивании групп он появляется/исчезает и ширина прыгает. */
+        #mainMenu .offcanvas-body {
+            scrollbar-gutter: stable;
+        }
+
         /* Стили пунктов меню — ТОЛЬКО внутри #mainMenu, чтобы не перекрывать
            .list-group-item на карточках покрытий/производителей (там дефолтный
            Bootstrap hover нужен и корректно работает в тёмной теме через
            --bs-list-group-*-* переменные). */
+        /* Каждый пункт меню — отдельная выделенная плашка в общем стиле:
+           bg-body поверх тонированной зоны, скругление, зазор, видимый ховер. */
         #mainMenu .list-group-item {
             border: none;
-            border-radius: 0;
-            padding: 1rem 1.5rem;
-            background: transparent;
+            border-radius: var(--bs-border-radius);
+            padding: .75rem 1rem;
+            margin-bottom: .375rem;
+            background: var(--bs-body-bg);
+            transition: background-color .12s ease, box-shadow .12s ease;
         }
 
-        #mainMenu .list-group-item:hover {
-            background-color: var(--bs-tertiary-bg);
+        #mainMenu .list-group-item:last-child {
+            margin-bottom: 0;
+        }
+
+        #mainMenu .list-group-item:hover,
+        #mainMenu .list-group-item:focus {
+            background-color: var(--bs-secondary-bg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
         }
 
         #mainMenu .list-group-item i {
             width: 20px;
+        }
+
+        /* Шеврон заголовка группы: вниз при раскрытой секции, вбок при свёрнутой. */
+        #mainMenu [data-bs-toggle="collapse"] .bi-chevron-down {
+            transition: transform .15s ease;
+        }
+        #mainMenu [data-bs-toggle="collapse"][aria-expanded="false"] .bi-chevron-down {
+            transform: rotate(-90deg);
         }
 
         .user-email {
@@ -483,39 +507,63 @@
             </div>
         {% endif %}
 
-        {# Зона: навигация. #}
+        {# Зона: навигация — сгруппирована в сворачиваемые секции (Bootstrap collapse).
+           Заголовки групп — обычные <button>, НЕ .list-group-item, чтобы клик по ним не
+           закрывал шторку (close-on-click JS ниже слушает только .list-group-item). #}
         <div class="p-3 rounded-3 bg-body-tertiary">
-            <div class="list-group list-group-flush">
-                {# Покрытия — для всех авторизованных, каталог общего доступа. #}
-                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
-                    <i class="bi bi-grid me-2"></i>Покрытия
-                </a>
-                <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
-                    <i class="bi bi-layers me-2"></i>Системы покрытий
-                </a>
-                <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
-                    <i class="bi bi-brush me-2"></i>Подготовка поверхности
-                </a>
-                {# Производители — только для админа (справочник управления). #}
-                {% if is_granted('ROLE_ADMIN') %}
-                    <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-building me-2"></i>Производители
+            {# Группа: Покрытия — каталог и справочники. #}
+            <button type="button"
+                    class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 text-body-secondary fw-semibold small text-uppercase"
+                    data-bs-toggle="collapse" data-bs-target="#menuGroupCoatings"
+                    aria-expanded="true" aria-controls="menuGroupCoatings">
+                <span>Покрытия</span>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="collapse show" id="menuGroupCoatings">
+                <div class="list-group list-group-flush">
+                    {# Покрытия / Системы / Подготовка — для всех авторизованных, каталог общего доступа. #}
+                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-grid me-2"></i>Покрытия
                     </a>
-                    {# Химстойкость — справочник веществ. Оценки (Assessment) и
-                       примечания редактируются in-context на странице конкретного
-                       покрытия, поэтому отдельных пунктов в шторке для них нет. #}
-                    <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-droplet me-2"></i>Химстойкость
+                    <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-layers me-2"></i>Системы покрытий
                     </a>
-                    {# Документы и издатели — контекст Certificates (заключения/сертификаты на системы). #}
-                    <a href="{{ path('app_cabinet_certificate_document_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-file-earmark-text me-2"></i>Документы
+                    <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-brush me-2"></i>Подготовка поверхности
                     </a>
-                    <a href="{{ path('app_cabinet_certificate_issuer_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-award me-2"></i>Издатели
-                    </a>
-                {% endif %}
+                    {# Производители / Химстойкость — только для админа (справочники управления).
+                       Оценки и примечания химстойкости правятся in-context на странице покрытия. #}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building me-2"></i>Производители
+                        </a>
+                        <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-droplet me-2"></i>Химстойкость
+                        </a>
+                    {% endif %}
+                </div>
             </div>
+
+            {# Группа: Документы (контекст Certificates) — целиком под админом. #}
+            {% if is_granted('ROLE_ADMIN') %}
+                <button type="button"
+                        class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 mt-2 text-body-secondary fw-semibold small text-uppercase"
+                        data-bs-toggle="collapse" data-bs-target="#menuGroupDocuments"
+                        aria-expanded="true" aria-controls="menuGroupDocuments">
+                    <span>Документы</span>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="collapse show" id="menuGroupDocuments">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ path('app_cabinet_certificate_document_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-file-earmark-text me-2"></i>Документы
+                        </a>
+                        <a href="{{ path('app_cabinet_certificate_issuer_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-award me-2"></i>Организации
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         {# Зона: аккаунт (личный кабинет / выход или вход / регистрация). #}
