@@ -8,6 +8,7 @@ use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -21,17 +22,23 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private CoatingMaker $coatingMaker,
         private RecoatingTreeBuilder $treeBuilder,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(CreateCoatingCommand $command): CreateCoatingCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $dto = $command->dto;
 
         $coating = $this->coatingMaker->make(

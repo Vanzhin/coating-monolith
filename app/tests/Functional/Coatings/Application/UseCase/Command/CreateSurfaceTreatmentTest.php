@@ -9,12 +9,15 @@ use App\Coatings\Application\UseCase\Command\CreateSurfaceTreatment\CreateSurfac
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateSurfaceTreatmentTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private CreateSurfaceTreatmentCommandHandler $handler;
     private EntityManagerInterface $em;
 
@@ -26,6 +29,8 @@ final class CreateSurfaceTreatmentTest extends KernelTestCase
         $container = static::getContainer();
         $this->handler = $container->get(CreateSurfaceTreatmentCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

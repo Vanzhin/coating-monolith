@@ -12,14 +12,12 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/coating/coating-tag',
     name: 'app_cabinet_coating_coating_tag_create',
     methods: ['POST'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class CreateGeneralTagAction extends AbstractController
 {
     public function __construct(private readonly CommandBusInterface $commandBus)

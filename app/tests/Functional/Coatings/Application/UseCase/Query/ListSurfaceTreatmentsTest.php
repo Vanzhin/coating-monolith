@@ -10,11 +10,14 @@ use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTrea
 use App\Coatings\Application\UseCase\Query\ListSurfaceTreatments\ListSurfaceTreatmentsQueryHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\SurfaceTreatmentsFilter;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ListSurfaceTreatmentsTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private ListSurfaceTreatmentsQueryHandler $queryHandler;
     private CreateSurfaceTreatmentCommandHandler $createHandler;
     private EntityManagerInterface $em;
@@ -28,6 +31,8 @@ final class ListSurfaceTreatmentsTest extends KernelTestCase
         $this->createHandler = $c->get(CreateSurfaceTreatmentCommandHandler::class);
         $this->em = $c->get(EntityManagerInterface::class);
         $this->testPrefix = 'LST-'.substr(uniqid('', true), -8);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

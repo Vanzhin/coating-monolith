@@ -15,7 +15,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Cabinet-endpoint для inline-создания подготовки поверхности прямо из формы CoatingSystem.
@@ -27,7 +26,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_surface_treatment_create_inline',
     methods: ['POST'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 class CreateInlineAction extends AbstractController
 {
     public function __construct(

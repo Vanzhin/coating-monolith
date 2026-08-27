@@ -8,6 +8,7 @@ use App\Coatings\Application\UseCase\Command\AppendLayer\AppendLayerCommand;
 use App\Coatings\Application\UseCase\Command\AppendLayer\AppendLayerCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -15,6 +16,7 @@ use Symfony\Component\Uid\Uuid;
 final class AppendLayerTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private AppendLayerCommandHandler $handler;
     private EntityManagerInterface $em;
@@ -26,6 +28,8 @@ final class AppendLayerTest extends KernelTestCase
         $this->handler = $container->get(AppendLayerCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
         $this->setUpFixture($container, $this->em);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

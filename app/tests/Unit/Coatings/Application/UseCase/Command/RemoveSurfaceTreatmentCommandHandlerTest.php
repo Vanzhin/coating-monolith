@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Coatings\Application\UseCase\Command;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment\RemoveSurfaceTreatmentCommand;
 use App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment\RemoveSurfaceTreatmentCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
@@ -11,9 +12,12 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
+use App\Shared\Application\Security\AccessGuard;
+use App\Shared\Application\Security\AuthChecker;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
@@ -98,7 +102,12 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             }
         };
 
-        $handler = new RemoveSurfaceTreatmentCommandHandler($treatmentRepo, $coatingSystemRepo);
+        // Авторизация проходит (админ/система) — проверяем доменное правило, а не гейт.
+        $authorizationChecker = $this->createMock(AuthorizationCheckerInterface::class);
+        $authorizationChecker->method('isGranted')->willReturn(true);
+        $access = new CoatingAccessControl(new AccessGuard(new AuthChecker($authorizationChecker)));
+
+        $handler = new RemoveSurfaceTreatmentCommandHandler($treatmentRepo, $coatingSystemRepo, $access);
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessageMatches('/используется в 3 системах/');

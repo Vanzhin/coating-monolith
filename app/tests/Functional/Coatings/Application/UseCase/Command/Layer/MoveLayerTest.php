@@ -10,6 +10,7 @@ use App\Coatings\Application\UseCase\Command\MoveLayer\MoveLayerCommand;
 use App\Coatings\Application\UseCase\Command\MoveLayer\MoveLayerCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -17,6 +18,7 @@ use Symfony\Component\Uid\Uuid;
 final class MoveLayerTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private MoveLayerCommandHandler $handler;
     private AppendLayerCommandHandler $appendHandler;
@@ -29,6 +31,11 @@ final class MoveLayerTest extends KernelTestCase
         $this->handler = $container->get(MoveLayerCommandHandler::class);
         $this->appendHandler = $container->get(AppendLayerCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
+
+        // Мутация ниже (appendHandler) авторизуется через AccessControl —
+        // системный актор должен быть в контексте до её вызова.
+        $this->authenticateAsSystem();
+
         $this->setUpFixture($container, $this->em);
 
         // Add a second layer so we have 2 layers to move between.

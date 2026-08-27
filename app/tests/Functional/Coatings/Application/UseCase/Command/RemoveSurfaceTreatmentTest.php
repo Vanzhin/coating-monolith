@@ -10,12 +10,15 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class RemoveSurfaceTreatmentTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private RemoveSurfaceTreatmentCommandHandler $handler;
     private EntityManagerInterface $em;
     private SurfaceTreatmentRepository $repo;
@@ -27,6 +30,8 @@ final class RemoveSurfaceTreatmentTest extends KernelTestCase
         $this->handler = $container->get(RemoveSurfaceTreatmentCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = new SurfaceTreatmentRepository($this->em);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

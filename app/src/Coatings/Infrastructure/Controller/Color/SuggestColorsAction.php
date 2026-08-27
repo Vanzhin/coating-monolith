@@ -12,14 +12,12 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/coating/color/suggest',
     name: 'app_cabinet_coating_color_suggest',
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class SuggestColorsAction extends AbstractController
 {
     private const MAX_LIMIT = 25;
