@@ -1,0 +1,55 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Организации{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Организации',
+        create_route: 'app_cabinet_certificate_issuer_create',
+        can_edit: canEdit,
+        is_empty: result.issuers is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_certificate_issuer_list') }}" class="d-flex gap-2">
+                <input type="search" name="search" value="{{ search }}" class="form-control"
+                       placeholder="Поиск по названию...">
+                <button class="btn btn-outline-secondary" type="submit" title="Искать">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="d-flex flex-column gap-2">
+                {% for issuer in result.issuers %}
+                    <div class="d-flex align-items-center gap-2 gap-md-3 p-3 rounded-3 bg-body">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <h6 class="mb-0 fw-semibold" style="word-break: break-word;">{{ issuer.title }}</h6>
+                        </div>
+                        {% if canEdit %}
+                            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                                {% include '/components/edit_delete.html.twig' with {
+                                    'edit': 'app_cabinet_certificate_issuer_update',
+                                    'delete': 'app_cabinet_certificate_issuer_delete',
+                                    'id': issuer.id,
+                                    'title': issuer.title,
+                                    'name': 'организацию'
+                                } %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if canEdit %}
+                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_certificate_issuer_delete'} %}
+            {% endif %}
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

@@ -16,6 +16,7 @@ doctrine:
             cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
             string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
             substrate_scope: App\Coatings\Infrastructure\Database\DBAL\SubstrateScopeType
+            document_references: App\Certificates\Infrastructure\Database\DBAL\DocumentReferencesType
         mapping_types:
             jsonb: json
     orm:
@@ -65,6 +66,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/ChemicalResistance/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\ChemicalResistance\Domain\Aggregate'
                 alias: ChemicalResistance
+            Certificates:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Certificates/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Certificates\Domain\Aggregate'
+                alias: Certificates
 
 
 #            App:

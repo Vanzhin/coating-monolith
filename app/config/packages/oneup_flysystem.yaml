@@ -4,7 +4,12 @@ oneup_flysystem:
     upload_general_proposal_adapter:
       local:
         location: '%general_proposal_template_upload_dir%'
+    document_scans_adapter:
+      local:
+        location: '%document_scans_upload_dir%'
 
   filesystems:
     upload_general_proposal:
       adapter: upload_general_proposal_adapter
+    document_scans:
+      adapter: document_scans_adapter

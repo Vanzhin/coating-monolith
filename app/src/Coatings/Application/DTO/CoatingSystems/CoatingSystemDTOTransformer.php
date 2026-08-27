@@ -18,10 +18,16 @@ class CoatingSystemDTOTransformer
     }
 
     /**
-     * @param list<Compliance> $compliance соответствия системы из read-model (снапшота)
+     * @param list<Compliance> $compliance          соответствия системы из read-model (снапшота)
+     * @param int              $documentCount       число привязанных документов (Certificates)
+     * @param ?string          $documentDownloadUrl URL скачивания документа системы (если есть файл)
      */
-    public function fromEntity(CoatingSystem $system, array $compliance = []): CoatingSystemDTO
-    {
+    public function fromEntity(
+        CoatingSystem $system,
+        array $compliance = [],
+        int $documentCount = 0,
+        ?string $documentDownloadUrl = null,
+    ): CoatingSystemDTO {
         $treatment = $system->getSurfaceTreatment();
 
         $dto = new CoatingSystemDTO();
@@ -48,6 +54,8 @@ class CoatingSystemDTOTransformer
             $compliance,
         );
         $dto->tags = array_values($this->tagTransformer->fromEntityList($system->getTags()->toArray()));
+        $dto->documentCount = $documentCount;
+        $dto->documentDownloadUrl = $documentDownloadUrl;
 
         return $dto;
     }

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\GetPagedCoatings;
 
-use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQuery;
-use App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments\ListCoatingAssessmentsQueryHandler;
 use App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch\MatchSubstancesForSearchQuery;
 use App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch\MatchSubstancesForSearchQueryHandler;
 use App\Coatings\Application\DTO\Coatings\CoatingDTOTransformer;
@@ -19,7 +17,6 @@ class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
         private readonly CoatingRepositoryInterface $coatingRepository,
         private readonly CoatingDTOTransformer $coatingDTOTransformer,
         private readonly MatchSubstancesForSearchQueryHandler $matchSubstances,
-        private readonly ListCoatingAssessmentsQueryHandler $listAssessments,
     ) {
     }
 
@@ -28,6 +25,8 @@ class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
         $paginator = $this->coatingRepository->findByFilter($query->filter);
         $coatings = $this->coatingDTOTransformer->fromEntityList($paginator->items);
 
+        // Только лёгкое обогащение для карточки: подсветка веществ по поисковому запросу.
+        // Тяжёлое (химстойкость, слои, «входит в системы») грузится лениво фрагментом превью по клику.
         if (null !== $query->filter->search && [] !== $coatings) {
             $words = $query->filter->search->words();
             if ([] !== $words) {
@@ -38,17 +37,6 @@ class GetPagedCoatingsQueryHandler implements QueryHandlerInterface
                 foreach ($coatings as $c) {
                     $c->matchedSubstances = $matches[$c->id] ?? [];
                 }
-            }
-        }
-
-        if ([] !== $coatings) {
-            foreach ($coatings as $c) {
-                $c->chemResistancePage = ($this->listAssessments)(new ListCoatingAssessmentsQuery(
-                    coatingId: $c->id,
-                    search: null,
-                    page: 1,
-                    pageSize: 50,
-                ));
             }
         }
 

@@ -5,6 +5,11 @@
      infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот
      partial без layout'a.
 
+   Раскладка (десктоп): шапка (название + чипы-атрибуты, справа ред/удал),
+   ниже 2 колонки тонированных блоков в общем стиле приложения (как модалка/зоны):
+   слева «Состав», справа «Нанесение» + «Соответствие» + «Теги»; футер «Обновлено».
+   Мобайл — колонки стекаются (col-12 col-md-6).
+
    Обязательные переменные:
      items    — list<CoatingSystemDTO>
      canEdit  — bool
@@ -12,112 +17,118 @@
 {% set canEdit = canEdit|default(false) %}
 
 {% for system in items %}
-    {% set complianceBadges = [] %}
+    {# Группируем соответствие по стандартам — отдельный блок на ГОСТ/ISO и на СП. #}
+    {% set complianceByStandard = {} %}
     {% for entry in system.compliance %}
-        {% set complianceBadges = complianceBadges|merge([entry.label]) %}
+        {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
     {% endfor %}
-    {% set visibleBadges = complianceBadges|slice(0, 3) %}
-    {% set hiddenBadgeCount = complianceBadges|length - visibleBadges|length %}
 
-    {% set payloadLayers = [] %}
-    {% for layer in system.layers %}
-        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft, coatingId: layer.coatingId, colorName: layer.colorName, colorRal: layer.colorRal, colorHex: layer.colorHex, colorLabel: layer.colorLabel}]) %}
-    {% endfor %}
-    {% set payload = {
-        id: system.id,
-        title: system.title,
-        substrateTitle: system.substrateTitle,
-        environmentTitle: system.environmentTitle,
-        treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
-        totalDft: system.totalDft,
-        minApplicationTime: system.minApplicationTimeAt20Minutes is not null ? (system.minApplicationTimeAt20Minutes|duration_minutes_short) : null,
-        description: system.description,
-        layerCount: system.layers|length,
-        layers: payloadLayers,
-        compliance: system.compliance,
-    } %}
+    {% set hasApplication = system.maxLayerApplicationMinTemp is not null or system.minApplicationTimeAt20Minutes is not null %}
 
-    <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body"
-         data-system-id="{{ system.id }}">
-        <div class="flex-grow-1 overflow-hidden"
-             role="button"
-             data-action="click->coating-system-preview#open"
-             data-payload="{{ payload|json_encode|e('html_attr') }}">
-            <h6 class="mb-1 fw-semibold" style="word-break: break-word;">
-                <span class="text-body">{{ system.title }}</span>
-            </h6>
-            <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
-                <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
-                <span class="badge text-bg-secondary fw-normal">{{ system.environmentTitle }}</span>
-                <span class="badge text-bg-light fw-normal text-body-secondary">
-                    {{ system.totalDft }} мкм
-                </span>
-                {% if system.surfaceTreatmentCode %}
-                    <span class="text-muted small">
-                        {{ system.surfaceTreatmentCode }}
-                        {% if system.surfaceTreatmentStandardCode %}({{ system.surfaceTreatmentStandardCode }}){% endif %}
-                    </span>
-                {% else %}
-                    <span class="text-muted small">{{ system.surfaceTreatmentDescription }}</span>
-                {% endif %}
-            </div>
-            {% if system.maxLayerApplicationMinTemp is not null %}
-                <div class="small text-muted mb-1">
-                    Мин.Т нанесения: {{ system.maxLayerApplicationMinTemp }} °C
-                </div>
-            {% endif %}
-            {% if system.minApplicationTimeAt20Minutes is not null %}
-                <div class="small text-muted mb-1">
-                    Мин. время нанесения: {{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}
-                </div>
-            {% endif %}
-            {% if visibleBadges|length > 0 %}
-                <div class="d-flex flex-wrap gap-1 mb-1">
-                    {% for badge in visibleBadges %}
-                        <span class="badge text-bg-success fw-normal">{{ badge }}</span>
-                    {% endfor %}
-                    {% if hiddenBadgeCount > 0 %}
-                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ hiddenBadgeCount }}</span>
+    <div class="coating-card p-3 rounded-3 bg-body" data-system-id="{{ system.id }}">
+
+        {# ── Шапка: название + чипы-атрибуты, справа действия ── #}
+        <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+            <div class="flex-grow-1 overflow-hidden"
+                 role="button"
+                 data-action="click->entity-preview#open"
+                 data-entity-id="{{ system.id }}">
+                <h6 class="mb-2 fw-semibold" style="word-break: break-word;">
+                    <span class="text-body">{{ system.title }}</span>
+                </h6>
+                <div class="d-flex flex-wrap gap-1 align-items-center">
+                    <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
+                    <span class="badge text-bg-secondary fw-normal">{{ system.environmentTitle }}</span>
+                    {% if system.surfaceTreatmentCode %}
+                        <span class="badge text-bg-light fw-normal text-body-secondary">
+                            {{ system.surfaceTreatmentCode }}{% if system.surfaceTreatmentStandardCode %} ({{ system.surfaceTreatmentStandardCode }}){% endif %}
+                        </span>
+                    {% endif %}
+                    <span class="badge text-bg-light fw-normal text-body-secondary">{{ system.totalDft }} мкм</span>
+                    {% if system.documentCount > 0 %}
+                        <span class="badge text-bg-light fw-normal text-body-secondary" title="Документы (сертификаты/заключения)">
+                            <i class="bi bi-patch-check-fill"></i> {{ system.documentCount }}
+                        </span>
                     {% endif %}
                 </div>
-            {% endif %}
-            {% if system.layers|length > 0 %}
-                <div class="small text-body-secondary mb-1 d-flex flex-column gap-1">
-                    {% for layer in system.layers %}
-                        <div>
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-secondary rounded-pill"
-                                    data-coating-id="{{ layer.coatingId }}"
-                                    data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
-                            {{ layer.dft }} мкм
-                            {% if layer.colorHex %}
-                                <span class="color-swatch ms-1" style="background: {{ layer.colorHex }}"
-                                      title="{{ layer.colorLabel }}"></span>{{ layer.colorLabel }}
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            {% if system.tags|length > 0 %}
-                <div class="d-flex flex-wrap gap-1 mb-1">
-                    {% for tag in system.tags %}
-                        <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            <p class="mb-0 small text-muted">
-                Обновлено: {{ system.updatedAt|date('d.m.Y') }}
-            </p>
-        </div>
-        {% if canEdit %}
-            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                {% include '/components/edit_delete.html.twig' with {
-                    'edit': 'app_cabinet_coating_system_update',
-                    'delete': 'app_cabinet_coating_system_remove',
-                    'id': system.id,
-                    'title': system.title,
-                } %}
             </div>
-        {% endif %}
+            {% if canEdit %}
+                <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                    {% if system.documentDownloadUrl %}
+                        <a href="{{ system.documentDownloadUrl }}" class="btn btn-outline-secondary" title="Скачать документ (PDF)">
+                            <i class="bi bi-file-earmark-arrow-down"></i>
+                        </a>
+                    {% endif %}
+                    {% include '/components/edit_delete.html.twig' with {
+                        'edit': 'app_cabinet_coating_system_update',
+                        'delete': 'app_cabinet_coating_system_remove',
+                        'id': system.id,
+                        'title': system.title,
+                    } %}
+                </div>
+            {% endif %}
+        </div>
+
+        {# ── Тело: тонированные блоки в 2 колонки; клик открывает превью ── #}
+        <div class="row g-2"
+             role="button"
+             data-action="click->entity-preview#open"
+             data-entity-id="{{ system.id }}">
+
+            {# Состав #}
+            <div class="col-12 {{ hasApplication ? 'col-md-6' : '' }}">
+                <div class="p-3 rounded-3 bg-body-tertiary h-100">
+                    {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
+                </div>
+            </div>
+
+            {# Нанесение #}
+            {% if hasApplication %}
+                <div class="col-12 col-md-6">
+                    <div class="p-3 rounded-3 bg-body-tertiary h-100">
+                        {% if system.maxLayerApplicationMinTemp is not null %}
+                            <div class="small text-muted">Мин. Т нанесения: {{ system.maxLayerApplicationMinTemp }} °C</div>
+                        {% endif %}
+                        {% if system.minApplicationTimeAt20Minutes is not null %}
+                            <div class="small text-muted">Мин. время нанесения: {{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Соответствие — на всю ширину, стандарты в ряд #}
+            {% if complianceByStandard|length > 0 %}
+                <div class="col-12">
+                    <div class="d-flex flex-column flex-md-row gap-2">
+                        {% for standard, entries in complianceByStandard %}
+                            <div class="p-3 rounded-3 bg-body-tertiary flex-fill">
+                                <div class="small text-body-secondary fw-semibold mb-2">{{ (entries|first).standardTitle }}</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for entry in entries|slice(0, 3) %}
+                                        <span class="badge text-bg-success fw-normal">{{ entry.label }}</span>
+                                    {% endfor %}
+                                    {% if entries|length > 3 %}
+                                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ entries|length - 3 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Теги — на всю ширину #}
+            {% if system.tags|length > 0 %}
+                <div class="col-12">
+                    <div class="p-3 rounded-3 bg-body-tertiary">
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for tag in system.tags %}
+                                <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
 {% endfor %}

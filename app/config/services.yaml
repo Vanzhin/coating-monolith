@@ -10,6 +10,7 @@ parameters:
   cache_adapter: cache.adapter.filesystem
   general_proposal_template_upload: 'proposals/templates'
   general_proposal_template_upload_dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Resources/%general_proposal_template_upload%'
+  document_scans_upload_dir: '%kernel.project_dir%/var/uploads/certificates/document_scans'
   elasticsearch.config_dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ES/config'
 
 services:
@@ -109,6 +110,11 @@ services:
     arguments:
       #      $fileSystem: '@oneup_flysystem.upload_general_proposal_filesystem'
       $pathToDirectory: '%general_proposal_template_upload_dir%'
+
+  # Хранилище PDF-сканов документов (контекст Certificates). Автоалиаса для flysystem-сервисов нет — биндим по id.
+  App\Certificates\Infrastructure\Storage\DocumentFileStorage:
+    arguments:
+      $filesystem: '@oneup_flysystem.document_scans_filesystem'
 
   # Telegram
   App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:

@@ -34,6 +34,8 @@ final readonly class CoatingSystemsFilter
         public ?RangeFilter $minApplicationTimeAt20 = null,
         public CoatingSystemSort $sort = CoatingSystemSort::DEFAULT,
         public Pager $pager = new Pager(1, 20),
+        // null — не фильтровать; true — только с документами; false — только без.
+        public ?bool $hasDocuments = null,
     ) {
     }
 }

@@ -52,6 +52,7 @@ final class CoatingSystemFinder
         $this->applyCompliance($qb, $filter);
         $this->applyTags($qb, $filter);
         $this->applyCoatings($qb, $filter);
+        $this->applyHasDocuments($qb, $filter);
         $this->applyRanges($qb, $filter);
 
         $countQb = clone $qb;
@@ -157,6 +158,23 @@ final class CoatingSystemFinder
         // EXISTS (не JOIN) — чтобы не размножать строки cs и не ломать COUNT/пагинацию.
         $qb->andWhere('EXISTS (SELECT 1 FROM coating_system_layer csl WHERE csl.system_id = cs.id AND csl.coating_id IN (:coating_ids))')
             ->setParameter('coating_ids', $filter->coatingIds->getList(), ArrayParameterType::STRING);
+    }
+
+    /**
+     * Фасет «есть документы»: кросс-контекстное чтение на уровне БД — EXISTS по таблице
+     * certificates_document (контекст Certificates). Coatings-домен про неё не знает; связь
+     * только тут, в поисковом SQL. Матч по jsonb-containment owner_refs с id системы.
+     */
+    private function applyHasDocuments(QueryBuilder $qb, CoatingSystemsFilter $filter): void
+    {
+        if (null === $filter->hasDocuments) {
+            return;
+        }
+
+        $exists = 'EXISTS (SELECT 1 FROM certificates_document d '
+            ."WHERE d.owner_refs @> jsonb_build_array(jsonb_build_object('type', 'coating_system', 'id', cs.id::text)))";
+
+        $qb->andWhere($filter->hasDocuments ? $exists : 'NOT '.$exists);
     }
 
     private function applyRanges(QueryBuilder $qb, CoatingSystemsFilter $filter): void

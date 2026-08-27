@@ -150,7 +150,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         self::assertIsInt($dto->maxLayerApplicationMinTemp);
         self::assertGreaterThanOrEqual(0, $dto->minApplicationTimeAt20Minutes);
         self::assertContainsEquals(
-            new ComplianceMatchDTO('ISO_12944', 'ISO 12944', 'C4-H', 'C4', 'HIGH'),
+            new ComplianceMatchDTO('ISO_12944', 'ГОСТ 34667.5 (ISO 12944-5)', 'C4-H', 'C4', 'HIGH'),
             $dto->compliance,
         );
     }

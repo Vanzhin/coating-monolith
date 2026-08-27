@@ -148,7 +148,8 @@ export default class extends Controller {
     }
 
     /**
-     * Программно выбирает элемент — используется при создании нового treatment через модалку.
+     * Программно выбирает элемент — используется при создании нового treatment через модалку
+     * и при гидрации префилл-ссылок документа (id → название).
      * @param {string} id
      * @param {string} title
      */
@@ -157,6 +158,30 @@ export default class extends Controller {
         this._tagify.removeAllTags();
         this._tagify.addTags([{ value: title, id }]);
         this._hidden.value = id;
+    }
+
+    /**
+     * Сбрасывает выбор (нет тега, пустой hidden) — например при смене типа ссылки,
+     * когда прежний объект уже не валиден для нового suggest-эндпоинта.
+     */
+    clear() {
+        if (!this._tagify) return;
+        this._tagify.removeAllTags();
+        this._hidden.value = '';
+        this._syncSelect('', '');
+    }
+
+    /**
+     * Текущий выбор как {id, title} или null — для потребителей, которые сами строят
+     * элемент из выбранного (список ссылок документа: «Добавить» переносит выбор в строку).
+     * @returns {{id: string, title: string}|null}
+     */
+    getSelection() {
+        if (!this._tagify) return null;
+        const tag = (this._tagify.value || [])[0];
+        if (!tag || !tag.id) return null;
+
+        return { id: tag.id, title: tag.value ?? '' };
     }
 
     disconnect() {

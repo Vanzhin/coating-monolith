@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Repository;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,6 +55,34 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
             ->setParameter('coatingId', $coatingId)
             ->getQuery()
             ->getResult();
+    }
+
+    public function findSystemTitlesByCoatingIds(StringCollection $coatingIds): array
+    {
+        if (0 === $coatingIds->count()) {
+            return [];
+        }
+
+        $sql = <<<'SQL'
+            SELECT DISTINCT csl.coating_id::text AS cid, cs.id::text AS sid, cs.title AS stitle
+            FROM coating_system_layer csl
+            JOIN coating_system cs ON cs.id = csl.system_id
+            WHERE csl.coating_id IN (:ids)
+            ORDER BY stitle
+            SQL;
+
+        $rows = $this->em->getConnection()->executeQuery(
+            $sql,
+            ['ids' => $coatingIds->getList()],
+            ['ids' => ArrayParameterType::STRING],
+        )->fetchAllAssociative();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(string) $row['cid']][] = ['id' => (string) $row['sid'], 'title' => (string) $row['stitle']];
+        }
+
+        return $result;
     }
 
     public function findAll(): array

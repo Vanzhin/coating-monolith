@@ -6,6 +6,7 @@ namespace App\Coatings\Application\UseCase\Command\AppendLayer;
 
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -14,6 +15,7 @@ final readonly class AppendLayerCommandHandler implements CommandHandlerInterfac
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
+        private SystemLockGuard $lockGuard,
         private CoatingRepositoryInterface $coatingRepo,
     ) {
     }
@@ -25,6 +27,8 @@ final readonly class AppendLayerCommandHandler implements CommandHandlerInterfac
         if (null === $system) {
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->systemId), 404);
         }
+
+        $this->lockGuard->assertModifiable($cmd->systemId);
 
         $coating = $this->coatingRepo->findOneById($cmd->coatingId);
 

@@ -8,6 +8,7 @@ use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\ColorRepositoryInterface;
+use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -16,6 +17,7 @@ final readonly class ReplaceLayersCommandHandler implements CommandHandlerInterf
 {
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
+        private SystemLockGuard $lockGuard,
         private CoatingRepositoryInterface $coatingRepo,
         private ColorRepositoryInterface $colorRepo,
     ) {
@@ -27,6 +29,8 @@ final readonly class ReplaceLayersCommandHandler implements CommandHandlerInterf
         if (null === $system) {
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->systemId), 404);
         }
+
+        $this->lockGuard->assertModifiable($cmd->systemId);
 
         $prepared = [];
         foreach ($cmd->items as $item) {

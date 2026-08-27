@@ -31,4 +31,7 @@ class CoatingSystemDTO
     public array $compliance = [];
     /** @var list<TagDTO> */
     public array $tags = [];
+    /** Число привязанных документов (сертификатов/заключений) — из контекста Certificates. */
+    public int $documentCount = 0;
+    public ?string $documentDownloadUrl = null;
 }

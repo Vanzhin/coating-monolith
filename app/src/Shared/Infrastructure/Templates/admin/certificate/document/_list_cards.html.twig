@@ -1,0 +1,52 @@
+{# Батч карточек документов. Используется основным index.html.twig (первая страница)
+   и ListAction в режиме ?partial=1 (догрузка ленты — только этот partial).
+   Клик по карточке лениво фетчит фрагмент превью документа (entity-preview).
+
+   Обязательные переменные:
+     documents — list<DocumentDTO>
+     canEdit   — bool
+#}
+{% set canEdit = canEdit|default(false) %}
+
+{% for doc in documents %}
+    <div class="document-card p-3 rounded-3 bg-body" data-document-id="{{ doc.id }}">
+        <div class="d-flex align-items-start justify-content-between gap-2">
+            <div class="flex-grow-1 overflow-hidden" role="button"
+                 data-action="click->entity-preview#open"
+                 data-entity-id="{{ doc.id }}">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h6 class="mb-0 fw-semibold" style="word-break: break-word;">{{ doc.title }}</h6>
+                    <span class="badge text-bg-secondary fw-normal">{{ doc.kindLabel }}</span>
+                    {% if doc.expiresAt is null %}
+                        <span class="badge text-bg-secondary fw-normal">Бессрочный</span>
+                    {% elseif doc.isExpired %}
+                        <span class="badge text-bg-danger fw-normal">Просрочен до {{ doc.expiresAt|date('d.m.Y') }}</span>
+                    {% else %}
+                        <span class="badge text-bg-success fw-normal">Действует до {{ doc.expiresAt|date('d.m.Y') }}</span>
+                    {% endif %}
+                </div>
+                <p class="mb-1 small text-muted">
+                    {{ doc.issuerTitle ?? '—' }} · {{ doc.issuedAt|date('d.m.Y') }}
+                    {% if doc.testStandard %} · {{ doc.testStandard }}{% endif %}
+                </p>
+                <p class="mb-0 small">{{ doc.subject }}</p>
+            </div>
+            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+                {% if doc.hasFile %}
+                    <a href="{{ path('app_cabinet_certificate_document_download', {id: doc.id}) }}" class="btn btn-outline-secondary" title="Скачать PDF">
+                        <i class="bi bi-file-earmark-arrow-down"></i>
+                    </a>
+                {% endif %}
+                {% if canEdit %}
+                    {% include '/components/edit_delete.html.twig' with {
+                        'edit': 'app_cabinet_certificate_document_update',
+                        'delete': 'app_cabinet_certificate_document_delete',
+                        'id': doc.id,
+                        'title': doc.title,
+                        'name': 'документ'
+                    } %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endfor %}
