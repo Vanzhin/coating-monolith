@@ -12,7 +12,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Отдаёт цвета конкретного покрытия + флаг колеруемости — для селектора цвета в слое
@@ -23,7 +22,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_coating_coating_colors',
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class CoatingColorsAction extends AbstractController
 {
     public function __construct(private readonly QueryBusInterface $queryBus)

@@ -10,10 +10,13 @@ use App\Coatings\Domain\Aggregate\Color\RalClassicPalette;
 use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class CreateColorCommandHandlerTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private CommandBusInterface $bus;
     private ColorRepositoryInterface $repo;
 
@@ -23,6 +26,8 @@ final class CreateColorCommandHandlerTest extends KernelTestCase
         $container = static::getContainer();
         $this->bus = $container->get(CommandBusInterface::class);
         $this->repo = $container->get(ColorRepositoryInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     public function test_creates_custom_color(): void

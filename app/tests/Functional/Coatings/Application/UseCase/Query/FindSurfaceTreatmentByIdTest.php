@@ -9,12 +9,15 @@ use App\Coatings\Application\UseCase\Command\CreateSurfaceTreatment\CreateSurfac
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQuery;
 use App\Coatings\Application\UseCase\Query\FindSurfaceTreatmentById\FindSurfaceTreatmentByIdQueryHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class FindSurfaceTreatmentByIdTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private FindSurfaceTreatmentByIdQueryHandler $queryHandler;
     private CreateSurfaceTreatmentCommandHandler $createHandler;
     private EntityManagerInterface $em;
@@ -26,6 +29,8 @@ final class FindSurfaceTreatmentByIdTest extends KernelTestCase
         $this->queryHandler = $c->get(FindSurfaceTreatmentByIdQueryHandler::class);
         $this->createHandler = $c->get(CreateSurfaceTreatmentCommandHandler::class);
         $this->em = $c->get(EntityManagerInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

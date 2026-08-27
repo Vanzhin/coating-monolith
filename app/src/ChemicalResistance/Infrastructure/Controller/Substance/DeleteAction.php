@@ -10,14 +10,12 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/chemical-resistance/substance/{id}/delete',
     name: 'app_cabinet_chemical_resistance_substance_delete',
     requirements: ['id' => '[0-9a-f-]{36}'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 class DeleteAction extends AbstractController
 {
     public function __construct(private readonly CommandBusInterface $commandBus)

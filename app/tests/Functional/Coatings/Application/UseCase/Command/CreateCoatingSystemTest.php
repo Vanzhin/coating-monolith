@@ -26,6 +26,7 @@ use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -33,6 +34,7 @@ use Symfony\Component\Uid\Uuid;
 final class CreateCoatingSystemTest extends KernelTestCase
 {
     use SurfaceTreatmentFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private CreateCoatingSystemCommandHandler $handler;
     private EntityManagerInterface $em;
@@ -49,6 +51,8 @@ final class CreateCoatingSystemTest extends KernelTestCase
         $container = static::getContainer();
         $this->handler = $container->get(CreateCoatingSystemCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

@@ -19,12 +19,15 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class IssuerUseCasesTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private CommandBusInterface $commandBus;
     private QueryBusInterface $queryBus;
     private IssuerRepositoryInterface $repo;
@@ -39,6 +42,8 @@ final class IssuerUseCasesTest extends KernelTestCase
         $this->commandBus = $container->get(CommandBusInterface::class);
         $this->queryBus = $container->get(QueryBusInterface::class);
         $this->repo = $container->get(IssuerRepositoryInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

@@ -17,6 +17,7 @@ use App\Coatings\Application\UseCase\Command\RemoveCoatingSystem\RemoveCoatingSy
 use App\Coatings\Application\UseCase\Command\RemoveCoatingSystem\RemoveCoatingSystemCommandHandler;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -24,6 +25,7 @@ use Symfony\Component\Uid\Uuid;
 final class CertifiedSystemFreezeTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private AppendLayerCommandHandler $appendHandler;
     private RemoveCoatingSystemCommandHandler $removeHandler;
@@ -45,6 +47,8 @@ final class CertifiedSystemFreezeTest extends KernelTestCase
         $this->issuerSpec = $container->get(IssuerSpecification::class);
         $this->em = $container->get(EntityManagerInterface::class);
         $this->setUpFixture($container, $this->em);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

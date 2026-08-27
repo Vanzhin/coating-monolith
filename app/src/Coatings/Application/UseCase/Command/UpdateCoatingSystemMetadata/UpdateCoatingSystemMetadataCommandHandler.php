@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\UpdateCoatingSystemMetadata;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class UpdateCoatingSystemMetadataCommandHandler implements CommandHandlerInterface
@@ -19,11 +21,16 @@ final readonly class UpdateCoatingSystemMetadataCommandHandler implements Comman
         private SystemLockGuard $lockGuard,
         private SurfaceTreatmentRepositoryInterface $surfaceTreatmentRepo,
         private TagRepositoryInterface $tagRepo,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(UpdateCoatingSystemMetadataCommand $cmd): UpdateCoatingSystemMetadataCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $system = $this->repo->findById(Uuid::fromString($cmd->id));
 
         if (null === $system) {

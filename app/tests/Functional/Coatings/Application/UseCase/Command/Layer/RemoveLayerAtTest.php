@@ -8,6 +8,7 @@ use App\Coatings\Application\UseCase\Command\RemoveLayerAt\RemoveLayerAtCommand;
 use App\Coatings\Application\UseCase\Command\RemoveLayerAt\RemoveLayerAtCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -15,6 +16,7 @@ use Symfony\Component\Uid\Uuid;
 final class RemoveLayerAtTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private RemoveLayerAtCommandHandler $handler;
     private EntityManagerInterface $em;
@@ -26,6 +28,8 @@ final class RemoveLayerAtTest extends KernelTestCase
         $this->handler = $container->get(RemoveLayerAtCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
         $this->setUpFixture($container, $this->em);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

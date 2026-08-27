@@ -39,6 +39,8 @@ final class CreateApiActionTest extends WebTestCase
         $user = new User(new Email($this->userEmail));
         $user->setPassword($this->userPassword, $hasher);
         (new \ReflectionProperty(User::class, 'isActive'))->setValue($user, true);
+        $rolesRef = new \ReflectionProperty($user, 'roles');
+        $rolesRef->setValue($user, ['ROLE_ADMIN']);
         $this->em->persist($user);
         $this->em->flush();
     }

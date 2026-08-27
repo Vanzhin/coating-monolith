@@ -24,6 +24,7 @@ use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -31,6 +32,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class DocumentUseCasesTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private CommandBusInterface $commandBus;
     private QueryBusInterface $queryBus;
     private DocumentRepositoryInterface $repo;
@@ -55,6 +58,8 @@ final class DocumentUseCasesTest extends KernelTestCase
         $this->storage = $c->get(DocumentFileStorage::class);
         $this->issuerSpec = $c->get(IssuerSpecification::class);
         $this->em = $c->get(EntityManagerInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

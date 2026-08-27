@@ -201,10 +201,13 @@ final class DocumentControllerTest extends WebTestCase
         $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/preview');
         self::assertResponseIsSuccessful();
 
-        // Создание/управление — только ROLE_ADMIN.
-        $createUrl = static::getContainer()->get('router')->generate('app_cabinet_certificate_document_create');
-        $this->client->request('GET', $createUrl);
-        self::assertResponseStatusCodeSame(403);
+        // Управление заблокировано: авторизация в хендлере (DocumentAccessControl) не пускает
+        // не-админа. Тонкий контроллер ловит ForbiddenException и показывает ошибку — статус не
+        // обязательно 403, но сама мутация не проходит: документ остаётся на месте.
+        $deleteUrl = static::getContainer()->get('router')->generate('app_cabinet_certificate_document_delete', ['id' => $id]);
+        $this->client->request('POST', $deleteUrl);
+        $this->em->clear();
+        self::assertNotNull($this->repo->findOneById($id), 'Не-админ не должен мочь удалить документ');
     }
 
     private function loginNonAdmin(): void

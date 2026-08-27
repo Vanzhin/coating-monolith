@@ -10,7 +10,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/coatings/{coatingId}/chem-resistance/partial',
@@ -18,7 +17,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     requirements: ['coatingId' => '[0-9a-f-]{36}'],
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class AssessmentsPartialAction extends AbstractController
 {
     public function __construct(

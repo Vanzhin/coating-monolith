@@ -19,6 +19,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_certificate_issuer_list',
     methods: ['GET'],
 )]
+// Исключение из правила «авторизация в хендлере»: просмотр организаций админский, но
+// GetPagedIssuersQuery переиспользуется открытым списком документов (фасет «организация»),
+// поэтому гейтить сам запрос нельзя. Ограничиваем именно эту страницу-управление на контроллере.
 #[IsGranted('ROLE_ADMIN')]
 final class ListAction extends AbstractController
 {

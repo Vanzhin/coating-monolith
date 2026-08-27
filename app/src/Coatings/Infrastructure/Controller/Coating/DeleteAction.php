@@ -10,10 +10,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(path: '/cabinet/coating/coating/{id}/delete', name: 'app_cabinet_coating_coating_delete')]
-#[IsGranted('ROLE_ADMIN')]
 class DeleteAction extends AbstractController
 {
     public function __construct(

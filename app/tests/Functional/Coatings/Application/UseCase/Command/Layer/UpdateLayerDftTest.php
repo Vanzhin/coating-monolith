@@ -8,6 +8,7 @@ use App\Coatings\Application\UseCase\Command\UpdateLayerDft\UpdateLayerDftComman
 use App\Coatings\Application\UseCase\Command\UpdateLayerDft\UpdateLayerDftCommandHandler;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -15,6 +16,7 @@ use Symfony\Component\Uid\Uuid;
 final class UpdateLayerDftTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private UpdateLayerDftCommandHandler $handler;
     private EntityManagerInterface $em;
@@ -26,6 +28,8 @@ final class UpdateLayerDftTest extends KernelTestCase
         $this->handler = $container->get(UpdateLayerDftCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
         $this->setUpFixture($container, $this->em);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

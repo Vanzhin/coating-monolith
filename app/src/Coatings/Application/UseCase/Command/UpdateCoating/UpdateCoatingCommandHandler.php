@@ -8,6 +8,7 @@ use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -24,6 +25,7 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 {
@@ -33,11 +35,16 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         private TagFetcher $coatingTagFetcher,
         private RecoatingTreeBuilder $treeBuilder,
         private ColorRepositoryInterface $colorRepository,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(UpdateCoatingCommand $command): UpdateCoatingCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $coating = $this->coatingRepository->findOneById($command->coatingId);
         $dto = $command->coatingDTO;
 

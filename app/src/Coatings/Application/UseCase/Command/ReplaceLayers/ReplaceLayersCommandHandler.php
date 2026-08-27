@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\ReplaceLayers;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class ReplaceLayersCommandHandler implements CommandHandlerInterface
@@ -20,11 +22,16 @@ final readonly class ReplaceLayersCommandHandler implements CommandHandlerInterf
         private SystemLockGuard $lockGuard,
         private CoatingRepositoryInterface $coatingRepo,
         private ColorRepositoryInterface $colorRepo,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(ReplaceLayersCommand $cmd): void
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $system = $this->repo->findById(Uuid::fromString($cmd->systemId));
         if (null === $system) {
             throw new AppException(sprintf('Система покрытий с id %s не найдена.', $cmd->systemId), 404);

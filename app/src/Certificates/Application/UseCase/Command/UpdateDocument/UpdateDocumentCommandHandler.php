@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Certificates\Application\UseCase\Command\UpdateDocument;
 
+use App\Certificates\Application\Service\AccessControl\DocumentAccessControl;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
 use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
@@ -16,11 +18,16 @@ final readonly class UpdateDocumentCommandHandler implements CommandHandlerInter
     public function __construct(
         private DocumentRepositoryInterface $repository,
         private DocumentFileStorage $storage,
+        private DocumentAccessControl $access,
     ) {
     }
 
     public function __invoke(UpdateDocumentCommand $command): UpdateDocumentCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $document = $this->repository->findOneById($command->id);
         if (null === $document) {
             throw new AppException('Документ не найден.', Response::HTTP_NOT_FOUND);

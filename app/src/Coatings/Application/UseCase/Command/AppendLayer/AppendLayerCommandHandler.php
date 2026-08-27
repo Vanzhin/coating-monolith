@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\AppendLayer;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class AppendLayerCommandHandler implements CommandHandlerInterface
@@ -17,11 +19,16 @@ final readonly class AppendLayerCommandHandler implements CommandHandlerInterfac
         private CoatingSystemRepositoryInterface $repo,
         private SystemLockGuard $lockGuard,
         private CoatingRepositoryInterface $coatingRepo,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(AppendLayerCommand $cmd): AppendLayerCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $system = $this->repo->findById(Uuid::fromString($cmd->systemId));
 
         if (null === $system) {

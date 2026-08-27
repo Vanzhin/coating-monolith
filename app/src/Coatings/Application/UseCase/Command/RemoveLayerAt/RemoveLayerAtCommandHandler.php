@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\RemoveLayerAt;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class RemoveLayerAtCommandHandler implements CommandHandlerInterface
@@ -15,11 +17,16 @@ final readonly class RemoveLayerAtCommandHandler implements CommandHandlerInterf
     public function __construct(
         private CoatingSystemRepositoryInterface $repo,
         private SystemLockGuard $lockGuard,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(RemoveLayerAtCommand $cmd): RemoveLayerAtCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $system = $this->repo->findById(Uuid::fromString($cmd->systemId));
 
         if (null === $system) {

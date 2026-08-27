@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment;
 
+use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class RemoveSurfaceTreatmentCommandHandler implements CommandHandlerInterface
@@ -15,11 +17,16 @@ final readonly class RemoveSurfaceTreatmentCommandHandler implements CommandHand
     public function __construct(
         private SurfaceTreatmentRepositoryInterface $repo,
         private CoatingSystemRepositoryInterface $coatingSystemRepo,
+        private CoatingAccessControl $access,
     ) {
     }
 
     public function __invoke(RemoveSurfaceTreatmentCommand $cmd): RemoveSurfaceTreatmentCommandResult
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $treatment = $this->repo->findById(Uuid::fromString($cmd->id));
 
         if (null === $treatment) {

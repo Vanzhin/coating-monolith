@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment;
 
+use App\ChemicalResistance\Application\Service\AccessControl\ChemicalResistanceAccessControl;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
@@ -11,6 +12,7 @@ use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentS
 use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateAssessmentCommandHandler implements CommandHandlerInterface
@@ -18,11 +20,16 @@ final class CreateAssessmentCommandHandler implements CommandHandlerInterface
     public function __construct(
         private AssessmentRepositoryInterface $assessments,
         private AssessmentSpecification $specification,
+        private ChemicalResistanceAccessControl $access,
     ) {
     }
 
     public function __invoke(CreateAssessmentCommand $c): string
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $maxTemp = null !== $c->maxTemperatureCelsius
             ? AssessmentTemperature::fromInt($c->maxTemperatureCelsius) : null;
 

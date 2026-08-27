@@ -11,7 +11,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Отдаёт справочник RAL Classic для сетки выбора в модалке создания цвета.
@@ -22,7 +21,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_coating_color_ral',
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class RalPaletteAction extends AbstractController
 {
     public function __invoke(Request $request): Response

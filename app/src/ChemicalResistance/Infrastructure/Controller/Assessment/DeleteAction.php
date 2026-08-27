@@ -10,7 +10,6 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/coatings/{coatingId}/chem-resistance/assessment/{assessmentId}/delete',
@@ -21,7 +20,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     ],
     methods: ['POST'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 class DeleteAction extends AbstractController
 {
     public function __construct(private readonly CommandBusInterface $commandBus)

@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Infrastructure\Console\ImportConclusionsCommand;
 use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -22,6 +23,7 @@ use Symfony\Component\Uid\Uuid;
 final class ImportConclusionsCommandTest extends KernelTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
+    use AuthenticatesActorTrait;
 
     private EntityManagerInterface $em;
     private DocumentRepositoryInterface $documents;
@@ -44,6 +46,8 @@ final class ImportConclusionsCommandTest extends KernelTestCase
         $this->command = $container->get(ImportConclusionsCommand::class);
         $this->setUpFixture($container, $this->em);
         $this->suffix = bin2hex(random_bytes(3));
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

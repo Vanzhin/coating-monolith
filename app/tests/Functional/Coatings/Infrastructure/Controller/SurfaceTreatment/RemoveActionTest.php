@@ -114,7 +114,7 @@ final class RemoveActionTest extends WebTestCase
         self::assertNull($treatment, 'Запись должна быть удалена из БД.');
     }
 
-    public function test_post_non_admin_returns_403(): void
+    public function test_post_non_admin_does_not_remove_treatment(): void
     {
         $container = $this->client->getContainer();
         $em = $container->get(EntityManagerInterface::class);
@@ -123,6 +123,12 @@ final class RemoveActionTest extends WebTestCase
 
         $this->client->request('POST', sprintf('/cabinet/coating/surface-treatment/%s/remove', $this->treatmentId));
 
-        self::assertResponseStatusCodeSame(403);
+        // Авторизация в хендлере (CoatingAccessControl) не пускает не-админа. Тонкий контроллер
+        // ловит ForbiddenException и показывает ошибку — статус не обязательно 403, но сама
+        // мутация не проходит: запись остаётся в БД.
+        $em2 = static::getContainer()->get(EntityManagerInterface::class);
+        $em2->clear();
+        $treatment = $em2->find(SurfaceTreatment::class, Uuid::fromString($this->treatmentId));
+        self::assertNotNull($treatment, 'Не-админ не должен мочь удалить подготовку поверхности.');
     }
 }
