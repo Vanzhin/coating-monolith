@@ -63,6 +63,12 @@
             z-index: 1030;
         }
 
+        /* Высота карточки-шапки как при кнопке в потоке (40px + p-3): вынос кнопки в fixed
+           не должен проседать шапку. Логотип центрируется по вертикали. */
+        .blog-header-bar {
+            min-height: 72px;
+        }
+
         .blog-header-logo {
             font-family: inherit;
             font-size: 1.25rem;
@@ -93,11 +99,14 @@
         }
 
 
-        /* Кнопка hamburger'a в шапке — единая для мобильной и десктопа.
-           Раньше была floating (position:fixed) и показывалась только на мобильной;
-           теперь встроена в левую колонку хедера и работает как единый источник
-           навигации на всех устройствах. */
+        /* Кнопка hamburger'a — фиксированная (floating), единая для мобильной и десктопа.
+           Остаётся на экране при скролле; в начальном положении совпадает с прежним местом
+           внутри шапки (без фона и тени — как было). z-index ниже шторки (1045). */
         .menu-toggle {
+            position: fixed;
+            top: 2rem;     /* header py-3 (1rem) + card p-3 (1rem) */
+            left: 1.75rem; /* container-fluid (.75rem) + card p-3 (1rem) */
+            z-index: 1030;
             width: 40px;
             height: 40px;
             padding: 0;
@@ -418,21 +427,22 @@
                со шторками и list_page'ом). Слева hamburger, посередине
                логотип. Переключатель темы переехал в #mainMenu offcanvas —
                нечастое действие, header чище без правой колонки. #}
-            <div class="p-3 rounded-3 bg-body-tertiary">
-                <div class="position-relative d-flex align-items-center">
-                    <button class="btn btn-outline-secondary menu-toggle shadow-sm" type="button"
-                            data-bs-toggle="offcanvas" data-bs-target="#mainMenu"
-                            aria-label="Открыть меню">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <a class="blog-header-logo text-body text-decoration-none position-absolute start-50 translate-middle-x"
-                       href="{{ path('app_homepage') }}">
-                        {{ app_name }}
-                    </a>
-                </div>
+            <div class="p-3 rounded-3 bg-body-tertiary d-flex align-items-center justify-content-center blog-header-bar">
+                <a class="blog-header-logo text-body text-decoration-none"
+                   href="{{ path('app_homepage') }}">
+                    {{ app_name }}
+                </a>
             </div>
         </div>
     </header>
+
+    {# Кнопка меню-шторки — фиксирована (см. .menu-toggle): в начальном положении как раньше,
+       внутри шапки; остаётся на экране при скролле. #}
+    <button class="btn btn-outline-secondary menu-toggle" type="button"
+            data-bs-toggle="offcanvas" data-bs-target="#mainMenu"
+            aria-label="Открыть меню">
+        <i class="bi bi-list"></i>
+    </button>
 {% endblock %}
 
 {# Flash сообщения #}
@@ -521,26 +531,14 @@
             </button>
             <div class="collapse show" id="menuGroupCoatings">
                 <div class="list-group list-group-flush">
-                    {# Покрытия / Системы / Подготовка — для всех авторизованных, каталог общего доступа. #}
+                    {# Покрытия / Системы — для всех авторизованных, частые кейсы. Редкие
+                       админские справочники — в группе «Администрирование» ниже. #}
                     <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-circle-square me-2"></i>Покрытия
                     </a>
                     <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-layers me-2"></i>Системы покрытий
                     </a>
-                    <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-chevron-bar-contract me-2"></i>Подготовка поверхности
-                    </a>
-                    {# Производители / Химстойкость — только для админа (справочники управления).
-                       Оценки и примечания химстойкости правятся in-context на странице покрытия. #}
-                    {% if is_granted('ROLE_ADMIN') %}
-                        <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-building me-2"></i>Производители
-                        </a>
-                        <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-eyedropper me-2"></i>Химстойкость
-                        </a>
-                    {% endif %}
                 </div>
             </div>
 
@@ -560,6 +558,31 @@
                     </a>
                 </div>
             </div>
+
+            {# Группа: Администрирование — редкие справочники только для админа. Свёрнута по
+               умолчанию (collapse без show), чтобы не захламлять шторку частым кейсам. #}
+            {% if is_granted('ROLE_ADMIN') %}
+                <button type="button"
+                        class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 mt-2 text-body-secondary fw-semibold small text-uppercase"
+                        data-bs-toggle="collapse" data-bs-target="#menuGroupAdmin"
+                        aria-expanded="false" aria-controls="menuGroupAdmin">
+                    <span>Администрирование</span>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="collapse" id="menuGroupAdmin">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-chevron-bar-contract me-2"></i>Подготовка поверхности
+                        </a>
+                        <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building me-2"></i>Производители
+                        </a>
+                        <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-eyedropper me-2"></i>Химстойкость
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         {# Зона: аккаунт (личный кабинет / выход или вход / регистрация). #}
