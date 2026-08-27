@@ -153,9 +153,21 @@ class Coating extends Aggregate
         return $this->dryingMaxTemp;
     }
 
+    /**
+     * Пределы эксплуатации в сухом тепле. Если у покрытия они не задокументированы (null),
+     * возвращается дефолт по типу основы: continuous = peak = CoatingBase::defaultDryHeatMaxOperatingTemp.
+     * Так у покрытия всегда есть верхний потолок сухого тепла — единая точка правды и для расчётов
+     * систем (снапшот/фильтр), и для формы (предзаполнение дефолтом). Задокументированные пределы
+     * (в т.ч. частичные) возвращаются как есть, без подмены полей.
+     */
     public function getDryHeatExposure(): ?ThermalExposureLimits
     {
-        return $this->dryHeatExposure;
+        if (null !== $this->dryHeatExposure) {
+            return $this->dryHeatExposure;
+        }
+        $default = $this->base->defaultDryHeatMaxOperatingTemp();
+
+        return new ThermalExposureLimits(continuousMax: $default, peakMax: $default);
     }
 
     public function getImmersionExposure(): ?ThermalExposureLimits

@@ -55,4 +55,20 @@ class CoatingBaseTest extends TestCase
             }
         }
     }
+
+    public function test_default_dry_heat_max_operating_temp_for_low_heat_bases(): void
+    {
+        $this->assertSame(50, CoatingBase::AY->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(50, CoatingBase::FEVE->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(50, CoatingBase::PAS->defaultDryHeatMaxOperatingTemp());
+    }
+
+    public function test_default_dry_heat_max_operating_temp_for_other_bases(): void
+    {
+        $this->assertSame(120, CoatingBase::AK->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(120, CoatingBase::ESI->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(120, CoatingBase::EP->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(120, CoatingBase::PUR->defaultDryHeatMaxOperatingTemp());
+        $this->assertSame(120, CoatingBase::PS->defaultDryHeatMaxOperatingTemp());
+    }
 }

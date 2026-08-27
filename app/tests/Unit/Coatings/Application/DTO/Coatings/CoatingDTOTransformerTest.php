@@ -63,6 +63,21 @@ final class CoatingDTOTransformerTest extends TestCase
         $this->assertNull($dto->maxRecoatingInterval);
     }
 
+    public function test_from_entity_carries_base_default_dry_heat_exposure_when_undocumented(): void
+    {
+        $minTree = new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 60)));
+        $coating = $this->makeCoating(min: $minTree, max: null); // база EP, пределы эксплуатации не заданы
+
+        $dto = (new CoatingDTOTransformer())->fromEntity($coating);
+
+        // Сухое тепло: геттер подставил дефолт по основе EP → 120/120, DTO это несёт.
+        self::assertNotNull($dto->dryHeatExposure);
+        self::assertSame(120, $dto->dryHeatExposure->continuous_max);
+        self::assertSame(120, $dto->dryHeatExposure->peak_max);
+        // Погружение: дефолта по основе нет — остаётся null.
+        self::assertNull($dto->immersionExposure);
+    }
+
     private function makeCoating(
         RecoatingIntervalTree $min,
         ?RecoatingIntervalTree $max,
