@@ -207,6 +207,80 @@ final class Iso12944EvaluatorTest extends TestCase
         );
     }
 
+    public function test_marks_cx_ignoring_binders_when_thresholds_met(): void
+    {
+        // ГОСТ 34667.9 табл.2: CX углеродистая, Zn(R) → NDFT≥280, 3 слоя, связующие не ограничены.
+        $evaluator = new Iso12944Evaluator([$this->makeRule(
+            substrate: Substrate::STEEL_CARBON,
+            category: 'CX',
+            durability: 'HIGH',
+            primerType: PrimerType::ZINC_RICH,
+            mnoc: 3,
+            ndft: 280,
+            primerBinders: null,
+            otherBinders: null,
+        )]);
+
+        // 3 слоя, цинкнаполненный грунт, ndft 300, произвольные основания (в т.ч. AK/AY) — должно пройти.
+        $system = $this->makeSystem(Substrate::STEEL_CARBON, [
+            [CoatingBase::EP, 120, true],
+            [CoatingBase::AK, 100, false],
+            [CoatingBase::AY, 80, false],
+        ]);
+
+        self::assertEquals(
+            [new Compliance(ComplianceStandard::ISO_12944, 'CX', 'HIGH')],
+            $evaluator->evaluate($system),
+        );
+    }
+
+    public function test_no_cx_when_layers_below_minimum(): void
+    {
+        $evaluator = new Iso12944Evaluator([$this->makeRule(
+            substrate: Substrate::STEEL_CARBON,
+            category: 'CX',
+            durability: 'HIGH',
+            primerType: PrimerType::ZINC_RICH,
+            mnoc: 3,
+            ndft: 280,
+            primerBinders: null,
+            otherBinders: null,
+        )]);
+
+        // 2 слоя (< 3) при достаточной толщине → CX не ставится.
+        $system = $this->makeSystem(Substrate::STEEL_CARBON, [
+            [CoatingBase::EP, 200, true],
+            [CoatingBase::EP, 200, false],
+        ]);
+
+        self::assertSame([], $evaluator->evaluate($system));
+    }
+
+    public function test_marks_im4(): void
+    {
+        // ГОСТ 34667.9 табл.2: Im4 углеродистая, иная грунтовка → NDFT≥600, 2 слоя.
+        $evaluator = new Iso12944Evaluator([$this->makeRule(
+            substrate: Substrate::STEEL_CARBON,
+            category: 'Im4',
+            durability: 'HIGH',
+            primerType: PrimerType::OTHER,
+            mnoc: 2,
+            ndft: 600,
+            primerBinders: null,
+            otherBinders: null,
+        )]);
+
+        $system = $this->makeSystem(Substrate::STEEL_CARBON, [
+            [CoatingBase::EP, 350, false],
+            [CoatingBase::PUR, 300, false],
+        ]);
+
+        self::assertEquals(
+            [new Compliance(ComplianceStandard::ISO_12944, 'Im4', 'HIGH')],
+            $evaluator->evaluate($system),
+        );
+    }
+
     // --- helpers (зеркалят прежний ComplianceEvaluatorTest) ---
 
     /**
@@ -257,8 +331,8 @@ final class Iso12944EvaluatorTest extends TestCase
     }
 
     /**
-     * @param list<CoatingBase> $primerBinders
-     * @param list<CoatingBase> $otherBinders
+     * @param list<CoatingBase>|null $primerBinders null — без ограничения по связующим
+     * @param list<CoatingBase>|null $otherBinders  null — без ограничения по связующим
      */
     private function makeRule(
         Substrate $substrate,
@@ -267,8 +341,8 @@ final class Iso12944EvaluatorTest extends TestCase
         PrimerType $primerType,
         int $mnoc,
         int $ndft,
-        array $primerBinders,
-        array $otherBinders,
+        ?array $primerBinders,
+        ?array $otherBinders,
     ): Iso12944Rule {
         return new Iso12944Rule(
             standard: ComplianceStandard::ISO_12944,

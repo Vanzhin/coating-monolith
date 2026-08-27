@@ -36,6 +36,12 @@ interface StandardFacets
     public function badgeLabel(string $primary, ?string $secondary): string;
 
     /**
+     * Есть ли у данного значения первой оси вторая ось выбора. ISO: у CX/Im4 (ГОСТ 34667.9)
+     * долговечность всегда высокая — ось скрывается и в фильтре не участвует. СП: условия есть всегда.
+     */
+    public function hasSecondaryAxis(string $primary): bool;
+
+    /**
      * Хранимые значения первой оси, удовлетворяющие фильтру на $value (ISO: ≥ в семье; СП: ≥ по рангу).
      *
      * @return list<string>

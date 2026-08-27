@@ -11,8 +11,10 @@ use App\Coatings\Domain\Compliance\ComplianceStandard;
 final readonly class Iso12944Rule
 {
     /**
-     * @param list<CoatingBase> $primerBinders
-     * @param list<CoatingBase> $otherBinders
+     * @param list<CoatingBase>|null $primerBinders допустимые основания грунта; null — без ограничения
+     *                                              (правила ГОСТ 34667.9 для CX/Im4 связующие не задают)
+     * @param list<CoatingBase>|null $otherBinders  допустимые основания последующих слоёв; null — без
+     *                                              ограничения. Пустой список [] = «последующих слоёв нет»
      */
     public function __construct(
         public ComplianceStandard $standard,
@@ -22,8 +24,8 @@ final readonly class Iso12944Rule
         public PrimerType $primerType,
         public int $mnoc,
         public int $ndft,
-        public array $primerBinders,
-        public array $otherBinders,
+        public ?array $primerBinders,
+        public ?array $otherBinders,
     ) {
     }
 }

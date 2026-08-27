@@ -51,6 +51,16 @@ final readonly class Iso12944Facets implements StandardFacets
         return $primary.(null !== $durability ? '-'.$durability->title() : '');
     }
 
+    public function hasSecondaryAxis(string $primary): bool
+    {
+        // CX и Im4 (ГОСТ 34667.9) — только высокая долговечность, оси выбора нет.
+        return !in_array(
+            IsoCorrosivityCategory::tryFrom($primary),
+            [IsoCorrosivityCategory::CX, IsoCorrosivityCategory::IM4],
+            true,
+        );
+    }
+
     public function expandPrimary(string $value): array
     {
         return IsoCorrosivityCategory::tryFrom($value)?->atOrAboveInFamily() ?? [$value];

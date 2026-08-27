@@ -35,6 +35,7 @@ final class Iso12944RuleBook
             self::d1Rules(),
             self::e1Rules(),
             self::b5Rules(),
+            self::part9Rules(),
         );
     }
 
@@ -278,8 +279,40 @@ final class Iso12944RuleBook
     }
 
     /**
-     * @param list<CoatingBase> $primerBinders
-     * @param list<CoatingBase> $otherBinders
+     * Таблица 2 ГОСТ 34667.9-2021 — экстремальная атмосфера CX (морская) и погружение Im4.
+     * Отсутствуют в части 5, поэтому заведены отдельной ветвью. Долговечность — только высокая (HIGH):
+     * иных градаций для CX/Im4 стандарт не предусматривает. Связующие НЕ ограничены (null): таблица 2
+     * задаёт только (зона × тип грунта) → NDFT/слои, состав плёнкообразующих отсылает к части 5 и
+     * разрешает «другие системы». Адгезия из таблицы 2 не проверяется — у системы нет такого свойства
+     * (существующая маркировка адгезию и так не смотрит). Зона «всплеск и переменное смачивание»
+     * (NDFT ≥450) отдельным правилом не нужна: такая система и так проходит пороги CX (≥280/350);
+     * зона важна для подбора, а не для маркировки.
+     *
+     * @return list<Iso12944Rule>
+     */
+    private static function part9Rules(): array
+    {
+        return [
+            // Углеродистая сталь, CX: Zn(R) грунт → система ≥280, 3 слоя; иная → ≥350, 3 слоя.
+            self::rule(Substrate::STEEL_CARBON, 'CX', IsoDurability::HIGH, PrimerType::ZINC_RICH, 3, 280, null, null),
+            self::rule(Substrate::STEEL_CARBON, 'CX', IsoDurability::HIGH, PrimerType::OTHER, 3, 350, null, null),
+            // Оцинковка/термонапыл, CX. Таблица 2 даёт один класс подложки с двумя тирами (с грунтом
+            // ≥350, sealer-only ≥200), но модель не различает «без грунта» (у обоих 2 слоя, PrimerType
+            // OTHER). Осознанный split по физике: термонапыл сам металлозащита — хватает sealer (≥200);
+            // горячая оцинковка получает полную систему (≥350). До сверки с нормоконтролем — так.
+            self::rule(Substrate::STEEL_GALVANIZED, 'CX', IsoDurability::HIGH, PrimerType::OTHER, 2, 350, null, null),
+            self::rule(Substrate::STEEL_METALLIZED, 'CX', IsoDurability::HIGH, PrimerType::OTHER, 2, 200, null, null),
+            // Углеродистая сталь, Im4: иная грунт → ≥600, 2 слоя; без грунтовки → ≥800, 1 слой;
+            // Zn(R) → ≥350 (сноска c), число слоёв принято 3.
+            self::rule(Substrate::STEEL_CARBON, 'Im4', IsoDurability::HIGH, PrimerType::OTHER, 2, 600, null, null),
+            self::rule(Substrate::STEEL_CARBON, 'Im4', IsoDurability::HIGH, PrimerType::OTHER, 1, 800, null, null),
+            self::rule(Substrate::STEEL_CARBON, 'Im4', IsoDurability::HIGH, PrimerType::ZINC_RICH, 3, 350, null, null),
+        ];
+    }
+
+    /**
+     * @param list<CoatingBase>|null $primerBinders null — без ограничения по связующим
+     * @param list<CoatingBase>|null $otherBinders  null — без ограничения; [] — «без последующих слоёв»
      */
     private static function rule(
         Substrate $substrate,
@@ -288,8 +321,8 @@ final class Iso12944RuleBook
         PrimerType $primerType,
         int $mnoc,
         int $ndft,
-        array $primerBinders,
-        array $otherBinders,
+        ?array $primerBinders,
+        ?array $otherBinders,
     ): Iso12944Rule {
         return new Iso12944Rule(
             standard: ComplianceStandard::ISO_12944,
