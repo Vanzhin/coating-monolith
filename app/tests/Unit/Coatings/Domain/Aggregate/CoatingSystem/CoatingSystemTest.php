@@ -119,6 +119,31 @@ final class CoatingSystemTest extends TestCase
         $sys->appendLayer($esiCoating, 60); // должен кинуть
     }
 
+    public function test_ak_cannot_cover_zinc_rich_primer(): void
+    {
+        // ISO 12944-5 F.1: поверх цинкнаполненной грунтовки алкид (AK) наносить нельзя.
+        $zincEp = $this->makeCoating(CoatingBase::EP);
+        $zincEp->setIsZincRich(true);
+        $ak = $this->makeCoating(CoatingBase::AK);
+
+        $sys = $this->newSystem();
+        $sys->appendLayer($zincEp, 80);
+        $this->expectException(AppException::class);
+        $sys->appendLayer($ak, 80);
+    }
+
+    public function test_ak_can_cover_non_zinc_primer(): void
+    {
+        $ep = $this->makeCoating(CoatingBase::EP); // не цинкнаполненный
+        $ak = $this->makeCoating(CoatingBase::AK);
+
+        $sys = $this->newSystem();
+        $sys->appendLayer($ep, 80);
+        $sys->appendLayer($ak, 80);
+
+        self::assertSame(2, $sys->layerCount());
+    }
+
     public function test_first_layer_throws_on_empty_system(): void
     {
         $sys = $this->newSystem();

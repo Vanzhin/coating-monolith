@@ -397,16 +397,24 @@ class Coating extends Aggregate
         $this->raise(new CoatingMutated($this->getId()));
     }
 
-    /** Можно ли это покрытие наносить поверх $primer (делегирует в основание). */
+    /**
+     * Можно ли это покрытие наносить поверх $primer — ЕДИНСТВЕННАЯ точка решения совместимости
+     * перекрытия. Матрицу оснований берём из CoatingBase::allowedPrimers (данные, ISO 12944-5),
+     * плюс пигментный нюанс таблицы F.1: алкид (AK) нельзя поверх цинкнаполненной грунтовки.
+     */
     public function canBeAppliedOnTopOf(self $primer): bool
     {
-        return $this->base->canBeAppliedOnTopOf($primer->base);
+        if (!in_array($primer->base, $this->base->allowedPrimers(), true)) {
+            return false;
+        }
+
+        return !(CoatingBase::AK === $this->base && $primer->isZincRich);
     }
 
-    /** Можно ли поверх этого покрытия нанести $topCoat (делегирует в основание). */
+    /** Можно ли поверх этого покрытия нанести $topCoat. Зеркало canBeAppliedOnTopOf. */
     public function canBecoveredBy(self $topCoat): bool
     {
-        return $this->base->canBecoveredBy($topCoat->base);
+        return $topCoat->canBeAppliedOnTopOf($this);
     }
 
     public function setMinRecoatingInterval(RecoatingIntervalTree $minRecoatingInterval): void

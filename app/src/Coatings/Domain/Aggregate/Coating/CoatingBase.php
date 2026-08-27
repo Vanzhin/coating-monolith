@@ -94,41 +94,26 @@ enum CoatingBase: string
     }
 
     /**
-     * Можно ли это покрытие наносить поверх покрытия с основанием $primer.
-     * Семантика: $topCoat->canBeAppliedOver($primer).
-     */
-    public function canBeAppliedOnTopOf(self $primer): bool
-    {
-        return in_array($primer, $this->allowedPrimers(), true);
-    }
-
-    /**
-     * Можно ли поверх этого основания нанести покрытие $topCoat.
-     * Зеркально к canBeAppliedOnTopOf: $primer->canReceive($topCoat).
-     */
-    public function canBecoveredBy(self $topCoat): bool
-    {
-        return $topCoat->canBeAppliedOnTopOf($this);
-    }
-
-    /**
-     * Список оснований, поверх которых данный тип ЛКМ можно наносить.
-     * Заготовка: каждое основание совместимо как минимум само с собой.
-     * Реальные правила совместимости заполняются вручную по справочной литературе.
+     * Матрица совместимости перекрытия (данные ISO 12944-5 / ГОСТ 34667.5): основания-грунтовки,
+     * поверх которых можно нанести покрытие этого типа. Здесь только ДАННЫЕ — решение о совместимости
+     * принимает единственная точка Coating::canBeAppliedOnTopOf (она учитывает ещё и пигмент/цинк).
      *
      * @return list<self>
      */
-    private function allowedPrimers(): array
+    public function allowedPrimers(): array
     {
-        // todo записать совместимость
+        // Совместимость перекрытия по ISO 12944-5 (ГОСТ 34667.5): таблица F.1 (какая грунтовка
+        // системы ложится поверх какой) + примечания к таблицам C.1–C.5 (FEVE/PAS/PS — топкоаты-
+        // альтернативы PUR поверх EP/PUR/ESI). Пигментный нюанс (нельзя AK поверх цинкнаполненной
+        // грунтовки) enum не выражает — он в Coating::canBecoveredBy через isZincRich.
         return match ($this) {
             self::AK => [self::AK, self::AY, self::EP, self::PUR],
             self::AY => [self::AY, self::AK, self::EP, self::PUR, self::ESI],
             self::ESI => [self::ESI],
-            self::EP => [self::EP, self::PUR, self::ESI],
-            self::PUR => [self::EP, self::PUR, self::ESI],
-            self::FEVE => [self::FEVE],
-            self::PAS => [self::PAS],
+            self::EP => [self::EP, self::PUR, self::ESI, self::AY],
+            self::PUR => [self::EP, self::PUR, self::ESI, self::AY],
+            self::FEVE => [self::FEVE, self::EP, self::PUR, self::ESI],
+            self::PAS => [self::PAS, self::EP, self::PUR, self::ESI],
             self::PS => [self::PS, self::EP, self::PUR, self::ESI],
         };
     }
