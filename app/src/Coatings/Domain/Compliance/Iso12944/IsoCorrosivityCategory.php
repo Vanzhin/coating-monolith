@@ -15,6 +15,7 @@ enum IsoCorrosivityCategory: string
     case IM1 = 'Im1';
     case IM2 = 'Im2';
     case IM3 = 'Im3';
+    case IM4 = 'Im4';
 
     public function title(): string
     {
@@ -33,6 +34,7 @@ enum IsoCorrosivityCategory: string
             self::IM1 => 'Погружение в пресную воду',
             self::IM2 => 'Погружение в морскую или слабоминерализованную воду',
             self::IM3 => 'Погружение в грунт',
+            self::IM4 => 'Постоянное погружение в морскую воду',
         };
     }
 
@@ -40,7 +42,7 @@ enum IsoCorrosivityCategory: string
     {
         return match ($this) {
             self::C1, self::C2, self::C3, self::C4, self::C5, self::CX => 'atmospheric',
-            self::IM1, self::IM2, self::IM3 => 'immersion',
+            self::IM1, self::IM2, self::IM3, self::IM4 => 'immersion',
         };
     }
 
@@ -56,6 +58,7 @@ enum IsoCorrosivityCategory: string
             self::IM1 => 1,
             self::IM2 => 2,
             self::IM3 => 3,
+            self::IM4 => 4,
         };
     }
 

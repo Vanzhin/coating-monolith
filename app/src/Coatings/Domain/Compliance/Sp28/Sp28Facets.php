@@ -54,6 +54,11 @@ final readonly class Sp28Facets implements StandardFacets
         return null !== $condition ? $degree.' · '.$condition : $degree;
     }
 
+    public function hasSecondaryAxis(string $primary): bool
+    {
+        return true; // у СП условия эксплуатации есть для любой степени агрессивности
+    }
+
     public function expandPrimary(string $value): array
     {
         return SpAggressivity::tryFrom($value)?->atOrAbove() ?? [$value];

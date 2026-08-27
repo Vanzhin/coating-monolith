@@ -282,6 +282,29 @@ final class CoatingSystemFinderTest extends KernelTestCase
         self::assertNotContains($sysImmersion->getId(), $result->ids);
     }
 
+    public function test_compliance_cx_filter_ignores_durability_axis(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        // У CX (ГОСТ 34667.9) второй оси нет — долговечность всегда HIGH.
+        $sysCx = $this->buildAndSaveSystem('CX sys '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysCx->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'CX', 'dur' => 'HIGH'],
+        );
+
+        // Залипший в URL durability=VERY_HIGH не должен отсеять CX-строку: у CX оси долговечности
+        // нет, фильтр по ней не применяется. Иначе expandSecondary(VERY_HIGH)=[VERY_HIGH] выкинул бы
+        // HIGH-строку (VERY_HIGH берём именно потому, что её «≥»-раскрытие не покрывает HIGH).
+        $filter = new CoatingSystemsFilter(
+            standard: ComplianceStandard::ISO_12944,
+            category: 'CX',
+            durability: 'VERY_HIGH',
+        );
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysCx->getId(), $result->ids);
+    }
+
     public function test_tag_filter(): void
     {
         $suffix = bin2hex(random_bytes(4));

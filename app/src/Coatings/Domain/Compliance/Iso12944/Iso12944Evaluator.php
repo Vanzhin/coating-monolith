@@ -73,18 +73,21 @@ final readonly class Iso12944Evaluator implements StandardEvaluator
             if ($ndft < $rule->ndft) {
                 continue;
             }
-            if (!in_array($primerBase, $rule->primerBinders, true)) {
+            // null-список связующих = без ограничения (CX/Im4: ГОСТ 34667.9 связующие не задаёт).
+            if (null !== $rule->primerBinders && !in_array($primerBase, $rule->primerBinders, true)) {
                 continue;
             }
-            $mismatch = false;
-            foreach ($followupBases as $base) {
-                if (!in_array($base, $rule->otherBinders, true)) {
-                    $mismatch = true;
-                    break;
+            if (null !== $rule->otherBinders) {
+                $mismatch = false;
+                foreach ($followupBases as $base) {
+                    if (!in_array($base, $rule->otherBinders, true)) {
+                        $mismatch = true;
+                        break;
+                    }
                 }
-            }
-            if ($mismatch) {
-                continue;
+                if ($mismatch) {
+                    continue;
+                }
             }
             $matches->add(new Iso12944Match($rule->standard, $rule->category, $rule->durability));
         }
