@@ -5,6 +5,46 @@
 
 export const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 
+// Глобально: ESC или клик вне модалки закрывают ВЕСЬ стек модалок (любого уровня).
+// Кнопка «Закрыть»/крестик (data-bs-dismiss) по-прежнему закрывает только свою — на неё это не влияет.
+let closeAllInitialised = false;
+
+function closeAllModals() {
+    document.querySelectorAll('.modal.show').forEach((modalEl) => {
+        window.bootstrap?.Modal.getInstance(modalEl)?.hide();
+    });
+}
+
+function initCloseAllModals() {
+    if (closeAllInitialised) {
+        return;
+    }
+    closeAllInitialised = true;
+
+    document.addEventListener('keydown', (event) => {
+        if ('Escape' === event.key) {
+            closeAllModals();
+        }
+    });
+    // Клик по самому .modal (вне .modal-dialog) = клик по фону/вне контента. Как в Bootstrap,
+    // сверяем цель mousedown и click: выделение текста, начатое внутри диалога и отпущенное на
+    // фоне, не должно закрывать стек (иначе один промах мышью схлопывает все модалки).
+    let backdropMousedownTarget = null;
+    document.addEventListener('mousedown', (event) => {
+        backdropMousedownTarget = event.target;
+    });
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLElement
+            && target === backdropMousedownTarget
+            && target.classList.contains('modal')) {
+            closeAllModals();
+        }
+    });
+}
+
+initCloseAllModals();
+
 /**
  * Резолвит названия объектов по id через by-ids эндпоинт Coatings.
  *
