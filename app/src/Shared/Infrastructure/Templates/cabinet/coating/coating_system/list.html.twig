@@ -6,10 +6,8 @@
     {% set canEdit = is_granted('ROLE_ADMIN') %}
     {% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
 
-    <div data-controller="coating-system-preview coating-preview-loader"
-         data-coating-system-preview-modal-id-value="coatingSystemModal"
-         data-coating-system-preview-edit-route-value="{{ path('app_cabinet_coating_system_update', {id: idPlaceholder}) }}"
-         data-coating-system-preview-delete-route-value="{{ path('app_cabinet_coating_system_remove', {id: idPlaceholder}) }}"
+    <div data-controller="entity-preview coating-preview-loader"
+         data-entity-preview-endpoint-value="{{ path('app_cabinet_coating_system_preview', {id: idPlaceholder}) }}"
          data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
 
     {# Собираем значения активных подложек для сравнения #}
@@ -951,87 +949,6 @@
             }} %}
         </noscript>
 
-        {# Модалка предпросмотра системы покрытий #}
-        <div class="modal fade" id="coatingSystemModal" tabindex="-1"
-             aria-labelledby="coatingSystemModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="coatingSystemModalLabel"
-                            data-coating-system-preview-target="modalTitle"></h5>
-                        <button type="button" class="btn-close"
-                                data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                            <div class="row g-2 small">
-                                <div class="col-md-4">
-                                    <span class="text-muted">Подложка:</span>
-                                    <span class="ms-1 fw-semibold"
-                                          data-coating-system-preview-target="modalSubstrate"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <span class="text-muted">Среда:</span>
-                                    <span class="ms-1 fw-semibold"
-                                          data-coating-system-preview-target="modalEnvironment"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <span class="text-muted">Подготовка:</span>
-                                    <span class="ms-1 fw-semibold"
-                                          data-coating-system-preview-target="modalTreatment"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <span class="text-muted">Суммарная ТСП:</span>
-                                    <span class="ms-1 fw-semibold"
-                                          data-coating-system-preview-target="modalDft"></span>
-                                </div>
-                                <div class="col-md-4 modal-apptime-col">
-                                    <span class="text-muted">Мин. время нанесения:</span>
-                                    <span class="ms-1 fw-semibold"
-                                          data-coating-system-preview-target="modalAppTime"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-description-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
-                            <p class="text-body-secondary mb-0"
-                               data-coating-system-preview-target="modalDescription"></p>
-                        </div>
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                            <h6 class="fw-semibold mb-3">
-                                Слои системы
-                                (<span data-coating-system-preview-target="modalLayersCount"></span>)
-                            </h6>
-                            <div class="small text-body-secondary d-flex flex-column gap-1"
-                                 data-coating-system-preview-target="modalLayers"></div>
-                        </div>
-                        <div class="modal-compliance-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
-                            <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
-                            <div class="d-flex flex-wrap gap-2"
-                                 data-coating-system-preview-target="modalCompliance"></div>
-                        </div>
-                        <div class="modal-documents-block p-3 mb-3 rounded-3 bg-body-tertiary d-none">
-                            <h6 class="fw-semibold mb-2">Документы</h6>
-                            <div class="d-flex flex-column gap-2"
-                                 data-coating-system-preview-target="modalDocuments"></div>
-                        </div>
-                        <div class="small text-muted">
-                            Обновлено: <span data-coating-system-preview-target="modalUpdatedAt"></span>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        {% if canEdit %}
-                            <a href="#" class="btn btn-outline-primary"
-                               data-coating-system-preview-target="modalEditLink">
-                                <i class="bi bi-pencil"></i> Редактировать
-                            </a>
-                        {% endif %}
-                        <button type="button" class="btn btn-secondary"
-                                data-bs-dismiss="modal">Закрыть</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         {% if canEdit %}
             {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_coating_system_remove'} %}
         {% endif %}
@@ -1050,10 +967,7 @@
     {% endblock %}
     {% endembed %}
 
-    {# Хост для ленивой модалки покрытия: клик по слою системы фетчит сюда фрагмент
-       _coating_preview.html.twig и показывает его поверх (стек модалок Bootstrap). #}
-    <div data-coating-preview-loader-target="container"></div>
 
-    </div>{# /data-controller="coating-system-preview" #}
+    </div>{# /data-controller="entity-preview coating-preview-loader" #}
 
 {% endblock %}

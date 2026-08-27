@@ -23,26 +23,6 @@
         {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
     {% endfor %}
 
-    {% set payloadLayers = [] %}
-    {% for layer in system.layers %}
-        {% set payloadLayers = payloadLayers|merge([{coatingTitle: layer.coatingTitle, dft: layer.dft, coatingId: layer.coatingId, colorName: layer.colorName, colorRal: layer.colorRal, colorHex: layer.colorHex, colorLabel: layer.colorLabel}]) %}
-    {% endfor %}
-    {% set payload = {
-        id: system.id,
-        title: system.title,
-        substrateTitle: system.substrateTitle,
-        environmentTitle: system.environmentTitle,
-        treatment: system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription,
-        totalDft: system.totalDft,
-        minApplicationTime: system.minApplicationTimeAt20Minutes is not null ? (system.minApplicationTimeAt20Minutes|duration_minutes_short) : null,
-        description: system.description,
-        layerCount: system.layers|length,
-        layers: payloadLayers,
-        compliance: system.compliance,
-        documentCount: system.documentCount,
-        documentsUrl: path('app_cabinet_coating_system_documents', {id: system.id}),
-        updatedAt: system.updatedAt|date('d.m.Y'),
-    } %}
     {% set hasApplication = system.maxLayerApplicationMinTemp is not null or system.minApplicationTimeAt20Minutes is not null %}
 
     <div class="coating-card p-3 rounded-3 bg-body" data-system-id="{{ system.id }}">
@@ -51,8 +31,8 @@
         <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
             <div class="flex-grow-1 overflow-hidden"
                  role="button"
-                 data-action="click->coating-system-preview#open"
-                 data-payload="{{ payload|json_encode|e('html_attr') }}">
+                 data-action="click->entity-preview#open"
+                 data-entity-id="{{ system.id }}">
                 <h6 class="mb-2 fw-semibold" style="word-break: break-word;">
                     <span class="text-body">{{ system.title }}</span>
                 </h6>
@@ -92,31 +72,13 @@
         {# ── Тело: тонированные блоки в 2 колонки; клик открывает превью ── #}
         <div class="row g-2"
              role="button"
-             data-action="click->coating-system-preview#open"
-             data-payload="{{ payload|json_encode|e('html_attr') }}">
+             data-action="click->entity-preview#open"
+             data-entity-id="{{ system.id }}">
 
             {# Состав #}
             <div class="col-12 {{ hasApplication ? 'col-md-6' : '' }}">
                 <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                    {% if system.layers|length > 0 %}
-                        <div class="small text-body-secondary d-flex flex-column gap-1">
-                            {% for layer in system.layers %}
-                                <div class="d-flex align-items-center flex-wrap gap-1">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-secondary"
-                                            data-coating-id="{{ layer.coatingId }}"
-                                            data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
-                                    <span>{{ layer.dft }} мкм</span>
-                                    {% if layer.colorHex %}
-                                        <span class="color-swatch ms-1" style="background: {{ layer.colorHex }}"
-                                              title="{{ layer.colorLabel }}"></span>{{ layer.colorLabel }}
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="small text-muted">Слоёв нет</div>
-                    {% endif %}
+                    {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
                 </div>
             </div>
 

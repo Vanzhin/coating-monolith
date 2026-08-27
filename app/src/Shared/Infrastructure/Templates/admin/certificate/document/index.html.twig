@@ -13,13 +13,8 @@
     {% set statusActive = status != '' %}
     {% set testStandardActive = testStandard != '' %}
 
-    <div data-controller="document-preview"
-         data-document-preview-modal-id-value="documentModal"
-         data-document-preview-edit-route-value="{{ path('app_cabinet_certificate_document_update', {id: idPlaceholder}) }}"
-         data-document-preview-by-ids-system-value="{{ path('app_cabinet_coating_system_by_ids') }}"
-         data-document-preview-by-ids-coating-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
-         data-document-preview-preview-system-value="{{ path('app_cabinet_coating_system_preview', {id: idPlaceholder}) }}"
-         data-document-preview-preview-coating-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
+    <div data-controller="entity-preview"
+         data-entity-preview-endpoint-value="{{ path('app_cabinet_certificate_document_preview', {id: idPlaceholder}) }}">
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Документы',
@@ -268,57 +263,6 @@
         {% if canEdit %}
             {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_certificate_document_delete'} %}
         {% endif %}
-
-        {# Модалка предпросмотра документа — единственная, заполняется JS из data-payload карточки. #}
-        <div class="modal fade" id="documentModal" tabindex="-1" aria-labelledby="documentModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div>
-                            <h5 class="modal-title mb-0" id="documentModalLabel" data-document-preview-target="modalTitle"></h5>
-                            <div class="d-flex flex-wrap gap-1 mt-1">
-                                <span class="badge text-bg-secondary fw-normal" data-document-preview-target="modalKind"></span>
-                                <span class="badge fw-normal" data-document-preview-target="modalStatus"></span>
-                            </div>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary small" data-document-preview-target="modalMeta"></div>
-
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                            <div class="small text-muted mb-1">Что подтверждает</div>
-                            <div data-document-preview-target="modalSubject"></div>
-                        </div>
-
-                        <div class="modal-doc-description p-3 mb-3 rounded-3 bg-body-tertiary d-none">
-                            <p class="text-body-secondary mb-0" data-document-preview-target="modalDescription"></p>
-                        </div>
-
-                        <div class="modal-doc-references p-3 mb-3 rounded-3 bg-body-tertiary d-none">
-                            <h6 class="fw-semibold mb-2">Распространяется на</h6>
-                            <div class="d-flex flex-wrap gap-1" data-document-preview-target="modalReferences"></div>
-                        </div>
-
-                        <div class="small text-muted">Обновлено: <span data-document-preview-target="modalUpdatedAt"></span></div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-outline-secondary d-none" data-document-preview-target="modalDownload">
-                            <i class="bi bi-file-earmark-arrow-down"></i> Скачать PDF
-                        </a>
-                        {% if canEdit %}
-                            <a href="#" class="btn btn-outline-primary" data-document-preview-target="modalEditLink">
-                                <i class="bi bi-pencil"></i> Редактировать
-                            </a>
-                        {% endif %}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {# Хост для ленивой модалки превью привязанного объекта (система/покрытие). #}
-        <div data-document-preview-target="previewHost"></div>
     {% endblock %}
 
     {% block empty_state %}
@@ -332,5 +276,5 @@
     {% endblock %}
     {% endembed %}
 
-    </div>{# /data-controller="document-preview" #}
+    </div>{# /data-controller="entity-preview" #}
 {% endblock %}

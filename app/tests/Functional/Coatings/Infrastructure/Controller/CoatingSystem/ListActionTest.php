@@ -198,17 +198,19 @@ final class ListActionTest extends WebTestCase
         self::assertStringContainsString('мкм', $content);
     }
 
-    public function test_list_shows_modal_placeholder(): void
+    public function test_list_cards_are_lazy_preview_triggers(): void
     {
         $this->persistSystem();
         $this->client->request('GET', '/cabinet/coating/coating-system/list');
 
         self::assertResponseIsSuccessful();
         $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('id="coatingSystemModal"', $content);
+        // Карточки — ленивые триггеры фрагмента превью; инлайн-модалки больше нет.
+        self::assertStringContainsString('click->entity-preview#open', $content);
+        self::assertStringNotContainsString('id="coatingSystemModal"', $content);
     }
 
-    public function test_list_shows_compliance_badges_on_card_when_available(): void
+    public function test_list_wires_lazy_system_preview_endpoint(): void
     {
         $suffix = uniqid('', true);
         $this->persistSystem($suffix);
@@ -217,7 +219,7 @@ final class ListActionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('class="coating-card', $content);
-        self::assertStringContainsString('modal-compliance-block', $content);
+        self::assertStringContainsString('data-entity-preview-endpoint-value', $content);
     }
 
     public function test_inverted_range_does_not_break(): void

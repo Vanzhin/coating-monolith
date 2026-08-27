@@ -61,24 +61,7 @@
 
                 <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
                     <h6 class="fw-semibold mb-3">Слои системы ({{ system.layers|length }})</h6>
-                    {% if system.layers|length > 0 %}
-                        <div class="small text-body-secondary d-flex flex-column gap-1">
-                            {% for layer in system.layers %}
-                                <div class="d-flex align-items-center flex-wrap gap-1">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                            data-coating-id="{{ layer.coatingId }}"
-                                            data-action="click->coating-preview-loader#open">{{ layer.coatingTitle }}</button>
-                                    <span>{{ layer.dft }} мкм</span>
-                                    {% if layer.colorHex %}
-                                        <span class="color-swatch ms-1" style="background: {{ layer.colorHex }}"
-                                              title="{{ layer.colorLabel }}"></span>{{ layer.colorLabel }}
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="small text-muted">Слоёв нет</div>
-                    {% endif %}
+                    {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
                 </div>
 
                 {% if complianceByStandard|length > 0 %}
@@ -94,6 +77,17 @@
                                 </div>
                             {% endfor %}
                         </div>
+                    </div>
+                {% endif %}
+
+                {% if system.documentCount > 0 %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
+                         data-controller="system-documents"
+                         data-system-documents-url-value="{{ path('app_cabinet_coating_system_documents', {id: system.id}) }}"
+                         data-system-documents-document-preview-route-value="{{ path('app_cabinet_certificate_document_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}"
+                         data-system-documents-target="block">
+                        <h6 class="fw-semibold mb-2">Документы</h6>
+                        <div class="d-flex flex-wrap gap-1" data-system-documents-target="list"></div>
                     </div>
                 {% endif %}
 
@@ -119,6 +113,4 @@
             </div>
         </div>
     </div>
-    {# Хост для ленивой модалки покрытия: клик по слою фетчит сюда фрагмент и показывает поверх. #}
-    <div data-coating-preview-loader-target="container"></div>
 </div>
