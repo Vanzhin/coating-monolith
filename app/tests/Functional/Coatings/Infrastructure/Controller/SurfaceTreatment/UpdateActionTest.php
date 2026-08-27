@@ -40,6 +40,10 @@ final class UpdateActionTest extends WebTestCase
         $ref->setAccessible(true);
         $ref->setValue($user, true);
 
+        // Мутация подготовки поверхности — только ROLE_ADMIN.
+        $rolesRef = new \ReflectionProperty($user, 'roles');
+        $rolesRef->setValue($user, ['ROLE_ADMIN']);
+
         $this->em->persist($user);
 
         $treatment = new SurfaceTreatment(

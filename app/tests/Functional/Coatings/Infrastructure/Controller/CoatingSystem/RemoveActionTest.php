@@ -43,6 +43,10 @@ final class RemoveActionTest extends WebTestCase
         $ref->setAccessible(true);
         $ref->setValue($user, true);
 
+        // Мутация систем покрытий — только ROLE_ADMIN.
+        $rolesRef = new \ReflectionProperty($user, 'roles');
+        $rolesRef->setValue($user, ['ROLE_ADMIN']);
+
         $this->em->persist($user);
 
         $treatment = $this->createAndPersistTreatment($this->em, $suffix);

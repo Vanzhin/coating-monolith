@@ -19,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/coatings/{coatingId}/chem-resistance/assessment/{assessmentId}/edit',
@@ -28,6 +29,7 @@ use Symfony\Component\Routing\Annotation\Route;
         'assessmentId' => '[0-9a-f-]{36}',
     ],
 )]
+#[IsGranted('ROLE_ADMIN')]
 class UpdateAction extends AbstractController
 {
     public function __construct(

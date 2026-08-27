@@ -63,6 +63,10 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         $ref->setAccessible(true);
         $ref->setValue($user, true);
 
+        // Мутация покрытий — только ROLE_ADMIN.
+        $rolesRef = new \ReflectionProperty($user, 'roles');
+        $rolesRef->setValue($user, ['ROLE_ADMIN']);
+
         $this->em->persist($user);
 
         // Create manufacturer
