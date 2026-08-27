@@ -1,7 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { openFragmentModal } from '../reference_helpers';
-
-const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+import { ZERO_UUID, openFragmentModal } from '../reference_helpers';
 
 /**
  * Ленивая загрузка модалки покрытия по клику на слой (data-coating-id). Фетчит серверный

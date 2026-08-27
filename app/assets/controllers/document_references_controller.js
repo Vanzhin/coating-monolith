@@ -18,7 +18,7 @@ import { fetchTitlesByIds, openReferencePreview } from '../reference_helpers';
  * previewSystem/previewCoating (шаблоны URL с плейсхолдером id).
  */
 export default class extends Controller {
-    static targets = ['list', 'rowTemplate', 'row', 'addType', 'addPicker', 'previewHost'];
+    static targets = ['list', 'rowTemplate', 'row', 'addType', 'addPicker'];
     static values = {
         suggestSystem: String,
         suggestCoating: String,
@@ -76,7 +76,7 @@ export default class extends Controller {
 
     async preview(event) {
         const row = event.target.closest('[data-document-references-target="row"]');
-        if (!row.dataset.refId) {
+        if (!row || !row.dataset.refId) {
             return;
         }
         const template = 'coating' === row.dataset.refType ? this.previewCoatingValue : this.previewSystemValue;

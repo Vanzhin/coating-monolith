@@ -8,12 +8,9 @@ import { openReferencePreview } from '../reference_helpers';
  *
  * Values:
  *   endpoint  — URL-шаблон превью системы с плейсхолдером id.
- * Targets:
- *   container — пустой <div>, куда кладётся фрагмент модалки.
  */
 export default class extends Controller {
     static values = { endpoint: String };
-    static targets = ['container'];
 
     async open(event) {
         // Чип лежит внутри триггера модалки покрытия — гасим всплытие.
