@@ -35,6 +35,7 @@ final class DocumentControllerTest extends WebTestCase
     private DocumentFileStorage $storage;
     private IssuerSpecification $issuerSpec;
     private string $userEmail;
+    private ?string $viewerEmail = null;
     private string $issuerId;
 
     /** @var list<string> */
@@ -84,9 +85,11 @@ final class DocumentControllerTest extends WebTestCase
             if (null !== $issuer) {
                 $em->remove($issuer);
             }
-            $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if (null !== $user) {
-                $em->remove($user);
+            foreach (array_filter([$this->userEmail, $this->viewerEmail]) as $email) {
+                $user = $em->getRepository(User::class)->findOneBy(['email.value' => $email]);
+                if (null !== $user) {
+                    $em->remove($user);
+                }
             }
             $em->flush();
         } catch (\Throwable $e) {
@@ -184,6 +187,37 @@ final class DocumentControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+    }
+
+    public function test_non_admin_views_documents_but_cannot_manage(): void
+    {
+        // Документ заводим как админ (setUp залогинил админа), затем переключаемся на обычного юзера.
+        $id = $this->createViaBus('VIEW-'.bin2hex(random_bytes(3)));
+        $this->loginNonAdmin();
+
+        // Просмотр (список + превью) — открыт всем авторизованным.
+        $this->client->request('GET', '/cabinet/certificate/document');
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/preview');
+        self::assertResponseIsSuccessful();
+
+        // Создание/управление — только ROLE_ADMIN.
+        $createUrl = static::getContainer()->get('router')->generate('app_cabinet_certificate_document_create');
+        $this->client->request('GET', $createUrl);
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    private function loginNonAdmin(): void
+    {
+        $c = $this->client->getContainer();
+        $this->viewerEmail = 'doc_viewer_'.uniqid('', true).'@example.com';
+        $viewer = new User(new Email($this->viewerEmail));
+        $viewer->setPassword('test_password', $c->get(UserPasswordHasherInterface::class));
+        $this->setPrivate($viewer, 'isActive', true);
+        // Без ROLE_ADMIN — обычный авторизованный пользователь.
+        $this->em->persist($viewer);
+        $this->em->flush();
+        $this->client->loginUser($viewer);
     }
 
     private function createViaBus(string $title, bool $withFile = false): string

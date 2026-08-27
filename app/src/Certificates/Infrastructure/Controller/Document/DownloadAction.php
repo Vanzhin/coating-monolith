@@ -13,14 +13,12 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/certificate/document/{id}/download',
     name: 'app_cabinet_certificate_document_download',
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class DownloadAction extends AbstractController
 {
     public function __construct(

@@ -9,7 +9,6 @@ use App\Shared\Application\Query\QueryBusInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Фрагмент модалки предпросмотра документа по id. Всплывает по клику на документ в модалке
@@ -21,7 +20,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_certificate_document_preview',
     methods: ['GET'],
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class PreviewAction extends AbstractController
 {
     public function __construct(private readonly QueryBusInterface $queryBus)

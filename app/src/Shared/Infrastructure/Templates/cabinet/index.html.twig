@@ -89,10 +89,16 @@
                                 <li>В поиске систем — фильтр «есть документы: да / нет».</li>
                                 <li>Система с привязанным документом заморожена: чтобы изменить состав — создайте новую систему.</li>
                             </ul>
-                            <a href="{{ path('app_cabinet_coating_system_list') }}"
-                               class="btn btn-sm btn-outline-primary mt-auto align-self-start">
-                                К системам <i class="bi bi-arrow-right"></i>
-                            </a>
+                            <div class="mt-auto d-flex gap-2 flex-wrap">
+                                <a href="{{ path('app_cabinet_certificate_document_list') }}"
+                                   class="btn btn-sm btn-outline-primary align-self-start">
+                                    Документы <i class="bi bi-arrow-right"></i>
+                                </a>
+                                <a href="{{ path('app_cabinet_coating_system_list') }}"
+                                   class="btn btn-sm btn-outline-primary align-self-start">
+                                    К системам <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
 
