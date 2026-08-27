@@ -60,6 +60,19 @@ enum CoatingBase: string
     }
 
     /**
+     * Дефолтная максимальная температура эксплуатации в сухом тепле (°C) по типу связующего.
+     * Служит fallback'ом для верхних пределов эксплуатации (continuous_max/peak_max),
+     * когда у покрытия они не задокументированы. Не путать с температурой сушки (dryingMaxTemp).
+     */
+    public function defaultDryHeatMaxOperatingTemp(): int
+    {
+        return match ($this) {
+            self::AY, self::FEVE, self::PAS => 50,
+            self::AK, self::ESI, self::EP, self::PUR, self::PS => 120,
+        };
+    }
+
+    /**
      * Ищет тип ЛКМ по аббревиатуре ГОСТ 9825 (например «ЭП», «УР»).
      * Сравнение без учёта регистра и пробелов. null — если такой ГОСТ-аббревиатуры нет.
      */

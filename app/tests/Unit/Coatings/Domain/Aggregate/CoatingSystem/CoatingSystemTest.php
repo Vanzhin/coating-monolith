@@ -12,6 +12,7 @@ use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
@@ -356,6 +357,55 @@ final class CoatingSystemTest extends TestCase
         $sys->appendLayer($coatingB, 80);   // top, не участвует
         self::assertSame(192, $sys->minApplicationTimeAt20Minutes());
         self::assertSame(10, $sys->maxLayerApplicationMinTemp());
+    }
+
+    public function test_max_dry_heat_continuous_operating_temp_is_null_for_empty_system(): void
+    {
+        self::assertNull($this->newSystem()->maxDryHeatContinuousOperatingTemp());
+    }
+
+    public function test_max_dry_heat_continuous_operating_temp_weakest_link_uses_base_default(): void
+    {
+        $sys = $this->newSystem();
+        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 80); // сухое тепло: дефолт основы 120
+        $sys->appendLayer($this->makeCoating(CoatingBase::AY), 80); // сухое тепло: дефолт основы 50
+
+        self::assertSame(50, $sys->maxDryHeatContinuousOperatingTemp());
+    }
+
+    public function test_max_dry_heat_continuous_operating_temp_uses_documented_value(): void
+    {
+        $coating = $this->makeCoating(CoatingBase::EP);
+        $coating->setDryHeatExposure(new ThermalExposureLimits(null, 200));
+        $sys = $this->newSystem();
+        $sys->appendLayer($coating, 80);
+
+        self::assertSame(200, $sys->maxDryHeatContinuousOperatingTemp());
+    }
+
+    public function test_max_immersion_continuous_operating_temp_min_when_all_documented(): void
+    {
+        $c1 = $this->makeCoating(CoatingBase::EP);
+        $c1->setImmersionExposure(new ThermalExposureLimits(null, 90));
+        $c2 = $this->makeCoating(CoatingBase::EP);
+        $c2->setImmersionExposure(new ThermalExposureLimits(null, 70));
+        $sys = $this->newSystem();
+        $sys->appendLayer($c1, 80);
+        $sys->appendLayer($c2, 80);
+
+        self::assertSame(70, $sys->maxImmersionContinuousOperatingTemp());
+    }
+
+    public function test_max_immersion_continuous_operating_temp_null_when_a_layer_missing_immersion(): void
+    {
+        $c1 = $this->makeCoating(CoatingBase::EP);
+        $c1->setImmersionExposure(new ThermalExposureLimits(null, 90));
+        $c2 = $this->makeCoating(CoatingBase::EP); // погружение не задокументировано, дефолта по основе нет
+        $sys = $this->newSystem();
+        $sys->appendLayer($c1, 80);
+        $sys->appendLayer($c2, 80);
+
+        self::assertNull($sys->maxImmersionContinuousOperatingTemp());
     }
 
     public function test_min_building_time_uses_topcoat_specific_branch(): void

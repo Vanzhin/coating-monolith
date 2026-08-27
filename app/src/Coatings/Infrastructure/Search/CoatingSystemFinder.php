@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Search;
 use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Domain\Repository\SearchResult;
@@ -54,6 +55,7 @@ final class CoatingSystemFinder
         $this->applyCoatings($qb, $filter);
         $this->applyHasDocuments($qb, $filter);
         $this->applyRanges($qb, $filter);
+        $this->applyThermalExposureFacet($qb, $filter);
 
         $countQb = clone $qb;
         $countQb->select('COUNT(DISTINCT cs.id) AS cnt');
@@ -198,6 +200,26 @@ final class CoatingSystemFinder
             $qb->andWhere("$column <= :{$prefix}_to")
                 ->setParameter("{$prefix}_to", $range->to);
         }
+    }
+
+    /**
+     * Фасет «система держит T °C в среде E» (верхняя граница, слабое звено уже свёрнут в снапшот).
+     * Столбец выбирается парой (среда × учёт пика). Только верхняя граница — как на фронте покрытий.
+     * Погружение: NULL-снапшот (у какого-то слоя нет immersion-пределов) в выборку не попадает.
+     */
+    private function applyThermalExposureFacet(QueryBuilder $qb, CoatingSystemsFilter $filter): void
+    {
+        if (!$filter->hasThermalFacet() || null === $filter->thermalEnvironment) {
+            return;
+        }
+
+        $column = match ($filter->thermalEnvironment) {
+            ThermalEnvironment::DRY_HEAT => $filter->thermalIncludingPeak ? 'css.dry_heat_peak_max' : 'css.dry_heat_continuous_max',
+            ThermalEnvironment::IMMERSION => $filter->thermalIncludingPeak ? 'css.immersion_peak_max' : 'css.immersion_continuous_max',
+        };
+
+        $qb->andWhere("$column IS NOT NULL AND $column >= :therm_temp")
+            ->setParameter('therm_temp', $filter->thermalTemperature);
     }
 
     private function applySort(QueryBuilder $qb, CoatingSystemsFilter $filter): void

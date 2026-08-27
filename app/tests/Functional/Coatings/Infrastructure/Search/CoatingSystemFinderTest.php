@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Infrastructure\Search;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
@@ -23,6 +25,7 @@ use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -46,6 +49,7 @@ final class CoatingSystemFinderTest extends KernelTestCase
     private CoatingSystemFinder $finder;
     private CoatingSystemRepositoryInterface $repo;
     private CoatingSystemSearchCacheRepository $searchCache;
+    private CoatingSystemOperatingTemperatureCalculator $temperatureCalculator;
     private CoatingSpecification $coatingSpec;
     private ManufacturerSpecification $mfrSpec;
     private TagSpecification $tagSpec;
@@ -69,6 +73,7 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $this->finder = $container->get(CoatingSystemFinder::class);
         $this->repo = $container->get(CoatingSystemRepositoryInterface::class);
         $this->searchCache = $container->get(CoatingSystemSearchCacheRepository::class);
+        $this->temperatureCalculator = $container->get(CoatingSystemOperatingTemperatureCalculator::class);
         $this->coatingSpec = $container->get(CoatingSpecification::class);
         $this->mfrSpec = $container->get(ManufacturerSpecification::class);
         $this->tagSpec = $container->get(TagSpecification::class);
@@ -145,6 +150,58 @@ final class CoatingSystemFinderTest extends KernelTestCase
         self::assertContains($sysSteel->getId(), $result->ids);
         self::assertContains($sysConcrete->getId(), $result->ids);
         self::assertNotContains($sysZinc->getId(), $result->ids);
+    }
+
+    public function test_thermal_facet_dry_heat_matches_only_systems_holding_temperature(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $hot = $this->persistCoatingWithLimits(CoatingBase::EP, null, null);   // сухое тепло: дефолт по основе 120
+        $cold = $this->persistCoatingWithLimits(CoatingBase::AY, null, null);  // сухое тепло: дефолт по основе 50
+        $sysHot = $this->buildAndSaveSystemWithCoatings('ТермГор '.$suffix, Substrate::STEEL_CARBON, $hot->getId());
+        $sysCold = $this->buildAndSaveSystemWithCoatings('ТермХол '.$suffix, Substrate::STEEL_CARBON, $cold->getId());
+
+        $filter = new CoatingSystemsFilter(thermalTemperature: 100, thermalEnvironment: ThermalEnvironment::DRY_HEAT);
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysHot->getId(), $result->ids);       // 120 >= 100
+        self::assertNotContains($sysCold->getId(), $result->ids);   // 50 < 100
+    }
+
+    public function test_thermal_facet_immersion_excludes_systems_without_immersion_data(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $wet = $this->persistCoatingWithLimits(CoatingBase::EP, null, new ThermalExposureLimits(null, 90));
+        $dry = $this->persistCoatingWithLimits(CoatingBase::EP, null, null); // погружение не задокументировано
+        $sysWet = $this->buildAndSaveSystemWithCoatings('ТермПогр '.$suffix, Substrate::STEEL_CARBON, $wet->getId());
+        $sysDry = $this->buildAndSaveSystemWithCoatings('ТермСух '.$suffix, Substrate::STEEL_CARBON, $dry->getId());
+
+        $filter = new CoatingSystemsFilter(thermalTemperature: 80, thermalEnvironment: ThermalEnvironment::IMMERSION);
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysWet->getId(), $result->ids);       // immersion 90 >= 80
+        self::assertNotContains($sysDry->getId(), $result->ids);    // immersion неизвестен → исключён
+    }
+
+    public function test_thermal_facet_peak_toggle_uses_peak_column(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $coating = $this->persistCoatingWithLimits(CoatingBase::EP, new ThermalExposureLimits(null, 100, 140), null);
+        $sys = $this->buildAndSaveSystemWithCoatings('ТермПик '.$suffix, Substrate::STEEL_CARBON, $coating->getId());
+
+        // continuous_max = 100 → при 130 без учёта пика система не проходит.
+        $withoutPeak = $this->finder->find(new CoatingSystemsFilter(
+            thermalTemperature: 130,
+            thermalEnvironment: ThermalEnvironment::DRY_HEAT,
+        ));
+        self::assertNotContains($sys->getId(), $withoutPeak->ids);
+
+        // peak_max = 140 → при 130 с учётом пика проходит.
+        $withPeak = $this->finder->find(new CoatingSystemsFilter(
+            thermalTemperature: 130,
+            thermalEnvironment: ThermalEnvironment::DRY_HEAT,
+            thermalIncludingPeak: true,
+        ));
+        self::assertContains($sys->getId(), $withPeak->ids);
     }
 
     public function test_compliance_standard_only_filter(): void
@@ -409,7 +466,7 @@ final class CoatingSystemFinderTest extends KernelTestCase
         // Reload because clear detaches the entity.
         $loaded = $this->repo->findById($id);
         \assert(null !== $loaded);
-        $this->searchCache->upsert($loaded);
+        $this->searchCache->upsert($loaded, $this->temperatureCalculator->calculate($loaded));
 
         $this->systemIds[] = $id;
 
@@ -439,7 +496,7 @@ final class CoatingSystemFinderTest extends KernelTestCase
         $this->em->clear();
         $loaded = $this->repo->findById($id);
         \assert(null !== $loaded);
-        $this->searchCache->upsert($loaded);
+        $this->searchCache->upsert($loaded, $this->temperatureCalculator->calculate($loaded));
 
         $this->systemIds[] = $id;
 
@@ -477,6 +534,37 @@ final class CoatingSystemFinderTest extends KernelTestCase
             $mfr,
             $this->coatingSpec,
         );
+        $this->em->persist($coating);
+        $this->em->flush();
+        $this->coatingIds[] = $id;
+
+        return $coating;
+    }
+
+    private function persistCoatingWithLimits(CoatingBase $base, ?ThermalExposureLimits $dry, ?ThermalExposureLimits $imm): Coating
+    {
+        $mfr = $this->persistManufacturer();
+        $id = UuidService::generateUuid();
+        $coating = new Coating(
+            $id,
+            'Coating-'.bin2hex(random_bytes(3)),
+            'Test coating.',
+            5,
+            1.5,
+            $base,
+            new DftRange(new PositiveNumberRange(60, 200), 80, ThicknessType::MIC),
+            5,
+            new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+            new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+            new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 120))),
+            null,
+            1.0,
+            null,
+            $mfr,
+            $this->coatingSpec,
+        );
+        $coating->setDryHeatExposure($dry);
+        $coating->setImmersionExposure($imm);
         $this->em->persist($coating);
         $this->em->flush();
         $this->coatingIds[] = $id;

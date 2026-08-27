@@ -13,6 +13,7 @@ use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecification;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
@@ -579,6 +580,41 @@ final class CoatingTest extends TestCase
         self::assertSame(Gloss::MATTE, $coating->getGloss());
     }
 
+    public function test_get_dry_heat_exposure_returns_documented_limits_as_is(): void
+    {
+        $documented = new ThermalExposureLimits(null, 200, 240);
+        $coating = $this->makeCoating(min: $this->minTree(), max: null, dryHeatExposure: $documented);
+
+        self::assertSame($documented, $coating->getDryHeatExposure());
+    }
+
+    public function test_get_dry_heat_exposure_falls_back_to_base_default_when_null(): void
+    {
+        $ay = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::AY);
+        $ep = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::EP);
+
+        $ayLimits = $ay->getDryHeatExposure();
+        self::assertNotNull($ayLimits);
+        self::assertSame(50, $ayLimits->continuousMax);
+        self::assertSame(50, $ayLimits->peakMax);
+
+        $epLimits = $ep->getDryHeatExposure();
+        self::assertNotNull($epLimits);
+        self::assertSame(120, $epLimits->continuousMax);
+        self::assertSame(120, $epLimits->peakMax);
+    }
+
+    public function test_get_dry_heat_exposure_keeps_partial_documented_without_defaulting_fields(): void
+    {
+        // Задокументирована только нижняя граница — верх дефолтом по основе не подменяем (fallback на уровне всего VO).
+        $partial = new ThermalExposureLimits(-30);
+        $coating = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::EP, dryHeatExposure: $partial);
+
+        $limits = $coating->getDryHeatExposure();
+        self::assertSame($partial, $limits);
+        self::assertNull($limits->continuousMax);
+    }
+
     private function color(): Color
     {
         return new Color(Uuid::v4(), 'Серый', null, '#9DA3A6');
@@ -591,6 +627,8 @@ final class CoatingTest extends TestCase
         int $dryingMaxTemp = 50,
         ?DryingTimeSeries $dryToTouch = null,
         ?DryingTimeSeries $fullCure = null,
+        CoatingBase $base = CoatingBase::EP,
+        ?ThermalExposureLimits $dryHeatExposure = null,
     ): Coating {
         $manufacturer = $this->createMock(Manufacturer::class);
         $manufacturer->method('getId')->willReturn('00000000-0000-0000-0000-000000000001');
@@ -599,13 +637,13 @@ final class CoatingTest extends TestCase
             $this->createMock(UniqueTitleCoatingSpecification::class),
         );
 
-        return new Coating(
+        $coating = new Coating(
             UuidService::generateUuid(),
             'Test Coating',
             'desc',
             50,
             1.2,
-            CoatingBase::EP,
+            $base,
             new DftRange(new PositiveNumberRange(80, 150), 100, ThicknessType::MIC),
             $applicationMinTemp,
             $dryToTouch ?? new DryingTimeSeries(new TimeAtTemperature(20, 60)),
@@ -618,5 +656,13 @@ final class CoatingTest extends TestCase
             $spec,
             $dryingMaxTemp,
         );
+        $coating->setDryHeatExposure($dryHeatExposure);
+
+        return $coating;
+    }
+
+    private function minTree(int $minutesAt20 = 60): RecoatingIntervalTree
+    {
+        return new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, $minutesAt20)));
     }
 }

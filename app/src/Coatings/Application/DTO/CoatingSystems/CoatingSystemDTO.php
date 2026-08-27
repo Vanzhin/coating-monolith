@@ -25,6 +25,8 @@ class CoatingSystemDTO
     public int $totalDft;
     public ?int $minApplicationTimeAt20Minutes = null;
     public ?int $maxLayerApplicationMinTemp = null;
+    public ?int $maxDryHeatContinuousOperatingTemp = null;
+    public ?int $maxImmersionContinuousOperatingTemp = null;
     public \DateTimeImmutable $createdAt;
     public \DateTimeImmutable $updatedAt;
     /** @var list<ComplianceMatchDTO> */

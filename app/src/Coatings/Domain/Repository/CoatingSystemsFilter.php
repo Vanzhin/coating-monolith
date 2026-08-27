@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
+use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -36,6 +37,18 @@ final readonly class CoatingSystemsFilter
         public Pager $pager = new Pager(1, 20),
         // null — не фильтровать; true — только с документами; false — только без.
         public ?bool $hasDocuments = null,
+        // Температурный фасет: «система держит T °C в среде E, опционально с учётом пика».
+        // Активен, только когда заданы и temperature, и environment (см. hasThermalFacet).
+        public ?int $thermalTemperature = null,
+        public ?ThermalEnvironment $thermalEnvironment = null,
+        public bool $thermalIncludingPeak = false,
     ) {
+        ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
+    }
+
+    /** Активен ли температурный фасет — заданы обе обязательные части. */
+    public function hasThermalFacet(): bool
+    {
+        return null !== $this->thermalTemperature && null !== $this->thermalEnvironment;
     }
 }

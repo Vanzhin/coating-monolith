@@ -11,6 +11,7 @@ use App\Coatings\Domain\Compliance\ComplianceFacetsRegistry;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Coatings\Domain\Compliance\Facet\FacetOption;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Repository\RangeFilter;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,6 +58,8 @@ final class CoatingSystemListViewFactory
         $applicationMinTemp = $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo');
         $minAppTime = $this->query->intRange($request, 'minApplicationTimeAt20From', 'minApplicationTimeAt20To', self::MINUTES_PER_HOUR);
 
+        $thermEnvRaw = $request->query->get('thermEnv');
+
         $facets = null !== $standard ? $this->facetsRegistry->facetsFor($standard) : null;
 
         return [
@@ -77,12 +80,16 @@ final class CoatingSystemListViewFactory
             'minApplicationTimeAt20Hours' => $this->rangeToHours($minAppTime),
             'sort' => CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,
             'hasDocuments' => (string) $request->query->get('hasDocuments', ''),
+            'thermTemp' => $this->query->nullableInt($request, 'thermTemp'),
+            'thermEnv' => (is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null)?->value,
+            'thermIncludingPeak' => (bool) $request->query->get('thermPeak'),
             'page' => max(1, (int) $request->query->get('page', 1)),
             'perPage' => self::DEFAULT_LIMIT,
             'sortOptions' => CoatingSystemSort::cases(),
             'substrateOptions' => Substrate::cases(),
             'environmentOptions' => EnvironmentType::cases(),
             'standardOptions' => ComplianceStandard::cases(),
+            'thermEnvOptions' => ThermalEnvironment::cases(),
         ];
     }
 

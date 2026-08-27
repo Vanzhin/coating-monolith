@@ -23,6 +23,7 @@
     {% set coatingsActive = coatingIds|length > 0 %}
     {% set appMinTempActive = applicationMinTemp is not null %}
     {% set appTimeActive = minApplicationTimeAt20Hours is not null %}
+    {% set thermalActive = thermTemp is not null and thermEnv %}
 
     {% set activeFacetsCount = substrates|length
         + (environmentActive ? 1 : 0)
@@ -33,6 +34,7 @@
         + coatingIds|length
         + (appMinTempActive ? 1 : 0)
         + (appTimeActive ? 1 : 0)
+        + (thermalActive ? 1 : 0)
         + (hasDocuments != '' ? 1 : 0) %}
 
     {# Summary-строки для активных range/single фасетов #}
@@ -48,9 +50,14 @@
             : (minApplicationTimeAt20Hours.from is not null ? '≥ ' ~ minApplicationTimeAt20Hours.from ~ ' ч' : '≤ ' ~ minApplicationTimeAt20Hours.to ~ ' ч'))
         : null %}
 
+    {% set thSummary = thermalActive
+        ? thermTemp ~ ' °C (' ~ (thermEnv == 'immersion' ? 'погр.' : 'сух.') ~ (thermIncludingPeak ? ' +пик' : '') ~ ')'
+        : null %}
+
     {# Reset URL-ы для range-фасетов #}
     {% set appMinTempResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({applicationMinTempFrom: null, applicationMinTempTo: null, page: null})|filter(v => v is not null)) %}
     {% set appTimeResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null)) %}
+    {% set thResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null)) %}
 
     {# Пресеты температурных чипов: «нанесение возможно при T и ниже» —
        фильтр по верхней границе (max_layer_application_min_temp <= T). #}
@@ -412,6 +419,50 @@
                     </a>
                 {% endif %}
 
+                {# --- Температура эксплуатации (single) --- #}
+                {% if not thermalActive %}
+                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Температура эксплуатации
+                            </button>
+                            <div class="dropdown-menu chip-desktop-menu p-3">
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Температура, °C</label>
+                                    <input type="number" name="thermTemp" value=""
+                                           class="form-control form-control-sm"
+                                           min="-200" max="1000" step="5" placeholder="напр. 90" form="systemListForm">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Среда</label>
+                                    <select name="thermEnv" class="form-select form-select-sm" form="systemListForm">
+                                        <option value="dry_heat" selected>Сухое тепло</option>
+                                        <option value="immersion">Погружение</option>
+                                    </select>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input"
+                                           id="thermPeakDd" name="thermPeak" value="1" form="systemListForm">
+                                    <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary w-100" form="systemListForm">Применить</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
+                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterThermal"
+                            aria-controls="chipFilterThermal">
+                        Температура эксплуатации
+                    </button>
+                {% else %}
+                    <a href="{{ thResetUrl }}"
+                       class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                       title="Убрать фильтр">
+                        Работает при {{ thSummary }} <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+
                 {# Теги — только через шторку «Все фильтры» #}
                 {% set selectedTagsJson = '[]' %}
 
@@ -592,6 +643,39 @@
                 </div>
             {% endif %}
 
+            {% if not thermalActive %}
+                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
+                     id="chipFilterThermal" aria-labelledby="chipFilterThermalLabel">
+                    <div class="offcanvas-header border-bottom">
+                        <h6 class="offcanvas-title mb-0" id="chipFilterThermalLabel">Температура эксплуатации</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                    </div>
+                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
+                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Температура, °C</label>
+                                <input type="number" name="thermTemp" value=""
+                                       class="form-control form-control-sm"
+                                       min="-200" max="1000" step="5" placeholder="напр. 90">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small text-muted mb-1">Среда</label>
+                                <select name="thermEnv" class="form-select form-select-sm">
+                                    <option value="dry_heat" selected>Сухое тепло</option>
+                                    <option value="immersion">Погружение</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="thermPeakMob" name="thermPeak" value="1">
+                                <label class="form-check-label small" for="thermPeakMob">Включая пиковые нагрузки</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </fieldset>
+                </div>
+            {% endif %}
+
         </form>
 
         {# === Offcanvas «Все фильтры» === #}
@@ -678,6 +762,15 @@
                                     {% set qRemove = app.request.query.all|merge({minApplicationTimeAt20From: null, minApplicationTimeAt20To: null, page: null})|filter(v => v is not null) %}
                                     <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
                                         Минимальное время нанесения: {{ appTimeSummary }}
+                                        <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
+                                           class="btn-close btn-close-white btn-close-sm ms-1"
+                                           aria-label="Убрать"></a>
+                                    </span>
+                                {% endif %}
+                                {% if thermalActive %}
+                                    {% set qRemove = app.request.query.all|merge({thermTemp: null, thermEnv: null, thermPeak: null, page: null})|filter(v => v is not null) %}
+                                    <span class="badge text-bg-secondary fw-normal d-inline-flex align-items-center gap-1 py-1 px-2">
+                                        Работает при {{ thermTemp }} °C ({{ thermEnv == 'immersion' ? 'погр.' : 'сух.' }}{{ thermIncludingPeak ? ' +пик' : '' }})
                                         <a href="{{ path('app_cabinet_coating_system_list', qRemove) }}"
                                            class="btn-close btn-close-white btn-close-sm ms-1"
                                            aria-label="Убрать"></a>
@@ -878,6 +971,35 @@
                         reset_label: 'Любое',
                     } only %}
 
+                    {# === Секция: Температура эксплуатации === #}
+                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Температура эксплуатации</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">°C</label>
+                                <input type="number" name="thermTemp" value="{{ thermTemp }}"
+                                       class="form-control form-control-sm"
+                                       min="-200" max="1000" step="5" placeholder="напр. 90">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Среда</label>
+                                {% set thermEnvEffective = thermEnv ?: 'dry_heat' %}
+                                <select name="thermEnv" class="form-select form-select-sm">
+                                    <option value="dry_heat" {% if thermEnvEffective == 'dry_heat' %}selected{% endif %}>Сухое тепло</option>
+                                    <option value="immersion" {% if thermEnvEffective == 'immersion' %}selected{% endif %}>Погружение</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           id="thermPeakOff" name="thermPeak" value="1"
+                                           {% if thermIncludingPeak %}checked{% endif %}>
+                                    <label class="form-check-label small" for="thermPeakOff">Включая пиковые нагрузки</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {# === Секция: Покрытия в составе === #}
                     <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Покрытия в составе</h6>
@@ -958,7 +1080,7 @@
         <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
             <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
             <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
-            {% if q or substratesActive or standardActive or tagsActive or coatingsActive or appMinTempActive or appTimeActive %}
+            {% if q or substratesActive or standardActive or tagsActive or coatingsActive or appMinTempActive or appTimeActive or thermalActive %}
                 <p class="text-body-secondary mb-0">
                     По запросу с заданными фильтрами совпадений нет. Попробуйте изменить параметры поиска.
                 </p>

@@ -11,11 +11,13 @@ use App\Certificates\Domain\Aggregate\Document\ReferenceType;
 use App\Certificates\Domain\Aggregate\Issuer\Issuer;
 use App\Certificates\Domain\Aggregate\Issuer\Specification\IssuerSpecification;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
@@ -49,7 +51,16 @@ final class SystemDocumentsReadModelTest extends KernelTestCase
         $this->em = $container->get(EntityManagerInterface::class);
         $this->setUpFixture($container, $this->em);
 
-        $this->systemTitle = (string) $this->em->find(CoatingSystem::class, $this->systemId)?->getTitle();
+        $system = $this->em->find(CoatingSystem::class, $this->systemId);
+        $this->systemTitle = (string) $system?->getTitle();
+        // Детерминированно наполняем поисковый кэш системы. В тестовой среде событие onFlush → upsert
+        // срабатывает нестабильно (флаки), а Finder делает INNER JOIN coating_system_search — без строки
+        // кэша система не находится. Явный upsert повторяет паттерн остальных функциональных тестов.
+        if (null !== $system) {
+            $searchCache = static::getContainer()->get(CoatingSystemSearchCacheRepository::class);
+            $calculator = static::getContainer()->get(CoatingSystemOperatingTemperatureCalculator::class);
+            $searchCache->upsert($system, $calculator->calculate($system));
+        }
         $this->attachCertificate();
         $this->em->clear();
     }
