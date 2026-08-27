@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Infrastructure\Cache;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -32,6 +33,7 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
     private EntityManagerInterface $em;
     private Connection $conn;
     private CoatingSystemSearchCacheRepository $repo;
+    private CoatingSystemOperatingTemperatureCalculator $calculator;
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
@@ -44,6 +46,7 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
         $this->em = $container->get(EntityManagerInterface::class);
         $this->conn = $this->em->getConnection();
         $this->repo = new CoatingSystemSearchCacheRepository($this->conn);
+        $this->calculator = $container->get(CoatingSystemOperatingTemperatureCalculator::class);
     }
 
     protected function tearDown(): void
@@ -82,22 +85,28 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
     public function test_upsert_inserts_new_row(): void
     {
         $system = $this->buildSystemWithLayerAndPersist();
-        $this->repo->upsert($system);
+        $this->repo->upsert($system, $this->calculator->calculate($system));
 
         $row = $this->fetchRow($system->getId());
         self::assertIsArray($row);
         self::assertSame(0, (int) $row['min_application_time_at_20_minutes']);
         self::assertSame(5, (int) $row['max_layer_application_min_temp']);
+        // EP без задокументированных пределов эксплуатации → дефолт по основе 120/120 для сухого тепла.
+        self::assertSame(120, (int) $row['dry_heat_continuous_max']);
+        self::assertSame(120, (int) $row['dry_heat_peak_max']);
+        // Погружение не задокументировано и дефолта по основе не имеет → NULL.
+        self::assertNull($row['immersion_continuous_max']);
+        self::assertNull($row['immersion_peak_max']);
         self::assertNotEmpty($row['search_tsvector']);
     }
 
     public function test_upsert_updates_existing_row(): void
     {
         $system = $this->buildSystemWithLayerAndPersist();
-        $this->repo->upsert($system);
+        $this->repo->upsert($system, $this->calculator->calculate($system));
 
         $system->setTitle('Изменено');
-        $this->repo->upsert($system);
+        $this->repo->upsert($system, $this->calculator->calculate($system));
 
         $count = (int) $this->conn->fetchOne(
             'SELECT COUNT(*) FROM coating_system_search WHERE system_id = ?',
@@ -109,7 +118,7 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
     public function test_row_cascade_deleted_with_system(): void
     {
         $system = $this->buildSystemWithLayerAndPersist();
-        $this->repo->upsert($system);
+        $this->repo->upsert($system, $this->calculator->calculate($system));
 
         $systemId = $system->getId();
 
@@ -185,7 +194,10 @@ final class CoatingSystemSearchCacheRepositoryTest extends KernelTestCase
     private function fetchRow(string $systemId): ?array
     {
         $row = $this->conn->fetchAssociative(
-            'SELECT system_id, min_application_time_at_20_minutes, max_layer_application_min_temp, search_tsvector::text AS search_tsvector FROM coating_system_search WHERE system_id = ?',
+            'SELECT system_id, min_application_time_at_20_minutes, max_layer_application_min_temp,
+                    dry_heat_continuous_max, dry_heat_peak_max, immersion_continuous_max, immersion_peak_max,
+                    search_tsvector::text AS search_tsvector
+             FROM coating_system_search WHERE system_id = ?',
             [$systemId],
         );
 

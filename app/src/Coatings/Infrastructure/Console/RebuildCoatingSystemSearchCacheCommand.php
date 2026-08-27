@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Console;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
@@ -22,6 +23,7 @@ final class RebuildCoatingSystemSearchCacheCommand extends Command
         private readonly CoatingSystemSearchCacheRepository $searchCache,
         private readonly CoatingSystemComplianceCacheRepository $complianceCache,
         private readonly SystemComplianceEvaluator $evaluator,
+        private readonly CoatingSystemOperatingTemperatureCalculator $temperatureCalculator,
     ) {
         parent::__construct();
     }
@@ -31,7 +33,7 @@ final class RebuildCoatingSystemSearchCacheCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $count = 0;
         foreach ($this->repo->findAll() as $system) {
-            $this->searchCache->upsert($system);
+            $this->searchCache->upsert($system, $this->temperatureCalculator->calculate($system));
             $this->complianceCache->rewrite($system->getId(), $this->evaluator->evaluate($system));
             ++$count;
         }

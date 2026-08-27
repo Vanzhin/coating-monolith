@@ -10,6 +10,7 @@ use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,6 +41,8 @@ final class CoatingSystemListRequestMapper
             $request->query->all('substrates'),
         )));
 
+        $thermEnvRaw = $request->query->get('thermEnv');
+
         return new CoatingSystemsFilter(
             search: '' !== $q ? SearchQuery::tryFromString($q) : null,
             substrates: $substrates,
@@ -67,6 +70,9 @@ final class CoatingSystemListRequestMapper
                 '0' => false,
                 default => null,
             },
+            thermalTemperature: $this->query->nullableInt($request, 'thermTemp'),
+            thermalEnvironment: is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null,
+            thermalIncludingPeak: (bool) $request->query->get('thermPeak'),
         );
     }
 }

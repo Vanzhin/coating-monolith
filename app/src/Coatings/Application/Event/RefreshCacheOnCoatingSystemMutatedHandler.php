@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\Event;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Domain\Event\CoatingSystemMutated;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
@@ -19,6 +20,7 @@ final readonly class RefreshCacheOnCoatingSystemMutatedHandler implements EventH
         private CoatingSystemSearchCacheRepository $searchCache,
         private CoatingSystemComplianceCacheRepository $complianceCache,
         private SystemComplianceEvaluator $evaluator,
+        private CoatingSystemOperatingTemperatureCalculator $temperatureCalculator,
     ) {
     }
 
@@ -28,7 +30,7 @@ final readonly class RefreshCacheOnCoatingSystemMutatedHandler implements EventH
         if (null === $system) {
             return;
         }
-        $this->searchCache->upsert($system);
+        $this->searchCache->upsert($system, $this->temperatureCalculator->calculate($system));
         $this->complianceCache->rewrite($event->systemId, $this->evaluator->evaluate($system));
     }
 }

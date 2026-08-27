@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -97,6 +98,7 @@ final class SuggestActionTest extends WebTestCase
 
         $repo = $container->get(CoatingSystemRepositoryInterface::class);
         $searchCache = $container->get(CoatingSystemSearchCacheRepository::class);
+        $temperatureCalculator = $container->get(CoatingSystemOperatingTemperatureCalculator::class);
 
         $systemUuid = Uuid::v7();
         $system = new CoatingSystem($systemUuid, 'SuggestCSTitle '.$suffix, 'Описание', Substrate::STEEL_CARBON, $treatment);
@@ -106,7 +108,7 @@ final class SuggestActionTest extends WebTestCase
 
         $loaded = $repo->findById($systemUuid);
         \assert(null !== $loaded);
-        $searchCache->upsert($loaded);
+        $searchCache->upsert($loaded, $temperatureCalculator->calculate($loaded));
 
         $this->systemId = $loaded->getId();
 

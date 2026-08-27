@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
@@ -81,6 +82,27 @@ final class ListActionTest extends WebTestCase
         parent::tearDown();
     }
 
+    public function test_thermal_facet_inputs_rendered_when_inactive(): void
+    {
+        $this->persistSystem();
+        $this->client->request('GET', '/cabinet/coating/coating-system/list');
+
+        self::assertResponseIsSuccessful();
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('name="thermTemp"', $content);
+        self::assertStringContainsString('name="thermEnv"', $content);
+        self::assertStringContainsString('name="thermPeak"', $content);
+    }
+
+    public function test_thermal_filter_active_renders_reset_chip(): void
+    {
+        $this->persistSystem();
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?thermTemp=100&thermEnv=dry_heat&thermPeak=1');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Работает при', (string) $this->client->getResponse()->getContent());
+    }
+
     private function persistSystem(string $suffix = ''): CoatingSystem
     {
         if ('' === $suffix) {
@@ -100,7 +122,8 @@ final class ListActionTest extends WebTestCase
 
         /** @var CoatingSystemSearchCacheRepository $cacheRepo */
         $cacheRepo = static::getContainer()->get(CoatingSystemSearchCacheRepository::class);
-        $cacheRepo->upsert($system);
+        $temperatureCalculator = static::getContainer()->get(CoatingSystemOperatingTemperatureCalculator::class);
+        $cacheRepo->upsert($system, $temperatureCalculator->calculate($system));
 
         return $system;
     }

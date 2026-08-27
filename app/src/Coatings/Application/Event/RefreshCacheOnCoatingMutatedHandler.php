@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\Event;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Domain\Compliance\SystemComplianceEvaluator;
 use App\Coatings\Domain\Event\CoatingMutated;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
@@ -18,13 +19,14 @@ final readonly class RefreshCacheOnCoatingMutatedHandler implements EventHandler
         private CoatingSystemSearchCacheRepository $searchCache,
         private CoatingSystemComplianceCacheRepository $complianceCache,
         private SystemComplianceEvaluator $evaluator,
+        private CoatingSystemOperatingTemperatureCalculator $temperatureCalculator,
     ) {
     }
 
     public function __invoke(CoatingMutated $event): void
     {
         foreach ($this->repo->findByLayerCoatingId($event->coatingId) as $system) {
-            $this->searchCache->upsert($system);
+            $this->searchCache->upsert($system, $this->temperatureCalculator->calculate($system));
             $this->complianceCache->rewrite($system->getId(), $this->evaluator->evaluate($system));
         }
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Application\UseCase\Query;
 
+use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystemsForSuggest\SearchCoatingSystemsForSuggestQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystemsForSuggest\SearchCoatingSystemsForSuggestQueryHandler;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
@@ -34,6 +35,7 @@ final class SearchCoatingSystemsForSuggestQueryHandlerTest extends KernelTestCas
     private EntityManagerInterface $em;
     private CoatingSystemRepositoryInterface $repo;
     private CoatingSystemSearchCacheRepository $searchCache;
+    private CoatingSystemOperatingTemperatureCalculator $temperatureCalculator;
 
     /** @var list<Uuid> */
     private array $systemIds = [];
@@ -50,6 +52,7 @@ final class SearchCoatingSystemsForSuggestQueryHandlerTest extends KernelTestCas
         $this->em = $container->get(EntityManagerInterface::class);
         $this->repo = $container->get(CoatingSystemRepositoryInterface::class);
         $this->searchCache = $container->get(CoatingSystemSearchCacheRepository::class);
+        $this->temperatureCalculator = $container->get(CoatingSystemOperatingTemperatureCalculator::class);
     }
 
     protected function tearDown(): void
@@ -158,7 +161,7 @@ final class SearchCoatingSystemsForSuggestQueryHandlerTest extends KernelTestCas
 
         $loaded = $this->repo->findById($id);
         \assert(null !== $loaded);
-        $this->searchCache->upsert($loaded);
+        $this->searchCache->upsert($loaded, $this->temperatureCalculator->calculate($loaded));
 
         $this->systemIds[] = $id;
 
