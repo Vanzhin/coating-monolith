@@ -221,11 +221,12 @@ final class Iso12944EvaluatorTest extends TestCase
             otherBinders: null,
         )]);
 
-        // 3 слоя, цинкнаполненный грунт, ndft 300, произвольные основания (в т.ч. AK/AY) — должно пройти.
+        // 3 слоя, цинкнаполненный грунт, ndft 300. Основания в правиле CX не ограничены (null),
+        // но система обязана быть совместимой по перекрытию (ISO 12944-5): инорг-цинк ESI → EP → PUR.
         $system = $this->makeSystem(Substrate::STEEL_CARBON, [
-            [CoatingBase::EP, 120, true],
-            [CoatingBase::AK, 100, false],
-            [CoatingBase::AY, 80, false],
+            [CoatingBase::ESI, 120, true],
+            [CoatingBase::EP, 100, false],
+            [CoatingBase::PUR, 80, false],
         ]);
 
         self::assertEquals(
