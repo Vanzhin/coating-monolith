@@ -9,13 +9,11 @@ use App\Shared\Application\Command\CommandBusInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(
     path: '/cabinet/certificate/document/{id}/delete',
     name: 'app_cabinet_certificate_document_delete',
 )]
-#[IsGranted('ROLE_ADMIN')]
 final class DeleteAction extends AbstractController
 {
     public function __construct(private readonly CommandBusInterface $commandBus)

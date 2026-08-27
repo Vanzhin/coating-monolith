@@ -19,6 +19,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     name: 'app_cabinet_certificate_issuer_suggest',
     methods: ['GET'],
 )]
+// Исключение из правила «авторизация в хендлере»: typeahead организаций только для админ-формы
+// документа; SuggestIssuersQuery не гейтим (read), ограничиваем эндпоинт на контроллере.
 #[IsGranted('ROLE_ADMIN')]
 final class SuggestIssuersAction extends AbstractController
 {
