@@ -615,6 +615,41 @@ final class CoatingTest extends TestCase
         self::assertNull($limits->continuousMax);
     }
 
+    public function test_can_be_applied_on_top_of_iso12944_pairs(): void
+    {
+        $ep = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::EP);
+        $pur = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::PUR);
+        $ay = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::AY);
+        $esi = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::ESI);
+        $feve = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::FEVE);
+        $pas = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::PAS);
+
+        // ISO 12944-5 F.1: EP и PUR ложатся поверх акриловой (AY) грунтовки.
+        self::assertTrue($ep->canBeAppliedOnTopOf($ay));
+        self::assertTrue($pur->canBeAppliedOnTopOf($ay));
+        self::assertTrue($ay->canBecoveredBy($ep)); // зеркало
+
+        // FEVE/PAS — топкоаты-альтернативы PUR: поверх EP/PUR/ESI и сами на себя.
+        foreach ([$ep, $pur, $esi] as $primer) {
+            self::assertTrue($feve->canBeAppliedOnTopOf($primer));
+            self::assertTrue($pas->canBeAppliedOnTopOf($primer));
+        }
+        self::assertTrue($feve->canBeAppliedOnTopOf($feve));
+    }
+
+    public function test_ak_cannot_be_applied_over_zinc_rich_coating(): void
+    {
+        $zincEp = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::EP);
+        $zincEp->setIsZincRich(true);
+        $plainEp = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::EP);
+        $ak = $this->makeCoating(min: $this->minTree(), max: null, base: CoatingBase::AK);
+
+        // ISO 12944-5 F.1: алкид нельзя поверх цинкнаполненной грунтовки, но можно поверх обычной.
+        self::assertFalse($ak->canBeAppliedOnTopOf($zincEp));
+        self::assertTrue($ak->canBeAppliedOnTopOf($plainEp));
+        self::assertFalse($zincEp->canBecoveredBy($ak)); // зеркало
+    }
+
     private function color(): Color
     {
         return new Color(Uuid::v4(), 'Серый', null, '#9DA3A6');

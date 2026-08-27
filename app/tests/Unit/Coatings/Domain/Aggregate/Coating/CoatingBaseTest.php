@@ -37,23 +37,18 @@ class CoatingBaseTest extends TestCase
         $this->assertNull(CoatingBase::fromGost('   '));
     }
 
-    public function test_can_be_applied_over_self_by_default(): void
+    public function test_allowed_primers_matrix_iso12944(): void
     {
-        $this->assertTrue(CoatingBase::EP->canBeAppliedOnTopOf(CoatingBase::EP));
-        $this->assertTrue(CoatingBase::PUR->canBeAppliedOnTopOf(CoatingBase::PUR));
-    }
-
-    public function test_can_receive_mirrors_can_be_applied_on_top_of(): void
-    {
-        $this->assertTrue(CoatingBase::EP->canBecoveredBy(CoatingBase::EP));
-        foreach (CoatingBase::cases() as $primer) {
-            foreach (CoatingBase::cases() as $top) {
-                $this->assertSame(
-                    $top->canBeAppliedOnTopOf($primer),
-                    $primer->canBecoveredBy($top),
-                );
-            }
+        // Матрица ISO 12944-5 (таблица F.1 + прим. к C.1–C.5) — только данные.
+        // Решение о совместимости принимает Coating (см. CoatingTest), не enum.
+        $this->assertContains(CoatingBase::AY, CoatingBase::EP->allowedPrimers());
+        $this->assertContains(CoatingBase::AY, CoatingBase::PUR->allowedPrimers());
+        foreach ([CoatingBase::EP, CoatingBase::PUR, CoatingBase::ESI] as $primer) {
+            $this->assertContains($primer, CoatingBase::FEVE->allowedPrimers());
+            $this->assertContains($primer, CoatingBase::PAS->allowedPrimers());
         }
+        $this->assertContains(CoatingBase::EP, CoatingBase::EP->allowedPrimers());
+        $this->assertSame([CoatingBase::ESI], CoatingBase::ESI->allowedPrimers());
     }
 
     public function test_default_dry_heat_max_operating_temp_for_low_heat_bases(): void
