@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Не та дверь (403){% endblock %}
+
+{% block body %}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <div class="display-1 mb-3">🚪</div>
+                <h1 class="display-5 mb-3">Кажется, вы зашли не в ту дверь</h1>
+                <p class="text-muted mb-4">Код: 403 — {{ status_text }}</p>
+                <p class="mb-4">Эта комната для админов. Вам сюда нельзя — но не переживайте,
+                    за дверью всё равно ничего интересного, только скучные кнопки «Сохранить».</p>
+                <a href="/" class="btn btn-primary">Вернуться к своим делам</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

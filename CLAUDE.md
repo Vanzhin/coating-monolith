@@ -176,6 +176,38 @@ throw new AppException('Длительность при +20 °C должна б�
 
 Сообщение — на русском, для пользователя. Если нужны технические детали для логов — четвёртый аргумент `$log`. Код по умолчанию 422 — менять только если есть причина (например, 404 для not-found).
 
+## Авторизация и доступ
+
+**Аутентификация — один раз в конфиге. Авторизация — дело каждого контекста, в Application.**
+
+- **Аутентификация** («есть залогиненный юзер или нет») — только `security.yaml` (`access_control`, `/cabinet → IS_AUTHENTICATED`). Контроллеры этого не проверяют. `#[IsGranted]` на контроллерах **не используем**.
+- **Авторизация** («этот актор вправе выполнить операцию?») — в **Application-хендлере** каждого контекста, через `{Context}/Application/Service/AccessControl/*AccessControl`. Единый источник истины для всех адаптеров (HTTP, API, консоль). Примеры: `DocumentAccessControl`, `CoatingAccessControl`, `ChannelAccessControl`.
+- Правило по **состоянию объекта** (инвариант, напр. заморозка сертифицированной системы) — в домене, не тут.
+
+**Форма проверки:**
+
+- **Capability (нет ресурса)** — create, и чисто-справочные сущности (только админ). `canManage(): bool` без аргумента, делегирует в `App\Shared\Application\Security\AccessGuard::isManager()` (админ или система). Хендлер:
+  ```php
+  if (!$this->access->canManage()) {
+      throw new ForbiddenException();
+  }
+  ```
+- **Resource-based (владелец ИЛИ админ)** — когда у сущности появляется владелец. Передаём в проверку **уже загруженный объект** (не id — иначе двойной фетч и TOCTOU), предикат владения — метод домена:
+  ```php
+  $entity = $this->repo->findOneById($command->id);
+  if (null === $entity) { throw new AppException('...', Response::HTTP_NOT_FOUND); }
+  if (!$this->access->canEdit($entity)) { throw new ForbiddenException(); } // canEdit(Entity): isManager() || $entity->isOwnedBy(currentUser)
+  ```
+  «Кто текущий юзер» — из `AuthUserFetcherInterface`. Это контракт Symfony Voter (subject-объект, не id), перенесённый в Application.
+
+**Отказ:** `App\Shared\Infrastructure\Exception\ForbiddenException` (наследник `AppException`, код 403). Тонкий контроллер по конвенции ловит `\Exception` и рендерит flash/ошибку «Недостаточно прав» — мутация заблокирована, статус может быть не 403. Для непойманных случаев (API/прямой хит) `ForbiddenExceptionListener` отдаёт 403-страницу.
+
+**Шаблоны:** кнопки создания/правки/удаления — под `{% if canEdit %}`, где `canEdit = is_granted('ROLE_ADMIN')`. Это только UX (спрятать). Просочившаяся кнопка / прямой POST / API упрутся в гейт хендлера и получат отказ — видимость и авторизация развязаны.
+
+**Консоль/крон — системный принципал.** У CLI нет залогиненного юзера. `ConsoleAuthenticationSubscriber` (`ConsoleEvents::COMMAND`, только CLI) ставит `SystemUser` (`ROLE_SYSTEM`) в `TokenStorage`, `AccessGuard::isManager()` пускает его как админа. В web недостижим.
+
+**Тесты авторизации:** handler/UseCase-тесты без HTTP-клиента используют трейт `App\Tests\Support\AuthenticatesActorTrait::authenticateAsSystem()` (иначе isGranted вернёт false → Forbidden). Контроллер-тесты мутации логинят юзера с `ROLE_ADMIN`.
+
 ## Что НЕЛЬЗЯ
 
 - **Не клади бизнес-проверки в Mapper.** Mapper — это инфраструктура, его не должно тошнить от того, что DTO физически невалидна.
@@ -188,6 +220,7 @@ throw new AppException('Длительность при +20 °C должна б�
 - **Не оставляй мёртвый код.** Удалённые методы убирай вместе с их вызовами (грепай по проекту). Закомментированные строки не оставляй.
 - **Не плоди сервис-обёртки `*Finder`/`*Fetcher` вокруг репозитория.** Поиск (typeahead/`suggest`) и резолв сущностей по id держи прямо в репозитории (`suggest(...)`, `findByIds`, `findOneById`) и вызывай из handler/maker. Отдельный класс, который лишь проксирует один вызов в репозиторий, бесполезен и только засоряет код. `TagFinder`/`TagFetcher` — легаси-контрпример: копировать их не надо (существующие пока не рефакторим).
 - **Не принимай коллекции как сырой `array`-параметр — там, где это осмысленно.** Список доменных объектов в методе/конструкторе — вариадик `Type ...$items` (как `DryingTimeSeries`, `applyColorScheme(bool, Color ...$colors)`), список строковых id — `StringCollection`. Так тип элемента виден в сигнатуре, а не прячется за `array`. Легаси (`replaceTags(array $tags)`) не эталон; новый код пишем через `...`/`StringCollection`.
+- **Не авторизуй в контроллере через `#[IsGranted]`.** Роль/владение проверяет `*AccessControl` в Application-хендлере (см. «Авторизация и доступ»). Контроллер только аутентифицирован через `security.yaml`. `#[IsGranted]` на экшене — обход единого источника истины, его обойдёт API/консоль/прямой POST.
 
 ## Шаблон: добавить новое правило
 
