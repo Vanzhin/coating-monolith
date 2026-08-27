@@ -71,6 +71,8 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $this->assertSame('ISO 8501-1', $dto->surfaceTreatmentStandardCode);
         $this->assertSame('Sa 2.5', $dto->surfaceTreatmentTitle);
         $this->assertSame(180, $dto->totalDft);
+        // EP и PUR без задокументированных пределов → дефолт по основе 120 у обоих → min = 120.
+        $this->assertSame(120, $dto->maxDryHeatContinuousOperatingTemp);
         $this->assertEquals($system->getCreatedAt(), $dto->createdAt);
         $this->assertEquals($system->getUpdatedAt(), $dto->updatedAt);
         $this->assertCount(2, $dto->layers);

@@ -23,7 +23,7 @@
         {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
     {% endfor %}
 
-    {% set hasApplication = system.maxLayerApplicationMinTemp is not null or system.minApplicationTimeAt20Minutes is not null %}
+    {% set hasApplication = system.maxLayerApplicationMinTemp is not null or system.minApplicationTimeAt20Minutes is not null or system.maxDryHeatContinuousOperatingTemp is not null or system.maxImmersionContinuousOperatingTemp is not null %}
 
     <div class="coating-card p-3 rounded-3 bg-body" data-system-id="{{ system.id }}">
 
@@ -88,6 +88,16 @@
                     <div class="p-3 rounded-3 bg-body-tertiary h-100">
                         {% if system.maxLayerApplicationMinTemp is not null %}
                             <div class="small text-muted">Мин. Т нанесения: {{ system.maxLayerApplicationMinTemp }} °C</div>
+                        {% endif %}
+                        {% set opTempParts = [] %}
+                        {% if system.maxDryHeatContinuousOperatingTemp is not null %}
+                            {% set opTempParts = opTempParts|merge([system.maxDryHeatContinuousOperatingTemp ~ ' °C (сух.)']) %}
+                        {% endif %}
+                        {% if system.maxImmersionContinuousOperatingTemp is not null %}
+                            {% set opTempParts = opTempParts|merge([system.maxImmersionContinuousOperatingTemp ~ ' °C (погр.)']) %}
+                        {% endif %}
+                        {% if opTempParts is not empty %}
+                            <div class="small text-muted">Макс. Т эксплуатации: {{ opTempParts|join(' / ') }}</div>
                         {% endif %}
                         {% if system.minApplicationTimeAt20Minutes is not null %}
                             <div class="small text-muted">Мин. время нанесения: {{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</div>

@@ -44,6 +44,19 @@
                                 <span class="ms-1 fw-semibold">{{ system.maxLayerApplicationMinTemp }} °C</span>
                             </div>
                         {% endif %}
+                        {% set opTempParts = [] %}
+                        {% if system.maxDryHeatContinuousOperatingTemp is not null %}
+                            {% set opTempParts = opTempParts|merge([system.maxDryHeatContinuousOperatingTemp ~ ' °C (сух.)']) %}
+                        {% endif %}
+                        {% if system.maxImmersionContinuousOperatingTemp is not null %}
+                            {% set opTempParts = opTempParts|merge([system.maxImmersionContinuousOperatingTemp ~ ' °C (погр.)']) %}
+                        {% endif %}
+                        {% if opTempParts is not empty %}
+                            <div class="col-md-4">
+                                <span class="text-muted">Макс. Т эксплуатации:</span>
+                                <span class="ms-1 fw-semibold">{{ opTempParts|join(' / ') }}</span>
+                            </div>
+                        {% endif %}
                         {% if system.minApplicationTimeAt20Minutes is not null %}
                             <div class="col-md-4">
                                 <span class="text-muted">Мин. время нанесения:</span>

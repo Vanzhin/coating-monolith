@@ -247,6 +247,54 @@ class CoatingSystem extends Aggregate
         return $max;
     }
 
+    /**
+     * Максимальная температура непрерывной эксплуатации системы в сухом тепле (°C) — слабое звено:
+     * минимум по слоям верхнего предела покрытия (Coating::getDryHeatExposure, с дефолтом по основе).
+     * Null для пустой системы или если у какого-то слоя верхний предел не задокументирован.
+     */
+    public function maxDryHeatContinuousOperatingTemp(): ?int
+    {
+        if ($this->layers->isEmpty()) {
+            return null;
+        }
+        $min = null;
+        foreach ($this->layers as $layer) {
+            $value = $layer->getCoating()->getDryHeatExposure()?->continuousMax;
+            if (null === $value) {
+                return null;
+            }
+            if (null === $min || $value < $min) {
+                $min = $value;
+            }
+        }
+
+        return $min;
+    }
+
+    /**
+     * Максимальная температура непрерывной эксплуатации системы в погружении (°C) — слабое звено:
+     * минимум по слоям верхнего предела покрытия (Coating::getImmersionExposure). Дефолта по основе
+     * у погружения нет: null, если система пуста или у какого-то слоя immersion-предел не задокументирован.
+     */
+    public function maxImmersionContinuousOperatingTemp(): ?int
+    {
+        if ($this->layers->isEmpty()) {
+            return null;
+        }
+        $min = null;
+        foreach ($this->layers as $layer) {
+            $value = $layer->getCoating()->getImmersionExposure()?->continuousMax;
+            if (null === $value) {
+                return null;
+            }
+            if (null === $min || $value < $min) {
+                $min = $value;
+            }
+        }
+
+        return $min;
+    }
+
     public function firstLayer(): CoatingSystemLayer
     {
         $sorted = array_values($this->getLayers()->toArray());

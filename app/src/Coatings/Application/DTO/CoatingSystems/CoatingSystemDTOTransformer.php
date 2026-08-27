@@ -48,6 +48,8 @@ class CoatingSystemDTOTransformer
         $dto->totalDft = $system->totalDft();
         $dto->minApplicationTimeAt20Minutes = $system->minApplicationTimeAt20Minutes();
         $dto->maxLayerApplicationMinTemp = $system->maxLayerApplicationMinTemp();
+        $dto->maxDryHeatContinuousOperatingTemp = $system->maxDryHeatContinuousOperatingTemp();
+        $dto->maxImmersionContinuousOperatingTemp = $system->maxImmersionContinuousOperatingTemp();
         $dto->layers = $this->layersFromSystem($system);
         $dto->compliance = array_map(
             fn (Compliance $c) => $this->complianceDto($c),
