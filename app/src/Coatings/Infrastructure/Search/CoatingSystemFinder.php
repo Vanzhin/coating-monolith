@@ -132,7 +132,10 @@ final class CoatingSystemFinder
             $qb->setParameter('csc_category_list', $facets->expandPrimary($filter->category), ArrayParameterType::STRING);
         }
 
-        if (null !== $filter->durability) {
+        // Долговечность применяем только если у выбранной категории есть вторая ось
+        // (у CX/Im4 её нет — игнорируем даже залипший в URL параметр).
+        if (null !== $filter->durability
+            && (null === $filter->category || $facets->hasSecondaryAxis($filter->category))) {
             $sub .= ' AND csc.durability IN (:csc_durability_list)';
             $qb->setParameter('csc_durability_list', $facets->expandSecondary($filter->durability), ArrayParameterType::STRING);
         }

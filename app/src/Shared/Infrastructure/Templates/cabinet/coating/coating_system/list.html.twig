@@ -18,7 +18,9 @@
     {% set environmentActive = environment is not null %}
     {% set standardActive = standard is not null %}
     {% set categoryActive = standardActive and category is not null %}
-    {% set durabilityActive = standardActive and durability is not null %}
+    {# У CX/Im4 нет оси долговечности (durabilityAxisEnabled=false) — блок скрыт, значение не применяется #}
+    {% set durabilityActive = standardActive and durability is not null and durabilityAxisEnabled %}
+    {% set durabilityAxisShown = categoryActive and durabilityAxisEnabled %}
     {% set tagsActive = tagIds|length > 0 %}
     {% set coatingsActive = coatingIds|length > 0 %}
     {% set appMinTempActive = applicationMinTemp is not null %}
@@ -299,8 +301,8 @@
                         </a>
                     {% endif %}
 
-                    {# --- Долговечность (single, только если категория выбрана) --- #}
-                    {% if categoryActive %}
+                    {# --- Долговечность (single, только если у категории есть эта ось; у CX/Im4 нет) --- #}
+                    {% if durabilityAxisShown %}
                         {% if not durabilityActive %}
                             <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
                                 <div class="dropdown">
@@ -564,7 +566,7 @@
                 </div>
             {% endif %}
 
-            {% if categoryActive and not durabilityActive %}
+            {% if durabilityAxisShown and not durabilityActive %}
                 <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
                      id="chipFilterDurability" aria-labelledby="chipFilterDurabilityLabel">
                     <div class="offcanvas-header border-bottom">
@@ -912,8 +914,8 @@
                             </div>
                         </div>
 
-                        {# === Секция: Долговечность (только при категории) === #}
-                        {% if categoryActive %}
+                        {# === Секция: Долговечность (только при категории с этой осью; у CX/Im4 нет) === #}
+                        {% if durabilityAxisShown %}
                             <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
                                 <h6 class="fw-semibold mb-2">{{ complianceFacets.secondaryLabel }}</h6>
                                 <input type="hidden" name="category" value="{{ category }}">

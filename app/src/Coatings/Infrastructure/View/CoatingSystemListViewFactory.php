@@ -74,6 +74,9 @@ final class CoatingSystemListViewFactory
             'standard' => $standard,
             'category' => $category,
             'durability' => $durability,
+            // У выбранной категории есть вторая ось (долговечность)? У CX/Im4 её нет —
+            // блок оси скрываем, значение долговечности игнорируем.
+            'durabilityAxisEnabled' => null === $category || null === $facets || $facets->hasSecondaryAxis($category),
             'tagIds' => $tagIds->getList(),
             'coatingIds' => $coatingIds->getList(),
             'applicationMinTemp' => $applicationMinTemp,
