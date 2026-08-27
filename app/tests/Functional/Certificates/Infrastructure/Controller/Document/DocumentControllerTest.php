@@ -162,6 +162,16 @@ final class DocumentControllerTest extends WebTestCase
         self::assertSame('application/pdf', $this->client->getResponse()->headers->get('Content-Type'));
     }
 
+    public function test_preview_renders_document_fragment(): void
+    {
+        $id = $this->createViaBus('PRV-'.bin2hex(random_bytes(3)));
+
+        $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/preview');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('documentPreview-'.$id, (string) $this->client->getResponse()->getContent());
+    }
+
     public function test_download_with_cyrillic_title_succeeds(): void
     {
         // Кириллическое название → Content-Disposition требует ASCII-фолбэк, иначе 500.

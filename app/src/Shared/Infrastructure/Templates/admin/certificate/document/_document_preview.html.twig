@@ -1,0 +1,82 @@
+{# Фрагмент модалки предпросмотра документа. Рендерится app_cabinet_certificate_document_preview,
+   всплывает по клику на документ в модалке системы. Единый паттерн с превью покрытия/системы.
+   Переменные: document (DocumentDTO), canEdit (bool). #}
+{% set idPlaceholder = '00000000-0000-0000-0000-000000000000' %}
+
+<div class="modal fade" id="documentPreview-{{ document.id }}" tabindex="-1"
+     aria-labelledby="documentPreviewLabel-{{ document.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0" id="documentPreviewLabel-{{ document.id }}">{{ document.title }}</h5>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <span class="badge text-bg-secondary fw-normal">{{ document.kindLabel }}</span>
+                        {% if document.expiresAt is null %}
+                            <span class="badge text-bg-secondary fw-normal">Бессрочный</span>
+                        {% elseif document.isExpired %}
+                            <span class="badge text-bg-danger fw-normal">Просрочен до {{ document.expiresAt|date('d.m.Y') }}</span>
+                        {% else %}
+                            <span class="badge text-bg-success fw-normal">Действует до {{ document.expiresAt|date('d.m.Y') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary small">
+                    {{ [document.issuerTitle, document.issuedAt|date('d.m.Y'), document.testStandard]|filter(v => v)|join(' · ') }}
+                </div>
+
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <div class="small text-muted mb-1">Что подтверждает</div>
+                    <div>{{ document.subject }}</div>
+                </div>
+
+                {% if document.description %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <p class="text-body-secondary mb-0">{{ document.description }}</p>
+                    </div>
+                {% endif %}
+
+                {% if document.references|length > 0 %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
+                         data-controller="reference-chips"
+                         data-reference-chips-by-ids-system-value="{{ path('app_cabinet_coating_system_by_ids') }}"
+                         data-reference-chips-by-ids-coating-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+                         data-reference-chips-preview-system-value="{{ path('app_cabinet_coating_system_preview', {id: idPlaceholder}) }}"
+                         data-reference-chips-preview-coating-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
+                        <h6 class="fw-semibold mb-2">Распространяется на</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for ref in document.references %}
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                        data-reference-chips-target="chip"
+                                        data-ref-type="{{ ref.referenceType }}" data-ref-id="{{ ref.referenceId }}"
+                                        data-action="click->reference-chips#open">
+                                    <i class="bi {{ ref.referenceType == 'coating' ? 'bi-square' : 'bi-layers' }}"></i>
+                                    <span data-role="refTitle">…</span>
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted">Обновлено: {{ document.updatedAt|date('d.m.Y') }}</div>
+            </div>
+            <div class="modal-footer">
+                {% if document.hasFile %}
+                    <a href="{{ path('app_cabinet_certificate_document_download', {id: document.id}) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Скачать PDF
+                    </a>
+                {% endif %}
+                {% if canEdit %}
+                    <a href="{{ path('app_cabinet_certificate_document_update', {id: document.id}) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
