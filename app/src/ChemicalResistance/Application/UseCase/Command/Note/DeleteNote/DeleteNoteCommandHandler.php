@@ -4,21 +4,28 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Command\Note\DeleteNote;
 
+use App\ChemicalResistance\Application\Service\AccessControl\ChemicalResistanceAccessControl;
 use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\NoteRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 final class DeleteNoteCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private NoteRepositoryInterface $notes,
         private AssessmentRepositoryInterface $assessments,
+        private ChemicalResistanceAccessControl $access,
     ) {
     }
 
     public function __invoke(DeleteNoteCommand $c): void
     {
+        if (!$this->access->canManage()) {
+            throw new ForbiddenException();
+        }
+
         $note = $this->notes->findOneById($c->id)
             ?? throw new AppException('Примечание не найдено.');
 

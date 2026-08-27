@@ -11,10 +11,8 @@ use App\Shared\Domain\Repository\Pager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/chemical-resistance/note/autocomplete', name: 'app_api_chemical_resistance_note_autocomplete', methods: ['GET'])]
-#[IsGranted('ROLE_ADMIN')]
 class AutocompleteAction
 {
     public function __construct(private readonly GetPagedNotesQueryHandler $handler)

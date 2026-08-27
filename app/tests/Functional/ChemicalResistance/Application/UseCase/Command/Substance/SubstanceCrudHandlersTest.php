@@ -20,12 +20,15 @@ use App\ChemicalResistance\Infrastructure\Repository\NoteRepository;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class SubstanceCrudHandlersTest extends KernelTestCase
 {
+    use AuthenticatesActorTrait;
+
     private CreateSubstanceCommandHandler $create;
     private UpdateSubstanceCommandHandler $update;
     private DeleteSubstanceCommandHandler $delete;
@@ -46,6 +49,8 @@ final class SubstanceCrudHandlersTest extends KernelTestCase
         $this->delete = $c->get(DeleteSubstanceCommandHandler::class);
         $this->substances = $c->get(SubstanceRepository::class);
         $this->em = $c->get(EntityManagerInterface::class);
+
+        $this->authenticateAsSystem();
     }
 
     protected function tearDown(): void

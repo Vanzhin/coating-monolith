@@ -11,10 +11,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/chemical-resistance/note', name: 'app_api_chemical_resistance_note_add', methods: ['POST'])]
-#[IsGranted('ROLE_ADMIN')]
 class AddAction
 {
     public function __construct(private readonly CommandBusInterface $commandBus)
