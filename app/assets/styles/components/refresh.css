@@ -1,0 +1,91 @@
+/* «GitHub-inspired refresh»: плотная типографика, мягкие границы, больше воздуха
+   в карточках/list-item'ах. Работает поверх Bootstrap, не заменяя базовые классы.
+   Вынесено из inline-<style> в base.html.twig. Импортируется в app.css ПОСЛЕ
+   shell.css/tables.css, чтобы его override'ы (.flash-messages, .blog-header-logo,
+   .list-group, .card) выигрывали каскад — как раньше в конце inline-блока.
+   Тёмная тема — через встроенный Bootstrap 5.3 data-bs-theme на <html>. */
+
+body {
+    /* Office-style стек: Calibri на Windows, Segoe UI fallback; macOS — SF Pro /
+       Helvetica Neue; Linux — Ubuntu / DejaVu. Всё нативно, без внешних загрузок. */
+    font-family: Calibri, "Segoe UI", -apple-system, BlinkMacSystemFont,
+                 "Helvetica Neue", "Noto Sans", Arial, sans-serif,
+                 "Apple Color Emoji", "Segoe UI Emoji";
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+}
+
+/* Логотип — тот же системный шрифт что и body: плотный weight и tight
+   letter-spacing вместо декоративной засечки. */
+.blog-header-logo {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+/* Больше воздуха в списках-карточках, мягкая граница. */
+.list-group {
+    border-radius: 8px;
+    --bs-list-group-border-color: var(--bs-border-color);
+}
+.list-group-item {
+    padding: 1rem 1.25rem;
+    transition: background-color 0.15s ease;
+}
+/* Hover карточек: --bs-secondary-bg даёт видимый контраст в обеих темах. */
+.list-group-item:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+.card {
+    border-radius: 8px;
+    border-color: var(--bs-border-color);
+}
+
+/* Flash-сообщения — прозрачнее, чтобы не выбивались из тёмной темы. */
+.flash-messages {
+    background-color: transparent;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+.flash-messages .alert {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+}
+
+/* Tagify не респектит --bs-border-color — переопределяем её CSS-vars
+   (документированный контракт библиотеки) на Bootstrap-переменные, чтобы
+   рамка/фон/цвет тегов подхватывали тему автоматически. */
+.tagify {
+    --tags-border-color: var(--bs-border-color);
+    --tags-hover-border-color: var(--bs-border-color);
+    --tags-focus-border-color: var(--bs-primary);
+    --tag-bg: var(--bs-secondary-bg);
+    --tag-hover: var(--bs-tertiary-bg);
+    --tag-text-color: var(--bs-body-color);
+    --tag-remove-btn-color: var(--bs-body-color);
+    --tag-remove-bg: var(--bs-danger-bg-subtle);
+    --tag-remove-btn-bg--hover: var(--bs-danger);
+    --input-color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+.tagify__input { color: var(--bs-body-color); }
+.tagify__dropdown__wrapper {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+.tagify__dropdown__item--active,
+.tagify__dropdown__item:hover {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}

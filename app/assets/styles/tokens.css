@@ -1,0 +1,56 @@
+/* Слой токенов поверх Bootstrap 5.3. Импортируется в app.css ПОСЛЕ bootstrap,
+   поэтому переопределяет его тему. НЕ меняем разметку — только переменные.
+   Задаёт нейтральную современную дизайн-систему 1helper: акцент, палитру,
+   радиусы, плюс собственные семантические токены для новых компонентов. */
+
+/* ── Светлая (Bootstrap ставит эти vars на :root и [data-bs-theme=light]) ── */
+:root,
+[data-bs-theme="light"] {
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #14181f;
+  --bs-secondary-color: #616b7a;         /* text-body-secondary */
+  --bs-secondary-bg: #eceef2;
+  --bs-tertiary-bg: #f2f4f7;             /* bg-body-tertiary — тонированные зоны */
+  --bs-border-color: #e4e7ec;
+  --bs-primary: #2f6feb;
+  --bs-primary-rgb: 47, 111, 235;
+  --bs-link-color: #2f6feb;
+  --bs-link-color-rgb: 47, 111, 235;
+  --bs-link-hover-color: #2456bd;
+  --bs-border-radius: .75rem;
+  --bs-border-radius-sm: .5rem;
+  --bs-border-radius-lg: 1rem;
+
+  /* собственные семантические токены (для новых компонентов и след. деплоев) */
+  --surface: #ffffff;
+  --sunken: #f0f2f5;
+  --accent-subtle: #eaf1ff;
+  --ok: #1a7f4b;  --ok-subtle: #e6f4ec;
+  --warn: #8a6d1a; --warn-subtle: #fbf3d8;
+  --danger-strong: #c0392b; --danger-subtle: #fdeceb;
+  --diff-bg: #fff6e6; --diff-bar: #e0a83a; --diff-txt: #8a6d1a;
+  --ease-emph: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ── Тёмная ── */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0d1117;
+  --bs-body-color: #e6edf3;
+  --bs-secondary-color: #9aa5b1;
+  --bs-secondary-bg: #1c222b;
+  --bs-tertiary-bg: #161b22;
+  --bs-border-color: #2a3038;
+  --bs-primary: #4d8bf5;
+  --bs-primary-rgb: 77, 139, 245;
+  --bs-link-color: #4d8bf5;
+  --bs-link-color-rgb: 77, 139, 245;
+  --bs-link-hover-color: #7aa7ff;
+
+  --surface: #161b22;
+  --sunken: #1c222b;
+  --accent-subtle: #17233b;
+  --ok: #3fb950;  --ok-subtle: #132a1c;
+  --warn: #d8b24a; --warn-subtle: #2a2413;
+  --danger-strong: #f0857d; --danger-subtle: #2a1615;
+  --diff-bg: #2a2413; --diff-bar: #d8b24a; --diff-txt: #e3c766;
+}
