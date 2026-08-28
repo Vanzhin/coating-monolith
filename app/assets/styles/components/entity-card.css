@@ -1,0 +1,111 @@
+/* Единая entity-карточка для списков покрытий/систем/документов. Один визуальный
+   контракт (медиа-слот + тело + мета + бейджи + теги + kebab); содержимое
+   медиа-слота и меты различается по сущности. На токенах Деплоя 1. */
+.ecard {
+    background: var(--surface); border: 1px solid var(--bs-border-color); border-radius: 14px;
+    padding: 13px; box-shadow: var(--shadow, 0 1px 2px rgba(16, 24, 40, .05));
+    display: flex; gap: 12px; position: relative;
+    /* НЕ используем transform на ховере: он создаёт stacking-context/containing-block,
+       из-за которого dropdown-меню kebab'а прячется за соседние карточки. Лифт — тенью. */
+    transition: box-shadow .16s var(--ease-emph), border-color .16s var(--ease-emph);
+}
+.ecard:hover { box-shadow: 0 6px 20px rgba(16, 24, 40, .10); border-color: var(--border-strong, var(--bs-border-color)); }
+.ecard.is-selected { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary); }
+
+/* Ведущая колонка выбора (чекбокс сравнения) — слева, чтобы не наезжать на kebab. */
+.ecard-select { flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 2px; }
+
+/* Медиа: монограм связующего + цветная полоса (покрытие). */
+.ecard-mono {
+    width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0; position: relative; overflow: hidden;
+    background: var(--sunken); border: 1px solid var(--bs-border-color);
+    display: grid; place-items: center;
+}
+.ecard-mono .lbl { font-size: 15px; font-weight: 800; letter-spacing: -.02em; color: var(--bs-body-color); margin-bottom: 6px; }
+.ecard-mono .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; display: flex; }
+.ecard-mono .strip i { flex: 1; display: block; }
+.ecard-mono .zn { position: absolute; top: 2px; right: 2px; font-size: 8px; font-weight: 800; color: var(--warn); background: color-mix(in srgb, var(--warn) 20%, transparent); border-radius: 4px; padding: 0 3px; }
+
+/* Медиа: иконка (система/документ). */
+.ecard-media { width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0; background: var(--sunken); border: 1px solid var(--bs-border-color); color: var(--bs-body-color); display: grid; place-items: center; }
+.ecard-media .bi { font-size: 20px; }
+.ecard-media.is-ok { color: var(--ok); }
+
+.ecard-body { flex: 1; min-width: 0; }
+.ecard-head { display: flex; align-items: flex-start; gap: 8px; }
+.ecard-title { flex: 1; font-weight: 650; font-size: 14.5px; letter-spacing: -.01em; line-height: 1.25; word-break: break-word; }
+.ecard-desc { font-size: 12.5px; color: var(--bs-secondary-color); line-height: 1.35; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ecard-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 11.5px; color: var(--faint, var(--bs-secondary-color)); font-weight: 500; }
+.ecard-meta .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 0, 0, .15); }
+
+.ecard-badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 8px; }
+.ecard-badges .b-ok { font-size: 11px; font-weight: 600; color: var(--ok); background: var(--ok-subtle); border-radius: 6px; padding: 2px 7px; }
+.ecard-badges .b-ok-lbl { font-size: 11px; font-weight: 600; color: var(--ok); }
+.ecard-badges .b-iso { font-size: 11px; font-weight: 700; color: var(--bs-primary); background: var(--accent-subtle); border-radius: 6px; padding: 2px 7px; }
+
+.ecard-tags { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; }
+.ecard-tags::-webkit-scrollbar { height: 0; }
+.ecard-tags .tag { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--bs-secondary-color); background: var(--sunken); border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 2px 8px; text-decoration: none; }
+.ecard-tags .tag.is-active { background: var(--accent-subtle); color: var(--bs-primary); border-color: var(--bs-primary); }
+/* Кликабельный чип-покрытие (слой системы): свотч цвета слоя + название, ведёт в превью покрытия. */
+.ecard-tags .tag-btn { font-family: inherit; cursor: pointer; line-height: 1.3; display: inline-flex; align-items: center; gap: 5px; }
+.ecard-tags .tag-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); }
+.ecard-tags .tag-btn .sw { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .15); flex-shrink: 0; }
+
+.ecard-kebab { flex-shrink: 0; }
+
+/* Соответствие стандартам — сгруппировано по стандарту: подпись + бейджи. */
+.ecard-compliance { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.ecard-compliance-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ecard-compliance-row .std { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--faint, var(--bs-secondary-color)); flex-shrink: 0; }
+.ecard-compliance-row .vals { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Кликабельный чип соответствия — тот же вид, что тег-чипы покрытий (серый чип),
+   ховер подсвечивает акцентом; клик фильтрует список систем. */
+.ecard-compliance-row .vals a {
+    font-size: 11px; font-weight: 500; color: var(--bs-secondary-color);
+    background: var(--sunken); border: 1px solid var(--bs-border-color); border-radius: 6px;
+    padding: 2px 8px; text-decoration: none; cursor: pointer;
+    transition: background-color .12s, color .12s, border-color .12s;
+}
+.ecard-compliance-row .vals a:hover { border-color: var(--bs-primary); color: var(--bs-primary); }
+
+/* Адаптивный грид списка: 1 колонка на мобиле, несколько на десктопе; карточки
+   тянутся на всю высоту ряда (равная высота). Применяется как wrapper_class
+   в infinite_list. */
+/* min(320px, 100%) — на экране уже 320px колонка ужимается до ширины контейнера
+   (одна колонка), иначе карточки вылезали бы за контур на мобиле. */
+.ecard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: .75rem; align-items: stretch; }
+.ecard-grid .ecard { height: 100%; }
+
+/* FAB создания (мобайл) — плавающая кнопка над таб-панелью. */
+.fab-create {
+    position: fixed; right: 18px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 1030;
+    width: 54px; height: 54px; border-radius: 17px; display: grid; place-items: center;
+    background: var(--bs-primary); color: #fff; border: 0; box-shadow: 0 10px 24px rgba(47, 111, 235, .4);
+    text-decoration: none;
+}
+.fab-create .bi { font-size: 26px; }
+@media (min-width: 992px) { .fab-create { display: none; } }
+
+/* ===== Трей сравнения (плавающий) — removable-чипы с названиями ===== */
+.compare-tray {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)); /* над таб-панелью на мобиле */
+    z-index: 1080; width: calc(100% - 24px); max-width: 640px;
+}
+@media (min-width: 992px) { .compare-tray { bottom: 20px; } } /* десктоп — таб-панели нет */
+.compare-tray-inner {
+    background: var(--surface); border: 1px solid var(--border-strong, var(--bs-border-color));
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(16, 24, 40, .16); padding: 10px 12px;
+}
+.compare-tray-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.compare-tray-head .ct-title { font-size: 12px; font-weight: 700; }
+.compare-tray-head .ct-hint { font-size: 11px; color: var(--faint, var(--bs-secondary-color)); font-weight: 500; }
+.compare-tray-head .ct-clear { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--bs-secondary-color); background: none; border: 0; padding: 0; }
+.compare-tray-body { display: flex; align-items: center; gap: 9px; }
+.compare-tray-chips { flex: 1; display: flex; gap: 7px; overflow-x: auto; }
+.compare-tray-chips::-webkit-scrollbar { height: 0; }
+.c-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 4px 0 11px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--bs-border-color); font-size: 12.5px; font-weight: 600; max-width: 170px; }
+.c-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-chip-x { width: 20px; height: 20px; border-radius: 6px; background: var(--surface); border: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: 15px; line-height: 1; display: grid; place-items: center; flex-shrink: 0; }
+.compare-tray-body .ct-go { flex-shrink: 0; border-radius: 10px; font-weight: 700; }

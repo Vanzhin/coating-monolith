@@ -1,142 +1,118 @@
-{# Батч карточек систем покрытий.
+{# Батч карточек систем покрытий (единая entity-карточка).
    Используется:
    - основным шаблоном list.html.twig для первой страницы;
-   - ListAction в режиме ?partial=1 для догрузки следующих страниц через
-     infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот
-     partial без layout'a.
-
-   Раскладка (десктоп): шапка (название + чипы-атрибуты, справа ред/удал),
-   ниже 2 колонки тонированных блоков в общем стиле приложения (как модалка/зоны):
-   слева «Состав», справа «Нанесение» + «Соответствие» + «Теги»; футер «Обновлено».
-   Мобайл — колонки стекаются (col-12 col-md-6).
+   - ListAction в режиме ?partial=1 для догрузки следующих страниц.
 
    Обязательные переменные:
      items    — list<CoatingSystemDTO>
      canEdit  — bool
-#}
+
+   Контракты (не ломать): data-system-id на карточке; превью по клику —
+   click->entity-preview#open + data-entity-id. Детали состава/нанесения — в превью. #}
 {% set canEdit = canEdit|default(false) %}
 
 {% for system in items %}
-    {# Группируем соответствие по стандартам — отдельный блок на ГОСТ/ISO и на СП. #}
+    {# Соответствие сгруппировано по стандартам (ГОСТ/ISO/СП) — бейджи label. #}
     {% set complianceByStandard = {} %}
     {% for entry in system.compliance %}
         {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
     {% endfor %}
 
-    {% set hasApplication = system.maxLayerApplicationMinTemp is not null or system.minApplicationTimeAt20Minutes is not null or system.maxDryHeatContinuousOperatingTemp is not null or system.maxImmersionContinuousOperatingTemp is not null %}
-
-    <div class="coating-card p-3 rounded-3 bg-body" data-system-id="{{ system.id }}">
-
-        {# ── Шапка: название + чипы-атрибуты, справа действия ── #}
-        <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
-            <div class="flex-grow-1 overflow-hidden"
-                 role="button"
-                 data-action="click->entity-preview#open"
-                 data-entity-id="{{ system.id }}">
-                <h6 class="mb-2 fw-semibold" style="word-break: break-word;">
-                    <span class="text-body">{{ system.title }}</span>
-                </h6>
-                <div class="d-flex flex-wrap gap-1 align-items-center">
-                    <span class="badge text-bg-secondary fw-normal">{{ system.substrateTitle }}</span>
-                    <span class="badge text-bg-secondary fw-normal">{{ system.environmentTitle }}</span>
-                    {% if system.surfaceTreatmentCode %}
-                        <span class="badge text-bg-light fw-normal text-body-secondary">
-                            {{ system.surfaceTreatmentCode }}{% if system.surfaceTreatmentStandardCode %} ({{ system.surfaceTreatmentStandardCode }}){% endif %}
-                        </span>
-                    {% endif %}
-                    <span class="badge text-bg-light fw-normal text-body-secondary">{{ system.totalDft }} мкм</span>
-                    {% if system.documentCount > 0 %}
-                        <span class="badge text-bg-light fw-normal text-body-secondary" title="Документы (сертификаты/заключения)">
-                            <i class="bi bi-patch-check-fill"></i> {{ system.documentCount }}
-                        </span>
-                    {% endif %}
-                </div>
-            </div>
-            {% if canEdit %}
-                <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                    {% if system.documentDownloadUrl %}
-                        <a href="{{ system.documentDownloadUrl }}" class="btn btn-outline-secondary" title="Скачать документ (PDF)">
-                            <i class="bi bi-file-earmark-arrow-down"></i>
-                        </a>
-                    {% endif %}
-                    {% include '/components/edit_delete.html.twig' with {
-                        'edit': 'app_cabinet_coating_system_update',
-                        'delete': 'app_cabinet_coating_system_remove',
-                        'id': system.id,
-                        'title': system.title,
-                    } %}
-                </div>
-            {% endif %}
+    <div class="ecard" data-system-id="{{ system.id }}">
+        <div class="ecard-media" role="button"
+             data-action="click->entity-preview#open" data-entity-id="{{ system.id }}">
+            <i class="bi bi-layers"></i>
         </div>
 
-        {# ── Тело: тонированные блоки в 2 колонки; клик открывает превью ── #}
-        <div class="row g-2"
-             role="button"
-             data-action="click->entity-preview#open"
-             data-entity-id="{{ system.id }}">
-
-            {# Состав #}
-            <div class="col-12 {{ hasApplication ? 'col-md-6' : '' }}">
-                <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                    {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
-                </div>
+        <div class="ecard-body">
+            <div class="ecard-head">
+                <div class="ecard-title" role="button"
+                     data-action="click->entity-preview#open" data-entity-id="{{ system.id }}">{{ system.title }}</div>
+                {% if canEdit %}
+                    <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                        <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if system.documentDownloadUrl %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ system.documentDownloadUrl }}">
+                                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Скачать документ
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}">
+                                    <i class="bi bi-pencil me-2"></i>Редактировать
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   href="{{ path('app_cabinet_coating_system_remove', {id: system.id}) }}"
+                                   data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                   data-bs-title="{{ system.title }}" data-bs-id="{{ system.id }}">
+                                    <i class="bi bi-trash3 me-2"></i>Удалить
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
             </div>
 
-            {# Нанесение #}
-            {% if hasApplication %}
-                <div class="col-12 col-md-6">
-                    <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                        {% if system.maxLayerApplicationMinTemp is not null %}
-                            <div class="small text-muted">Мин. Т нанесения: {{ system.maxLayerApplicationMinTemp }} °C</div>
-                        {% endif %}
-                        {% set opTempParts = [] %}
-                        {% if system.maxDryHeatContinuousOperatingTemp is not null %}
-                            {% set opTempParts = opTempParts|merge([system.maxDryHeatContinuousOperatingTemp ~ ' °C (сух.)']) %}
-                        {% endif %}
-                        {% if system.maxImmersionContinuousOperatingTemp is not null %}
-                            {% set opTempParts = opTempParts|merge([system.maxImmersionContinuousOperatingTemp ~ ' °C (погр.)']) %}
-                        {% endif %}
-                        {% if opTempParts is not empty %}
-                            <div class="small text-muted">Макс. Т эксплуатации: {{ opTempParts|join(' / ') }}</div>
-                        {% endif %}
-                        {% if system.minApplicationTimeAt20Minutes is not null %}
-                            <div class="small text-muted">Мин. время нанесения: {{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</div>
-                        {% endif %}
-                    </div>
+            {% if system.description %}
+                <div class="ecard-desc" role="button"
+                     data-action="click->entity-preview#open" data-entity-id="{{ system.id }}">{{ system.description }}</div>
+            {% endif %}
+
+            {# Покрытия системы (по слоям) — кликабельные чипы: свотч цвета слоя + название,
+               ведут в превью покрытия (тот же coating-preview-loader, что и в списке покрытий). #}
+            {% if system.layers|length > 0 %}
+                <div class="ecard-tags" data-controller="scroll-fade">
+                    {% for layer in system.layers %}
+                        <button type="button" class="tag tag-btn"
+                                data-coating-id="{{ layer.coatingId }}"
+                                data-action="click->coating-preview-loader#open">
+                            {% if layer.colorHex %}<span class="sw" style="background: {{ layer.colorHex }}"></span>{% endif %}{{ layer.coatingTitle }}
+                        </button>
+                    {% endfor %}
                 </div>
             {% endif %}
 
-            {# Соответствие — на всю ширину, стандарты в ряд #}
+            {# Мета: ТСП · подложка · среда · документы. Кол-во слоёв и подготовка
+               поверхности убраны (слои видны чипами выше, детали — в модалке). #}
+            <div class="ecard-meta">
+                {{ system.totalDft }} мкм · {{ system.substrateTitle }} · {{ system.environmentTitle }}
+                {%- if system.documentCount > 0 %} · {{ system.documentCount }} докум.{% endif %}
+            </div>
+
+            {# Соответствие — сгруппировано по стандарту: подпись стандарта + кликабельные
+               чипы. Клик по чипу фильтрует список систем по этому соответствию
+               (standard/category/durability = standard/primary/secondary DTO). #}
             {% if complianceByStandard|length > 0 %}
-                <div class="col-12">
-                    <div class="d-flex flex-column flex-md-row gap-2">
-                        {% for standard, entries in complianceByStandard %}
-                            <div class="p-3 rounded-3 bg-body-tertiary flex-fill">
-                                <div class="small text-body-secondary fw-semibold mb-2">{{ (entries|first).standardTitle }}</div>
-                                <div class="d-flex flex-wrap gap-1">
-                                    {% for entry in entries|slice(0, 3) %}
-                                        <span class="badge text-bg-success fw-normal">{{ entry.label }}</span>
-                                    {% endfor %}
-                                    {% if entries|length > 3 %}
-                                        <span class="badge text-bg-light fw-normal text-body-secondary">+{{ entries|length - 3 }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
+                <div class="ecard-compliance">
+                    {% for standard, entries in complianceByStandard %}
+                        <div class="ecard-compliance-row">
+                            <span class="std">{{ (entries|first).standardTitle }}</span>
+                            <span class="vals">
+                                {% for entry in entries %}
+                                    {% set q = app.request.query.all|merge({
+                                        standard: entry.standard, category: entry.primary,
+                                        durability: entry.secondary, page: null
+                                    })|filter(v => v is not null) %}
+                                    <a href="{{ path('app_cabinet_coating_system_list', q) }}"
+                                       title="Отфильтровать по «{{ entry.standardTitle }} · {{ entry.label }}»">{{ entry.label }}</a>
+                                {% endfor %}
+                            </span>
+                        </div>
+                    {% endfor %}
                 </div>
             {% endif %}
 
-            {# Теги — на всю ширину #}
             {% if system.tags|length > 0 %}
-                <div class="col-12">
-                    <div class="p-3 rounded-3 bg-body-tertiary">
-                        <div class="d-flex flex-wrap gap-1">
-                            {% for tag in system.tags %}
-                                <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
+                <div class="ecard-tags" data-controller="scroll-fade">
+                    {% for tag in system.tags %}<span class="tag">{{ tag.title }}</span>{% endfor %}
                 </div>
             {% endif %}
         </div>

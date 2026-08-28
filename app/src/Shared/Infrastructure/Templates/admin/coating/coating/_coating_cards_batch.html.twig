@@ -1,70 +1,112 @@
-{# Батч карточек покрытий + их preview-модалок.
+{# Батч карточек покрытий (единая entity-карточка).
    Используется:
    - основным шаблоном index.html.twig для первой страницы;
    - ListAction в режиме ?partial=1 для догрузки следующих страниц через
-     infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот
-     partial без layout'a.
+     infinite-list Stimulus-контроллер — тогда возвращается ТОЛЬКО этот partial.
 
    Обязательные переменные:
      coatings          — list<CoatingDTO>
      canEdit           — bool
      selectedTagIdList — list<string>  (id уже активных tag-фильтров)
-#}
+
+   Контракты (не ломать — их слушают Stimulus-контроллеры):
+   - чекбокс сравнения: data-compare-id + change->compare-tray#toggle (+ data-compare-title для чипа);
+   - превью по клику на заголовок/описание: click->coating-preview-loader#open + data-coating-id;
+   - удаление: общий #deleteModal (data-bs-toggle=modal, data-bs-id/title) — как в edit_delete. #}
 {% for coating in coatings %}
-    {# Карточка покрытия — bg-body поверх тертиарного контейнера (см. list_page.html.twig),
-       чтобы был контраст между «зоной» и «элементом внутри неё». Раньше был
-       list-group-item с бортиками — новый паттерн через p-3 rounded-3.
-       coating-card — фиксирует одинаковую min-height (см. index.html.twig),
-       чтобы карточки с коротким описанием / без тегов не «подскакивали». #}
-    <div class="coating-card d-flex align-items-start gap-2 gap-md-3 p-3 rounded-3 bg-body">
-        <div class="form-check flex-shrink-0 m-0 mt-1">
+    {% set mono = coating.base ?? '—' %}{# монограм связующего = ISO-код как есть (EP/PUR/ESI/AK…) #}
+    {# Колеруемые (isTintable = любой цвет) показываем ОДИНАКОВЫМ набором непривычных
+       приглушённых оттенков (фиолетовый/бирюза/роза/олива/барвинок) — так сразу
+       понятно, что это не реальные цвета, а «колеруемо». Обычные — своими possibleColors. #}
+    {% set tintablePalette = ['#9b8bbf', '#6bb0a8', '#c090a8', '#a8b06b', '#8b9bbf'] %}
+    {% set colorHexes = coating.isTintable ? tintablePalette : coating.possibleColors|map(c => c.hex)|slice(0, 5) %}
+    <div class="ecard">
+        {# Сравнение — ведущая колонка слева (не наезжает на kebab); контракт compare-tray сохранён. #}
+        <div class="ecard-select">
             <input type="checkbox" class="form-check-input m-0"
                    data-compare-id="{{ coating.id }}"
+                   data-compare-title="{{ coating.title }}"
                    data-action="change->compare-tray#toggle"
                    aria-label="Добавить к сравнению">
         </div>
-        <div class="flex-grow-1 overflow-hidden">
-            {# Модалку-триггер вешаем ТОЛЬКО на title+description, не на всю
-               обёртку. Иначе клик по tag-ссылке пузырьком триггерит модалку
-               (stopPropagation на inline onclick был fragile из-за event
-               delegation в Bootstrap 5). #}
-            <div style="cursor: pointer;"
-                 data-action="click->coating-preview-loader#open"
-                 data-coating-id="{{ coating.id }}">
-                <h6 class="mb-1 fw-semibold" style="word-break: break-word;">{{ coating.title }}</h6>
-                <p class="mb-1 small text-muted coating-card-desc">
-                    {{ coating.description }}
-                </p>
+
+        {# Медиа: монограм связующего + цветная полоса (несколько доступных цветов). #}
+        <div class="ecard-mono">
+            <span class="lbl">{{ mono }}</span>
+            {% if coating.isZincRich %}<span class="zn">Zn</span>{% endif %}
+            <span class="strip">
+                {% if colorHexes|length > 0 %}
+                    {% for hex in colorHexes %}<i style="background: {{ hex }}"></i>{% endfor %}
+                {% else %}
+                    <i style="background: var(--bs-border-color)"></i>
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="ecard-body">
+            <div class="ecard-head">
+                {# Превью открывается кликом по заголовку (контракт сохранён). #}
+                <div class="ecard-title" style="cursor: pointer;"
+                     data-action="click->coating-preview-loader#open"
+                     data-coating-id="{{ coating.id }}">{{ coating.title }}</div>
+                {% if canEdit %}
+                    <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                        <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}">
+                                    <i class="bi bi-pencil me-2"></i>Редактировать
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ path('app_cabinet_coating_coating_create', {from: coating.id}) }}">
+                                    <i class="bi bi-files me-2"></i>Дублировать
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                {# Удаление через общий #deleteModal — тот же контракт, что в edit_delete. #}
+                                <a class="dropdown-item text-danger"
+                                   href="{{ path('app_cabinet_coating_coating_delete', {id: coating.id}) }}"
+                                   data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                   data-bs-title="{{ coating.title }}" data-bs-id="{{ coating.id }}">
+                                    <i class="bi bi-trash3 me-2"></i>Удалить
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
             </div>
+
+            {% if coating.description %}
+                <div class="ecard-desc" style="cursor: pointer;"
+                     data-action="click->coating-preview-loader#open"
+                     data-coating-id="{{ coating.id }}">{{ coating.description }}</div>
+            {% endif %}
+
+            {% if not coating.isTintable and coating.possibleColors|length > 0 %}
+                <div class="ecard-meta">{{ coating.possibleColors|length }} цветов</div>
+            {% endif %}
+
             {% if coating.matchedSubstances is defined and coating.matchedSubstances|length > 0 %}
                 {% set matches = coating.matchedSubstances %}
-                {% set visible = matches|slice(0, 3) %}
-                {% set hidden = matches|length - visible|length %}
-                <div class="d-flex flex-wrap gap-1 align-items-center mb-1 coating-match-substances">
-                    <span class="small text-success-emphasis fw-medium me-1">✓ Стойкое к:</span>
-                    {% for m in visible %}
-                        <a href="#"
+                <div class="ecard-badges">
+                    <span class="b-ok-lbl">✓ Стойкое к:</span>
+                    {% for m in matches|slice(0, 3) %}
+                        <a href="#" class="b-ok text-decoration-none"
                            data-action="click->coating-preview-loader#open"
                            data-coating-id="{{ coating.id }}"
-                           data-highlight-substance-id="{{ m.substanceId }}"
-                           class="badge text-bg-success bg-opacity-25 text-body-emphasis fw-normal text-decoration-none">
-                            {{ m.canonicalName }}
-                        </a>
+                           data-highlight-substance-id="{{ m.substanceId }}">{{ m.canonicalName }}</a>
                     {% endfor %}
-                    {% if hidden > 0 %}
-                        <span class="badge text-bg-light fw-normal">+{{ hidden }} ещё</span>
-                    {% endif %}
+                    {% if matches|length > 3 %}<span class="b-ok">+{{ matches|length - 3 }}</span>{% endif %}
                 </div>
             {% endif %}
+
             {% if coating.tags|length > 0 %}
-                {# Теги в одну строку с горизонтальным скроллом. При большом
-                   количестве тегов не растягивают карточку по высоте — CSS
-                   для .coating-tags-scroll лежит в index.html.twig.
-                   data-controller="scroll-fade" — общий Stimulus-контроллер,
-                   выставляет классы .scroll-fade-at-start/-at-end, чтобы
-                   CSS убирал fade-градиент когда скролл упёрся в край. #}
-                <div class="d-flex flex-nowrap gap-1 coating-tags-scroll"
-                     data-controller="scroll-fade">
+                <div class="ecard-tags" data-controller="scroll-fade">
                     {% for tag in coating.tags %}
                         {% set isActive = tag.id in selectedTagIdList %}
                         {% set newTagIds = isActive
@@ -72,27 +114,13 @@
                             : selectedTagIdList|merge([tag.id]) %}
                         {% set q = app.request.query.all|merge({tagIds: newTagIds, page: null})|filter(v => v is not null) %}
                         <a href="{{ path('app_cabinet_coating_coating_list', q) }}"
-                           class="badge text-bg-{{ tag.type|tag_bootstrap_color }}{% if not isActive %} bg-opacity-25 text-body-emphasis{% endif %} fw-normal text-decoration-none flex-shrink-0"
+                           class="tag{{ isActive ? ' is-active' : '' }}"
                            title="{{ isActive ? 'Убрать «' ~ tag.title ~ '» из фильтра' : 'Отфильтровать по «' ~ tag.title ~ '»' }}">
-                            {{ tag.title }}
-                            {%- if isActive %} ×{% endif -%}
+                            {{ tag.title }}{%- if isActive %} ×{% endif -%}
                         </a>
                     {% endfor %}
                 </div>
             {% endif %}
         </div>
-        {% if canEdit %}
-            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                {% include '/components/edit_delete.html.twig'
-                    with {
-                    'edit': 'app_cabinet_coating_coating_update',
-                    'delete':'app_cabinet_coating_coating_delete',
-                    'duplicate': 'app_cabinet_coating_coating_create',
-                    'id': coating.id,
-                    'title': coating.title,
-                    'name': "покрытие"
-                } %}
-            </div>
-        {% endif %}
     </div>
 {% endfor %}

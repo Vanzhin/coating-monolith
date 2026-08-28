@@ -919,6 +919,7 @@
                     },
                     total_pages: totalPages,
                     base_url: path('app_cabinet_coating_coating_list', baseQuery),
+                    wrapper_class: 'ecard-grid',
                 } only %}
 
                 {# Fallback: обычный pager для случая когда JS выключен или Stimulus
@@ -959,22 +960,30 @@
         {# Floating tray «К сравнению». Общий стиль: bg-body + rounded-3 + shadow
            вместо старого .card chrome. Shadow нужен, чтобы плашка визуально
            отлипала от контента списка (она поверх). #}
-        <div class="position-fixed bottom-0 start-50 translate-middle-x mb-3 d-none"
-             style="z-index: 1080;"
-             data-compare-tray-target="bar">
-            <div class="p-2 px-3 rounded-3 bg-body shadow d-flex align-items-center gap-3">
-                <span class="small">К сравнению: <strong data-compare-tray-target="count">0</strong></span>
-                <button type="button" class="btn btn-sm btn-primary"
-                        data-action="click->compare-tray#open"
-                        data-compare-tray-target="openBtn" disabled>
-                    Сравнить
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        data-action="click->compare-tray#clear">
-                    Очистить
-                </button>
+        {# Плавающий трей сравнения: removable-чипы с названиями выбранных покрытий +
+           «Сравнить». Позиция — над таб-панелью на мобиле (см. .compare-tray). #}
+        <div class="compare-tray d-none" data-compare-tray-target="bar">
+            <div class="compare-tray-inner">
+                <div class="compare-tray-head">
+                    <span class="ct-title">Сравнение</span>
+                    <span class="ct-hint"><strong data-compare-tray-target="count">0</strong> из 4</span>
+                    <button type="button" class="ct-clear" data-action="click->compare-tray#clear">Очистить</button>
+                </div>
+                <div class="compare-tray-body">
+                    <div class="compare-tray-chips" data-compare-tray-target="chips"></div>
+                    <button type="button" class="btn btn-sm btn-primary ct-go"
+                            data-action="click->compare-tray#open"
+                            data-compare-tray-target="openBtn" disabled>Сравнить</button>
+                </div>
             </div>
         </div>
+
+        {# FAB создания (мобайл; на десктопе — кнопка «+» в шапке списка). #}
+        {% if canEdit %}
+            <a class="fab-create" href="{{ path('app_cabinet_coating_coating_create') }}" aria-label="Новое покрытие">
+                <i class="bi bi-plus"></i>
+            </a>
+        {% endif %}
     </div>
 
     {# Логика portal + viewport-adaptive живёт в assets/controllers/chip_facets_controller.js
