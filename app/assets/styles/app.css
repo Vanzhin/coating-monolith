@@ -1,4 +1,5 @@
 @import "~bootstrap";
+@import "tokens.css";
 @import "bootstrap-icons.css";
 @import "blog.css";
 @import "admin/dashboard.css";
@@ -8,6 +9,13 @@
 @import "./components/coating-substance-badges.css";
 @import "components/color-swatch.css";
 @import "fonts.css";
+/* Стили каркаса, вынесенные из inline-<style> base.html.twig. Порядок важен:
+   shell/tables — базовые, refresh — последним (его override'ы каскадируют выше). */
+@import "components/shell.css";
+@import "components/tables.css";
+@import "components/refresh.css";
+@import "components/app-shell.css";
+@import "components/entity-card.css";
 /*@import "signin.css";*/
 
 

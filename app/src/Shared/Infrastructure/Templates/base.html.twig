@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ app_name }} — инструменты, которые помогают в повседневной работе">
+    {# Кросс-документные native-переходы (View Transitions API); включение — в app-shell.css. #}
+    <meta name="view-transition" content="same-origin">
+
+    {# PWA: цвет системной панели по теме, iOS-standalone. Манифест — ниже в head. #}
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="1helper">
+
     <title>{% block title %}{{ app_name }} | {% endblock %}</title>
 
     {# FOUC-safe theme init — ставим data-bs-theme на <html> ДО того как браузер
@@ -38,395 +48,40 @@
     {% block javascripts %}
         {{ encore_entry_script_tags('app') }}
     {% endblock %}
-
-    <style>
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-        }
-
-        body {
-            /* fallback для <iOS 15.4 / <Chrome 108; dvh учитывает iOS Safari
-               address-bar (без него контент скачет при show/hide URL-бара). */
-            min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        main {
-            flex: 1;
-        }
-
-        .blog-header {
-            position: relative;
-            z-index: 1030;
-        }
-
-        /* Высота карточки-шапки как при кнопке в потоке (40px + p-3): вынос кнопки в fixed
-           не должен проседать шапку. Логотип центрируется по вертикали. */
-        .blog-header-bar {
-            min-height: 72px;
-        }
-
-        .blog-header-logo {
-            font-family: inherit;
-            font-size: 1.25rem;
-            text-decoration: none;
-        }
-
-        .blog-header-logo:hover {
-            text-decoration: none;
-        }
-
-        .flash-messages {
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            z-index: 1050;
-            max-width: 400px;
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
-            border-radius: 8px;
-            padding: 0;
-        }
-
-        .flash-messages .alert {
-            margin: 0;
-            box-shadow: none;
-            border: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-
-        /* Кнопка hamburger'a — фиксированная (floating), единая для мобильной и десктопа.
-           Остаётся на экране при скролле; в начальном положении совпадает с прежним местом
-           внутри шапки (без фона и тени — как было). z-index ниже шторки (1045). */
-        .menu-toggle {
-            position: fixed;
-            top: 2rem;     /* header py-3 (1rem) + card p-3 (1rem) */
-            left: 1.75rem; /* container-fluid (.75rem) + card p-3 (1rem) */
-            z-index: 1030;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .menu-toggle .bi-list {
-            font-size: 1.2rem;
-        }
-
-        @media (max-width: 576px) {
-            .blog-header-logo {
-                font-size: 1.5rem;
-            }
-
-            .menu-toggle {
-                width: 36px;
-                height: 36px;
-            }
-
-            .flash-messages {
-                top: 90px;
-                left: 20px;
-                right: 20px;
-                max-width: none;
-            }
-        }
-
-        .back-to-top {
-            position: fixed;
-            /* safe-area-inset-* — отступ от iOS home-bar / notch на iPhone X+. */
-            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            right: calc(20px + env(safe-area-inset-right, 0px));
-            z-index: 1000;
-            display: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Touch-target ≥44px (Apple HIG, WCAG 2.5.5 AA) для duration-кнопок
-           на mobile. На desktop остаётся btn-sm — там mouse-pointer. */
-        @media (max-width: 767.98px) {
-            .duration-display-btn {
-                min-height: 44px;
-            }
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            background-color: #dee2e6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-avatar i {
-            font-size: 16px;
-            color: #6c757d;
-        }
-
-        /* Offcanvas меню. Использую var(--bs-border-color) вместо хардкода
-           #dee2e6 — иначе на тёмной теме шапка шторки уходит светлой полосой. */
-        .offcanvas-header {
-            border-bottom: 1px solid var(--bs-border-color);
-            padding: 1rem 1.5rem;
-        }
-
-        .offcanvas-title {
-            font-weight: 600;
-        }
-
-        .offcanvas-body {
-            padding: 0;
-        }
-
-        /* Таблицы, где каждая строка — визуально отдельная «карточка».
-           Используется в compare (сравнение полей/времени высыхания) и в
-           edit-форме покрытия (точки drying/recoating). Каждый tr получает
-           фон bg-body поверх тертиарного контейнера + скругление уголков
-           на первой/последней td'шке. Промежутки между строками — через
-           border-spacing (требует border-collapse: separate).
-           table-warning-строки (различающиеся значения в compare) сохраняют
-           свой оттенок через каскад --bs-table-bg-state → fallback bg-body. */
-        .table-rows {
-            border-collapse: separate;
-            border-spacing: 0 0.5rem;
-            margin-bottom: -0.5rem; /* компенсируем последний gap-spacing */
-        }
-        .table-rows > thead > tr > th,
-        .table-rows > thead > tr > td {
-            border: 0;
-            padding-top: 0;
-            padding-bottom: 0.25rem;
-            background: transparent;
-        }
-        .table-rows > tbody > tr > td,
-        .table-rows > tbody > tr > th {
-            border: 0;
-            /* Приоритет:
-               1. --table-rows-cell-bg — наш собственный override с родителя
-                  (Bootstrap его не трогает, поэтому каскадирует внутрь .table
-                  без перезаписи). Используется, когда обёртка сама bg-body
-                  и строки-«карточки» должны быть серыми на белом фоне.
-               2. --bs-table-bg — стандартная переменная Bootstrap (равна
-                  body-bg на .table, переопределяется .table-warning в #fff3cd
-                  для подсветки «различающихся» ячеек compare). */
-            background: var(--table-rows-cell-bg, var(--bs-table-bg, var(--bs-body-bg)));
-        }
-        .table-rows > tbody > tr > td:first-child,
-        .table-rows > tbody > tr > th:first-child {
-            border-top-left-radius: 0.5rem;
-            border-bottom-left-radius: 0.5rem;
-        }
-        .table-rows > tbody > tr > td:last-child,
-        .table-rows > tbody > tr > th:last-child {
-            border-top-right-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-        }
-
-        /* Скругление шторок с той стороны, куда они «прилипают» к экрану:
-           slide-in-слева → правые углы, slide-in-справа → левые углы,
-           slide-in-снизу → верхние. overflow: hidden — чтобы контент
-           (list-group items, form controls) не торчал за пределы скруглённой
-           формы, особенно в углах. */
-        .offcanvas-start {
-            border-top-right-radius: 1rem;
-            border-bottom-right-radius: 1rem;
-            overflow: hidden;
-        }
-        .offcanvas-end {
-            border-top-left-radius: 1rem;
-            border-bottom-left-radius: 1rem;
-            overflow: hidden;
-        }
-        .offcanvas-bottom {
-            border-top-left-radius: 1rem;
-            border-top-right-radius: 1rem;
-            overflow: hidden;
-        }
-
-        /* Резервируем место под вертикальный скроллбар шторки всегда, иначе при
-           сворачивании/разворачивании групп он появляется/исчезает и ширина прыгает. */
-        #mainMenu .offcanvas-body {
-            scrollbar-gutter: stable;
-        }
-
-        /* Стили пунктов меню — ТОЛЬКО внутри #mainMenu, чтобы не перекрывать
-           .list-group-item на карточках покрытий/производителей (там дефолтный
-           Bootstrap hover нужен и корректно работает в тёмной теме через
-           --bs-list-group-*-* переменные). */
-        /* Каждый пункт меню — отдельная выделенная плашка в общем стиле:
-           bg-body поверх тонированной зоны, скругление, зазор, видимый ховер. */
-        #mainMenu .list-group-item {
-            border: none;
-            border-radius: var(--bs-border-radius);
-            padding: .75rem 1rem;
-            margin-bottom: .375rem;
-            background: var(--bs-body-bg);
-            transition: background-color .12s ease, box-shadow .12s ease;
-        }
-
-        #mainMenu .list-group-item:last-child {
-            margin-bottom: 0;
-        }
-
-        #mainMenu .list-group-item:hover,
-        #mainMenu .list-group-item:focus {
-            background-color: var(--bs-secondary-bg);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
-        }
-
-        #mainMenu .list-group-item i {
-            width: 20px;
-        }
-
-        /* Шеврон заголовка группы: вниз при раскрытой секции, вбок при свёрнутой. */
-        #mainMenu [data-bs-toggle="collapse"] .bi-chevron-down {
-            transition: transform .15s ease;
-        }
-        #mainMenu [data-bs-toggle="collapse"][aria-expanded="false"] .bi-chevron-down {
-            transform: rotate(-90deg);
-        }
-
-        .user-email {
-            font-weight: 500;
-        }
-
-        /* === GitHub-inspired refresh ===
-           Системный шрифт-стек (нативный на каждой ОС), плотная типографика,
-           мягкие границы, больше воздуха в карточках/list-item'ах. Работает
-           поверх Bootstrap: не заменяет базовые классы, только уточняет.
-
-           Тёмная тема — через встроенный Bootstrap 5.3 механизм
-           `data-bs-theme="dark"` на <html> (см. FOUC-safe init script в head). */
-        body {
-            /* Office-style стек: Calibri на Windows (Office-default), Segoe UI
-               fallback там же; на macOS — системный SF Pro / Helvetica Neue;
-               на Linux — Ubuntu / DejaVu. Всё нативно, без внешних загрузок. */
-            font-family: Calibri, "Segoe UI", -apple-system, BlinkMacSystemFont,
-                         "Helvetica Neue", "Noto Sans", Arial, sans-serif,
-                         "Apple Color Emoji", "Segoe UI Emoji";
-            font-size: 15px;
-            -webkit-font-smoothing: antialiased;
-            text-rendering: optimizeLegibility;
-        }
-
-        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-            font-weight: 600;
-            line-height: 1.25;
-            letter-spacing: -0.005em;
-        }
-
-        /* Логотип — не Playfair, а тот же системный шрифт что и body: плотный
-           weight и tight letter-spacing вместо декоративной засечки. */
-        .blog-header-logo {
-            font-family: inherit;
-            font-weight: 700;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
-        }
-
-        /* Больше воздуха в списках-карточках, мягкая граница. */
-        .list-group {
-            border-radius: 8px;
-            --bs-list-group-border-color: var(--bs-border-color);
-        }
-        .list-group-item {
-            padding: 1rem 1.25rem;
-            transition: background-color 0.15s ease;
-        }
-        /* Hover-выделение карточек: --bs-secondary-bg даёт видимый контраст
-           в обеих темах (#e9ecef в светлой, #343a40 в тёмной) и не ломает
-           читаемость текста (цвет тела не меняем). */
-        .list-group-item:hover {
-            background-color: var(--bs-secondary-bg);
-        }
-
-        .card {
-            border-radius: 8px;
-            border-color: var(--bs-border-color);
-        }
-
-        /* Flash-сообщения — прозрачнее, чтобы не выбивались из тёмной темы. */
-        .flash-messages {
-            background-color: transparent;
-            backdrop-filter: none;
-            box-shadow: none;
-        }
-        .flash-messages .alert {
-            background-color: var(--bs-body-bg);
-            border-color: var(--bs-border-color);
-        }
-
-        /* Модалка / offcanvas в тёмной теме получают правильные фон/бордер
-           через встроенный Bootstrap 5.3 — доп. правки не нужны. */
-
-        /* Tagify не респектит --bs-border-color, из-за чего на тёмной теме
-           у инпута торчит серо-белая рамка. Переопределяем через её CSS-vars
-           (документированный контракт библиотеки) на Bootstrap-переменные —
-           так рамка/фон/цвет тегов подхватывают тему автоматически. */
-        .tagify {
-            --tags-border-color: var(--bs-border-color);
-            --tags-hover-border-color: var(--bs-border-color);
-            --tags-focus-border-color: var(--bs-primary);
-            --tag-bg: var(--bs-secondary-bg);
-            --tag-hover: var(--bs-tertiary-bg);
-            --tag-text-color: var(--bs-body-color);
-            --tag-remove-btn-color: var(--bs-body-color);
-            --tag-remove-bg: var(--bs-danger-bg-subtle);
-            --tag-remove-btn-bg--hover: var(--bs-danger);
-            --input-color: var(--bs-body-color);
-            background-color: var(--bs-body-bg);
-            color: var(--bs-body-color);
-        }
-        .tagify__input { color: var(--bs-body-color); }
-        .tagify__dropdown__wrapper {
-            background-color: var(--bs-body-bg);
-            border-color: var(--bs-border-color);
-            color: var(--bs-body-color);
-        }
-        .tagify__dropdown__item--active,
-        .tagify__dropdown__item:hover {
-            background-color: var(--bs-tertiary-bg);
-            color: var(--bs-body-color);
-        }
-
-        /* Кнопка переключения темы: одинаковый размер с .menu-toggle. */
-        .theme-toggle {
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .theme-toggle .bi { font-size: 1.1rem; }
-        @media (max-width: 576px) {
-            .theme-toggle { width: 36px; height: 36px; }
-        }
-    </style>
 </head>
-<body>
+{# data-controller="back-to-top" — кнопка «Наверх». has-app-shell (для авторизованных)
+   включает app-shell: десктоп-сайдбар, нижнюю таб-панель и отступы под них. #}
+<body data-controller="back-to-top"{% if app.user %} class="has-app-shell"{% endif %}>
+
+{# Пункты основной навигации — единый источник для сайдбара и таб-панели.
+   Задаём в base: included-партиалы наследуют контекст родителя, но свои `set`
+   наружу НЕ экспортируют, поэтому переменная должна жить здесь. Вкладка
+   «Химстойкость» (поиск по веществу) добавится в Деплое 6. #}
+{% set current_route = app.request.attributes.get('_route') %}
+{% set nav_items = [
+    { key: 'coatings',  label: 'Покрытия',  icon: 'bi-grid',
+      route: 'app_cabinet_coating_coating_list', prefix: 'app_cabinet_coating_coating' },
+    { key: 'systems',   label: 'Системы',   icon: 'bi-layers',
+      route: 'app_cabinet_coating_system_list',  prefix: 'app_cabinet_coating_system' },
+    { key: 'documents', label: 'Документы', icon: 'bi-file-earmark-text',
+      route: 'app_cabinet_certificate_document_list', prefix: 'app_cabinet_certificate_document' },
+] %}
+{% set nav_items = nav_items|map(item => item|merge({
+    active: current_route starts with item.prefix
+})) %}
+
+{# Десктоп-сайдбар — навигация для авторизованных (d-none d-lg-flex). #}
+{% if app.user %}
+    {% include '_shell/_sidebar.html.twig' %}
+{% endif %}
+
+{# Основной контент. На десктопе (lg+) смещается вправо под сайдбар (см. app-shell.css). #}
+<div class="app-content">
 {% block header %}
-    <header class="blog-header py-3">
+    {# Шапка-карточка с логотипом — только на мобиле (.app-header-mobile);
+       на десктопе бренд — в сайдбаре. #}
+    <header class="blog-header app-header-mobile py-3">
         <div class="container-fluid">
-            {# Содержимое хедера — карточка с тертиарным фоном (единый стиль зон
-               со шторками и list_page'ом). Слева hamburger, посередине
-               логотип. Переключатель темы переехал в #mainMenu offcanvas —
-               нечастое действие, header чище без правой колонки. #}
             <div class="p-3 rounded-3 bg-body-tertiary d-flex align-items-center justify-content-center blog-header-bar">
                 <a class="blog-header-logo text-body text-decoration-none"
                    href="{{ path('app_homepage') }}">
@@ -435,18 +90,10 @@
             </div>
         </div>
     </header>
-
-    {# Кнопка меню-шторки — фиксирована (см. .menu-toggle): в начальном положении как раньше,
-       внутри шапки; остаётся на экране при скролле. #}
-    <button class="btn btn-outline-secondary menu-toggle" type="button"
-            data-bs-toggle="offcanvas" data-bs-target="#mainMenu"
-            aria-label="Открыть меню">
-        <i class="bi bi-list"></i>
-    </button>
 {% endblock %}
 
-{# Flash сообщения #}
-<div class="flash-messages">
+{# Flash сообщения. data-controller="flash" — авто-скрытие тостов. #}
+<div class="flash-messages" data-controller="flash">
     {% for type, messages in app.flashes %}
         {% for message in messages %}
             <div class="alert alert-{{ type }} alert-dismissible fade show shadow" role="alert">
@@ -469,226 +116,108 @@
     {% block body %}{% endblock %}
 </main>
 
-{# Кнопка "Наверх" #}
-<button class="btn btn-primary back-to-top shadow" onclick="scrollToTop()" title="Наверх">
+{# Кнопка "Наверх" — target контроллера back-to-top (показ по скроллу, клик = вверх). #}
+<button class="btn btn-primary back-to-top shadow" title="Наверх"
+        data-back-to-top-target="button"
+        data-action="click->back-to-top#top">
     <i class="bi bi-arrow-up"></i>
 </button>
 
-{% block footer %}
-    <footer class="py-3 mt-auto">
-        <div class="container-fluid">
-            {# Содержимое футера — карточка. Цвет фона оставляем историческим
-               (bg-dark), только оборачиваем в rounded-карточку для единства
-               с хедером и остальными зонами. #}
-            <div class="p-3 rounded-3 bg-dark text-white">
-                <div class="row align-items-center g-0">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <p class="mb-0">&copy; {{ "now"|date("Y") }} 1helper</p>
-                    </div>
-                    <div class="col-md-6 text-md-end">
-                        <ul class="nav justify-content-md-end">
-                            <li class="nav-item">
-                                <a href="#" class="nav-link px-2 text-white-50" onclick="scrollToTop(); return false;">Наверх</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-{% endblock %}
+{# Футер убран: © выглядел неуместно, «Наверх» дублировал плавающую кнопку.
+   Блок оставлен пустым — страницы могут переопределить при необходимости. #}
+{% block footer %}{% endblock %}
+</div>{# /.app-content #}
 
-{# Мобильное offcanvas меню - ТОЛЬКО ОДНО #}
-<div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="mainMenuLabel">Меню</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-    </div>
-    <div class="offcanvas-body p-3 d-flex flex-column gap-2">
-        {# Зона: информация о пользователе. #}
-        {% if app.user %}
+{# «Ещё» (offcanvas) и нижняя таб-панель — только для авторизованных. Гостям
+   (лендинг/вход/регистрация) навигация не нужна — страницы самодостаточны. #}
+{% if app.user %}
+    {# offcanvas «Ещё»: аккаунт, тема, админ-справочники. Первичная навигация
+       (Покрытия/Системы/Документы) — в таб-панели/сайдбаре. Открывается вкладкой
+       «Ещё» таб-панели. data-controller="offcanvas-autoclose" — закрытие по клику. #}
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel"
+         data-controller="offcanvas-autoclose">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="mainMenuLabel">Ещё</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+        </div>
+        <div class="offcanvas-body p-3 d-flex flex-column gap-2">
+            {# Пользователь. #}
             <div class="p-3 rounded-3 bg-body-tertiary">
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3">
-                        <i class="bi bi-person"></i>
-                    </div>
+                    <div class="user-avatar me-3"><i class="bi bi-person"></i></div>
                     <div class="user-email">{{ app.user.email }}</div>
                 </div>
             </div>
-        {% endif %}
 
-        {# Зона: навигация — сгруппирована в сворачиваемые секции (Bootstrap collapse).
-           Заголовки групп — обычные <button>, НЕ .list-group-item, чтобы клик по ним не
-           закрывал шторку (close-on-click JS ниже слушает только .list-group-item). #}
-        <div class="p-3 rounded-3 bg-body-tertiary">
-            {# Группа: Покрытия — каталог и справочники. #}
-            <button type="button"
-                    class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 text-body-secondary fw-semibold small text-uppercase"
-                    data-bs-toggle="collapse" data-bs-target="#menuGroupCoatings"
-                    aria-expanded="true" aria-controls="menuGroupCoatings">
-                <span>Покрытия</span>
-                <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="collapse show" id="menuGroupCoatings">
+            {# Разделы — те же, что в нижней таб-панели: делаем «Ещё» полноценным
+               меню (паритет с десктоп-сайдбаром). #}
+            <div class="p-3 rounded-3 bg-body-tertiary">
                 <div class="list-group list-group-flush">
-                    {# Покрытия / Системы — для всех авторизованных, частые кейсы. Редкие
-                       админские справочники — в группе «Администрирование» ниже. #}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-circle-square me-2"></i>Покрытия
-                    </a>
-                    <a href="{{ path('app_cabinet_coating_system_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-layers me-2"></i>Системы покрытий
-                    </a>
+                    {% for item in nav_items %}
+                        <a href="{{ path(item.route) }}"
+                           class="list-group-item list-group-item-action{{ item.active ? ' active' : '' }}"
+                           data-action="click->offcanvas-autoclose#close">
+                            <i class="bi {{ item.icon }} me-2"></i>{{ item.label }}
+                        </a>
+                    {% endfor %}
                 </div>
             </div>
 
-            {# Группа: Документы (контекст Certificates) — просмотр для всех авторизованных;
-               создание/правка/удаление гейтятся на самой странице списка под ROLE_ADMIN. #}
-            <button type="button"
-                    class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 mt-2 text-body-secondary fw-semibold small text-uppercase"
-                    data-bs-toggle="collapse" data-bs-target="#menuGroupDocuments"
-                    aria-expanded="true" aria-controls="menuGroupDocuments">
-                <span>Документы</span>
-                <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="collapse show" id="menuGroupDocuments">
-                <div class="list-group list-group-flush">
-                    <a href="{{ path('app_cabinet_certificate_document_list') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-file-earmark-text me-2"></i>Документы
-                    </a>
-                </div>
-            </div>
-
-            {# Группа: Администрирование — редкие справочники только для админа. Свёрнута по
-               умолчанию (collapse без show), чтобы не захламлять шторку частым кейсам. #}
+            {# Администрирование — только админ. #}
             {% if is_granted('ROLE_ADMIN') %}
-                <button type="button"
-                        class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-2 py-1 mt-2 text-body-secondary fw-semibold small text-uppercase"
-                        data-bs-toggle="collapse" data-bs-target="#menuGroupAdmin"
-                        aria-expanded="false" aria-controls="menuGroupAdmin">
-                    <span>Администрирование</span>
-                    <i class="bi bi-chevron-down"></i>
-                </button>
-                <div class="collapse" id="menuGroupAdmin">
+                <div class="p-3 rounded-3 bg-body-tertiary">
+                    <div class="px-2 py-1 text-body-secondary fw-semibold small text-uppercase">Администрирование</div>
                     <div class="list-group list-group-flush">
-                        <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="list-group-item list-group-item-action"
+                           data-action="click->offcanvas-autoclose#close">
                             <i class="bi bi-chevron-bar-contract me-2"></i>Подготовка поверхности
                         </a>
-                        <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="list-group-item list-group-item-action"
+                           data-action="click->offcanvas-autoclose#close">
                             <i class="bi bi-building me-2"></i>Производители
                         </a>
-                        <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action"
+                           data-action="click->offcanvas-autoclose#close">
                             <i class="bi bi-eyedropper me-2"></i>Химстойкость
                         </a>
                     </div>
                 </div>
             {% endif %}
-        </div>
 
-        {# Зона: аккаунт (личный кабинет / выход или вход / регистрация). #}
-        <div class="p-3 rounded-3 bg-body-tertiary">
-            <div class="list-group list-group-flush">
-                {% if app.user %}
-                    <a href="{{ path('app_cabinet') }}" class="list-group-item list-group-item-action">
+            {# Аккаунт. #}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                <div class="list-group list-group-flush">
+                    <a href="{{ path('app_cabinet') }}" class="list-group-item list-group-item-action"
+                       data-action="click->offcanvas-autoclose#close">
                         <i class="bi bi-person-circle me-2"></i>Личный кабинет
                     </a>
-                    <a href="{{ path('app_logout') }}" class="list-group-item list-group-item-action text-danger">
+                    <a href="{{ path('app_logout') }}" class="list-group-item list-group-item-action text-danger"
+                       data-action="click->offcanvas-autoclose#close">
                         <i class="bi bi-box-arrow-right me-2"></i>Выйти из аккаунта
                     </a>
-                {% else %}
-                    <a href="{{ path('app_login') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>Войти в аккаунт
-                    </a>
-                    <a href="{{ path('app_sign_up') }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
-                    </a>
-                {% endif %}
+                </div>
+            </div>
+
+            {# Тема. НЕ .list-group-item — клик не закрывает шторку. #}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                <button type="button" class="btn btn-outline-secondary w-100"
+                        id="themeToggle" aria-label="Переключить тему"
+                        data-controller="theme-toggle"
+                        data-action="click->theme-toggle#toggle">
+                    <i class="bi bi-sun-fill me-2" data-theme-toggle-target="light"></i>
+                    <i class="bi bi-moon-stars-fill me-2 d-none" data-theme-toggle-target="dark"></i>
+                    Переключить тему
+                </button>
+            </div>
+
+            {# Установка приложения — появляется, когда браузер предлагает установку. #}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                {% include '_shell/_install_button.html.twig' with { class: 'w-100' } %}
             </div>
         </div>
-
-        {# Зона: интерфейс — переключатель темы. НЕ .list-group-item, чтобы
-           клик по нему не закрывал шторку (JS ниже закрывает offcanvas при
-           клике на любой .list-group-item; тема — не навигация). #}
-        <div class="p-3 rounded-3 bg-body-tertiary">
-            <button type="button" class="btn btn-outline-secondary w-100"
-                    id="themeToggle" aria-label="Переключить тему">
-                <i class="bi bi-sun-fill me-2" data-theme-icon="light"></i>
-                <i class="bi bi-moon-stars-fill me-2 d-none" data-theme-icon="dark"></i>
-                Переключить тему
-            </button>
-        </div>
     </div>
-</div>
 
-<script>
-    // Скролл к верху страницы
-    function scrollToTop() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Показ/скрытие кнопки "Наверх"
-    window.addEventListener('scroll', function() {
-        const backToTopBtn = document.querySelector('.back-to-top');
-        if (window.scrollY > 300) {
-            backToTopBtn.style.display = 'flex';
-        } else {
-            backToTopBtn.style.display = 'none';
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Автоматическое скрытие flash-toast'ов: success'ы — 5 сек (короткое
-        // подтверждение), warning/danger/info — 10 сек (нужно успеть прочитать,
-        // но пропадают сами). Inline-алерты (не в .flash-messages) остаются
-        // до явного dismiss — это контентные сообщения (empty-state, ошибки
-        // формы), а не toast'ы.
-        const closeAfter = (selector, delay) => {
-            document.querySelectorAll(selector).forEach(alert => {
-                setTimeout(() => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, delay);
-            });
-        };
-        closeAfter('.flash-messages .alert-success', 5000);
-        closeAfter('.flash-messages .alert:not(.alert-success)', 10000);
-
-        // Инициализация tooltips
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Переключение темы — актуальная тема на <html data-bs-theme=...>
-        // выставляется FOUC-safe скриптом в <head>. Здесь только синхронизируем
-        // иконку и обрабатываем клик.
-        const themeToggleBtn = document.getElementById('themeToggle');
-        if (themeToggleBtn) {
-            const syncIcon = () => {
-                const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-                themeToggleBtn.querySelector('[data-theme-icon="light"]').classList.toggle('d-none', isDark);
-                themeToggleBtn.querySelector('[data-theme-icon="dark"]').classList.toggle('d-none', !isDark);
-            };
-            syncIcon();
-            themeToggleBtn.addEventListener('click', () => {
-                const next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-bs-theme', next);
-                try { localStorage.setItem('theme', next); } catch (e) {}
-                syncIcon();
-            });
-        }
-
-        // Закрытие меню при клике на ссылку — иначе пользователь выбрал раздел
-        // и остался с открытым offcanvas'ом, приходится закрывать вручную.
-        document.querySelectorAll('#mainMenu .list-group-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const bsOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('mainMenu'));
-                if (bsOffcanvas) {
-                    bsOffcanvas.hide();
-                }
-            });
-        });
-    });
-</script>
+    {% include '_shell/_bottom_nav.html.twig' %}
+{% endif %}
 </body>
 </html>

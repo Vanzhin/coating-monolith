@@ -1,0 +1,17 @@
+{# Нижняя таб-панель (мобайл, d-lg-none). Пункты — из `nav_items` (задан в base).
+   «Ещё» открывает offcanvas #mainMenu (аккаунт/тема/админ). Включается в base
+   только для авторизованных. #}
+<nav class="app-tabbar d-lg-none" aria-label="Основная навигация">
+    {% for item in nav_items %}
+        <a href="{{ path(item.route) }}"
+           class="app-tab{{ item.active ? ' active' : '' }}"
+           {% if item.active %}aria-current="page"{% endif %}>
+            <i class="bi {{ item.icon }}"></i>
+            <span>{{ item.label }}</span>
+        </a>
+    {% endfor %}
+    <button type="button" class="app-tab" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-label="Ещё">
+        <i class="bi bi-three-dots"></i>
+        <span>Ещё</span>
+    </button>
+</nav>
