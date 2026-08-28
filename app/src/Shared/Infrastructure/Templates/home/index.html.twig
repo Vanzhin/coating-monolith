@@ -48,6 +48,10 @@
                             <i class="bi bi-person-plus"></i> Регистрация
                         </a>
                     </div>
+                    {# Установка PWA — появляется, когда браузер предлагает установку. #}
+                    <div class="mt-3">
+                        {% include '_shell/_install_button.html.twig' with { class: 'btn-sm' } %}
+                    </div>
                 </div>
 
                 {# Три коротких фичи-блока — быстрый обзор возможностей. #}
