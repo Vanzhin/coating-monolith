@@ -1,9 +1,11 @@
-{# Локальное редактирование состава слоёв. Add/Remove/Move меняют только DOM;
+{# Локальное редактирование состава слоёв. Add/Remove/Move/Drag меняют только DOM;
    ничего на сервер до submit'а формы. При submit UpdateAction получит
-   `layers[i][coatingId]` + `layers[i][dft]` и вызовет ReplaceLayersCommand.
+   `layers[i][coatingId]` + `layers[i][dft]` (+ `layers[i][colorId]` от layer-color)
+   в текущем DOM-порядке и вызовет ReplaceLayersCommand.
 
    Обязательные переменные:
-     system  — CoatingSystemDTO
+     layers — list<layer DTO> (для существующих — с мета: manufacturerTitle/coatingBaseTitle/
+              dftMin/dftMax/colorHex; для новых client-side мета неизвестна до сохранения)
 #}
 {% set layers = layers is defined ? layers : (system.layers|default([])) %}
 <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
@@ -11,77 +13,82 @@
      data-coating-system-layers-edit-coating-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}">
     <h6 class="fw-semibold mb-3">Слои системы</h6>
 
-    <div class="d-flex flex-column gap-1 mb-3" data-coating-system-layers-edit-target="list">
+    <div class="d-flex flex-column gap-2" data-coating-system-layers-edit-target="list">
         {% for layer in layers %}
-            <div class="d-flex align-items-center gap-2 gap-md-3 px-3 py-1 rounded-3 bg-body border"
-                 data-coating-system-layers-edit-target="row">
-                <div class="text-muted flex-shrink-0" style="min-width: 20px;"
-                     data-coating-system-layers-edit-target="position">{{ loop.index }}</div>
-                <div class="flex-grow-1 overflow-hidden">
-                    <div class="fw-semibold text-truncate">
-                        {{ layer.coatingTitle }}
-                        {% if layer.isZincRich|default(false) %}
-                            <span class="badge text-bg-warning ms-1 small">Zn(R)</span>
-                        {% endif %}
-                    </div>
-                    {% if layer.manufacturerTitle is defined and layer.manufacturerTitle %}
-                        <div class="small text-muted text-truncate">
-                            {{ layer.manufacturerTitle }} · {{ layer.coatingBaseTitle }} · допустимо {{ layer.dftMin }}–{{ layer.dftMax }} мкм
-                        </div>
-                    {% else %}
-                        <div class="small text-muted text-truncate">слой системы</div>
-                    {% endif %}
+            <div class="lcard" data-coating-system-layers-edit-target="row">
+                <div class="lgrip" title="Перетащить" aria-label="Перетащить"
+                     data-action="pointerdown->coating-system-layers-edit#dragStart">
+                    <i class="bi bi-grip-vertical"></i>
                 </div>
                 <input type="hidden" name="layers[{{ loop.index0 }}][coatingId]" value="{{ layer.coatingId }}"
                        data-role="coatingId">
-                <div style="width: 110px;" class="flex-shrink-0">
-                    <div class="input-group input-group-sm">
-                        <input type="number" min="1" max="9999" required
-                               value="{{ layer.dft }}"
-                               name="layers[{{ loop.index0 }}][dft]"
-                               data-role="dft"
-                               class="form-control">
-                        <span class="input-group-text">мкм</span>
+                <div class="lbody">
+                    <div class="lname">
+                        <span class="l-title">{{ layer.coatingTitle }}</span>
+                        {% if layer.isZincRich|default(false) %}<span class="l-zn">Zn(R)</span>{% endif %}
+                    </div>
+                    <div class="lmeta">
+                        {% if layer.manufacturerTitle is defined and layer.manufacturerTitle %}
+                            {{ layer.manufacturerTitle }} · {{ layer.coatingBaseTitle }} · допустимо {{ layer.dftMin }}–{{ layer.dftMax }} мкм
+                        {% else %}
+                            слой системы
+                        {% endif %}
+                    </div>
+                    <div class="lctrls">
+                        <div class="ldft">
+                            <button type="button" class="ldft-btn" aria-label="минус"
+                                    data-action="click->coating-system-layers-edit#stepDft"
+                                    data-coating-system-layers-edit-delta-param="-5">−</button>
+                            <input type="number" min="1" max="9999" required
+                                   value="{{ layer.dft }}"
+                                   name="layers[{{ loop.index0 }}][dft]"
+                                   data-role="dft" inputmode="numeric"
+                                   class="ldft-input">
+                            <button type="button" class="ldft-btn" aria-label="плюс"
+                                    data-action="click->coating-system-layers-edit#stepDft"
+                                    data-coating-system-layers-edit-delta-param="5">+</button>
+                            <span class="ldft-u">мкм</span>
+                        </div>
+                        <div class="lcolor" data-layer-color-group>
+                            <input type="text"
+                                   data-controller="layer-color"
+                                   data-layer-color-coating-id-value="{{ layer.coatingId }}"
+                                   data-layer-color-field-value="layers[{{ loop.index0 }}][colorId]"
+                                   data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
+                                   data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
+                                   data-layer-color-selected-value="{{ {id: layer.colorId, name: layer.colorName, ral: layer.colorRal, hex: layer.colorHex, label: layer.colorLabel}|json_encode }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Цвет...">
+                        </div>
                     </div>
                 </div>
-                <div class="flex-shrink-0" style="width: 170px;" data-layer-color-group>
-                    <input type="text"
-                           data-controller="layer-color"
-                           data-layer-color-coating-id-value="{{ layer.coatingId }}"
-                           data-layer-color-field-value="layers[{{ loop.index0 }}][colorId]"
-                           data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
-                           data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
-                           data-layer-color-selected-value="{{ {id: layer.colorId, name: layer.colorName, ral: layer.colorRal, hex: layer.colorHex, label: layer.colorLabel}|json_encode }}"
-                           class="form-control form-control-sm"
-                           placeholder="Цвет...">
-                </div>
-                <div class="d-flex gap-1 flex-shrink-0">
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->coating-system-layers-edit#moveUp"
-                            title="Переместить вверх">
-                        <i class="bi bi-arrow-up"></i>
+                <div class="lright">
+                    <button type="button" class="l-move" title="Вверх" aria-label="Переместить вверх"
+                            data-action="click->coating-system-layers-edit#moveUp">
+                        <i class="bi bi-chevron-up"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->coating-system-layers-edit#moveDown"
-                            title="Переместить вниз">
-                        <i class="bi bi-arrow-down"></i>
+                    <button type="button" class="l-move" title="Вниз" aria-label="Переместить вниз"
+                            data-action="click->coating-system-layers-edit#moveDown">
+                        <i class="bi bi-chevron-down"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                            data-action="click->coating-system-layers-edit#remove"
-                            title="Удалить">
-                        <i class="bi bi-trash"></i>
+                    <button type="button" class="l-del" title="Удалить" aria-label="Удалить слой"
+                            data-action="click->coating-system-layers-edit#remove">
+                        <i class="bi bi-trash3"></i>
                     </button>
                 </div>
             </div>
         {% endfor %}
     </div>
 
-    {# Форма добавления — только input'ы для JS; в POST-форму не идут. #}
-    <div class="d-flex align-items-center gap-2 gap-md-3 px-3 py-1 rounded-3 bg-body border">
-        <div class="text-muted flex-shrink-0" style="min-width: 20px;">
-            <i class="bi bi-plus-lg"></i>
-        </div>
-        <div class="flex-grow-1 overflow-hidden"
+    {# «Добавить слой» — dashed-кнопка раскрывает inline-пикер (input'ы только для JS,
+       в POST-форму не идут; append клонирует rowTemplate). #}
+    <button type="button" class="laddlayer"
+            data-coating-system-layers-edit-target="addButton"
+            data-action="click->coating-system-layers-edit#toggleAdd">
+        <i class="bi bi-plus-lg"></i> Добавить слой
+    </button>
+    <div class="laddform d-none" data-coating-system-layers-edit-target="addForm">
+        <div class="laddform-coating"
              data-controller="async-typeahead"
              data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
              data-async-typeahead-placeholder-value="Поиск покрытия...">
@@ -91,73 +98,67 @@
                 <option value="">Выберите покрытие...</option>
             </select>
         </div>
-        <div style="width: 130px;" class="flex-shrink-0">
-            <div class="input-group input-group-sm">
-                <input type="number" min="1" max="9999"
-                       class="form-control"
-                       placeholder="ТСП"
-                       data-coating-system-layers-edit-target="appendDft">
-                <span class="input-group-text">мкм</span>
-            </div>
+        <div class="input-group input-group-sm" style="width: 130px;">
+            <input type="number" min="1" max="9999" class="form-control" placeholder="ТСП"
+                   data-coating-system-layers-edit-target="appendDft">
+            <span class="input-group-text">мкм</span>
         </div>
-        <div class="flex-shrink-0">
-            <button type="button" class="btn btn-sm btn-outline-secondary"
-                    data-action="click->coating-system-layers-edit#append">
-                Добавить
-            </button>
-        </div>
+        <button type="button" class="btn btn-sm btn-soft-success"
+                data-action="click->coating-system-layers-edit#append">Добавить</button>
+        <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none"
+                data-action="click->coating-system-layers-edit#cancelAdd">Отмена</button>
     </div>
 
-    {# Шаблон плитки для нового слоя. Данные (manufacturer / диапазон) неизвестны
-       до submit'а — показываем только coatingTitle и dft; после сохранения формы
-       сервер вернёт партиал с полными данными. #}
+    {# Шаблон карточки нового слоя. Мета неизвестна до submit'а — «новый слой» +
+       нейтральный свотч; сервер вернёт полные данные после сохранения. #}
     <template data-coating-system-layers-edit-target="rowTemplate">
-        <div class="d-flex align-items-center gap-2 gap-md-3 px-3 py-1 rounded-3 bg-body border"
-             data-coating-system-layers-edit-target="row">
-            <div class="text-muted flex-shrink-0" style="min-width: 20px;"
-                 data-coating-system-layers-edit-target="position"></div>
-            <div class="flex-grow-1 overflow-hidden">
-                <div class="fw-semibold text-truncate" data-role="title"></div>
-                <div class="small text-muted text-truncate">новый слой</div>
+        <div class="lcard" data-coating-system-layers-edit-target="row">
+            <div class="lgrip" title="Перетащить" aria-label="Перетащить"
+                 data-action="pointerdown->coating-system-layers-edit#dragStart">
+                <i class="bi bi-grip-vertical"></i>
             </div>
-            <input type="hidden" name="layers[0][coatingId]" value=""
-                   data-role="coatingId">
-            <div style="width: 110px;" class="flex-shrink-0">
-                <div class="input-group input-group-sm">
-                    <input type="number" min="1" max="9999" required
-                           value=""
-                           name="layers[0][dft]"
-                           data-role="dft"
-                           class="form-control">
-                    <span class="input-group-text">мкм</span>
+            <input type="hidden" name="layers[0][coatingId]" value="" data-role="coatingId">
+            <div class="lbody">
+                <div class="lname"><span class="l-title" data-role="title"></span></div>
+                <div class="lmeta">новый слой</div>
+                <div class="lctrls">
+                    <div class="ldft">
+                        <button type="button" class="ldft-btn" aria-label="минус"
+                                data-action="click->coating-system-layers-edit#stepDft"
+                                data-coating-system-layers-edit-delta-param="-5">−</button>
+                        <input type="number" min="1" max="9999" required value=""
+                               name="layers[0][dft]" data-role="dft" inputmode="numeric"
+                               class="ldft-input">
+                        <button type="button" class="ldft-btn" aria-label="плюс"
+                                data-action="click->coating-system-layers-edit#stepDft"
+                                data-coating-system-layers-edit-delta-param="5">+</button>
+                        <span class="ldft-u">мкм</span>
+                    </div>
+                    <div class="lcolor" data-layer-color-group>
+                        <input type="text"
+                               data-controller="layer-color"
+                               data-layer-color-coating-id-value=""
+                               data-layer-color-field-value="layers[0][colorId]"
+                               data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
+                               data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
+                               data-layer-color-selected-value="{}"
+                               class="form-control form-control-sm"
+                               placeholder="Цвет...">
+                    </div>
                 </div>
             </div>
-            <div class="flex-shrink-0" style="width: 170px;" data-layer-color-group>
-                <input type="text"
-                       data-controller="layer-color"
-                       data-layer-color-coating-id-value=""
-                       data-layer-color-field-value="layers[0][colorId]"
-                       data-layer-color-colors-url-value="{{ path('app_cabinet_coating_coating_colors', {id: '__ID__'}) }}"
-                       data-layer-color-suggest-url-value="{{ path('app_cabinet_coating_color_suggest') }}"
-                       data-layer-color-selected-value="{}"
-                       class="form-control form-control-sm"
-                       placeholder="Цвет...">
-            </div>
-            <div class="d-flex gap-1 flex-shrink-0">
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        data-action="click->coating-system-layers-edit#moveUp"
-                        title="Переместить вверх">
-                    <i class="bi bi-arrow-up"></i>
+            <div class="lright">
+                <button type="button" class="l-move" title="Вверх" aria-label="Переместить вверх"
+                        data-action="click->coating-system-layers-edit#moveUp">
+                    <i class="bi bi-chevron-up"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        data-action="click->coating-system-layers-edit#moveDown"
-                        title="Переместить вниз">
-                    <i class="bi bi-arrow-down"></i>
+                <button type="button" class="l-move" title="Вниз" aria-label="Переместить вниз"
+                        data-action="click->coating-system-layers-edit#moveDown">
+                    <i class="bi bi-chevron-down"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-danger"
-                        data-action="click->coating-system-layers-edit#remove"
-                        title="Удалить">
-                    <i class="bi bi-trash"></i>
+                <button type="button" class="l-del" title="Удалить" aria-label="Удалить слой"
+                        data-action="click->coating-system-layers-edit#remove">
+                    <i class="bi bi-trash3"></i>
                 </button>
             </div>
         </div>
