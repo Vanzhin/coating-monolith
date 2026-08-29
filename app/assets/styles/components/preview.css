@@ -20,6 +20,21 @@
     .modal.show .modal-sheet { transform: none; }
 }
 
+/* Борде рлесс: у превью-модалок нет линий-разделителей (дизайн-линия «без рамок»).
+   Хедер различаем мягким тоном, футер — мягкой верхней тенью. Применяется на всех
+   ширинах (класс .modal-sheet есть всегда, sheet-позиционирование — только на мобиле). */
+.modal-sheet .modal-header {
+    border-bottom: 0;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 50%, var(--surface));
+}
+.modal-sheet .modal-footer {
+    border-top: 0;
+    box-shadow: 0 -7px 18px rgba(0, 0, 0, .05);
+}
+[data-bs-theme="dark"] .modal-sheet .modal-footer {
+    box-shadow: 0 -7px 18px rgba(0, 0, 0, .35);
+}
+
 /* Key-value список характеристик (одна пара в строку) — для системного превью.
    Без рамок/разделителей — строки разделены отступом. */
 .kv { display: flex; flex-direction: column; gap: 8px; }
@@ -74,12 +89,12 @@
 .pv-matrix-legend .lg-item .bi { font-size: 14px; color: var(--faint, var(--bs-secondary-color)); }
 
 /* Сворачиваемая секция (химстойкость). */
-.disc { background: var(--sunken); border: 1px solid var(--bs-border-color); border-radius: 12px; overflow: hidden; }
+.disc { background: var(--sunken); border-radius: 12px; overflow: hidden; }
 .disc-head { display: flex; align-items: center; gap: 10px; padding: 12px 13px; cursor: pointer; width: 100%; background: none; border: 0; text-align: left; color: var(--bs-body-color); }
 .disc-head .disc-title { flex: 1; font-size: 13.5px; font-weight: 650; }
 .disc-head .disc-chev { transition: transform .18s var(--ease-emph, ease); color: var(--faint, var(--bs-secondary-color)); }
 .disc-head[aria-expanded="true"] .disc-chev { transform: rotate(180deg); }
-.disc-body { border-top: 1px solid var(--bs-border-color); padding: 10px 13px; }
+.disc-body { padding: 10px 13px; }
 
 /* Заголовок секции превью. */
 .pv-sec { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--faint, var(--bs-secondary-color)); margin: 16px 2px 8px; }

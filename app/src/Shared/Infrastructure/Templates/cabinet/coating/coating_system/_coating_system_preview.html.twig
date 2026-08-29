@@ -22,23 +22,40 @@
             <div class="modal-header">
                 <div class="d-flex align-items-center gap-3">
                     <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-layers"></i></div>
-                    <h5 class="modal-title mb-0" id="coatingSystemPreviewLabel-{{ system.id }}">{{ system.title }}</h5>
+                    <div>
+                        <h5 class="modal-title mb-0" id="coatingSystemPreviewLabel-{{ system.id }}">{{ system.title }}</h5>
+                        <small class="text-body-secondary">Система · {{ system.substrateTitle }}</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
             <div class="modal-body">
-                <div class="kv">
-                    <div class="row"><span class="k">Подложка</span><span class="v">{{ system.substrateTitle }}</span></div>
-                    <div class="row"><span class="k">Среда</span><span class="v">{{ system.environmentTitle }}</span></div>
-                    <div class="row"><span class="k">Подготовка</span><span class="v">{{ system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription }}{% if system.surfaceTreatmentStandardCode %} <span class="u">{{ system.surfaceTreatmentStandardCode }}</span>{% endif %}</span></div>
-                    <div class="row"><span class="k">Суммарная ТСП</span><span class="v">{{ system.totalDft }}<span class="u">мкм</span></span></div>
-                    {% if system.maxLayerApplicationMinTemp is not null %}<div class="row"><span class="k">Мин. Т нанесения</span><span class="v">{{ system.maxLayerApplicationMinTemp }}<span class="u">°C</span></span></div>{% endif %}
-                    {% if opTempParts is not empty %}<div class="row"><span class="k">Макс. Т эксплуатации</span><span class="v">{{ opTempParts|join(' / ') }}</span></div>{% endif %}
-                    {% if system.minApplicationTimeAt20Minutes is not null %}<div class="row"><span class="k">Мин. время нанесения</span><span class="v">{{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</span></div>{% endif %}
+                {% if system.tags|length > 0 or system.description %}
+                    <div class="p-3 mb-1 rounded-3 bg-body-tertiary">
+                        {% if system.tags|length > 0 %}
+                            <div class="{% if system.description %}mb-2 {% endif %}d-flex flex-wrap gap-1">
+                                {% for tag in system.tags %}<span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if system.description %}<p class="text-body-secondary mb-0">{{ system.description }}</p>{% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="pv-sec">Основные характеристики</div>
+                <div class="kv-grid">
+                    <div class="kvi"><span class="k">Подложка</span><span class="v">{{ system.substrateTitle }}</span></div>
+                    <div class="kvi"><span class="k">Среда</span><span class="v">{{ system.environmentTitle }}</span></div>
+                    <div class="kvi"><span class="k">Суммарная ТСП</span><span class="v">{{ system.totalDft }}<span class="u">мкм</span></span></div>
+                    {% if system.maxLayerApplicationMinTemp is not null %}<div class="kvi"><span class="k">Мин. Т нанесения</span><span class="v">{{ system.maxLayerApplicationMinTemp }}<span class="u">°C</span></span></div>{% endif %}
+                    {% if opTempParts is not empty %}<div class="kvi"><span class="k">Макс. Т эксплуатации</span><span class="v">{{ opTempParts|join(' / ') }}</span></div>{% endif %}
+                    {% if system.minApplicationTimeAt20Minutes is not null %}<div class="kvi"><span class="k">Мин. время нанесения</span><span class="v">{{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</span></div>{% endif %}
                 </div>
 
-                {% if system.description %}
-                    <p class="text-body-secondary small mt-3 mb-0">{{ system.description }}</p>
+                {% if system.surfaceTreatmentCode or system.surfaceTreatmentDescription %}
+                    <div class="pv-sec">Подготовка поверхности</div>
+                    <div class="p-3 rounded-3 bg-body-tertiary">
+                        {{ system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription }}{% if system.surfaceTreatmentStandardCode %} <span class="text-body-secondary">{{ system.surfaceTreatmentStandardCode }}</span>{% endif %}
+                    </div>
                 {% endif %}
 
                 <div class="pv-sec">Состав · {{ system.layers|length }} слоёв</div>
@@ -69,13 +86,6 @@
                          data-system-documents-document-preview-route-value="{{ path('app_cabinet_certificate_document_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}"
                          data-system-documents-target="block">
                         <div class="d-flex flex-wrap gap-1" data-system-documents-target="list"></div>
-                    </div>
-                {% endif %}
-
-                {% if system.tags|length > 0 %}
-                    <div class="pv-sec">Теги</div>
-                    <div class="d-flex flex-wrap gap-1">
-                        {% for tag in system.tags %}<span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>{% endfor %}
                     </div>
                 {% endif %}
 
