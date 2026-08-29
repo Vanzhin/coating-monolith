@@ -35,19 +35,35 @@ services:
   App\ChemicalResistance\Application\Service\SubstanceLookup:
     public: true
 
+  # См. комментарий у Assessment-хендлеров ниже: public: true сбрасывает тег
+  # messenger.message_handler, поэтому для диспетчеризации через command.bus
+  # (QuickCreateAction в HTTP-тесте) возвращаем его явно.
   App\ChemicalResistance\Application\UseCase\Command\Substance\CreateSubstance\CreateSubstanceCommandHandler:
     public: true
+    tags:
+      - { name: messenger.message_handler, bus: command.bus }
   App\ChemicalResistance\Application\UseCase\Command\Substance\UpdateSubstance\UpdateSubstanceCommandHandler:
     public: true
   App\ChemicalResistance\Application\UseCase\Command\Substance\DeleteSubstance\DeleteSubstanceCommandHandler:
     public: true
 
+  # public: true переопределяет автодискавери из services.yaml и сбрасывает тег
+  # messenger.message_handler (его вешает _instanceof, а он действует пофайлово).
+  # Прямые вызовы хендлера в тестах это не задевает, но диспетчеризация через
+  # command.bus (HTTP-контроллер-тесты by-substance экшенов) без тега падает
+  # «No handler» — поэтому возвращаем тег явно.
   App\ChemicalResistance\Application\UseCase\Command\Assessment\CreateAssessment\CreateAssessmentCommandHandler:
     public: true
+    tags:
+      - { name: messenger.message_handler, bus: command.bus }
   App\ChemicalResistance\Application\UseCase\Command\Assessment\UpdateAssessment\UpdateAssessmentCommandHandler:
     public: true
+    tags:
+      - { name: messenger.message_handler, bus: command.bus }
   App\ChemicalResistance\Application\UseCase\Command\Assessment\DeleteAssessment\DeleteAssessmentCommandHandler:
     public: true
+    tags:
+      - { name: messenger.message_handler, bus: command.bus }
 
   App\ChemicalResistance\Application\Service\ChemicalResistanceImporter:
     public: true

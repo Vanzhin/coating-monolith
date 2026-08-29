@@ -55,8 +55,7 @@
 
 {# Пункты основной навигации — единый источник для сайдбара и таб-панели.
    Задаём в base: included-партиалы наследуют контекст родителя, но свои `set`
-   наружу НЕ экспортируют, поэтому переменная должна жить здесь. Вкладка
-   «Химстойкость» (поиск по веществу) добавится в Деплое 6. #}
+   наружу НЕ экспортируют, поэтому переменная должна жить здесь. #}
 {% set current_route = app.request.attributes.get('_route') %}
 {% set nav_items = [
     { key: 'coatings',  label: 'Покрытия',  icon: 'bi-grid',
@@ -65,9 +64,17 @@
       route: 'app_cabinet_coating_system_list',  prefix: 'app_cabinet_coating_system' },
     { key: 'documents', label: 'Документы', icon: 'bi-file-earmark-text',
       route: 'app_cabinet_certificate_document_list', prefix: 'app_cabinet_certificate_document' },
+    { key: 'chem',      label: 'Химстойкость', icon: 'bi-droplet',
+      route: 'app_cabinet_coating_coating_by_substance', prefix: 'app_cabinet_coating_coating_by_substance' },
 ] %}
+{# Активна вкладка с САМЫМ длинным совпавшим префиксом: иначе by-substance
+   (префикс «…coating_coating_by_substance») подсветил бы и «Покрытия»
+   (префикс «…coating_coating»). Длину лучшего совпадения берём одним
+   выражением — {% set %} внутри {% for %} в Twig наружу не вытекает. #}
+{% set matchedPrefixLengths = nav_items|filter(item => current_route starts with item.prefix)|map(item => item.prefix|length) %}
+{% set matchLen = matchedPrefixLengths is empty ? 0 : max(matchedPrefixLengths) %}
 {% set nav_items = nav_items|map(item => item|merge({
-    active: current_route starts with item.prefix
+    active: (current_route starts with item.prefix) and (item.prefix|length == matchLen)
 })) %}
 
 {# Десктоп-сайдбар — навигация для авторизованных (d-none d-lg-flex). #}
@@ -92,13 +99,19 @@
     </header>
 {% endblock %}
 
-{# Flash сообщения. data-controller="flash" — авто-скрытие тостов. #}
+{# Flash-тосты. data-controller="flash" — авто-скрытие (success 5с, прочее 10с).
+   Иконка-бокс по типу + сообщение; borderless (surface + тень). #}
+{% set flashIcons = {success: 'check-circle', danger: 'exclamation-octagon', error: 'exclamation-octagon', warning: 'exclamation-triangle', info: 'info-circle'} %}
+{% set flashKinds = {success: 'ok', danger: 'err', error: 'err', warning: 'warn', info: 'info'} %}
 <div class="flash-messages" data-controller="flash">
     {% for type, messages in app.flashes %}
         {% for message in messages %}
-            <div class="alert alert-{{ type }} alert-dismissible fade show shadow" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="flash-toast flash-toast--{{ flashKinds[type] ?? 'info' }}" role="alert"
+                 data-flash-target="toast" data-flash-type="{{ type }}">
+                <span class="flash-toast-ic"><i class="bi bi-{{ flashIcons[type] ?? 'info-circle' }}"></i></span>
+                <div class="flash-toast-body">{{ message }}</div>
+                <button type="button" class="flash-toast-x" aria-label="Закрыть"
+                        data-action="click->flash#dismiss"><i class="bi bi-x-lg"></i></button>
             </div>
         {% endfor %}
     {% endfor %}
@@ -111,6 +124,16 @@
         </div>
     {% endif %}
 </div>
+
+{# Шаблон клиентского flash-тоста (клонируется в assets/flash_toast.js — чтобы не
+   дублировать разметку тоста в JS). Иконка/тип-класс/текст проставляются в JS. #}
+<template id="tpl-flash-toast">
+    <div class="flash-toast" role="alert">
+        <span class="flash-toast-ic"><i class="bi"></i></span>
+        <div class="flash-toast-body"></div>
+        <button type="button" class="flash-toast-x" aria-label="Закрыть"><i class="bi bi-x-lg"></i></button>
+    </div>
+</template>
 
 <main class="container-fluid py-4">
     {% block body %}{% endblock %}
@@ -178,7 +201,7 @@
                         </a>
                         <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="list-group-item list-group-item-action"
                            data-action="click->offcanvas-autoclose#close">
-                            <i class="bi bi-eyedropper me-2"></i>Химстойкость
+                            <i class="bi bi-eyedropper me-2"></i>Вещества
                         </a>
                     </div>
                 </div>
