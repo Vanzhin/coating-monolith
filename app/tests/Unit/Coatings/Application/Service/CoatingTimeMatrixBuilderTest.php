@@ -60,9 +60,9 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         ]);
 
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
-        $row = $matrix['rows'][0];
+        $row = $matrix['groups'][0]['rows'][0];
 
-        self::assertSame('Сухой на отлип', $row['label']);
+        self::assertSame('Сухой на отлип', $row['stage']);
         self::assertSame(['minutes' => 60, 'is_calculated' => false], $row['values'][20]);
     }
 
@@ -75,7 +75,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
 
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
         // 10°C = ровно между 0 и 20; 100→20 → 60.
-        self::assertSame(['minutes' => 60, 'is_calculated' => true], $matrix['rows'][0]['values'][10]);
+        self::assertSame(['minutes' => 60, 'is_calculated' => true], $matrix['groups'][0]['rows'][0]['values'][10]);
     }
 
     public function test_outside_range_is_null(): void
@@ -86,8 +86,8 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         ]);
 
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
-        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['rows'][0]['values'][0]);
-        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['rows'][0]['values'][40]);
+        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['groups'][0]['rows'][0]['values'][0]);
+        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['groups'][0]['rows'][0]['values'][40]);
     }
 
     public function test_unlimited_bound_kills_interpolation(): void
@@ -98,7 +98,7 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         ]);
 
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
-        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['rows'][0]['values'][20 + 5] ?? ['minutes' => null, 'is_calculated' => false]);
+        self::assertSame(['minutes' => null, 'is_calculated' => false], $matrix['groups'][0]['rows'][0]['values'][20 + 5] ?? ['minutes' => null, 'is_calculated' => false]);
     }
 
     public function test_empty_dry_to_touch_produces_no_row(): void
@@ -106,8 +106,13 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         $coating = $this->coating(0, 50, dryToTouch: []);
 
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
-        $labels = array_column($matrix['rows'], 'label');
-        self::assertNotContains('Сухой на отлип', $labels);
+        $stages = [];
+        foreach ($matrix['groups'] as $group) {
+            foreach ($group['rows'] as $row) {
+                $stages[] = $row['stage'];
+            }
+        }
+        self::assertNotContains('Сухой на отлип', $stages);
     }
 
     public function test_recoating_env_branches_get_own_rows(): void
@@ -122,9 +127,13 @@ final class CoatingTimeMatrixBuilderTest extends TestCase
         $coating = $this->coating(0, 50, minRecoatingTree: $minTree);
         $matrix = (new CoatingTimeMatrixBuilder())->build($coating);
 
-        $labels = array_column($matrix['rows'], 'label');
-        self::assertContains('Интервал перекрытия (мин)', $labels);
-        self::assertContains('Интервал перекрытия (мин), эксплуатация при погружении', $labels);
+        // Базовая группа (label=null) содержит дефолтный мин-интервал.
+        self::assertNull($matrix['groups'][0]['label']);
+        self::assertContains('Интервал перекрытия (мин)', array_column($matrix['groups'][0]['rows'], 'stage'));
+
+        // Ветка среды — отдельной группой с подзаголовком.
+        $groupLabels = array_column($matrix['groups'], 'label');
+        self::assertContains('Погружение', $groupLabels);
     }
 
     /**

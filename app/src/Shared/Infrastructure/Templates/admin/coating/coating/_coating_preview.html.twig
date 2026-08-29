@@ -1,229 +1,211 @@
-{# Модалка предпросмотра покрытия — единый источник разметки.
-   Подключается инлайн в _coating_cards_batch.html.twig (вьюха покрытий)
-   и рендерится фрагментом эндпоинтом app_cabinet_coating_coating_preview
-   (модалка, всплывающая по клику слоя на вьюхе систем).
-   Переменные: coating (CoatingDTO), canEdit (bool). #}
+{# Фрагмент быстрого просмотра покрытия. Рендерится эндпоинтом
+   app_cabinet_coating_coating_preview и всплывает модалкой (bottom-sheet на мобиле,
+   modal-lg на десктопе — класс .modal-sheet). Переменные: coating (CoatingDTO), canEdit.
+   Контракты: id coatingPreview-{id}; coating-system-preview-loader (вложенное превью
+   системы по чипу «входит в системы»); макросы thermalRange/coating_time_matrix;
+   include _chem_resistance_section с подсветкой по data-highlight-substance-id. #}
 
-    <div class="modal fade" id="coatingPreview-{{ coating.id }}" tabindex="-1"
-         aria-labelledby="coatingPreviewLabel-{{ coating.id }}" aria-hidden="true"
-         data-controller="coating-system-preview-loader"
-         data-coating-system-preview-loader-endpoint-value="{{ path('app_cabinet_coating_system_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div>
-                        <h5 class="modal-title mb-0" id="coatingPreviewLabel-{{ coating.id }}">
-                            {{ coating.title }}
-                        </h5>
-                        <small class="text-muted">{{ coating.manufacturer.title }}</small>
+{# Форматирование ThermalExposureLimits: continuous_min…continuous_max + опц. пик. #}
+{% macro thermalRange(exposure) %}
+    {% if exposure %}
+        {% set cMin = exposure.continuous_min %}
+        {% set cMax = exposure.continuous_max %}
+        {% if cMin is not null and cMax is not null %}
+            {{ cMin > 0 ? '+' ~ cMin : cMin }} … {{ cMax > 0 ? '+' ~ cMax : cMax }}
+        {% elseif cMax is not null %}
+            ≤ {{ cMax > 0 ? '+' ~ cMax : cMax }}
+        {% elseif cMin is not null %}
+            ≥ {{ cMin > 0 ? '+' ~ cMin : cMin }}
+        {% endif %}
+        {% if exposure.peak_max is not null %}
+            <span class="text-body-secondary small">
+                (пик до {{ exposure.peak_max > 0 ? '+' ~ exposure.peak_max : exposure.peak_max }}
+                {%- if exposure.peak_duration_minutes %}, {{ exposure.peak_duration_minutes }} мин{% endif -%})
+            </span>
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{# Значок стадии высыхания (иконка + для интервалов перекрытия — подпись min/max). #}
+{% macro stageMark(label) %}
+    {%- set l = label|lower -%}
+    <span class="stage-glyph">
+    {%- if 'отлип' in l -%}<i class="bi bi-fingerprint"></i>
+    {%- elseif 'полное' in l or 'отверж' in l -%}<i class="bi bi-check-circle"></i>
+    {%- elseif 'макс' in l -%}<i class="bi bi-hourglass-bottom"></i><span class="mk">max</span>
+    {%- elseif 'перекры' in l -%}<i class="bi bi-hourglass-bottom"></i><span class="mk">min</span>
+    {%- else -%}<i class="bi bi-clock"></i>
+    {%- endif -%}
+    </span>
+{% endmacro %}
+
+<div class="modal fade" id="coatingPreview-{{ coating.id }}" tabindex="-1"
+     aria-labelledby="coatingPreviewLabel-{{ coating.id }}" aria-hidden="true"
+     data-controller="coating-system-preview-loader"
+     data-coating-system-preview-loader-endpoint-value="{{ path('app_cabinet_coating_system_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
+    <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ecard-mono" style="width: 44px; height: 44px;">
+                        <span class="lbl" style="margin-bottom: 0;">{{ coating.base ?? '—' }}</span>
                     </div>
-                    <button type="button" class="btn-close"
-                            data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <div>
+                        <h5 class="modal-title mb-0" id="coatingPreviewLabel-{{ coating.id }}">{{ coating.title }}</h5>
+                        <small class="text-body-secondary">{{ coating.manufacturer.title }}</small>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    {% if coating.tags|length > 0 or coating.description %}
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                            {% if coating.tags|length > 0 %}
-                                <div class="{% if coating.description %}mb-3 {% endif %}d-flex flex-wrap gap-1">
-                                    {% for tag in coating.tags %}
-                                        <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if coating.description %}
-                                <p class="text-body-secondary mb-0">{{ coating.description }}</p>
-                            {% endif %}
-                        </div>
-                    {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                {% if coating.tags|length > 0 or coating.description %}
+                    <div class="p-3 mb-1 rounded-3 bg-body-tertiary">
+                        {% if coating.tags|length > 0 %}
+                            <div class="{% if coating.description %}mb-2 {% endif %}d-flex flex-wrap gap-1">
+                                {% for tag in coating.tags %}
+                                    <span class="badge text-bg-{{ tag.type|tag_bootstrap_color }} fw-normal">{{ tag.title }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if coating.description %}
+                            <p class="text-body-secondary mb-0">{{ coating.description }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
 
-                    {# Входит в системы — кликабельные чипы (превью системы поверх). Систем может быть
-                       много: сворачиваем в один ряд, остальное — по кнопке (expandable-chips). #}
-                    {% if coating.systems|length > 0 %}
-                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-controller="expandable-chips">
-                            <h6 class="fw-semibold mb-2">Входит в системы</h6>
+                {% if coating.systems|length > 0 %}
+                    {# Свёрнуто по умолчанию (collapse без show) — раскрывается кликом,
+                       без вспышки раскрытого списка. #}
+                    <div class="pv-sec">Системы</div>
+                    <div class="disc">
+                        <button class="disc-head" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#systems-{{ coating.id }}" aria-expanded="false" aria-controls="systems-{{ coating.id }}">
+                            <span class="disc-title">Входит в системы · {{ coating.systems|length }}</span>
+                            <i class="bi bi-chevron-down disc-chev"></i>
+                        </button>
+                        <div class="collapse disc-body" id="systems-{{ coating.id }}">
                             <div class="d-flex flex-wrap gap-1">
                                 {% for system in coating.systems %}
                                     <button type="button"
                                             class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                            data-expandable-chips-target="chip"
                                             data-system-id="{{ system.id }}"
                                             data-action="click->coating-system-preview-loader#open">
                                         <i class="bi bi-layers"></i>{{ system.title }}
                                     </button>
                                 {% endfor %}
                             </div>
-                            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 mt-1 d-none"
-                                    data-expandable-chips-target="toggle"
-                                    data-action="expandable-chips#toggle">
-                                <span data-expandable-chips-target="label"></span>
-                            </button>
-                        </div>
-                    {% endif %}
-
-                    {# Форматирование ThermalExposureLimits: continuous_min…continuous_max
-                       (обе границы включительно, null-граница = «не задокументировано»),
-                       + опциональный «пик X °C, N мин». Показываем только если у нас
-                       есть хоть одно значение — null-DTO пропускаем. #}
-                    {% macro thermalRange(exposure) %}
-                        {% if exposure %}
-                            {% set cMin = exposure.continuous_min %}
-                            {% set cMax = exposure.continuous_max %}
-                            {% if cMin is not null and cMax is not null %}
-                                {{ cMin > 0 ? '+' ~ cMin : cMin }} … {{ cMax > 0 ? '+' ~ cMax : cMax }}
-                            {% elseif cMax is not null %}
-                                ≤ {{ cMax > 0 ? '+' ~ cMax : cMax }}
-                            {% elseif cMin is not null %}
-                                ≥ {{ cMin > 0 ? '+' ~ cMin : cMin }}
-                            {% endif %}
-                            {% if exposure.peak_max is not null %}
-                                <span class="text-muted small">
-                                    (пик до {{ exposure.peak_max > 0 ? '+' ~ exposure.peak_max : exposure.peak_max }}
-                                    {%- if exposure.peak_duration_minutes %}, {{ exposure.peak_duration_minutes }} мин{% endif -%}
-                                    )
-                                </span>
-                            {% endif %}
-                        {% endif %}
-                    {% endmacro %}
-
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <h6 class="fw-semibold mb-3">Основные характеристики</h6>
-                        <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0 table-rows">
-                            <tbody>
-                                {% set baseEnum = coating.baseEnum %}
-                                {% if baseEnum %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal" style="width: 60%;">Тип ЛКМ</th>
-                                        <td>
-                                            {{ baseEnum.title }}
-                                            <span class="text-muted">
-                                                ({{ baseEnum.iso }}{% if baseEnum.gost|length > 0 %} / {{ baseEnum.gost|join(', ') }}{% endif %})
-                                            </span>
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                                <tr>
-                                    <th scope="row" class="text-muted fw-normal" style="width: 60%;">Сухой остаток, об. %</th>
-                                    <td>{{ coating.volumeSolid }}</td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" class="text-muted fw-normal">Плотность, кг/л</th>
-                                    <td>{{ coating.massDensity }}</td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" class="text-muted fw-normal">Толщина сухой плёнки, мкм</th>
-                                    <td>
-                                        {{ coating.dftRange.min }}–{{ coating.dftRange.max }}
-                                        <span class="text-muted">(целевая {{ coating.dftRange.tds_dft }})</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" class="text-muted fw-normal">Диапазон нанесения, °C</th>
-                                    <td>{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }}</td>
-                                </tr>
-                                {% if coating.dryHeatExposure %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal">Эксплуатация в сухом тепле, °C</th>
-                                        <td>{{ _self.thermalRange(coating.dryHeatExposure) }}</td>
-                                    </tr>
-                                {% endif %}
-                                {% if coating.immersionExposure %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal">Эксплуатация в погружении, °C</th>
-                                        <td>{{ _self.thermalRange(coating.immersionExposure) }}</td>
-                                    </tr>
-                                {% endif %}
-                                {% if coating.glossEnum %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal">Блеск</th>
-                                        <td>{{ coating.glossEnum.title }}</td>
-                                    </tr>
-                                {% endif %}
-                                {% if coating.isTintable or coating.possibleColors|length > 0 %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal">Возможные цвета</th>
-                                        <td>
-                                            {% if coating.isTintable %}
-                                                <span class="badge text-bg-secondary fw-normal me-1">Колеруемое (любой цвет)</span>
-                                            {% endif %}
-                                            {% for color in coating.possibleColors %}
-                                                <span class="d-inline-flex align-items-center me-2">
-                                                    <span class="color-swatch" style="background: {{ color.hex }}"></span>{{ color.name }}
-                                                    {%- if color.ral %} <span class="text-muted small ms-1">{{ color.ral }}</span>{% endif %}
-                                                </span>
-                                            {% endfor %}
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                                <tr>
-                                    <th scope="row" class="text-muted fw-normal">Упаковка, л</th>
-                                    <td>{{ coating.pack }}</td>
-                                </tr>
-                                {% if coating.thinner %}
-                                    <tr>
-                                        <th scope="row" class="text-muted fw-normal">Разбавитель</th>
-                                        <td>{{ coating.thinner }}</td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
                         </div>
                     </div>
+                {% endif %}
 
-                    {% set matrix = coating_time_matrix(coating) %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <h6 class="fw-semibold mb-3">Время высыхания</h6>
-                        <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0 table-rows">
+                <div class="pv-sec">Основные характеристики</div>
+                <div class="kv-grid">
+                    {% if coating.baseEnum %}
+                        <div class="kvi"><span class="k">Тип ЛКМ</span><span class="v">{{ coating.baseEnum.title }} <span class="u">{{ coating.baseEnum.iso }}{% if coating.baseEnum.gost|length > 0 %} / {{ coating.baseEnum.gost|join(', ') }}{% endif %}</span></span></div>
+                    {% endif %}
+                    <div class="kvi"><span class="k">Сухой остаток</span><span class="v">{{ coating.volumeSolid }} <span class="u">об.%</span></span></div>
+                    <div class="kvi"><span class="k">Плотность</span><span class="v">{{ coating.massDensity }} <span class="u">кг/л</span></span></div>
+                    <div class="kvi"><span class="k">Толщина плёнки</span><span class="v">{{ coating.dftRange.min }}–{{ coating.dftRange.max }} <span class="u">мкм</span></span></div>
+                    <div class="kvi"><span class="k">Нанесение</span><span class="v">{{ coating.applicationMinTemp }} … {{ coating.dryingMaxTemp }} <span class="u">°C</span></span></div>
+                    {% if coating.dryHeatExposure %}<div class="kvi"><span class="k">Сухое тепло</span><span class="v">{{ _self.thermalRange(coating.dryHeatExposure) }}</span></div>{% endif %}
+                    {% if coating.immersionExposure %}<div class="kvi"><span class="k">Погружение</span><span class="v">{{ _self.thermalRange(coating.immersionExposure) }}</span></div>{% endif %}
+                    {% if coating.glossEnum %}<div class="kvi"><span class="k">Блеск</span><span class="v">{{ coating.glossEnum.title }}</span></div>{% endif %}
+                    <div class="kvi"><span class="k">Упаковка</span><span class="v">{{ coating.pack }} <span class="u">л</span></span></div>
+                    {% if coating.thinner %}<div class="kvi"><span class="k">Разбавитель</span><span class="v">{{ coating.thinner }}</span></div>{% endif %}
+                </div>
+
+                {% if coating.isTintable or coating.possibleColors|length > 0 %}
+                    <div class="pv-sec">Возможные цвета</div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        {% if coating.isTintable %}<span class="badge text-bg-secondary fw-normal">Колеруемое</span>{% endif %}
+                        {% for color in coating.possibleColors %}
+                            <span class="d-inline-flex align-items-center">
+                                <span class="color-swatch" style="background: {{ color.hex }}"></span>{{ color.name }}
+                                {%- if color.ral %} <span class="text-body-secondary small ms-1">{{ color.ral }}</span>{% endif %}
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% set matrix = coating_time_matrix(coating) %}
+                <div class="pv-sec">Время высыхания</div>
+                {# Все группы — в едином блоке .pv-drying (рамка-карточка), чтобы читалось как
+                   один раздел; подзаголовки-контексты разделены линиями внутри блока.
+                   Подзаголовок — по центру над своей таблицей, вне скролла (всегда виден). #}
+                <div class="pv-drying">
+                {% for group in matrix.groups %}
+                    {% if group.label %}<div class="pv-group-title">{{ group.label }}</div>{% endif %}
+                    <div class="pv-matrix-wrap{{ not loop.first ? ' mt-2' : '' }}">
+                        <table class="pv-matrix">
                             <thead>
                                 <tr>
-                                    <th class="text-muted fw-normal">Температура поверхности</th>
-                                    {% for t in matrix.columns %}
-                                        <th class="text-muted fw-normal text-center text-nowrap">{{ t > 0 ? '+' ~ t : t }} °C</th>
-                                    {% endfor %}
+                                    <th class="stage-icon"></th>
+                                    <th class="stage-label d-none d-lg-table-cell"></th>
+                                    {% for t in matrix.columns %}<th>{{ t > 0 ? '+' ~ t : t }} °C</th>{% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for row in matrix.rows %}
+                                {% for row in group.rows %}
+                                    {# Иконка стадии залипает; описание (десктоп) скроллится; на мобиле — иконка + легенда. #}
                                     <tr>
-                                        <th scope="row" class="fw-normal">{{ row.label }}</th>
+                                        <th class="stage-icon" title="{{ row.stage }}">{{ _self.stageMark(row.stage) }}</th>
+                                        <th class="stage-label d-none d-lg-table-cell">{{ row.stage }}</th>
                                         {% for t in matrix.columns %}
                                             {% set cell = row.values[t] %}
-                                            <td class="text-center text-nowrap {% if cell.is_calculated %}text-muted fst-italic{% endif %}">
-                                                {% if cell.minutes is null %}
-                                                    <span class="text-muted">—</span>
-                                                {% elseif cell.minutes == 0 %}
-                                                    <i class="bi bi-infinity" title="без ограничения"></i>
-                                                {% else %}
-                                                    {{ cell.minutes|duration_minutes_short }}
-                                                {% endif %}
+                                            <td class="{{ cell.is_calculated ? 'calc' : '' }}">
+                                                {% if cell.minutes is null %}<span class="text-body-secondary">—</span>
+                                                {% elseif cell.minutes == 0 %}<i class="bi bi-infinity" title="без ограничения"></i>
+                                                {% else %}{{ cell.minutes|duration_minutes_short }}{% endif %}
                                             </td>
                                         {% endfor %}
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                {% endfor %}
+                {# Легенда — только по значкам (уникальные стадии, без повторов мин/макс),
+                   и только на мобиле, где первый столбец — иконки без подписи. #}
+                {% set seenStages = [] %}
+                <div class="pv-matrix-legend d-lg-none">
+                    {% for group in matrix.groups %}{% for row in group.rows %}
+                        {% if row.stage not in seenStages %}
+                            {% set seenStages = seenStages|merge([row.stage]) %}
+                            <span class="lg-item">{{ _self.stageMark(row.stage) }}{{ row.stage }}</span>
+                        {% endif %}
+                    {% endfor %}{% endfor %}
+                </div>
+                <p class="text-body-secondary small mt-2 mb-0">
+                    Курсивом — рассчитанные интерполяцией значения. «—» — данные отсутствуют или вне диапазона.
+                    {% if coating.maxRecoatingInterval is null %}Верхняя граница интервала перекрытия не задана.{% endif %}
+                </p>
+                </div>{# /.pv-drying #}
+
+                {% if coating.chemResistancePage is not empty %}
+                    <div class="pv-sec">Стойкость</div>
+                    <div class="disc">
+                        {# Раскрыто по умолчанию: deep-link «стойкое к» подсвечивает вещество —
+                           свёрнутая секция скрыла бы подсветку. Сворачивается кликом. #}
+                        <button class="disc-head" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#chem-{{ coating.id }}" aria-expanded="true" aria-controls="chem-{{ coating.id }}">
+                            <span class="disc-title">Химическая стойкость</span>
+                            <i class="bi bi-chevron-down disc-chev"></i>
+                        </button>
+                        <div class="collapse show disc-body" id="chem-{{ coating.id }}">
+                            {% include 'admin/coating/coating/_chem_resistance_section.html.twig'
+                                with { coating: coating, assessments: coating.chemResistancePage } %}
                         </div>
                     </div>
-                    <p class="text-muted small mb-0">
-                        Курсивом — рассчитанные интерполяцией значения.
-                        «—» — данные отсутствуют или вне определённого диапазона.
-                        {% if coating.maxRecoatingInterval is null %}
-                            Верхняя граница интервала перекрытия не задана.
-                        {% endif %}
-                    </p>
-                    {% include 'admin/coating/coating/_chem_resistance_section.html.twig'
-                        with { coating: coating, assessments: coating.chemResistancePage } %}
-                </div>
-                <div class="modal-footer">
-                    {% if canEdit %}
-                        <a href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}"
-                           class="btn btn-outline-primary">
-                            <i class="bi bi-pencil"></i> Редактировать
-                        </a>
-                    {% endif %}
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                {% if canEdit %}
+                    <a href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
+</div>

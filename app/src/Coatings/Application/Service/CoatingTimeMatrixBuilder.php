@@ -40,35 +40,97 @@ final class CoatingTimeMatrixBuilder
     private const MANDATORY_TEMPS = [0, 20];
 
     private const ENV_LABELS = [
-        'atmospheric' => 'атмосферная эксплуатация',
-        'immersion' => 'эксплуатация при погружении',
-        'special' => 'спец. среды',
+        'atmospheric' => 'Атмосфера',
+        'immersion' => 'Погружение',
+        'special' => 'Спец. среды',
     ];
 
+    private const RECOAT_MIN = 'Интервал перекрытия (мин)';
+    private const RECOAT_MAX = 'Интервал перекрытия (макс.)';
+
     /**
+     * Строки сгруппированы по контексту: базовая группа (label=null) — сухой на
+     * отлип / полное отверждение / интервал перекрытия (мин/макс) без ветвления;
+     * затем группы по средам и средам→материалам (label=подзаголовок) — свои
+     * мин/макс собраны вместе. Шаблон рисует подзаголовок на непустой label.
+     *
      * @return array{
      *   columns: list<int>,
-     *   rows: list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>
+     *   groups: list<array{
+     *     label: ?string,
+     *     rows: list<array{stage: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>
+     *   }>
      * }
      */
     public function build(CoatingDTO $coating): array
     {
         $columns = $this->computeColumns($coating->applicationMinTemp, $coating->dryingMaxTemp);
-        $rows = [];
+        $groups = [];
 
+        // Базовая группа (без подзаголовка).
+        $baseRows = [];
         if ([] !== $coating->dryToTouch) {
-            $rows[] = $this->rowFromSeries('Сухой на отлип', $coating->dryToTouch, $columns);
+            $baseRows[] = $this->rowFromSeries('Сухой на отлип', $coating->dryToTouch, $columns);
         }
         if ([] !== $coating->fullCure) {
-            $rows[] = $this->rowFromSeries('Полное отверждение', $coating->fullCure, $columns);
+            $baseRows[] = $this->rowFromSeries('Полное отверждение', $coating->fullCure, $columns);
+        }
+        if ([] !== $coating->minRecoatingInterval->default) {
+            $baseRows[] = $this->rowFromSeries(self::RECOAT_MIN, $coating->minRecoatingInterval->default, $columns);
+        }
+        if (null !== $coating->maxRecoatingInterval && [] !== $coating->maxRecoatingInterval->default) {
+            $baseRows[] = $this->rowFromSeries(self::RECOAT_MAX, $coating->maxRecoatingInterval->default, $columns);
+        }
+        if ([] !== $baseRows) {
+            $groups[] = ['label' => null, 'rows' => $baseRows];
         }
 
-        $this->addRecoatingRows($rows, 'Интервал перекрытия (мин)', $coating->minRecoatingInterval, $columns);
-        if (null !== $coating->maxRecoatingInterval) {
-            $this->addRecoatingRows($rows, 'Интервал перекрытия (макс.)', $coating->maxRecoatingInterval, $columns);
-        }
+        // Группы по средам и средам→материалам: мин и макс одного контекста рядом.
+        $this->addContextGroups($groups, $coating->minRecoatingInterval, $coating->maxRecoatingInterval, $columns);
 
-        return ['columns' => $columns, 'rows' => $rows];
+        return ['columns' => $columns, 'groups' => $groups];
+    }
+
+    /**
+     * @param list<array{label: ?string, rows: list<array{stage: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>}> $groups
+     * @param list<int>                                                                                                                     $columns
+     */
+    private function addContextGroups(array &$groups, RecoatingIntervalTreeDTO $minTree, ?RecoatingIntervalTreeDTO $maxTree, array $columns): void
+    {
+        foreach (self::ENV_LABELS as $envKey => $envLabel) {
+            $minEnv = $minTree->branches[$envKey] ?? null;
+            $maxEnv = $maxTree?->branches[$envKey] ?? null;
+
+            // Ветка среды (env default): мин, затем макс.
+            $envRows = [];
+            if (null !== $minEnv && [] !== $minEnv->default) {
+                $envRows[] = $this->rowFromSeries(self::RECOAT_MIN, $minEnv->default, $columns);
+            }
+            if (null !== $maxEnv && [] !== $maxEnv->default) {
+                $envRows[] = $this->rowFromSeries(self::RECOAT_MAX, $maxEnv->default, $columns);
+            }
+            if ([] !== $envRows) {
+                $groups[] = ['label' => $envLabel, 'rows' => $envRows];
+            }
+
+            // Материалы под средой (env → base): ключи из min- и max-веток.
+            $baseKeys = array_keys(($minEnv->branches ?? []) + ($maxEnv->branches ?? []));
+            foreach ($baseKeys as $baseKey) {
+                $minBase = $minEnv->branches[$baseKey] ?? null;
+                $maxBase = $maxEnv->branches[$baseKey] ?? null;
+
+                $matRows = [];
+                if (null !== $minBase && [] !== $minBase->default) {
+                    $matRows[] = $this->rowFromSeries(self::RECOAT_MIN, $minBase->default, $columns);
+                }
+                if (null !== $maxBase && [] !== $maxBase->default) {
+                    $matRows[] = $this->rowFromSeries(self::RECOAT_MAX, $maxBase->default, $columns);
+                }
+                if ([] !== $matRows) {
+                    $groups[] = ['label' => $envLabel . ' · ' . $this->baseTitle((string) $baseKey), 'rows' => $matRows];
+                }
+            }
+        }
     }
 
     /** @return list<int> */
@@ -91,37 +153,6 @@ final class CoatingTimeMatrixBuilder
         return array_values(array_unique($columns));
     }
 
-    /**
-     * @param list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}> $rows
-     * @param list<int>                                                                                 $columns
-     */
-    private function addRecoatingRows(array &$rows, string $baseLabel, RecoatingIntervalTreeDTO $tree, array $columns): void
-    {
-        if ([] !== $tree->default) {
-            $rows[] = $this->rowFromSeries($baseLabel, $tree->default, $columns);
-        }
-        foreach (self::ENV_LABELS as $envKey => $envLabel) {
-            $envBranch = $tree->branches[$envKey] ?? null;
-            if (null === $envBranch) {
-                continue;
-            }
-            if ([] !== $envBranch->default) {
-                $rows[] = $this->rowFromSeries("{$baseLabel}, {$envLabel}", $envBranch->default, $columns);
-            }
-            foreach ($envBranch->branches as $baseKey => $baseBranch) {
-                if ([] === $baseBranch->default) {
-                    continue;
-                }
-                $baseTitle = $this->baseTitle((string) $baseKey);
-                $rows[] = $this->rowFromSeries(
-                    "{$baseLabel}, {$envLabel} → {$baseTitle}",
-                    $baseBranch->default,
-                    $columns,
-                );
-            }
-        }
-    }
-
     /** Русское название базы ЛКМ по её нормализованному (lower-case) ключу дерева. */
     private function baseTitle(string $baseKey): string
     {
@@ -134,16 +165,16 @@ final class CoatingTimeMatrixBuilder
      * @param list<DryingTimePointDTO> $points
      * @param list<int>                $columns
      *
-     * @return array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}
+     * @return array{stage: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}
      */
-    private function rowFromSeries(string $label, array $points, array $columns): array
+    private function rowFromSeries(string $stage, array $points, array $columns): array
     {
         $values = [];
         foreach ($columns as $t) {
             $values[$t] = $this->resolve($points, $t);
         }
 
-        return ['label' => $label, 'values' => $values];
+        return ['stage' => $stage, 'values' => $values];
     }
 
     /**
