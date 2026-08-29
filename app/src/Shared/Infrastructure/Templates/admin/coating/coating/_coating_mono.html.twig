@@ -1,0 +1,17 @@
+{# Медиа-плитка покрытия: монограм связующего (ISO-код) + бейдж Zn(R) + цветная полоса.
+   Колеруемые — стандартный непривычный набор (сразу видно, что «любой цвет»).
+   Переменная: coating (CoatingDTO). Общий партиал для карточек покрытий и химстойкости. #}
+{% set mono = coating.base ?? '—' %}
+{% set tintablePalette = ['#9b8bbf', '#6bb0a8', '#c090a8', '#a8b06b', '#8b9bbf'] %}
+{% set colorHexes = coating.isTintable ? tintablePalette : coating.possibleColors|map(c => c.hex)|slice(0, 5) %}
+<div class="ecard-mono">
+    <span class="lbl">{{ mono }}</span>
+    {% if coating.isZincRich %}<span class="zn">Zn</span>{% endif %}
+    <span class="strip">
+        {% if colorHexes|length > 0 %}
+            {% for hex in colorHexes %}<i style="background: {{ hex }}"></i>{% endfor %}
+        {% else %}
+            <i style="background: var(--bs-border-color)"></i>
+        {% endif %}
+    </span>
+</div>

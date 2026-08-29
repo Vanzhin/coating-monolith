@@ -130,22 +130,29 @@ final class ListActionTest extends WebTestCase
 
     public function test_get_shows_systems(): void
     {
-        $this->persistSystem();
-        $this->client->request('GET', '/cabinet/coating/coating-system/list');
+        // Ищем по уникальному имени: no-q список поднимает и чужие системы из
+        // общего search-кэша — наша могла бы уехать со страницы 1.
+        $suffix = uniqid('', true);
+        $sys = $this->persistSystem($suffix);
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
 
         self::assertResponseIsSuccessful();
-        $content = $this->client->getResponse()->getContent();
+        $content = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('Системы покрытий', $content);
-        self::assertStringContainsString('Список-система-', $content);
+        self::assertStringContainsString($sys->getTitle(), $content);
     }
 
     public function test_returns_full_page_when_no_partial(): void
     {
-        $sys = $this->persistSystem();
-        $this->client->request('GET', '/cabinet/coating/coating-system/list');
+        $suffix = uniqid('', true);
+        $sys = $this->persistSystem($suffix);
+        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
 
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString($sys->getTitle(), (string) $this->client->getResponse()->getContent());
+        $content = (string) $this->client->getResponse()->getContent();
+        // Полная страница (в отличие от ?partial=1) — с обёрткой документа.
+        self::assertStringContainsString('<html', $content);
+        self::assertStringContainsString($sys->getTitle(), $content);
     }
 
     public function test_q_filters_results(): void
@@ -179,7 +186,7 @@ final class ListActionTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('class="coating-card', $content);
+        self::assertStringContainsString('class="ecard', $content);
         self::assertStringNotContainsString('<table class="table table-hover', $content);
     }
 
@@ -196,17 +203,6 @@ final class ListActionTest extends WebTestCase
         self::assertStringContainsString('В помещении', $content);
         self::assertStringNotContainsString('C1 — Очень низкая', $content);
         self::assertStringNotContainsString('менее 7 лет', $content);
-    }
-
-    public function test_list_shows_treatment_code_on_card(): void
-    {
-        $suffix = uniqid('', true);
-        $this->persistSystem($suffix);
-        $this->client->request('GET', '/cabinet/coating/coating-system/list?q=Список-система-'.$suffix);
-
-        self::assertResponseIsSuccessful();
-        $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('ST-', $content);
     }
 
     public function test_list_shows_layer_count_and_total_dft_on_card(): void
@@ -241,7 +237,7 @@ final class ListActionTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('class="coating-card', $content);
+        self::assertStringContainsString('class="ecard', $content);
         self::assertStringContainsString('data-entity-preview-endpoint-value', $content);
     }
 

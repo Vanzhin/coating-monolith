@@ -14,12 +14,6 @@
    - превью по клику на заголовок/описание: click->coating-preview-loader#open + data-coating-id;
    - удаление: общий #deleteModal (data-bs-toggle=modal, data-bs-id/title) — как в edit_delete. #}
 {% for coating in coatings %}
-    {% set mono = coating.base ?? '—' %}{# монограм связующего = ISO-код как есть (EP/PUR/ESI/AK…) #}
-    {# Колеруемые (isTintable = любой цвет) показываем ОДИНАКОВЫМ набором непривычных
-       приглушённых оттенков (фиолетовый/бирюза/роза/олива/барвинок) — так сразу
-       понятно, что это не реальные цвета, а «колеруемо». Обычные — своими possibleColors. #}
-    {% set tintablePalette = ['#9b8bbf', '#6bb0a8', '#c090a8', '#a8b06b', '#8b9bbf'] %}
-    {% set colorHexes = coating.isTintable ? tintablePalette : coating.possibleColors|map(c => c.hex)|slice(0, 5) %}
     <div class="ecard">
         {# Сравнение — ведущая колонка слева (не наезжает на kebab); контракт compare-tray сохранён. #}
         <div class="ecard-select">
@@ -30,18 +24,8 @@
                    aria-label="Добавить к сравнению">
         </div>
 
-        {# Медиа: монограм связующего + цветная полоса (несколько доступных цветов). #}
-        <div class="ecard-mono">
-            <span class="lbl">{{ mono }}</span>
-            {% if coating.isZincRich %}<span class="zn">Zn</span>{% endif %}
-            <span class="strip">
-                {% if colorHexes|length > 0 %}
-                    {% for hex in colorHexes %}<i style="background: {{ hex }}"></i>{% endfor %}
-                {% else %}
-                    <i style="background: var(--bs-border-color)"></i>
-                {% endif %}
-            </span>
-        </div>
+        {# Медиа: монограм связующего + цветная полоса (общий партиал). #}
+        {% include 'admin/coating/coating/_coating_mono.html.twig' with { coating: coating } only %}
 
         <div class="ecard-body">
             <div class="ecard-head">
@@ -66,9 +50,8 @@
                                     <i class="bi bi-files me-2"></i>Дублировать
                                 </a>
                             </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                {# Удаление через общий #deleteModal — тот же контракт, что в edit_delete. #}
+                            <li class="mt-1">
+                                {# Удаление через общий #deleteModal; отделено отступом (без разделителя). #}
                                 <a class="dropdown-item text-danger"
                                    href="{{ path('app_cabinet_coating_coating_delete', {id: coating.id}) }}"
                                    data-bs-toggle="modal" data-bs-target="#deleteModal"

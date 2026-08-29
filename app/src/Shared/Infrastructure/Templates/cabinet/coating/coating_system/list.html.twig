@@ -82,97 +82,26 @@
         is_empty: items is empty,
     } %}
     {% block above_list %}
-        <form method="get" action="{{ path('app_cabinet_coating_system_list') }}"
-              id="systemListForm" class="mb-3"
-              data-controller="chip-facets">
-
-            {% include 'components/_search_toolbar.html.twig' with {
-                q_value: q,
-                name: 'q',
-                reset_url: path('app_cabinet_coating_system_list'),
-                placeholder: 'По названию системы (от 3 символов)',
-                endpoint_typeahead: path('app_cabinet_coating_system_suggest'),
-            } %}
-
-            {# Сортировка #}
-            {% set defaultSort = constant('App\\Coatings\\Domain\\Repository\\CoatingSystemSort::DEFAULT') %}
-            {% set sortActive = sort != defaultSort %}
-
-            {# === Chip-row === #}
-            <div class="d-flex align-items-center gap-2 mb-3 chip-row">
-                <div class="d-flex gap-2 flex-shrink-0 chip-row-pinned">
-
-                {# --- Сортировка --- #}
-                <div class="dropdown">
-                    <button type="button"
-                            class="btn btn-sm {{ sortActive ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
-                            data-bs-toggle="dropdown" aria-expanded="false"
-                            aria-label="Сортировка">
-                        <i class="bi bi-sort-down"></i><span class="d-none d-md-inline"> {{ sortActive ? sort.title() : 'Сортировка' }}</span>
-                    </button>
-                    <ul class="dropdown-menu">
-                        {% for opt in sortOptions %}
-                            {% set q2 = opt == defaultSort
-                                ? app.request.query.all|merge({sort: null, page: null})|filter(v => v is not null)
-                                : app.request.query.all|merge({sort: opt.value, page: null})|filter(v => v is not null) %}
-                            <li>
-                                <a class="dropdown-item {% if sort == opt %}active{% endif %}"
-                                   href="{{ path('app_cabinet_coating_system_list', q2) }}">
-                                    {{ opt.title() }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                {# --- Все фильтры (offcanvas) --- #}
-                <button type="button"
-                        class="btn btn-sm {{ activeFacetsCount > 0 ? 'btn-primary' : 'btn-outline-secondary' }} position-relative"
-                        data-bs-toggle="offcanvas" data-bs-target="#allFiltersOffcanvas"
-                        aria-controls="allFiltersOffcanvas"
-                        aria-label="Все фильтры">
-                    <i class="bi bi-sliders"></i><span class="d-none d-md-inline"> Все фильтры</span>
-                    {% if activeFacetsCount > 0 %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" style="font-size: 0.65rem;">
-                            {{ activeFacetsCount }}
-                        </span>
-                    {% endif %}
-                </button>
-                </div>
-
-                {# Скроллируемая часть chip-row #}
-                <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
+        {% set selectedTagsJson = '[]' %}
+        {% set defaultSort = constant('App\\Coatings\\Domain\\Repository\\CoatingSystemSort::DEFAULT') %}
+        {% embed 'components/entity_search.html.twig' with {
+            list_route: 'app_cabinet_coating_system_list',
+            form_id: 'systemListForm',
+            search_name: 'q',
+            search_value: q,
+            search_placeholder: 'По названию системы (от 3 символов)',
+            search_typeahead: path('app_cabinet_coating_system_suggest'),
+            sort_options: sortOptions|map(o => {value: o.value, label: o.title()}),
+            sort_current: sort.value,
+            sort_default: defaultSort.value,
+            active_count: activeFacetsCount,
+            drawer_id: 'allFiltersOffcanvas',
+            drawer_form_id: 'allFiltersForm',
+        } %}
+            {% block chips %}
 
                 {# --- Подложка (multi) --- #}
-                {% if not substratesActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Подложка
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3" style="max-height: 400px; overflow-y: auto;">
-                                {% for s in substrateOptions %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input"
-                                               name="substrates[]" value="{{ s.value }}"
-                                               id="substrate-{{ s.value }}" form="systemListForm">
-                                        <label class="form-check-label" for="substrate-{{ s.value }}">
-                                            {{ s.title() }}
-                                        </label>
-                                    </div>
-                                {% endfor %}
-                                <hr class="my-2">
-                                <button type="submit" class="btn btn-sm btn-primary w-100" form="systemListForm">Применить</button>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterSubstrate"
-                            aria-controls="chipFilterSubstrate">
-                        Подложка
-                    </button>
-                {% else %}
+                {% if substratesActive %}
                     {% for s in substrateOptions|filter(s => s.value in activeSubstrateValues) %}
                         {% set valsAfterRemove = activeSubstrateValues|filter(v => v != s.value) %}
                         {% set removeUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({substrates: valsAfterRemove, page: null})|filter(v => v is not null)) %}
@@ -182,41 +111,26 @@
                             {{ s.title() }} <i class="bi bi-x-lg"></i>
                         </a>
                     {% endfor %}
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="substrate">
+                        Подложка
+                    </button>
                 {% endif %}
 
                 {# --- Среда (single) --- #}
-                {% if not environmentActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Среда
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3">
-                                {% for e in environmentOptions %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="environment" value="{{ e.value }}"
-                                               id="environment-{{ e.value }}" form="systemListForm"
-                                               onchange="this.form.requestSubmit()">
-                                        <label class="form-check-label" for="environment-{{ e.value }}">{{ e.title() }}</label>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterEnvironment"
-                            aria-controls="chipFilterEnvironment">
-                        Среда
-                    </button>
-                {% else %}
+                {% if environmentActive %}
                     {% set environmentResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({environment: null, page: null})|filter(v => v is not null)) %}
                     <a href="{{ environmentResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр среды">
                         {{ environment.title() }} <i class="bi bi-x-lg"></i>
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="environment">
+                        Среда
+                    </button>
                 {% endif %}
 
                 {# --- Документы: выбор в шторке «Все фильтры»; здесь — только активный чип для сброса --- #}
@@ -230,474 +144,99 @@
                 {% endif %}
 
                 {# --- Стандарт (single) --- #}
-                {% if not standardActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Стандарт
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3">
-                                {% for s in standardOptions %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="standard" value="{{ s.value }}"
-                                               id="standard-{{ s.value }}" form="systemListForm"
-                                               onchange="this.form.requestSubmit()">
-                                        <label class="form-check-label" for="standard-{{ s.value }}">{{ s.title() }}</label>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterStandard"
-                            aria-controls="chipFilterStandard">
-                        Стандарт
-                    </button>
-                {% else %}
+                {% if standardActive %}
                     {% set standardResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({standard: null, category: null, durability: null, page: null})|filter(v => v is not null)) %}
                     <a href="{{ standardResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр стандарта">
                         {{ standard.title() }} <i class="bi bi-x-lg"></i>
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="standard">
+                        Стандарт
+                    </button>
                 {% endif %}
 
-                {# --- Категория (single, только если стандарт выбран) --- #}
+                {# --- Категория / Долговечность (только если стандарт выбран) --- #}
                 {% if standardActive %}
-                    {% if not categoryActive %}
-                        <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                    {{ complianceFacets.primaryLabel }}
-                                </button>
-                                <div class="dropdown-menu chip-desktop-menu p-3">
-                                    {% for opt in complianceFacets.primaryOptions %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio"
-                                                   name="category" value="{{ opt.value }}"
-                                                   id="category-{{ opt.value }}" form="systemListForm"
-                                                   onchange="this.form.requestSubmit()">
-                                            <label class="form-check-label" for="category-{{ opt.value }}">{{ opt.title }}</label>
-                                        </div>
-                                    {% endfor %}
-                                    <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
-                                </div>
-                            </div>
-                        </fieldset>
-                        <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                                data-bs-toggle="offcanvas" data-bs-target="#chipFilterCategory"
-                                aria-controls="chipFilterCategory">
-                            {{ complianceFacets.primaryLabel }}
-                        </button>
-                    {% else %}
+                    {% if categoryActive %}
                         {% set categoryResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({category: null, durability: null, page: null})|filter(v => v is not null)) %}
                         <a href="{{ categoryResetUrl }}"
                            class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                            title="Убрать фильтр категории">
                             {{ categoryTitle }} <i class="bi bi-x-lg"></i>
                         </a>
+                    {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-action="click->facet-jump#jump" data-facet-jump-facet-param="category">
+                            {{ complianceFacets.primaryLabel }}
+                        </button>
                     {% endif %}
 
                     {# --- Долговечность (single, только если у категории есть эта ось; у CX/Im4 нет) --- #}
                     {% if durabilityAxisShown %}
-                        {% if not durabilityActive %}
-                            <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                                <div class="dropdown">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                        {{ complianceFacets.secondaryLabel }}
-                                    </button>
-                                    <div class="dropdown-menu chip-desktop-menu p-3">
-                                        {% for opt in complianceFacets.secondaryOptions %}
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio"
-                                                       name="durability" value="{{ opt.value }}"
-                                                       id="durability-{{ opt.value }}" form="systemListForm"
-                                                       onchange="this.form.requestSubmit()">
-                                                <label class="form-check-label" for="durability-{{ opt.value }}">{{ opt.title }}</label>
-                                            </div>
-                                        {% endfor %}
-                                        <input type="hidden" name="standard" value="{{ standard.value }}" form="systemListForm">
-                                        <input type="hidden" name="category" value="{{ category }}" form="systemListForm">
-                                    </div>
-                                </div>
-                            </fieldset>
-                            <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                                    data-bs-toggle="offcanvas" data-bs-target="#chipFilterDurability"
-                                    aria-controls="chipFilterDurability">
-                                {{ complianceFacets.secondaryLabel }}
-                            </button>
-                        {% else %}
+                        {% if durabilityActive %}
                             {% set durabilityResetUrl = path('app_cabinet_coating_system_list', app.request.query.all|merge({durability: null, page: null})|filter(v => v is not null)) %}
                             <a href="{{ durabilityResetUrl }}"
                                class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                                title="Убрать фильтр долговечности">
                                 {{ durabilityTitle }} <i class="bi bi-x-lg"></i>
                             </a>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    data-action="click->facet-jump#jump" data-facet-jump-facet-param="durability">
+                                {{ complianceFacets.secondaryLabel }}
+                            </button>
                         {% endif %}
                     {% endif %}
                 {% endif %}
 
                 {# --- Мин Т нанесения (range) --- #}
-                {% if not appMinTempActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Мин Т нанесения
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
-                                <input type="hidden" name="applicationMinTempFrom" value=""
-                                       data-range-filter-target="fromInput" form="systemListForm">
-                                <input type="hidden" name="applicationMinTempTo" value=""
-                                       data-range-filter-target="toInput" form="systemListForm">
-                                <div class="d-flex flex-wrap gap-1">
-                                    <button type="button" class="btn btn-sm btn-secondary"
-                                            data-action="click->range-filter#reset" form="systemListForm">Любая</button>
-                                    {% for p in appMinTempPresets %}
-                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                                data-action="click->range-filter#preset"
-                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="systemListForm">
-                                            {{ p.label }}
-                                        </button>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppMinTemp"
-                            aria-controls="chipFilterAppMinTemp">
-                        Мин Т нанесения
-                    </button>
-                {% else %}
+                {% if appMinTempActive %}
                     <a href="{{ appMinTempResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр">
                         Мин Т: {{ appMinTempSummary }} <i class="bi bi-x-lg"></i>
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="appMinTemp">
+                        Мин Т нанесения
+                    </button>
                 {% endif %}
 
                 {# --- Мин время нанесения при 20°C (range) --- #}
-                {% if not appTimeActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Мин. время нанесения
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3" data-controller="range-filter">
-                                <input type="hidden" name="minApplicationTimeAt20From" value=""
-                                       data-range-filter-target="fromInput" form="systemListForm">
-                                <input type="hidden" name="minApplicationTimeAt20To" value=""
-                                       data-range-filter-target="toInput" form="systemListForm">
-                                <div class="d-flex flex-wrap gap-1">
-                                    <button type="button" class="btn btn-sm btn-secondary"
-                                            data-action="click->range-filter#reset" form="systemListForm">Любое</button>
-                                    {% for p in appTimePresets %}
-                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                                data-action="click->range-filter#preset"
-                                                data-from="{{ p.from }}" data-to="{{ p.to }}" form="systemListForm">
-                                            {{ p.label }}
-                                        </button>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterAppTime"
-                            aria-controls="chipFilterAppTime">
-                        Мин. время нанесения
-                    </button>
-                {% else %}
+                {% if appTimeActive %}
                     <a href="{{ appTimeResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр">
                         Минимальное время нанесения: {{ appTimeSummary }} <i class="bi bi-x-lg"></i>
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="appTime">
+                        Мин. время нанесения
+                    </button>
                 {% endif %}
 
                 {# --- Температура эксплуатации (single) --- #}
-                {% if not thermalActive %}
-                    <fieldset class="chip-desktop-panel d-none d-md-inline-block border-0 p-0 m-0">
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                Температура эксплуатации
-                            </button>
-                            <div class="dropdown-menu chip-desktop-menu p-3">
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Температура, °C</label>
-                                    <input type="number" name="thermTemp" value=""
-                                           class="form-control form-control-sm"
-                                           min="-200" max="1000" step="5" placeholder="напр. 90" form="systemListForm">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Среда</label>
-                                    <select name="thermEnv" class="form-select form-select-sm" form="systemListForm">
-                                        <option value="dry_heat" selected>Сухое тепло</option>
-                                        <option value="immersion">Погружение</option>
-                                    </select>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="thermPeakDd" name="thermPeak" value="1" form="systemListForm">
-                                    <label class="form-check-label small" for="thermPeakDd">Включая пиковые нагрузки</label>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-primary w-100" form="systemListForm">Применить</button>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none"
-                            data-bs-toggle="offcanvas" data-bs-target="#chipFilterThermal"
-                            aria-controls="chipFilterThermal">
-                        Температура эксплуатации
-                    </button>
-                {% else %}
+                {% if thermalActive %}
                     <a href="{{ thResetUrl }}"
                        class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
                        title="Убрать фильтр">
                         Работает при {{ thSummary }} <i class="bi bi-x-lg"></i>
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="thermal">
+                        Температура эксплуатации
+                    </button>
                 {% endif %}
 
-                {# Теги — только через шторку «Все фильтры» #}
-                {% set selectedTagsJson = '[]' %}
+            {% endblock %}
 
-                </div>{# /.chip-scroll #}
-            </div>{# /.chip-row #}
-
-            {# === Mobile chip-offcanvas'ы === #}
-
-            {% if not substratesActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterSubstrate" aria-labelledby="chipFilterSubstrateLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterSubstrateLabel">Подложка</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for s in substrateOptions %}
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input"
-                                           name="substrates[]" value="{{ s.value }}"
-                                           id="substrateMob-{{ s.value }}">
-                                    <label class="form-check-label" for="substrateMob-{{ s.value }}">{{ s.title() }}</label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if not environmentActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterEnvironment" aria-labelledby="chipFilterEnvironmentLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterEnvironmentLabel">Среда</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for e in environmentOptions %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="environment" value="{{ e.value }}"
-                                           id="environmentMob-{{ e.value }}">
-                                    <label class="form-check-label" for="environmentMob-{{ e.value }}">{{ e.title() }}</label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if not standardActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterStandard" aria-labelledby="chipFilterStandardLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterStandardLabel">Стандарт</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for s in standardOptions %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="standard" value="{{ s.value }}"
-                                           id="standardMob-{{ s.value }}">
-                                    <label class="form-check-label" for="standardMob-{{ s.value }}">{{ s.title() }}</label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if standardActive and not categoryActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterCategory" aria-labelledby="chipFilterCategoryLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterCategoryLabel">{{ complianceFacets.primaryLabel }}</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for opt in complianceFacets.primaryOptions %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="category" value="{{ opt.value }}"
-                                           id="categoryMob-{{ opt.value }}">
-                                    <label class="form-check-label" for="categoryMob-{{ opt.value }}">{{ opt.title }}</label>
-                                </div>
-                            {% endfor %}
-                            <input type="hidden" name="standard" value="{{ standard.value }}">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if durabilityAxisShown and not durabilityActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterDurability" aria-labelledby="chipFilterDurabilityLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterDurabilityLabel">{{ complianceFacets.secondaryLabel }}</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            {% for opt in complianceFacets.secondaryOptions %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="durability" value="{{ opt.value }}"
-                                           id="durabilityMob-{{ opt.value }}">
-                                    <label class="form-check-label" for="durabilityMob-{{ opt.value }}">{{ opt.title }}</label>
-                                </div>
-                            {% endfor %}
-                            <input type="hidden" name="standard" value="{{ standard.value }}">
-                            <input type="hidden" name="category" value="{{ category }}">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if not appMinTempActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterAppMinTemp" aria-labelledby="chipFilterAppMinTempLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterAppMinTempLabel">Мин Т нанесения</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
-                        <input type="hidden" name="applicationMinTempFrom" value=""
-                               data-range-filter-target="fromInput">
-                        <input type="hidden" name="applicationMinTempTo" value=""
-                               data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
-                            <button type="button" class="btn btn-sm btn-secondary"
-                                    data-action="click->range-filter#reset">Любая</button>
-                            {% for p in appMinTempPresets %}
-                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                        data-action="click->range-filter#preset"
-                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                    {{ p.label }}
-                                </button>
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if not appTimeActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterAppTime" aria-labelledby="chipFilterAppTimeLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterAppTimeLabel">Минимальное время нанесения (при 20°C)</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel offcanvas-body border-0 p-3 m-0" data-controller="range-filter">
-                        <input type="hidden" name="minApplicationTimeAt20From" value=""
-                               data-range-filter-target="fromInput">
-                        <input type="hidden" name="minApplicationTimeAt20To" value=""
-                               data-range-filter-target="toInput">
-                        <div class="d-flex flex-wrap gap-2 bg-body-tertiary rounded-3 p-3">
-                            <button type="button" class="btn btn-sm btn-secondary"
-                                    data-action="click->range-filter#reset">Любое</button>
-                            {% for p in appTimePresets %}
-                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                        data-action="click->range-filter#preset"
-                                        data-from="{{ p.from }}" data-to="{{ p.to }}">
-                                    {{ p.label }}
-                                </button>
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-            {% if not thermalActive %}
-                <div class="offcanvas offcanvas-bottom d-md-none" tabindex="-1"
-                     id="chipFilterThermal" aria-labelledby="chipFilterThermalLabel">
-                    <div class="offcanvas-header border-bottom">
-                        <h6 class="offcanvas-title mb-0" id="chipFilterThermalLabel">Температура эксплуатации</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                    </div>
-                    <fieldset class="chip-mobile-panel d-flex flex-column flex-grow-1 border-0 p-3 m-0 gap-2" style="min-height: 0;">
-                        <div class="overflow-auto p-3 flex-grow-1 bg-body-tertiary rounded-3">
-                            <div class="mb-2">
-                                <label class="form-label small text-muted mb-1">Температура, °C</label>
-                                <input type="number" name="thermTemp" value=""
-                                       class="form-control form-control-sm"
-                                       min="-200" max="1000" step="5" placeholder="напр. 90">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small text-muted mb-1">Среда</label>
-                                <select name="thermEnv" class="form-select form-select-sm">
-                                    <option value="dry_heat" selected>Сухое тепло</option>
-                                    <option value="immersion">Погружение</option>
-                                </select>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="thermPeakMob" name="thermPeak" value="1">
-                                <label class="form-check-label small" for="thermPeakMob">Включая пиковые нагрузки</label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                    </fieldset>
-                </div>
-            {% endif %}
-
-        </form>
-
-        {# === Offcanvas «Все фильтры» === #}
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="allFiltersOffcanvas" aria-labelledby="allFiltersOffcanvasLabel">
-            <div class="offcanvas-header border-bottom">
-                <button type="button" class="btn-close m-0 me-auto" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
-                <h5 class="offcanvas-title" id="allFiltersOffcanvasLabel">
-                    Фильтры
-                    {% if activeFacetsCount > 0 %}
-                        <span class="badge text-bg-primary ms-1">{{ activeFacetsCount }}</span>
-                    {% endif %}
-                </h5>
-            </div>
-
-            <form method="get" action="{{ path('app_cabinet_coating_system_list') }}"
-                  id="allFiltersForm" class="offcanvas-body d-flex flex-column p-0">
-                {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-
-                <div class="flex-grow-1 overflow-auto p-3">
-
+            {% block drawer %}
                     {# Активные фильтры сверху #}
                     {% if activeFacetsCount > 0 %}
                         <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
@@ -783,163 +322,99 @@
                     {% endif %}
 
                     {# === Секция: Подложка === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                    <div id="facet-substrate" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Подложка</h6>
-                        <div class="row g-1">
+                        <div class="d-flex flex-wrap gap-1">
                             {% for s in substrateOptions %}
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input"
-                                               name="substrates[]" value="{{ s.value }}"
-                                               id="substrateOff-{{ s.value }}"
-                                               {% if s.value in activeSubstrateValues %}checked{% endif %}>
-                                        <label class="form-check-label" for="substrateOff-{{ s.value }}">{{ s.title() }}</label>
-                                    </div>
-                                </div>
+                                <label class="facet-pill">
+                                    <input type="checkbox" name="substrates[]" value="{{ s.value }}"
+                                           {% if s.value in activeSubstrateValues %}checked{% endif %}>{{ s.title() }}
+                                </label>
                             {% endfor %}
                         </div>
                     </div>
 
                     {# === Секция: Среда === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                    <div id="facet-environment" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Среда</h6>
-                        <div class="row g-1">
+                        <div class="d-flex flex-wrap gap-1">
                             {% for e in environmentOptions %}
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="environment" value="{{ e.value }}"
-                                               id="environmentOff-{{ e.value }}"
-                                               {% if environment and environment.value == e.value %}checked{% endif %}>
-                                        <label class="form-check-label" for="environmentOff-{{ e.value }}">{{ e.title() }}</label>
-                                    </div>
-                                </div>
+                                <label class="facet-pill">
+                                    <input type="radio" name="environment" value="{{ e.value }}"
+                                           {% if environment and environment.value == e.value %}checked{% endif %}>{{ e.title() }}
+                                </label>
                             {% endfor %}
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="environment" value=""
-                                           id="environmentOff-none"
-                                           {% if not environment %}checked{% endif %}>
-                                    <label class="form-check-label text-muted" for="environmentOff-none">Любая</label>
-                                </div>
-                            </div>
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="environment" value="" {% if not environment %}checked{% endif %}>Любая
+                            </label>
                         </div>
                     </div>
 
                     {# === Секция: Документы === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                    <div id="facet-hasDocuments" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Документы</h6>
-                        <div class="row g-1">
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="hasDocuments" value="1"
-                                           id="hasDocumentsOff-1"
-                                           {% if hasDocuments == '1' %}checked{% endif %}>
-                                    <label class="form-check-label" for="hasDocumentsOff-1">С документами</label>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="hasDocuments" value="0"
-                                           id="hasDocumentsOff-0"
-                                           {% if hasDocuments == '0' %}checked{% endif %}>
-                                    <label class="form-check-label" for="hasDocumentsOff-0">Без документов</label>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="hasDocuments" value=""
-                                           id="hasDocumentsOff-none"
-                                           {% if hasDocuments == '' %}checked{% endif %}>
-                                    <label class="form-check-label text-muted" for="hasDocumentsOff-none">Любые</label>
-                                </div>
-                            </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <label class="facet-pill">
+                                <input type="radio" name="hasDocuments" value="1" {% if hasDocuments == '1' %}checked{% endif %}>С документами
+                            </label>
+                            <label class="facet-pill">
+                                <input type="radio" name="hasDocuments" value="0" {% if hasDocuments == '0' %}checked{% endif %}>Без документов
+                            </label>
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="hasDocuments" value="" {% if hasDocuments == '' %}checked{% endif %}>Любые
+                            </label>
                         </div>
                     </div>
 
                     {# === Секция: Стандарт === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                    <div id="facet-standard" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Стандарт</h6>
-                        <div class="row g-1">
+                        <div class="d-flex flex-wrap gap-1">
                             {% for s in standardOptions %}
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="standard" value="{{ s.value }}"
-                                               id="standardOff-{{ s.value }}"
-                                               {% if standard and standard.value == s.value %}checked{% endif %}>
-                                        <label class="form-check-label" for="standardOff-{{ s.value }}">{{ s.title() }}</label>
-                                    </div>
-                                </div>
+                                <label class="facet-pill">
+                                    <input type="radio" name="standard" value="{{ s.value }}"
+                                           {% if standard and standard.value == s.value %}checked{% endif %}>{{ s.title() }}
+                                </label>
                             {% endfor %}
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio"
-                                           name="standard" value=""
-                                           id="standardOff-none"
-                                           {% if not standard %}checked{% endif %}>
-                                    <label class="form-check-label text-muted" for="standardOff-none">Любой</label>
-                                </div>
-                            </div>
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="standard" value="" {% if not standard %}checked{% endif %}>Любой
+                            </label>
                         </div>
                     </div>
 
                     {# === Секция: Категория (только при стандарте) === #}
                     {% if standardActive %}
-                        <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <div id="facet-category" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                             <h6 class="fw-semibold mb-2">{{ complianceFacets.primaryLabel }}</h6>
                             <input type="hidden" name="standard" value="{{ standard.value }}">
-                            <div class="row g-1">
+                            <div class="d-flex flex-wrap gap-1">
                                 {% for opt in complianceFacets.primaryOptions %}
-                                    <div class="col-12">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio"
-                                                   name="category" value="{{ opt.value }}"
-                                                   id="categoryOff-{{ opt.value }}"
-                                                   {% if category == opt.value %}checked{% endif %}>
-                                            <label class="form-check-label" for="categoryOff-{{ opt.value }}">{{ opt.title }}</label>
-                                        </div>
-                                    </div>
+                                    <label class="facet-pill">
+                                        <input type="radio" name="category" value="{{ opt.value }}"
+                                               {% if category == opt.value %}checked{% endif %}>{{ opt.title }}
+                                    </label>
                                 {% endfor %}
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="category" value=""
-                                               id="categoryOff-none"
-                                               {% if not category %}checked{% endif %}>
-                                        <label class="form-check-label text-muted" for="categoryOff-none">Любая</label>
-                                    </div>
-                                </div>
+                                <label class="facet-pill facet-pill--muted">
+                                    <input type="radio" name="category" value="" {% if not category %}checked{% endif %}>Любая
+                                </label>
                             </div>
                         </div>
 
                         {# === Секция: Долговечность (только при категории с этой осью; у CX/Im4 нет) === #}
                         {% if durabilityAxisShown %}
-                            <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                            <div id="facet-durability" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                                 <h6 class="fw-semibold mb-2">{{ complianceFacets.secondaryLabel }}</h6>
                                 <input type="hidden" name="category" value="{{ category }}">
-                                <div class="row g-1">
+                                <div class="d-flex flex-wrap gap-1">
                                     {% for opt in complianceFacets.secondaryOptions %}
-                                        <div class="col-12">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio"
-                                                       name="durability" value="{{ opt.value }}"
-                                                       id="durabilityOff-{{ opt.value }}"
-                                                       {% if durability == opt.value %}checked{% endif %}>
-                                                <label class="form-check-label" for="durabilityOff-{{ opt.value }}">{{ opt.title }}</label>
-                                            </div>
-                                        </div>
+                                        <label class="facet-pill">
+                                            <input type="radio" name="durability" value="{{ opt.value }}"
+                                                   {% if durability == opt.value %}checked{% endif %}>{{ opt.title }}
+                                        </label>
                                     {% endfor %}
-                                    <div class="col-12">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio"
-                                                   name="durability" value=""
-                                                   id="durabilityOff-none"
-                                                   {% if not durability %}checked{% endif %}>
-                                            <label class="form-check-label text-muted" for="durabilityOff-none">Любая</label>
-                                        </div>
-                                    </div>
+                                    <label class="facet-pill facet-pill--muted">
+                                        <input type="radio" name="durability" value="" {% if not durability %}checked{% endif %}>Любая
+                                    </label>
                                 </div>
                             </div>
                         {% endif %}
@@ -950,6 +425,7 @@
                         title: 'Мин Т нанесения',
                         unit: '°C',
                         name_from: 'applicationMinTempFrom',
+                        facet_id: 'appMinTemp',
                         name_to: 'applicationMinTempTo',
                         from: applicationMinTemp ? applicationMinTemp.from : null,
                         to: applicationMinTemp ? applicationMinTemp.to : null,
@@ -964,6 +440,7 @@
                         title: 'Минимальное время нанесения (при 20°C)',
                         unit: 'ч',
                         name_from: 'minApplicationTimeAt20From',
+                        facet_id: 'appTime',
                         name_to: 'minApplicationTimeAt20To',
                         from: minApplicationTimeAt20Hours ? minApplicationTimeAt20Hours.from : null,
                         to: minApplicationTimeAt20Hours ? minApplicationTimeAt20Hours.to : null,
@@ -974,7 +451,7 @@
                     } only %}
 
                     {# === Секция: Температура эксплуатации === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary">
+                    <div id="facet-thermal" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                         <h6 class="fw-semibold mb-2">Температура эксплуатации</h6>
                         <div class="row g-2">
                             <div class="col-6">
@@ -1003,7 +480,7 @@
                     </div>
 
                     {# === Секция: Покрытия в составе === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <div id="facet-coatings" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Покрытия в составе</h6>
                         <input type="text"
                                data-controller="coating-tags"
@@ -1019,7 +496,7 @@
                     </div>
 
                     {# === Секция: Теги === #}
-                    <div class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <div id="facet-tags" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Теги</h6>
                         <input type="text"
                                data-controller="coating-tags"
@@ -1031,20 +508,8 @@
                                class="form-control form-control-sm"
                                placeholder="Начните вводить тег...">
                     </div>
-                </div>
-
-                {# Sticky footer #}
-                <div class="border-top p-3 d-flex gap-2 bg-body">
-                    <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary flex-fill">
-                        Сбросить всё
-                    </a>
-                    <button type="submit" class="btn btn-primary flex-fill">
-                        Показать
-                    </button>
-                </div>
-            </form>
-        </div>
-
+            {% endblock %}
+        {% endembed %}
     {% endblock %}
 
     {% block list_content %}

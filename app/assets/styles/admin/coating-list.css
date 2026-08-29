@@ -57,9 +57,170 @@
    scroll-кнопки — текст; из-за разных line-box'ов при некоторых
    font stacks кнопки могут визуально различаться по высоте. Явные
    line-height + white-space гарантируют одинаковый рендер. */
+/* Чипы chip-row — по дизайн-макету: компактные пилюли, ghost светлее с приглушённым
+   текстом, активные — заливка primary (btn-primary как есть). */
 .chip-row .btn.btn-sm {
-    line-height: 1.5;
+    border-radius: 999px;
+    min-height: 31px;
+    padding: 0 13px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     white-space: nowrap;
+}
+.chip-row .btn.btn-sm.btn-outline-secondary {
+    --bs-btn-bg: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+    --bs-btn-color: var(--bs-secondary-color);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-body-color) 13%, transparent);
+    --bs-btn-hover-color: var(--bs-body-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-body-color) 13%, transparent);
+    --bs-btn-active-color: var(--bs-body-color);
+}
+/* Счётчик активных фильтров — пилюля-заливка ВНУТРИ чипа «Все фильтры» (по макету). */
+.chip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 2px;
+    border-radius: 999px;
+    background: var(--bs-primary);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Шторка «Все фильтры» — по дизайн-линии без жёстких линий-разделителей:
+   у липкого футера действий вместо border-top — мягкая тень. */
+.entity-drawer-foot {
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, .06);
+}
+
+/* Блок фасета в шторке (цель перехода с чипа) + подсветка при скролле к нему.
+   Стиль по макету chip-to-drawer: мягкая карточка, заголовок + единица,
+   компактные пилюли-пресеты (soft accent / активная — заливка / «Любая» — muted). */
+.facet-block {
+    scroll-margin-top: 10px;
+}
+.facet-block > h6 {
+    font-size: 0.9rem;
+}
+.facet-block .btn.btn-sm.rounded-pill {
+    min-height: 29px;
+    padding: 3px 12px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+/* Пилюля-тоггл фасета (мультивыбор в шторке). Компонент Bootstrap .btn-check в
+   этом билде НЕ собран, поэтому не используем его: <label> оборачивает <input>
+   (клик по label нативно переключает input — без for/id и без .btn-check), input
+   скрыт, выбранная пилюля — заливка primary через :has(input:checked). */
+.facet-pill {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--accent-subtle);
+    color: var(--bs-primary);
+}
+.facet-pill input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.facet-pill:hover { background: color-mix(in srgb, var(--bs-primary) 20%, transparent); }
+.facet-pill:has(input:checked) {
+    background: var(--bs-primary);
+    color: #fff;
+}
+.facet-pill .facet-pill-sub { opacity: 0.75; margin-left: 3px; }
+/* «Любой/Любая» — нейтральная пилюля (при выборе — серая заливка, не синяя). */
+.facet-pill--muted {
+    background: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+    color: var(--bs-secondary-color);
+}
+.facet-pill--muted:hover { background: color-mix(in srgb, var(--bs-body-color) 13%, transparent); }
+.facet-pill--muted:has(input:checked) {
+    background: color-mix(in srgb, var(--bs-body-color) 16%, transparent);
+    color: var(--bs-body-color);
+}
+
+/* Поля от/до — единый чистый rounded-бокс как в макете (без внутренних рамок
+   input-group, единица — приглушённый текст внутри поля). */
+.facet-block .input-group-sm {
+    background: var(--bs-body-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.facet-block .input-group-sm .form-control,
+.facet-block .input-group-sm .input-group-text {
+    border: 0;
+    background: transparent;
+}
+.facet-block .input-group-sm .input-group-text {
+    padding-left: 2px;
+    color: var(--bs-secondary-color);
+}
+.facet-block .input-group-sm:focus-within {
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+/* Поля от/до внутри группы уже обёрнуты боксом с :focus-within-кольцом — гасим
+   собственное bootstrap-свечение инпута, чтобы не было двойного кольца. */
+.facet-block .input-group-sm .form-control:focus {
+    box-shadow: none;
+}
+
+/* Единый мягкий безрамочный вид ВСЕХ полей шторки «Все фильтры» (число, селект,
+   Tagify): чистый rounded-бокс на фоне body-bg — как поля «от/до», без жёстких рамок
+   Bootstrap; фокус — мягкое кольцо accent-subtle. background-color (не background),
+   чтобы у select сохранилась стрелка-каретка. */
+.entity-drawer .form-control,
+.entity-drawer .form-select {
+    border: 0;
+    background-color: var(--bs-body-bg);
+    border-radius: 8px;
+}
+.entity-drawer .form-control:focus,
+.entity-drawer .form-select:focus {
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.entity-drawer .tagify {
+    --tags-border-color: transparent;
+    --tags-focus-border-color: transparent;
+    border: 0;
+    background-color: var(--bs-body-bg);
+    border-radius: 8px;
+}
+.entity-drawer .tagify--focus {
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.facet-block.facet-hl {
+    animation: facetHl 1.6s ease;
+}
+@keyframes facetHl {
+    0% { box-shadow: 0 0 0 0 transparent; }
+    14% { box-shadow: 0 0 0 2px var(--bs-primary), 0 10px 26px rgba(0, 0, 0, .14); }
+    72% { box-shadow: 0 0 0 2px var(--bs-primary), 0 10px 26px rgba(0, 0, 0, .14); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+[data-bs-theme="dark"] .entity-drawer-foot {
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, .35);
 }
 
 /* Описание в карточке покрытия — обрезаем по -webkit-line-clamp.

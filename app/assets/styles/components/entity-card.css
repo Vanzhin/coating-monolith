@@ -2,15 +2,15 @@
    контракт (медиа-слот + тело + мета + бейджи + теги + kebab); содержимое
    медиа-слота и меты различается по сущности. На токенах Деплоя 1. */
 .ecard {
-    background: var(--surface); border: 1px solid var(--bs-border-color); border-radius: 14px;
+    background: var(--surface); border: 0; border-radius: 14px;
     padding: 13px; box-shadow: var(--shadow, 0 1px 2px rgba(16, 24, 40, .05));
     display: flex; gap: 12px; position: relative;
-    /* НЕ используем transform на ховере: он создаёт stacking-context/containing-block,
-       из-за которого dropdown-меню kebab'а прячется за соседние карточки. Лифт — тенью. */
-    transition: box-shadow .16s var(--ease-emph), border-color .16s var(--ease-emph);
+    /* Без рамок — определение карточки только тенью. НЕ используем transform на ховере:
+       он создаёт stacking-context, из-за которого dropdown kebab'а прячется. Лифт — тенью. */
+    transition: box-shadow .16s var(--ease-emph);
 }
-.ecard:hover { box-shadow: 0 6px 20px rgba(16, 24, 40, .10); border-color: var(--border-strong, var(--bs-border-color)); }
-.ecard.is-selected { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary); }
+.ecard:hover { box-shadow: 0 6px 20px rgba(16, 24, 40, .10); }
+.ecard.is-selected { box-shadow: 0 0 0 1px var(--bs-primary); }
 
 /* Ведущая колонка выбора (чекбокс сравнения) — слева, чтобы не наезжать на kebab. */
 .ecard-select { flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 2px; }
@@ -18,7 +18,7 @@
 /* Медиа: монограм связующего + цветная полоса (покрытие). */
 .ecard-mono {
     width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0; position: relative; overflow: hidden;
-    background: var(--sunken); border: 1px solid var(--bs-border-color);
+    background: var(--sunken); border: 0;
     display: grid; place-items: center;
 }
 .ecard-mono .lbl { font-size: 15px; font-weight: 800; letter-spacing: -.02em; color: var(--bs-body-color); margin-bottom: 6px; }
@@ -27,7 +27,7 @@
 .ecard-mono .zn { position: absolute; top: 2px; right: 2px; font-size: 8px; font-weight: 800; color: var(--warn); background: color-mix(in srgb, var(--warn) 20%, transparent); border-radius: 4px; padding: 0 3px; }
 
 /* Медиа: иконка (система/документ). */
-.ecard-media { width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0; background: var(--sunken); border: 1px solid var(--bs-border-color); color: var(--bs-body-color); display: grid; place-items: center; }
+.ecard-media { width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0; background: var(--sunken); border: 0; color: var(--bs-body-color); display: grid; place-items: center; }
 .ecard-media .bi { font-size: 20px; }
 .ecard-media.is-ok { color: var(--ok); }
 
@@ -43,13 +43,24 @@
 .ecard-badges .b-ok-lbl { font-size: 11px; font-weight: 600; color: var(--ok); }
 .ecard-badges .b-iso { font-size: 11px; font-weight: 700; color: var(--bs-primary); background: var(--accent-subtle); border-radius: 6px; padding: 2px 7px; }
 
+/* Вердикт химстойкости (страница «Химстойкость»): грейд + макс. рабочая температура.
+   Цвет по грейду — стойкое (ok), ограниченно (warn), нестойкое (danger). */
+/* Вердикт химстойкости — ПЕРВЫЙ чип в ряду тегов карточки (капля = химстойкость,
+   цвет = вердикт). flex-shrink:0 + nowrap: не переносится, ряд тегов скроллится,
+   высота карточки постоянна. */
+.ecard-tags .verdict { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.ecard-tags .verdict .bi { font-size: 11px; }
+.ecard-tags .verdict.is-ok { color: var(--ok); background: var(--ok-subtle); }
+.ecard-tags .verdict.is-warn { color: var(--warn); background: var(--warn-subtle); }
+.ecard-tags .verdict.is-danger { color: var(--bs-danger); background: var(--bs-danger-bg-subtle); }
+
 .ecard-tags { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; }
 .ecard-tags::-webkit-scrollbar { height: 0; }
-.ecard-tags .tag { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--bs-secondary-color); background: var(--sunken); border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 2px 8px; text-decoration: none; }
-.ecard-tags .tag.is-active { background: var(--accent-subtle); color: var(--bs-primary); border-color: var(--bs-primary); }
+.ecard-tags .tag { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--bs-secondary-color); background: var(--sunken); border: 0; border-radius: 6px; padding: 2px 8px; text-decoration: none; }
+.ecard-tags .tag.is-active { background: var(--accent-subtle); color: var(--bs-primary); }
 /* Кликабельный чип-покрытие (слой системы): свотч цвета слоя + название, ведёт в превью покрытия. */
 .ecard-tags .tag-btn { font-family: inherit; cursor: pointer; line-height: 1.3; display: inline-flex; align-items: center; gap: 5px; }
-.ecard-tags .tag-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); }
+.ecard-tags .tag-btn:hover { color: var(--bs-primary); }
 .ecard-tags .tag-btn .sw { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .15); flex-shrink: 0; }
 
 .ecard-kebab { flex-shrink: 0; }
@@ -63,11 +74,11 @@
    ховер подсвечивает акцентом; клик фильтрует список систем. */
 .ecard-compliance-row .vals a {
     font-size: 11px; font-weight: 500; color: var(--bs-secondary-color);
-    background: var(--sunken); border: 1px solid var(--bs-border-color); border-radius: 6px;
+    background: var(--sunken); border: 0; border-radius: 6px;
     padding: 2px 8px; text-decoration: none; cursor: pointer;
-    transition: background-color .12s, color .12s, border-color .12s;
+    transition: background-color .12s, color .12s;
 }
-.ecard-compliance-row .vals a:hover { border-color: var(--bs-primary); color: var(--bs-primary); }
+.ecard-compliance-row .vals a:hover { color: var(--bs-primary); }
 
 /* Адаптивный грид списка: 1 колонка на мобиле, несколько на десктопе; карточки
    тянутся на всю высоту ряда (равная высота). Применяется как wrapper_class

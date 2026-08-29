@@ -1,23 +1,23 @@
-{#<div class="d-flex gap-2 mb-3">#}
-    {% if duplicate is defined %}
-        <a href="{{ path(duplicate, {'from': id}) }}" type="button" class="btn btn-outline-info" title="Дублировать">
-            <i class="bi bi-files"></i>
-        </a>
-    {% endif %}
-    <a href="{{ path(edit, {'id': id}) }}" type="button" class="btn btn-outline-primary" title="Редактировать">
-        <i class="bi bi-pencil"></i>
-    </a>
-{#    <a class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#deleteModal"#}
+{# Действия над сущностью — единый компонент (списки-строки и карточки).
+   Кнопки soft (без рамки): Дублировать (info) / Редактировать (primary) / Удалить (danger).
+   Адаптивно: на мобиле только иконки, на десктопе (md+) иконка + подпись.
+   Удаление — через общий #deleteModal (data-bs-id + подключённый на странице delete_modal).
 
-{#    >#}
-    <a href="{{ path(delete, {'id': id}) }}"
-       type="button"
-       data-bs-toggle="modal"
-       data-bs-target="#deleteModal"
-       class="btn btn-outline-danger"
-       data-bs-title="{{ title }}"
-       data-bs-id="{{ id }}"
-    >
-        <i class="bi bi-trash3"></i>
+   Параметры: edit (route), delete (route), id, title; duplicate (route, опц.). #}
+{% if duplicate is defined %}
+    <a href="{{ path(duplicate, {'from': id}) }}" class="btn btn-sm btn-soft-info" title="Дублировать">
+        <i class="bi bi-files"></i><span class="d-none d-md-inline ms-1">Дублировать</span>
     </a>
-{#</div>#}
+{% endif %}
+<a href="{{ path(edit, {'id': id}) }}" class="btn btn-sm btn-soft-primary" title="Редактировать">
+    <i class="bi bi-pencil"></i><span class="d-none d-md-inline ms-1">Редактировать</span>
+</a>
+<a href="{{ path(delete, {'id': id}) }}"
+   data-bs-toggle="modal"
+   data-bs-target="#deleteModal"
+   class="btn btn-sm btn-soft-danger ms-2"
+   title="Удалить"
+   data-bs-title="{{ title }}"
+   data-bs-id="{{ id }}">
+    <i class="bi bi-trash3"></i><span class="d-none d-md-inline ms-1">Удалить</span>
+</a>
