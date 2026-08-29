@@ -97,7 +97,7 @@ final class CoatingCompareMatrixBuilderTest extends TestCase
 
         self::assertNotNull($this->findSection(
             $sections,
-            'Интервал перекрытия (мин), атмосферная эксплуатация → Полиуретановое',
+            'Атмосфера · Полиуретановое · Интервал перекрытия (мин)',
         ));
     }
 
