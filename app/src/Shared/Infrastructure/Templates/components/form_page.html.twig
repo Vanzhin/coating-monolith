@@ -1,0 +1,88 @@
+{# Общий каркас формы редактирования/создания сущности: липкий app-bar
+   (назад · заголовок · Сохранить), мобильные чипы-якоря, десктоп-TOC со
+   scroll-spy, липкая нижняя панель сохранения. Стиль — components/form.css,
+   подсветка активного раздела — controllers/form_scrollspy_controller.js.
+
+   Кнопки «Сохранить» лежат ВНЕ <form> и сабмитят её через HTML5-атрибут
+   form="{{ save_form_id }}" — поэтому саму <form> страница кладёт в блок
+   sections и обязана дать ей id="{{ save_form_id }}". Валидация/ибработчики
+   формы (submit-события) при этом срабатывают как обычно.
+
+   Параметры:
+     title        — заголовок страницы (app-bar).
+     back_url     — URL кнопки «назад» и «Отмена».
+     save_form_id — id <form> внутри блока sections (для form=... у кнопок).
+     save_label   — текст кнопки сохранения («Сохранить» / «Добавить»).
+     anchors      — list<{id, label}>: разделы для чипов-якорей и TOC. Пусто —
+                    навигация не рендерится. id должен совпадать с id="" секции
+                    в блоке sections; секции помечать data-form-scrollspy-target="section".
+
+   Блоки:
+     sections     — содержимое формы: <form id="{{ save_form_id }}"> с секциями
+                    (<section id class="fsec" data-form-scrollspy-target="section">),
+                    плюс соседние sheet/модалки.
+     appbar_extra — доп. действия в app-bar слева от «Сохранить» (напр. ссылка
+                    на смежную сущность).
+
+   Использование:
+       {% embed 'components/form_page.html.twig' with {
+           title: pageTitle, back_url: listUrl,
+           save_form_id: 'coating-form-el', save_label: submitLabel,
+           anchors: [{id: 'sec-desc', label: 'Описание'}, ...],
+       } %}
+           {% block sections %}
+               <form id="coating-form-el" method="post" action="...">...</form>
+           {% endblock %}
+       {% endembed %}
+#}
+{% set anchors = anchors|default([]) %}
+{% set save_label = save_label|default('Сохранить') %}
+
+<div class="form-page" data-controller="form-scrollspy">
+    <div class="form-appbar">
+        <div class="form-appbar-inner">
+            <a href="{{ back_url }}" class="form-appbar-back" aria-label="Назад" title="Назад">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="form-appbar-title">{{ title }}</div>
+            <div class="form-appbar-actions">
+                {% block appbar_extra %}{% endblock %}
+                <button type="submit" form="{{ save_form_id }}" class="btn btn-primary btn-sm" title="{{ save_label }}">
+                    <i class="bi bi-check-lg d-md-none"></i>
+                    <span class="d-none d-md-inline">{{ save_label }}</span>
+                </button>
+            </div>
+        </div>
+
+        {% if anchors is not empty %}
+            <div class="form-anchors d-lg-none">
+                {% for a in anchors %}
+                    <a href="#{{ a.id }}" class="form-anchor" data-anchor="{{ a.id }}"
+                       data-form-scrollspy-target="anchor"
+                       data-action="click->form-scrollspy#scrollTo">{{ a.label }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="form-layout">
+        {% if anchors is not empty %}
+            <nav class="form-toc d-none d-lg-flex" aria-label="Разделы формы">
+                {% for a in anchors %}
+                    <a href="#{{ a.id }}" class="form-toc-link" data-anchor="{{ a.id }}"
+                       data-form-scrollspy-target="toc"
+                       data-action="click->form-scrollspy#scrollTo">{{ a.label }}</a>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
+        <div class="form-main">
+            {% block sections %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="form-savebar">
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">Отмена</a>
+        <button type="submit" form="{{ save_form_id }}" class="btn btn-primary">{{ save_label }}</button>
+    </div>
+</div>

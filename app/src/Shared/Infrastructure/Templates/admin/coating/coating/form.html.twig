@@ -1,5 +1,4 @@
 {% extends '/cabinet/index.html.twig' %}
-{% from '/components/duration_input.html.twig' import duration_input %}
 
 {% set inputData = inputData|default({}) %}
 {% set isUpdate = inputData.id is defined and inputData.id %}
@@ -9,42 +8,55 @@
     ? path('app_cabinet_coating_coating_update', {id: inputData.id})
     : path('app_cabinet_coating_coating_create') %}
 {% set selectedTagIds = (inputData.tags ?? [])|map(t => t.id) %}
+{% set listUrl = path('app_cabinet_coating_coating_list') %}
+{% set formId = 'coating-form-el' %}
+{% set anchors = [
+    {id: 'sec-desc',   label: 'Описание'},
+    {id: 'sec-class',  label: 'Классификация'},
+    {id: 'sec-look',   label: 'Внешний вид'},
+    {id: 'sec-compo',  label: 'Состав'},
+    {id: 'sec-dft',    label: 'ТСП'},
+    {id: 'sec-apply',  label: 'Нанесение'},
+    {id: 'sec-limits', label: 'Пределы'},
+    {id: 'sec-cure',   label: 'Отверждение'},
+] %}
 
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
 {% block content %}
-    {# data-controller на обёртке, а не на <form>, чтобы #durationModal был соседом формы (а не её
-       потомком) — иначе скрытые number-инпуты модалки участвуют в HTML5-валидации формы и роняют
-       submit с «An invalid form control with name='' is not focusable». #}
-    <div class="p-2 p-md-3" data-controller="coating-form">
-        {# novalidate — единый паттерн: валидирует бэк, форма рендерит .alert-danger
-           (см. блок `{% if error %}` ниже). Без novalidate браузер блокировал бы
-           submit нативным tooltip'ом, который клипится overflow-hidden карточек
-           и часто не виден. Атрибуты min/max на инпутах остаются как UX-хинт
-           (up/down-стрелки в пределах диапазона), но не блокируют submit. #}
-        <form method="post" action="{{ actionUrl }}" class="w-100" novalidate
-              data-action="submit->coating-form#validateBeforeSubmit">
-            {% if error %}
-                <div class="alert alert-danger">{{ error }}</div>
-            {% endif %}
-
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
-                <div class="d-flex gap-2">
-                    {% if isUpdate %}
-                        <a href="{{ path('app_cabinet_coating_chem_resistance_edit', {coatingId: inputData.id}) }}"
-                           class="btn btn-outline-primary btn-sm">
-                            Химстойкость <i class="bi bi-arrow-right"></i>
-                        </a>
-                    {% endif %}
-                    <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left"></i> К списку
-                    </a>
-                </div>
-            </div>
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle,
+        back_url: listUrl,
+        save_form_id: formId,
+        save_label: submitLabel,
+        anchors: anchors,
+    } %}
+        {% block sections %}
+        {# Импорт внутри блока: макросы, импортированные в начале шаблона, не видны внутри
+           {% embed %}-блока (отдельный scope). #}
+        {% from '/components/duration_input.html.twig' import duration_input %}
+        {# data-controller на обёртке, а не на <form>, чтобы #durationModal был соседом формы (а не её
+           потомком) — иначе скрытые number-инпуты модалки участвуют в HTML5-валидации формы и роняют
+           submit с «An invalid form control with name='' is not focusable». #}
+        <div data-controller="coating-form">
+            {# novalidate — единый паттерн: валидирует бэк, форма рендерит .form-alert. Без novalidate
+               браузер блокировал бы submit нативным tooltip'ом, который клипится overflow-hidden
+               карточек и часто не виден. Атрибуты min/max на инпутах остаются как UX-хинт
+               (up/down-стрелки в пределах диапазона), но не блокируют submit. #}
+            <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100" novalidate
+                  data-action="submit->coating-form#validateBeforeSubmit">
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
+                    </div>
+                {% endif %}
 
             {# 1. Описание #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-desc" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Описание</h6>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -76,7 +88,7 @@
             </div>
 
             {# 2. Классификация #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-class" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Классификация</h6>
                 <div class="row g-3">
                         <div class="col-12">
@@ -91,8 +103,8 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="coating_is_zinc_rich"
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" class="form-check-input" role="switch" id="coating_is_zinc_rich"
                                        name="isZincRich" {% if inputData.isZincRich ?? false %}checked{% endif %}>
                                 <label class="form-check-label" for="coating_is_zinc_rich">
                                     Цинкнаполненная грунтовка (Zn(R), ≥80% Zn)
@@ -140,7 +152,7 @@
             </div>
 
             {# 2b. Внешний вид — блеск, колеруемость, возможные цвета #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-look" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Внешний вид</h6>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -155,8 +167,8 @@
                         </select>
                     </div>
                     <div class="col-12">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="inputIsTintable"
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" role="switch" id="inputIsTintable"
                                    name="isTintable" {% if inputData.isTintable ?? false %}checked{% endif %}>
                             <label class="form-check-label" for="inputIsTintable">
                                 Колеруемое (можно получить любой цвет)
@@ -178,7 +190,7 @@
             </div>
 
             {# 3. Состав и упаковка #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-compo" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Состав и упаковка</h6>
                 <div class="row g-3">
                         <div class="col-md-3">
@@ -216,7 +228,7 @@
             </div>
 
             {# 4. Толщина сухой плёнки (ТСП) #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-dft" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">
                     Толщина сухой плёнки (ТСП)
                     <span class="text-muted fw-normal small ms-1">мкм</span>
@@ -241,7 +253,7 @@
             </div>
 
             {# 5. Нанесение #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-apply" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Нанесение</h6>
                 <div class="row g-3">
                         <div class="col-md-4">
@@ -272,7 +284,7 @@
                   проверяются в ThermalExposureLimits::__construct → AppException → форма. #}
             {% set dryHeat = inputData.dryHeatExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
             {% set immersion = inputData.immersionExposure ?? {continuous_min: '', continuous_max: '', peak_max: '', peak_duration_minutes: ''} %}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-limits" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Пределы эксплуатации</h6>
 
                     {# ─── Сухое тепло ─── #}
@@ -358,7 +370,7 @@
                   точек визуально выделялся серым внутри белой обёртки. Использовать
                   --bs-table-bg нельзя: Bootstrap перезаписывает её на .table и наш
                   override с родителя не доходит до ячеек. #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-cure" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Время отверждения</h6>
 
                 {# ─── Сухой на отлип — белая подсекция ─── #}
@@ -483,98 +495,112 @@
                 </div>
             </div>
 
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
 
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{{ path('app_cabinet_coating_coating_list') }}" class="btn btn-outline-secondary">Отмена</a>
-                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
-            </div>
-        </form>
-
-        {# ─── Общая модалка для редактирования длительности (вне <form>, см. комментарий выше) ─── #}
-        <div class="modal fade" id="durationModal" tabindex="-1" aria-hidden="true"
-             data-coating-form-target="modal">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" data-coating-form-target="modalLabel">Значение</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                    </div>
+        {# ─── Общая модалка редактирования длительности (вне <form>, см. комментарий выше).
+              Вариант «живой итог»: крупный результат сверху (пересчитывается при вводе),
+              сегмент режима, компактные −значение+ пилюли. Логика — контроллер coating-form. ─── #}
+        <div class="modal fade" tabindex="-1" id="durationModal" aria-hidden="true"
+             aria-labelledby="durationModalLabel" data-coating-form-target="modal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content duration-modal">
                     <div class="modal-body">
-                        <div class="mb-3" data-coating-form-target="kindGroup">
-                            {# btn-group-sm + сокращённые лейблы на <sm чтобы три кнопки помещались
-                               в модалку на iPhone SE (375px). На sm+ показываем полные тексты. #}
-                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Тип значения">
-                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-duration"
-                                       value="duration" data-coating-form-target="kindRadio"
-                                       data-action="change->coating-form#onKindChange">
-                                <label class="btn btn-outline-primary" for="durationModalKind-duration">Значение</label>
-
-                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unlimited"
-                                       value="unlimited" data-coating-form-target="kindRadio"
-                                       data-action="change->coating-form#onKindChange">
-                                <label class="btn btn-outline-secondary" for="durationModalKind-unlimited"
-                                       data-coating-form-target="kindUnlimitedLabel"
-                                       title="Без ограничения">
-                                    <span class="d-sm-none">Без огр.</span>
-                                    <span class="d-none d-sm-inline">Без ограничения</span>
-                                </label>
-
-                                <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unknown"
-                                       value="unknown" data-coating-form-target="kindRadio"
-                                       data-action="change->coating-form#onKindChange">
-                                <label class="btn btn-outline-secondary" for="durationModalKind-unknown"
-                                       data-coating-form-target="kindUnknownLabel">Нет данных</label>
-                            </div>
-                        </div>
-
-                        <div data-coating-form-target="durationFields">
-                            <div class="row g-2">
-                                <div class="col">
-                                    <label class="form-label small text-muted">Дни</label>
-                                    <input type="number" class="form-control" min="0" max="365" value="0"
-                                           data-coating-form-target="modalDays">
-                                </div>
-                                <div class="col">
-                                    <label class="form-label small text-muted">Часы</label>
-                                    <input type="number" class="form-control" min="0" max="23" value="0"
-                                           data-coating-form-target="modalHours">
-                                </div>
-                                <div class="col">
-                                    <label class="form-label small text-muted">Минуты</label>
-                                    <input type="number" class="form-control" min="0" max="59" value="0"
-                                           data-coating-form-target="modalMinutes">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer justify-content-between">
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-link text-muted"
-                                    data-action="click->coating-form#clearDuration">Очистить</button>
-                            <button type="button" class="btn btn-primary"
-                                    data-action="click->coating-form#calculateDuration"
-                                    data-coating-form-target="calcBtn"
-                                    title="Рассчитать по соседним точкам"
-                                    disabled>
-                                <i class="bi bi-calculator"></i> Рассчитать
-                            </button>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
-                                    title="Отмена" aria-label="Отмена">
+                        <div class="dur-hd">
+                            <div class="dur-kicker" id="durationModalLabel" data-coating-form-target="modalLabel">Значение</div>
+                            <button type="button" class="dur-x" data-bs-dismiss="modal" aria-label="Закрыть">
                                 <i class="bi bi-x-lg"></i>
                             </button>
-                            <button type="button" class="btn btn-success"
-                                    data-action="click->coating-form#saveDuration"
-                                    title="Применить" aria-label="Применить">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
+                        </div>
+
+                        <div class="dur-live">
+                            <div class="dur-live-big" data-coating-form-target="liveTotal">0 мин</div>
+                            <div class="dur-live-cap" data-coating-form-target="liveCap">длительность</div>
+                        </div>
+                        {# Сегмент режима поверх btn-check (сокращённые лейблы на <sm — iPhone SE 375px). #}
+                        <div class="duration-seg mb-3" data-coating-form-target="kindGroup" aria-label="Тип значения">
+                            <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-duration"
+                                   value="duration" data-coating-form-target="kindRadio"
+                                   data-action="change->coating-form#onKindChange">
+                            <label class="duration-seg-btn" for="durationModalKind-duration">Значение</label>
+
+                            <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unlimited"
+                                   value="unlimited" data-coating-form-target="kindRadio"
+                                   data-action="change->coating-form#onKindChange">
+                            <label class="duration-seg-btn" for="durationModalKind-unlimited"
+                                   data-coating-form-target="kindUnlimitedLabel" title="Без ограничения">
+                                <span class="d-sm-none">Без огр.</span>
+                                <span class="d-none d-sm-inline">Без ограничения</span>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="durationModalKind" id="durationModalKind-unknown"
+                                   value="unknown" data-coating-form-target="kindRadio"
+                                   data-action="change->coating-form#onKindChange">
+                            <label class="duration-seg-btn" for="durationModalKind-unknown"
+                                   data-coating-form-target="kindUnknownLabel">Нет данных</label>
+                        </div>
+
+                        <div class="dur-pills" data-coating-form-target="durationFields">
+                            <div class="dur-pill">
+                                <button type="button" class="dur-pbtn" aria-label="минус"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="days" data-coating-form-delta-param="-1">−</button>
+                                <div class="dur-pill-mid">
+                                    <input type="number" class="dur-pval" min="0" max="365" value="0" inputmode="numeric"
+                                           data-coating-form-target="modalDays"
+                                           data-action="input->coating-form#onDurationInput">
+                                    <span class="dur-plabel">дн.</span>
+                                </div>
+                                <button type="button" class="dur-pbtn" aria-label="плюс"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="days" data-coating-form-delta-param="1">+</button>
+                            </div>
+                            <div class="dur-pill">
+                                <button type="button" class="dur-pbtn" aria-label="минус"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="hours" data-coating-form-delta-param="-1">−</button>
+                                <div class="dur-pill-mid">
+                                    <input type="number" class="dur-pval" min="0" max="23" value="0" inputmode="numeric"
+                                           data-coating-form-target="modalHours"
+                                           data-action="input->coating-form#onDurationInput">
+                                    <span class="dur-plabel">ч.</span>
+                                </div>
+                                <button type="button" class="dur-pbtn" aria-label="плюс"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="hours" data-coating-form-delta-param="1">+</button>
+                            </div>
+                            <div class="dur-pill">
+                                <button type="button" class="dur-pbtn" aria-label="минус"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="minutes" data-coating-form-delta-param="-1">−</button>
+                                <div class="dur-pill-mid">
+                                    <input type="number" class="dur-pval" min="0" max="59" value="0" inputmode="numeric"
+                                           data-coating-form-target="modalMinutes"
+                                           data-action="input->coating-form#onDurationInput">
+                                    <span class="dur-plabel">мин</span>
+                                </div>
+                                <button type="button" class="dur-pbtn" aria-label="плюс"
+                                        data-action="click->coating-form#step"
+                                        data-coating-form-field-param="minutes" data-coating-form-delta-param="1">+</button>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100 mt-3"
+                                data-action="click->coating-form#saveDuration">Применить</button>
+                        <div class="d-flex justify-content-center gap-3 mt-2">
+                            <button type="button" class="btn btn-link btn-sm text-muted text-decoration-none px-1"
+                                    data-action="click->coating-form#clearDuration">Очистить</button>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none px-1"
+                                    data-action="click->coating-form#calculateDuration"
+                                    data-coating-form-target="calcBtn"
+                                    title="Рассчитать по соседним точкам" disabled>Рассчитать</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        {% include 'components/color_create_modal.html.twig' %}
-    </div>
+            {% include 'components/color_create_modal.html.twig' %}
+        </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

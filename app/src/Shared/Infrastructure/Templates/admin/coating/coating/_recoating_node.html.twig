@@ -28,95 +28,106 @@
 
 {% set nodeId = (path|length > 0 ? path|join('-') : 'root') %}
 
-{# Корень: контейнер с вкладками. Среды-вкладки внутри. #}
+{# Корень: аккордеон по средам. «Общее» — статичная всегда-открытая секция,
+   каждая среда — раскрывающаяся (Bootstrap collapse). data-контракты
+   (data-env-tab / data-recoating-add-env / data-recoating-add-menu / id="recoating-pane-*")
+   сохранены — coating-form (addEnv/removeEnv/addBase/_rebuildAddMenu) на них завязан. #}
 {% if isRoot %}
+{% set envBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
 <div data-recoating-root
      data-available-bases="{{ baseLabels|json_encode|e('html_attr') }}">
-    {# nav-pills со сброшенным primary-цветом активной вкладки на серый:
-       переопределяем встроенные bootstrap-переменные, чтобы активная вкладка
-       была тёмной на светло-сером (общий стиль проекта, без «глубокого» синего). #}
-    <ul class="nav nav-pills mb-3 flex-nowrap overflow-x-auto overflow-y-hidden"
-        style="--bs-nav-pills-link-active-bg: var(--bs-secondary-bg); --bs-nav-pills-link-active-color: var(--bs-body-color);"
-        role="tablist" data-recoating-tabs>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab"
-                    data-bs-target="#recoating-pane-root" type="button" role="tab">
-                Общее
-            </button>
-        </li>
-        {# Итерация по union ключей min+max, чтобы env-ветви из max (без min) тоже отрисовались. #}
-        {% set envBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}
-        {% for envKey in envBranchKeys|keys %}
-            {# Крестик — sibling <button> рядом с .nav-link внутри одного <li>
-               (Bootstrap Tabs официально это поддерживает: tab-toggle сидит только
-               на .nav-link, close на его брате не активирует Bootstrap Tab-плагин).
-               Раньше был <span role=button> внутри <button data-bs-toggle=tab> —
-               interactive-в-interactive, хрупко: клик по span всплывал к parent'у,
-               и порядок stopPropagation vs Bootstrap-делегата был не гарантирован. #}
-            <li class="nav-item position-relative" role="presentation" data-env-tab="{{ envKey }}">
-                <button class="nav-link pe-4" data-bs-toggle="tab"
-                        data-bs-target="#recoating-pane-{{ envKey }}" type="button" role="tab">
-                    {{ envLabels[envKey] ?? envKey }}
-                </button>
-                <button type="button"
-                        class="btn position-absolute top-50 translate-middle-y p-0 border-0 lh-1 text-body-secondary"
-                        style="right: 0.5rem;"
-                        data-action="click->coating-form#removeEnv"
-                        data-coating-form-env-param="{{ envKey }}"
-                        title="Удалить ветку"
-                        aria-label="Удалить ветку">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </li>
-        {% endfor %}
-        <li class="nav-item dropdown ms-auto" data-recoating-add-env
-            data-controller="dropdown-portal">
-            <button class="nav-link dropdown-toggle text-body-secondary" data-bs-toggle="dropdown"
-                    type="button" aria-expanded="false">
-                + Среда
-            </button>
-            <ul class="dropdown-menu">
-                {% for envKey in availableEnvKeys %}
-                    <li{% if envKey in envBranchKeys|keys %} style="display: none;"{% endif %}>
-                        <button type="button" class="dropdown-item"
-                                data-action="click->coating-form#addEnv"
-                                data-coating-form-env-param="{{ envKey }}"
-                                data-env-option="{{ envKey }}">
-                            {{ envLabels[envKey] ?? envKey }}
-                        </button>
-                    </li>
-                {% endfor %}
-            </ul>
-        </li>
-    </ul>
 
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="recoating-pane-root" role="tabpanel">
+    {# ─── «Общее» — всегда открыта, без переключателя ─── #}
+    <div class="rec-sec">
+        <div class="rec-sec-head rec-sec-head--static">
+            <span class="rec-sec-title">Общее</span>
+            <span class="text-body-secondary small">применяется ко всем основам ЛКМ</span>
+        </div>
+        <div class="rec-sec-body">
             {% include 'admin/coating/coating/_recoating_node.html.twig' with {
                 minNode: minNode,
                 maxNode: maxNode,
                 level: 'env',
                 path: [],
                 envLabels: envLabels,
-                showEnvControls: false,
                 baseLabels: baseLabels,
             } only %}
         </div>
-        {% for envKey in envBranchKeys|keys %}
-            {% set envMinNode = (minNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
-            {% set envMaxNode = (maxNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
-            <div class="tab-pane fade" id="recoating-pane-{{ envKey }}" role="tabpanel">
-                {% include 'admin/coating/coating/_recoating_node.html.twig' with {
-                    minNode: envMinNode,
-                    maxNode: envMaxNode,
-                    level: 'env',
-                    path: [envKey],
-                    envLabels: envLabels,
-                    showEnvControls: true,
-                    baseLabels: baseLabels,
-                } only %}
+    </div>
+
+    {# ─── Среды — раскрывающиеся секции (union min+max, чтобы env из max тоже вышли) ─── #}
+    {% for envKey in envBranchKeys|keys %}
+        {% set envMinNode = (minNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
+        {% set envMaxNode = (maxNode.branches ?? {})[envKey] ?? {default: {points: []}, branches: {}} %}
+        <div class="rec-sec" data-env-tab="{{ envKey }}">
+            <div class="rec-sec-head-row">
+                <button class="rec-sec-head" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#recoating-pane-{{ envKey }}" aria-expanded="true"
+                        aria-controls="recoating-pane-{{ envKey }}">
+                    <i class="bi bi-chevron-down rec-sec-caret"></i>
+                    <span class="rec-sec-title">{{ envLabels[envKey] ?? envKey }}</span>
+                </button>
+                <button type="button" class="rec-sec-del"
+                        data-action="click->coating-form#removeEnv"
+                        data-coating-form-env-param="{{ envKey }}"
+                        title="Удалить среду" aria-label="Удалить среду">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-        {% endfor %}
+            <div id="recoating-pane-{{ envKey }}" class="collapse show">
+                <div class="rec-sec-body">
+                    {% include 'admin/coating/coating/_recoating_node.html.twig' with {
+                        minNode: envMinNode,
+                        maxNode: envMaxNode,
+                        level: 'env',
+                        path: [envKey],
+                        envLabels: envLabels,
+                        baseLabels: baseLabels,
+                    } only %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    {# ─── «+ Добавить» — единое tree-level меню: новая среда ИЛИ основа ЛКМ для среды.
+          «+ Среда» и per-env «+ Правило» сведены сюда (concept «добавить ветку дерева»).
+          data-recoating-add-env — якорь вставки новых сред (JS insertBefore перед ним);
+          data-recoating-add-menu — контейнер пунктов, JS перестраивает после add/remove. ─── #}
+    {% set usedEnvKeys = envBranchKeys|keys %}
+    {% set freeEnvKeys = availableEnvKeys|filter(k => k not in usedEnvKeys) %}
+    <div class="dropdown" data-recoating-add-env data-controller="dropdown-portal">
+        <button class="btn btn-sm btn-soft-success dropdown-toggle" data-bs-toggle="dropdown"
+                type="button" aria-expanded="false">
+            <i class="bi bi-plus-lg"></i> Добавить
+        </button>
+        <ul class="dropdown-menu" data-recoating-add-menu style="max-height: 60vh; overflow-y: auto;">
+            {% if freeEnvKeys is not empty %}
+                <li><h6 class="dropdown-header">Среда</h6></li>
+                {% for k in freeEnvKeys %}
+                    <li><button type="button" class="dropdown-item"
+                            data-action="click->coating-form#addEnv"
+                            data-coating-form-env-param="{{ k }}">
+                        {{ envLabels[k] ?? k }}
+                    </button></li>
+                {% endfor %}
+            {% endif %}
+            {% for env in usedEnvKeys %}
+                {% set envMin = (minNode.branches ?? {})[env] ?? {branches: {}} %}
+                {% set envMax = (maxNode.branches ?? {})[env] ?? {branches: {}} %}
+                {% set usedBaseKeys = ((envMin.branches ?? {})|merge(envMax.branches ?? {}))|keys %}
+                {% set freeBaseKeys = baseLabels|keys|filter(b => b not in usedBaseKeys) %}
+                {% if freeBaseKeys is not empty %}
+                    <li><h6 class="dropdown-header">Основа ЛКМ · {{ envLabels[env] ?? env }}</h6></li>
+                    {% for b in freeBaseKeys %}
+                        <li><button type="button" class="dropdown-item"
+                                data-action="click->coating-form#addBase"
+                                data-coating-form-env-param="{{ env }}" data-coating-form-base-param="{{ b }}">
+                            {{ baseLabels[b] }}
+                        </button></li>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </ul>
     </div>
 </div>
 
@@ -129,15 +140,27 @@
 <div class="{% if isBase %}p-3 mt-3 rounded-3 bg-body-tertiary{% endif %}"
      {% if isBase %}style="--table-rows-cell-bg: var(--bs-body-bg);"{% endif %}
      data-recoating-node="{{ nodeId }}">
+    {# Кнопка «Добавить точку» — в шапке блока справа (как в блоках сушки), не внизу. #}
     {% if isBase %}
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="fw-semibold mb-0">Основа: {{ baseLabels[path|last] ?? path|last }}</h6>
-            <button type="button" class="btn-close"
-                    data-action="click->coating-form#removeBase"
-                    data-coating-form-env-param="{{ path[0] }}"
-                    data-coating-form-base-param="{{ path|last }}"
-                    title="Удалить правило для основы"
-                    aria-label="Удалить правило для основы"></button>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-action="click->coating-form#addRow"
+                        data-coating-form-tbody-param="recoating-{{ nodeId }}">Добавить точку</button>
+                <button type="button" class="btn-close"
+                        data-action="click->coating-form#removeBase"
+                        data-coating-form-env-param="{{ path[0] }}"
+                        data-coating-form-base-param="{{ path|last }}"
+                        title="Удалить правило для основы"
+                        aria-label="Удалить правило для основы"></button>
+            </div>
+        </div>
+    {% else %}
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-action="click->coating-form#addRow"
+                    data-coating-form-tbody-param="recoating-{{ nodeId }}">Добавить точку</button>
         </div>
     {% endif %}
 
@@ -188,35 +211,6 @@
         </tbody>
     </table>
     </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary"
-                data-action="click->coating-form#addRow"
-                data-coating-form-tbody-param="recoating-{{ nodeId }}">
-            + Точка
-        </button>
-
-        {% if isEnv and (showEnvControls ?? true) %}
-            <div class="dropdown">
-                <button class="btn btn-sm btn-outline-success dropdown-toggle"
-                        data-bs-toggle="dropdown" type="button">
-                    + Правило для основы ЛКМ
-                </button>
-                <ul class="dropdown-menu">
-                    {% for baseKey, baseLabel in baseLabels %}
-                        <li>
-                            <button type="button" class="dropdown-item"
-                                    data-action="click->coating-form#addBase"
-                                    data-coating-form-env-param="{{ path[0] }}"
-                                    data-coating-form-base-param="{{ baseKey }}">
-                                {{ baseLabel }}
-                            </button>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-    </div>
-
     {% if isEnv and path|length > 0 %}
         {# Union ключей min+max, чтобы base-ветви из max (без min) тоже отрисовались. #}
         {% set baseBranchKeys = (minNode.branches ?? {})|merge(maxNode.branches ?? {}) %}

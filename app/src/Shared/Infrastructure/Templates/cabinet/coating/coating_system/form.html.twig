@@ -7,29 +7,39 @@
 {% set actionUrl = isUpdate
     ? path('app_cabinet_coating_system_update', {id: systemId})
     : path('app_cabinet_coating_system_add') %}
+{% set listUrl = path('app_cabinet_coating_system_list') %}
+{% set formId = 'coating-system-form' %}
+{% set anchors = [
+    {id: 'sec-meta',   label: 'Описание'},
+    {id: 'sec-prep',   label: 'Подготовка'},
+    {id: 'sec-layers', label: 'Слои'},
+    {id: 'sec-tags',   label: 'Теги'},
+] %}
 
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
 {% block content %}
-    <div class="p-2 p-md-3"
-         data-controller="surface-treatment-modal"
-         data-surface-treatment-modal-endpoint-value="{{ path('app_cabinet_surface_treatment_create_inline') }}"
-         data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
-         data-surface-treatment-modal-substrate-select-value="inputSubstrate">
-        <form method="post" action="{{ actionUrl }}" class="w-100" novalidate>
-            {% if error is defined and error %}
-                <div class="alert alert-danger">{{ error }}</div>
-            {% endif %}
-
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
-                <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i> К списку
-                </a>
-            </div>
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle, back_url: listUrl, save_form_id: formId, save_label: submitLabel, anchors: anchors,
+    } %}
+        {% block sections %}
+        <div data-controller="surface-treatment-modal"
+             data-surface-treatment-modal-endpoint-value="{{ path('app_cabinet_surface_treatment_create_inline') }}"
+             data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
+             data-surface-treatment-modal-substrate-select-value="inputSubstrate">
+            <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
+                    </div>
+                {% endif %}
 
             {# 1. Метаданные #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-meta" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Описание</h6>
                 <div class="row g-3">
                     <div class="col-md-4">
@@ -72,13 +82,13 @@
             </div>
 
             {# 2. Подготовка поверхности #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+            <div id="sec-prep" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Подготовка поверхности</h6>
                 <div class="row g-3">
                     <div class="col-md-8">
                         <label for="inputSurfaceTreatment" class="form-label">Метод подготовки</label>
-                        <div class="input-group">
-                            <div class="flex-grow-1"
+                        <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
+                            <div class="flex-grow-1" style="min-width: 0;"
                                  data-controller="async-typeahead"
                                  data-async-typeahead-endpoint-value="{{ path('app_cabinet_surface_treatment_suggest') }}"
                                  data-async-typeahead-placeholder-value="Поиск подготовки поверхности...">
@@ -92,9 +102,9 @@
                                     {% endif %}
                                 </select>
                             </div>
-                            <button type="button" class="btn btn-outline-secondary"
+                            <button type="button" class="btn btn-soft-success flex-shrink-0"
                                     data-action="click->surface-treatment-modal#open">
-                                + Создать
+                                <i class="bi bi-plus-lg"></i> Создать
                             </button>
                         </div>
                     </div>
@@ -118,13 +128,15 @@
                     }]) %}
                 {% endfor %}
             {% endif %}
-            {% include 'cabinet/coating/coating_system/_layers_edit.html.twig' with {
-                layers: editorLayers,
-                error: null,
-            } %}
+            <div id="sec-layers" class="fsec" data-form-scrollspy-target="section">
+                {% include 'cabinet/coating/coating_system/_layers_edit.html.twig' with {
+                    layers: editorLayers,
+                    error: null,
+                } %}
+            </div>
 
             {# 4. Теги #}
-            <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-coating-tags-group>
+            <div id="sec-tags" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section" data-coating-tags-group>
                 <h6 class="fw-semibold mb-3">Теги</h6>
                 <input type="text"
                        data-controller="coating-tags"
@@ -137,11 +149,7 @@
                        placeholder="Начните вводить тег...">
             </div>
 
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{{ path('app_cabinet_coating_system_list') }}" class="btn btn-outline-secondary">Отмена</a>
-                <button class="btn btn-primary" type="submit">{{ submitLabel }}</button>
-            </div>
-        </form>
+            </form>
 
     {# Bootstrap modal для inline-создания подготовки поверхности.
        Модалка ВНУТРИ внешнего div c data-controller="surface-treatment-modal",
@@ -199,5 +207,7 @@
     </div>
 
     {% include 'components/color_create_modal.html.twig' %}
-    </div>
+        </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

@@ -1,17 +1,19 @@
 import { Controller } from '@hotwired/stimulus';
 import { Modal } from 'bootstrap';
+import { showToast } from '../flash_toast.js';
 
 /**
  * Управляет формой редактирования покрытия:
- *  - модалкой длительности (#durationModal) — открытие, заполнение, сохранение,
+ *  - модалкой длительности (#durationModal) — открытие, заполнение, степперы,
+ *    сохранение,
  *  - универсальным добавлением/удалением строк во всех температурно-зависимых
  *    подсекциях (data-series="dryToTouch|fullCure|recoating-{nodeId}"),
- *  - динамическим добавлением/удалением env-вкладок и base-правил
+ *  - динамическим добавлением/удалением env-секций и base-правил
  *    в дереве интервалов перекрытия.
  */
 export default class extends Controller {
     static targets = [
-        'modal', 'modalLabel',
+        'modal', 'modalLabel', 'liveTotal', 'liveCap',
         'modalDays', 'modalHours', 'modalMinutes',
         'calcBtn',
         'kindGroup', 'kindRadio', 'kindUnlimitedLabel', 'kindUnknownLabel', 'durationFields',
@@ -33,7 +35,7 @@ export default class extends Controller {
         }
     }
 
-    // --- Модалка ---
+    // --- Модалка длительности ---
 
     onShowDurationModal(event) {
         const button = event.relatedTarget;
@@ -68,6 +70,13 @@ export default class extends Controller {
             this.kindUnknownLabelTarget.previousElementSibling.style.display = showUnknown ? '' : 'none';
         }
 
+        // Доступен только режим «Значение» (мин. интервал / сушки) — прячем весь сегмент,
+        // одиночный пилюль-переключатель без выбора только путает.
+        if (this.hasKindGroupTarget) {
+            const onlyDuration = !allowUnlimited && required;
+            this.kindGroupTarget.style.display = onlyDuration ? 'none' : '';
+        }
+
         // Подсветить текущий kind.
         const safeKind = (currentKind === 'unlimited' && allowUnlimited)
             || (currentKind === 'unknown' && !required)
@@ -91,6 +100,7 @@ export default class extends Controller {
         }
 
         this._applyKindVisibility(safeKind);
+        this._updateLive();
     }
 
     onKindChange() {
@@ -100,6 +110,31 @@ export default class extends Controller {
             this.modalDaysTarget.value = 0;
             this.modalHoursTarget.value = 0;
             this.modalMinutesTarget.value = 0;
+        }
+        this._updateLive();
+    }
+
+    onDurationInput() {
+        this._updateLive();
+    }
+
+    /** Обновляет крупный «живой» итог сверху модалки по текущему режиму/значениям. */
+    _updateLive() {
+        if (!this.hasLiveTotalTarget) return;
+        const kind = this._currentRadioKind();
+        if (kind === 'unlimited') {
+            this.liveTotalTarget.textContent = 'Без ограничения';
+        } else if (kind === 'unknown') {
+            this.liveTotalTarget.textContent = 'Нет данных';
+        } else {
+            const total = this._intVal(this.modalDaysTarget) * 1440
+                + this._intVal(this.modalHoursTarget) * 60
+                + this._intVal(this.modalMinutesTarget);
+            this.liveTotalTarget.textContent = this._formatMinutesShort(total);
+        }
+        this.liveTotalTarget.classList.toggle('dur-live-big--text', kind !== 'duration');
+        if (this.hasLiveCapTarget) {
+            this.liveCapTarget.style.visibility = kind === 'duration' ? 'visible' : 'hidden';
         }
     }
 
@@ -160,6 +195,20 @@ export default class extends Controller {
         this.modalDaysTarget.value    = 0;
         this.modalHoursTarget.value   = 0;
         this.modalMinutesTarget.value = 0;
+        this._updateLive();
+    }
+
+    /** Степпер −/+ для полей Дни/Часы/Минуты модалки (в рамках min/max инпута). */
+    step(event) {
+        const field = event.params.field;
+        const delta = parseInt(event.params.delta, 10) || 0;
+        const input = { days: this.modalDaysTarget, hours: this.modalHoursTarget, minutes: this.modalMinutesTarget }[field];
+        if (!input) return;
+        const min = parseInt(input.min, 10) || 0;
+        const max = input.max !== '' ? parseInt(input.max, 10) : Number.MAX_SAFE_INTEGER;
+        const next = (parseInt(input.value, 10) || 0) + delta;
+        input.value = Math.max(min, Math.min(max, next));
+        this._updateLive();
     }
 
     /** «Рассчитать» — линейная интерполяция через бэк (/cabinet/coating/series/interpolate). */
@@ -183,15 +232,16 @@ export default class extends Controller {
             });
             const envelope = await response.json();
             if (envelope.result !== 'success' || !envelope.data) {
-                alert(envelope.message || 'Не удалось рассчитать значение.');
+                showToast(envelope.message || 'Не удалось рассчитать значение.', 'danger');
                 return;
             }
             const decomposed = this._decompose(envelope.data.minutes);
             this.modalDaysTarget.value    = decomposed.days;
             this.modalHoursTarget.value   = decomposed.hours;
             this.modalMinutesTarget.value = decomposed.minutes;
+            this._updateLive();
         } catch (e) {
-            alert('Ошибка обращения к серверу: ' + e.message);
+            showToast('Ошибка обращения к серверу: ' + e.message, 'danger');
         } finally {
             this.calcBtnTarget.disabled = false;
         }
@@ -223,7 +273,7 @@ export default class extends Controller {
         }
         if (emptyTemps.length > 0) {
             event.preventDefault();
-            alert(`Заполните минимальный интервал перекрытия для точек: ${emptyTemps.join(', ')} (или удалите эти строки).`);
+            showToast(`Заполните минимальный интервал перекрытия для точек: ${emptyTemps.join(', ')} (или удалите эти строки).`, 'warning');
         }
     }
 
@@ -269,7 +319,7 @@ export default class extends Controller {
         if (!tbody) return;
         const required = tbody.dataset.seriesRequired !== '0';
         if (required && tbody.children.length <= 1) {
-            alert('Нужна хотя бы одна точка.');
+            showToast('Нужна хотя бы одна точка.', 'warning');
             return;
         }
         tr.remove();
@@ -284,49 +334,38 @@ export default class extends Controller {
         const root = this.element.querySelector('[data-recoating-root]');
         if (!root) return;
 
-        const tabsUl = root.querySelector('[data-recoating-tabs]');
-        const tabContent = root.querySelector('.tab-content');
-
         const envLabels = { atmospheric: 'Атмосферная', immersion: 'Погружение', special: 'Спец среды' };
         const label = envLabels[envKey] || envKey;
+        const paneId = `recoating-pane-${envKey}`;
 
-        // Структура совпадает с Twig-версией: close — sibling <button> для .nav-link
-        // внутри <li> (Bootstrap Tabs так и предполагается). Не span-в-button.
-        const tabLi = document.createElement('li');
-        tabLi.className = 'nav-item position-relative';
-        tabLi.setAttribute('role', 'presentation');
-        tabLi.setAttribute('data-env-tab', envKey);
-        tabLi.innerHTML = `
-            <button class="nav-link pe-4"
-                    data-bs-toggle="tab" data-bs-target="#recoating-pane-${envKey}"
-                    type="button" role="tab">${label}</button>
-            <button type="button"
-                    class="btn position-absolute top-50 translate-middle-y p-0 border-0 lh-1 text-body-secondary"
-                    style="right: 0.5rem;"
-                    data-action="click->coating-form#removeEnv"
-                    data-coating-form-env-param="${envKey}"
-                    title="Удалить ветку"
-                    aria-label="Удалить ветку">
-                <i class="bi bi-x-lg"></i>
-            </button>`;
-        const addEnvLi = root.querySelector('[data-recoating-add-env]');
-        tabsUl.insertBefore(tabLi, addEnvLi);
+        // Раскрывающаяся секция среды (открыта сразу), структура зеркалит Twig-версию
+        // _recoating_node.html.twig: заголовок-toggle + collapse-тело с env-узлом.
+        const section = document.createElement('div');
+        section.className = 'rec-sec';
+        section.setAttribute('data-env-tab', envKey);
+        section.innerHTML = `
+            <div class="rec-sec-head-row">
+                <button class="rec-sec-head" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#${paneId}" aria-expanded="true" aria-controls="${paneId}">
+                    <i class="bi bi-chevron-down rec-sec-caret"></i>
+                    <span class="rec-sec-title">${label}</span>
+                </button>
+                <button type="button" class="rec-sec-del"
+                        data-action="click->coating-form#removeEnv"
+                        data-coating-form-env-param="${envKey}"
+                        title="Удалить среду" aria-label="Удалить среду">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div id="${paneId}" class="collapse show">
+                <div class="rec-sec-body">${this._envPaneHTML(envKey)}</div>
+            </div>`;
 
-        // Создать pane.
-        const paneDiv = document.createElement('div');
-        paneDiv.className = 'tab-pane fade';
-        paneDiv.id = `recoating-pane-${envKey}`;
-        paneDiv.setAttribute('role', 'tabpanel');
-        paneDiv.innerHTML = this._envPaneHTML(envKey);
-        tabContent.appendChild(paneDiv);
+        // Вставляем секцию перед единым контролом «+ Добавить».
+        const addControl = root.querySelector('[data-recoating-add-env]');
+        root.insertBefore(section, addControl);
 
-        // Скрыть выбранную среду в dropdown.
-        const opt = root.querySelector(`[data-env-option="${envKey}"]`);
-        if (opt) opt.closest('li').style.display = 'none';
-
-        // Активировать новую вкладку через Bootstrap.
-        const Tab = window.bootstrap?.Tab;
-        if (Tab) new Tab(tabLi.querySelector('button.nav-link')).show();
+        this._rebuildAddMenu();
     }
 
     removeEnv(event) {
@@ -334,22 +373,10 @@ export default class extends Controller {
         if (!envKey) return;
         const root = this.element.querySelector('[data-recoating-root]');
         if (!root) return;
-        const tabLi = root.querySelector(`[data-env-tab="${envKey}"]`);
-        const pane = root.querySelector(`#recoating-pane-${envKey}`);
-        const wasActive = tabLi?.querySelector('.nav-link.active');
-        tabLi?.remove();
-        pane?.remove();
+        // Секция целиком (заголовок + collapse-тело) — под data-env-tab.
+        root.querySelector(`[data-env-tab="${envKey}"]`)?.remove();
 
-        // Вернуть среду в dropdown.
-        const opt = root.querySelector(`[data-env-option="${envKey}"]`);
-        if (opt) opt.closest('li').style.display = '';
-
-        // Если удалили активную — переключиться на «Общее».
-        if (wasActive) {
-            const Tab = window.bootstrap?.Tab;
-            const rootBtn = root.querySelector('button[data-bs-target="#recoating-pane-root"]');
-            if (Tab && rootBtn) new Tab(rootBtn).show();
-        }
+        this._rebuildAddMenu();
     }
 
     // --- Основания (base-правила) ---
@@ -380,12 +407,17 @@ export default class extends Controller {
         block.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-semibold mb-0">Основа: ${baseLabel}</h6>
-                <button type="button" class="btn-close"
-                        data-action="click->coating-form#removeBase"
-                        data-coating-form-env-param="${envKey}"
-                        data-coating-form-base-param="${baseKey}"
-                        title="Удалить правило для основы"
-                        aria-label="Удалить правило для основы"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->coating-form#addRow"
+                            data-coating-form-tbody-param="recoating-${nodeId}">Добавить точку</button>
+                    <button type="button" class="btn-close"
+                            data-action="click->coating-form#removeBase"
+                            data-coating-form-env-param="${envKey}"
+                            data-coating-form-base-param="${baseKey}"
+                            title="Удалить правило для основы"
+                            aria-label="Удалить правило для основы"></button>
+                </div>
             </div>
             <div class="table-responsive">
             <table class="table table-sm align-middle mb-0 table-rows">
@@ -399,13 +431,15 @@ export default class extends Controller {
                     <tr>${rowHTML}</tr>
                 </tbody>
             </table>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        data-action="click->coating-form#addRow"
-                        data-coating-form-tbody-param="recoating-${nodeId}">+ Точка</button>
             </div>`;
         pane.appendChild(block);
+
+        // Раскрыть среду, если свёрнута — чтобы новое правило было видно.
+        const paneEl = document.getElementById(`recoating-pane-${envKey}`);
+        if (paneEl && !paneEl.classList.contains('show')) {
+            window.bootstrap?.Collapse.getOrCreateInstance(paneEl).show();
+        }
+        this._rebuildAddMenu();
     }
 
     removeBase(event) {
@@ -414,6 +448,47 @@ export default class extends Controller {
         if (!envKey || !baseKey) return;
         const block = this.element.querySelector(`[data-recoating-node="${envKey}-${baseKey}"]`);
         block?.remove();
+        this._rebuildAddMenu();
+    }
+
+    /**
+     * Перестраивает единое меню «+ Добавить»: группа «Среда» (неиспользованные среды)
+     * + по группе «Основа ЛКМ · {среда}» на каждую существующую среду (её неиспользованные
+     * основы). Зеркалит начальную Twig-разметку меню; вызывается после add/remove.
+     */
+    _rebuildAddMenu() {
+        const root = this.element.querySelector('[data-recoating-root]');
+        const menu = root?.querySelector('[data-recoating-add-menu]');
+        if (!root || !menu) return;
+
+        const envLabels = { atmospheric: 'Атмосферная', immersion: 'Погружение', special: 'Спец среды' };
+        const allEnvKeys = ['atmospheric', 'immersion', 'special'];
+        const baseLabels = this._baseLabelsFromRoot();
+        const existingEnvs = [...root.querySelectorAll('[data-env-tab]')].map((el) => el.dataset.envTab);
+
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        let html = '';
+
+        const freeEnvs = allEnvKeys.filter((k) => !existingEnvs.includes(k));
+        if (freeEnvs.length) {
+            html += '<li><h6 class="dropdown-header">Среда</h6></li>';
+            for (const k of freeEnvs) {
+                html += `<li><button type="button" class="dropdown-item" data-action="click->coating-form#addEnv" data-coating-form-env-param="${k}">${esc(envLabels[k] || k)}</button></li>`;
+            }
+        }
+
+        for (const env of existingEnvs) {
+            const usedBases = [...root.querySelectorAll(`[data-recoating-node^="${env}-"]`)]
+                .map((el) => el.dataset.recoatingNode.slice(env.length + 1));
+            const freeBases = Object.keys(baseLabels).filter((b) => !usedBases.includes(b));
+            if (!freeBases.length) continue;
+            html += `<li><h6 class="dropdown-header">Основа ЛКМ · ${esc(envLabels[env] || env)}</h6></li>`;
+            for (const b of freeBases) {
+                html += `<li><button type="button" class="dropdown-item" data-action="click->coating-form#addBase" data-coating-form-env-param="${env}" data-coating-form-base-param="${b}">${esc(baseLabels[b])}</button></li>`;
+            }
+        }
+
+        menu.innerHTML = html || '<li><span class="dropdown-item-text text-body-secondary small">Всё добавлено</span></li>';
     }
 
     // --- Утилиты ---
@@ -669,29 +744,20 @@ export default class extends Controller {
         `;
     }
 
-    /** Генерирует HTML панели для свежей env-ветки (одна точка по умолчанию). */
+    /** Генерирует HTML панели для свежей env-ветки (одна точка по умолчанию).
+        Добавление основ ЛКМ — через единое меню «+ Добавить» уровня дерева. */
     _envPaneHTML(envKey) {
         const minPrefix = `minRecoatingInterval[branches][${envKey}][default][points]`;
         const maxPrefix = `maxRecoatingInterval[branches][${envKey}][default][points]`;
         const nodeId = envKey;
         const rowHTML = this._pairedRecoatingRow(minPrefix, maxPrefix, nodeId, 0);
-        const baseLabels = this._baseLabelsFromRoot();
-        const baseItems = Object.entries(baseLabels).map(([key, label]) => `
-            <li><button type="button" class="dropdown-item"
-                        data-action="click->coating-form#addBase"
-                        data-coating-form-env-param="${envKey}"
-                        data-coating-form-base-param="${key}">${label}</button></li>
-        `).join('');
-        const baseDropdown = `
-            <div class="dropdown">
-                <button class="btn btn-sm btn-outline-success dropdown-toggle"
-                        data-bs-toggle="dropdown" type="button">
-                    + Правило для основы ЛКМ
-                </button>
-                <ul class="dropdown-menu">${baseItems}</ul>
-            </div>`;
         return `
             <div data-recoating-node="${nodeId}">
+                <div class="d-flex justify-content-end mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->coating-form#addRow"
+                            data-coating-form-tbody-param="recoating-${nodeId}">Добавить точку</button>
+                </div>
                 <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0 table-rows">
                     <thead><tr>
@@ -704,12 +770,6 @@ export default class extends Controller {
                         <tr>${rowHTML}</tr>
                     </tbody>
                 </table>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->coating-form#addRow"
-                            data-coating-form-tbody-param="recoating-${nodeId}">+ Точка</button>
-                    ${baseDropdown}
                 </div>
             </div>`;
     }
