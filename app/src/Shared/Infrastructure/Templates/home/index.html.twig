@@ -2,90 +2,52 @@
 
 {% block title %}{{ parent() }} | Главная{% endblock %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    <style>
-        /* Тонкий пульс кнопки «Войти» — цветом, не размером. Мягкое halo
-           расширяется и угасает вокруг кнопки, привлекая внимание к CTA
-           без прыгающего лейаута. rgba secondary с невысокой альфой —
-           почти незаметно, но взгляд ловится.
-           Уважаем prefers-reduced-motion — пользователи с настройкой
-           anti-motion не видят анимации. */
-        @keyframes cta-pulse {
-            0%   { box-shadow: 0 0 0 0   rgba(108, 117, 125, 0.35); }
-            70%  { box-shadow: 0 0 0 10px rgba(108, 117, 125, 0);    }
-            100% { box-shadow: 0 0 0 0   rgba(108, 117, 125, 0);    }
-        }
-        .cta-pulse { animation: cta-pulse 4.5s ease-out infinite; }
-        @media (prefers-reduced-motion: reduce) {
-            .cta-pulse { animation: none; }
-        }
-    </style>
-{% endblock %}
-
-{# Лэндинг без header/footer — фокус только на приветственной карточке
-   и выборе «Войти / Регистрация». Меню и брендовые элементы появляются
-   только внутри кабинета. #}
+{# Лендинг без header/footer — фокус на герое и входе. Меню/брендинг — только в кабинете. #}
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
 
 {% block body %}
-    <div class="container-fluid p-3">
-        <div class="row justify-content-center">
-            <div class="col-lg-9">
-                {# Приветственный экран. Тертиарная карточка в общем стиле, с крупным
-                   заголовком, кратким описанием и CTA-кнопками. #}
-                <div class="p-4 p-md-5 rounded-3 bg-body-tertiary text-center mb-3">
-                    <h1 class="display-6 fw-semibold mb-2">{{ app_name }}</h1>
-                    <p class="lead text-body-secondary mb-4">
-                        Инструменты, которые помогают в повседневной работе.
-                    </p>
-                    <div class="d-flex flex-wrap gap-2 justify-content-center">
-                        <a href="{{ path('app_login') }}" class="btn btn-secondary cta-pulse">
+    <div class="authshell">
+        <div class="land-split">
+            <div class="ls-left">
+                <div class="auth-glow"></div>
+                <div class="land-hero">
+                    <div class="auth-logo-mark lg">{{ app_name|first }}</div>
+                    <div class="land-title">{{ app_name }}</div>
+                    <div class="land-sub">Каталог, подбор и сравнение — в одном приложении. Работает и как сайт, и как установленное приложение.</div>
+
+                    <div class="land-feats">
+                        <div class="land-feat">
+                            <div class="fi"><i class="bi bi-grid-3x3-gap"></i></div>
+                            <div class="ft"><b>Покрытия</b><span>поиск, фильтры и характеристики</span></div>
+                        </div>
+                        <div class="land-feat">
+                            <div class="fi"><i class="bi bi-droplet"></i></div>
+                            <div class="ft"><b>Подбор по среде</b><span>под условия эксплуатации</span></div>
+                        </div>
+                        <div class="land-feat">
+                            <div class="fi"><i class="bi bi-arrow-left-right"></i></div>
+                            <div class="ft"><b>Сравнение</b><span>варианты рядом</span></div>
+                        </div>
+                    </div>
+
+                    <div class="land-cta">
+                        <a href="{{ path('app_login') }}" class="auth-btn auth-btn-primary">
                             <i class="bi bi-box-arrow-in-right"></i> Войти
                         </a>
-                        <a href="{{ path('app_sign_up') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-person-plus"></i> Регистрация
-                        </a>
-                    </div>
-                    {# Установка PWA — появляется, когда браузер предлагает установку. #}
-                    <div class="mt-3">
-                        {% include '_shell/_install_button.html.twig' with { class: 'btn-sm' } %}
+                        <a href="{{ path('app_sign_up') }}" class="auth-btn auth-btn-ghost">Регистрация</a>
+                        <div class="install-hint">
+                            {% include '_shell/_install_button.html.twig' with { class: 'btn-sm' } %}
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {# Три коротких фичи-блока — быстрый обзор возможностей. #}
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                            <h6 class="fw-semibold mb-2">
-                                <i class="bi bi-search me-1"></i> Поиск
-                            </h6>
-                            <p class="small text-body-secondary mb-0">
-                                Быстрый поиск с автокоррекцией опечаток.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                            <h6 class="fw-semibold mb-2">
-                                <i class="bi bi-sliders me-1"></i> Фильтры
-                            </h6>
-                            <p class="small text-body-secondary mb-0">
-                                Гибкие фильтры и сортировки для точного результата.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 rounded-3 bg-body-tertiary h-100">
-                            <h6 class="fw-semibold mb-2">
-                                <i class="bi bi-arrow-left-right me-1"></i> Сравнение
-                            </h6>
-                            <p class="small text-body-secondary mb-0">
-                                Сопоставление нескольких объектов рядом.
-                            </p>
-                        </div>
-                    </div>
+            {# Десктоп: вход прямо в сплите (на мобиле скрыт — там кнопки CTA выше). #}
+            <div class="ls-right">
+                <div class="auth-card">
+                    <h1 class="auth-h">Вход</h1>
+                    {% include 'security/_login_form.html.twig' %}
                 </div>
             </div>
         </div>

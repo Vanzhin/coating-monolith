@@ -2,24 +2,22 @@
 
 {% block title %}{{ parent() }} · Письмо отправлено{% endblock %}
 
-{# Неавторизованные страницы — только контент без хедера/футера. #}
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
 
 {% block body %}
-    <div class="container-fluid p-3">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="p-4 rounded-3 bg-body-tertiary text-center">
-                    <i class="bi bi-envelope-check display-4 text-primary d-block mb-3"></i>
-                    <h1 class="h4 fw-semibold mb-2">Проверьте почту</h1>
-                    <p class="text-body-secondary mb-3">
-                        Если <strong>{{ email }}</strong> зарегистрирован в системе, мы отправили на него ссылку для входа. Ссылка активна несколько минут.
-                    </p>
-                    <a href="{{ path('app_login_link', {'email': email}) }}"
-                       class="btn btn-outline-secondary">
-                        Отправить ещё раз
-                    </a>
+    <div class="authshell">
+        <div class="auth-wrap">
+            <div class="auth-logo-mark md auth-logo-center">{{ app_name|first }}</div>
+
+            <div class="auth-card auth-sent">
+                <div class="ok-ic"><i class="bi bi-envelope-check"></i></div>
+                <h1 class="auth-h">Проверьте почту</h1>
+                <p class="auth-s">
+                    Если <span class="em">{{ email }}</span> зарегистрирован в системе, мы отправили на него ссылку для входа. Ссылка активна несколько минут.
+                </p>
+                <div class="auth-mini">
+                    <a href="{{ path('app_login_link', {'email': email}) }}">Отправить ещё раз</a>
                 </div>
             </div>
         </div>

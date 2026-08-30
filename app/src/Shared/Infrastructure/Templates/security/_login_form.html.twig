@@ -1,0 +1,29 @@
+{# Форма входа по паролю. Переиспользуется на /login и в десктоп-сплите лендинга.
+   Поля/роут/CSRF не менять — на них завязан security-guard. Переменные (обе опц.):
+     error         — AuthenticationException|null (показываем сообщение)
+     last_username — предзаполнение email #}
+<form method="post" action="{{ path('app_login') }}">
+    {% if error is defined and error %}
+        <div class="auth-alert">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+    {% endif %}
+
+    <div class="auth-field">
+        <input type="email" name="email" id="inputEmail" value="{{ last_username|default('') }}"
+               autocomplete="email" required autofocus placeholder="you@example.com">
+        <label for="inputEmail">Email</label>
+    </div>
+    <div class="auth-field">
+        <input type="password" name="password" id="inputPassword"
+               autocomplete="current-password" required placeholder="Пароль">
+        <label for="inputPassword">Пароль</label>
+    </div>
+
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+    <button class="auth-btn auth-btn-primary" type="submit">
+        <i class="bi bi-box-arrow-in-right"></i> Войти
+    </button>
+
+    <div class="auth-alt">Нет аккаунта? <a href="{{ path('app_sign_up') }}">Зарегистрироваться</a></div>
+    <div class="auth-mini"><a href="{{ path('app_login_link') }}">Вход по ссылке без пароля</a></div>
+</form>

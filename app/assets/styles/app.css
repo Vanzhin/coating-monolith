@@ -8,6 +8,7 @@
 @import "components/range-slider.css";
 @import "./components/coating-substance-badges.css";
 @import "components/color-swatch.css";
+@import "components/auth.css";
 @import "fonts.css";
 /* Стили каркаса, вынесенные из inline-<style> base.html.twig. Порядок важен:
    shell/tables — базовые, refresh — последним (его override'ы каскадируют выше). */

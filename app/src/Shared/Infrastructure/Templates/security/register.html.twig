@@ -2,72 +2,65 @@
 
 {% block title %}{{ parent() }} · Регистрация{% endblock %}
 
-{# Неавторизованные страницы — только форма без хедера/футера. #}
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
 
 {% block body %}
-    <div class="container-fluid p-3">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                {% if app.user %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary text-center">
-                        Вы вошли как <strong>{{ app.user.userIdentifier }}</strong>.
-                        <a href="{{ path('app_logout') }}">Выйти</a>
-                    </div>
-                {% endif %}
+    <div class="authshell">
+        <div class="auth-wrap">
+            <a href="{{ path('app_login') }}" class="auth-back" aria-label="Ко входу"><i class="bi bi-arrow-left"></i></a>
 
-                <div class="p-4 rounded-3 bg-body-tertiary">
-                    <h1 class="h4 fw-semibold mb-3 text-center">Регистрация</h1>
-
-                    {# Flash-сообщения от контроллера (register_failure / register_success). #}
-                    {% for message in app.flashes('register_failure') %}
-                        <div class="alert alert-danger">{{ message }}</div>
-                    {% endfor %}
-                    {% for message in app.flashes('register_success') %}
-                        <div class="alert alert-success">{{ message }}</div>
-                    {% endfor %}
-
-                    {# Symfony Form отдаёт поля с name="registration_form[...]" и
-                       свой CSRF-токен. Стиль — form-floating (у Symfony bootstrap_5
-                       theme его нет), поэтому inputs пишем руками, а name/id/errors
-                       берём из FormView. #}
-                    <form method="post" action="{{ path('app_sign_up') }}">
-                        <div class="form-floating mb-2">
-                            <input type="email"
-                                   id="{{ registrationForm.email.vars.id }}"
-                                   name="{{ registrationForm.email.vars.full_name }}"
-                                   value="{{ registrationForm.email.vars.value }}"
-                                   class="form-control{% if not registrationForm.email.vars.valid %} is-invalid{% endif %}"
-                                   autocomplete="email"
-                                   required autofocus placeholder="you@example.com">
-                            <label for="{{ registrationForm.email.vars.id }}">Email</label>
-                            {{ form_errors(registrationForm.email) }}
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input type="password"
-                                   id="{{ registrationForm.plainPassword.vars.id }}"
-                                   name="{{ registrationForm.plainPassword.vars.full_name }}"
-                                   class="form-control{% if not registrationForm.plainPassword.vars.valid %} is-invalid{% endif %}"
-                                   autocomplete="new-password"
-                                   required placeholder="Пароль">
-                            <label for="{{ registrationForm.plainPassword.vars.id }}">Пароль</label>
-                            {{ form_errors(registrationForm.plainPassword) }}
-                        </div>
-
-                        {# CSRF-токен генерирует Symfony Form сам — рендерим виджет. #}
-                        {{ form_widget(registrationForm._token) }}
-
-                        <button class="btn btn-primary w-100" type="submit">Зарегистрироваться</button>
-                    </form>
-
-                    <hr class="my-3">
-
-                    <div class="small text-body-secondary text-center">
-                        Уже есть аккаунт? <a href="{{ path('app_login') }}">Войти</a>
-                    </div>
+            {% if app.user %}
+                <div class="auth-alert ok">
+                    Вы вошли как <strong>{{ app.user.userIdentifier }}</strong>. <a href="{{ path('app_logout') }}">Выйти</a>
                 </div>
+            {% endif %}
+
+            <div class="auth-logo-mark md auth-logo-center">{{ app_name|first }}</div>
+
+            <div class="auth-card">
+                <h1 class="auth-h">Регистрация</h1>
+                <p class="auth-s">Создайте аккаунт по email и паролю.</p>
+
+                {% for message in app.flashes('register_failure') %}
+                    <div class="auth-alert">{{ message }}</div>
+                {% endfor %}
+                {% for message in app.flashes('register_success') %}
+                    <div class="auth-alert ok">{{ message }}</div>
+                {% endfor %}
+
+                {# Symfony Form: name="registration_form[...]" + свой CSRF. Стиль — свой,
+                   поэтому inputs пишем руками, беря name/id/value/errors из FormView. #}
+                <form method="post" action="{{ path('app_sign_up') }}">
+                    <div class="auth-field">
+                        <input type="email"
+                               id="{{ registrationForm.email.vars.id }}"
+                               name="{{ registrationForm.email.vars.full_name }}"
+                               value="{{ registrationForm.email.vars.value }}"
+                               class="{% if not registrationForm.email.vars.valid %}is-invalid{% endif %}"
+                               autocomplete="email" required autofocus placeholder="you@example.com">
+                        <label for="{{ registrationForm.email.vars.id }}">Email</label>
+                        {{ form_errors(registrationForm.email) }}
+                    </div>
+
+                    <div class="auth-field">
+                        <input type="password"
+                               id="{{ registrationForm.plainPassword.vars.id }}"
+                               name="{{ registrationForm.plainPassword.vars.full_name }}"
+                               class="{% if not registrationForm.plainPassword.vars.valid %}is-invalid{% endif %}"
+                               autocomplete="new-password" required placeholder="Пароль">
+                        <label for="{{ registrationForm.plainPassword.vars.id }}">Пароль</label>
+                        {{ form_errors(registrationForm.plainPassword) }}
+                    </div>
+
+                    {{ form_widget(registrationForm._token) }}
+
+                    <button class="auth-btn auth-btn-primary" type="submit">
+                        <i class="bi bi-person-plus"></i> Зарегистрироваться
+                    </button>
+                </form>
+
+                <div class="auth-alt">Уже есть аккаунт? <a href="{{ path('app_login') }}">Войти</a></div>
             </div>
         </div>
     </div>

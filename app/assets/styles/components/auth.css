@@ -1,0 +1,146 @@
+/* Публичные экраны (лендинг + вход/регистрация), §6.8. Всё под .authshell, чтобы
+   не пересекаться с общими стилями. Тема — через токены приложения (переключается
+   автоматически по data-bs-theme). Без inline-стилей в Twig. */
+
+.authshell {
+    --auth-faint: color-mix(in srgb, var(--bs-body-color) 45%, transparent);
+    --auth-glow: color-mix(in srgb, var(--bs-primary) 22%, transparent);
+    --auth-shadow-lg: 0 12px 40px rgba(16, 24, 40, .12);
+    min-height: calc(100dvh - 3rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+[data-bs-theme="dark"] .authshell { --auth-shadow-lg: 0 16px 50px rgba(0, 0, 0, .6); }
+
+/* Брендовый знак-плитка. */
+.auth-logo-mark {
+    border-radius: 20px;
+    background: linear-gradient(140deg, var(--bs-primary), #7aa7ff);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--bs-primary) 40%, transparent);
+}
+.auth-logo-mark.lg { width: 66px; height: 66px; font-size: 34px; }
+.auth-logo-mark.md { width: 52px; height: 52px; font-size: 26px; border-radius: 15px; }
+
+/* Мягкое свечение за героем. */
+.auth-glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--auth-glow), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ===== Лендинг ===== */
+.land-hero { position: relative; z-index: 1; padding: 8px 4px; }
+.land-title { font-size: 34px; font-weight: 850; letter-spacing: -.03em; line-height: 1.05; margin: 20px 0 10px; }
+.land-sub { font-size: 15px; color: var(--bs-secondary-color); line-height: 1.5; margin-bottom: 24px; max-width: 320px; }
+.land-feats { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+.land-feat { display: flex; align-items: center; gap: 12px; }
+.land-feat .fi {
+    width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--bs-border-color);
+    display: grid; place-items: center; color: var(--bs-primary); font-size: 18px;
+}
+.land-feat .ft { font-size: 13.5px; line-height: 1.25; }
+.land-feat .ft b { font-weight: 700; }
+.land-feat .ft span { color: var(--bs-secondary-color); display: block; font-size: 12px; }
+.land-cta { display: flex; flex-direction: column; gap: 10px; max-width: 340px; }
+.install-hint { margin-top: 14px; font-size: 12px; color: var(--auth-faint); }
+.install-hint .btn { --bs-btn-color: var(--auth-faint); }
+
+/* Кнопки auth (высокие, крупный радиус). */
+.auth-btn {
+    height: 52px; border-radius: 14px; font-size: 15px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; border: 1px solid transparent; cursor: pointer; text-decoration: none;
+}
+.auth-btn i { font-size: 17px; }
+.auth-btn-primary { background: var(--bs-primary); color: #fff; box-shadow: 0 8px 20px color-mix(in srgb, var(--bs-primary) 35%, transparent); }
+.auth-btn-primary:hover { color: #fff; filter: brightness(1.05); }
+.auth-btn-ghost { background: var(--surface); color: var(--bs-body-color); border-color: var(--bs-border-color); }
+.auth-btn-ghost:hover { color: var(--bs-body-color); background: var(--sunken); }
+
+/* ===== Карточка входа/регистрации ===== */
+.auth-wrap { position: relative; z-index: 1; width: 100%; max-width: 420px; margin: 0 auto; }
+.auth-logo-center { margin: 0 auto 18px; }
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: var(--auth-shadow-lg);
+}
+.auth-h { font-size: 20px; font-weight: 800; text-align: center; letter-spacing: -.01em; margin: 0; }
+.auth-s { font-size: 13px; color: var(--bs-secondary-color); text-align: center; margin: 6px 0 20px; line-height: 1.45; }
+/* Когда под заголовком нет подписи, а сразу форма — даём отступ (сплит-лендинг). */
+.auth-h + form { margin-top: 16px; }
+
+/* Поле с постоянной мелкой подписью сверху. */
+.auth-field { position: relative; margin-bottom: 12px; }
+.auth-field > input {
+    width: 100%; height: 54px; border-radius: 12px;
+    border: 1.5px solid var(--bs-border-color); background: var(--surface);
+    padding: 20px 14px 6px; font-size: 15px; color: var(--bs-body-color); font-family: inherit;
+}
+.auth-field > input:focus { outline: none; border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
+.auth-field > input.is-invalid { border-color: var(--danger-strong); }
+.auth-field > label { position: absolute; left: 14px; top: 8px; font-size: 11px; font-weight: 600; color: var(--auth-faint); }
+.auth-field .invalid-feedback { display: block; font-size: 12px; color: var(--danger-strong); margin-top: 4px; }
+
+.auth-alt { text-align: center; font-size: 13px; color: var(--bs-secondary-color); margin-top: 16px; }
+.auth-alt a { color: var(--bs-primary); font-weight: 650; text-decoration: none; }
+.auth-mini { text-align: center; font-size: 12.5px; margin-top: 10px; }
+.auth-mini a { color: var(--bs-secondary-color); text-decoration: none; }
+.auth-mini a:hover { color: var(--bs-primary); }
+
+/* Алерт ошибки внутри карточки — мягкий, без жёсткой рамки. */
+.auth-alert { background: var(--danger-subtle); color: var(--danger-strong); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; }
+.auth-alert.ok { background: var(--ok-subtle); color: var(--ok); }
+
+/* Состояние «письмо отправлено». */
+.auth-sent { text-align: center; }
+.auth-sent .ok-ic { width: 60px; height: 60px; border-radius: 50%; background: var(--ok-subtle); color: var(--ok); display: grid; place-items: center; margin: 0 auto 16px; font-size: 28px; }
+.auth-sent .em { font-weight: 750; color: var(--bs-body-color); }
+
+/* Кнопка «назад» над карточкой. */
+.auth-back { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--bs-border-color); background: var(--surface); color: var(--bs-body-color); display: inline-grid; place-items: center; text-decoration: none; margin-bottom: 12px; }
+.auth-back:hover { color: var(--bs-body-color); background: var(--sunken); }
+
+/* ===== Десктоп-сплит лендинга: герой + карточка входа ===== */
+.land-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 960px;
+    margin-inline: auto;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--auth-shadow-lg);
+    position: relative;
+    z-index: 1;
+}
+.land-split .ls-left { padding: 44px 40px; position: relative; overflow: hidden; }
+.land-split .ls-right { display: none; }
+@media (min-width: 992px) {
+    .land-split { grid-template-columns: 1.1fr .9fr; }
+    .land-split .ls-left { padding: 56px 48px; }
+    .land-split .ls-left .land-title { font-size: 40px; }
+    .land-split .ls-left .land-sub { font-size: 16px; max-width: 380px; }
+    .land-split .ls-right { display: flex; align-items: center; justify-content: center; padding: 40px; background: var(--surface); border-left: 1px solid var(--bs-border-color); }
+    .land-split .ls-right .auth-card { width: 100%; max-width: 330px; border: 0; box-shadow: none; padding: 8px; }
+    /* На десктопе мобильные CTA-кнопки прячем — вход в правой карточке. */
+    .land-split .ls-left .land-cta { display: none; }
+}
