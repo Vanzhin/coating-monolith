@@ -54,13 +54,13 @@ final readonly class CreateCoatingSystemCommandHandler implements CommandHandler
                 throw new AppException(sprintf('Покрытие с id %s не найдено.', $layerData['coatingId']));
             }
 
-            $color = null;
             $colorId = $layerData['colorId'] ?? null;
-            if (null !== $colorId && '' !== $colorId) {
-                $color = $this->colorRepo->findOneById($colorId);
-                if (null === $color) {
-                    throw new AppException(sprintf('Цвет с id %s не найден.', $colorId), 404);
-                }
+            if (null === $colorId || '' === $colorId) {
+                throw new AppException(sprintf('Для слоя с покрытием «%s» не указан цвет.', $coating->getTitle()));
+            }
+            $color = $this->colorRepo->findOneById($colorId);
+            if (null === $color) {
+                throw new AppException(sprintf('Цвет с id %s не найден.', $colorId), 404);
             }
 
             $system->appendLayer($coating, $layerData['dft'], $color);

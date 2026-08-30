@@ -43,6 +43,7 @@ final class MoveLayerTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) $this->coatingId,
             dft: 100,
+            colorId: (string) $this->colorId,
         );
         ($this->appendHandler)($appendCmd);
         $this->em->clear();

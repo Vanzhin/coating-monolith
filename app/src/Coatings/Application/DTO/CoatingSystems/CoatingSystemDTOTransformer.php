@@ -96,13 +96,11 @@ class CoatingSystemDTOTransformer
             $layerDto->dftMax = (int) $coating->getDftRange()->range->getMax();
 
             $color = $layer->getColor();
-            if (null !== $color) {
-                $layerDto->colorId = $color->getId();
-                $layerDto->colorName = $color->getName();
-                $layerDto->colorRal = $color->getRal();
-                $layerDto->colorHex = $color->getHex();
-                $layerDto->colorLabel = $color->label();
-            }
+            $layerDto->colorId = $color->getId();
+            $layerDto->colorName = $color->getName();
+            $layerDto->colorRal = $color->getRal();
+            $layerDto->colorHex = $color->getHex();
+            $layerDto->colorLabel = $color->label();
 
             $layers[] = $layerDto;
         }

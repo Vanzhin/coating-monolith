@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
@@ -92,6 +93,11 @@ final class SuggestActionTest extends WebTestCase
             $mfr,
             $container->get(CoatingSpecification::class),
         );
+
+        $color = new Color(Uuid::v7(), 'Серый-'.substr($suffix, -6), null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(false, $color);
+
         $this->em->persist($coating);
         $this->em->flush();
         $this->coatingId = (string) $coatingId;
@@ -102,7 +108,7 @@ final class SuggestActionTest extends WebTestCase
 
         $systemUuid = Uuid::v7();
         $system = new CoatingSystem($systemUuid, 'SuggestCSTitle '.$suffix, 'Описание', Substrate::STEEL_CARBON, $treatment);
-        $system->appendLayer($coating, 80);
+        $system->appendLayer($coating, 80, $color);
         $repo->save($system);
         $this->em->clear();
 

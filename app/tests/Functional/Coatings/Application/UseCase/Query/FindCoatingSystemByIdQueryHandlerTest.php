@@ -16,6 +16,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
@@ -37,6 +38,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
 
     private ?Uuid $systemId = null;
     private ?Uuid $coatingId = null;
+    private ?Uuid $colorId = null;
     private ?Uuid $manufacturerId = null;
     /** @var list<string> */
     private array $tagIds = [];
@@ -64,6 +66,12 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
                 $c = $em->find(Coating::class, $this->coatingId);
                 if (null !== $c) {
                     $em->remove($c);
+                }
+            }
+            if (null !== $this->colorId) {
+                $color = $em->find(Color::class, $this->colorId);
+                if (null !== $color) {
+                    $em->remove($color);
                 }
             }
             if (null !== $this->manufacturerId) {
@@ -120,6 +128,12 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             $manufacturer,
             $container->get(CoatingSpecification::class),
         );
+
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $this->colorId = $color->id;
+        $coating->applyColorScheme(false, $color);
+
         $this->em->persist($coating);
         $this->em->flush();
         $this->coatingId = $coatingId;
@@ -132,7 +146,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 100);
+        $system->appendLayer($coating, 100, $color);
         $this->em->persist($system);
         $this->em->flush();
 
@@ -183,6 +197,12 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             $manufacturer,
             $container->get(CoatingSpecification::class),
         );
+
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $this->colorId = $color->id;
+        $coating->applyColorScheme(false, $color);
+
         $this->em->persist($coating);
 
         $tagSpec = $container->get(TagSpecification::class);
@@ -202,7 +222,7 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 100);
+        $system->appendLayer($coating, 100, $color);
         $system->replaceTags([$tag1, $tag2]);
         $this->em->persist($system);
         $this->em->flush();

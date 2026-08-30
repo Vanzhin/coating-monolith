@@ -13,6 +13,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
@@ -147,7 +148,11 @@ final class CoatingSystemRepositoryFindByLayerCoatingIdTest extends KernelTestCa
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $systemA->appendLayer($coatingX, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coatingX->applyColorScheme(true);
+        $coatingY->applyColorScheme(true);
+        $systemA->appendLayer($coatingX, 80, $color);
         $this->repo->save($systemA);
         $this->systemIds[] = $systemAId;
 
@@ -160,7 +165,7 @@ final class CoatingSystemRepositoryFindByLayerCoatingIdTest extends KernelTestCa
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $systemB->appendLayer($coatingY, 80);
+        $systemB->appendLayer($coatingY, 80, $color);
         $this->repo->save($systemB);
         $this->systemIds[] = $systemBId;
 

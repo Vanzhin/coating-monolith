@@ -66,7 +66,7 @@ class CoatingSystemMapper
      *
      * @param array<mixed> $raw
      *
-     * @return list<array{coatingId: string, dft: int}>
+     * @return list<array{coatingId: string, dft: int, colorId: string}>
      */
     public function layersFromInput(array $raw): array
     {
@@ -79,11 +79,10 @@ class CoatingSystemMapper
             if ('' === $coatingId) {
                 continue;
             }
-            $colorId = (string) ($item['colorId'] ?? '');
             $out[] = [
                 'coatingId' => $coatingId,
                 'dft' => (int) ($item['dft'] ?? 0),
-                'colorId' => '' !== $colorId ? $colorId : null,
+                'colorId' => (string) ($item['colorId'] ?? ''),
             ];
         }
 

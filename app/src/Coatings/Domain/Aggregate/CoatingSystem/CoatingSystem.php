@@ -323,7 +323,7 @@ class CoatingSystem extends Aggregate
         return array_slice($sorted, 1);
     }
 
-    public function appendLayer(Coating $coating, int $dft, ?Color $color = null): CoatingSystemLayer
+    public function appendLayer(Coating $coating, int $dft, Color $color): CoatingSystemLayer
     {
         $position = $this->layerCount() + 1;
         $layer = new CoatingSystemLayer(Uuid::v7(), $this, $coating, $position, $dft, $color);
@@ -333,7 +333,7 @@ class CoatingSystem extends Aggregate
         return $layer;
     }
 
-    public function insertLayerAt(int $position, Coating $coating, int $dft, ?Color $color = null): CoatingSystemLayer
+    public function insertLayerAt(int $position, Coating $coating, int $dft, Color $color): CoatingSystemLayer
     {
         if ($position < 1 || $position > $this->layerCount() + 1) {
             throw new AppException(sprintf('Позиция вставки %d вне диапазона 1..%d.', $position, $this->layerCount() + 1));
@@ -412,13 +412,13 @@ class CoatingSystem extends Aggregate
      * Doctrine удалит старые (orphan-removal="true" в маппинге) и вставит новые.
      * Инварианты (совместимость, плотные позиции) проверяются в postMutate().
      *
-     * @param list<array{coating: Coating, dft: int, color?: ?Color}> $items
+     * @param list<array{coating: Coating, dft: int, color: Color}> $items
      */
     public function replaceLayers(array $items): void
     {
         $this->layers->clear();
         foreach ($items as $i => $item) {
-            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft'], $item['color'] ?? null));
+            $this->layers->add(new CoatingSystemLayer(Uuid::v7(), $this, $item['coating'], $i + 1, $item['dft'], $item['color']));
         }
         $this->postMutate();
     }

@@ -45,6 +45,7 @@ final class InsertLayerAtTest extends KernelTestCase
             position: 1,
             coatingId: (string) $this->coatingId,
             dft: 75,
+            colorId: (string) $this->colorId,
         );
 
         $result = ($this->handler)($cmd);
@@ -77,6 +78,7 @@ final class InsertLayerAtTest extends KernelTestCase
             position: 1,
             coatingId: (string) $this->coatingId,
             dft: 80,
+            colorId: (string) $this->colorId,
         );
 
         $this->expectException(AppException::class);
@@ -92,6 +94,7 @@ final class InsertLayerAtTest extends KernelTestCase
             position: 1,
             coatingId: (string) Uuid::v7(),
             dft: 80,
+            colorId: (string) $this->colorId,
         );
 
         $this->expectException(AppException::class);

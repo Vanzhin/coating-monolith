@@ -124,7 +124,10 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
 
         $this->repo->save($system);
 
@@ -337,7 +340,10 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             Substrate::STEEL_GALVANIZED,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $this->repo->save($system);
 
         $this->em->clear();

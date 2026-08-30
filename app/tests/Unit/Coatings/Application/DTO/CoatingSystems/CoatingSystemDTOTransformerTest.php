@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Compliance\Compliance;
@@ -33,6 +34,13 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemDTOTransformerTest extends TestCase
 {
+    private ?Color $sharedColor = null;
+
+    private function anyColor(): Color
+    {
+        return $this->sharedColor ??= new Color(Uuid::v4(), 'Серый', null, '#888888');
+    }
+
     private function makeTransformer(): CoatingSystemDTOTransformer
     {
         return new CoatingSystemDTOTransformer(
@@ -53,8 +61,8 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating1, 100);
-        $system->appendLayer($coating2, 80);
+        $system->appendLayer($coating1, 100, $this->anyColor());
+        $system->appendLayer($coating2, 80, $this->anyColor());
 
         $transformer = $this->makeTransformer();
         $dto = $transformer->fromEntity($system);
@@ -91,7 +99,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             Substrate::STEEL_GALVANIZED,
             $treatment,
         );
-        $layer = $system->appendLayer($coating, 120);
+        $layer = $system->appendLayer($coating, 120, $this->anyColor());
 
         $dto = $this->makeTransformer()->fromEntity($system);
 
@@ -175,8 +183,8 @@ final class CoatingSystemDTOTransformerTest extends TestCase
         $topcoat = $this->makeCoating('EP Topcoat', CoatingBase::EP, 80, 120);
         $topcoat->setApplicationMinTemp(5);
 
-        $system->appendLayer($primer, 80);
-        $system->appendLayer($topcoat, 120);
+        $system->appendLayer($primer, 80, $this->anyColor());
+        $system->appendLayer($topcoat, 120, $this->anyColor());
 
         return $system;
     }
@@ -207,7 +215,7 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             $this->createMock(UniqueTitleCoatingSpecification::class),
         );
 
-        return new Coating(
+        $coating = new Coating(
             UuidService::generateUuid(),
             $title,
             'desc',
@@ -226,5 +234,8 @@ final class CoatingSystemDTOTransformerTest extends TestCase
             $spec,
             50,
         );
+        $coating->applyColorScheme(false, $this->anyColor());
+
+        return $coating;
     }
 }
