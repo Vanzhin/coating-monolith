@@ -1,0 +1,432 @@
+/* Каркас форм редактирования сущностей: липкий верхний app-bar (назад · заголовок ·
+   Сохранить), секции-карточки с якорями, десктоп-TOC со scroll-spy, липкая нижняя
+   панель сохранения. Дизайн-линия проекта: без рамок-линий, отделяем оттенком/тенью
+   (см. components/refresh.css, entity-card.css). Импортируется в app.css после
+   entity-card.css. Разметка — components/form_page.html.twig, скролл-подсветка —
+   controllers/form_scrollspy_controller.js.
+
+   Позиционирование относительно app-shell (components/app-shell.css):
+   - над app-bar ничего фиксированного нет (моб. хедер .app-header-mobile скроллится) → top:0;
+   - снизу на мобиле фикс. таб-панель (~64px, z-1035) → save-bar поднимаем над ней;
+   - z-index баров 1020 (как Bootstrap sticky-top), под таб-баром/сайдбаром (1035). */
+
+.form-page {
+    /* контейнер-скоуп для form-scrollspy; без собственных отступов —
+       их задают container-fluid (снаружи) и регионы (внутри). */
+}
+
+/* ── Липкий верхний app-bar ───────────────────────────────────────────────
+   Full-bleed до краёв контентной колонки: гасим горизонтальный padding
+   container-fluid (--bs-gutter-x .5 = .75rem) отрицательным margin. */
+.form-appbar {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    margin-inline: -0.75rem;
+    padding: 0.4rem 0.75rem;
+    background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+}
+.form-appbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+}
+.form-appbar-back {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: var(--bs-body-color);
+    text-decoration: none;
+    background: color-mix(in srgb, var(--bs-body-color) 6%, transparent);
+}
+.form-appbar-back:hover {
+    background: color-mix(in srgb, var(--bs-body-color) 12%, transparent);
+}
+.form-appbar-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.form-appbar-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Мобильные чипы-якоря (горизонтальный скролл под app-bar) ─────────────── */
+.form-anchors {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.4rem 0 0.15rem;
+}
+.form-anchors::-webkit-scrollbar {
+    display: none;
+}
+.form-anchor {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    white-space: nowrap;
+    color: var(--bs-secondary-color);
+    background: color-mix(in srgb, var(--bs-body-color) 6%, transparent);
+}
+.form-anchor.is-active {
+    background: var(--accent-subtle);
+    color: var(--bs-primary);
+    font-weight: 600;
+}
+
+/* ── Область TOC + контент ────────────────────────────────────────────────
+   Мобайл — просто контент (TOC скрыт). Десктоп — двухколоночная сетка с
+   липким оглавлением слева. */
+.form-layout {
+    margin-top: 0.75rem;
+}
+.form-toc-link {
+    display: block;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.form-toc-link:hover {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+.form-toc-link.is-active {
+    background: var(--accent-subtle);
+    color: var(--bs-primary);
+    font-weight: 600;
+}
+
+@media (min-width: 992px) {
+    .form-layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+    .form-toc {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+/* ── Секция-карточка (якорь scroll-spy) ───────────────────────────────────
+   Визуально идентична существующим `p-3 mb-3 rounded-3 bg-body-tertiary`
+   блокам — класс .fsec добавляет только отступ прокрутки под липкий app-bar
+   и служит целью IntersectionObserver. */
+.fsec {
+    scroll-margin-top: 96px;
+}
+@media (min-width: 992px) {
+    .fsec {
+        scroll-margin-top: 80px;
+    }
+}
+
+/* ── Липкая нижняя панель сохранения ──────────────────────────────────────
+   Full-bleed, приподнята над мобильной таб-панелью; на десктопе таб-панели
+   нет → bottom:0. Значение подъёма совпадает с body padding-bottom
+   (см. app-shell.css), чтобы панель села ровно над таб-баром. */
+.form-savebar {
+    position: sticky;
+    bottom: 0;
+    z-index: 1020;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-inline: -0.75rem;
+    margin-top: 1rem;
+    padding: 0.7rem 0.75rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    box-shadow: 0 -1px 0 color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+}
+@media (max-width: 991.98px) {
+    .form-savebar {
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* ── Редизайн верхнего алерта ошибки (серверная валидация → .alert-danger).
+   Danger-карточка без жёсткой рамки: иконка + заголовок + сообщение бэка. ── */
+.form-alert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--bs-border-radius-lg);
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger-text-emphasis);
+}
+.form-alert .bi {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--bs-danger);
+    flex-shrink: 0;
+}
+.form-alert-title {
+    font-weight: 650;
+    margin-bottom: 0.1rem;
+}
+
+/* Универсальные soft-сообщения (flash/ошибки формы) — тема-аваре, без рамок.
+   Динамические сообщения (AJAX) показываем через flash-тосты (showToast). */
+.msg {
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+.msg-success { background: var(--ok-subtle); color: var(--ok); }
+.msg-danger, .msg-error { background: var(--danger-subtle); color: var(--danger-strong); }
+.msg-warning { background: var(--warn-subtle); color: var(--warn); }
+.msg-info { background: var(--accent-subtle); color: var(--bs-primary); }
+
+/* Поле ввода кода верификации — крупные разреженные цифры по центру. */
+.channel-code-input {
+    letter-spacing: 0.3rem;
+    font-weight: 700;
+    height: 60px;
+    text-align: center;
+}
+
+/* ── Модалка длительности #durationModal — вариант «живой итог» ──────────────
+   Разметка: form.html.twig; логика/пересчёт — coating_form_controller.js. */
+.duration-modal {
+    border: 0;
+    border-radius: 16px;
+}
+.dur-hd {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.dur-kicker {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--bs-secondary-color);
+}
+.dur-x {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    display: grid;
+    place-items: center;
+}
+.dur-x:hover { background: color-mix(in srgb, var(--bs-body-color) 8%, transparent); }
+
+/* Крупный «живой» итог. */
+.dur-live { text-align: center; padding: 2px 0 12px; }
+.dur-live-big {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+.dur-live-big--text { font-size: 1.4rem; }
+.dur-live-cap {
+    font-size: 0.74rem;
+    color: var(--bs-secondary-color);
+    margin-top: 2px;
+}
+
+/* Сегмент режима — мягкий toggle поверх скрытых btn-check. Переиспользуется для
+   любого выбора «один режим из нескольких» (тип длительности, режим создания цвета). */
+.duration-seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--bs-body-color) 5%, transparent);
+}
+/* Компонент .btn-check в этом билде Bootstrap не собран (нет базового правила
+   скрытия), поэтому прячем radio сами — иначе кружок торчит слева от сегмента. */
+.duration-seg .btn-check {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.duration-seg-btn {
+    flex: 1;
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+    border: 0;
+    border-radius: 8px;
+    padding: 7px 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--bs-secondary-color);
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+.duration-seg-btn:hover { color: var(--bs-body-color); }
+/* Активный сегмент — приподнятый «surface»-чип с тенью: явно читается как выбранный. */
+.duration-seg .btn-check:checked + .duration-seg-btn {
+    background: var(--surface);
+    color: var(--bs-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .16);
+}
+
+/* Пилюли −значение+ (Дни/Часы/Минуты). */
+.dur-pills { display: flex; flex-direction: column; gap: 8px; }
+.dur-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--bs-tertiary-bg);
+}
+.dur-pill-mid {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+}
+.dur-pval {
+    width: 3ch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bs-body-color);
+    text-align: right;
+    font-size: 1.05rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+}
+.dur-pval::-webkit-outer-spin-button,
+.dur-pval::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.dur-plabel { font-size: 0.74rem; color: var(--bs-secondary-color); }
+.dur-pbtn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--bs-body-color);
+    background: color-mix(in srgb, var(--bs-body-color) 6%, transparent);
+    display: grid;
+    place-items: center;
+}
+.dur-pbtn:hover { background: color-mix(in srgb, var(--bs-body-color) 12%, transparent); }
+
+/* ── Дерево «Интервал перекрытия» — аккордеон по средам ────────────────────
+   «Общее» — статичная всегда-открытая секция; каждая среда — раскрывающаяся
+   (Bootstrap collapse). Тело секций прозрачное (на белой подсекции «Интервал
+   перекрытия»), чтобы сохранился контраст строк таблиц; разделяем заголовком
+   и отступом, без жёстких рамок. Разметка/логика: _recoating_node.html.twig +
+   coating_form_controller.js (addEnv/removeEnv). */
+.rec-sec {
+    margin-bottom: 0.75rem;
+}
+.rec-sec-head-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.rec-sec-head {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border: 0;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--bs-body-color) 5%, transparent);
+    color: var(--bs-body-color);
+    font-weight: 600;
+}
+button.rec-sec-head:hover {
+    background: color-mix(in srgb, var(--bs-body-color) 9%, transparent);
+}
+.rec-sec-head--static {
+    cursor: default;
+}
+.rec-sec-title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.rec-sec-caret {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+    transition: transform 0.15s ease;
+}
+.rec-sec-head[aria-expanded="false"] .rec-sec-caret {
+    transform: rotate(-90deg);
+}
+.rec-sec-del {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--bs-secondary-color);
+}
+.rec-sec-del:hover {
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger);
+}
+.rec-sec-body {
+    padding: 0.75rem 0.25rem 0;
+}
+/* Последняя среда (за ней сразу единый контрол «+ Добавить») — вплотную к нему. */
+.rec-sec:has(+ [data-recoating-add-env]) {
+    margin-bottom: 0.35rem;
+}
+@media (prefers-reduced-motion: reduce) {
+    .rec-sec-caret {
+        transition: none;
+    }
+}

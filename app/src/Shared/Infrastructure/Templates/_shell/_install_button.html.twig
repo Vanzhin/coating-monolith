@@ -1,0 +1,10 @@
+{# Кнопка установки PWA. Скрыта до beforeinstallprompt (см. pwa-install контроллер).
+   Параметр class — доп. классы под контекст (лендинг / «Ещё»). #}
+<div data-controller="pwa-install">
+    <button type="button"
+            class="btn btn-outline-secondary {{ class|default('') }} d-none"
+            data-pwa-install-target="button"
+            data-action="click->pwa-install#install">
+        <i class="bi bi-download me-2"></i>Установить как приложение
+    </button>
+</div>

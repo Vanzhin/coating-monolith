@@ -1,0 +1,254 @@
+/* «GitHub-inspired refresh»: плотная типографика, мягкие границы, больше воздуха
+   в карточках/list-item'ах. Работает поверх Bootstrap, не заменяя базовые классы.
+   Вынесено из inline-<style> в base.html.twig. Импортируется в app.css ПОСЛЕ
+   shell.css/tables.css, чтобы его override'ы (.flash-messages, .blog-header-logo,
+   .list-group, .card) выигрывали каскад — как раньше в конце inline-блока.
+   Тёмная тема — через встроенный Bootstrap 5.3 data-bs-theme на <html>. */
+
+body {
+    /* Office-style стек: Calibri на Windows, Segoe UI fallback; macOS — SF Pro /
+       Helvetica Neue; Linux — Ubuntu / DejaVu. Всё нативно, без внешних загрузок. */
+    font-family: Calibri, "Segoe UI", -apple-system, BlinkMacSystemFont,
+                 "Helvetica Neue", "Noto Sans", Arial, sans-serif,
+                 "Apple Color Emoji", "Segoe UI Emoji";
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+}
+
+/* Логотип — тот же системный шрифт что и body: плотный weight и tight
+   letter-spacing вместо декоративной засечки. */
+.blog-header-logo {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+/* Больше воздуха в списках-карточках, мягкая граница. */
+.list-group {
+    border-radius: 8px;
+    --bs-list-group-border-color: var(--bs-border-color);
+}
+.list-group-item {
+    padding: 1rem 1.25rem;
+    transition: background-color 0.15s ease;
+}
+/* Hover карточек: --bs-secondary-bg даёт видимый контраст в обеих темах. */
+.list-group-item:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+.card {
+    border-radius: 8px;
+    border-color: var(--bs-border-color);
+}
+
+/* Убираем жёсткие контуры-границы у outline-secondary кнопок (фильтры, сортировка,
+   сброс поиска, «Все фильтры», «Закрыть», «Сбросить всё») — вместо рамки отличаем
+   лёгким фоном-оттенком. Активные состояния фасетов остаются заливкой btn-primary,
+   так что контраст «выбрано / не выбрано» сохраняется. */
+.btn-outline-secondary {
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-disabled-border-color: transparent;
+    --bs-btn-bg: color-mix(in srgb, var(--bs-body-color) 17%, transparent);
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-body-color) 25%, transparent);
+    --bs-btn-hover-color: var(--bs-body-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-body-color) 25%, transparent);
+    --bs-btn-active-color: var(--bs-body-color);
+}
+
+/* Строка поиска (input-group-lg) — без жёсткой рамки у поля; фон дефолтный
+   (белый в светлой теме), фокус-ринг Bootstrap сохраняется. */
+.input-group-lg .form-control,
+.input-group-lg .form-control:focus {
+    border-color: transparent;
+}
+
+/* Единая soft-линия кнопок: outline-варианты Bootstrap = soft (заливка-оттенок,
+   без рамки). Так во ВСЁМ приложении outline и soft выглядят одинаково. Filled
+   (btn-primary и т.п.) остаются заливкой для основных действий. */
+.btn-outline-success, .btn-soft-success {
+    --bs-btn-color: var(--ok);
+    --bs-btn-bg: var(--ok-subtle);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--ok);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--ok) 22%, transparent);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--ok);
+    --bs-btn-active-bg: color-mix(in srgb, var(--ok) 26%, transparent);
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-focus-shadow-rgb: 26, 127, 75;
+}
+
+/* Мягкая «primary»-кнопка (заливка-оттенок, без рамки) — «Редактировать» и т.п. */
+.btn-outline-primary, .btn-soft-primary {
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-bg: var(--accent-subtle);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-primary);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-primary) 20%, transparent);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-primary);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-primary) 24%, transparent);
+    --bs-btn-active-border-color: transparent;
+}
+
+/* Мягкая «info»-кнопка (заливка-оттенок, без рамки) — «Дублировать» и т.п. */
+.btn-outline-info, .btn-soft-info {
+    --bs-btn-color: var(--bs-info-text-emphasis);
+    --bs-btn-bg: var(--bs-info-bg-subtle);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-info-text-emphasis);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-info) 22%, transparent);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-info-text-emphasis);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-info) 26%, transparent);
+    --bs-btn-active-border-color: transparent;
+}
+
+/* Мягкая «danger»-кнопка (заливка-оттенок, без рамки) — триггеры удаления. */
+.btn-outline-danger, .btn-soft-danger {
+    --bs-btn-color: var(--bs-danger);
+    --bs-btn-bg: var(--bs-danger-bg-subtle);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-danger);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-danger) 20%, transparent);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-danger);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-danger) 24%, transparent);
+    --bs-btn-active-border-color: transparent;
+}
+
+/* Мягкая «secondary»-кнопка (нейтральный оттенок, без рамки) — «К списку», «Назад» и
+   прочие второстепенные действия. Был единственным outline-вариантом без soft-правила
+   → торчал жёсткой bootstrap-рамкой не в дизайн-линии. */
+.btn-outline-secondary, .btn-soft-secondary {
+    --bs-btn-color: var(--bs-secondary-color);
+    --bs-btn-bg: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-body-color);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-body-color) 13%, transparent);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-body-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-body-color) 16%, transparent);
+    --bs-btn-active-border-color: transparent;
+}
+
+/* Иконка-кружок в модалке подтверждения удаления (дизайн A). */
+.del-ic {
+    width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+    margin: 0 auto 14px; background: var(--bs-danger-bg-subtle); color: var(--bs-danger);
+}
+.del-ic .bi { font-size: 24px; }
+
+/* Дропдауны — единый вид во всём приложении: без рамки-линии, мягкая тень,
+   скруглённые пункты (кебаб-меню, фасет-дропдауны, сортировка). */
+.dropdown-menu {
+    --bs-dropdown-border-width: 0;
+    --bs-dropdown-border-radius: 12px;
+    --bs-dropdown-padding-x: 6px;
+    --bs-dropdown-padding-y: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+}
+.dropdown-item { border-radius: 8px; }
+.dropdown-divider { --bs-dropdown-divider-bg: var(--bs-border-color); }
+
+/* Flash-сообщения — прозрачнее, чтобы не выбивались из тёмной темы. */
+.flash-messages {
+    background-color: transparent;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+.flash-messages .alert {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+}
+
+/* Flash-тост (по макету states-errors-flash): иконка-бокс по типу + сообщение,
+   surface + мягкая тень, без рамки-линии. Разметка — base.html.twig, авто-скрытие —
+   controllers/flash_controller.js. Класс .flash-toast (не .toast — чтобы не
+   конфликтовать с Bootstrap Toast). */
+.flash-toast {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: var(--surface);
+    border-radius: 13px;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+    margin-bottom: 9px;
+    transition: opacity .25s ease, transform .25s ease;
+}
+.flash-toast--out {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+.flash-toast-ic {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.flash-toast-ic .bi { font-size: 17px; }
+.flash-toast--ok .flash-toast-ic { background: var(--ok-subtle); color: var(--ok); }
+.flash-toast--err .flash-toast-ic { background: var(--danger-subtle); color: var(--danger-strong); }
+.flash-toast--warn .flash-toast-ic { background: var(--warn-subtle); color: var(--warn); }
+.flash-toast--info .flash-toast-ic { background: var(--accent-subtle); color: var(--bs-primary); }
+.flash-toast-body {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+.flash-toast-x {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    padding: 2px;
+    line-height: 1;
+    color: var(--bs-secondary-color);
+}
+.flash-toast-x .bi { font-size: 15px; }
+.flash-toast-x:hover { color: var(--bs-body-color); }
+
+/* Tagify не респектит --bs-border-color — переопределяем её CSS-vars
+   (документированный контракт библиотеки) на Bootstrap-переменные, чтобы
+   рамка/фон/цвет тегов подхватывали тему автоматически. */
+.tagify {
+    --tags-border-color: var(--bs-border-color);
+    --tags-hover-border-color: var(--bs-border-color);
+    --tags-focus-border-color: var(--bs-primary);
+    --tag-bg: var(--bs-secondary-bg);
+    --tag-hover: var(--bs-tertiary-bg);
+    --tag-text-color: var(--bs-body-color);
+    --tag-remove-btn-color: var(--bs-body-color);
+    --tag-remove-bg: var(--bs-danger-bg-subtle);
+    --tag-remove-btn-bg--hover: var(--bs-danger);
+    --input-color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+.tagify__input { color: var(--bs-body-color); }
+.tagify__dropdown__wrapper {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+.tagify__dropdown__item--active,
+.tagify__dropdown__item:hover {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}

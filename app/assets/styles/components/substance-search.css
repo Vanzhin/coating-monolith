@@ -1,0 +1,10 @@
+/* Страница «Химстойкость»: поиск веществ переиспользует общий шелл entity_search
+   (input-group + chip-row), поэтому своих стилей почти нет — только позиционирование
+   выпадашки подсказок typeahead под строкой поиска (родитель — .position-relative). */
+[data-substance-multiselect-target="results"] {
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    max-height: 340px;
+    overflow-y: auto;
+}

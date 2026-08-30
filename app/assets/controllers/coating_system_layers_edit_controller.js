@@ -10,7 +10,88 @@ import { Controller } from '@hotwired/stimulus';
  * Номер позиции в плитке — визуальный, пересчитывается локально после каждой мутации.
  */
 export default class extends Controller {
-    static targets = ['list', 'row', 'position', 'appendCoating', 'appendDft', 'rowTemplate'];
+    static targets = ['list', 'row', 'appendCoating', 'appendDft', 'rowTemplate', 'addButton', 'addForm'];
+
+    /** Раскрыть inline-пикер добавления слоя. */
+    toggleAdd() {
+        this.addFormTarget.classList.remove('d-none');
+        if (this.hasAddButtonTarget) this.addButtonTarget.classList.add('d-none');
+        this.addFormTarget.querySelector('select, input')?.focus?.();
+    }
+
+    /** Свернуть пикер добавления слоя. */
+    cancelAdd() {
+        this.addFormTarget.classList.add('d-none');
+        if (this.hasAddButtonTarget) this.addButtonTarget.classList.remove('d-none');
+        this.appendCoatingTarget.value = '';
+        this.appendDftTarget.value = '';
+    }
+
+    /** ТСП-степпер −/+ (шаг из data-delta-param, clamp по min/max инпута). */
+    stepDft(event) {
+        const delta = parseInt(event.params.delta, 10) || 0;
+        const row = event.currentTarget.closest('[data-coating-system-layers-edit-target="row"]');
+        const input = row?.querySelector('[data-role="dft"]');
+        if (!input) return;
+        const min = parseInt(input.min, 10) || 1;
+        const max = input.max ? parseInt(input.max, 10) : 9999;
+        const next = (parseInt(input.value, 10) || 0) + delta;
+        input.value = Math.max(min, Math.min(max, next));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    /** Перетаскивание слоя за grip (Pointer Events, без библиотек). Кнопки ↑/↓ — рядом,
+        как fallback/доступность. touch-action:none на grip (CSS) не даёт жесту скроллить. */
+    dragStart(event) {
+        if (event.button != null && event.button !== 0) return; // только основная кнопка
+        const row = event.currentTarget.closest('[data-coating-system-layers-edit-target="row"]');
+        if (!row) return;
+        event.preventDefault();
+
+        this._dragRow = row;
+        this._dragGrip = event.currentTarget;
+        this._dragPointerId = event.pointerId;
+        row.classList.add('lcard--dragging');
+
+        this._dragGrip.setPointerCapture?.(event.pointerId);
+        this._onDragMove = this._dragMove.bind(this);
+        this._onDragEnd = this._dragEnd.bind(this);
+        this._dragGrip.addEventListener('pointermove', this._onDragMove);
+        this._dragGrip.addEventListener('pointerup', this._onDragEnd);
+        this._dragGrip.addEventListener('pointercancel', this._onDragEnd);
+    }
+
+    _dragMove(event) {
+        if (!this._dragRow) return;
+        const y = event.clientY;
+        const others = this.rowTargets.filter((r) => r !== this._dragRow);
+        let target = null;
+        for (const r of others) {
+            const rect = r.getBoundingClientRect();
+            if (y < rect.top + rect.height / 2) { target = r; break; }
+        }
+        if (target) {
+            // вставить перед target, если ещё не там (иначе дёргается)
+            if (target.previousElementSibling !== this._dragRow) {
+                this.listTarget.insertBefore(this._dragRow, target);
+            }
+        } else if (this.listTarget.lastElementChild !== this._dragRow) {
+            this.listTarget.appendChild(this._dragRow); // ниже всех
+        }
+    }
+
+    _dragEnd() {
+        if (this._dragGrip) {
+            this._dragGrip.releasePointerCapture?.(this._dragPointerId);
+            this._dragGrip.removeEventListener('pointermove', this._onDragMove);
+            this._dragGrip.removeEventListener('pointerup', this._onDragEnd);
+            this._dragGrip.removeEventListener('pointercancel', this._onDragEnd);
+        }
+        this._dragRow?.classList.remove('lcard--dragging');
+        this._dragRow = null;
+        this._dragGrip = null;
+        this._renumber();
+    }
 
     append() {
         const coatingId = this.appendCoatingTarget.value;
@@ -63,10 +144,6 @@ export default class extends Controller {
 
     _renumber() {
         this.rowTargets.forEach((row, i) => {
-            const positionEl = row.querySelector('[data-coating-system-layers-edit-target="position"]');
-            if (positionEl) {
-                positionEl.textContent = String(i + 1);
-            }
             // Выбор инпутов по data-role, а НЕ по типу: у слоя теперь два hidden
             // (coatingId + colorId у layer-color), input[type=hidden] брал бы первый.
             const coatingIdInput = row.querySelector('[data-role="coatingId"]');

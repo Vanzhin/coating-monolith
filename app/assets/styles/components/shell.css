@@ -1,0 +1,211 @@
+/* Стили каркаса приложения (header/footer/шторка меню/floating-кнопки).
+   Вынесено из inline-<style> в base.html.twig (правило «в Twig только разметка»).
+   Значения перенесены дословно; палитра/радиусы теперь приходят из tokens.css. */
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+}
+
+body {
+    /* fallback для <iOS 15.4 / <Chrome 108; dvh учитывает iOS Safari
+       address-bar (без него контент скачет при show/hide URL-бара). */
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.blog-header {
+    position: relative;
+    z-index: 1030;
+}
+
+/* Высота карточки-шапки как при кнопке в потоке (40px + p-3): вынос кнопки в fixed
+   не должен проседать шапку. Логотип центрируется по вертикали. */
+.blog-header-bar {
+    min-height: 72px;
+}
+
+.blog-header-logo {
+    font-family: inherit;
+    font-size: 1.25rem;
+    text-decoration: none;
+}
+
+.blog-header-logo:hover {
+    text-decoration: none;
+}
+
+.flash-messages {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 1050;
+    max-width: 400px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    padding: 0;
+}
+
+.flash-messages .alert {
+    margin: 0;
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 576px) {
+    .blog-header-logo {
+        font-size: 1.5rem;
+    }
+
+    .flash-messages {
+        top: 90px;
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+}
+
+.back-to-top {
+    position: fixed;
+    /* safe-area-inset-* — отступ от iOS home-bar / notch на iPhone X+. */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
+    z-index: 1000;
+    display: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Touch-target ≥44px (Apple HIG, WCAG 2.5.5 AA) для duration-кнопок
+   на mobile. На desktop остаётся btn-sm — там mouse-pointer. */
+@media (max-width: 767.98px) {
+    .duration-display-btn {
+        min-height: 44px;
+    }
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar i {
+    font-size: 16px;
+    color: #6c757d;
+}
+
+/* Offcanvas меню. var(--bs-border-color) вместо хардкода — иначе на тёмной
+   теме шапка шторки уходит светлой полосой. */
+.offcanvas-header {
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 1rem 1.5rem;
+}
+
+.offcanvas-title {
+    font-weight: 600;
+}
+
+.offcanvas-body {
+    padding: 0;
+}
+
+/* Скругление шторок с той стороны, куда они «прилипают» к экрану. */
+.offcanvas-start {
+    border-top-right-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    overflow: hidden;
+}
+.offcanvas-end {
+    border-top-left-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    overflow: hidden;
+}
+.offcanvas-bottom {
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    overflow: hidden;
+}
+
+/* Резервируем место под скроллбар шторки всегда, иначе ширина прыгает. */
+#mainMenu .offcanvas-body {
+    scrollbar-gutter: stable;
+}
+
+/* Пункты меню — ТОЛЬКО внутри #mainMenu, чтобы не перекрывать .list-group-item
+   на карточках. Каждый пункт — отдельная плашка: bg-body, скругление, ховер. */
+#mainMenu .list-group-item {
+    border: none;
+    border-radius: var(--bs-border-radius);
+    padding: .75rem 1rem;
+    margin-bottom: .375rem;
+    background: var(--bs-body-bg);
+    transition: background-color .12s ease, box-shadow .12s ease;
+}
+
+#mainMenu .list-group-item:last-child {
+    margin-bottom: 0;
+}
+
+#mainMenu .list-group-item:hover,
+#mainMenu .list-group-item:focus {
+    background-color: var(--bs-secondary-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+/* Активный пункт: наш стиль (акцент-subtle фон + акцентный текст), а не
+   бутстраповский белый-на-primary — иначе на светлом фоне шторки надпись
+   пропадала (фон элемента переопределён #mainMenu-правилом, а color=white). */
+#mainMenu .list-group-item.active {
+    background-color: var(--accent-subtle);
+    color: var(--bs-primary);
+    font-weight: 650;
+}
+
+#mainMenu .list-group-item i {
+    width: 20px;
+}
+
+/* Шеврон заголовка группы: вниз при раскрытой секции, вбок при свёрнутой. */
+#mainMenu [data-bs-toggle="collapse"] .bi-chevron-down {
+    transition: transform .15s ease;
+}
+#mainMenu [data-bs-toggle="collapse"][aria-expanded="false"] .bi-chevron-down {
+    transform: rotate(-90deg);
+}
+
+.user-email {
+    font-weight: 500;
+}
+
+/* Кнопка переключения темы: одинаковый размер с .menu-toggle. */
+.theme-toggle {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.theme-toggle .bi { font-size: 1.1rem; }
+@media (max-width: 576px) {
+    .theme-toggle { width: 36px; height: 36px; }
+}

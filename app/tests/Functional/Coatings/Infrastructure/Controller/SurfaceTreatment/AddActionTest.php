@@ -122,7 +122,7 @@ final class AddActionTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
-        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringContainsString('form-alert', $content);
     }
 
     public function test_post_validation_error_shows_human_readable_message(): void
@@ -134,7 +134,7 @@ final class AddActionTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
-        self::assertStringContainsString('alert-danger', $content);
+        self::assertStringContainsString('form-alert', $content);
         self::assertStringContainsString('Описание:', $content);
         self::assertStringNotContainsString('[description]', $content);
     }

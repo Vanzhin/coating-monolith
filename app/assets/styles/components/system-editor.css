@@ -1,0 +1,196 @@
+/* Редактор слоёв системы покрытий (по макету system-editor): визуальный разрез +
+   карточки слоёв (grip, свотч, мета, ТСП-степпер, чип цвета, ↑/↓, удаление) +
+   «Добавить слой». Дизайн-линия: без рамок-линий, оттенок + тень; степпер как в
+   модалке длительности. Разметка — _layers_edit.html.twig; логика/drag/разрез —
+   coating_system_layers_edit_controller.js. Подключается в app.css. */
+
+/* ── Карточки слоёв ──────────────────────────────────────────────────────── */
+.lcard {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px;
+    border-radius: 13px;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .06);
+}
+[data-bs-theme="dark"] .lcard {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 3px rgba(0, 0, 0, .4);
+}
+.lgrip {
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    padding: 0 1px;
+    color: var(--bs-secondary-color);
+    cursor: grab;
+    touch-action: none;
+}
+.lgrip:active { cursor: grabbing; }
+.lcard--dragging {
+    opacity: 0.85;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+}
+.lbody { flex: 1; min-width: 0; }
+.lname {
+    font-size: 0.9rem;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.lname .l-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.l-zn {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 18%, transparent);
+    border-radius: 5px;
+    padding: 1px 5px;
+}
+.lmeta {
+    font-size: 0.76rem;
+    color: var(--bs-secondary-color);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lctrls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* ТСП-степпер */
+.ldft {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--bs-tertiary-bg);
+    overflow: hidden;
+}
+.ldft-btn {
+    width: 30px;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+.ldft-btn:hover { background: color-mix(in srgb, var(--bs-body-color) 8%, transparent); }
+.ldft-input {
+    width: 3.5ch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bs-body-color);
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+}
+.ldft-input::-webkit-outer-spin-button,
+.ldft-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ldft-u {
+    padding: 0 9px 0 3px;
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+}
+.lcolor { flex: 0 1 auto; min-width: 150px; }
+
+/* Чип цвета слоя (layer-color / Tagify) в ряду контролов карточки. Логику контроллера
+   не трогаем — только компактный вид: soft-фон, без рамки-линии, одна строка, ~34px. */
+[data-layer-color-group] .tagify {
+    --tags-border-color: transparent;
+    --tags-hover-border-color: transparent;
+    --tags-focus-border-color: transparent;
+    min-height: 34px;
+    border: 0;
+    border-radius: 9px;
+    padding: 1px 4px;
+    background: var(--bs-tertiary-bg);
+    flex-wrap: nowrap;
+    align-items: center;
+}
+[data-layer-color-group] .tagify__input {
+    margin: 0;
+    padding: 5px 4px;
+    min-width: 56px;
+    font-size: 0.82rem;
+}
+[data-layer-color-group] .tagify__tag {
+    margin: 2px;
+}
+[data-layer-color-group] .tagify__tag > div {
+    padding: 0.18em 0.4em;
+    font-size: 0.82rem;
+}
+
+.lright {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.l-move,
+.l-del {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+.l-move:hover {
+    background: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+    color: var(--bs-body-color);
+}
+.l-del:hover {
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger);
+}
+
+/* ── «Добавить слой» ─────────────────────────────────────────────────────── */
+.laddlayer {
+    width: 100%;
+    margin-top: 10px;
+    min-height: 46px;
+    border: 1.5px dashed var(--bs-border-color);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--bs-primary);
+    font-size: 0.9rem;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.laddlayer:hover { background: var(--accent-subtle); }
+.laddform {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--bs-tertiary-bg);
+}
+.laddform .laddform-coating { flex: 1 1 200px; min-width: 0; }

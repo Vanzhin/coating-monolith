@@ -1,120 +1,95 @@
-{# Фрагмент модалки предпросмотра системы покрытий по id.
-   Рендерится эндпоинтом app_cabinet_coating_system_preview и всплывает по клику
-   на ссылку-референс в форме/списке документов (кросс-контекст: названия и превью
-   систем тянутся из Coatings по HTTP, не в PHP Certificates).
-   Переменные: system (CoatingSystemDTO), canEdit (bool). #}
+{# Фрагмент быстрого просмотра системы покрытий. Рендерится эндпоинтом
+   app_cabinet_coating_system_preview, всплывает модалкой (bottom-sheet на мобиле,
+   modal-lg на десктопе — .modal-sheet). Переменные: system (CoatingSystemDTO), canEdit.
+   Контракты: id coatingSystemPreview-{id}; coating-preview-loader (вложенное превью
+   покрытия по клику на слой); include _system_layer_rows; ленивый блок system-documents. #}
 
 {% set complianceByStandard = {} %}
 {% for entry in system.compliance %}
     {% set complianceByStandard = complianceByStandard|merge({(entry.standard): (complianceByStandard[entry.standard]|default([]))|merge([entry])}) %}
 {% endfor %}
 
+{% set opTempParts = [] %}
+{% if system.maxDryHeatContinuousOperatingTemp is not null %}{% set opTempParts = opTempParts|merge([system.maxDryHeatContinuousOperatingTemp ~ ' °C (сух.)']) %}{% endif %}
+{% if system.maxImmersionContinuousOperatingTemp is not null %}{% set opTempParts = opTempParts|merge([system.maxImmersionContinuousOperatingTemp ~ ' °C (погр.)']) %}{% endif %}
+
 <div class="modal fade" id="coatingSystemPreview-{{ system.id }}" tabindex="-1"
      aria-labelledby="coatingSystemPreviewLabel-{{ system.id }}" aria-hidden="true"
      data-controller="coating-preview-loader"
      data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title mb-0" id="coatingSystemPreviewLabel-{{ system.id }}">{{ system.title }}</h5>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-layers"></i></div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="coatingSystemPreviewLabel-{{ system.id }}">{{ system.title }}</h5>
+                        <small class="text-body-secondary">Система · {{ system.substrateTitle }}</small>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
             <div class="modal-body">
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <div class="row g-2 small">
-                        <div class="col-md-4">
-                            <span class="text-muted">Подложка:</span>
-                            <span class="ms-1 fw-semibold">{{ system.substrateTitle }}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <span class="text-muted">Среда:</span>
-                            <span class="ms-1 fw-semibold">{{ system.environmentTitle }}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <span class="text-muted">Подготовка:</span>
-                            <span class="ms-1 fw-semibold">{{ system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription }}{% if system.surfaceTreatmentStandardCode %} ({{ system.surfaceTreatmentStandardCode }}){% endif %}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <span class="text-muted">Суммарная ТСП:</span>
-                            <span class="ms-1 fw-semibold">{{ system.totalDft }} мкм</span>
-                        </div>
-                        {% if system.maxLayerApplicationMinTemp is not null %}
-                            <div class="col-md-4">
-                                <span class="text-muted">Мин. Т нанесения:</span>
-                                <span class="ms-1 fw-semibold">{{ system.maxLayerApplicationMinTemp }} °C</span>
+                {% if system.tags|length > 0 or system.description %}
+                    <div class="p-3 mb-1 rounded-3 bg-body-tertiary">
+                        {% if system.tags|length > 0 %}
+                            <div class="{% if system.description %}mb-2 {% endif %}d-flex flex-wrap gap-1">
+                                {% for tag in system.tags %}<span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>{% endfor %}
                             </div>
                         {% endif %}
-                        {% set opTempParts = [] %}
-                        {% if system.maxDryHeatContinuousOperatingTemp is not null %}
-                            {% set opTempParts = opTempParts|merge([system.maxDryHeatContinuousOperatingTemp ~ ' °C (сух.)']) %}
-                        {% endif %}
-                        {% if system.maxImmersionContinuousOperatingTemp is not null %}
-                            {% set opTempParts = opTempParts|merge([system.maxImmersionContinuousOperatingTemp ~ ' °C (погр.)']) %}
-                        {% endif %}
-                        {% if opTempParts is not empty %}
-                            <div class="col-md-4">
-                                <span class="text-muted">Макс. Т эксплуатации:</span>
-                                <span class="ms-1 fw-semibold">{{ opTempParts|join(' / ') }}</span>
-                            </div>
-                        {% endif %}
-                        {% if system.minApplicationTimeAt20Minutes is not null %}
-                            <div class="col-md-4">
-                                <span class="text-muted">Мин. время нанесения:</span>
-                                <span class="ms-1 fw-semibold">{{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</span>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                {% if system.description %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <p class="text-body-secondary mb-0">{{ system.description }}</p>
+                        {% if system.description %}<p class="text-body-secondary mb-0">{{ system.description }}</p>{% endif %}
                     </div>
                 {% endif %}
 
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <h6 class="fw-semibold mb-3">Слои системы ({{ system.layers|length }})</h6>
-                    {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
+                <div class="pv-sec">Основные характеристики</div>
+                <div class="kv-grid">
+                    <div class="kvi"><span class="k">Подложка</span><span class="v">{{ system.substrateTitle }}</span></div>
+                    <div class="kvi"><span class="k">Среда</span><span class="v">{{ system.environmentTitle }}</span></div>
+                    <div class="kvi"><span class="k">Суммарная ТСП</span><span class="v">{{ system.totalDft }}<span class="u">мкм</span></span></div>
+                    {% if system.maxLayerApplicationMinTemp is not null %}<div class="kvi"><span class="k">Мин. Т нанесения</span><span class="v">{{ system.maxLayerApplicationMinTemp }}<span class="u">°C</span></span></div>{% endif %}
+                    {% if opTempParts is not empty %}<div class="kvi"><span class="k">Макс. Т эксплуатации</span><span class="v">{{ opTempParts|join(' / ') }}</span></div>{% endif %}
+                    {% if system.minApplicationTimeAt20Minutes is not null %}<div class="kvi"><span class="k">Мин. время нанесения</span><span class="v">{{ system.minApplicationTimeAt20Minutes|duration_minutes_short }}</span></div>{% endif %}
                 </div>
 
+                {% if system.surfaceTreatmentCode or system.surfaceTreatmentDescription %}
+                    <div class="pv-sec">Подготовка поверхности</div>
+                    <div class="p-3 rounded-3 bg-body-tertiary">
+                        {{ system.surfaceTreatmentCode ?: system.surfaceTreatmentDescription }}{% if system.surfaceTreatmentStandardCode %} <span class="text-body-secondary">{{ system.surfaceTreatmentStandardCode }}</span>{% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="pv-sec">Состав · {{ system.layers|length }} слоёв</div>
+                {% include 'cabinet/coating/coating_system/_system_layer_rows.html.twig' with { layers: system.layers } only %}
+
                 {% if complianceByStandard|length > 0 %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <h6 class="fw-semibold mb-2">Соответствие стандартам</h6>
-                        <div class="d-flex flex-column gap-2">
-                            {% for standard, entries in complianceByStandard %}
-                                <div class="d-flex flex-wrap align-items-center gap-2">
-                                    <span class="text-body-secondary small">{{ (entries|first).standardTitle }}:</span>
+                    <div class="pv-sec">Соответствие</div>
+                    <div class="ecard-compliance">
+                        {% for standard, entries in complianceByStandard %}
+                            <div class="ecard-compliance-row">
+                                <span class="std">{{ (entries|first).standardTitle }}</span>
+                                <span class="vals">
                                     {% for entry in entries %}
-                                        <span class="badge text-bg-success fw-normal">{{ entry.label }}</span>
+                                        {% set q = { standard: entry.standard, category: entry.primary, durability: entry.secondary } %}
+                                        <a href="{{ path('app_cabinet_coating_system_list', q) }}"
+                                           title="Отфильтровать по «{{ entry.standardTitle }} · {{ entry.label }}»">{{ entry.label }}</a>
                                     {% endfor %}
-                                </div>
-                            {% endfor %}
-                        </div>
+                                </span>
+                            </div>
+                        {% endfor %}
                     </div>
                 {% endif %}
 
                 {% if system.documentCount > 0 %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
-                         data-controller="system-documents"
+                    <div class="pv-sec">Документы</div>
+                    <div data-controller="system-documents"
                          data-system-documents-url-value="{{ path('app_cabinet_coating_system_documents', {id: system.id}) }}"
                          data-system-documents-document-preview-route-value="{{ path('app_cabinet_certificate_document_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}"
                          data-system-documents-target="block">
-                        <h6 class="fw-semibold mb-2">Документы</h6>
                         <div class="d-flex flex-wrap gap-1" data-system-documents-target="list"></div>
                     </div>
                 {% endif %}
 
-                {% if system.tags|length > 0 %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <div class="d-flex flex-wrap gap-1">
-                            {% for tag in system.tags %}
-                                <span class="badge text-bg-light fw-normal text-body-secondary">{{ tag.title }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-
-                <div class="small text-muted">Обновлено: {{ system.updatedAt|date('d.m.Y') }}</div>
+                <div class="small text-body-secondary mt-3">Обновлено: {{ system.updatedAt|date('d.m.Y') }}</div>
             </div>
             <div class="modal-footer">
                 {% if canEdit %}

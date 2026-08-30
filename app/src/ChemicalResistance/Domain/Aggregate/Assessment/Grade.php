@@ -17,4 +17,16 @@ enum Grade: string
     {
         return self::R === $this || self::LR === $this;
     }
+
+    /** Человекочитаемая подпись грейда (единый источник для UI). */
+    public function label(): string
+    {
+        return match ($this) {
+            self::R => 'Стойкое',
+            self::LR => 'Ограниченно',
+            self::NR => 'Нестойкое',
+            self::FS => 'Спец. условия',
+            self::NT => 'Не испытано',
+        };
+    }
 }

@@ -1,0 +1,127 @@
+{# Батч карточек «стойкие покрытия по веществам» (страница «Химстойкость», мультивыбор).
+   Карточка — ТА ЖЕ единая entity-карточка, что в поиске покрытий (чекбокс сравнения,
+   монограм, заголовок→превью, теги), чтобы работали сравнение и быстрый просмотр.
+   Вердикт химстойкости — ПЕРВЫЙ чип в ряду тегов (капля = химстойкость, цвет = вердикт:
+   R ok / LR warn / прочее danger); ряд тегов скроллится, высота карточки не растёт.
+
+   Используется by_substance.html.twig и BySubstanceAction (?partial=1 для догрузки).
+
+   Обязательные переменные:
+     items   — list<CoatingResistanceDTO>; grade/gradeLabel/maxTemperature = ХУДШИЙ вердикт;
+               verdicts — разбивка по веществам (для правки).
+     canEdit — bool; grades — list<Grade> (для селекта грейда в правке).
+
+   Контракты (не ломать): чекбокс сравнения — data-compare-id + change->compare-tray#toggle;
+   превью — click->coating-preview-loader#open + data-coating-id. #}
+{# Фильтр для возврата после правки (те же вещества/оценка) — из URL, минус page/partial. #}
+{% set filterQuery = app.request.query.all|filter((v, k) => k != 'page' and k != 'partial') %}
+{% for item in items %}
+    {% set c = item.coating %}
+    {% set verdictClass = item.grade == 'R' ? 'is-ok' : (item.grade == 'LR' ? 'is-warn' : 'is-danger') %}
+    <div class="ecard">
+        {# Сравнение — как в списке покрытий (контракт compare-tray). #}
+        <div class="ecard-select">
+            <input type="checkbox" class="form-check-input m-0"
+                   data-compare-id="{{ c.id }}"
+                   data-compare-title="{{ c.title }}"
+                   data-action="change->compare-tray#toggle"
+                   aria-label="Добавить к сравнению">
+        </div>
+
+        {# Медиа: монограм связующего + цветная полоса (общий партиал). #}
+        {% include 'admin/coating/coating/_coating_mono.html.twig' with { coating: c } only %}
+
+        <div class="ecard-body">
+            <div class="ecard-head">
+                <div class="ecard-title" style="cursor: pointer;"
+                     data-action="click->coating-preview-loader#open"
+                     data-coating-id="{{ c.id }}">{{ c.title }}</div>
+                {% if canEdit %}
+                    <div class="ecard-kebab">
+                        <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                data-bs-toggle="modal" data-bs-target="#editResistance-{{ c.id }}"
+                                aria-label="Править химстойкость">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if c.description %}
+                <div class="ecard-desc" style="cursor: pointer;"
+                     data-action="click->coating-preview-loader#open"
+                     data-coating-id="{{ c.id }}">{{ c.description }}</div>
+            {% endif %}
+
+            {% if not c.isTintable and c.possibleColors|length > 0 %}
+                <div class="ecard-meta">{{ c.possibleColors|length }} цветов</div>
+            {% endif %}
+
+            {# Вердикт-чип первым + теги покрытия; ряд скроллится (scroll-fade), не переносится. #}
+            <div class="ecard-tags" data-controller="scroll-fade">
+                <span class="verdict {{ verdictClass }}"
+                      title="{{ item.gradeLabel }}{% if item.maxTemperature is not null %} до {{ item.maxTemperature }} °C{% endif %}">
+                    <i class="bi bi-droplet"></i>{% if item.maxTemperature is not null %}до {{ item.maxTemperature }} °C{% else %}{{ item.gradeLabel }}{% endif %}
+                </span>
+                {% for tag in c.tags %}
+                    <span class="tag">{{ tag.title }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if canEdit %}
+        {# Правка химстойкости покрытия — модалка: строка на каждое выбранное вещество. #}
+        <div class="modal fade" tabindex="-1" id="editResistance-{{ c.id }}"
+             aria-labelledby="editResistanceLabel-{{ c.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="editResistanceLabel-{{ c.id }}">
+                    Химстойкость: {{ c.title }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                {% for v in item.verdicts %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <div class="fw-semibold mb-2">{{ v.substanceName }}</div>
+                        <form method="post"
+                              action="{{ path('app_cabinet_chemical_resistance_by_substance_assessment_update', filterQuery|merge({assessmentId: v.assessmentId})) }}"
+                              class="row g-2 align-items-end">
+                            <div class="col-6 col-sm">
+                                <label class="form-label small text-muted mb-1">Оценка</label>
+                                <select name="grade" class="form-select form-select-sm">
+                                    {% for g in grades %}
+                                        <option value="{{ g.value }}" {{ g.value == v.grade ? 'selected' : '' }}>
+                                            {{ g.value }} — {{ g.label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 col-sm">
+                                <label class="form-label small text-muted mb-1">Макс. t, °C</label>
+                                <input type="number" name="maxTemperatureCelsius" class="form-control form-control-sm"
+                                       min="1" max="500" step="1" value="{{ v.maxTemperature }}" placeholder="—">
+                            </div>
+                            <div class="col-12 col-sm-auto">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Сохранить</button>
+                            </div>
+                        </form>
+                        <button type="button" class="btn btn-sm btn-soft-danger mt-2"
+                                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-bs-title="«{{ c.title }}» из «{{ v.substanceName }}»"
+                                data-bs-url="{{ path('app_cabinet_chemical_resistance_by_substance_assessment_delete', filterQuery|merge({assessmentId: v.assessmentId})) }}">
+                            <i class="bi bi-trash3 me-1"></i>Убрать из «{{ v.substanceName }}»
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+            </div>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}

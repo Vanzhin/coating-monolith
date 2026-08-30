@@ -5,12 +5,21 @@
 
 <div class="modal fade" id="documentPreview-{{ document.id }}" tabindex="-1"
      aria-labelledby="documentPreviewLabel-{{ document.id }}" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <div>
-                    <h5 class="modal-title mb-0" id="documentPreviewLabel-{{ document.id }}">{{ document.title }}</h5>
-                    <div class="d-flex flex-wrap gap-1 mt-1">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-file-earmark-text"></i></div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="documentPreviewLabel-{{ document.id }}">{{ document.title }}</h5>
+                        <small class="text-body-secondary">Документ{% if document.issuerTitle %} · {{ document.issuerTitle }}{% endif %}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-3 mb-1 rounded-3 bg-body-tertiary">
+                    <div class="d-flex flex-wrap gap-1">
                         <span class="badge text-bg-secondary fw-normal">{{ document.kindLabel }}</span>
                         {% if document.expiresAt is null %}
                             <span class="badge text-bg-secondary fw-normal">Бессрочный</span>
@@ -21,32 +30,31 @@
                         {% endif %}
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary small">
-                    {{ [document.issuerTitle, document.issuedAt|date('d.m.Y'), document.testStandard]|filter(v => v)|join(' · ') }}
+
+                <div class="pv-sec">Реквизиты</div>
+                <div class="kv-grid">
+                    {% if document.issuerTitle %}<div class="kvi"><span class="k">Организация</span><span class="v">{{ document.issuerTitle }}</span></div>{% endif %}
+                    {% if document.issuedAt %}<div class="kvi"><span class="k">Выдан</span><span class="v">{{ document.issuedAt|date('d.m.Y') }}</span></div>{% endif %}
+                    {% if document.testStandard %}<div class="kvi"><span class="k">Стандарт</span><span class="v">{{ document.testStandard }}</span></div>{% endif %}
                 </div>
 
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <div class="small text-muted mb-1">Что подтверждает</div>
-                    <div>{{ document.subject }}</div>
-                </div>
+                {% if document.subject %}
+                    <div class="pv-sec">Что подтверждает</div>
+                    <div class="p-3 rounded-3 bg-body-tertiary">{{ document.subject }}</div>
+                {% endif %}
 
                 {% if document.description %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                        <p class="text-body-secondary mb-0">{{ document.description }}</p>
-                    </div>
+                    <div class="pv-sec">Описание</div>
+                    <p class="text-body-secondary mb-0">{{ document.description }}</p>
                 {% endif %}
 
                 {% if document.references|length > 0 %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary"
-                         data-controller="reference-chips"
+                    <div class="pv-sec">Распространяется на</div>
+                    <div data-controller="reference-chips"
                          data-reference-chips-by-ids-system-value="{{ path('app_cabinet_coating_system_by_ids') }}"
                          data-reference-chips-by-ids-coating-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
                          data-reference-chips-preview-system-value="{{ path('app_cabinet_coating_system_preview', {id: idPlaceholder}) }}"
                          data-reference-chips-preview-coating-value="{{ path('app_cabinet_coating_coating_preview', {id: idPlaceholder}) }}">
-                        <h6 class="fw-semibold mb-2">Распространяется на</h6>
                         <div class="d-flex flex-wrap gap-1">
                             {% for ref in document.references %}
                                 <button type="button"
@@ -62,7 +70,7 @@
                     </div>
                 {% endif %}
 
-                <div class="small text-muted">Обновлено: {{ document.updatedAt|date('d.m.Y') }}</div>
+                <div class="small text-body-secondary mt-3">Обновлено: {{ document.updatedAt|date('d.m.Y') }}</div>
             </div>
             <div class="modal-footer">
                 {% if document.hasFile %}

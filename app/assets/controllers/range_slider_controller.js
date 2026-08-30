@@ -18,7 +18,7 @@ import { Controller } from '@hotwired/stimulus';
  *    к min/max: URL может исторически хранить значение вне slider bounds,
  *    и молча его переписывать нельзя. Bounds валидирует бэк.
  *  - reset() публично сбрасывает state (значения и CSS-переменные заливки),
- *    вызывается flip_card_controller при переворачивании на невидимую сторону.
+ *    вызывается пресетом «сброс» в range_filter_card (resetPreset).
  *  - Когда обе ручки стакаются (from==to), toggle'им CSS-класс,
  *    меняющий z-index приоритет — пользователь может кликнуть ещё раз и
  *    попасть уже в противоположную ручку.
@@ -93,8 +93,7 @@ export default class extends Controller {
 
     /**
      * Публичный reset: очищает значения number-инпутов и пересчитывает
-     * CSS-переменные заливки. Вызывается flip_card_controller при
-     * переворачивании стороны с этим слайдером на невидимую.
+     * CSS-переменные заливки. Вызывается пресетом «сброс» (resetPreset).
      */
     reset() {
         this.fromInputTarget.value = '';
@@ -102,6 +101,38 @@ export default class extends Controller {
         this._syncRangesFromInputs();
         this._updateFill();
         this._updateStackedPriority(false);
+    }
+
+    /**
+     * Пресет-пилюля: ставит от/до из data-attr'ов в number-инпуты и двигает
+     * слайдер. БЕЗ сабмита — применяет общий «Показать» шторки. Активный пресет
+     * подсвечивается CSS'ом через сравнение значений (см. range_filter_card).
+     */
+    preset(event) {
+        const btn = event.currentTarget;
+        this.fromInputTarget.value = btn.dataset.from ?? '';
+        this.toInputTarget.value = btn.dataset.to ?? '';
+        this._syncRangesFromInputs();
+        this._updateFill();
+        this._updateStackedPriority(false);
+        this._markActivePreset(btn);
+    }
+
+    /** Кнопка «Любая/Любой»: очистить диапазон + подсветить себя. */
+    resetPreset(event) {
+        this.reset();
+        this._markActivePreset(event.currentTarget);
+    }
+
+    /** Подсветка выбранной пилюли-пресета (без перерисовки Twig). */
+    _markActivePreset(activeBtn) {
+        const group = activeBtn.closest('[data-range-preset-group]');
+        if (!group) return;
+        group.querySelectorAll('[data-range-preset]').forEach((b) => {
+            b.classList.toggle('btn-primary', b === activeBtn);
+            b.classList.toggle('btn-outline-primary', b !== activeBtn && b.dataset.rangePreset !== 'reset');
+            b.classList.toggle('btn-outline-secondary', b !== activeBtn && b.dataset.rangePreset === 'reset');
+        });
     }
 
     _syncRangesFromInputs() {

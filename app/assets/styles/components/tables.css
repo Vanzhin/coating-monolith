@@ -1,0 +1,39 @@
+/* Таблицы, где каждая строка — визуально отдельная «карточка».
+   Используется в compare (сравнение полей/времени высыхания) и в edit-форме
+   покрытия (точки drying/recoating). Вынесено из inline-<style> в base.html.twig.
+   Каждый tr получает фон bg-body поверх тертиарного контейнера + скругление
+   уголков на первой/последней td. Промежутки между строками — border-spacing
+   (требует border-collapse: separate). table-warning-строки (различающиеся
+   значения в compare) сохраняют оттенок через каскад --bs-table-bg-state. */
+.table-rows {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+    margin-bottom: -0.5rem; /* компенсируем последний gap-spacing */
+}
+.table-rows > thead > tr > th,
+.table-rows > thead > tr > td {
+    border: 0;
+    padding-top: 0;
+    padding-bottom: 0.25rem;
+    background: transparent;
+}
+.table-rows > tbody > tr > td,
+.table-rows > tbody > tr > th {
+    border: 0;
+    /* Приоритет:
+       1. --table-rows-cell-bg — наш override с родителя (bg-body строки-«карточки»
+          на bg-body-tertiary зоне);
+       2. --bs-table-bg — стандартная переменная Bootstrap (равна body-bg,
+          переопределяется .table-warning для подсветки различий compare). */
+    background: var(--table-rows-cell-bg, var(--bs-table-bg, var(--bs-body-bg)));
+}
+.table-rows > tbody > tr > td:first-child,
+.table-rows > tbody > tr > th:first-child {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+}
+.table-rows > tbody > tr > td:last-child,
+.table-rows > tbody > tr > th:last-child {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}

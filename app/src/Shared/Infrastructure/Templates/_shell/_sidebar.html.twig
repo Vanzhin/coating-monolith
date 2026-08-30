@@ -1,0 +1,29 @@
+{# Десктоп-сайдбар (d-none d-lg-flex). Пункты — из `nav_items` (задан в base);
+   ниже — группа «Администрирование» (только ROLE_ADMIN) и аккаунт/тема/выход.
+   Включается в base только для авторизованных. #}
+<aside class="app-sidebar d-none d-lg-flex">
+    <a class="app-brand" href="{{ path('app_homepage') }}">{{ app_name }}</a>
+    <nav class="app-sidebar-nav" aria-label="Основная навигация">
+        {% for item in nav_items %}
+            <a href="{{ path(item.route) }}" class="app-nav-item{{ item.active ? ' active' : '' }}"
+               {% if item.active %}aria-current="page"{% endif %}>
+                <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
+            </a>
+        {% endfor %}
+        {% if is_granted('ROLE_ADMIN') %}
+            <div class="app-nav-sep">Администрирование</div>
+            <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item"><i class="bi bi-chevron-bar-contract"></i><span>Подготовка поверхности</span></a>
+            <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="app-nav-item"><i class="bi bi-building"></i><span>Производители</span></a>
+            <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="app-nav-item"><i class="bi bi-eyedropper"></i><span>Вещества</span></a>
+        {% endif %}
+    </nav>
+    <div class="app-sidebar-foot">
+        <a href="{{ path('app_cabinet') }}" class="app-nav-item"><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span></a>
+        <button type="button" class="app-nav-item app-theme" data-controller="theme-toggle" data-action="click->theme-toggle#toggle" aria-label="Переключить тему">
+            <i class="bi bi-sun-fill" data-theme-toggle-target="light"></i>
+            <i class="bi bi-moon-stars-fill d-none" data-theme-toggle-target="dark"></i>
+            <span>Тема</span>
+        </button>
+        <a href="{{ path('app_logout') }}" class="app-nav-item text-danger"><i class="bi bi-box-arrow-right"></i><span>Выйти</span></a>
+    </div>
+</aside>

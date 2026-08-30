@@ -1,0 +1,138 @@
+{# Общий шелл поиска для всех списков кабинета (покрытия / системы / документы /
+   химстойкость). Даёт ЕДИНЫЙ вид и поведение: строка поиска (_search_toolbar) +
+   chip-row (Сортировка + «Все фильтры» + скроллящиеся чипы фасетов) + шторка
+   «Все фильтры» (offcanvas-end со своей GET-формой и футером «Сбросить всё / Показать»).
+   Начинку фасетов страница передаёт блоками — сам шелл про конкретные фасеты не знает.
+
+   Использование (внутри block above_list у list_page):
+     {% embed 'components/entity_search.html.twig' with {
+         list_route: 'app_cabinet_..._list',
+         form_id: 'xxxListForm',
+         search_name: 'q', search_value: q, search_placeholder: '...',
+         search_typeahead: path('..._suggest'),        (опц.)
+         sort_options: sortOptions|map(o => {value: o.value, label: o.label}),
+         sort_current: sort.value, sort_default: defaultSort.value,
+         active_count: activeFacetsCount,
+         drawer_id: 'allXxxFiltersOffcanvas', drawer_form_id: 'allXxxFiltersForm',
+     } %}
+        {% block chips %}...per-facet чипы/дропдауны...{% endblock %}
+        {% block drawer %}...секции шторки...{% endblock %}
+        {% block drawer_hidden %}...доп. hidden формы шторки (напр. sort)...{% endblock %}
+        {% block extra %}...мобильные per-facet шторки и пр....{% endblock %}
+     {% endembed %}
+
+   Параметры:
+     list_route         — имя маршрута списка (reset/sort URL строятся от него)
+     form_id            — id основной GET-формы
+     has_search         — bool, показывать ли строку поиска (default true)
+     search_name        — имя поля поиска (default 'q')
+     search_value       — текущее значение
+     search_placeholder — плейсхолдер
+     search_typeahead   — endpoint async-typeahead (опц.)
+     search_minlength / search_maxlength — опц.
+     sort_options       — list<{value, label}>; пусто/не задано → блок сортировки не рендерится
+     sort_current       — текущее значение сортировки (string)
+     sort_default       — дефолтное значение сортировки (string)
+     active_count       — число активных фасетов (badge на «Все фильтры»)
+     has_drawer         — bool, показывать ли «Все фильтры» (default true)
+     drawer_id          — id offcanvas шторки
+     drawer_form_id     — id формы шторки
+
+   Блоки:
+     chips         — per-facet чипы/дропдауны внутри chip-scroll
+     drawer        — секции внутри тела шторки (без header/footer/формы — их даёт шелл)
+     drawer_hidden — доп. hidden-поля формы шторки (напр. passthrough sort)
+     extra         — произвольная разметка после основной формы (мобильные per-facet шторки и т.п.)
+#}
+{% set has_search = has_search ?? true %}
+{% set has_drawer = has_drawer ?? true %}
+{% set search_name = search_name|default('q') %}
+{% set sort_shown = sort_options is defined and sort_options|length > 0 %}
+{% set sort_active = sort_shown and sort_current != sort_default %}
+{% set current_sort_label = sort_shown ? (sort_options|filter(o => o.value == sort_current)|first).label|default('Сортировка') : 'Сортировка' %}
+
+<form method="get" action="{{ path(list_route) }}" id="{{ form_id }}" class="mb-3"
+      data-controller="{{ form_controllers|default('chip-facets') }} facet-jump"
+      data-facet-jump-drawer-value="{{ drawer_id|default('') }}">
+    {% if has_search %}
+        {# По умолчанию — общая строка поиска; страница может переопределить блок search
+           (напр. химстойкость: typeahead-мультивыбор веществ вместо текстового q). #}
+        {% block search %}
+            {% include 'components/_search_toolbar.html.twig' with {
+                q_value: search_value,
+                name: search_name,
+                reset_url: path(list_route),
+                placeholder: search_placeholder,
+                endpoint_typeahead: search_typeahead|default(null),
+                minlength: search_minlength|default(null),
+                maxlength: search_maxlength|default(null),
+            } %}
+        {% endblock %}
+    {% endif %}
+
+    {# === Chip-row: pinned (Сортировка + «Все фильтры») + скроллящиеся чипы === #}
+    <div class="d-flex align-items-center gap-2 mb-3 chip-row">
+        <div class="d-flex gap-2 flex-shrink-0 chip-row-pinned">
+            {% if sort_shown %}
+                <div class="dropdown">
+                    <button type="button"
+                            class="btn btn-sm {{ sort_active ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Сортировка">
+                        <i class="bi bi-sort-down"></i><span class="d-none d-md-inline"> {{ sort_active ? current_sort_label : 'Сортировка' }}</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for o in sort_options %}
+                            {% set sortParam = (o.value == sort_default) ? null : o.value %}
+                            {% set q2 = app.request.query.all|merge({sort: sortParam, page: null})|filter(v => v is not null) %}
+                            <li>
+                                <a class="dropdown-item {% if o.value == sort_current %}active{% endif %}"
+                                   href="{{ path(list_route, q2) }}">{{ o.label }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if has_drawer %}
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-bs-toggle="offcanvas" data-bs-target="#{{ drawer_id }}"
+                        aria-controls="{{ drawer_id }}" aria-label="Все фильтры">
+                    <i class="bi bi-sliders"></i><span class="d-none d-md-inline"> Все фильтры</span>
+                    {% if active_count > 0 %}<span class="chip-count">{{ active_count }}</span>{% endif %}
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-nowrap chip-scroll flex-grow-1">
+            {% block chips %}{% endblock %}
+        </div>
+    </div>
+</form>
+
+{% block extra %}{% endblock %}
+
+{% if has_drawer %}
+    <div class="offcanvas offcanvas-end entity-drawer" tabindex="-1" id="{{ drawer_id }}" aria-labelledby="{{ drawer_id }}Label">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title mb-0" id="{{ drawer_id }}Label">
+                Фильтры
+                {% if active_count > 0 %}<span class="badge text-bg-primary ms-1">{{ active_count }}</span>{% endif %}
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+        </div>
+
+        <form method="get" action="{{ path(list_route) }}" id="{{ drawer_form_id }}" class="offcanvas-body d-flex flex-column p-0">
+            {% if has_search and search_value %}<input type="hidden" name="{{ search_name }}" value="{{ search_value }}">{% endif %}
+            {% block drawer_hidden %}{% endblock %}
+
+            <div class="flex-grow-1 overflow-auto p-3">
+                {% block drawer %}{% endblock %}
+            </div>
+
+            <div class="entity-drawer-foot p-3 d-flex gap-2 bg-body">
+                <a href="{{ path(list_route) }}" class="btn btn-outline-secondary flex-fill">Сбросить всё</a>
+                <button type="submit" class="btn btn-primary flex-fill">Показать</button>
+            </div>
+        </form>
+    </div>
+{% endif %}

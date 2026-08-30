@@ -1,0 +1,217 @@
+{# Страница «Химстойкость»: мультивыбор веществ → покрытия, стойкие ко ВСЕМ (AND).
+   Чипы выбранных веществ рендерит сервер из result.selectedSubstances (hidden
+   substanceIds[] внутри формы), состояние — в URL (shareable, работает без JS).
+   substance-multiselect добавляет/убирает вещества и пересабмичивает форму.
+   Вердикт в карточке — худший среди выбранных веществ (одна пилюля).
+
+   Переменные из BySubstanceAction: includeAll, canEdit,
+   result (GetCoatingsBySubstanceQueryResult|null), perPage, grades. #}
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Химстойкость{% endblock %}
+
+{% block content %}
+    {% set hasResult = result is not null %}
+    {% set chips = hasResult ? result.selectedSubstances : [] %}
+
+    {# preview-loader + compare-tray на обёртке — та же карточка, что в покрытиях:
+       заголовок открывает быстрый просмотр, чекбокс добавляет в сравнение. #}
+    <div data-controller="compare-tray coating-preview-loader"
+         data-compare-tray-storage-key-value="compare:Coating"
+         data-compare-tray-compare-url-value="{{ path('app_cabinet_coating_coating_compare') }}"
+         data-compare-tray-max-value="4"
+         data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Химстойкость',
+        create_route: null,
+        can_edit: canEdit,
+        is_empty: not hasResult or result.items is empty,
+    } %}
+        {% block above_list %}
+            {# Тот же шелл поиска, что у покрытий/систем/документов; строка поиска —
+               typeahead-мультивыбор веществ, выбранные вещества — чипы в chip-row. #}
+            {% embed 'components/entity_search.html.twig' with {
+                list_route: 'app_cabinet_coating_coating_by_substance',
+                form_id: 'bySubstanceForm',
+                form_controllers: '',
+                has_search: true,
+                has_drawer: false,
+            } %}
+                {% block search %}
+                    {# Разметка 1-в-1 как _search_toolbar (input-group + «Найти» + «Сброс»),
+                       но поле — typeahead-мультивыбор веществ (substance-multiselect
+                       на этой обёртке; endpoint — здесь же). #}
+                    <div class="position-relative"
+                         data-controller="substance-multiselect"
+                         data-substance-multiselect-endpoint-value="{{ path('app_cabinet_chemical_resistance_substance_autocomplete') }}">
+                        <div class="input-group input-group-lg mb-3">
+                            <input type="search" class="form-control" autocomplete="off"
+                                   placeholder="Добавьте вещество (напр. метанол, серная кислота)…"
+                                   data-substance-multiselect-target="input"
+                                   data-action="input->substance-multiselect#onInput keydown->substance-multiselect#onKeydown">
+                            <button type="submit" class="btn btn-primary" title="Найти" aria-label="Найти">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <a href="{{ path('app_cabinet_coating_coating_by_substance') }}"
+                               class="btn btn-outline-secondary" title="Сбросить" aria-label="Сбросить">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown-menu w-100" data-substance-multiselect-target="results"></div>
+                    </div>
+                {% endblock %}
+
+                {% block chips %}
+                    {# Preserve выбранных веществ и режима для сабмита при добавлении через typeahead. #}
+                    {% for s in chips %}<input type="hidden" name="substanceIds[]" value="{{ s.id }}">{% endfor %}
+                    {% if includeAll %}<input type="hidden" name="includeAll" value="1">{% endif %}
+
+                    {# Чипы выбранных веществ — как активные фасеты (btn-primary, снятие по URL). #}
+                    {% for s in chips %}
+                        {% set restIds = chips|filter(x => x.id != s.id)|map(x => x.id) %}
+                        {% set removeUrl = path('app_cabinet_coating_coating_by_substance', app.request.query.all|merge({substanceIds: restIds, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать «{{ s.canonicalName }}»">
+                            {{ s.canonicalName }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+
+                    {# Сегмент вердикта — чип-ссылки в общем стиле (состояние в URL). #}
+                    {% if hasResult %}
+                        {% set base = app.request.query.all %}
+                        {% set onlyUrl = path('app_cabinet_coating_coating_by_substance', base|merge({includeAll: null, page: null})|filter(v => v is not null)) %}
+                        {% set allUrl = path('app_cabinet_coating_coating_by_substance', base|merge({includeAll: 1, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ onlyUrl }}" class="btn btn-sm {{ not includeAll ? 'btn-primary' : 'btn-outline-secondary' }}">Только стойкие</a>
+                        <a href="{{ allUrl }}" class="btn btn-sm {{ includeAll ? 'btn-primary' : 'btn-outline-secondary' }}">+ ограниченно</a>
+                    {% endif %}
+                {% endblock %}
+            {% endembed %}
+
+            {% if canEdit and hasResult %}
+                <button type="button" class="btn btn-soft-success mt-2"
+                        data-bs-toggle="modal" data-bs-target="#addCoatingToSubstance">
+                    <i class="bi bi-plus-lg"></i> Добавить покрытие к веществу
+                </button>
+            {% endif %}
+        {% endblock %}
+
+        {% block list_content %}
+            {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
+            {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
+            {% include 'components/infinite_list.html.twig' with {
+                items_template: 'cabinet/chemical_resistance/_resistant_cards.html.twig',
+                items_params: {
+                    items: result.items,
+                    canEdit: canEdit,
+                    grades: grades,
+                },
+                total_pages: totalPages,
+                base_url: path('app_cabinet_coating_coating_by_substance', baseQuery),
+                wrapper_class: 'ecard-grid',
+            } only %}
+
+            <noscript>
+                {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+            </noscript>
+        {% endblock %}
+
+        {% block empty_state %}
+            {% if not hasResult %}
+                {# Вещества ещё не выбраны — приглашение к поиску. #}
+                <div class="p-4 text-center" role="status">
+                    <i class="bi bi-droplet fs-1 d-block mb-2 text-body-secondary"></i>
+                    <h5 class="fw-semibold mb-2">Поиск по химстойкости</h5>
+                    <p class="mb-0 text-body-secondary">Добавьте одно или несколько веществ выше — покажем покрытия, стойкие ко всем.</p>
+                </div>
+            {% else %}
+                <div class="p-4 text-center" role="status">
+                    <i class="bi bi-search fs-1 d-block mb-2 text-body-secondary"></i>
+                    <h5 class="fw-semibold mb-2">Ничего не найдено</h5>
+                    <p class="mb-0 text-body-secondary">
+                        Нет покрытий, стойких ко всем выбранным веществам.
+                        {% if not includeAll %} Попробуйте показать также ограниченно/нестойкие или убрать часть веществ.{% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+
+    {% if canEdit and hasResult %}
+        {# Добавить покрытие к одному из выбранных веществ (создать оценку). #}
+        {% set addFilterQuery = app.request.query.all|filter((v, k) => k != 'page' and k != 'partial') %}
+        <div class="modal fade" tabindex="-1" id="addCoatingToSubstance"
+             aria-labelledby="addCoatingToSubstanceLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+            <form method="post"
+                  action="{{ path('app_cabinet_chemical_resistance_by_substance_assessment_create', addFilterQuery) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title mb-0" id="addCoatingToSubstanceLabel">Добавить покрытие к веществу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 p-3 rounded-3 bg-body-tertiary mx-0">
+                        <div class="col-12 col-md-6"
+                             data-controller="async-typeahead"
+                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                             data-async-typeahead-placeholder-value="Поиск покрытия…">
+                            <label class="form-label small text-muted mb-1">Покрытие</label>
+                            <select name="coatingId" data-async-typeahead-target="select" required>
+                                <option value="">Выберите покрытие…</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small text-muted mb-1">Вещество</label>
+                            <select name="substanceId" class="form-select" required>
+                                {% for s in result.selectedSubstances %}
+                                    <option value="{{ s.id }}">{{ s.canonicalName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1">Оценка</label>
+                            <select name="grade" class="form-select">
+                                {% for g in grades %}
+                                    <option value="{{ g.value }}" {{ g.value == 'R' ? 'selected' : '' }}>{{ g.value }} — {{ g.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1">Макс. t, °C</label>
+                            <input type="number" name="maxTemperatureCelsius" class="form-control"
+                                   min="1" max="500" step="1" placeholder="—">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+            </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Единая модалка подтверждения удаления (удаление оценки — через data-bs-url). #}
+    {% if canEdit %}
+        {% include 'components/delete_modal.html.twig' %}
+    {% endif %}
+
+    {# Плавающий трей сравнения — как в списке покрытий. #}
+    <div class="compare-tray d-none" data-compare-tray-target="bar">
+        <div class="compare-tray-inner">
+            <div class="compare-tray-head">
+                <span class="ct-title">Сравнение</span>
+                <span class="ct-hint"><strong data-compare-tray-target="count">0</strong> из 4</span>
+                <button type="button" class="ct-clear" data-action="click->compare-tray#clear">Очистить</button>
+            </div>
+            <div class="compare-tray-body">
+                <div class="compare-tray-chips" data-compare-tray-target="chips"></div>
+                <button type="button" class="btn btn-sm btn-primary ct-go"
+                        data-action="click->compare-tray#open"
+                        data-compare-tray-target="openBtn" disabled>Сравнить</button>
+            </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}

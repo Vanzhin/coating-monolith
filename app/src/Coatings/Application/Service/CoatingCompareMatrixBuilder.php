@@ -52,7 +52,13 @@ final class CoatingCompareMatrixBuilder
             return [];
         }
 
-        $matrices = array_map(fn (CoatingDTO $s) => $this->singleBuilder->build($s), $subjects);
+        // Single-builder отдаёт groups-формат (Деплой 5); схлопываем в плоские
+        // строки {label, values} со составной меткой, как ждёт compare-логика ниже.
+        $matrices = array_map(function (CoatingDTO $s): array {
+            $matrix = $this->singleBuilder->build($s);
+
+            return ['columns' => $matrix['columns'], 'rows' => $this->flattenRows($matrix['groups'])];
+        }, $subjects);
 
         $columns = $this->unionColumns($matrices);
         $labelOrder = $this->collectLabelsInEncounterOrder($matrices);
@@ -88,6 +94,28 @@ final class CoatingCompareMatrixBuilder
         }
 
         return $sections;
+    }
+
+    /**
+     * Схлопывает groups-формат single-builder'а в плоские строки со составной
+     * меткой «подзаголовок группы · стадия» (базовая группа без подзаголовка —
+     * просто стадия). Compare-логика идентифицирует строки по этой метке.
+     *
+     * @param list<array{label: ?string, rows: list<array{stage: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>}> $groups
+     *
+     * @return list<array{label: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>
+     */
+    private function flattenRows(array $groups): array
+    {
+        $rows = [];
+        foreach ($groups as $group) {
+            $prefix = null !== $group['label'] ? $group['label'].' · ' : '';
+            foreach ($group['rows'] as $row) {
+                $rows[] = ['label' => $prefix.$row['stage'], 'values' => $row['values']];
+            }
+        }
+
+        return $rows;
     }
 
     /**

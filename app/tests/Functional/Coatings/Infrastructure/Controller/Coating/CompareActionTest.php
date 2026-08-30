@@ -153,9 +153,9 @@ final class CompareActionTest extends WebTestCase
         self::assertStringContainsString('Сравнение покрытий (2)', $content);
         self::assertStringContainsString('Coating A', $content);
         self::assertStringContainsString('Coating B', $content);
-        // Различия по volumeSolid должны быть подсвечены — независимо от порядка атрибутов в <tr>.
+        // Различия по volumeSolid должны быть подсвечены diff-классом — независимо от порядка атрибутов в <tr>.
         self::assertMatchesRegularExpression(
-            '/<tr(?=[^>]*class="[^"]*table-warning)(?=[^>]*data-field="volumeSolid")[^>]*>/',
+            '/<tr(?=[^>]*class="[^"]*cmp-row--diff)(?=[^>]*data-field="volumeSolid")[^>]*>/',
             $content,
         );
     }

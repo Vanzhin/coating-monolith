@@ -1,0 +1,100 @@
+/* Превью-модалки покрытия/системы: на мобиле — bottom-sheet (выезжает снизу),
+   на десктопе — обычная центрированная modal-lg. Класс .modal-sheet — на .modal-dialog. */
+@media (max-width: 991.98px) {
+    .modal-sheet.modal-dialog {
+        position: fixed; left: 0; right: 0; bottom: 0; margin: 0;
+        max-width: 100%; width: 100%;
+    }
+    .modal-sheet .modal-content {
+        border-radius: 18px 18px 0 0; border-bottom: 0;
+        max-height: 92vh;
+    }
+    /* Grabber сверху. */
+    .modal-sheet .modal-content::before {
+        content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+        width: 38px; height: 5px; border-radius: 3px; background: var(--bs-border-color); z-index: 2;
+    }
+    .modal-sheet .modal-header { padding-top: 20px; }
+    /* Выезд снизу вместо fade-сверху. */
+    .modal.fade .modal-sheet { transform: translateY(100%); transition: transform .28s var(--ease-emph, ease); }
+    .modal.show .modal-sheet { transform: none; }
+}
+
+/* Борде рлесс: у превью-модалок нет линий-разделителей (дизайн-линия «без рамок»).
+   Хедер различаем мягким тоном, футер — мягкой верхней тенью. Применяется на всех
+   ширинах (класс .modal-sheet есть всегда, sheet-позиционирование — только на мобиле). */
+.modal-sheet .modal-header {
+    border-bottom: 0;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 50%, var(--surface));
+}
+.modal-sheet .modal-footer {
+    border-top: 0;
+    box-shadow: 0 -7px 18px rgba(0, 0, 0, .05);
+}
+[data-bs-theme="dark"] .modal-sheet .modal-footer {
+    box-shadow: 0 -7px 18px rgba(0, 0, 0, .35);
+}
+
+/* Key-value список характеристик (одна пара в строку) — для системного превью.
+   Без рамок/разделителей — строки разделены отступом. */
+.kv { display: flex; flex-direction: column; gap: 8px; }
+.kv .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 0; }
+.kv .k { font-size: 13px; color: var(--bs-secondary-color); }
+.kv .v { font-size: 13.5px; font-weight: 600; text-align: right; }
+.kv .v .u { color: var(--faint, var(--bs-secondary-color)); font-weight: 500; font-size: 12px; margin-left: 3px; }
+
+/* Плотная сетка характеристик: каждая пара — отдельный заполненный блок (--sunken),
+   без линий/рамок; метка сверху мелко, значение снизу. */
+.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.kv-grid .kvi { background: var(--sunken); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.kv-grid .kvi .k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--faint, var(--bs-secondary-color)); }
+.kv-grid .kvi .v { font-size: 13.5px; font-weight: 650; }
+.kv-grid .kvi .v .u { color: var(--faint, var(--bs-secondary-color)); font-weight: 500; font-size: 11.5px; margin-left: 3px; }
+
+/* Компактная матрица высыхания (гор. скролл, липкий первый столбец с иконкой).
+   Без линий-контуров: строки различает зебра. Фон даёт панель .pv-drying. */
+.pv-matrix-wrap { overflow-x: auto; }
+.pv-matrix { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 340px; }
+.pv-matrix th, .pv-matrix td { padding: 9px 10px; text-align: center; white-space: nowrap; }
+.pv-matrix thead th { color: var(--faint, var(--bs-secondary-color)); font-weight: 600; }
+/* Иконка стадии — ЕДИНСТВЕННЫЙ залипающий столбец. Описание (.stage-label) —
+   отдельный столбец, НЕ залипает: прокручивается и уходит под иконку.
+   На мобиле описание скрыто (d-none d-lg-table-cell) — остаются иконки. */
+.pv-matrix th.stage-icon { width: 48px; min-width: 48px; text-align: center; position: sticky; left: 0; z-index: 2; }
+.pv-matrix th.stage-label { text-align: left; font-weight: 600; min-width: 150px; }
+/* Значок стадии: иконка + опц. подпись min/max (для интервалов перекрытия). */
+.stage-glyph { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; gap: 1px; }
+.stage-glyph .bi { font-size: 16px; color: var(--bs-secondary-color); }
+.stage-glyph .mk { font-size: 8px; font-weight: 700; text-transform: uppercase; color: var(--faint, var(--bs-secondary-color)); }
+.pv-matrix td.calc { color: var(--faint, var(--bs-secondary-color)); font-style: italic; }
+
+/* Единый блок «Время высыхания»: общий тонированный фон-панель (--sunken) выделяется
+   на фоне модалки; таблицы ПРОЗРАЧНЫ поверх, поэтому фон реально виден. Без рамок. */
+.pv-drying { background: var(--sunken); border-radius: 12px; padding: 12px; }
+.pv-drying .pv-matrix-wrap { background: transparent; }
+/* Зебра: чётные строки — surface (светлее панели, видны), нечётные — прозрачны (панель).
+   Залипающие столбцы повторяют фон своей строки (иначе данные просвечивали бы при прокрутке). */
+.pv-drying .pv-matrix tbody th.stage-icon,
+.pv-drying .pv-matrix tbody th.stage-label { background: var(--sunken); }
+.pv-drying .pv-matrix tbody tr:nth-child(even) > td,
+.pv-drying .pv-matrix tbody tr:nth-child(even) > th { background: var(--surface); }
+
+/* Подзаголовок группы (среда/материал) — по центру НАД своей таблицей, вне скролла
+   (всегда виден). Без разделительной линии — контексты разделяет общий фон и отступ. */
+.pv-group-title { text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--bs-primary); margin: 12px 0 6px; }
+
+/* Легенда стадий (иконка → название) — для тача, где tooltip недоступен. */
+.pv-matrix-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+.pv-matrix-legend .lg-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--bs-secondary-color); }
+.pv-matrix-legend .lg-item .bi { font-size: 14px; color: var(--faint, var(--bs-secondary-color)); }
+
+/* Сворачиваемая секция (химстойкость). */
+.disc { background: var(--sunken); border-radius: 12px; overflow: hidden; }
+.disc-head { display: flex; align-items: center; gap: 10px; padding: 12px 13px; cursor: pointer; width: 100%; background: none; border: 0; text-align: left; color: var(--bs-body-color); }
+.disc-head .disc-title { flex: 1; font-size: 13.5px; font-weight: 650; }
+.disc-head .disc-chev { transition: transform .18s var(--ease-emph, ease); color: var(--faint, var(--bs-secondary-color)); }
+.disc-head[aria-expanded="true"] .disc-chev { transform: rotate(180deg); }
+.disc-body { padding: 10px 13px; }
+
+/* Заголовок секции превью. */
+.pv-sec { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--faint, var(--bs-secondary-color)); margin: 16px 2px 8px; }
