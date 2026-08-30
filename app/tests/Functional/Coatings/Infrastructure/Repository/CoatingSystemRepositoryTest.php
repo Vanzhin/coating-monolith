@@ -274,6 +274,16 @@ final class CoatingSystemRepositoryTest extends KernelTestCase
             self::assertNotNull($layer->getColor());
             self::assertSame($color->getId(), $layer->getColor()->getId());
         }
+
+        // tearDown убирает только systemId (=s1) и coating. Вторую систему s2, делящую
+        // то же покрытие, снимаем вручную — иначе её слой держит coating, и удаление
+        // покрытия в tearDown падает по FK (coating_system_layer_coating_id_fkey),
+        // что закрывает EntityManager и роняет последующие тесты каскадом.
+        $s2Managed = $this->em->find(CoatingSystem::class, $s2->id);
+        if (null !== $s2Managed) {
+            $this->em->remove($s2Managed);
+            $this->em->flush();
+        }
     }
 
     public function test_remove_deletes_system_and_layers(): void
