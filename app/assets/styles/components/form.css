@@ -198,6 +198,27 @@
     margin-bottom: 0.1rem;
 }
 
+/* Универсальные soft-сообщения (flash/ошибки формы) — тема-аваре, без рамок.
+   Динамические сообщения (AJAX) показываем через flash-тосты (showToast). */
+.msg {
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+.msg-success { background: var(--ok-subtle); color: var(--ok); }
+.msg-danger, .msg-error { background: var(--danger-subtle); color: var(--danger-strong); }
+.msg-warning { background: var(--warn-subtle); color: var(--warn); }
+.msg-info { background: var(--accent-subtle); color: var(--bs-primary); }
+
+/* Поле ввода кода верификации — крупные разреженные цифры по центру. */
+.channel-code-input {
+    letter-spacing: 0.3rem;
+    font-weight: 700;
+    height: 60px;
+    text-align: center;
+}
+
 /* ── Модалка длительности #durationModal — вариант «живой итог» ──────────────
    Разметка: form.html.twig; логика/пересчёт — coating_form_controller.js. */
 .duration-modal {
