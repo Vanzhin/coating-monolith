@@ -175,9 +175,24 @@ final class SurfaceTreatmentRepositoryTest extends KernelTestCase
         $this->make('Описание первое-'.$suffix, code: $code, standardCode: $std);
         $this->em->clear();
 
-        $this->expectException(\Throwable::class);
+        // Дубликат ловим внутри savepoint. Unique-нарушение закрывает EntityManager и
+        // оставляет транзакцию DAMA (статическое соединение переживает reboot ядра)
+        // оборванной — это роняло следующие тесты каскадом. Откат savepoint возвращает
+        // соединение в рабочее состояние.
+        $conn = $this->em->getConnection();
+        $conn->beginTransaction();
+        $violated = false;
+        try {
+            $this->make('Описание второе-'.$suffix, code: $code, standardCode: $std);
+        } catch (\Throwable) {
+            $violated = true;
+        } finally {
+            if ($conn->isTransactionActive()) {
+                $conn->rollBack();
+            }
+        }
 
-        $this->make('Описание второе-'.$suffix, code: $code, standardCode: $std);
+        self::assertTrue($violated, 'Ожидалось нарушение unique-ограничения (code, standardCode).');
     }
 
     public function test_null_code_and_standard_allows_duplicates(): void
