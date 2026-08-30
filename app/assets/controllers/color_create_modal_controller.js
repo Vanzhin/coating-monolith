@@ -11,7 +11,7 @@ import { Controller } from '@hotwired/stimulus';
 export default class extends Controller {
     static targets = [
         'nameInput', 'ralSearch', 'ralGrid', 'ralSection', 'customSection',
-        'customHex', 'customSwatch', 'selectedRalLabel', 'errorBox', 'modeRadio',
+        'customHex', 'selectedRalLabel', 'errorBox', 'modeRadio',
     ];
 
     static values = {
@@ -57,10 +57,6 @@ export default class extends Controller {
         this.selectedRalLabelTarget.innerHTML =
             `<span class="color-swatch color-swatch--lg" style="background:${this._escape(btn.dataset.hex)}"></span>`
             + `${this._escape(btn.dataset.code)}`;
-    }
-
-    onCustomHexChange() {
-        this.customSwatchTarget.style.background = this.customHexTarget.value;
     }
 
     async submit() {
@@ -166,7 +162,6 @@ export default class extends Controller {
         this.ralGridTarget.innerHTML = '';
         this.selectedRalLabelTarget.textContent = '';
         this.customHexTarget.value = '#888888';
-        this.customSwatchTarget.style.background = '#888888';
         this._selectedRal = null;
         this._hideError();
     }
