@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Compliance\Compliance;
@@ -298,7 +299,9 @@ final class Iso12944EvaluatorTest extends TestCase
         );
 
         foreach ($layers as [$base, $dft, $isZincRich]) {
-            $system->appendLayer($this->makeCoating($base, 40, 500, $isZincRich), $dft);
+            $coating = $this->makeCoating($base, 40, 500, $isZincRich);
+            $coating->applyColorScheme(true);
+            $system->appendLayer($coating, $dft, new Color(Uuid::v7(), 'Серый', null, '#888888'));
         }
 
         return $system;

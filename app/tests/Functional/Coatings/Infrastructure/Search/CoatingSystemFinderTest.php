@@ -15,6 +15,7 @@ use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -472,7 +473,10 @@ final class CoatingSystemFinderTest extends KernelTestCase
 
         $id = Uuid::v7();
         $system = new CoatingSystem($id, $title, 'Описание для '.$title, $substrate, $treatment);
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.bin2hex(random_bytes(4)), null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $this->repo->save($system);
 
         if (null !== $tag) {
@@ -509,10 +513,13 @@ final class CoatingSystemFinderTest extends KernelTestCase
 
         $id = Uuid::v7();
         $system = new CoatingSystem($id, $title, 'Описание для '.$title, $substrate, $treatment);
+        $color = new Color(Uuid::v7(), 'Серый-'.bin2hex(random_bytes(4)), null, '#888888');
+        $this->em->persist($color);
         foreach ($coatingIds as $coatingId) {
             $coating = $this->em->find(Coating::class, $coatingId);
             \assert($coating instanceof Coating);
-            $system->appendLayer($coating, 80);
+            $coating->applyColorScheme(true);
+            $system->appendLayer($coating, 80, $color);
         }
         $this->repo->save($system);
 

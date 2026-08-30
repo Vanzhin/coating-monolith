@@ -14,6 +14,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\UniqueTitleCoatingSpecif
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Compliance\Compliance;
@@ -150,7 +151,9 @@ final class Sp28EvaluatorTest extends TestCase
         );
 
         foreach ($layers as [$base, $dft]) {
-            $system->appendLayer($this->makeCoating($base), $dft);
+            $coating = $this->makeCoating($base);
+            $coating->applyColorScheme(true);
+            $system->appendLayer($coating, $dft, new Color(Uuid::v7(), 'Серый', null, '#888888'));
         }
 
         return $system;

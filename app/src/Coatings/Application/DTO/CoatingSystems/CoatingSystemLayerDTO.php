@@ -18,11 +18,11 @@ class CoatingSystemLayerDTO
     public int $dftMin;
     public int $dftMax;
 
-    // Выбранный цвет слоя (nullable — легаси-слои без цвета).
-    public ?string $colorId = null;
-    public ?string $colorName = null;
+    // Выбранный цвет слоя — обязателен. RAL nullable (у цвета может не быть кода RAL).
+    public string $colorId;
+    public string $colorName;
     public ?string $colorRal = null;
-    public ?string $colorHex = null;
+    public string $colorHex;
     // Готовая подпись «Название (RAL XXXX)» — единый формат отображения (см. Color::label()).
-    public ?string $colorLabel = null;
+    public string $colorLabel;
 }
