@@ -29,7 +29,9 @@ export default class extends Controller {
         try {
             const rawStored = window.localStorage.getItem(this.storageKeyValue);
             const stored = rawStored ? JSON.parse(rawStored) : [];
-            const newStored = stored.filter(x => x !== this.idValue);
+            // Tray хранит массив {id,title} (легаси — строки-id). Фильтруем по id,
+            // иначе (объект !== строка) удаление не срабатывает и tray рассинхронится.
+            const newStored = stored.filter(x => (x && typeof x === 'object' ? x.id : x) !== this.idValue);
             window.localStorage.setItem(this.storageKeyValue, JSON.stringify(newStored));
         } catch (e) {
             // сториджа нет / disabled — идём дальше.

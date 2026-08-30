@@ -4,6 +4,7 @@
 @import "blog.css";
 @import "admin/dashboard.css";
 @import "admin/coating-list.css";
+@import "admin/compare.css";
 @import "components/range-slider.css";
 @import "./components/coating-substance-badges.css";
 @import "components/color-swatch.css";
