@@ -179,15 +179,14 @@ jobs:
             # Снимает зависимость от host'овой версии Node (Tagify 4.37+ требует
             # Node ≥22) и делает сборку воспроизводимой через pinned image.
             #
-            # В yarn.lock одна git-зависимость (@symfony/stimulus-bridge) с URL
-            # 'git+ssh://git@github.com/...'. У деплой-юзера нет SSH-доступа к
-            # github.com, поэтому ставим `git` через apk и через `git config
-            # insteadOf` переписываем ssh-URL'ы на https-эквиваленты — так же,
-            # как это делал host'овый global git config до этого изменения.
+            # Все зависимости резолвятся из npm-registry по https (git-зависимость
+            # @symfony/stimulus-bridge переведена на registry-tarball), поэтому ни
+            # `git`, ни SSH-доступ к github.com контейнеру больше не нужны — раньше
+            # тут был `apk add git`, который ронял деплой при флаке Alpine CDN.
             #
-            # Контейнер бежит root'ом (apk требует root) → в конце chown'им
-            # node_modules + public/build на деплой-юзера, иначе следующий
-            # деплой не сможет их перезаписать.
+            # Контейнер бежит root'ом → в конце chown'им node_modules +
+            # public/build на деплой-юзера, иначе следующий деплой не сможет их
+            # перезаписать.
             docker run --rm \
               -e HOME=/tmp \
               -v "$(pwd)/app:/app" \
@@ -195,9 +194,6 @@ jobs:
               node:22-alpine \
               sh -c "
                 set -e
-                apk add --no-cache git
-                git config --global --add url.'https://github.com/'.insteadOf 'ssh://git@github.com/'
-                git config --global --add url.'https://github.com/'.insteadOf 'git@github.com:'
                 yarn install --frozen-lockfile
                 yarn build
                 chown -R $(id -u):$(id -g) node_modules public/build
