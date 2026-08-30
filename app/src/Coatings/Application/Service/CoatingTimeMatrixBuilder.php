@@ -93,7 +93,7 @@ final class CoatingTimeMatrixBuilder
 
     /**
      * @param list<array{label: ?string, rows: list<array{stage: string, values: array<int, array{minutes: ?int, is_calculated: bool}>}>}> $groups
-     * @param list<int>                                                                                                                     $columns
+     * @param list<int>                                                                                                                    $columns
      */
     private function addContextGroups(array &$groups, RecoatingIntervalTreeDTO $minTree, ?RecoatingIntervalTreeDTO $maxTree, array $columns): void
     {
@@ -127,7 +127,7 @@ final class CoatingTimeMatrixBuilder
                     $matRows[] = $this->rowFromSeries(self::RECOAT_MAX, $maxBase->default, $columns);
                 }
                 if ([] !== $matRows) {
-                    $groups[] = ['label' => $envLabel . ' · ' . $this->baseTitle((string) $baseKey), 'rows' => $matRows];
+                    $groups[] = ['label' => $envLabel.' · '.$this->baseTitle((string) $baseKey), 'rows' => $matRows];
                 }
             }
         }

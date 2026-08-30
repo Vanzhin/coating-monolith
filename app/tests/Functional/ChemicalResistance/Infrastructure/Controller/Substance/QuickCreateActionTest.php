@@ -54,6 +54,7 @@ final class QuickCreateActionTest extends WebTestCase
         $this->substanceName = 'Вещество-quick-'.$suffix;
     }
 
+    /** @param list<string> $roles */
     private function makeUser(string $email, array $roles, UserPasswordHasherInterface $hasher): User
     {
         $user = new User(new Email($email));

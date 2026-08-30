@@ -126,6 +126,7 @@ final class BySubstanceAssessmentActionsTest extends WebTestCase
         $this->client->loginUser($this->admin);
     }
 
+    /** @param list<string> $roles */
     private function makeUser(string $email, array $roles, UserPasswordHasherInterface $hasher): User
     {
         $user = new User(new Email($email));
