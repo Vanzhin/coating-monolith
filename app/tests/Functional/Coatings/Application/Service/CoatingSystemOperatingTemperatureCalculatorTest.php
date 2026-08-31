@@ -15,6 +15,7 @@ use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
@@ -184,8 +185,11 @@ final class CoatingSystemOperatingTemperatureCalculatorTest extends KernelTestCa
             Substrate::STEEL_GALVANIZED,
             $treatment,
         );
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
         foreach ($layers as $layer) {
-            $system->appendLayer($layer, 80);
+            $layer->applyColorScheme(true);
+            $system->appendLayer($layer, 80, $color);
         }
         $this->em->persist($system);
         $this->em->flush();

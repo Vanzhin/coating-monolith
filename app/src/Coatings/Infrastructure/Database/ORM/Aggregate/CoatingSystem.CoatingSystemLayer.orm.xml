@@ -28,7 +28,7 @@
         <many-to-one field="color"
                      target-entity="App\Coatings\Domain\Aggregate\Color\Color"
                      fetch="EAGER">
-            <join-column name="color_id" referenced-column-name="id" nullable="true"/>
+            <join-column name="color_id" referenced-column-name="id" nullable="false"/>
         </many-to-one>
 
         <unique-constraints>

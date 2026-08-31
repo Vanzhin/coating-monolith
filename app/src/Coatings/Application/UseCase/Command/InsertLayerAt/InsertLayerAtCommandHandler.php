@@ -7,6 +7,7 @@ namespace App\Coatings\Application\UseCase\Command\InsertLayerAt;
 use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\ColorRepositoryInterface;
 use App\Coatings\Domain\Service\SystemLockGuard;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -19,6 +20,7 @@ final readonly class InsertLayerAtCommandHandler implements CommandHandlerInterf
         private CoatingSystemRepositoryInterface $repo,
         private SystemLockGuard $lockGuard,
         private CoatingRepositoryInterface $coatingRepo,
+        private ColorRepositoryInterface $colorRepo,
         private CoatingAccessControl $access,
     ) {
     }
@@ -43,7 +45,12 @@ final readonly class InsertLayerAtCommandHandler implements CommandHandlerInterf
             throw new AppException(sprintf('Покрытие с id %s не найдено.', $cmd->coatingId), 404);
         }
 
-        $layer = $system->insertLayerAt($cmd->position, $coating, $cmd->dft);
+        $color = $this->colorRepo->findOneById($cmd->colorId);
+        if (null === $color) {
+            throw new AppException(sprintf('Цвет с id %s не найден.', $cmd->colorId), 404);
+        }
+
+        $layer = $system->insertLayerAt($cmd->position, $coating, $cmd->dft, $color);
         $this->repo->save($system);
 
         return new InsertLayerAtCommandResult($layer->getId());

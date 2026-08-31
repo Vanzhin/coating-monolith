@@ -12,6 +12,7 @@ final readonly class AppendLayerCommand extends Command
         public string $systemId,
         public string $coatingId,
         public int $dft,
+        public string $colorId,
     ) {
     }
 }

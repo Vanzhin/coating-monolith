@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
@@ -47,6 +48,8 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
     /** @var list<Uuid> */
     private array $coatingIds = [];
     /** @var list<Uuid> */
+    private array $colorIds = [];
+    /** @var list<Uuid> */
     private array $manufacturerIds = [];
 
     protected function setUp(): void
@@ -75,6 +78,12 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
                 $c = $em->find(Coating::class, $id);
                 if (null !== $c) {
                     $em->remove($c);
+                }
+            }
+            foreach ($this->colorIds as $id) {
+                $color = $em->find(Color::class, $id);
+                if (null !== $color) {
+                    $em->remove($color);
                 }
             }
             foreach ($this->manufacturerIds as $id) {
@@ -176,13 +185,19 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
             $mfr,
             $container->get(CoatingSpecification::class),
         );
+
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $this->colorIds[] = $color->id;
+        $coating->applyColorScheme(false, $color);
+
         $this->em->persist($coating);
         $this->em->flush();
         $this->coatingIds[] = $coatingId;
 
         $id = Uuid::v7();
         $system = new CoatingSystem($id, $title, 'Описание системы '.$title, Substrate::STEEL_CARBON, $treatment);
-        $system->appendLayer($coating, 80);
+        $system->appendLayer($coating, 80, $color);
         $this->repo->save($system);
         $this->em->clear();
 

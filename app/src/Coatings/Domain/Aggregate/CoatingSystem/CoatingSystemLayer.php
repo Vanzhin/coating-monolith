@@ -19,9 +19,7 @@ class CoatingSystemLayer
         private Coating $coating,
         private int $position,
         private int $dft,
-        // Цвет слоя nullable ради легаси-слоёв (колонка color_id может быть пустой).
-        // Обязательность форсится на записи (валидация формы), домен проверяет членство.
-        private ?Color $color = null,
+        private Color $color,
     ) {
         $this->id = $id;
         $this->assertPositionValid($position);
@@ -54,7 +52,7 @@ class CoatingSystemLayer
         return $this->dft;
     }
 
-    public function getColor(): ?Color
+    public function getColor(): Color
     {
         return $this->color;
     }
@@ -88,13 +86,12 @@ class CoatingSystemLayer
     }
 
     /**
-     * Цвет слоя должен принадлежать возможным цветам покрытия. Исключения:
-     *  - цвет не задан (null) — легаси-слой, обязательность форсится на записи;
-     *  - покрытие колеруемое — допустим любой цвет.
+     * Цвет слоя должен принадлежать возможным цветам покрытия.
+     * Исключение: колеруемое покрытие — допустим любой цвет.
      */
-    private function assertColorAllowed(?Color $color, Coating $coating): void
+    private function assertColorAllowed(Color $color, Coating $coating): void
     {
-        if (null === $color || $coating->isTintable()) {
+        if ($coating->isTintable()) {
             return;
         }
 

@@ -13,6 +13,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -35,6 +36,7 @@ trait CoatingSystemLayerTestFixtureTrait
     private ?Uuid $coatingId = null;
     private ?Uuid $manufacturerId = null;
     private ?Uuid $treatmentId = null;
+    private ?Uuid $colorId = null;
 
     private function setUpFixture(ContainerInterface $container, EntityManagerInterface $em): void
     {
@@ -78,6 +80,14 @@ trait CoatingSystemLayerTestFixtureTrait
             $container->get(CoatingSpecification::class),
         );
         $em->persist($coating);
+
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $em->persist($color);
+        $this->colorId = $color->id;
+
+        // Слой обязан нести цвет из палитры покрытия (или tintable). Кладём цвет в схему покрытия.
+        $coating->applyColorScheme(false, $color);
+
         $em->flush();
         $this->coatingId = $coatingId;
 
@@ -89,7 +99,7 @@ trait CoatingSystemLayerTestFixtureTrait
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $system->appendLayer($coating, 80, $color);
 
         $repo = new CoatingSystemRepository($em);
         $repo->save($system);
@@ -118,6 +128,15 @@ trait CoatingSystemLayerTestFixtureTrait
                 if (null !== $m) {
                     $em->remove($m);
                 }
+            }
+            // Цвет удаляем в этой же партии: система (со слоями) и покрытие сняты выше,
+            // значит FK color_id (слой) и m2m покрытия освобождены, Doctrine упорядочит удаление.
+            if (null !== $this->colorId) {
+                $col = $em->find(Color::class, $this->colorId);
+                if (null !== $col) {
+                    $em->remove($col);
+                }
+                $this->colorId = null;
             }
             $em->flush();
             if (null !== $this->treatmentId) {

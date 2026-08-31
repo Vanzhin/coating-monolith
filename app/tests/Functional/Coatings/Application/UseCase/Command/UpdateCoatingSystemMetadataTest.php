@@ -16,6 +16,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
@@ -153,7 +154,10 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $this->repo->save($system);
 
         $cmd = new UpdateCoatingSystemMetadataCommand(
@@ -234,7 +238,10 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $system->replaceTags([$tagA, $tagB]);
         $this->repo->save($system);
 
@@ -314,7 +321,10 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $system->replaceTags([$tagX]);
         $this->repo->save($system);
 
@@ -428,7 +438,10 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
             Substrate::STEEL_CARBON,
             $treatment1,
         );
-        $system->appendLayer($coating, 80);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
+        $this->em->persist($color);
+        $coating->applyColorScheme(true);
+        $system->appendLayer($coating, 80, $color);
         $this->repo->save($system);
 
         // Switch to CONCRETE + treatment2 (CONCRETE-only).

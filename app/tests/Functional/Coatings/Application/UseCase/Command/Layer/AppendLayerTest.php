@@ -44,6 +44,7 @@ final class AppendLayerTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) $this->coatingId,
             dft: 80,
+            colorId: (string) $this->colorId,
         );
 
         $result = ($this->handler)($cmd);
@@ -74,6 +75,7 @@ final class AppendLayerTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) $this->coatingId,
             dft: 100,
+            colorId: (string) $this->colorId,
         );
 
         ($this->handler)($cmd);
@@ -93,6 +95,7 @@ final class AppendLayerTest extends KernelTestCase
             systemId: (string) Uuid::v7(),
             coatingId: (string) $this->coatingId,
             dft: 80,
+            colorId: (string) $this->colorId,
         );
 
         $this->expectException(AppException::class);
@@ -107,6 +110,7 @@ final class AppendLayerTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) Uuid::v7(),
             dft: 80,
+            colorId: (string) $this->colorId,
         );
 
         $this->expectException(AppException::class);

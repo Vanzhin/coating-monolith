@@ -111,6 +111,7 @@ final class CertifiedSystemFreezeTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) $this->coatingId,
             dft: 80,
+            colorId: (string) $this->colorId,
         ));
     }
 
@@ -131,6 +132,7 @@ final class CertifiedSystemFreezeTest extends KernelTestCase
             systemId: (string) $this->systemId,
             coatingId: (string) $this->coatingId,
             dft: 80,
+            colorId: (string) $this->colorId,
         ));
 
         self::assertNotEmpty($result->layerId);

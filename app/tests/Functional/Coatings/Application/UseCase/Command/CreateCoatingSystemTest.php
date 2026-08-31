@@ -16,6 +16,7 @@ use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
+use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
@@ -128,7 +129,10 @@ final class CreateCoatingSystemTest extends KernelTestCase
             $manufacturer,
             $container->get(CoatingSpecification::class),
         );
+        $coating->applyColorScheme(true);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
         $this->em->persist($coating);
+        $this->em->persist($color);
         $this->em->flush();
         $this->coatingId = $coatingId;
 
@@ -139,7 +143,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
-                ['coatingId' => (string) $coatingId, 'dft' => 80],
+                ['coatingId' => (string) $coatingId, 'dft' => 80, 'colorId' => (string) $color->getId()],
             ],
         );
 
@@ -199,7 +203,10 @@ final class CreateCoatingSystemTest extends KernelTestCase
             $manufacturer,
             $container->get(CoatingSpecification::class),
         );
+        $coating->applyColorScheme(true);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
         $this->em->persist($coating);
+        $this->em->persist($color);
         $this->em->flush();
         $this->coatingId = $coatingId;
 
@@ -210,7 +217,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
-                ['coatingId' => (string) $coatingId, 'dft' => 80],
+                ['coatingId' => (string) $coatingId, 'dft' => 80, 'colorId' => (string) $color->getId()],
             ],
         );
 
@@ -259,7 +266,10 @@ final class CreateCoatingSystemTest extends KernelTestCase
             $manufacturer,
             $container->get(CoatingSpecification::class),
         );
+        $coating->applyColorScheme(true);
+        $color = new Color(Uuid::v7(), 'Серый-'.$suffix, null, '#888888');
         $this->em->persist($coating);
+        $this->em->persist($color);
 
         $tagSpec = $container->get(TagSpecification::class);
         $tag1 = new Tag('морской-'.$suffix, $tagSpec);
@@ -277,7 +287,7 @@ final class CreateCoatingSystemTest extends KernelTestCase
             environment: EnvironmentType::Atmospheric,
             surfaceTreatmentId: $treatment->getId(),
             initialLayers: [
-                ['coatingId' => (string) $coatingId, 'dft' => 80],
+                ['coatingId' => (string) $coatingId, 'dft' => 80, 'colorId' => (string) $color->getId()],
             ],
             tagIds: new StringCollection($tag1->getId(), $tag2->getId()),
         );

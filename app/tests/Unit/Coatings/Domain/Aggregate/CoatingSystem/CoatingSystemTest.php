@@ -30,6 +30,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemTest extends TestCase
 {
+    private ?Color $sharedColor = null;
+
     public function test_construction_sets_metadata_and_timestamps(): void
     {
         $sys = $this->newSystem(title: 'Sys');
@@ -42,7 +44,7 @@ final class CoatingSystemTest extends TestCase
     public function test_append_layer_assigns_position_1(): void
     {
         $sys = $this->newSystem();
-        $layer = $sys->appendLayer($this->newCoatingCompatibleAll(), 120);
+        $layer = $sys->appendLayer($this->newCoatingCompatibleAll(), 120, $this->anyColor());
         self::assertSame(1, $layer->getPosition());
         self::assertSame(1, $sys->layerCount());
         self::assertSame(120, $sys->totalDft());
@@ -51,8 +53,8 @@ final class CoatingSystemTest extends TestCase
     public function test_append_two_layers_second_gets_position_2(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
         self::assertSame(2, $l2->getPosition());
         self::assertSame([1, 2], $this->positions($sys));
     }
@@ -60,9 +62,9 @@ final class CoatingSystemTest extends TestCase
     public function test_insert_at_shifts_positions(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $sys->insertLayerAt(2, $this->newCoatingCompatibleAll(), 80);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $sys->insertLayerAt(2, $this->newCoatingCompatibleAll(), 80, $this->anyColor());
         self::assertSame([1, 2, 3], $this->positions($sys));
         self::assertSame(3, $sys->layerCount());
     }
@@ -70,9 +72,9 @@ final class CoatingSystemTest extends TestCase
     public function test_remove_at_compacts_positions(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40, $this->anyColor());
         $sys->removeLayerAt(2);
         self::assertSame([1, 2], $this->positions($sys));
         self::assertSame(100, $sys->totalDft());
@@ -81,9 +83,9 @@ final class CoatingSystemTest extends TestCase
     public function test_move_layer(): void
     {
         $sys = $this->newSystem();
-        $l1 = $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+        $l1 = $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40, $this->anyColor());
         $sys->moveLayer(1, 3);
         self::assertSame([1, 2, 3], $this->positions($sys));
         // Первый слой ушёл на позицию 3
@@ -93,7 +95,7 @@ final class CoatingSystemTest extends TestCase
     public function test_update_layer_dft(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
         $sys->updateLayerDft(1, 90);
         self::assertSame(90, $sys->totalDft());
     }
@@ -103,7 +105,7 @@ final class CoatingSystemTest extends TestCase
         $sys = $this->newSystem();
         $coating = $this->newCoatingWithDftRange(80, 150);
         $this->expectException(AppException::class);
-        $sys->appendLayer($coating, 200);
+        $sys->appendLayer($coating, 200, $this->anyColor());
     }
 
     public function test_incompatible_neighbors_throws(): void
@@ -114,9 +116,9 @@ final class CoatingSystemTest extends TestCase
         $akCoating = $this->newCoatingWithBase(CoatingBase::AK);
         $esiCoating = $this->newCoatingWithBase(CoatingBase::ESI);
 
-        $sys->appendLayer($akCoating, 60); // должен пройти
+        $sys->appendLayer($akCoating, 60, $this->anyColor()); // должен пройти
         $this->expectException(AppException::class);
-        $sys->appendLayer($esiCoating, 60); // должен кинуть
+        $sys->appendLayer($esiCoating, 60, $this->anyColor()); // должен кинуть
     }
 
     public function test_ak_cannot_cover_zinc_rich_primer(): void
@@ -127,9 +129,9 @@ final class CoatingSystemTest extends TestCase
         $ak = $this->makeCoating(CoatingBase::AK);
 
         $sys = $this->newSystem();
-        $sys->appendLayer($zincEp, 80);
+        $sys->appendLayer($zincEp, 80, $this->anyColor());
         $this->expectException(AppException::class);
-        $sys->appendLayer($ak, 80);
+        $sys->appendLayer($ak, 80, $this->anyColor());
     }
 
     public function test_ak_can_cover_non_zinc_primer(): void
@@ -138,8 +140,8 @@ final class CoatingSystemTest extends TestCase
         $ak = $this->makeCoating(CoatingBase::AK);
 
         $sys = $this->newSystem();
-        $sys->appendLayer($ep, 80);
-        $sys->appendLayer($ak, 80);
+        $sys->appendLayer($ep, 80, $this->anyColor());
+        $sys->appendLayer($ak, 80, $this->anyColor());
 
         self::assertSame(2, $sys->layerCount());
     }
@@ -154,16 +156,16 @@ final class CoatingSystemTest extends TestCase
     public function test_first_layer_returns_position_1(): void
     {
         $sys = $this->newSystem();
-        $l1 = $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $l1 = $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
         self::assertSame($l1, $sys->firstLayer());
     }
 
     public function test_first_layer_after_removing_first_returns_next(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
         $sys->removeLayerAt(1);
         self::assertSame($l2, $sys->firstLayer());
     }
@@ -171,15 +173,15 @@ final class CoatingSystemTest extends TestCase
     public function test_replace_layers_replaces_composition_and_renumbers(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40, $this->anyColor());
 
         $newA = $this->newCoatingCompatibleAll();
         $newB = $this->newCoatingCompatibleAll();
         $sys->replaceLayers([
-            ['coating' => $newA, 'dft' => 55],
-            ['coating' => $newB, 'dft' => 90],
+            ['coating' => $newA, 'dft' => 55, 'color' => $this->anyColor()],
+            ['coating' => $newB, 'dft' => 90, 'color' => $this->anyColor()],
         ]);
 
         self::assertSame(2, $sys->layerCount());
@@ -190,7 +192,7 @@ final class CoatingSystemTest extends TestCase
     public function test_replace_layers_with_empty_list_clears_system(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
         $sys->replaceLayers([]);
         self::assertSame(0, $sys->layerCount());
     }
@@ -199,20 +201,20 @@ final class CoatingSystemTest extends TestCase
     {
         $sys = $this->newSystem();
         for ($i = 0; $i < 5; ++$i) {
-            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
         }
         $this->expectException(AppException::class);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
     }
 
     public function test_insert_sixth_layer_throws(): void
     {
         $sys = $this->newSystem();
         for ($i = 0; $i < 5; ++$i) {
-            $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+            $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
         }
         $this->expectException(AppException::class);
-        $sys->insertLayerAt(3, $this->newCoatingCompatibleAll(), 60);
+        $sys->insertLayerAt(3, $this->newCoatingCompatibleAll(), 60, $this->anyColor());
     }
 
     public function test_replace_with_six_layers_throws(): void
@@ -220,7 +222,7 @@ final class CoatingSystemTest extends TestCase
         $sys = $this->newSystem();
         $items = [];
         for ($i = 0; $i < 6; ++$i) {
-            $items[] = ['coating' => $this->newCoatingCompatibleAll(), 'dft' => 60];
+            $items[] = ['coating' => $this->newCoatingCompatibleAll(), 'dft' => 60, 'color' => $this->anyColor()];
         }
         $this->expectException(AppException::class);
         $sys->replaceLayers($items);
@@ -234,17 +236,17 @@ final class CoatingSystemTest extends TestCase
 
         $this->expectException(AppException::class);
         $sys->replaceLayers([
-            ['coating' => $ak, 'dft' => 60],
-            ['coating' => $esi, 'dft' => 60],
+            ['coating' => $ak, 'dft' => 60, 'color' => $this->anyColor()],
+            ['coating' => $esi, 'dft' => 60, 'color' => $this->anyColor()],
         ]);
     }
 
     public function test_followup_layers_returns_all_except_first(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $l3 = $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $l2 = $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $l3 = $sys->appendLayer($this->newCoatingCompatibleAll(), 40, $this->anyColor());
         $followup = iterator_to_array($sys->followupLayers(), false);
         self::assertCount(2, $followup);
         self::assertSame($l2, $followup[0]);
@@ -254,9 +256,9 @@ final class CoatingSystemTest extends TestCase
     public function test_total_dft_sums_all_layers(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 100);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 40);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 100, $this->anyColor());
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 40, $this->anyColor());
         self::assertSame(200, $sys->totalDft());
     }
 
@@ -266,7 +268,7 @@ final class CoatingSystemTest extends TestCase
         $before = $sys->getUpdatedAt();
         // Sleep 2 ms to ensure timestamp strictly advances
         usleep(2000);
-        $sys->appendLayer($this->newCoatingCompatibleAll(), 60);
+        $sys->appendLayer($this->newCoatingCompatibleAll(), 60, $this->anyColor());
         $after = $sys->getUpdatedAt();
         self::assertNotSame($before, $after);
         self::assertGreaterThan($before, $after);
@@ -378,8 +380,8 @@ final class CoatingSystemTest extends TestCase
         $sys = $this->newSystem();
         $coatingA = $this->makeCoating(sourceMinutes: 240, tdsDft: 100);
         $coatingB = $this->makeCoating(applicationMinTemp: 10);
-        $sys->appendLayer($coatingA, 80);   // 240*80/100 = 192
-        $sys->appendLayer($coatingB, 80);   // top, не участвует
+        $sys->appendLayer($coatingA, 80, $this->anyColor());   // 240*80/100 = 192
+        $sys->appendLayer($coatingB, 80, $this->anyColor());   // top, не участвует
         self::assertSame(192, $sys->minApplicationTimeAt20Minutes());
         self::assertSame(10, $sys->maxLayerApplicationMinTemp());
     }
@@ -392,8 +394,8 @@ final class CoatingSystemTest extends TestCase
     public function test_max_dry_heat_continuous_operating_temp_weakest_link_uses_base_default(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 80); // сухое тепло: дефолт основы 120
-        $sys->appendLayer($this->makeCoating(CoatingBase::AY), 80); // сухое тепло: дефолт основы 50
+        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 80, $this->anyColor()); // сухое тепло: дефолт основы 120
+        $sys->appendLayer($this->makeCoating(CoatingBase::AY), 80, $this->anyColor()); // сухое тепло: дефолт основы 50
 
         self::assertSame(50, $sys->maxDryHeatContinuousOperatingTemp());
     }
@@ -403,7 +405,7 @@ final class CoatingSystemTest extends TestCase
         $coating = $this->makeCoating(CoatingBase::EP);
         $coating->setDryHeatExposure(new ThermalExposureLimits(null, 200));
         $sys = $this->newSystem();
-        $sys->appendLayer($coating, 80);
+        $sys->appendLayer($coating, 80, $this->anyColor());
 
         self::assertSame(200, $sys->maxDryHeatContinuousOperatingTemp());
     }
@@ -415,8 +417,8 @@ final class CoatingSystemTest extends TestCase
         $c2 = $this->makeCoating(CoatingBase::EP);
         $c2->setImmersionExposure(new ThermalExposureLimits(null, 70));
         $sys = $this->newSystem();
-        $sys->appendLayer($c1, 80);
-        $sys->appendLayer($c2, 80);
+        $sys->appendLayer($c1, 80, $this->anyColor());
+        $sys->appendLayer($c2, 80, $this->anyColor());
 
         self::assertSame(70, $sys->maxImmersionContinuousOperatingTemp());
     }
@@ -427,8 +429,8 @@ final class CoatingSystemTest extends TestCase
         $c1->setImmersionExposure(new ThermalExposureLimits(null, 90));
         $c2 = $this->makeCoating(CoatingBase::EP); // погружение не задокументировано, дефолта по основе нет
         $sys = $this->newSystem();
-        $sys->appendLayer($c1, 80);
-        $sys->appendLayer($c2, 80);
+        $sys->appendLayer($c1, 80, $this->anyColor());
+        $sys->appendLayer($c2, 80, $this->anyColor());
 
         self::assertNull($sys->maxImmersionContinuousOperatingTemp());
     }
@@ -450,13 +452,13 @@ final class CoatingSystemTest extends TestCase
         $under = $this->makeCoating(CoatingBase::EP, 40, 500, tdsDft: 100, minTree: $branchedMin);
 
         $sysEp = $this->newSystem();
-        $sysEp->appendLayer($under, 100);
-        $sysEp->appendLayer($this->makeCoating(CoatingBase::EP), 100); // топкоат EP
+        $sysEp->appendLayer($under, 100, $this->anyColor());
+        $sysEp->appendLayer($this->makeCoating(CoatingBase::EP), 100, $this->anyColor()); // топкоат EP
         self::assertSame(60, $sysEp->minApplicationTimeAt20Minutes());
 
         $sysPur = $this->newSystem();
-        $sysPur->appendLayer($under, 100);
-        $sysPur->appendLayer($this->makeCoating(CoatingBase::PUR), 100); // топкоат PUR
+        $sysPur->appendLayer($under, 100, $this->anyColor());
+        $sysPur->appendLayer($this->makeCoating(CoatingBase::PUR), 100, $this->anyColor()); // топкоат PUR
         self::assertSame(180, $sysPur->minApplicationTimeAt20Minutes());
     }
 
@@ -475,15 +477,15 @@ final class CoatingSystemTest extends TestCase
         $under = $this->makeCoating(CoatingBase::EP, 40, 500, tdsDft: 100, minTree: $branchedMin);
 
         $sys = $this->newSystem(environment: EnvironmentType::Immersion);
-        $sys->appendLayer($under, 100);
-        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 100);
+        $sys->appendLayer($under, 100, $this->anyColor());
+        $sys->appendLayer($this->makeCoating(CoatingBase::EP), 100, $this->anyColor());
         self::assertSame(300, $sys->minApplicationTimeAt20Minutes());
     }
 
     public function test_mutation_raises_coating_system_mutated_event(): void
     {
         $sys = $this->newSystem();
-        $sys->appendLayer($this->newCoating(), 80);
+        $sys->appendLayer($this->newCoating(), 80, $this->anyColor());
         $events = $sys->pullEvents();
         self::assertCount(1, $events);
         self::assertInstanceOf(CoatingSystemMutated::class, $events[0]);
@@ -496,11 +498,9 @@ final class CoatingSystemTest extends TestCase
         $this->expectExceptionMessageMatches('/несовместим/');
         // ESI поверх FEVE не совместимо (по CoatingBase::allowedPrimers)
         $sys = $this->newSystem();
-        $sys->appendLayer($this->makeCoating(CoatingBase::FEVE), 80);
-        $sys->appendLayer($this->makeCoating(CoatingBase::ESI), 80);
+        $sys->appendLayer($this->makeCoating(CoatingBase::FEVE), 80, $this->anyColor());
+        $sys->appendLayer($this->makeCoating(CoatingBase::ESI), 80, $this->anyColor());
     }
-
-    // --- helpers ---
 
     public function test_append_layer_with_color_from_coating_list_is_accepted(): void
     {
@@ -536,12 +536,7 @@ final class CoatingSystemTest extends TestCase
         self::assertSame($any, $layer->getColor());
     }
 
-    public function test_append_layer_without_color_is_accepted_for_legacy(): void
-    {
-        $layer = $this->newSystem()->appendLayer($this->newCoatingCompatibleAll(), 120);
-
-        self::assertNull($layer->getColor());
-    }
+    // --- helpers ---
 
     private function newSystem(
         string $title = 'Test System',
@@ -555,6 +550,15 @@ final class CoatingSystemTest extends TestCase
             $this->newTreatment([Substrate::STEEL_CARBON]),
             $environment,
         );
+    }
+
+    /**
+     * Общий валидный цвет: регистрируется в палитре каждого покрытия (см. makeCoating)
+     * и передаётся в построение слоя. Один инстанс на тест — id совпадает, членство проходит.
+     */
+    private function anyColor(): Color
+    {
+        return $this->sharedColor ??= new Color(Uuid::v4(), 'Серый', null, '#888888');
     }
 
     /**
@@ -616,7 +620,7 @@ final class CoatingSystemTest extends TestCase
 
         $resolvedTdsDft = $tdsDft > 0 ? $tdsDft : (int) (($dftMin + $dftMax) / 2);
 
-        return new Coating(
+        $coating = new Coating(
             UuidService::generateUuid(),
             'Test Coating',
             'desc',
@@ -635,6 +639,10 @@ final class CoatingSystemTest extends TestCase
             $spec,
             50,
         );
+        // Общий цвет в палитру: слои строятся с anyColor(), членство по id проходит.
+        $coating->applyColorScheme(false, $this->anyColor());
+
+        return $coating;
     }
 
     /** @return list<int> */

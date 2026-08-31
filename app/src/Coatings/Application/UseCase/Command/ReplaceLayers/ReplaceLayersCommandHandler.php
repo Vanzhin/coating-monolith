@@ -45,17 +45,17 @@ final readonly class ReplaceLayersCommandHandler implements CommandHandlerInterf
             if (null === $coating) {
                 throw new AppException(sprintf('Покрытие с id %s не найдено.', $item['coatingId']), 404);
             }
-            $prepared[] = ['coating' => $coating, 'dft' => $item['dft'], 'color' => $this->resolveColor($item['colorId'] ?? null)];
+            $prepared[] = ['coating' => $coating, 'dft' => $item['dft'], 'color' => $this->resolveColor($item['colorId'])];
         }
 
         $system->replaceLayers($prepared);
         $this->repo->save($system);
     }
 
-    private function resolveColor(?string $colorId): ?Color
+    private function resolveColor(?string $colorId): Color
     {
         if (null === $colorId || '' === $colorId) {
-            return null;
+            throw new AppException('Для слоя не указан цвет.');
         }
 
         $color = $this->colorRepo->findOneById($colorId);

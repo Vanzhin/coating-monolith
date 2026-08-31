@@ -13,6 +13,7 @@ final readonly class InsertLayerAtCommand extends Command
         public int $position,
         public string $coatingId,
         public int $dft,
+        public string $colorId,
     ) {
     }
 }
