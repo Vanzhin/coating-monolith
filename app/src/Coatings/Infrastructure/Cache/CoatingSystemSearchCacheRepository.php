@@ -23,7 +23,7 @@ final class CoatingSystemSearchCacheRepository
                      dry_heat_continuous_max, dry_heat_peak_max, immersion_continuous_max, immersion_peak_max,
                      search_tsvector)
                 VALUES
-                    (:id, :sum, :max_temp, :dry_cont, :dry_peak, :imm_cont, :imm_peak, to_tsvector('russian', :doc))
+                    (:id, :sum, :max_temp, :dry_cont, :dry_peak, :imm_cont, :imm_peak, to_tsvector('russian', translate(:doc, '-.,;', '    ')))
                 ON CONFLICT (system_id) DO UPDATE
                 SET min_application_time_at_20_minutes = EXCLUDED.min_application_time_at_20_minutes,
                     max_layer_application_min_temp  = EXCLUDED.max_layer_application_min_temp,
