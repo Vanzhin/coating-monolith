@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Application\UseCase\Query;
 
+use App\Certificates\Domain\Aggregate\Document\Document;
+use App\Certificates\Domain\Aggregate\Document\DocumentKind;
+use App\Certificates\Domain\Aggregate\Document\Reference;
+use App\Certificates\Domain\Aggregate\Document\ReferenceType;
+use App\Certificates\Domain\Aggregate\Issuer\Issuer;
+use App\Certificates\Domain\Aggregate\Issuer\Specification\IssuerSpecification;
+use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQuery;
 use App\Coatings\Application\UseCase\Query\FindCoatingSystemById\FindCoatingSystemByIdQueryHandler;
@@ -40,8 +47,11 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
     private ?Uuid $coatingId = null;
     private ?Uuid $colorId = null;
     private ?Uuid $manufacturerId = null;
+    private ?Uuid $issuerId = null;
     /** @var list<string> */
     private array $tagIds = [];
+    /** @var list<string> */
+    private array $documentIds = [];
 
     protected function setUp(): void
     {
@@ -86,8 +96,21 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
                     $em->remove($t);
                 }
             }
+            foreach ($this->documentIds as $docId) {
+                $d = $em->find(Document::class, Uuid::fromString($docId));
+                if (null !== $d) {
+                    $em->remove($d);
+                }
+            }
+            if (null !== $this->issuerId) {
+                $issuer = $em->find(Issuer::class, $this->issuerId);
+                if (null !== $issuer) {
+                    $em->remove($issuer);
+                }
+            }
             $em->flush();
             $this->tagIds = [];
+            $this->documentIds = [];
             $this->cleanUpTreatment($em);
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
@@ -150,11 +173,22 @@ final class FindCoatingSystemByIdQueryHandlerTest extends KernelTestCase
         $this->em->persist($system);
         $this->em->flush();
 
+        $this->issuerId = Uuid::v7();
+        $this->em->persist(new Issuer($this->issuerId, 'Изд-FindById-'.$suffix, $container->get(IssuerSpecification::class)));
+        $docId = Uuid::v7();
+        $container->get(DocumentRepositoryInterface::class)->add(new Document(
+            $docId, DocumentKind::Conclusion, 'Заключение-'.$suffix, $this->issuerId,
+            new \DateTimeImmutable('2023-01-01'), null, 'С5, 15-25 лет', null, null, null,
+            new Reference(ReferenceType::CoatingSystem, $this->systemId),
+        ));
+        $this->documentIds[] = (string) $docId;
+
         $this->em->clear();
 
         $dto = ($this->handler)(new FindCoatingSystemByIdQuery((string) $this->systemId));
 
         self::assertInstanceOf(CoatingSystemDTO::class, $dto);
+        self::assertSame(1, $dto->documentCount);
         self::assertSame((string) $this->systemId, $dto->id);
         self::assertSame('Система-FindById-'.$suffix, $dto->title);
         self::assertSame('Описание системы.', $dto->description);

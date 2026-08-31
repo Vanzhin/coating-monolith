@@ -7,8 +7,10 @@ namespace App\Coatings\Application\UseCase\Query\FindCoatingSystemById;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTOTransformer;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Service\SystemCertificatesGateway;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
 use App\Shared\Application\Query\QueryHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Uid\Uuid;
 
 readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterface
@@ -17,6 +19,7 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
         private CoatingSystemRepositoryInterface $repository,
         private CoatingSystemComplianceCacheRepository $complianceCache,
         private CoatingSystemDTOTransformer $transformer,
+        private SystemCertificatesGateway $certificates,
     ) {
     }
 
@@ -28,6 +31,8 @@ readonly class FindCoatingSystemByIdQueryHandler implements QueryHandlerInterfac
             return null;
         }
 
-        return $this->transformer->fromEntity($system, $this->complianceCache->findBySystem($query->id));
+        $documentCount = $this->certificates->countBySystemIds(new StringCollection($query->id))[$query->id] ?? 0;
+
+        return $this->transformer->fromEntity($system, $this->complianceCache->findBySystem($query->id), $documentCount);
     }
 }
