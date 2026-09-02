@@ -5,26 +5,20 @@ declare(strict_types=1);
 namespace App\Users\Infrastructure\Controller;
 
 use App\Shared\Application\Command\CommandBusInterface;
-use App\Shared\Application\Security\LoginFormAuthenticator;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Users\Application\UseCase\Command\CreateUser\CreateUserCommand;
-use App\Users\Domain\Repository\UserRepositoryInterface;
 use App\Users\Domain\Service\Validation\EmailValidatorInterface;
 use App\Users\Infrastructure\Form\RegistrationFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 
 class RegistrationController extends AbstractController
 {
     public function __construct(
         private readonly CommandBusInterface $commandBus,
-        private readonly UserRepositoryInterface $userRepository,
-        private readonly UserAuthenticatorInterface $userAuthenticator,
-        private readonly LoginFormAuthenticator $authenticator,
-        private readonly EmailValidatorInterface $emailListValidator
+        private readonly EmailValidatorInterface $emailListValidator,
     ) {
     }
 
@@ -40,7 +34,7 @@ class RegistrationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
-            // посторонних не пускаем
+            // посторонних не пускаем (allow-list — отдельная проверка, не про существование аккаунта)
             if (!$this->emailListValidator->isValid($email)) {
                 $this->addFlash('register_failure', sprintf('С почтой `%s` зарегистрироваться невозможно.', $email));
 
@@ -50,24 +44,22 @@ class RegistrationController extends AbstractController
             }
 
             try {
-                $result = $this->commandBus->execute(new CreateUserCommand($email, $password));
-            } catch (AppException $e) {
-                $this->addFlash('register_failure', $e->getMessage());
-
-                return $this->render('security/register.html.twig', [
-                    'registrationForm' => $form->createView(),
-                ]);
+                $this->commandBus->execute(new CreateUserCommand($email, $password));
+            } catch (AppException) {
+                // Анти-энумерация: НЕ подтверждаем, существует ли уже аккаунт с такой почтой.
+                // Экран ниже одинаков и для нового, и для занятого адреса — оракула нет.
+                // Авто-логин убран сознательно: залогинить можно только реально нового юзера,
+                // а это выдало бы разницу между ветками. Ср. анти-энумерацию в LoginLinkAction.
             }
 
-            $user = $this->userRepository->getByUlid((string) $result->ulid);
-
-            $this->addFlash('register_success', 'Регистрация прошла успешно.');
-
-            return $this->userAuthenticator->authenticateUser(
-                $user,
-                $this->authenticator,
-                $request
+            $this->addFlash(
+                'register_success',
+                'Регистрация обработана. Если аккаунт с этой почтой ещё не был создан — теперь он создан. Войдите, используя указанные данные.'
             );
+
+            return $this->render('security/register.html.twig', [
+                'registrationForm' => $form->createView(),
+            ]);
         }
 
         return $this->render('security/register.html.twig', [
