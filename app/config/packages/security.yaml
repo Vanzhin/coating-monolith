@@ -15,6 +15,11 @@ security:
     login:
       pattern: ^/api/auth/token/login
       stateless: true
+      # Анти-брутфорс/credential-stuffing: не больше 5 неудачных попыток на (IP+логин)
+      # за 15 мин; бандл добавляет и глобальный per-IP лимит. Хранилище — cache.app (Redis).
+      login_throttling:
+        max_attempts: 5
+        interval: '15 minutes'
       json_login:
         username_path: email
         check_path: /api/auth/token/login # or api_login_check as defined in config/routes.yaml
@@ -40,6 +45,10 @@ security:
         # "app_login" is the name of the route created previously
         login_path: app_login
         check_path: app_login
+      # Тот же анти-брутфорс для веб-логина (form_login).
+      login_throttling:
+        max_attempts: 5
+        interval: '15 minutes'
       lazy: true
       provider: users
       entry_point: App\Shared\Application\Security\LoginFormAuthenticator # or 'form_login'
