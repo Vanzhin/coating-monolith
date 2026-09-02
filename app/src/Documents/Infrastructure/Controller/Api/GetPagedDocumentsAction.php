@@ -26,7 +26,8 @@ class GetPagedDocumentsAction extends AbstractController
     {
         $search = $request->query->get('search');
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
-        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
+        // Верхний потолок: не даём выкачивать индекс одним запросом / грузить ES deep-paging'ом.
+        $limit = $request->query->get('limit') ? min(100, max(1, (int) $request->query->get('limit'))) : null;
         $filter = new DocumentFilter(
             $search,
             null,

@@ -32,7 +32,7 @@ class ManufacturerController extends AbstractController
     {
         $search = $request->query->get('search');
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
-        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
+        $limit = $request->query->get('limit') ? min(100, max(1, (int) $request->query->get('limit'))) : null;
         $query = new GetPagedManufacturersQuery(new ManufacturersFilter($search, Pager::fromPage($page, $limit)));
         $result = $this->queryBus->execute($query);
 

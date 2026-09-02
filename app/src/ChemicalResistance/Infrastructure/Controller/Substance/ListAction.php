@@ -25,7 +25,8 @@ class ListAction extends AbstractController
         $search = $request->query->get('search');
         $cas = $request->query->get('cas');
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
-        $limit = $request->query->get('limit') ? (int) $request->query->get('limit') : null;
+        // Верхний потолок: не даём выгрузить всю таблицу веществ одним запросом.
+        $limit = $request->query->get('limit') ? min(100, max(1, (int) $request->query->get('limit'))) : null;
 
         $result = $this->queryBus->execute(
             new GetPagedSubstancesQuery(

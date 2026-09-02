@@ -31,7 +31,7 @@ class ListApiAction
         $substrateRaw = $request->query->get('substrate');
         $q = $request->query->get('q');
         $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = max(1, (int) $request->query->get('perPage', 50));
+        $perPage = max(1, min(100, (int) $request->query->get('perPage', 50)));
 
         try {
             $substrate = null;
