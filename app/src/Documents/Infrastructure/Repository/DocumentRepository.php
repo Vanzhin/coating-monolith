@@ -73,10 +73,12 @@ class DocumentRepository implements DocumentRepositoryInterface
         return $this->client->indices()->delete($data)->asBool();
     }
 
-    public function bulkInsert(string $data, ?string $dbName = null): bool
+    public function bulkInsert(string $data): bool
     {
+        // Индекс жёстко фиксирован ('documents'): целевой индекс НЕ принимаем от клиента,
+        // иначе любой авторизованный юзер мог бы писать/удалять в произвольный ES-индекс.
         return $this->client->bulk([
-            'index' => $dbName ?? $this->default,
+            'index' => $this->default,
             'body' => $data,
         ])->asBool();
     }

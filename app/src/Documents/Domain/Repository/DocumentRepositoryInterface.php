@@ -17,7 +17,7 @@ interface DocumentRepositoryInterface
 
     public function dbDelete(string $dbTitle): bool;
 
-    public function bulkInsert(string $data, ?string $dbName = null): bool;
+    public function bulkInsert(string $data): bool;
 
     public function save(Document $document): void;
 

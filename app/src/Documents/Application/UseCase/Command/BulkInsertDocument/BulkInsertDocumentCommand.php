@@ -8,7 +8,7 @@ use App\Shared\Application\Command\Command;
 
 readonly class BulkInsertDocumentCommand extends Command
 {
-    public function __construct(public string $filePath, public ?string $db)
+    public function __construct(public string $filePath)
     {
     }
 }

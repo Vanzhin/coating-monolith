@@ -24,7 +24,6 @@ class AddBulkAction extends AbstractController
 
     public function __invoke(Request $request): JsonResponse
     {
-        $dbName = $request->getPayload()->get('db_name');
         /**
          * @var UploadedFile $file
          */
@@ -32,7 +31,7 @@ class AddBulkAction extends AbstractController
         if (!$file instanceof UploadedFile) {
             throw new AppException('Файл не найден.');
         }
-        $command = new BulkInsertDocumentCommand($file->getRealPath(), $dbName);
+        $command = new BulkInsertDocumentCommand($file->getRealPath());
         $result = $this->commandBus->execute($command);
 
         return new JsonResponse($result, Response::HTTP_CREATED);
