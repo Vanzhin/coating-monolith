@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\SurfaceTreatme
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -98,6 +99,7 @@ final class CreateInlineActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $regularUser = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
         $this->client->loginUser($regularUser);
+        CsrfTestHelper::enable($this->client);
 
         $this->client->request(
             'POST',
@@ -119,6 +121,7 @@ final class CreateInlineActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $admin = $em->getRepository(User::class)->findOneBy(['email.value' => $this->adminEmail]);
         $this->client->loginUser($admin);
+        CsrfTestHelper::enable($this->client);
 
         $suffix = uniqid('', true);
         $description = 'Пескоструйная '.$suffix;
@@ -155,6 +158,7 @@ final class CreateInlineActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $admin = $em->getRepository(User::class)->findOneBy(['email.value' => $this->adminEmail]);
         $this->client->loginUser($admin);
+        CsrfTestHelper::enable($this->client);
 
         $this->client->request(
             'POST',

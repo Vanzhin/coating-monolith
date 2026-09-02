@@ -17,6 +17,7 @@ use App\Certificates\Domain\Repository\DocumentsFilter;
 use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -68,6 +69,7 @@ final class DocumentControllerTest extends WebTestCase
         $this->em->flush();
 
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void
@@ -145,7 +147,7 @@ final class DocumentControllerTest extends WebTestCase
     {
         $id = $this->createViaBus('DEL-'.bin2hex(random_bytes(3)));
 
-        $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/delete');
+        $this->client->request('POST', '/cabinet/certificate/document/'.$id.'/delete');
         self::assertResponseRedirects('/cabinet/certificate/document');
 
         $this->em->clear();
@@ -221,6 +223,7 @@ final class DocumentControllerTest extends WebTestCase
         $this->em->persist($viewer);
         $this->em->flush();
         $this->client->loginUser($viewer);
+        CsrfTestHelper::enable($this->client);
     }
 
     private function createViaBus(string $title, bool $withFile = false): string

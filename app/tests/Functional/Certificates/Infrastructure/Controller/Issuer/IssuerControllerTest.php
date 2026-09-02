@@ -9,6 +9,7 @@ use App\Certificates\Application\UseCase\Command\CreateIssuer\CreateIssuerComman
 use App\Certificates\Domain\Aggregate\Issuer\Issuer;
 use App\Certificates\Domain\Repository\IssuerRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -47,6 +48,7 @@ final class IssuerControllerTest extends WebTestCase
         $this->em->flush();
 
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void
@@ -140,7 +142,7 @@ final class IssuerControllerTest extends WebTestCase
         $suffix = bin2hex(random_bytes(3));
         $id = $this->createIssuer('Удаляемый-'.$suffix);
 
-        $this->client->request('GET', '/cabinet/certificate/issuer/'.$id.'/delete');
+        $this->client->request('POST', '/cabinet/certificate/issuer/'.$id.'/delete');
         self::assertResponseRedirects('/cabinet/certificate/issuer');
 
         $this->em->clear();

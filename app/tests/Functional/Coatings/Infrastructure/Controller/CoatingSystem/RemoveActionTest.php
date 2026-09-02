@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -63,6 +64,7 @@ final class RemoveActionTest extends WebTestCase
 
         $this->systemId = $system->getId();
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void

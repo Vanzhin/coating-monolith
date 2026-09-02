@@ -7,6 +7,7 @@ namespace App\Tests\Functional\ChemicalResistance\Infrastructure\Controller\Subs
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -103,6 +104,7 @@ final class QuickCreateActionTest extends WebTestCase
     {
         $this->createdSubstanceNames[] = $this->substanceName;
         $this->client->loginUser($this->admin);
+        CsrfTestHelper::enable($this->client);
 
         $this->client->request(
             'POST',
@@ -125,6 +127,7 @@ final class QuickCreateActionTest extends WebTestCase
         $name = $this->substanceName.'-forbidden';
         $this->createdSubstanceNames[] = $name;
         $this->client->loginUser($this->regular);
+        CsrfTestHelper::enable($this->client);
 
         $this->client->request(
             'POST',

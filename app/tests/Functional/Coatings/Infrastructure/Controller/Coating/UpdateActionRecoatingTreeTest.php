@@ -18,6 +18,7 @@ use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -114,6 +115,7 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
 
         // Authenticate the user for the session (must be done on the same client)
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void

@@ -10,6 +10,7 @@ use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -68,6 +69,7 @@ final class UpdateActionTest extends WebTestCase
 
         $this->systemId = $system->getId();
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void

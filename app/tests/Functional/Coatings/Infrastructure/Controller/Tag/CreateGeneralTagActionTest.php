@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\Tag;
 
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -45,6 +46,7 @@ final class CreateGeneralTagActionTest extends WebTestCase
         $this->em->persist($user);
         $this->em->flush();
         $this->client->loginUser($user);
+        CsrfTestHelper::enable($this->client);
     }
 
     protected function tearDown(): void

@@ -25,6 +25,7 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Support\CsrfTestHelper;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -124,6 +125,7 @@ final class BySubstanceAssessmentActionsTest extends WebTestCase
 
         // По умолчанию — под админом (как рабочие контроллер-тесты мутаций).
         $this->client->loginUser($this->admin);
+        CsrfTestHelper::enable($this->client);
     }
 
     /** @param list<string> $roles */
@@ -262,6 +264,7 @@ final class BySubstanceAssessmentActionsTest extends WebTestCase
     public function test_non_admin_cannot_add(): void
     {
         $this->client->loginUser($this->regular);
+        CsrfTestHelper::enable($this->client);
 
         $this->client->request('POST', $this->createUrlWithFilter(), [
             'coatingId' => $this->coatingId,
