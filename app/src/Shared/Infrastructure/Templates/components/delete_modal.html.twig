@@ -1,14 +1,8 @@
-{# Единая модалка подтверждения удаления (#deleteModal — одна на страницу), дизайн A:
-   иконка-корзина в кружке сверху, по центру заголовок «Удалить …?» + подпояснение,
-   кнопки [Отмена] [Удалить (filled danger)].
-
-   Триггер-кнопка: data-bs-toggle="modal" data-bs-target="#deleteModal"
-     + data-bs-title="<что удаляем>"  (в заголовок «Удалить <…>?»)
-   URL удаления — одним из двух способов:
-     • data-bs-url="<полный URL>"  — приоритет (query-параметры или маршрутный
-       плейсхолдер не 'id', напр. assessmentId + substanceIds);
-     • data-bs-id="<id>" + include c параметром {delete: '<route>'} → path(delete,{id}).
-   Ссылка удаления — GET (как во всём приложении). #}
+{# Единая модалка подтверждения удаления (#deleteModal — одна на страницу).
+   Триггер — кнопка удаления из _delete_form.html.twig (type=submit + data-bs-toggle="modal"
+   + data-bs-title). Логика — Stimulus-контроллер delete-confirm на <body>: arm() запоминает
+   форму и ставит заголовок, confirm() сабмитит её. Без JS модалка не участвует — форма
+   сабмитится напрямую. Никакого <script> здесь (см. assets/controllers/delete_confirm_controller.js). #}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -19,34 +13,10 @@
             </div>
             <div class="modal-footer border-0 pt-0 d-flex gap-2">
                 <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
-                <a class="btn btn-danger flex-fill" data-role="confirm"><i class="bi bi-trash3 me-1"></i>Удалить</a>
+                <button type="button" class="btn btn-danger flex-fill" data-bs-dismiss="modal" data-action="click->delete-confirm#confirm">
+                    <i class="bi bi-trash3 me-1"></i>Удалить
+                </button>
             </div>
         </div>
     </div>
 </div>
-{% block javascript %}
-<script>
-    (() => {
-        const deleteModal = document.getElementById('deleteModal');
-        if (!deleteModal) return;
-        deleteModal.addEventListener('show.bs.modal', (event) => {
-            const button = event.relatedTarget;
-            const title = button.getAttribute('data-bs-title') || '';
-            const id = button.getAttribute('data-bs-id');
-            const url = button.getAttribute('data-bs-url');
-            const titleEl = deleteModal.querySelector('[data-role="title"]');
-            const confirmLink = deleteModal.querySelector('a[data-role="confirm"]');
-
-            titleEl.textContent = title ? `Удалить ${title}?` : 'Удалить?';
-
-            if (url) {
-                confirmLink.setAttribute('href', url);
-            }{% if delete is defined %} else {
-                const placeholder = "00000000-0000-0000-0000-000000000000";
-                const path = "{{ path(delete, {'id': '00000000-0000-0000-0000-000000000000'}) }}";
-                confirmLink.setAttribute('href', path.replace(placeholder, id));
-            }{% endif %}
-        });
-    })();
-</script>
-{% endblock %}

@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route(path: '/cabinet/coating/coating/{id}/delete', name: 'app_cabinet_coating_coating_delete')]
+#[Route(path: '/cabinet/coating/coating/{id}/delete', name: 'app_cabinet_coating_coating_delete', methods: ['POST'])]
 class DeleteAction extends AbstractController
 {
     public function __construct(

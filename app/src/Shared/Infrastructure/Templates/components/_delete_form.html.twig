@@ -1,0 +1,17 @@
+{# POST-форма удаления. Без JS — сабмит сразу; с JS (delete-confirm на <body>) — открывает
+   #deleteModal и сабмитит по подтверждению. CSRF-токен обязателен (CsrfRequestSubscriber).
+   Параметры: url ИЛИ (route + id); title (в заголовок модалки); label; btnClass;
+   iconExtra (доп. классы иконки, напр. me-2 для dropdown); labelClass (класс подписи). #}
+{% set _action = url is defined ? url : path(route, {'id': id}) %}
+<form method="post" action="{{ _action }}" class="d-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('mutation') }}">
+    <button type="submit"
+            class="{{ btnClass|default('btn btn-sm btn-soft-danger ms-2') }}"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteModal"
+            data-bs-title="{{ title|default('') }}"
+            data-action="click->delete-confirm#arm"
+            title="Удалить">
+        <i class="bi bi-trash3{% if iconExtra is defined %} {{ iconExtra }}{% endif %}"></i><span class="{{ labelClass|default('d-none d-md-inline ms-1') }}">{{ label|default('Удалить') }}</span>
+    </button>
+</form>

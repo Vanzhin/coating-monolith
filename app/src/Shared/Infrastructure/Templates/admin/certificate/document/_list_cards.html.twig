@@ -42,12 +42,7 @@
                                     </a>
                                 </li>
                                 <li class="mt-1">
-                                    <a class="dropdown-item text-danger"
-                                       href="{{ path('app_cabinet_certificate_document_delete', {id: doc.id}) }}"
-                                       data-bs-toggle="modal" data-bs-target="#deleteModal"
-                                       data-bs-title="{{ doc.title }}" data-bs-id="{{ doc.id }}">
-                                        <i class="bi bi-trash3 me-2"></i>Удалить
-                                    </a>
+                                    {% include 'components/_delete_form.html.twig' with { route: 'app_cabinet_certificate_document_delete', id: doc.id, title: doc.title, btnClass: 'dropdown-item text-danger', iconExtra: 'me-2', labelClass: '' } only %}
                                 </li>
                             {% endif %}
                         </ul>

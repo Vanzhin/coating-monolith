@@ -52,12 +52,7 @@
                             </li>
                             <li class="mt-1">
                                 {# Удаление через общий #deleteModal; отделено отступом (без разделителя). #}
-                                <a class="dropdown-item text-danger"
-                                   href="{{ path('app_cabinet_coating_coating_delete', {id: coating.id}) }}"
-                                   data-bs-toggle="modal" data-bs-target="#deleteModal"
-                                   data-bs-title="{{ coating.title }}" data-bs-id="{{ coating.id }}">
-                                    <i class="bi bi-trash3 me-2"></i>Удалить
-                                </a>
+                                {% include 'components/_delete_form.html.twig' with { route: 'app_cabinet_coating_coating_delete', id: coating.id, title: coating.title, btnClass: 'dropdown-item text-danger', iconExtra: 'me-2', labelClass: '' } only %}
                             </li>
                         </ul>
                     </div>

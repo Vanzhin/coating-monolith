@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route(
     path: '/cabinet/certificate/issuer/{id}/delete',
     name: 'app_cabinet_certificate_issuer_delete',
+    methods: ['POST'],
 )]
 final class DeleteAction extends AbstractController
 {

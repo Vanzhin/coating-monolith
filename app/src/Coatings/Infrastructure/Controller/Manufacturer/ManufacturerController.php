@@ -97,7 +97,7 @@ class ManufacturerController extends AbstractController
         return $this->render('admin/coating/manufacturer/form.html.twig', compact('inputData'));
     }
 
-    #[Route(path: '/{id}/delete', name: 'delete')]
+    #[Route(path: '/{id}/delete', name: 'delete', methods: ['POST'])]
     public function delete(string $id): Response
     {
         $error = null;

@@ -12,12 +12,4 @@
 <a href="{{ path(edit, {'id': id}) }}" class="btn btn-sm btn-soft-primary" title="Редактировать">
     <i class="bi bi-pencil"></i><span class="d-none d-md-inline ms-1">Редактировать</span>
 </a>
-<a href="{{ path(delete, {'id': id}) }}"
-   data-bs-toggle="modal"
-   data-bs-target="#deleteModal"
-   class="btn btn-sm btn-soft-danger ms-2"
-   title="Удалить"
-   data-bs-title="{{ title }}"
-   data-bs-id="{{ id }}">
-    <i class="bi bi-trash3"></i><span class="d-none d-md-inline ms-1">Удалить</span>
-</a>
+{% include 'components/_delete_form.html.twig' with { route: delete, id: id, title: title } only %}

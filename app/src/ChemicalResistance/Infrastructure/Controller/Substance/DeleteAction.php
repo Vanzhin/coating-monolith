@@ -15,6 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
     path: '/cabinet/chemical-resistance/substance/{id}/delete',
     name: 'app_cabinet_chemical_resistance_substance_delete',
     requirements: ['id' => '[0-9a-f-]{36}'],
+    methods: ['POST'],
 )]
 class DeleteAction extends AbstractController
 {

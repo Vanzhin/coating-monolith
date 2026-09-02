@@ -1,0 +1,9 @@
+{# Простая POST-форма-кнопка без confirm-модалки (напр. «Дублировать»). CSRF-токен обязателен.
+   Параметры: url ИЛИ (route + params={}); label; icon (bi-*); btnClass; title. #}
+{% set _action = url is defined ? url : path(route, params|default({})) %}
+<form method="post" action="{{ _action }}" class="d-inline">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('mutation') }}">
+    <button type="submit" class="{{ btnClass|default('btn btn-sm btn-soft-info') }}" title="{{ title|default(label|default('')) }}">
+        <i class="bi {{ icon|default('bi-files') }}"></i><span class="d-none d-md-inline ms-1">{{ label|default('') }}</span>
+    </button>
+</form>
