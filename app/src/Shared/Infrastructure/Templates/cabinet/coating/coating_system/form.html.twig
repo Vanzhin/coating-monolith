@@ -28,6 +28,7 @@
              data-surface-treatment-modal-treatment-select-value="inputSurfaceTreatment"
              data-surface-treatment-modal-substrate-select-value="inputSubstrate">
             <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('mutation') }}">
                 {% if error is defined and error %}
                     <div class="form-alert" role="alert">
                         <i class="bi bi-exclamation-octagon"></i>

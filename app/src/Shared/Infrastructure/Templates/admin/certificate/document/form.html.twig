@@ -166,7 +166,7 @@
                 </template>
             </div>
 
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('mutation') }}">
 
             <div class="d-flex justify-content-end gap-2">
                 <a href="{{ path('app_cabinet_certificate_document_list') }}" class="btn btn-outline-secondary">Отмена</a>

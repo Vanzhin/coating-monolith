@@ -16,6 +16,14 @@
 
     <title>{% block title %}{{ app_name }} | {% endblock %}</title>
 
+    {# CSRF-токен мутаций (intention 'mutation'). Читается assets/csrf.js — он вешает
+       заголовок X-CSRF-TOKEN на все не-GET fetch. Серверная валидация — CsrfRequestSubscriber. #}
+    <meta name="csrf-token" content="{{ csrf_token('mutation') }}">
+    <meta name="csrf-header" content="X-CSRF-TOKEN">
+    <meta name="csrf-field" content="_csrf_token">
+    <meta name="csrf-param" content="mutation">
+    {% if app.user %}<meta name="app-authenticated" content="1">{% endif %}
+
     {# FOUC-safe theme init — ставим data-bs-theme на <html> ДО того как браузер
        начнёт применять Bootstrap CSS, чтобы не «моргнуть» светлой темой при
        загрузке. Bootstrap 5.3+ читает атрибут и применяет соответствующие
@@ -51,7 +59,7 @@
 </head>
 {# data-controller="back-to-top" — кнопка «Наверх». has-app-shell (для авторизованных)
    включает app-shell: десктоп-сайдбар, нижнюю таб-панель и отступы под них. #}
-<body data-controller="back-to-top"{% if app.user %} class="has-app-shell"{% endif %}>
+<body data-controller="back-to-top delete-confirm"{% if app.user %} class="has-app-shell"{% endif %}>
 
 {# Пункты основной навигации — единый источник для сайдбара и таб-панели.
    Задаём в base: included-партиалы наследуют контекст родителя, но свои `set`

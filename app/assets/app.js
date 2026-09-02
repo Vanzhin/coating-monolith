@@ -1,3 +1,5 @@
+// CSRF-патч fetch — ПЕРВЫМ, до Stimulus/bootstrap, чтобы X-CSRF-TOKEN стоял на первых же fetch.
+import './csrf.js';
 import './bootstrap.js';
 /*
  * Welcome to your app's main JavaScript file!
