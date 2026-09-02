@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventListener\Exception;
 
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -47,10 +48,18 @@ class ExceptionListener
      */
     public function exceptionToArray(\Throwable $exception): array
     {
+        $isDebug = (bool) $this->containerBag->get('kernel.debug');
+        // В проде наружу отдаём только user-facing сообщения (AppException/HttpException —
+        // они уже санитизированы). Сырые 5xx (DBAL с полным SQL, TypeError с путями) —
+        // общий текст, чтобы не сливать схему БД и внутренности. В debug — как есть.
+        $isUserFacing = $exception instanceof AppException || $exception instanceof HttpExceptionInterface;
+
         $data = [
-            'message' => $exception->getMessage(),
+            'message' => ($isUserFacing || $isDebug)
+                ? $exception->getMessage()
+                : 'Внутренняя ошибка сервера.',
         ];
-        if ($this->containerBag->get('kernel.debug')) {
+        if ($isDebug) {
             $data = array_merge(
                 $data,
                 [
