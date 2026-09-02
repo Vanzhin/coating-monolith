@@ -1,5 +1,5 @@
 gesdinet_jwt_refresh_token:
-  ttl: 604800
+  ttl: 172800 # 2 дня вместо 7: короче окно замены. single_use пока НЕ включаем (ломает параллельный refresh у клиентов)
   token_parameter_name: refresh_token
   return_expiration: true
   return_expiration_parameter_name: refresh_token_expiration
