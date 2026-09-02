@@ -9,7 +9,6 @@ use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Helper\ExceptionHelperTrait;
 use App\Users\Application\DTO\Channel\ChannelDTO;
 use App\Users\Application\UseCase\Command\CreateChannel\CreateChannelCommand;
-use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Entity\User;
 use App\Users\Infrastructure\Form\CreateChannelFormType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -38,12 +37,12 @@ class CreateChannelAction extends AbstractController
             return $this->redirectToRoute('app_user_channel_verification');
         }
 
-        // Получаем значения из query параметров
+        // Префилл формы из query — только отображение. Создание канала строго через
+        // POST-сабмит формы с CSRF (Symfony Form). GET-ветки авто-создания больше нет:
+        // раньше `?type=&value=` создавал канал на аккаунте жертвы по одной ссылке (CSRF).
+        $formData = [];
         $type = $request->query->get('type');
         $value = $request->query->get('value');
-
-        // Подготавливаем начальные данные для формы
-        $formData = [];
         if ($type) {
             $formData['type'] = $type;
         }
@@ -52,48 +51,6 @@ class CreateChannelAction extends AbstractController
         }
 
         $form = $this->createForm(CreateChannelFormType::class, $formData);
-
-        // Если есть данные из query параметров, проверяем валидность и автоматически создаем канал
-        if (!empty($formData) && $type && $value && !$request->isMethod('POST')) {
-            // Валидируем данные вручную, минуя CSRF
-            $isValid = true;
-            $errors = [];
-
-            // Проверяем тип канала
-            if (!in_array($type, [ChannelType::EMAIL->value, ChannelType::TELEGRAM->value], true)) {
-                $isValid = false;
-                $errors[] = 'Неверный тип канала';
-            }
-
-            // Проверяем значение
-            if (empty($value) || strlen($value) < 3 || strlen($value) > 255) {
-                $isValid = false;
-                $errors[] = 'Значение канала должно содержать от 3 до 255 символов';
-            }
-
-            // Если тип email - проверяем формат email
-            if ($isValid && $type === ChannelType::EMAIL->value) {
-                if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $isValid = false;
-                    $errors[] = 'Неверный формат email адреса';
-                }
-            }
-
-            // Если данные валидны, создаем канал напрямую, минуя форму и CSRF
-            if ($isValid) {
-                try {
-                    return $this->createChannelFromFormData($formData, $user);
-                } catch (\Exception $e) {
-                    $this->handleChannelCreationException($e);
-                }
-            } else {
-                // Показываем ошибки валидации
-                foreach ($errors as $error) {
-                    $this->addFlash('error', $error);
-                }
-            }
-        }
-
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
