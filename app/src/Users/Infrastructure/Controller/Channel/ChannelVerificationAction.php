@@ -16,8 +16,10 @@ use App\Users\Domain\Entity\User;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ChannelVerificationAction extends AbstractController
@@ -27,6 +29,10 @@ class ChannelVerificationAction extends AbstractController
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly ChannelRepositoryInterface $channelRepository,
+        #[Autowire(service: 'limiter.channel_verify_per_channel')]
+        private readonly RateLimiterFactory $channelVerifyPerChannelLimiter,
+        #[Autowire(service: 'limiter.channel_verify_per_ip')]
+        private readonly RateLimiterFactory $channelVerifyPerIpLimiter,
     ) {
     }
 
@@ -67,24 +73,36 @@ class ChannelVerificationAction extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Узкий try: ловим доменный AppException ровно над verify-командой.
-            // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx
-            // с реальным сообщением вместо «Undefined $form».
-            try {
-                /** @var Channel $channel */
-                $channel = $form->get('channel')->getData();
-                $token = $form->get('token')->getData();
-                $this->commandBus->execute(
-                    new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
-                );
+            /** @var Channel $channel */
+            $channel = $form->get('channel')->getData();
+            $token = $form->get('token')->getData();
 
-                $this->addFlash('success', 'Канал успешно верифицирован!');
-                $this->addFlash('success', 'Аккаунт успешно активирован!');
+            // Анти-брутфорс 6-значного OTP: лимит попыток по каналу (IP-независимо) и по IP.
+            // Превышение — та же форма с alert'ом, verify-команда не выполняется.
+            $channelLimit = $this->channelVerifyPerChannelLimiter->create($channel->getId())->consume();
+            $ipLimit = $this->channelVerifyPerIpLimiter->create($request->getClientIp() ?? 'unknown')->consume();
+            if (!$channelLimit->isAccepted() || !$ipLimit->isAccepted()) {
+                $rejected = $channelLimit->isAccepted() ? $ipLimit : $channelLimit;
+                $this->addFlash('error', sprintf(
+                    'Слишком много попыток верификации. Попробуйте через %d мин.',
+                    max(1, (int) ceil(($rejected->getRetryAfter()->getTimestamp() - time()) / 60)),
+                ));
+            } else {
+                // Узкий try: ловим доменный AppException ровно над verify-командой.
+                // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx.
+                try {
+                    $this->commandBus->execute(
+                        new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
+                    );
 
-                return $this->redirectToRoute('app_cabinet');
-            } catch (\Exception $e) {
-                $this->addFlash('error', $this->getOriginalExceptionMessage($e));
-                // Падаем в render формы с показом flash-ошибки.
+                    $this->addFlash('success', 'Канал успешно верифицирован!');
+                    $this->addFlash('success', 'Аккаунт успешно активирован!');
+
+                    return $this->redirectToRoute('app_cabinet');
+                } catch (\Exception $e) {
+                    $this->addFlash('error', $this->getOriginalExceptionMessage($e));
+                    // Падаем в render формы с показом flash-ошибки.
+                }
             }
         }
 

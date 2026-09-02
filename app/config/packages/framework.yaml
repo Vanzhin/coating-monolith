@@ -30,6 +30,17 @@ framework:
             policy: 'sliding_window'
             limit: 30
             interval: '1 hour'
+        # Верификация канала (OTP): не даём брутфорсить 6-значный код. Ключ — id канала,
+        # поэтому смена IP не помогает: на канал ≤5 попыток за 15 мин, а токен живёт 5 мин.
+        channel_verify_per_channel:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+        # По IP — тормозим bot'ов, гоняющих верификацию пачкой по разным каналам.
+        channel_verify_per_ip:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '1 hour'
 
     #esi: true
     #fragments: true
