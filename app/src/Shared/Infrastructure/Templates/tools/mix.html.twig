@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Калькулятор смешивания компонентов краски — онлайн | {{ app_name }}{% endblock %}
+{% block meta_description %}<meta name="description" content="Онлайн-калькулятор смешивания двухкомпонентных красок и покрытий по пропорции. Посчитайте, сколько основы и отвердителя нужно на объём смеси или сколько добавить по одному компоненту. Без регистрации.">{% endblock %}
+
+{% block body %}
+<div class="tools-page" data-controller="mix-calculator">
+    <nav class="tools-crumbs">
+        <a href="{{ path('app_tools_index') }}">Инструменты</a>
+        <i class="bi bi-chevron-right"></i>
+        <span>Смешивание</span>
+    </nav>
+
+    <h1 class="tools-h1">Калькулятор смешивания компонентов</h1>
+    <p class="tools-intro">Сколько основы и отвердителя нужно на заданный объём смеси — или сколько добавить, если один компонент уже отмерен.</p>
+
+    {% if not app.user %}
+        <div class="tools-cta">
+            <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
+            <p class="tools-cta-text">Войдите, чтобы искать покрытия и подставлять их пропорции автоматически.</p>
+            <a class="btn btn-primary" href="{{ path('app_login') }}">Войти</a>
+        </div>
+    {% endif %}
+
+    <div class="p-3 rounded-3 bg-body-tertiary mix-card">
+        <div class="mix-cols mix-cols-head">
+            <span>Компонент</span>
+            <span>Часть</span>
+            <span>Количество</span>
+        </div>
+
+        <div data-mix-calculator-target="rows">
+            <div class="mix-row" data-mix-calculator-target="row">
+                <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">1</span></span>
+                <input type="text" inputmode="decimal" class="form-control mix-part"
+                       data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 1">
+                <input type="text" inputmode="decimal" class="form-control mix-qty"
+                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 1">
+            </div>
+            <div class="mix-row" data-mix-calculator-target="row">
+                <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">2</span></span>
+                <input type="text" inputmode="decimal" class="form-control mix-part"
+                       data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 2">
+                <input type="text" inputmode="decimal" class="form-control mix-qty"
+                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 2">
+            </div>
+        </div>
+
+        <button type="button" class="mix-add" data-action="mix-calculator#addComponent">
+            <i class="bi bi-plus-lg"></i> Добавить компонент
+        </button>
+
+        <hr class="mix-sep">
+
+        <div class="mix-row mix-total">
+            <span class="mix-name">Итого</span>
+            <span class="mix-part-sum" data-mix-calculator-target="totalPart">0</span>
+            <input type="text" inputmode="decimal" class="form-control mix-qty"
+                   data-mix-calculator-target="totalQty" data-action="input->mix-calculator#onInput" aria-label="Итоговое количество смеси">
+        </div>
+
+        <p class="mix-hint">Введите количество в любую строку или в «Итого» — остальные пересчитаются по пропорции.</p>
+    </div>
+
+    <details class="tools-details">
+        <summary>Как рассчитать смешивание</summary>
+        <div class="tools-details-body">
+            <p>Онлайн-калькулятор для приготовления рабочей смеси двухкомпонентных красок и покрытий по пропорции. Работает без регистрации и без интернета.</p>
+            <p>Пропорция — это части компонентов, например 3:1 (три части основы на одну часть отвердителя). Калькулятор масштабирует части под нужное количество:</p>
+            <ul>
+                <li>задайте объём готовой смеси — получите дозу каждого компонента;</li>
+                <li>или введите отмеренное количество одного компонента — получите остальные.</li>
+            </ul>
+            <p>Числа безразмерные: считайте в литрах, миллилитрах или килограммах — пропорция сохраняется.</p>
+        </div>
+    </details>
+
+    {# Шаблон строки компонента — клонируется контроллером при добавлении (без дублирования разметки в JS). #}
+    <template data-mix-calculator-target="rowTemplate">
+        <div class="mix-row" data-mix-calculator-target="row">
+            <span class="mix-name">
+                Компонент <span data-mix-calculator-target="rowNum"></span>
+                <button type="button" class="mix-remove" data-action="mix-calculator#removeComponent" aria-label="Убрать компонент"><i class="bi bi-x-lg"></i></button>
+            </span>
+            <input type="text" inputmode="decimal" class="form-control mix-part"
+                   data-mix-calculator-target="part" data-action="input->mix-calculator#onInput">
+            <input type="text" inputmode="decimal" class="form-control mix-qty"
+                   data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput">
+        </div>
+    </template>
+</div>
+{% endblock %}

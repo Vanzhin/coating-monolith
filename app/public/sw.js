@@ -3,8 +3,10 @@
    сети, кэш обновляем попутно и используем только как офлайн-fallback (навигации
    → закэшированная страница или /offline.html). Так исключаем протухание стилей
    в dev (Encore там не хеширует имена, cache-first отдавал бы старый app.css). */
-const CACHE = 'app-v2';
-const PRECACHE = ['/offline.html', '/icons/android-chrome-192x192.png'];
+const CACHE = 'app-v3';
+// Раздел «Инструменты» офлайн-first: страницы предкэшируем, чтобы калькулятор открывался
+// без сети даже на холодном кэше (JS/CSS-бандл подтянется network-first при первом заходе).
+const PRECACHE = ['/offline.html', '/icons/android-chrome-192x192.png', '/tools', '/tools/mix'];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(

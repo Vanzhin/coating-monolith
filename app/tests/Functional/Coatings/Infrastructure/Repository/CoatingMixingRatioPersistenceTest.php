@@ -17,6 +17,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecifi
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PartsRatio;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -68,8 +69,8 @@ final class CoatingMixingRatioPersistenceTest extends KernelTestCase
             $container->get(CoatingSpecification::class),
         );
         $coating->setMixingRatio(new MixingRatio(
-            byVolume: new PartsRatio(3.0, 1.0),
-            byMass: new PartsRatio(100.0, 23.0),
+            byVolume: new PartsRatio(new PositiveNumber(3.0), new PositiveNumber(1.0)),
+            byMass: new PartsRatio(new PositiveNumber(100.0), new PositiveNumber(23.0)),
         ));
         $this->repo->add($coating);
         $this->em->flush();

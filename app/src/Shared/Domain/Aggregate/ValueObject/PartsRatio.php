@@ -18,17 +18,20 @@ use App\Shared\Infrastructure\Exception\AppException;
  */
 final readonly class PartsRatio
 {
-    /** @var list<float> */
+    /** @var list<PositiveNumber> */
     private array $parts;
 
-    public function __construct(float ...$parts)
+    public function __construct(PositiveNumber ...$parts)
     {
         if (count($parts) < 2) {
             throw new AppException('Соотношение должно содержать минимум два компонента.');
         }
+
         foreach ($parts as $part) {
-            if ($part <= 0) {
-                throw new AppException('Доля компонента должна быть положительной.');
+            // Положительность уже гарантирована типом PositiveNumber. Здесь — своё правило
+            // соотношения: целое или максимум два знака после запятой (точнее не задают).
+            if (abs($part->value() * 100 - round($part->value() * 100)) > 1e-9) {
+                throw new AppException('Доля компонента может иметь не более двух знаков после запятой.');
             }
         }
         $this->parts = array_values($parts);
@@ -37,7 +40,7 @@ final readonly class PartsRatio
     /** @return list<float> */
     public function getParts(): array
     {
-        return $this->parts;
+        return array_map(static fn (PositiveNumber $part): float => (float) $part->value(), $this->parts);
     }
 
     public function count(): int
@@ -58,7 +61,7 @@ final readonly class PartsRatio
             throw new AppException('Количество должно быть положительным.');
         }
 
-        $scale = $amount / $this->parts[$index];
+        $scale = $amount / $this->parts[$index]->value();
 
         return $this->doseAtScale($scale);
     }
@@ -90,13 +93,13 @@ final readonly class PartsRatio
             throw new AppException('Количество должно быть положительным.');
         }
 
-        $scale = $total / array_sum($this->parts);
+        $scale = $total / array_sum($this->getParts());
 
         return $this->doseAtScale($scale);
     }
 
     private function doseAtScale(float $scale): MixDose
     {
-        return new MixDose(...array_map(static fn (float $part): float => $part * $scale, $this->parts));
+        return new MixDose(...array_map(static fn (float $part): float => $part * $scale, $this->getParts()));
     }
 }

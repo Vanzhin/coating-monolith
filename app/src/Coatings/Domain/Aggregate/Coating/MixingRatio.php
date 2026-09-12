@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Coatings\Domain\Aggregate\Coating;
 
 use App\Shared\Domain\Aggregate\ValueObject\PartsRatio;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Infrastructure\Exception\AppException;
 
 /**
@@ -61,7 +62,7 @@ final readonly class MixingRatio implements \JsonSerializable
             return null;
         }
 
-        return new PartsRatio(...array_map(static fn ($part): float => (float) $part, $parts));
+        return new PartsRatio(...array_map(static fn ($part): PositiveNumber => new PositiveNumber((float) $part), $parts));
     }
 
     /**

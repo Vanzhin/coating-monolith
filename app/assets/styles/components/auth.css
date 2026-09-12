@@ -55,6 +55,14 @@
 .land-feat .ft { font-size: 13.5px; line-height: 1.25; }
 .land-feat .ft b { font-weight: 700; }
 .land-feat .ft span { color: var(--bs-secondary-color); display: block; font-size: 12px; }
+/* Публичный вход в раздел «Инструменты» — та же вёрстка, что .land-feat, но выделен как
+   кликабельная карточка (акцентный фон, primary-плитка, стрелка, hover). Вне .land-cta —
+   виден и на десктопе. */
+.land-feat-link { text-decoration: none; color: var(--bs-body-color); background: var(--accent-subtle); border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; transition: transform .12s var(--ease-emph), box-shadow .12s var(--ease-emph); }
+.land-feat-link:hover { color: var(--bs-body-color); transform: translateY(-1px); box-shadow: 0 6px 16px color-mix(in srgb, var(--bs-primary) 18%, transparent); }
+.land-feat-link .fi { background: var(--bs-primary); border-color: transparent; color: #fff; }
+.land-feat-link .ft b { color: var(--bs-primary); }
+.land-feat-arrow { margin-left: auto; color: var(--bs-primary); font-size: 14px; }
 .land-cta { display: flex; flex-direction: column; gap: 10px; max-width: 340px; }
 .install-hint { margin-top: 14px; font-size: 12px; color: var(--auth-faint); }
 .install-hint .btn { --bs-btn-color: var(--auth-faint); }
