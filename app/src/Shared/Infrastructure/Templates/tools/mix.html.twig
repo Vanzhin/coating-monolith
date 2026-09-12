@@ -14,7 +14,31 @@
     <h1 class="tools-h1">Калькулятор смешивания компонентов</h1>
     <p class="tools-intro">Сколько основы и отвердителя нужно на заданный объём смеси — или сколько добавить, если один компонент уже отмерен.</p>
 
-    {% if not app.user %}
+    {% if app.user %}
+        <div class="mix-coating p-3 rounded-3 bg-body-tertiary"
+             data-controller="async-typeahead"
+             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+             data-async-typeahead-placeholder-value="Найти покрытие…"
+             data-action="async-typeahead:select->mix-calculator#applyFromCoating async-typeahead:deselect->mix-calculator#clearCoating">
+            <label class="mix-coating-lbl" for="mixCoatingSelect">Из покрытия</label>
+            <select id="mixCoatingSelect" data-async-typeahead-target="select">
+                <option value="">Найти покрытие…</option>
+            </select>
+
+            <div class="mix-base" data-mix-calculator-target="baseSeg" hidden>
+                <div class="duration-seg" role="group" aria-label="База соотношения">
+                    <input type="radio" class="btn-check" name="mixBase" id="mixBaseVolume" value="volume" checked
+                           data-action="change->mix-calculator#changeBase">
+                    <label class="duration-seg-btn" for="mixBaseVolume">Объём</label>
+                    <input type="radio" class="btn-check" name="mixBase" id="mixBaseMass" value="mass"
+                           data-action="change->mix-calculator#changeBase">
+                    <label class="duration-seg-btn" for="mixBaseMass">Масса</label>
+                </div>
+            </div>
+
+            <p class="mix-coating-msg msg msg-warning" data-mix-calculator-target="coatingMsg" hidden></p>
+        </div>
+    {% else %}
         <div class="tools-cta">
             <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
             <p class="tools-cta-text">Войдите, чтобы искать покрытия и подставлять их пропорции автоматически.</p>

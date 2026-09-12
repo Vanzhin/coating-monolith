@@ -83,11 +83,15 @@ export default class extends Controller {
             const id = e.detail.data.id ?? '';
             this._hidden.value = id;
             this._syncSelect(id, e.detail.data.value ?? '');
+            // Наружу — весь item (не только id/title): потребителям нужны доп. поля
+            // (напр. калькулятору смешивания — mixingRatio выбранного покрытия).
+            this.dispatch('select', { detail: { item: e.detail.data } });
         });
 
         this._tagify.on('remove', () => {
             this._hidden.value = '';
             this._syncSelect('', '');
+            this.dispatch('deselect');
         });
     }
 
@@ -135,9 +139,11 @@ export default class extends Controller {
             const data = await response.json();
             const raw = data.data?.items ?? data.items ?? [];
 
+            // Сохраняем весь item на теге (не схлопываем до id/value) — доп. поля доступны
+            // потребителям через событие select. value — то, что показываем/ищем.
             const items = raw.map(item => ({
+                ...item,
                 value: item.title ?? item.description ?? '',
-                id: item.id,
             }));
 
             this._tagify.whitelist = items;

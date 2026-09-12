@@ -12,10 +12,12 @@ import { Controller } from '@hotwired/stimulus';
  * подсветки ошибок нет, ругаться не на что. Доменный инвариант дублируется в PartsRatio.
  */
 export default class extends Controller {
-    static targets = ['rows', 'row', 'part', 'qty', 'rowNum', 'totalPart', 'totalQty', 'rowTemplate'];
+    static targets = ['rows', 'row', 'part', 'qty', 'rowNum', 'totalPart', 'totalQty', 'rowTemplate', 'baseSeg', 'coatingMsg'];
 
     connect() {
         this.anchorEl = null;
+        this.coatingRatio = null; // {volume:number[]|null, mass:number[]|null} выбранного покрытия
+        this.locked = false;      // пропорция из покрытия — части не редактируются
         this.renumber();
     }
 
@@ -47,6 +49,102 @@ export default class extends Controller {
         row.remove();
         this.renumber();
         this.recompute();
+    }
+
+    // ── Подстановка из покрытия (для залогиненных) ──
+
+    /** Событие async-typeahead:select — выбрано покрытие; берём его mixingRatio. */
+    applyFromCoating(event) {
+        const ratio = event.detail?.item?.mixingRatio ?? null;
+        const hasVolume = Array.isArray(ratio?.volume);
+        const hasMass = Array.isArray(ratio?.mass);
+
+        if (!hasVolume && !hasMass) {
+            // У покрытия нет соотношения — сообщаем и оставляем ручной ввод.
+            this.coatingRatio = null;
+            this.unlock();
+            this.showBaseSeg(false);
+            this.showMsg('У этого покрытия нет данных о соотношении — введите пропорцию вручную.');
+            return;
+        }
+
+        this.coatingRatio = ratio;
+        this.showMsg(null);
+        this.showBaseSeg(hasVolume && hasMass);
+        const base = hasVolume ? 'volume' : 'mass';
+        this.setBaseRadio(base);
+        this.loadBase(base);
+    }
+
+    /** Смена сегмента Объём/Масса — перезалить части из выбранной базы. */
+    changeBase(event) {
+        if (this.coatingRatio) {
+            this.loadBase(event.target.value);
+        }
+    }
+
+    /** «Убрать покрытие» (снятие тега typeahead) — вернуть ручной режим, значения оставить. */
+    clearCoating() {
+        this.coatingRatio = null;
+        this.unlock();
+        this.showBaseSeg(false);
+        this.showMsg(null);
+    }
+
+    loadBase(base) {
+        const parts = this.coatingRatio?.[base];
+        if (!Array.isArray(parts) || parts.length < 2) {
+            return;
+        }
+        this.setRowCount(parts.length);
+        this.partTargets.forEach((el, i) => { el.value = parts[i] ?? ''; });
+        this.anchorEl = null; // части сменились — сбрасываем опору
+        this.lock();
+        this.recompute();
+    }
+
+    /** Доводит число строк калькулятора до n (клонируя/убирая последние). */
+    setRowCount(n) {
+        while (this.partTargets.length < n) {
+            this.rowsTarget.appendChild(this.rowTemplateTarget.content.cloneNode(true));
+        }
+        while (this.partTargets.length > n) {
+            this.rowTargets[this.rowTargets.length - 1].remove();
+        }
+        this.renumber();
+    }
+
+    lock() {
+        this.locked = true;
+        this.element.classList.add('mix-locked');
+        this.partTargets.forEach((el) => { el.readOnly = true; });
+    }
+
+    unlock() {
+        this.locked = false;
+        this.element.classList.remove('mix-locked');
+        this.partTargets.forEach((el) => { el.readOnly = false; });
+    }
+
+    showBaseSeg(show) {
+        if (this.hasBaseSegTarget) {
+            this.baseSegTarget.hidden = !show;
+        }
+    }
+
+    setBaseRadio(base) {
+        const radio = this.element.querySelector(`input[name="mixBase"][value="${base}"]`);
+        if (radio) {
+            radio.checked = true;
+        }
+    }
+
+    showMsg(text) {
+        if (!this.hasCoatingMsgTarget) {
+            return;
+        }
+        this.coatingMsgTarget.textContent = text ?? '';
+        this.coatingMsgTarget.hidden = !text;
     }
 
     renumber() {

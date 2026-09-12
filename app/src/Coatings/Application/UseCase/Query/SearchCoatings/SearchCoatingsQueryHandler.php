@@ -22,7 +22,7 @@ readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
     }
 
     /**
-     * @return list<array{id: string, title: string, base: string, dftMin: int, dftMax: int}>
+     * @return list<array{id: string, title: string, base: string, dftMin: int, dftMax: int, mixingRatio: array{volume: list<float>|null, mass: list<float>|null}|null}>
      */
     public function __invoke(SearchCoatingsQuery $query): array
     {
@@ -45,6 +45,8 @@ readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
                 'base' => $base,
                 'dftMin' => $dftMin,
                 'dftMax' => $dftMax,
+                // Соотношение смешивания для калькулятора инструментов (null у однокомпонентных).
+                'mixingRatio' => $coating->getMixingRatio()?->jsonSerialize(),
             ];
         }
 
