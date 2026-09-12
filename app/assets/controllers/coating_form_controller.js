@@ -786,4 +786,60 @@ export default class extends Controller {
             return {};
         }
     }
+
+    // --- Соотношение смешивания. Изолировано от temperature-based строк: addRow завязан на
+    //     [temperature_at] и имена серий, поэтому свои методы. ---
+    /** Подпись компонента: 1 — Основа, 2 — Отвердитель, дальше — Компонент N. */
+    _mixingLabel(i) {
+        if (i === 0) {
+            return 'Основа';
+        }
+        if (i === 1) {
+            return 'Отвердитель';
+        }
+        return 'Компонент ' + (i + 1);
+    }
+
+    addMixingRow(event) {
+        const base = event.params.base; // 'volume' | 'mass' — из data-coating-form-base-param
+        const tbody = this.element.querySelector(`[data-mixing-body="${base}"]`);
+        if (!tbody) {
+            return;
+        }
+        const i = tbody.children.length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-body-secondary">${this._mixingLabel(i)}</td>
+            <td><input type="number" name="mixingRatio[${base}][${i}]" value=""
+                       class="form-control form-control-sm" min="0" step="0.01" placeholder="—"></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        data-action="click->coating-form#removeMixingRow" title="Удалить компонент">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>`;
+        tbody.appendChild(tr);
+    }
+
+    removeMixingRow(event) {
+        const tr = event.currentTarget.closest('tr');
+        const tbody = tr?.parentElement;
+        if (!tbody) {
+            return;
+        }
+        const base = tbody.dataset.mixingBody;
+        tr.remove();
+        this._reindexMixingRows(tbody, base);
+    }
+
+    /** После удаления переиндексируем имена mixingRatio[base][i] и подписи компонентов. */
+    _reindexMixingRows(tbody, base) {
+        Array.from(tbody.children).forEach((tr, i) => {
+            const label = tr.querySelector('td');
+            if (label) {
+                label.textContent = this._mixingLabel(i);
+            }
+            tr.querySelector('input')?.setAttribute('name', `mixingRatio[${base}][${i}]`);
+        });
+    }
 }
