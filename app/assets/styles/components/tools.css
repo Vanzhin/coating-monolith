@@ -1,0 +1,84 @@
+/* Раздел «Инструменты» (/tools): хаб + калькулятор смешивания. Дизайн-система приложения —
+   без рамок-линий, отделяем оттенком/тенью; иконки монохромные bi-*. Токены из tokens.css. */
+
+/* ===== Хаб ===== */
+.tools-hub { max-width: 900px; margin: 0 auto; }
+.tools-h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; }
+.tools-lead { color: var(--bs-secondary-color); font-size: .9rem; margin: 0 0 1.25rem; }
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .75rem;
+}
+.tool-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    min-height: 120px;
+    padding: 1rem;
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    text-decoration: none;
+    box-shadow: inset 0 0 0 1.5px transparent;
+    transition: box-shadow .15s var(--ease-emph);
+}
+a.tool-card:hover { color: var(--bs-body-color); box-shadow: inset 0 0 0 1.5px var(--bs-primary); }
+.tool-card-ic {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: var(--accent-subtle); color: var(--bs-primary);
+    display: grid; place-items: center; font-size: 1.25rem;
+}
+.tool-card-title { font-weight: 700; }
+.tool-card-desc { font-size: .8rem; color: var(--bs-secondary-color); line-height: 1.35; }
+.tool-card--soon { opacity: .7; }
+.tool-card--soon .tool-card-ic { background: var(--sunken); color: var(--bs-secondary-color); }
+.tool-card-badge {
+    position: absolute; top: .75rem; right: .75rem;
+    font-size: .625rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--bs-secondary-color); background: var(--sunken);
+    padding: .15rem .5rem; border-radius: 999px;
+}
+
+/* ===== Страница инструмента ===== */
+.tools-page { max-width: 460px; margin: 0 auto; }
+.tools-crumbs { font-size: .78rem; color: var(--bs-secondary-color); margin-bottom: .4rem; display: flex; align-items: center; gap: .3rem; }
+.tools-crumbs a { color: var(--bs-primary); text-decoration: none; }
+.tools-crumbs .bi { font-size: .7rem; }
+.tools-intro { font-size: .9rem; color: var(--bs-body-color); line-height: 1.45; margin: 0 0 1rem; }
+
+.tools-cta { background: var(--accent-subtle); border-radius: var(--bs-border-radius); padding: .9rem 1rem; margin-bottom: .85rem; }
+.tools-cta-title { font-weight: 700; margin-bottom: .2rem; }
+.tools-cta-text { font-size: .85rem; color: var(--bs-body-color); margin: 0 0 .7rem; }
+
+/* ===== Карточка калькулятора ===== */
+.mix-cols { display: grid; grid-template-columns: 1fr 4.5rem 6rem; gap: .5rem; align-items: center; }
+.mix-cols-head { font-size: .6rem; text-transform: uppercase; letter-spacing: .03em; color: var(--bs-secondary-color); font-weight: 700; margin-bottom: .3rem; padding: 0 .1rem; }
+.mix-cols-head span:nth-child(2), .mix-cols-head span:nth-child(3) { text-align: center; }
+
+.mix-row { display: grid; grid-template-columns: 1fr 4.5rem 6rem; gap: .5rem; align-items: center; padding: .3rem 0; }
+.mix-name { font-size: .85rem; font-weight: 600; display: inline-flex; align-items: center; gap: .35rem; }
+.mix-part.form-control, .mix-qty.form-control { text-align: center; padding: .4rem .3rem; height: auto; font-weight: 600; }
+/* Вычисленное количество читается как утопленная плитка; опорное (ввод) — акцентная обводка. */
+.mix-qty.form-control { background: var(--sunken); border-color: transparent; }
+.mix-qty.is-anchor { background: var(--surface); border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
+
+.mix-add { background: none; border: 0; color: var(--bs-primary); font-size: .82rem; font-weight: 600; padding: .5rem .1rem .2rem; display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
+.mix-remove { background: none; border: 0; color: var(--bs-secondary-color); padding: 0; line-height: 1; cursor: pointer; font-size: .7rem; }
+.mix-remove:hover { color: var(--danger-strong); }
+.mix-sep { border: 0; border-top: 1px dashed var(--bs-border-color); margin: .55rem 0; }
+.mix-total .mix-name { font-weight: 700; }
+.mix-part-sum { text-align: center; font-weight: 700; color: var(--bs-secondary-color); }
+.mix-hint { font-size: .75rem; color: var(--bs-secondary-color); margin: .6rem 0 0; line-height: 1.35; }
+
+/* ===== Раскрывающийся SEO-блок ===== */
+.tools-details { margin-top: .85rem; border-top: 1px solid var(--bs-border-color); padding-top: .5rem; }
+.tools-details > summary { cursor: pointer; list-style: none; font-size: .9rem; font-weight: 600; color: var(--bs-primary); padding: .4rem .1rem; }
+.tools-details > summary::-webkit-details-marker { display: none; }
+.tools-details > summary::before { content: "\F285"; font-family: "bootstrap-icons"; font-size: .8rem; margin-right: .4rem; display: inline-block; transition: transform .15s var(--ease-emph); }
+.tools-details[open] > summary::before { transform: rotate(90deg); }
+.tools-details-body { font-size: .85rem; color: var(--bs-body-color); line-height: 1.55; padding: .2rem .1rem .4rem; }
+.tools-details-body p { margin: 0 0 .5rem; }
+.tools-details-body ul { margin: 0 0 .5rem; padding-left: 1.15rem; }

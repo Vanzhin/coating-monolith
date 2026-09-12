@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{{ app_name }} — инструменты, которые помогают в повседневной работе">
+    {% block meta_description %}<meta name="description" content="{{ app_name }} — инструменты, которые помогают в повседневной работе">{% endblock %}
     {# Кросс-документные native-переходы (View Transitions API); включение — в app-shell.css. #}
     <meta name="view-transition" content="same-origin">
 
@@ -183,6 +183,11 @@
                             <i class="bi {{ item.icon }} me-2"></i>{{ item.label }}
                         </a>
                     {% endfor %}
+                    <a href="{{ path('app_tools_index') }}"
+                       class="list-group-item list-group-item-action{{ current_route starts with 'app_tools' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-calculator me-2"></i>Инструменты
+                    </a>
                 </div>
             </div>
 

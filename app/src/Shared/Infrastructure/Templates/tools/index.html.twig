@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Инструменты — калькуляторы для нанесения покрытий | {{ app_name }}{% endblock %}
+{% block meta_description %}<meta name="description" content="Онлайн-калькуляторы для нанесения покрытий: смешивание компонентов по пропорции, расход материала, толщина мокрой плёнки. Работают без регистрации.">{% endblock %}
+
+{% block body %}
+<div class="tools-hub">
+    <h1 class="tools-h1">Инструменты</h1>
+    <p class="tools-lead">Расчёты для нанесения. Работают без входа — со входом подставляют данные из базы покрытий.</p>
+
+    <div class="tools-grid">
+        <a class="tool-card" href="{{ path('app_tools_mix') }}">
+            <span class="tool-card-ic"><i class="bi bi-droplet-half"></i></span>
+            <span class="tool-card-title">Смешивание компонентов</span>
+            <span class="tool-card-desc">Дозировки рабочей смеси по пропорции: нужно N готовой смеси или есть N одного компонента.</span>
+        </a>
+
+        <div class="tool-card tool-card--soon" aria-disabled="true">
+            <span class="tool-card-badge">Скоро</span>
+            <span class="tool-card-ic"><i class="bi bi-bucket"></i></span>
+            <span class="tool-card-title">Расход материала</span>
+            <span class="tool-card-desc">Сколько материала на площадь при нужной толщине сухой плёнки.</span>
+        </div>
+
+        <div class="tool-card tool-card--soon" aria-disabled="true">
+            <span class="tool-card-badge">Скоро</span>
+            <span class="tool-card-ic"><i class="bi bi-rulers"></i></span>
+            <span class="tool-card-title">Толщина мокрой плёнки</span>
+            <span class="tool-card-desc">Какую мокрую плёнку набирать, чтобы получить нужную сухую.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
