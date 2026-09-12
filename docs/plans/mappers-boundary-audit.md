@@ -63,5 +63,14 @@ Mapper — **pure shape mapping**: форма/JSON ↔ DTO/Command, только
 `./run check` + функц.-тесты затронутых форм/списков (создание/обновление/ре-рендер ошибок,
 фасеты фильтров). Round-trip юнит-тесты мэпперов (`build → decompose → build`).
 
-## Статус
-Аудит готов (2026-09-12). Реализация — по чанкам, каждый отдельной веткой, по подтверждению.
+## Статус (ветка refactor/mappers-boundary)
+- Чанк 1 — СДЕЛАН (`8feeb0e`): VO `Duration`, конверсия единиц вычищена из CoatingMapper + обоих list-мэпперов.
+- Чанк 2 — СДЕЛАН (`fc39901`): CoatingMapper exposure throw→Assert (человеческие сообщения), решение «all-empty→null» → новый `ThermalExposureLimitsBuilder` (симметрично `MixingRatioBuilder`).
+- Чанк 4 — СДЕЛАН (`8b0323e`): compliance-каскад → `CoatingSystemsFilter` (домен); мэппер пробрасывает category/durability как есть.
+- Чанк 3 (`Certificates/DocumentMapper`) — РЕШЕНО НЕ ДЕЛАТЬ. Все 9 `throw` структурные (валидный
+  UUID/enum/дата/файл), не доменные правила → строго правило CLAUDE.md не нарушают. Это стилевая
+  рассинхронность с coating-мэппером (Assert vs throw). Перевод на Assert = крупный риск-переезд
+  (getValidationCollection + ValidatorInterface в оба контроллера + `Assert\File` + переписка
+  юнит-тестов, кодирующих throw-контракт) ради консистентности, а не устранения дрейфа. Оставлен как есть.
+- Мелочь `::from()`→`tryFrom()` (CoatingSystemMapper/SurfaceTreatmentMapper) — не трогали: поля уже
+  под `Assert\Choice` в их валидационных коллекциях, `from()` безопасен; смена дала бы лишнюю ветку null.
