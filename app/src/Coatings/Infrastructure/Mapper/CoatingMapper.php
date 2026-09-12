@@ -17,6 +17,7 @@ use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
+use App\Shared\Domain\Aggregate\ValueObject\Duration;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -147,22 +148,17 @@ class CoatingMapper
      */
     public function parseDurationInput(array $raw): int
     {
-        $days = (int) ($raw['days'] ?? 0);
-        $hours = (int) ($raw['hours'] ?? 0);
-        $minutes = (int) ($raw['minutes'] ?? 0);
-
-        return $days * 24 * 60 + $hours * 60 + $minutes;
+        return Duration::fromParts(
+            (int) ($raw['days'] ?? 0),
+            (int) ($raw['hours'] ?? 0),
+            (int) ($raw['minutes'] ?? 0),
+        )->minutes();
     }
 
     /** @return array{days: int, hours: int, minutes: int} */
     public function decomposeDurationForForm(int $totalMinutes): array
     {
-        $days = intdiv($totalMinutes, 24 * 60);
-        $rem = $totalMinutes - $days * 24 * 60;
-        $hours = intdiv($rem, 60);
-        $minutes = $rem - $hours * 60;
-
-        return ['days' => $days, 'hours' => $hours, 'minutes' => $minutes];
+        return Duration::ofMinutes($totalMinutes)->toParts();
     }
 
     public function getValidationCollectionCoating(): Assert\Collection

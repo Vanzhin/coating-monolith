@@ -11,6 +11,7 @@ use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
+use App\Shared\Domain\Aggregate\ValueObject\Duration;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final class CoatingSystemListRequestMapper
 {
-    private const MINUTES_PER_HOUR = 60;
     private const DEFAULT_LIMIT = 20;
 
     public function __construct(private readonly QueryParams $query)
@@ -57,11 +57,12 @@ final class CoatingSystemListRequestMapper
                 static fn (string $id): bool => Uuid::isValid($id),
             ),
             applicationMinTemp: $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo'),
+            // UI задаёт время в ЧАСАХ, домен — в минутах; множитель из Duration.
             minApplicationTimeAt20: $this->query->intRange(
                 $request,
                 'minApplicationTimeAt20From',
                 'minApplicationTimeAt20To',
-                self::MINUTES_PER_HOUR,
+                Duration::MINUTES_PER_HOUR,
             ),
             sort: CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,
             pager: Pager::fromPage(max(1, (int) $request->query->get('page', 1)), self::DEFAULT_LIMIT),
