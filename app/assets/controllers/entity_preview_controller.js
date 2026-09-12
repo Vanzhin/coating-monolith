@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { openReferencePreview } from '../reference_helpers';
+import { withPending } from '../pending';
 
 /**
  * Универсальный ленивый загрузчик модалки-превью сущности по клику на карточку/строку.
@@ -13,9 +14,10 @@ export default class extends Controller {
     static values = { endpoint: String };
 
     async open(event) {
-        const id = event.currentTarget.dataset.entityId;
+        const trigger = event.currentTarget;
+        const id = trigger.dataset.entityId;
         if (id) {
-            await openReferencePreview(this.endpointValue, id);
+            await withPending(trigger, () => openReferencePreview(this.endpointValue, id));
         }
     }
 }

@@ -1,0 +1,8 @@
+/* Триггер «в полёте» (см. assets/pending.js): неблокирующий визуал для НЕ-кнопок
+   (карточки/чипы/строки) — сам блокирует повторный клик через pointer-events.
+   <button disabled> гасится Bootstrap'ом, ему этот класс лишь добавляет курсор ожидания. */
+.is-pending {
+    opacity: .65;
+    cursor: wait;
+    pointer-events: none;
+}

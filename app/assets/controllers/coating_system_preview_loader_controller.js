@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { openReferencePreview } from '../reference_helpers';
+import { withPending } from '../pending';
 
 /**
  * Ленивая загрузка модалки превью системы по клику на чип в превью покрытия
@@ -16,9 +17,10 @@ export default class extends Controller {
         // Чип лежит внутри триггера модалки покрытия — гасим всплытие.
         event.stopPropagation();
 
-        const systemId = event.currentTarget.dataset.systemId;
+        const trigger = event.currentTarget;
+        const systemId = trigger.dataset.systemId;
         if (systemId) {
-            await openReferencePreview(this.endpointValue, systemId);
+            await withPending(trigger, () => openReferencePreview(this.endpointValue, systemId));
         }
     }
 }
