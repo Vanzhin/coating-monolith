@@ -13,6 +13,7 @@ doctrine:
             dft_range: App\Coatings\Infrastructure\Database\DBAL\DftRangeType
             recoating_interval_tree: App\Coatings\Infrastructure\Database\DBAL\RecoatingIntervalTreeType
             thermal_exposure_limits: App\Coatings\Infrastructure\Database\DBAL\ThermalExposureLimitsType
+            mixing_ratio: App\Coatings\Infrastructure\Database\DBAL\MixingRatioType
             cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
             string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
             substrate_scope: App\Coatings\Infrastructure\Database\DBAL\SubstrateScopeType
