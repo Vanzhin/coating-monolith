@@ -7,6 +7,7 @@ namespace App\Coatings\Infrastructure\Mapper;
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
+use App\Coatings\Application\DTO\Coatings\MixingRatioDTO;
 use App\Coatings\Application\DTO\Coatings\RecoatingIntervalTreeDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
@@ -50,6 +51,7 @@ class CoatingMapper
 
         $vars['dryHeatExposure'] = $this->decomposeExposureForForm($coatingDTO->dryHeatExposure);
         $vars['immersionExposure'] = $this->decomposeExposureForForm($coatingDTO->immersionExposure);
+        $vars['mixingRatio'] = $this->decomposeMixingRatioForForm($coatingDTO->mixingRatio);
 
         // Возможные цвета — полными записями (id/name/ral/hex), чтобы форма рисовала чипы со свотчами
         // без отдельного гидратора. gloss/isTintable уже скаляры в $vars.
@@ -114,6 +116,7 @@ class CoatingMapper
 
         $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
         $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
+        $dto->mixingRatio = $this->buildMixingRatioFromInput($inputData['mixingRatio'] ?? []);
 
         $tags = [];
         foreach ($inputData['tags'] ?? [] as $tag) {
@@ -276,6 +279,9 @@ class CoatingMapper
             // человеческой формулировкой и явным указанием секции.
             'dryHeatExposure' => new Assert\Optional([new Assert\Type('array')]),
             'immersionExposure' => new Assert\Optional([new Assert\Type('array')]),
+            // Только структура; ≥2 компонента / >0 / ≤2 знака / ≥1 база / равное число при
+            // обеих базах — инварианты домена (MixingRatio/PartsRatio/PositiveNumber → AppException).
+            'mixingRatio' => new Assert\Optional([new Assert\Type('array')]),
         ], allowExtraFields: true);
     }
 
@@ -358,6 +364,57 @@ class CoatingMapper
             'peak_max' => $dto->peak_max ?? '',
             'peak_duration_minutes' => $dto->peak_duration_minutes ?? '',
         ];
+    }
+
+    /**
+     * Пере-shape формы (mixingRatio[volume][], mixingRatio[mass][]) в DTO: ячейки к float,
+     * пустые отброшены (форм-нормализация). НИЧЕГО не решает: «пусто → нет соотношения» и
+     * сборку VO делает хендлер, инварианты — домен.
+     *
+     * @param array<string, mixed> $raw
+     */
+    private function buildMixingRatioFromInput(array $raw): MixingRatioDTO
+    {
+        $dto = new MixingRatioDTO();
+        $dto->volume = $this->cleanParts($raw['volume'] ?? []);
+        $dto->mass = $this->cleanParts($raw['mass'] ?? []);
+
+        return $dto;
+    }
+
+    /**
+     * Ячейки базы в list<float>: пустые отброшены (иначе PositiveNumber((float)'')=0 →
+     * AppException), ключи переуплотнены (после удаления строки индексы разрежены).
+     *
+     * @return list<float>
+     */
+    private function cleanParts(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $filled = array_filter(
+            $raw,
+            static fn ($v) => is_string($v) ? '' !== trim($v) : null !== $v,
+        );
+
+        return array_values(array_map(static fn ($v) => (float) $v, $filled));
+    }
+
+    /**
+     * Раскладывает MixingRatioDTO в shape формы (совпадает с POST — чтобы после ошибки
+     * секция восстановилась из сырого payload).
+     *
+     * @return array{volume: list<float>, mass: list<float>}
+     */
+    private function decomposeMixingRatioForForm(?MixingRatioDTO $dto): array
+    {
+        if (null === $dto) {
+            return ['volume' => [], 'mass' => []];
+        }
+
+        return ['volume' => $dto->volume ?? [], 'mass' => $dto->mass ?? []];
     }
 
     /**

@@ -19,6 +19,7 @@
     {id: 'sec-apply',  label: 'Нанесение'},
     {id: 'sec-limits', label: 'Пределы'},
     {id: 'sec-cure',   label: 'Отверждение'},
+    {id: 'sec-mix',    label: 'Смешивание'},
 ] %}
 
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
@@ -492,6 +493,81 @@
                         availableEnvKeys: availableEnvKeys,
                         baseLabels: baseLabels,
                     } only %}
+                </div>
+            </div>
+
+            {# ─── Соотношение смешивания компонентов (объём и масса — отдельными блоками) ─── #}
+            {% set mix = inputData.mixingRatio ?? {volume: [], mass: []} %}
+            {% set volParts = mix.volume ?? [] %}
+            {% set massParts = mix.mass ?? [] %}
+            <div id="sec-mix" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                <h6 class="fw-semibold mb-1">Соотношение смешивания компонентов</h6>
+                <p class="text-body-secondary small mb-3">Пусто — однокомпонентное покрытие. Заполните нужную базу (объём и/или масса); если заданы обе — число компонентов должно совпадать.</p>
+
+                {# По объёму #}
+                <div class="p-3 mb-3 rounded-3 bg-body" style="--table-rows-cell-bg: var(--bs-tertiary-bg);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">По объёму</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-action="click->coating-form#addMixingRow" data-coating-form-base-param="volume">Добавить компонент</button>
+                    </div>
+                    <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 table-rows">
+                        <thead><tr>
+                            <th class="text-muted fw-normal" style="width: 220px;">Компонент</th>
+                            <th class="text-muted fw-normal">Часть</th>
+                            <th style="width: 60px;"></th>
+                        </tr></thead>
+                        <tbody data-mixing-body="volume">
+                            {% for i in 0..(max(volParts|length, 2) - 1) %}
+                                <tr>
+                                    <td class="text-body-secondary">{{ i == 0 ? 'Основа' : (i == 1 ? 'Отвердитель' : 'Компонент ' ~ (i + 1)) }}</td>
+                                    <td><input type="number" name="mixingRatio[volume][{{ i }}]" value="{{ volParts[i] ?? '' }}"
+                                               class="form-control form-control-sm" min="0" step="0.01" placeholder="—"></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-action="click->coating-form#removeMixingRow" title="Удалить компонент">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                {# По массе #}
+                <div class="p-3 rounded-3 bg-body" style="--table-rows-cell-bg: var(--bs-tertiary-bg);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">По массе</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-action="click->coating-form#addMixingRow" data-coating-form-base-param="mass">Добавить компонент</button>
+                    </div>
+                    <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 table-rows">
+                        <thead><tr>
+                            <th class="text-muted fw-normal" style="width: 220px;">Компонент</th>
+                            <th class="text-muted fw-normal">Часть</th>
+                            <th style="width: 60px;"></th>
+                        </tr></thead>
+                        <tbody data-mixing-body="mass">
+                            {% for i in 0..(max(massParts|length, 2) - 1) %}
+                                <tr>
+                                    <td class="text-body-secondary">{{ i == 0 ? 'Основа' : (i == 1 ? 'Отвердитель' : 'Компонент ' ~ (i + 1)) }}</td>
+                                    <td><input type="number" name="mixingRatio[mass][{{ i }}]" value="{{ massParts[i] ?? '' }}"
+                                               class="form-control form-control-sm" min="0" step="0.01" placeholder="—"></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-action="click->coating-form#removeMixingRow" title="Удалить компонент">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
                 </div>
             </div>
 

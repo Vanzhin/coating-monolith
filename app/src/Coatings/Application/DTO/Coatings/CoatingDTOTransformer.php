@@ -9,6 +9,7 @@ use App\Coatings\Application\DTO\Manufacturers\ManufacturerDTO;
 use App\Coatings\Application\DTO\Tags\TagDTO;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\MixingRatio;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
@@ -61,6 +62,7 @@ class CoatingDTOTransformer
         $dto->thinner = $entity->getThinner();
         $dto->dryHeatExposure = $this->exposureDto($entity->getDryHeatExposure());
         $dto->immersionExposure = $this->exposureDto($entity->getImmersionExposure());
+        $dto->mixingRatio = $this->mixingRatioDto($entity->getMixingRatio());
         $dto->tags = $coatingTagDtos;
         $dto->recoatingInterpolationModel = $entity->getRecoatingInterpolationModel();
 
@@ -92,6 +94,18 @@ class CoatingDTOTransformer
         $dto->continuous_max = $limits->continuousMax;
         $dto->peak_max = $limits->peakMax;
         $dto->peak_duration_minutes = $limits->peakDurationMinutes;
+
+        return $dto;
+    }
+
+    private function mixingRatioDto(?MixingRatio $mixingRatio): ?MixingRatioDTO
+    {
+        if (null === $mixingRatio) {
+            return null;
+        }
+        $dto = new MixingRatioDTO();
+        $dto->volume = $mixingRatio->getByVolume()?->getParts();
+        $dto->mass = $mixingRatio->getByMass()?->getParts();
 
         return $dto;
     }
