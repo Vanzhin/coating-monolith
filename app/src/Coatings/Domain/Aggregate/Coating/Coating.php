@@ -47,6 +47,11 @@ class Coating extends Aggregate
     private ?ThermalExposureLimits $dryHeatExposure = null;
     private ?ThermalExposureLimits $immersionExposure = null;
 
+    /**
+     * Соотношение смешивания компонентов. null = однокомпонентное покрытие (смешивать нечего).
+     */
+    private ?MixingRatio $mixingRatio = null;
+
     private bool $isZincRich = false;
 
     private RecoatingInterpolationModel $recoatingInterpolationModel = RecoatingInterpolationModel::LINEAR;
@@ -183,6 +188,16 @@ class Coating extends Aggregate
     public function setImmersionExposure(?ThermalExposureLimits $limits): void
     {
         $this->immersionExposure = $limits;
+    }
+
+    public function getMixingRatio(): ?MixingRatio
+    {
+        return $this->mixingRatio;
+    }
+
+    public function setMixingRatio(?MixingRatio $mixingRatio): void
+    {
+        $this->mixingRatio = $mixingRatio;
     }
 
     public function getDryToTouch(): DryingTimeSeries
