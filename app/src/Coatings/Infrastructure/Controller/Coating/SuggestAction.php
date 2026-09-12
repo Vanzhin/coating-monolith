@@ -35,7 +35,7 @@ final class SuggestAction extends AbstractController
             return new JsonResponse(['items' => []]);
         }
 
-        /** @var list<array{id: string, title: string, base: string, dftMin: int, dftMax: int}> $raw */
+        /** @var list<array{id: string, title: string, base: string, dftMin: int, dftMax: int, mixingRatio: array{volume: list<float>|null, mass: list<float>|null}|null}> $raw */
         $raw = $this->queryBus->execute(new SearchCoatingsQuery($q, $limit));
 
         $items = array_map(
@@ -45,6 +45,7 @@ final class SuggestAction extends AbstractController
                 'base' => $item['base'],
                 'dftMin' => $item['dftMin'],
                 'dftMax' => $item['dftMax'],
+                'mixingRatio' => $item['mixingRatio'],
             ],
             $raw,
         );

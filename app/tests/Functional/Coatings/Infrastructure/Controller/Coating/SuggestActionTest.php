@@ -8,12 +8,15 @@ use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
+use App\Coatings\Domain\Aggregate\Coating\MixingRatio;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
+use App\Shared\Domain\Aggregate\ValueObject\PartsRatio;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
 use App\Users\Domain\Entity\User;
@@ -174,5 +177,39 @@ final class SuggestActionTest extends WebTestCase
         self::assertArrayHasKey('base', $first);
         self::assertArrayHasKey('dftMin', $first);
         self::assertArrayHasKey('dftMax', $first);
+        // Соотношение смешивания едет в suggest (для калькулятора инструментов);
+        // у покрытия без соотношения — null (кейс «отказ»).
+        self::assertArrayHasKey('mixingRatio', $first);
+        self::assertNull($first['mixingRatio']);
+    }
+
+    public function test_item_carries_mixing_ratio_when_set(): void
+    {
+        $coating = $this->em->find(Coating::class, Uuid::fromString($this->coatingId));
+        self::assertNotNull($coating);
+        $coating->setMixingRatio(new MixingRatio(
+            byVolume: new PartsRatio(new PositiveNumber(3.0), new PositiveNumber(1.0)),
+            byMass: new PartsRatio(new PositiveNumber(100.0), new PositiveNumber(23.0)),
+        ));
+        $this->em->flush();
+
+        $this->client->request('GET', '/cabinet/coating/coating/suggest', ['q' => 'SuggestCoatingXYZ']);
+        self::assertResponseIsSuccessful();
+
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $items = $response['data']['items'] ?? $response['items'] ?? [];
+
+        $item = null;
+        foreach ($items as $candidate) {
+            if (($candidate['id'] ?? null) === $this->coatingId) {
+                $item = $candidate;
+                break;
+            }
+        }
+
+        self::assertNotNull($item);
+        // Нестрогое сравнение: json_encode без JSON_PRESERVE_ZERO_FRACTION отдаёт 3.0 как 3
+        // (для фронта неважно — JS-числа всё равно float).
+        self::assertEquals(['volume' => [3.0, 1.0], 'mass' => [100.0, 23.0]], $item['mixingRatio']);
     }
 }
