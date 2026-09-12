@@ -1,20 +1,30 @@
-# Консолидация поиска покрытий: SearchCoatings → GetPagedCoatings (бэклог)
+# Консолидация поиска покрытий: SearchCoatings по стилю GetPagedCoatings
 
-Заметка на будущее (по указанию заказчика). НЕ делаем сейчас — отдельная задача-рефактор.
+## Что сделано (ветка refactor/search-coatings-paged)
 
-## Что сделать
-- Убрать `readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface`
-  (`app/src/Coatings/Application/UseCase/Query/SearchCoatings/`) и перенести его логику в
-  `app/src/Coatings/Application/UseCase/Query/GetPagedCoatings`.
-- Цель — единый query-путь поиска/пагинации покрытий вместо двух параллельных.
+Решение заказчика уточнилось по ходу: НЕ сливать в один хендлер, а оставить отдельный
+лёгкий `SearchCoatings`, но переписать его один-в-один по стилю `GetPagedCoatings`.
+Разница между ними — только в весе данных, всё остальное одинаково.
 
-## Что учесть при переносе
-- Потребитель `SuggestAction` (`Coatings/Infrastructure/Controller/Coating/SuggestAction.php`)
-  сейчас гоняет `SearchCoatingsQuery` и отдаёт item-shape
-  `{id, title, base, dftMin, dftMax, mixingRatio}` (mixingRatio добавлен в Деплое 3 калькулятора).
-  При консолидации сохранить этот shape (или адаптировать потребителя под GetPagedCoatings).
-- Проверить прочих потребителей `SearchCoatingsQuery` (грепнуть) перед удалением.
-- Регистрация хендлеров — через `implements QueryHandlerInterface` (как в проекте).
+- `SearchCoatingsQuery` принимает `CoatingsFilter $filter` (как `GetPagedCoatingsQuery`),
+  вместо прежних `q`/`limit`.
+- `SearchCoatingsQueryResult` — result-класс `{CoatingSuggestDTO[] $coatings, Pager $pager}`
+  (зеркалит `GetPagedCoatingsQueryResult`). Хендлер больше не возвращает `array`.
+- `SearchCoatingsQueryHandler` структурно повторяет `GetPagedCoatingsQueryHandler`
+  (`findByFilter($filter)` → items → `Pager` из фильтра). Отличие ровно в весе:
+  строит лёгкий `CoatingSuggestDTO` (id, готовый title, base, dft, mixingRatio) вместо
+  полного `CoatingDTO` и НЕ обогащает подсветкой веществ.
+- `CoatingSuggestDTO` — новый лёгкий DTO строки typeahead без тяжёлых связей.
+- Потребители `SuggestAction` и `ListApiAction` собирают `CoatingsFilter(search, pager)`
+  и потребляют result. Suggest отдаёт `{items, page, hasMore}`; публичный API — прежний
+  shape `{id, title, base, dftMin, dftMax}`.
+- Фронт `async_typeahead_controller.js` — инфинит-скролл выпадающего списка: по
+  `dropdown:scroll` у дна тянет следующую страницу и дописывает элементы в конец
+  (createListHTML + insertAdjacentHTML, скролл не сбрасывается). Эндпоинты без `hasMore`
+  работают как раньше — одной страницей.
+
+## Проверки
+`./run check style phpstan` — OK. `SuggestActionTest` 4/4, `ListApiActionTest` 4/4. `yarn dev` — OK.
 
 ## Статус
-Только записано. Реализация — когда дойдут руки, отдельной веткой/планом.
+Реализовано, зелёное. Осталось глазами проверить сам скролл-догруз в браузере (нужно >1 страницы, лимит 10).
