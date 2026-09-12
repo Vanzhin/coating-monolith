@@ -90,7 +90,7 @@
 
 /* FAB создания (мобайл) — плавающая кнопка над таб-панелью. */
 .fab-create {
-    position: fixed; right: 18px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 1030;
+    position: fixed; right: 18px; bottom: calc(78px + var(--app-safe-bottom)); z-index: 1030;
     width: 54px; height: 54px; border-radius: 17px; display: grid; place-items: center;
     background: var(--bs-primary); color: #fff; border: 0; box-shadow: 0 10px 24px rgba(47, 111, 235, .4);
     text-decoration: none;
@@ -101,7 +101,7 @@
 /* ===== Трей сравнения (плавающий) — removable-чипы с названиями ===== */
 .compare-tray {
     position: fixed; left: 50%; transform: translateX(-50%);
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px)); /* над таб-панелью на мобиле */
+    bottom: calc(76px + var(--app-safe-bottom)); /* над таб-панелью на мобиле */
     z-index: 1080; width: calc(100% - 24px); max-width: 640px;
 }
 @media (min-width: 992px) { .compare-tray { bottom: 20px; } } /* десктоп — таб-панели нет */
