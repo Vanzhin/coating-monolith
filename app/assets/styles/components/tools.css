@@ -60,18 +60,43 @@ a.tool-card:hover { color: var(--bs-body-color); box-shadow: inset 0 0 0 1.5px v
 
 .mix-row { display: grid; grid-template-columns: 1fr 4.5rem 6rem; gap: .5rem; align-items: center; padding: .3rem 0; }
 .mix-name { font-size: .85rem; font-weight: 600; display: inline-flex; align-items: center; gap: .35rem; }
-.mix-part.form-control, .mix-qty.form-control { text-align: center; padding: .4rem .3rem; height: auto; font-weight: 600; }
-/* Вычисленное количество читается как утопленная плитка; опорное (ввод) — акцентная обводка. */
-.mix-qty.form-control { background: var(--sunken); border-color: transparent; }
-.mix-qty.is-anchor { background: var(--surface); border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
+/* Единый язык «редактируемое vs только-чтение». Одинаковая метрика ячеек — столбцы ровные
+   независимо от типа поля. */
+.mix-part.form-control, .mix-qty.form-control, .mix-part-sum {
+    text-align: center; padding: .4rem .3rem; font-weight: 600;
+    border-radius: var(--bs-border-radius-sm);
+}
+.mix-part.form-control, .mix-qty.form-control { height: auto; }
+/* ТОЛЬКО ЧТЕНИЕ — утопленная плитка без рамки, приглушённый текст: вычисленное количество,
+   сумма частей «Итого», зафиксированные из покрытия части. */
+.mix-qty.form-control,
+.mix-part-sum,
+.mix-part[readonly] {
+    background: var(--sunken); border: 1px solid transparent;
+    color: var(--bs-secondary-color); cursor: default;
+}
+.mix-part-sum { display: block; }
+/* РЕДАКТИРУЕМОЕ И ОПОРНОЕ — единственное активное «кол-во», от которого считаем:
+   белый фон + акцентная обводка. Обычные редактируемые части — белый form-control по умолчанию. */
+.mix-qty.is-anchor {
+    background: var(--surface); border-color: var(--bs-primary);
+    color: var(--bs-body-color); box-shadow: 0 0 0 3px var(--accent-subtle); cursor: text;
+}
 
 .mix-add { background: none; border: 0; color: var(--bs-primary); font-size: .82rem; font-weight: 600; padding: .5rem .1rem .2rem; display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
 .mix-remove { background: none; border: 0; color: var(--bs-secondary-color); padding: 0; line-height: 1; cursor: pointer; font-size: .7rem; }
 .mix-remove:hover { color: var(--danger-strong); }
 .mix-sep { border: 0; border-top: 1px dashed var(--bs-border-color); margin: .55rem 0; }
 .mix-total .mix-name { font-weight: 700; }
-.mix-part-sum { text-align: center; font-weight: 700; color: var(--bs-secondary-color); }
 .mix-hint { font-size: .75rem; color: var(--bs-secondary-color); margin: .6rem 0 0; line-height: 1.35; }
+
+/* ===== Блок «Из покрытия» (для залогиненных) ===== */
+.mix-coating { margin-bottom: .75rem; }
+.mix-coating-lbl { display: block; font-size: .625rem; text-transform: uppercase; letter-spacing: .04em; color: var(--bs-secondary-color); font-weight: 700; margin-bottom: .5rem; }
+.mix-base { margin-top: .6rem; }
+.mix-coating-msg { margin: .6rem 0 0; }
+/* В режиме «из покрытия» состав задан покрытием — скрываем добавление/удаление компонентов. */
+.mix-locked .mix-add, .mix-locked .mix-remove { display: none; }
 
 /* ===== Раскрывающийся SEO-блок ===== */
 .tools-details { margin-top: .85rem; border-top: 1px solid var(--bs-border-color); padding-top: .5rem; }
