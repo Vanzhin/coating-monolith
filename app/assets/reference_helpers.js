@@ -80,36 +80,51 @@ export async function fetchTitlesByIds(endpoint, ids) {
  * @param {string} url
  * @param {(modalEl: HTMLElement) => void} [onModal] хук до показа (напр. проставить data-атрибут)
  */
-export async function openFragmentModal(url, onModal = null) {
-    const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
+// Пояс + подтяжки к withPending: URL-ы фрагментов, что грузятся прямо сейчас. Если тот же
+// фрагмент уже в полёте (двойной клик проскочил guard, или два триггера ведут на один URL) —
+// второй вызов no-op, дубля той же модалки не будет. Покрываем только async-окно загрузки:
+// после show() карточка уже под модалкой и недоступна для клика.
+const inFlightFragments = new Set();
 
-    const template = document.createElement('template');
-    template.innerHTML = (await response.text()).trim();
-    const modalEl = template.content.querySelector('.modal');
-    if (!modalEl) {
+export async function openFragmentModal(url, onModal = null) {
+    if (inFlightFragments.has(url)) {
         return;
     }
+    inFlightFragments.add(url);
 
-    document.body.appendChild(modalEl);
-
-    // Смещение по глубине стека (сколько модалок уже открыто) — видно край нижней.
-    const depth = document.querySelectorAll('.modal.show').length;
-    if (depth > 0) {
-        const dialog = modalEl.querySelector('.modal-dialog');
-        if (dialog) {
-            dialog.style.marginTop = `${1.75 + depth * 1.5}rem`;
+    try {
+        const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-    }
 
-    if (onModal) {
-        onModal(modalEl);
-    }
+        const template = document.createElement('template');
+        template.innerHTML = (await response.text()).trim();
+        const modalEl = template.content.querySelector('.modal');
+        if (!modalEl) {
+            return;
+        }
 
-    modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
-    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        document.body.appendChild(modalEl);
+
+        // Смещение по глубине стека (сколько модалок уже открыто) — видно край нижней.
+        const depth = document.querySelectorAll('.modal.show').length;
+        if (depth > 0) {
+            const dialog = modalEl.querySelector('.modal-dialog');
+            if (dialog) {
+                dialog.style.marginTop = `${1.75 + depth * 1.5}rem`;
+            }
+        }
+
+        if (onModal) {
+            onModal(modalEl);
+        }
+
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } finally {
+        inFlightFragments.delete(url);
+    }
 }
 
 /**

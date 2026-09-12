@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { ZERO_UUID, openFragmentModal } from '../reference_helpers';
+import { withPending } from '../pending';
 
 /**
  * Ленивая загрузка модалки покрытия по клику на слой (data-coating-id). Фетчит серверный
@@ -18,26 +19,27 @@ export default class extends Controller {
         // Слой лежит внутри триггера модалки системы — гасим всплытие.
         event.stopPropagation();
 
-        const coatingId = event.currentTarget.dataset.coatingId;
-        if (!coatingId || this._loading) {
+        const trigger = event.currentTarget;
+        const coatingId = trigger.dataset.coatingId;
+        if (!coatingId) {
             return;
         }
 
         // Deep-link по бейджу «стойкое к»: подсветить вещество в chem-секции фрагмента.
-        const highlightSubstanceId = event.currentTarget.dataset.highlightSubstanceId;
+        const highlightSubstanceId = trigger.dataset.highlightSubstanceId;
 
-        this._loading = true;
-        try {
-            await openFragmentModal(
-                this.endpointValue.replace(ZERO_UUID, coatingId),
-                highlightSubstanceId
-                    ? (modalEl) => modalEl.setAttribute('data-highlight-substance-id', highlightSubstanceId)
-                    : null,
-            );
-        } catch {
-            alert('Не удалось загрузить покрытие. Попробуйте ещё раз.');
-        } finally {
-            this._loading = false;
-        }
+        // withPending гасит триггер и режет повторные клики, пока фрагмент грузится.
+        await withPending(trigger, async () => {
+            try {
+                await openFragmentModal(
+                    this.endpointValue.replace(ZERO_UUID, coatingId),
+                    highlightSubstanceId
+                        ? (modalEl) => modalEl.setAttribute('data-highlight-substance-id', highlightSubstanceId)
+                        : null,
+                );
+            } catch {
+                alert('Не удалось загрузить покрытие. Попробуйте ещё раз.');
+            }
+        });
     }
 }
