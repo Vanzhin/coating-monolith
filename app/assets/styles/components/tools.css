@@ -67,20 +67,30 @@ a.tool-card:hover { color: var(--bs-body-color); box-shadow: inset 0 0 0 1.5px v
     border-radius: var(--bs-border-radius-sm);
 }
 .mix-part.form-control, .mix-qty.form-control { height: auto; }
-/* ТОЛЬКО ЧТЕНИЕ — утопленная плитка без рамки, приглушённый текст: вычисленное количество,
-   сумма частей «Итого», зафиксированные из покрытия части. */
-.mix-qty.form-control,
+/* ТОЛЬКО ЧТЕНИЕ — утопленная плитка без рамки, приглушённый текст. Ровно для того, что
+   нельзя редактировать: сумма частей «Итого» и зафиксированные из покрытия части. Поля
+   «Количество» сюда НЕ входят — в них можно вводить, они выглядят как редактируемые. */
 .mix-part-sum,
 .mix-part[readonly] {
     background: var(--sunken); border: 1px solid transparent;
     color: var(--bs-secondary-color); cursor: default;
 }
 .mix-part-sum { display: block; }
-/* РЕДАКТИРУЕМОЕ И ОПОРНОЕ — единственное активное «кол-во», от которого считаем:
-   белый фон + акцентная обводка. Обычные редактируемые части — белый form-control по умолчанию. */
+/* РЕДАКТИРУЕМОЕ — белый form-control по умолчанию (части и все «количества» одинаковы).
+   ОПОРНОЕ — активное «кол-во», от которого считаем: тот же белый фон + акцентная обводка,
+   т.е. состояние на редактируемом поле, а не отдельный вид. */
 .mix-qty.is-anchor {
     background: var(--surface); border-color: var(--bs-primary);
     color: var(--bs-body-color); box-shadow: 0 0 0 3px var(--accent-subtle); cursor: text;
+}
+
+/* Мобила: крупнее тап-зона — высота ≥44px, шрифт 16px (без iOS-зума при фокусе).
+   Сумма-плитка центрируется по вертикали, чтобы метрика строки совпадала с инпутами. */
+@media (max-width: 575.98px) {
+    .mix-part.form-control, .mix-qty.form-control, .mix-part-sum {
+        min-height: 44px; padding: .5rem .4rem; font-size: 1rem;
+    }
+    .mix-part-sum { display: flex; align-items: center; justify-content: center; }
 }
 
 .mix-add { background: none; border: 0; color: var(--bs-primary); font-size: .82rem; font-weight: 600; padding: .5rem .1rem .2rem; display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
