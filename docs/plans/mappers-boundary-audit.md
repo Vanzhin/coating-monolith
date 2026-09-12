@@ -1,40 +1,76 @@
-# Аудит границ мэпперов: «мэппер только мапит» (бэклог)
+# Аудит границ мэпперов: «мэппер только мапит»
 
-По указанию заказчика: границы размылись, пройтись по ВСЕМ мэпперам. НЕ делаем сейчас —
-отдельный рефактор (тянет существующие фичи). Отдельной веткой/планом.
+По указанию заказчика: границы размылись, пройтись по ВСЕМ мэпперам. Отдельный рефактор
+(тянет существующие фичи). Аудит проведён 2026-09-12 (2 приоритетных прочитаны вручную,
+8 остальных — Explore-агентом).
 
 ## Правило (CLAUDE.md)
-Mapper — **pure shape mapping**: форма/JSON ↔ DTO, только структура. Никаких бизнес-фильтров,
-никаких `throw` про правила домена, никаких вычислений/решений. Форм-специфичную нормализацию
-(«пустая ячейка = нет значения») допускаем отдельным именованным методом, но решения и
-инварианты — не здесь (интерпретация → хендлер, инварианты → домен).
+Mapper — **pure shape mapping**: форма/JSON ↔ DTO/Command, только структура. Никаких бизнес-
+фильтров, никаких `throw` про правила домена, никаких вычислений/решений/конверсий единиц.
+Форм-специфичную нормализацию («пустая ячейка = нет значения») допускаем отдельным именованным
+методом, но решения и инварианты — не здесь (интерпретация → хендлер, инварианты → домен,
+структурная валидация → Assert-коллекция с человеческим message).
 
-## Инвентарь (10 мэпперов) и сигналы дрейфа
-| Мэппер | throws | вычисления | Вердикт |
-|---|---|---|---|
-| `Coatings/.../CoatingMapper` | 4 | 5 | **дрейф**: duration-математика (`parseDurationInput`/`decomposeDurationForForm`), `throw AppException` в `buildExposureFromInput` |
-| `Certificates/.../DocumentMapper` | 9 | 0 | **дрейф**: много `throw` — проверить, доменные ли это правила (тогда вынести) |
-| `Coatings/.../CoatingSystemMapper` | 0 | 0 | бегло чисто — проверить на скрытые решения |
-| `Coatings/.../SurfaceTreatmentMapper` | 0 | 0 | бегло чисто |
-| `Coatings/.../CoatingListRequestMapper` | 0 | 0 | бегло чисто |
-| `Coatings/.../CoatingSystemListRequestMapper` | 0 | 0 | бегло чисто |
-| `ChemicalResistance/.../AssessmentMapper` | 0 | 0 | бегло чисто |
-| `Documents/.../DocumentMapper` | 0 | 0 | бегло чисто |
-| `Certificates/.../DocumentListRequestMapper` | 0 | 0 | бегло чисто |
-| `Proposals/.../GeneralProposalInfoMapper` | 0 | 0 | бегло чисто |
+## Итог аудита
+| Мэппер | Вердикт | Что именно |
+|---|---|---|
+| `Coatings/CoatingMapper` | **ДРЕЙФ** | арифметика длительности `parseDurationInput`/`decomposeDurationForForm`; 4 `throw` в `buildExposureFromInput`; решения «→null» (exposure all-empty, max-tree empty стр.108, time 0) |
+| `Certificates/DocumentMapper` | **ДРЕЙФ** | 9 структурных `throw` (UUID/enum/дата/файл); нет Assert-коллекции; сам собирает `Reference`/`Uuid`; валидация файла size/mime |
+| `Coatings/CoatingListRequestMapper` | **ДРЕЙФ** | конверсия единиц: `MINUTES_PER_HOUR=60`/`MINUTES_PER_DAY=1440` + множители (стр. 24-26, 58-59) |
+| `Coatings/CoatingSystemListRequestMapper` | **ДРЕЙФ** | конверсия единиц (стр. 27, 64) + бизнес-правило compliance-каскада (стр. 51-52) |
+| `Coatings/CoatingSystemMapper` | чисто | нит: `Substrate::from`/`EnvironmentType::from` → `tryFrom`+Assert |
+| `Coatings/SurfaceTreatmentMapper` | чисто | нит: `Substrate::from` → `tryFrom`+Assert |
+| `Coatings/CoatingListRequestMapper`… | (см. выше) | |
+| `ChemicalResistance/AssessmentMapper` | чисто | — |
+| `Documents/DocumentMapper` | чисто* | *ES `_source` → доменный агрегат `Document`+VO (реконституция read-model, транзитивные инвариант-throw'ы) — другая категория, не форм-мэппер |
+| `Certificates/DocumentListRequestMapper` | чисто | — |
+| `Proposals/GeneralProposalInfoMapper` | чисто | — |
 
-(throws/calc — эвристика grep'ом, не приговор; каждый смотреть глазами на «решения».)
+## Что делать (по дрейфу)
 
-## Что делать
-1. По каждому мэпперу: вынести вычисления (единицы времени и т.п.) в VO/хелпер/домен; убрать
-   `throw` про доменные правила (структурные проверки — Assert; инварианты — домен); решения
-   «пусто→null», фильтры-интерпретации — в хендлер именованными методами.
-2. Приоритет: `CoatingMapper` (duration + exposure-throw), затем `Certificates/DocumentMapper`
-   (9 throw). Остальные — подтвердить, что чисто.
-3. Эталон «как надо» — секция соотношения смешивания (эта задача): мэппер только shape
-   (строка→float + отброс пустых ячеек), решение о `null` и сборка VO — в хендлере, инварианты —
-   в домене, ни одного `throw` из мэппера.
-4. Верификация: `./run check` + функц.-тесты затронутых форм (создание/обновление/ре-рендер ошибок).
+### Сквозное: VO `Duration` (Shared/Domain)
+Конверсия часы/дни↔минуты дублируется в CoatingMapper и обоих list-мэпперах. Завести
+`Duration` VO, владеющий minutes↔{days,hours,minutes} и множителями. Все три мэппера
+делегируют в него. Убирает дублирование и конверсию из инфраструктуры разом.
 
-## Статус
-Только записано. Реализация — отдельной задачей.
+### CoatingMapper
+- Длительность → через `Duration` VO (см. выше).
+- `buildExposureFromInput` throw'ы → Assert-констрейнты «целое число» с человеческим message
+  (по образцу остальных полей `getValidationCollectionCoating`); мэппер только shape.
+- Решения «→null» (exposure all-empty, max-tree empty, time 0) → в хендлер (прецедент —
+  mixingRatio: мэппер всегда отдаёт DTO, решение о null в хендлере).
+
+### Certificates/DocumentMapper
+- Завести `getValidationCollection...()` (Assert) для формы документа: UUID (`Assert\Uuid`),
+  enum вида/типа (`Assert\Choice`), дата (`Assert\NotBlank`+`Assert\Date`), файл
+  (`Assert\File` mimeTypes=pdf/maxSize=8M — встроенный, не свой) — с человеческими message.
+- После валидации мэппер строит Command/`Reference`/`Uuid` без единого `throw`.
+
+### CoatingSystemListRequestMapper
+- Конверсия единиц → `Duration` VO.
+- Compliance-каскад (category/durability только при standard) → в `CoatingSystemsFilter`/домен.
+
+### Мелочь
+- `::from()` → `tryFrom()` + `Assert\Choice` в CoatingSystemMapper/SurfaceTreatmentMapper.
+
+## Разбивка на чанки (многоэтапно — по одному плану/ветке на чанк)
+1. **Duration VO** + починка конверсии в 3 местах (CoatingMapper duration, 2 list-мэппера).
+2. **CoatingMapper**: exposure throw→Assert + решения «→null»→хендлер.
+3. **Certificates/DocumentMapper**: Assert-коллекция (+`Assert\File`) + снять throw'ы + решения→хендлер.
+4. **CoatingSystemListRequestMapper**: compliance-каскад → домен (+ мелочь `::from`→`tryFrom`).
+
+## Верификация (на каждый чанк)
+`./run check` + функц.-тесты затронутых форм/списков (создание/обновление/ре-рендер ошибок,
+фасеты фильтров). Round-trip юнит-тесты мэпперов (`build → decompose → build`).
+
+## Статус (ветка refactor/mappers-boundary)
+- Чанк 1 — СДЕЛАН (`8feeb0e`): VO `Duration`, конверсия единиц вычищена из CoatingMapper + обоих list-мэпперов.
+- Чанк 2 — СДЕЛАН (`fc39901`): CoatingMapper exposure throw→Assert (человеческие сообщения), решение «all-empty→null» → новый `ThermalExposureLimitsBuilder` (симметрично `MixingRatioBuilder`).
+- Чанк 4 — СДЕЛАН (`8b0323e`): compliance-каскад → `CoatingSystemsFilter` (домен); мэппер пробрасывает category/durability как есть.
+- Чанк 3 (`Certificates/DocumentMapper`) — РЕШЕНО НЕ ДЕЛАТЬ. Все 9 `throw` структурные (валидный
+  UUID/enum/дата/файл), не доменные правила → строго правило CLAUDE.md не нарушают. Это стилевая
+  рассинхронность с coating-мэппером (Assert vs throw). Перевод на Assert = крупный риск-переезд
+  (getValidationCollection + ValidatorInterface в оба контроллера + `Assert\File` + переписка
+  юнит-тестов, кодирующих throw-контракт) ради консистентности, а не устранения дрейфа. Оставлен как есть.
+- Мелочь `::from()`→`tryFrom()` (CoatingSystemMapper/SurfaceTreatmentMapper) — не трогали: поля уже
+  под `Assert\Choice` в их валидационных коллекциях, `from()` безопасен; смена дала бы лишнюю ветку null.

@@ -9,6 +9,7 @@ use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
+use App\Shared\Domain\Aggregate\ValueObject\Duration;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,10 +22,6 @@ use Symfony\Component\HttpFoundation\Request;
  */
 final class CoatingListRequestMapper
 {
-    // UI задаёт интервал перекрытия: min в ЧАСАХ, max в ДНЯХ. Домен — в минутах.
-    private const MINUTES_PER_HOUR = 60;
-    private const MINUTES_PER_DAY = 1440;
-
     public function __construct(private readonly QueryParams $query)
     {
     }
@@ -55,8 +52,10 @@ final class CoatingListRequestMapper
                 static fn (string $v): bool => null !== CoatingBase::tryFrom($v),
                 unique: true,
             ),
-            minRecoating20: $this->query->intRange($request, 'minRecoat20From', 'minRecoat20To', self::MINUTES_PER_HOUR, false),
-            maxRecoating20: $this->query->intRange($request, 'maxRecoat20From', 'maxRecoat20To', self::MINUTES_PER_DAY, false),
+            // UI задаёт интервал перекрытия: min в ЧАСАХ, max в ДНЯХ. Домен — в минутах;
+            // множители — из Duration (единый владелец конверсии единиц).
+            minRecoating20: $this->query->intRange($request, 'minRecoat20From', 'minRecoat20To', Duration::MINUTES_PER_HOUR, false),
+            maxRecoating20: $this->query->intRange($request, 'maxRecoat20From', 'maxRecoat20To', Duration::MINUTES_PER_DAY, false),
         );
     }
 }

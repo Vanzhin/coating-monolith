@@ -11,20 +11,20 @@ use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
+use App\Shared\Domain\Aggregate\ValueObject\Duration;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Query-параметры списка систем покрытий → CoatingSystemsFilter. Pure shape.
- * Инвертированный диапазон роняем в null (тихо, без ошибки — политика этого
- * списка, отличается от списка покрытий). Compliance-каскад: category/durability
- * осмысленны только при заданном standard.
+ * Query-параметры списка систем покрытий → CoatingSystemsFilter. Pure shape: читает query,
+ * нормализует единицы/enum'ы. Инвертированный диапазон роняем в null (тихо, без ошибки —
+ * политика этого списка). Compliance-каскад (category/durability осмысленны только при
+ * заданном standard) — доменное правило, живёт в CoatingSystemsFilter.
  */
 final class CoatingSystemListRequestMapper
 {
-    private const MINUTES_PER_HOUR = 60;
     private const DEFAULT_LIMIT = 20;
 
     public function __construct(private readonly QueryParams $query)
@@ -48,8 +48,10 @@ final class CoatingSystemListRequestMapper
             substrates: $substrates,
             environment: EnvironmentType::tryFrom((string) $request->query->get('environment', '')),
             standard: $standard,
-            category: null !== $standard ? ($request->query->get('category') ?: null) : null,
-            durability: null !== $standard ? ($request->query->get('durability') ?: null) : null,
+            // Пусто → null (форм-нормализация); каскад «только при заданном standard» —
+            // доменное правило в CoatingSystemsFilter, здесь пробрасываем как есть.
+            category: $request->query->get('category') ?: null,
+            durability: $request->query->get('durability') ?: null,
             tagIds: $this->query->stringCollection($request, 'tagIds'),
             coatingIds: $this->query->stringCollection(
                 $request,
@@ -57,11 +59,12 @@ final class CoatingSystemListRequestMapper
                 static fn (string $id): bool => Uuid::isValid($id),
             ),
             applicationMinTemp: $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo'),
+            // UI задаёт время в ЧАСАХ, домен — в минутах; множитель из Duration.
             minApplicationTimeAt20: $this->query->intRange(
                 $request,
                 'minApplicationTimeAt20From',
                 'minApplicationTimeAt20To',
-                self::MINUTES_PER_HOUR,
+                Duration::MINUTES_PER_HOUR,
             ),
             sort: CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,
             pager: Pager::fromPage(max(1, (int) $request->query->get('page', 1)), self::DEFAULT_LIMIT),

@@ -18,6 +18,10 @@ use App\Shared\Domain\Repository\RangeFilter;
  */
 final readonly class CoatingSystemsFilter
 {
+    // Compliance-каскад: заполняются в конструкторе с учётом standard (см. ниже).
+    public ?string $category;
+    public ?string $durability;
+
     /**
      * @param list<Substrate> $substrates
      */
@@ -26,8 +30,8 @@ final readonly class CoatingSystemsFilter
         public array $substrates = [],
         public ?EnvironmentType $environment = null,
         public ?ComplianceStandard $standard = null,
-        public ?string $category = null,
-        public ?string $durability = null,
+        ?string $category = null,
+        ?string $durability = null,
         public StringCollection $tagIds = new StringCollection(),
         // Покрытия в составе системы (OR: хотя бы одно из выбранных).
         public StringCollection $coatingIds = new StringCollection(),
@@ -44,6 +48,11 @@ final readonly class CoatingSystemsFilter
         public bool $thermalIncludingPeak = false,
     ) {
         ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
+
+        // Compliance-каскад (домен-правило): category/durability имеют смысл только при заданном
+        // standard — без него сбрасываем, откуда бы они ни пришли (в т.ч. из query-параметров).
+        $this->category = null !== $standard ? $category : null;
+        $this->durability = null !== $standard ? $durability : null;
     }
 
     /** Активен ли температурный фасет — заданы обе обязательные части. */

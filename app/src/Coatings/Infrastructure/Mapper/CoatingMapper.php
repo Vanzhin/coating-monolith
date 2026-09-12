@@ -17,7 +17,7 @@ use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\Gloss;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
-use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Domain\Aggregate\ValueObject\Duration;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class CoatingMapper
@@ -114,8 +114,8 @@ class CoatingMapper
             (string) ($inputData['recoatingInterpolationModel'] ?? '')
         ) ?? RecoatingInterpolationModel::LINEAR;
 
-        $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? [], 'Сухое тепло');
-        $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? [], 'Погружение');
+        $dto->dryHeatExposure = $this->buildExposureFromInput($inputData['dryHeatExposure'] ?? []);
+        $dto->immersionExposure = $this->buildExposureFromInput($inputData['immersionExposure'] ?? []);
         $dto->mixingRatio = $this->buildMixingRatioFromInput($inputData['mixingRatio'] ?? []);
 
         $tags = [];
@@ -147,22 +147,17 @@ class CoatingMapper
      */
     public function parseDurationInput(array $raw): int
     {
-        $days = (int) ($raw['days'] ?? 0);
-        $hours = (int) ($raw['hours'] ?? 0);
-        $minutes = (int) ($raw['minutes'] ?? 0);
-
-        return $days * 24 * 60 + $hours * 60 + $minutes;
+        return Duration::fromParts(
+            (int) ($raw['days'] ?? 0),
+            (int) ($raw['hours'] ?? 0),
+            (int) ($raw['minutes'] ?? 0),
+        )->minutes();
     }
 
     /** @return array{days: int, hours: int, minutes: int} */
     public function decomposeDurationForForm(int $totalMinutes): array
     {
-        $days = intdiv($totalMinutes, 24 * 60);
-        $rem = $totalMinutes - $days * 24 * 60;
-        $hours = intdiv($rem, 60);
-        $minutes = $rem - $hours * 60;
-
-        return ['days' => $days, 'hours' => $hours, 'minutes' => $minutes];
+        return Duration::ofMinutes($totalMinutes)->toParts();
     }
 
     public function getValidationCollectionCoating(): Assert\Collection
@@ -273,12 +268,11 @@ class CoatingMapper
                     'message' => 'Недопустимая модель интерполяции.',
                 ]),
             ]),
-            // Температурные пределы валидируются не через Assert (тот бы выдавал
-            // тех-сообщения типа "[dryHeatExposure][continuous_min] должно быть numeric"
-            // при пустой строке), а через buildExposureFromInput → AppException с
-            // человеческой формулировкой и явным указанием секции.
-            'dryHeatExposure' => new Assert\Optional([new Assert\Type('array')]),
-            'immersionExposure' => new Assert\Optional([new Assert\Type('array')]),
+            // Структурно: каждое поле секции — пусто или целое число, с человеческим сообщением
+            // и явной меткой секции. Инварианты (min<max, peak>max, duration>0) — домен; решение
+            // «все пусто → пределов нет» — ThermalExposureLimitsBuilder.
+            'dryHeatExposure' => $this->exposureFieldConstraints('Сухое тепло'),
+            'immersionExposure' => $this->exposureFieldConstraints('Погружение'),
             // Только структура; ≥2 компонента / >0 / ≤2 знака / ≥1 база / равное число при
             // обеих базах — инварианты домена (MixingRatio/PartsRatio/PositiveNumber → AppException).
             'mixingRatio' => new Assert\Optional([new Assert\Type('array')]),
@@ -286,60 +280,60 @@ class CoatingMapper
     }
 
     /**
-     * Собирает ThermalExposureLimitsDTO из плоских полей формы. Все 4 поля
-     * независимо-опциональные:
-     *  - ВСЕ поля пустые → null (пределы не задокументированы, при UPDATE
-     *    существующая запись затирается — тоже null).
-     *  - хотя бы одно поле заполнено → строим DTO с null'ами на месте пустых.
-     *
-     * Валидность каждого значения проверяется структурно (целое число), а
-     * попарные и содержательные инварианты (min<max, peak>max, duration>0) —
-     * в ThermalExposureLimits::__construct.
+     * Структурная валидация секции температурных пределов: каждое поле — пусто или целое число,
+     * человеческое сообщение с явной меткой секции. Инварианты (min<max, peak>max, duration>0) —
+     * в ThermalExposureLimits; решение «все пусто → пределов нет» — в ThermalExposureLimitsBuilder.
      */
+    private function exposureFieldConstraints(string $sectionLabel): Assert\Optional
+    {
+        $integerOrBlank = fn (string $noun): Assert\Optional => new Assert\Optional([
+            new Assert\Regex([
+                'pattern' => '/^(-?\d+)?$/',
+                'message' => sprintf('Секция «%s»: %s должна быть целым числом.', $sectionLabel, $noun),
+            ]),
+        ]);
+
+        return new Assert\Optional([
+            new Assert\Collection([
+                'fields' => [
+                    'continuous_min' => $integerOrBlank('минимальная температура'),
+                    'continuous_max' => $integerOrBlank('максимальная температура'),
+                    'peak_max' => $integerOrBlank('пиковая температура'),
+                    'peak_duration_minutes' => new Assert\Optional([
+                        new Assert\Regex([
+                            'pattern' => '/^(-?\d+)?$/',
+                            'message' => sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel),
+                        ]),
+                    ]),
+                ],
+                'allowExtraFields' => true,
+            ]),
+        ]);
+    }
+
     /**
+     * Pure shape: 4 плоских поля секции → DTO (пусто → null, иначе int). Ничего не решает и не
+     * валидирует: «целое число» проверяет Assert (exposureFieldConstraints), «все пусто → пределов
+     * нет (null)» решает ThermalExposureLimitsBuilder, инварианты — доменный VO.
+     *
      * @param array<string, mixed> $raw
      */
-    private function buildExposureFromInput(array $raw, string $sectionLabel): ?ThermalExposureLimitsDTO
+    private function buildExposureFromInput(array $raw): ThermalExposureLimitsDTO
     {
-        $min = $this->trimOrEmpty($raw['continuous_min'] ?? '');
-        $max = $this->trimOrEmpty($raw['continuous_max'] ?? '');
-        $peakMax = $this->trimOrEmpty($raw['peak_max'] ?? '');
-        $peakDur = $this->trimOrEmpty($raw['peak_duration_minutes'] ?? '');
-
-        if ('' === $min && '' === $max && '' === $peakMax && '' === $peakDur) {
-            return null;
-        }
-
-        if ('' !== $min && !$this->looksLikeInt($min)) {
-            throw new AppException(sprintf('Секция «%s»: минимальная температура должна быть целым числом.', $sectionLabel));
-        }
-        if ('' !== $max && !$this->looksLikeInt($max)) {
-            throw new AppException(sprintf('Секция «%s»: максимальная температура должна быть целым числом.', $sectionLabel));
-        }
-        if ('' !== $peakMax && !$this->looksLikeInt($peakMax)) {
-            throw new AppException(sprintf('Секция «%s»: пиковая температура должна быть целым числом.', $sectionLabel));
-        }
-        if ('' !== $peakDur && !$this->looksLikeInt($peakDur)) {
-            throw new AppException(sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel));
-        }
-
         $dto = new ThermalExposureLimitsDTO();
-        $dto->continuous_min = '' !== $min ? (int) $min : null;
-        $dto->continuous_max = '' !== $max ? (int) $max : null;
-        $dto->peak_max = '' !== $peakMax ? (int) $peakMax : null;
-        $dto->peak_duration_minutes = '' !== $peakDur ? (int) $peakDur : null;
+        $dto->continuous_min = $this->intOrNull($raw['continuous_min'] ?? '');
+        $dto->continuous_max = $this->intOrNull($raw['continuous_max'] ?? '');
+        $dto->peak_max = $this->intOrNull($raw['peak_max'] ?? '');
+        $dto->peak_duration_minutes = $this->intOrNull($raw['peak_duration_minutes'] ?? '');
 
         return $dto;
     }
 
-    private function trimOrEmpty(mixed $v): string
+    private function intOrNull(mixed $value): ?int
     {
-        return is_string($v) ? trim($v) : (string) $v;
-    }
+        $trimmed = is_string($value) ? trim($value) : (string) $value;
 
-    private function looksLikeInt(string $v): bool
-    {
-        return (bool) preg_match('/^-?\d+$/', $v);
+        return '' === $trimmed ? null : (int) $trimmed;
     }
 
     /**

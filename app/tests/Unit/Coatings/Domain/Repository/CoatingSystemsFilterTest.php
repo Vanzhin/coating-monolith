@@ -69,4 +69,25 @@ final class CoatingSystemsFilterTest extends TestCase
         self::assertSame(1, $filter->pager->page);
         self::assertSame(20, $filter->pager->perPage);
     }
+
+    public function test_compliance_cascade_drops_category_and_durability_without_standard(): void
+    {
+        $filter = new CoatingSystemsFilter(category: 'C4', durability: 'HIGH');
+
+        self::assertNull($filter->standard);
+        self::assertNull($filter->category);
+        self::assertNull($filter->durability);
+    }
+
+    public function test_compliance_cascade_keeps_category_and_durability_with_standard(): void
+    {
+        $filter = new CoatingSystemsFilter(
+            standard: ComplianceStandard::ISO_12944,
+            category: 'C4',
+            durability: 'HIGH',
+        );
+
+        self::assertSame('C4', $filter->category);
+        self::assertSame('HIGH', $filter->durability);
+    }
 }
