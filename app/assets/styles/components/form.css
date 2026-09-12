@@ -171,7 +171,8 @@
 }
 @media (max-width: 991.98px) {
     .form-savebar {
-        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+        /* Садится ровно над таб-баром — тот же зазор, что у body padding-bottom (app-shell.css). */
+        bottom: calc(64px + var(--app-safe-bottom));
     }
 }
 
