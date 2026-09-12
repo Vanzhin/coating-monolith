@@ -9,6 +9,7 @@ use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\Gloss;
+use App\Coatings\Domain\Aggregate\Coating\MixingRatio;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingInterpolationModel;
 use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
@@ -58,6 +59,7 @@ final readonly class CoatingMaker
         StringCollection $colorIds = new StringCollection(),
         ?Gloss $gloss = null,
         bool $isTintable = false,
+        ?MixingRatio $mixingRatio = null,
     ): Coating {
         $manufacturer = $this->manufacturerRepository->findOneById($manufacturerId);
 
@@ -95,6 +97,7 @@ final readonly class CoatingMaker
         // делает flush, после него сеттеры не персистятся без нового flush'a.
         $coating->setDryHeatExposure($dryHeatExposure);
         $coating->setImmersionExposure($immersionExposure);
+        $coating->setMixingRatio($mixingRatio);
 
         $this->coatingRepository->add($coating);
 

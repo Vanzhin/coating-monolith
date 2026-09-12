@@ -243,6 +243,48 @@ final class CoatingMapperTest extends TestCase
         $this->assertNull($form[2]['time_in_minutes']);
     }
 
+    public function test_mixing_ratio_both_bases_round_trip(): void
+    {
+        $input = $this->validInput([
+            'mixingRatio' => ['volume' => ['3', '1'], 'mass' => ['100', '23']],
+        ]);
+
+        $dto = $this->mapper->buildCoatingDtoFromInputData($input);
+
+        self::assertNotNull($dto->mixingRatio);
+        self::assertSame([3.0, 1.0], $dto->mixingRatio->volume);
+        self::assertSame([100.0, 23.0], $dto->mixingRatio->mass);
+
+        // Обратно в форму — тот же shape (для ре-рендера).
+        $reInput = $this->mapper->buildInputDataFromDto($dto);
+        self::assertSame(['volume' => [3.0, 1.0], 'mass' => [100.0, 23.0]], $reInput['mixingRatio']);
+    }
+
+    public function test_mixing_ratio_drops_empty_cells_volume_only(): void
+    {
+        $input = $this->validInput([
+            // Хвостовая пустая ячейка отброшена; масса не задана вовсе.
+            'mixingRatio' => ['volume' => ['4', '1', '0.5', ''], 'mass' => ['', '']],
+        ]);
+
+        $dto = $this->mapper->buildCoatingDtoFromInputData($input);
+
+        self::assertNotNull($dto->mixingRatio);
+        self::assertSame([4.0, 1.0, 0.5], $dto->mixingRatio->volume);
+        self::assertSame([], $dto->mixingRatio->mass);
+    }
+
+    public function test_mixing_ratio_absent_input_yields_empty_dto(): void
+    {
+        // Мэппер ничего не решает: при отсутствии ввода отдаёт DTO с пустыми базами,
+        // «пусто → нет соотношения (null)» решает хендлер.
+        $dto = $this->mapper->buildCoatingDtoFromInputData($this->validInput([]));
+
+        self::assertNotNull($dto->mixingRatio);
+        self::assertSame([], $dto->mixingRatio->volume);
+        self::assertSame([], $dto->mixingRatio->mass);
+    }
+
     /**
      * @param array<string, mixed> $overrides
      *

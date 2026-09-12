@@ -9,6 +9,7 @@ use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
+use App\Coatings\Application\UseCase\Command\MixingRatioBuilder;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -29,6 +30,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
     public function __construct(
         private CoatingMaker $coatingMaker,
         private RecoatingTreeBuilder $treeBuilder,
+        private MixingRatioBuilder $mixingRatioBuilder,
         private CoatingAccessControl $access,
     ) {
     }
@@ -68,6 +70,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             new StringCollection(...array_map(fn (ColorDTO $color) => $color->id, $dto->possibleColors)),
             null !== $dto->gloss ? Gloss::tryFrom($dto->gloss) : null,
             $dto->isTintable,
+            $this->mixingRatioBuilder->build($dto->mixingRatio),
         );
 
         return new CreateCoatingCommandResult($coating->getId());

@@ -9,6 +9,7 @@ use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
 use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
+use App\Coatings\Application\UseCase\Command\MixingRatioBuilder;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -34,6 +35,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         private ManufacturerRepositoryInterface $manufacturerRepository,
         private TagFetcher $coatingTagFetcher,
         private RecoatingTreeBuilder $treeBuilder,
+        private MixingRatioBuilder $mixingRatioBuilder,
         private ColorRepositoryInterface $colorRepository,
         private CoatingAccessControl $access,
     ) {
@@ -125,6 +127,8 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
 
         $coating->setDryHeatExposure($this->buildExposure($dto->dryHeatExposure));
         $coating->setImmersionExposure($this->buildExposure($dto->immersionExposure));
+        // Безусловно: пустая секция соотношения = покрытие стало однокомпонентным.
+        $coating->setMixingRatio($this->mixingRatioBuilder->build($dto->mixingRatio));
         $coating->setIsZincRich($dto->isZincRich);
         $coating->setRecoatingInterpolationModel($dto->recoatingInterpolationModel);
 

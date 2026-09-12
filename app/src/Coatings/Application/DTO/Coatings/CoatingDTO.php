@@ -67,6 +67,9 @@ class CoatingDTO
     public ?ThermalExposureLimitsDTO $dryHeatExposure = null;
     public ?ThermalExposureLimitsDTO $immersionExposure = null;
 
+    /** Соотношение смешивания компонентов (null = однокомпонентное). Формат: {volume:[...], mass:[...]}. */
+    public ?MixingRatioDTO $mixingRatio = null;
+
     /** @var TagDTO[] */
     public array $tags;
 
