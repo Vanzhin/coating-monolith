@@ -6,16 +6,15 @@ namespace App\Coatings\Application\UseCase\Command\UpdateCoating;
 
 use App\Coatings\Application\DTO\Coatings\DftRangeDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
-use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Application\UseCase\Command\MixingRatioBuilder;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
+use App\Coatings\Application\UseCase\Command\ThermalExposureLimitsBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\Gloss;
-use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\ColorRepositoryInterface;
@@ -36,6 +35,7 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         private TagFetcher $coatingTagFetcher,
         private RecoatingTreeBuilder $treeBuilder,
         private MixingRatioBuilder $mixingRatioBuilder,
+        private ThermalExposureLimitsBuilder $exposureBuilder,
         private ColorRepositoryInterface $colorRepository,
         private CoatingAccessControl $access,
     ) {
@@ -125,8 +125,8 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
             $coating->replaceTags($tags);
         }
 
-        $coating->setDryHeatExposure($this->buildExposure($dto->dryHeatExposure));
-        $coating->setImmersionExposure($this->buildExposure($dto->immersionExposure));
+        $coating->setDryHeatExposure($this->exposureBuilder->build($dto->dryHeatExposure));
+        $coating->setImmersionExposure($this->exposureBuilder->build($dto->immersionExposure));
         // Безусловно: пустая секция соотношения = покрытие стало однокомпонентным.
         $coating->setMixingRatio($this->mixingRatioBuilder->build($dto->mixingRatio));
         $coating->setIsZincRich($dto->isZincRich);
@@ -140,20 +140,6 @@ readonly class UpdateCoatingCommandHandler implements CommandHandlerInterface
         $this->coatingRepository->add($coating);
 
         return new UpdateCoatingCommandResult();
-    }
-
-    private function buildExposure(?ThermalExposureLimitsDTO $dto): ?ThermalExposureLimits
-    {
-        if (null === $dto) {
-            return null;
-        }
-
-        return new ThermalExposureLimits(
-            $dto->continuous_min,
-            $dto->continuous_max,
-            $dto->peak_max,
-            $dto->peak_duration_minutes,
-        );
     }
 
     private function buildDftRange(DftRangeDTO $range): DftRange

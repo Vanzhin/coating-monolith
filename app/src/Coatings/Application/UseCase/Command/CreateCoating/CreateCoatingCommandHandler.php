@@ -6,16 +6,15 @@ namespace App\Coatings\Application\UseCase\Command\CreateCoating;
 
 use App\Coatings\Application\DTO\Coatings\CoatingDTO;
 use App\Coatings\Application\DTO\Coatings\DryingTimePointDTO;
-use App\Coatings\Application\DTO\Coatings\ThermalExposureLimitsDTO;
 use App\Coatings\Application\DTO\Colors\ColorDTO;
 use App\Coatings\Application\Service\AccessControl\CoatingAccessControl;
 use App\Coatings\Application\UseCase\Command\MixingRatioBuilder;
 use App\Coatings\Application\UseCase\Command\RecoatingTreeBuilder;
+use App\Coatings\Application\UseCase\Command\ThermalExposureLimitsBuilder;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
 use App\Coatings\Domain\Aggregate\Coating\DryingTimeSeries;
 use App\Coatings\Domain\Aggregate\Coating\Gloss;
-use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Service\CoatingMaker;
 use App\Shared\Application\Command\CommandHandlerInterface;
@@ -31,6 +30,7 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
         private CoatingMaker $coatingMaker,
         private RecoatingTreeBuilder $treeBuilder,
         private MixingRatioBuilder $mixingRatioBuilder,
+        private ThermalExposureLimitsBuilder $exposureBuilder,
         private CoatingAccessControl $access,
     ) {
     }
@@ -63,8 +63,8 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
             $dto->pack,
             $dto->thinner,
             $dto->dryingMaxTemp,
-            $this->buildExposure($dto->dryHeatExposure),
-            $this->buildExposure($dto->immersionExposure),
+            $this->exposureBuilder->build($dto->dryHeatExposure),
+            $this->exposureBuilder->build($dto->immersionExposure),
             $dto->isZincRich,
             $dto->recoatingInterpolationModel,
             new StringCollection(...array_map(fn (ColorDTO $color) => $color->id, $dto->possibleColors)),
@@ -74,20 +74,6 @@ readonly class CreateCoatingCommandHandler implements CommandHandlerInterface
         );
 
         return new CreateCoatingCommandResult($coating->getId());
-    }
-
-    private function buildExposure(?ThermalExposureLimitsDTO $dto): ?ThermalExposureLimits
-    {
-        if (null === $dto) {
-            return null;
-        }
-
-        return new ThermalExposureLimits(
-            $dto->continuous_min,
-            $dto->continuous_max,
-            $dto->peak_max,
-            $dto->peak_duration_minutes,
-        );
     }
 
     private function buildDftRange(CoatingDTO $dto): DftRange
