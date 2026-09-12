@@ -18,10 +18,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Query-параметры списка систем покрытий → CoatingSystemsFilter. Pure shape.
- * Инвертированный диапазон роняем в null (тихо, без ошибки — политика этого
- * списка, отличается от списка покрытий). Compliance-каскад: category/durability
- * осмысленны только при заданном standard.
+ * Query-параметры списка систем покрытий → CoatingSystemsFilter. Pure shape: читает query,
+ * нормализует единицы/enum'ы. Инвертированный диапазон роняем в null (тихо, без ошибки —
+ * политика этого списка). Compliance-каскад (category/durability осмысленны только при
+ * заданном standard) — доменное правило, живёт в CoatingSystemsFilter.
  */
 final class CoatingSystemListRequestMapper
 {
@@ -48,8 +48,10 @@ final class CoatingSystemListRequestMapper
             substrates: $substrates,
             environment: EnvironmentType::tryFrom((string) $request->query->get('environment', '')),
             standard: $standard,
-            category: null !== $standard ? ($request->query->get('category') ?: null) : null,
-            durability: null !== $standard ? ($request->query->get('durability') ?: null) : null,
+            // Пусто → null (форм-нормализация); каскад «только при заданном standard» —
+            // доменное правило в CoatingSystemsFilter, здесь пробрасываем как есть.
+            category: $request->query->get('category') ?: null,
+            durability: $request->query->get('durability') ?: null,
             tagIds: $this->query->stringCollection($request, 'tagIds'),
             coatingIds: $this->query->stringCollection(
                 $request,
