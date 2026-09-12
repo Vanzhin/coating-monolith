@@ -4,52 +4,71 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\SearchCoatings;
 
+use App\Coatings\Application\DTO\Coatings\CoatingSuggestDTO;
+use App\Coatings\Application\DTO\Coatings\MixingRatioDTO;
+use App\Coatings\Domain\Aggregate\Coating\Coating;
+use App\Coatings\Domain\Aggregate\Coating\MixingRatio;
 use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
-use App\Coatings\Domain\Repository\CoatingsFilter;
-use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 
 /**
- * Лёгкий хендлер для поиска покрытий в typeahead.
- * Не загружает химстойкость, теги, производителей — только поля формы слоя.
+ * Лёгкий постраничный поиск покрытий для typeahead. Структурно — один-в-один с
+ * GetPagedCoatingsQueryHandler (findByFilter → items + Pager из фильтра), НО строит лёгкие
+ * CoatingSuggestDTO (без тяжёлых связей: тегов/цветов/систем/химстойкости) и НЕ обогащает
+ * подсветкой веществ. Единственная разница с GetPagedCoatings — вес данных.
  */
 readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
 {
-    public function __construct(
-        private CoatingRepositoryInterface $repository,
-    ) {
+    public function __construct(private CoatingRepositoryInterface $coatingRepository)
+    {
     }
 
-    /**
-     * @return list<array{id: string, title: string, base: string, dftMin: int, dftMax: int, mixingRatio: array{volume: list<float>|null, mass: list<float>|null}|null}>
-     */
-    public function __invoke(SearchCoatingsQuery $query): array
+    public function __invoke(SearchCoatingsQuery $query): SearchCoatingsQueryResult
     {
-        $search = SearchQuery::tryFromString($query->q);
+        $paginator = $this->coatingRepository->findByFilter($query->filter);
 
-        $result = $this->repository->findByFilter(new CoatingsFilter(
-            search: $search,
-            pager: Pager::fromPage(1, $query->limit),
-        ));
+        $coatings = array_map(
+            fn (Coating $coating): CoatingSuggestDTO => $this->toSuggestDto($coating),
+            array_values($paginator->items),
+        );
 
-        $items = [];
-        foreach ($result->items as $coating) {
-            $dft = $coating->getDftRange();
-            $dftMin = (int) $dft->range->getMin();
-            $dftMax = (int) $dft->range->getMax();
-            $base = $coating->getBase()->value;
-            $items[] = [
-                'id' => $coating->getId(),
-                'title' => sprintf('%s (%s, %d–%d мкм)', $coating->getTitle(), $base, $dftMin, $dftMax),
-                'base' => $base,
-                'dftMin' => $dftMin,
-                'dftMax' => $dftMax,
-                // Соотношение смешивания для калькулятора инструментов (null у однокомпонентных).
-                'mixingRatio' => $coating->getMixingRatio()?->jsonSerialize(),
-            ];
+        $pager = new Pager(
+            $query->filter->pager->page,
+            $query->filter->pager->perPage,
+            $paginator->total,
+        );
+
+        return new SearchCoatingsQueryResult($coatings, $pager);
+    }
+
+    private function toSuggestDto(Coating $coating): CoatingSuggestDTO
+    {
+        $dftMin = (int) $coating->getDftRange()->range->getMin();
+        $dftMax = (int) $coating->getDftRange()->range->getMax();
+        $base = $coating->getBase()->value;
+
+        $dto = new CoatingSuggestDTO();
+        $dto->id = $coating->getId();
+        $dto->title = sprintf('%s (%s, %d–%d мкм)', $coating->getTitle(), $base, $dftMin, $dftMax);
+        $dto->base = $base;
+        $dto->dftMin = $dftMin;
+        $dto->dftMax = $dftMax;
+        $dto->mixingRatio = $this->mixingRatioDto($coating->getMixingRatio());
+
+        return $dto;
+    }
+
+    private function mixingRatioDto(?MixingRatio $mixingRatio): ?MixingRatioDTO
+    {
+        if (null === $mixingRatio) {
+            return null;
         }
 
-        return $items;
+        $dto = new MixingRatioDTO();
+        $dto->volume = $mixingRatio->getByVolume()?->getParts();
+        $dto->mass = $mixingRatio->getByMass()?->getParts();
+
+        return $dto;
     }
 }

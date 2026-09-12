@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\SearchCoatings;
 
+use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Shared\Application\Query\Query;
 
 /**
- * Лёгкий поиск покрытий для typeahead-подсказок.
- * Возвращает только минимальный набор полей: id, title, base, dftMin, dftMax.
+ * Лёгкий постраничный поиск покрытий для typeahead. Один-в-один с GetPagedCoatingsQuery
+ * (принимает CoatingsFilter — search + pager). Разница ТОЛЬКО в весе результата: лёгкие
+ * CoatingSuggestDTO вместо полного CoatingDTO и без обогащения химстойкостью.
  */
 readonly class SearchCoatingsQuery extends Query
 {
-    public function __construct(
-        public ?string $q = null,
-        public int $limit = 30,
-    ) {
+    public function __construct(public CoatingsFilter $filter)
+    {
     }
 }

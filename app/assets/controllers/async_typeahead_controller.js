@@ -14,10 +14,14 @@ import Tagify from '@yaireo/tagify';
  *     </select>
  *   </div>
  *
- * API endpoint должен принимать ?q=<query> и возвращать:
- *   { data: { items: [{id, title, ...}] } }  или  { items: [{id, title, ...}] }
+ * API endpoint должен принимать ?q=<query> (и опционально ?page=<n>) и возвращать:
+ *   { data: { items: [{id, title, ...}], page, hasMore } }  или тот же объект без обёртки data.
  *
  * Поле title берётся из item.title ?? item.description.
+ *
+ * Пагинация: если ответ несёт hasMore:true, при прокрутке выпадающего списка вниз
+ * подгружается следующая страница и дописывается в конец (scroll не сбрасывается).
+ * Эндпоинты без hasMore работают как раньше — одной страницей.
  */
 export default class extends Controller {
     static targets = ['select'];
@@ -65,7 +69,7 @@ export default class extends Controller {
             mode: 'select',
             dropdown: {
                 enabled: 1,
-                maxItems: 30,
+                maxItems: 50,
                 highlightFirst: true,
                 closeOnSelect: true,
             },
@@ -78,6 +82,7 @@ export default class extends Controller {
         }
 
         this._tagify.on('input', e => this._onInput(e));
+        this._tagify.on('dropdown:scroll', e => this._onDropdownScroll(e));
 
         this._tagify.on('add', e => {
             const id = e.detail.data.id ?? '';
@@ -122,22 +127,45 @@ export default class extends Controller {
             return;
         }
 
+        this._query = value;
+        this._page = 1;
+        this._hasMore = false;
+        this._loadingMore = false;
         this._tagify.whitelist = [];
         this._tagify.loading(true).dropdown.hide.call(this._tagify);
 
+        const result = await this._fetchPage(value, 1);
+        if (null === result) {
+            this._tagify.loading(false);
+            return;
+        }
+
+        this._page = result.page;
+        this._hasMore = result.hasMore;
+        this._tagify.whitelist = result.items;
+        this._tagify.loading(false).dropdown.show.call(this._tagify, value);
+    }
+
+    /**
+     * Тянет одну страницу подсказок. Возвращает нормализованный {items, page, hasMore}
+     * или null при сетевой ошибке. Разворачивает обёртку {data:{...}} и голый {...}.
+     * @param {string} query
+     * @param {number} page
+     * @returns {Promise<{items: Array, page: number, hasMore: boolean}|null>}
+     */
+    async _fetchPage(query, page) {
         try {
-            const url = `${this.endpointValue}?q=${encodeURIComponent(value)}`;
+            const url = `${this.endpointValue}?q=${encodeURIComponent(query)}&page=${page}`;
             const response = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
-
             if (!response.ok) {
-                this._tagify.loading(false);
-                return;
+                return null;
             }
 
-            const data = await response.json();
-            const raw = data.data?.items ?? data.items ?? [];
+            const json = await response.json();
+            const payload = json.data ?? json;
+            const raw = payload.items ?? [];
 
             // Сохраняем весь item на теге (не схлопываем до id/value) — доп. поля доступны
             // потребителям через событие select. value — то, что показываем/ищем.
@@ -146,11 +174,50 @@ export default class extends Controller {
                 value: item.title ?? item.description ?? '',
             }));
 
-            this._tagify.whitelist = items;
-            this._tagify.loading(false).dropdown.show.call(this._tagify, value);
+            return { items, page: payload.page ?? page, hasMore: true === payload.hasMore };
         } catch {
-            this._tagify.loading(false);
+            return null;
         }
+    }
+
+    /**
+     * Инфинит-скролл выпадающего списка: у дна тянет следующую страницу и дописывает
+     * её элементы в конец (без сброса позиции скролла). Дедуп по id. Эндпоинты без
+     * hasMore сюда не заходят — _hasMore остаётся false.
+     */
+    async _onDropdownScroll(e) {
+        if (!this._hasMore || this._loadingMore) {
+            return;
+        }
+        if ((e.detail?.percentage ?? 0) < 80) {
+            return;
+        }
+
+        this._loadingMore = true;
+        const result = await this._fetchPage(this._query, this._page + 1);
+        this._loadingMore = false;
+
+        if (null === result || 0 === result.items.length) {
+            this._hasMore = false;
+            return;
+        }
+
+        this._page = result.page;
+        this._hasMore = result.hasMore;
+
+        const known = new Set((this._tagify.suggestedListItems ?? []).map(i => i.id));
+        const fresh = result.items.filter(i => i.id && !known.has(i.id));
+        if (0 === fresh.length) {
+            return;
+        }
+
+        // Клик по подсказке резолвится по value-атрибуту через suggestedListItems, не по
+        // индексу — достаточно докинуть свежие в whitelist + suggestedListItems и дорисовать
+        // их DOM в конец скролл-контейнера (позиция скролла сохраняется).
+        this._tagify.whitelist = [...this._tagify.whitelist, ...fresh];
+        this._tagify.suggestedListItems = [...(this._tagify.suggestedListItems ?? []), ...fresh];
+        const html = this._tagify.dropdown.createListHTML.call(this._tagify, fresh);
+        this._tagify.DOM.dropdown.content.insertAdjacentHTML('beforeend', html);
     }
 
     /**
