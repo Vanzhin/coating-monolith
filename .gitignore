@@ -10,3 +10,6 @@ tools/pubchem-cache.json
 
 # макеты визуального компаньона brainstorming
 /.superpowers/
+
+# Визуальный компаньон brainstorming (макеты, не в репо)
+.superpowers/
