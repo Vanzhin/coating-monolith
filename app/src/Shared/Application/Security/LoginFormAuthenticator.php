@@ -46,19 +46,34 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // Удаляем сохраненный target path после использования, чтобы избежать повторных редиректов
-        $session = $request->getSession();
-        if ($targetPath = $this->getTargetPath($session, $firewallName)) {
-            $this->removeTargetPath($session, $firewallName);
-
+        // Явный _target_path из формы: ссылка «Войти» с любой публичной страницы несёт свой URL
+        // (напр. калькулятор в /tools) — после входа возвращаемся туда. Пускаем только локальный
+        // путь; Symfony сам _target_path не валидирует, поэтому open-redirect guard здесь.
+        $targetPath = $request->request->get('_target_path');
+        if (is_string($targetPath) && $this->isLocalPath($targetPath)) {
             return new RedirectResponse($targetPath);
         }
 
-        // For example:
-        //        if (in_array('ROLE_ADMIN', $token->getUser()->getRoles())){
-        //            return new RedirectResponse($this->urlGenerator->generate('app_admin_index'));
-        //        }
+        // Иначе — сохранённый в сессии путь (аноним упёрся в защищённую страницу), затем кабинет.
+        $session = $request->getSession();
+        if ($sessionTarget = $this->getTargetPath($session, $firewallName)) {
+            $this->removeTargetPath($session, $firewallName);
+
+            return new RedirectResponse($sessionTarget);
+        }
+
         return new RedirectResponse($this->urlGenerator->generate('app_cabinet'));
+    }
+
+    /**
+     * Локальный путь: один ведущий «/», без «//» и «/\» (оба — protocol-relative,
+     * увели бы на чужой хост). Схему/хост не пускаем — только внутренние переходы.
+     */
+    private function isLocalPath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            && !str_starts_with($path, '//')
+            && !str_starts_with($path, '/\\');
     }
 
     protected function getLoginUrl(Request $request): string
