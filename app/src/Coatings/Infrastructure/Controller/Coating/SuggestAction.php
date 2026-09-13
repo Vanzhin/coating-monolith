@@ -54,8 +54,11 @@ final class SuggestAction extends AbstractController
                 'base' => $coating->base,
                 'dftMin' => $coating->dftMin,
                 'dftMax' => $coating->dftMax,
-                // Сухой остаток — для калькулятора толщины плёнки.
+                // Сухой остаток — для калькуляторов толщины плёнки и расхода.
                 'volumeSolid' => $coating->volumeSolid,
+                // Фасовка и плотность — для калькулятора расхода (вёдра, масса).
+                'pack' => $coating->pack,
+                'massDensity' => $coating->massDensity,
                 // Соотношение смешивания для калькулятора инструментов (null у однокомпонентных).
                 'mixingRatio' => null === $coating->mixingRatio
                     ? null

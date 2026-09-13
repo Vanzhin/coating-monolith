@@ -15,12 +15,11 @@
             <span class="tool-card-desc">Дозировки рабочей смеси по пропорции: нужно N готовой смеси или есть N одного компонента.</span>
         </a>
 
-        <div class="tool-card tool-card--soon" aria-disabled="true">
-            <span class="tool-card-badge">Скоро</span>
+        <a class="tool-card" href="{{ path('app_tools_consumption') }}">
             <span class="tool-card-ic"><i class="bi bi-bucket"></i></span>
             <span class="tool-card-title">Расход материала</span>
-            <span class="tool-card-desc">Сколько материала на площадь при нужной толщине сухой плёнки.</span>
-        </div>
+            <span class="tool-card-desc">Сколько краски на площадь при нужной толщине сухой плёнки — с учётом потерь.</span>
+        </a>
 
         <a class="tool-card" href="{{ path('app_tools_film') }}">
             <span class="tool-card-ic"><i class="bi bi-water"></i></span>

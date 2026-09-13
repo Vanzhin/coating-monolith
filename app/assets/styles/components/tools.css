@@ -121,6 +121,10 @@ a.tool-card:hover { color: var(--bs-body-color); box-shadow: inset 0 0 0 1.5px v
 .film-eff-val { display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600; min-height: 44px; padding: .5rem .3rem; border-radius: var(--bs-border-radius-sm); background: var(--sunken); color: var(--bs-secondary-color); }
 .film-unit { color: var(--bs-secondary-color); font-size: .85rem; }
 .film-sep { border: 0; border-top: 1px dashed var(--bs-border-color); margin: .55rem 0; }
+/* Пояснение к вёдрам (как посчитали) — приглушённая строка под рядами. */
+.film-packs-note { font-size: .78rem; color: var(--bs-secondary-color); margin: .4rem 0 0; line-height: 1.4; }
+/* Тумблер единиц (Объём/Масса) расхода — небольшой отступ снизу. */
+.film-unit-seg { margin: 0 0 .5rem; }
 
 /* Оговорка «это только расчёт» — приглушённая заметка с info-иконкой (переиспуема на tools). */
 .tools-note { display: flex; gap: .5rem; align-items: flex-start; font-size: .78rem; color: var(--bs-secondary-color); line-height: 1.45; margin: .75rem 0 0; }

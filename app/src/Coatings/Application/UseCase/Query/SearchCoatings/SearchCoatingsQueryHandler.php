@@ -55,6 +55,8 @@ readonly class SearchCoatingsQueryHandler implements QueryHandlerInterface
         $dto->dftMin = $dftMin;
         $dto->dftMax = $dftMax;
         $dto->volumeSolid = $coating->getVolumeSolid();
+        $dto->pack = $coating->getPack();
+        $dto->massDensity = $coating->getMassDensity();
         $dto->mixingRatio = $this->mixingRatioDto($coating->getMixingRatio());
 
         return $dto;
