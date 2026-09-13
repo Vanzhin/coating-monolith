@@ -19,6 +19,8 @@
     </div>
 
     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+    {# Куда вернуть после входа — исходная страница, если пришли по ссылке «Войти» с _target_path. #}
+    <input type="hidden" name="_target_path" value="{{ app.request.query.get('_target_path') }}">
 
     <button class="auth-btn auth-btn-primary" type="submit">
         <i class="bi bi-box-arrow-in-right"></i> Войти

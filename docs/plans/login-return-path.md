@@ -1,49 +1,40 @@
-# Возврат на исходную страницу после входа (magic-link)
+# Возврат на исходную страницу после входа (встроенный _target_path)
 
-Отдельный деплой (контекст Users), не часть арки «Инструменты». Триггер: со страницы
-инструмента жмёшь «Войти» → после входа кидает в кабинет, а не назад на инструмент — ломается
-ростовой хук раздела.
+Ветка `feat/login-return-path` (от origin/main). Контекст: со страницы инструмента жмёшь «Войти»
+→ после входа кидало в кабинет, а не назад — ломало ростовой хук раздела.
 
-## Root cause (найдено)
+## Решение (по итогам изучения доков Symfony 7.0)
 
-- Вход — **magic-link**. `LoginLinkProcessAction::__invoke` после `security->login(...)` делает
-  **жёстко** `redirectToRoute('app_cabinet')` — origin игнорируется (`.../Security/LoginLinkProcessAction.php:51`).
-- Штатный `TargetPathTrait` в `LoginFormAuthenticator` есть, но target path сохраняет только
-  `start()` — когда аноним УПЁРСЯ в защищённую страницу. Инструменты публичны, «Войти» жмут
-  добровольно → `start()` не срабатывает → target path пуст → дефолт (cabinet).
-- `SecurityController::login` (`/login`) referrer не запоминает.
+Использован **встроенный** механизм `form_login` `_target_path` вместо кастомной обвязки.
+Минимум кода, приём универсален (работает для любой ссылки «Войти» с любой публичной страницы).
 
-## Symfony-механизм
+- `use_referer` НЕ подходит: между инструментом и входом есть промежуточная `/login`, на POST
+  референс = `/login` (Symfony его ещё и режет как петлю), origin теряется. Ради этого и есть
+  `_target_path` — явно нести URL через страницу логина.
+- Symfony `_target_path` сам НЕ валидируется от open-redirect (принимает и внешние URL) —
+  поэтому guard на нашей стороне: только локальный путь.
 
-`TargetPathTrait` (`saveTargetPath`/`getTargetPath`) + конвенция `_target_path`. Но magic-link —
-круговой рейс через письмо (ссылку могут открыть в другом браузере), поэтому origin надо везти
-**вместе с хэшем** ссылки (в Redis, где уже лежит `userUlid`), а не в сессии.
+## Что сделано (только парольный путь)
 
-## Фикс
+- `tools/mix.html.twig`: приманка `path('app_login', {_target_path: app.request.requestUri})`.
+- `_login_form.html.twig`: hidden `_target_path` из `app.request.query` (форма POST'ит его в теле).
+- `LoginFormAuthenticator::onAuthenticationSuccess`: сперва читает POST `_target_path`, пускает
+  только локальный путь (`isLocalPath`: один `/`, не `//`, не `/\`), редиректит туда; иначе —
+  прежняя логика (сессия → кабинет). Guard инлайн, без отдельного класса.
 
-1. Ссылка «Войти» несёт текущий URL: `path('app_login', {_target_path: app.request.requestUri})`.
-   Добавить в приманку `tools/mix.html.twig` и (опц.) в лендинг.
-2. `/login` и форма запроса ссылки (`login_link`) протаскивают `_target_path` (hidden-поле /
-   query), не теряя при POST.
-3. При создании ссылки (`LoginLinkCreatedEvent`/`LoginLinkCreatedEventHandler` → Redis) класть
-   рядом с `userUlid` валидированный `targetPath`.
-4. `LoginLinkProcessAction` редиректит на сохранённый `targetPath` вместо хардкода `app_cabinet`;
-   если пусто/невалидно — cabinet.
-5. **Open-redirect guard**: принимать только локальные пути (начинается с одного `/`, не `//`,
-   без схемы/хоста). Хелпер валидации; отвергнутое → cabinet.
+## Универсальность
+Приём — не про калькулятор: любая ссылка `path('app_login', {_target_path: <url>})` вернёт на
+`<url>` после входа. Новый код на каждую ссылку не нужен — только атрибут в href.
 
-## Файлы (ориентировочно)
-- `Users/Infrastructure/Controller/Security/LoginLinkAction.php`, `LoginLinkProcessAction.php`.
-- `Users/Domain/Event/LoginLinkCreatedEvent.php` + `EventHandler/LoginLinkCreatedEventHandler.php`
-  (протащить targetPath в Redis).
-- `Shared/Infrastructure/Controller/Security/SecurityController.php` (или где `/login`),
-  шаблоны `security/login_link.html.twig` / `_login_form.html.twig` (hidden `_target_path`).
-- Вызовы: `tools/mix.html.twig` (приманка), лендинг.
+## Осознанно НЕ сделано: magic-link
+Вход по ссылке (письмо) — круговой рейс, referer/сессия теряются, а реализация magic-link в
+проекте **своя** (Redis+hash), мимо Symfony'ного `login_link`. Чтобы и он возвращал, origin надо
+класть в Redis-ключ (событие → хендлер → process-экшен) — заметно больше кода. Отложено; приманка
+ведёт на `/login` (пароль), парольный путь ловит большинство.
 
 ## Тесты
-- Функц.: запрос ссылки с `_target_path=/tools/mix` → после обработки ссылки редирект на
-  `/tools/mix`; `_target_path` с внешним хостом/`//evil` → редирект на cabinet (guard).
-- Юнит: хелпер валидации локального пути.
+- Функц. `LoginTargetPathTest`: POST-логин с `_target_path=/tools/mix` → редирект туда;
+  `//evil…` → редирект в `/cabinet` (guard).
 
 ## Верификация
 `./run check` + ручной прогон флоу в браузере.

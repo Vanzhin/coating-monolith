@@ -42,7 +42,7 @@
         <div class="tools-cta">
             <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
             <p class="tools-cta-text">Войдите, чтобы искать покрытия и подставлять их пропорции автоматически.</p>
-            <a class="btn btn-primary" href="{{ path('app_login') }}">Войти</a>
+            <a class="btn btn-primary" href="{{ path('app_login', {_target_path: app.request.requestUri}) }}">Войти</a>
         </div>
     {% endif %}
 
