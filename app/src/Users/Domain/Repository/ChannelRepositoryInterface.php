@@ -24,4 +24,12 @@ interface ChannelRepositoryInterface
      * может врать; этот метод спрашивает БД напрямую.
      */
     public function findOneByOwnerTypeValue(string $ownerId, string $type, string $value): ?Channel;
+
+    /**
+     * Все каналы владельца заданного типа — для дедупа web-push подписок по endpoint
+     * (value хранит JSON подписки, точное сравнение по value не годится).
+     *
+     * @return list<Channel>
+     */
+    public function findByOwnerAndType(string $ownerId, string $type): array;
 }

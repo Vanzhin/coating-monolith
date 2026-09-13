@@ -10,7 +10,7 @@
                enum-type="App\Users\Domain\Entity\ChannelType"
                length="100"
         />
-        <field name="value"/>
+        <field name="value" type="text"/>
         <many-to-one field="owner" target-entity="App\Users\Domain\Entity\User" inversed-by="channels">
             <join-column referenced-column-name="ulid" nullable="false"/>
         </many-to-one>

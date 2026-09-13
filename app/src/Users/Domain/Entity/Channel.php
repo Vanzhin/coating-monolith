@@ -21,6 +21,12 @@ class Channel extends Aggregate implements VerificationSubjectInterface
         private string $value,
         private readonly User $owner
     ) {
+        // Каналы без OTP (web push — согласие даёт браузер) рождаются подтверждёнными.
+        // Email/Telegram требуют верификации кодом → isVerified остаётся false до verify().
+        if (!$type->requiresVerification()) {
+            $this->isVerified = true;
+            $this->verifiedAt = new \DateTimeImmutable();
+        }
     }
 
     // Геттеры

@@ -17,6 +17,7 @@
     "irazasyed/telegram-bot-sdk": "^3.15",
     "lexik/jwt-authentication-bundle": "*",
     "longman/telegram-bot": "^0.83.1",
+    "minishlink/web-push": "^10.0",
     "mpdf/mpdf": "^8.2",
     "nesbot/carbon": "^3.8",
     "oneup/flysystem-bundle": "^4.12",

@@ -3,6 +3,7 @@ twig:
   file_name_pattern: '*.twig'
   globals:
     app_name: '%env(APP_NAME)%'
+    vapid_public_key: '%env(VAPID_PUBLIC_KEY)%'
   form_themes: [ 'bootstrap_5_horizontal_layout.html.twig' ]
 
   paths:

@@ -18,6 +18,10 @@ services:
   _defaults:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    bind:
+      $vapidPublicKey: '%env(VAPID_PUBLIC_KEY)%'
+      $vapidPrivateKey: '%env(VAPID_PRIVATE_KEY)%'
+      $vapidSubject: '%env(VAPID_SUBJECT)%'
 
   # makes classes in src/ available to be used as services
   # this creates a service per class whose id is the fully-qualified class name
@@ -117,9 +121,6 @@ services:
       $filesystem: '@oneup_flysystem.document_scans_filesystem'
 
   # Telegram
-  App\Shared\Infrastructure\EventListener\Request\SessionRequestProcessor:
-    tags:
-      - { name: monolog.processor, channel: 'coating' }
   telegram_handler:
     class: App\Shared\Infrastructure\Log\TelegramLogHandler
     arguments:

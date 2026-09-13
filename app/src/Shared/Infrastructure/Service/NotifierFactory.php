@@ -12,6 +12,7 @@ readonly class NotifierFactory
     public function __construct(
         private EmailNotifier $emailNotifier,
         private TelegramNotifier $telegramNotifier,
+        private WebPushNotifier $webPushNotifier,
     ) {
     }
 
@@ -20,6 +21,7 @@ readonly class NotifierFactory
         return match ($channelType) {
             ChannelType::EMAIL => $this->emailNotifier,
             ChannelType::TELEGRAM => $this->telegramNotifier,
+            ChannelType::WEB_PUSH => $this->webPushNotifier,
         };
     }
 }
