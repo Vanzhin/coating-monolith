@@ -20,6 +20,9 @@ class CoatingSuggestDTO
     public int $dftMin;
     public int $dftMax;
 
+    /** Сухой остаток по объёму (%), 1..100 — для калькулятора толщины плёнки. */
+    public int $volumeSolid;
+
     /** Соотношение смешивания (для калькулятора инструментов); null у однокомпонентных. */
     public ?MixingRatioDTO $mixingRatio = null;
 }
