@@ -1,0 +1,11 @@
+{# Кнопка включения web-push уведомлений (PWA). Показывается авторизованным при заданном
+   VAPID-ключе; контроллер сам прячет её, если браузер не поддерживает push или разрешение
+   отклонено. Параметр class — доп. классы под контекст. #}
+<div data-controller="push-subscribe" data-push-subscribe-key-value="{{ vapid_public_key }}">
+    <button type="button"
+            class="btn btn-outline-secondary {{ class|default('') }}"
+            data-push-subscribe-target="button"
+            data-action="click->push-subscribe#toggle">
+        <i class="bi bi-bell me-2"></i><span data-push-subscribe-target="label">Включить уведомления</span>
+    </button>
+</div>

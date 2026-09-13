@@ -3,7 +3,7 @@
    сети, кэш обновляем попутно и используем только как офлайн-fallback (навигации
    → закэшированная страница или /offline.html). Так исключаем протухание стилей
    в dev (Encore там не хеширует имена, cache-first отдавал бы старый app.css). */
-const CACHE = 'app-v5';
+const CACHE = 'app-v6';
 // Раздел «Инструменты» офлайн-first: страницы предкэшируем, чтобы калькулятор открывался
 // без сети даже на холодном кэше (JS/CSS-бандл подтянется network-first при первом заходе).
 const PRECACHE = ['/offline.html', '/icons/android-chrome-192x192.png', '/tools', '/tools/mix', '/tools/film', '/tools/consumption'];
@@ -44,4 +44,53 @@ self.addEventListener('fetch', (event) => {
                 return Response.error();
             }))
     );
+});
+
+/* ===== Web Push ===== */
+// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление.
+self.addEventListener('push', (event) => {
+    let data = {};
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch (e) {
+        data = { body: event.data ? event.data.text() : '' };
+    }
+    event.waitUntil(self.registration.showNotification(data.title || 'Уведомление', {
+        body: data.body || '',
+        icon: '/icons/android-chrome-192x192.png',
+        data: { url: data.url || '/' },
+    }));
+});
+
+// Клик по уведомлению → сфокусировать существующее окно PWA или открыть новое.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = (event.notification.data && event.notification.data.url) || '/';
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+            for (const w of wins) {
+                if (w.url.includes(url) && 'focus' in w) return w.focus();
+            }
+            return self.clients.openWindow(url);
+        })
+    );
+});
+
+// Подписка протухла/сменилась → переподписываемся тем же ключом и досылаем на бэк.
+self.addEventListener('pushsubscriptionchange', (event) => {
+    event.waitUntil((async () => {
+        try {
+            const key = event.oldSubscription && event.oldSubscription.options
+                ? event.oldSubscription.options.applicationServerKey
+                : undefined;
+            const sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+            await fetch('/cabinet/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub),
+            });
+        } catch (e) {
+            // best-effort: если не вышло — подпишемся при следующем заходе через кнопку
+        }
+    })());
 });

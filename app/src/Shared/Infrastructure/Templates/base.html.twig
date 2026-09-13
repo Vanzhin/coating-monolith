@@ -242,6 +242,13 @@
             <div class="p-3 rounded-3 bg-body-tertiary">
                 {% include '_shell/_install_button.html.twig' with { class: 'w-100' } %}
             </div>
+
+            {# Web-push уведомления — только при заданном VAPID-ключе (контроллер прячет, если браузер не тянет). #}
+            {% if vapid_public_key %}
+                <div class="p-3 rounded-3 bg-body-tertiary">
+                    {% include '_shell/_notifications_button.html.twig' with { class: 'w-100' } %}
+                </div>
+            {% endif %}
         </div>
     </div>
 
