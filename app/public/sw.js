@@ -1,16 +1,23 @@
 /* 1helper service worker (без Workbox).
-   Стратегия — network-first для ВСЕГО same-origin GET: всегда берём свежее из
-   сети, кэш обновляем попутно и используем только как офлайн-fallback (навигации
-   → закэшированная страница или /offline.html). Так исключаем протухание стилей
-   в dev (Encore там не хеширует имена, cache-first отдавал бы старый app.css). */
-const CACHE = 'app-v6';
+   Стратегия — network-first для same-origin GET: всегда берём свежее из сети,
+   ответ используем как офлайн-fallback. В рантайме в кэш кладём ТОЛЬКО статику
+   (см. isCacheablePath): HTML-страницы (в т.ч. авторизованная оболочка с email
+   юзера), JSON и приватное туда НЕ попадают — иначе на общем устройстве офлайн
+   отдал бы чужую идентичность/данные. Офлайн-оболочку страниц даёт PRECACHE,
+   который тянется АНОНИМНО (без кук), поэтому без чьей-либо шапки. Смена версии
+   кэша ниже вычищает старый (app-v6) кэш, куда приватное уже могло попасть. */
+const CACHE = 'app-v7';
 // Раздел «Инструменты» офлайн-first: страницы предкэшируем, чтобы калькулятор открывался
 // без сети даже на холодном кэше (JS/CSS-бандл подтянется network-first при первом заходе).
 const PRECACHE = ['/offline.html', '/icons/android-chrome-192x192.png', '/tools', '/tools/mix', '/tools/film', '/tools/consumption'];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+        caches.open(CACHE)
+            // credentials:'omit' — тянем без кук: в офлайн-кэше должна лежать анонимная
+            // оболочка (без email/ссылок в кабинет), кто бы ни был залогинен при установке.
+            .then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { credentials: 'omit' }))))
+            .then(() => self.skipWaiting())
     );
 });
 
@@ -22,6 +29,20 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Что безопасно и осмысленно держать в офлайн-кэше. Приватное и динамику не кэшируем.
+function isCacheableResponse(res) {
+    // Только успешный полный ответ своего origin: не 206 (Range) и не redirect/opaque —
+    // Cache.put на таких падает.
+    return res.status === 200 && res.type === 'basic';
+}
+
+function isCacheablePath(url) {
+    // Кэшируем в рантайме ТОЛЬКО статику. HTML (в т.ч. авторизованная оболочка),
+    // JSON и приватное не кэшируем; офлайн-страницы даёт анонимный PRECACHE.
+    if (url.search) return false; // ?query — не плодим варианты одного ресурса
+    return /\.(css|js|mjs|png|jpe?g|svg|gif|ico|woff2?|ttf|webp)$/.test(url.pathname);
+}
+
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     if (req.method !== 'GET') return;
@@ -31,10 +52,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         fetch(req)
             .then((res) => {
-                // Кэшируем свежую копию (для офлайна). Только успешные ответы.
-                if (res && res.ok) {
+                if (isCacheableResponse(res) && isCacheablePath(url)) {
                     const copy = res.clone();
-                    caches.open(CACHE).then((c) => c.put(req, copy));
+                    caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
                 }
                 return res;
             })
