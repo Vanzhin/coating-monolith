@@ -108,6 +108,24 @@ a.tool-card:hover { color: var(--bs-body-color); box-shadow: inset 0 0 0 1.5px v
 /* В режиме «из покрытия» состав задан покрытием — скрываем добавление/удаление компонентов. */
 .mix-locked .mix-add, .mix-locked .mix-remove { display: none; }
 
+/* ===== Калькулятор толщины плёнки ===== */
+.film-row { display: grid; grid-template-columns: 1fr 5.5rem 2.4rem; gap: .5rem; align-items: center; padding: .35rem 0; }
+.film-label { font-size: .9rem; font-weight: 600; }
+.film-label small { display: block; font-weight: 400; color: var(--bs-secondary-color); font-size: .72rem; line-height: 1.2; }
+.film-fld.form-control { text-align: center; padding: .5rem .3rem; font-weight: 600; height: auto; min-height: 44px; border-radius: var(--bs-border-radius-sm); }
+/* Опорная толщина, от которой считаем: акцентная обводка (как .is-anchor в смешивании). */
+.film-fld.is-anchor { border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
+/* Сухой остаток, подставленный из покрытия — заперт: утопленная плитка. */
+.film-fld.film-locked { background: var(--sunken); border: 1px solid transparent; color: var(--bs-secondary-color); cursor: default; }
+/* Фактический сухой остаток (после разбавления) — вычислено, только чтение: утопленная плитка. */
+.film-eff-val { display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600; min-height: 44px; padding: .5rem .3rem; border-radius: var(--bs-border-radius-sm); background: var(--sunken); color: var(--bs-secondary-color); }
+.film-unit { color: var(--bs-secondary-color); font-size: .85rem; }
+.film-sep { border: 0; border-top: 1px dashed var(--bs-border-color); margin: .55rem 0; }
+
+/* Оговорка «это только расчёт» — приглушённая заметка с info-иконкой (переиспуема на tools). */
+.tools-note { display: flex; gap: .5rem; align-items: flex-start; font-size: .78rem; color: var(--bs-secondary-color); line-height: 1.45; margin: .75rem 0 0; }
+.tools-note .bi { flex-shrink: 0; margin-top: .12rem; }
+
 /* ===== Раскрывающийся SEO-блок ===== */
 .tools-details { margin-top: .85rem; border-top: 1px solid var(--bs-border-color); padding-top: .5rem; }
 .tools-details > summary { cursor: pointer; list-style: none; font-size: .9rem; font-weight: 600; color: var(--bs-primary); padding: .4rem .1rem; }

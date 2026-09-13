@@ -177,6 +177,9 @@ final class SuggestActionTest extends WebTestCase
         self::assertArrayHasKey('base', $first);
         self::assertArrayHasKey('dftMin', $first);
         self::assertArrayHasKey('dftMax', $first);
+        // Сухой остаток едет в suggest (для калькулятора толщины плёнки).
+        self::assertArrayHasKey('volumeSolid', $first);
+        self::assertSame(60, $first['volumeSolid']);
         // Соотношение смешивания едет в suggest (для калькулятора инструментов);
         // у покрытия без соотношения — null (кейс «отказ»).
         self::assertArrayHasKey('mixingRatio', $first);
