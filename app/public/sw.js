@@ -68,17 +68,15 @@ self.addEventListener('fetch', (event) => {
 
 /* ===== Web Push ===== */
 
-// Бейдж-счётчик на иконке установленной PWA = число ещё висящих уведомлений (вариант A,
-// без серверного счётчика непрочитанного). Ставим на пуш, пересчитываем на клик, сбрасываем
-// при открытии приложения (см. app.js). Где Badging API нет — тихо пропускаем.
-async function refreshAppBadge() {
-    if (!self.navigator || typeof self.navigator.setAppBadge !== 'function') {
+// Бейдж на иконке PWA = число непрочитанных, приходит с сервера в payload.badge. Ставит SW на пуш,
+// сбрасывает приложение при открытии (см. app.js). Где Badging API нет — тихо пропускаем.
+async function applyBadge(badge) {
+    if (typeof badge !== 'number' || !self.navigator || typeof self.navigator.setAppBadge !== 'function') {
         return;
     }
     try {
-        const count = (await self.registration.getNotifications()).length;
-        if (count > 0) {
-            await self.navigator.setAppBadge(count);
+        if (badge > 0) {
+            await self.navigator.setAppBadge(badge);
         } else if (typeof self.navigator.clearAppBadge === 'function') {
             await self.navigator.clearAppBadge();
         }
@@ -101,7 +99,7 @@ self.addEventListener('push', (event) => {
             icon: '/icons/android-chrome-192x192.png',
             data: { url: data.url || '/' },
         });
-        await refreshAppBadge();
+        await applyBadge(data.badge);
     })());
 });
 
@@ -110,7 +108,6 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     const url = (event.notification.data && event.notification.data.url) || '/';
     event.waitUntil((async () => {
-        await refreshAppBadge(); // закрытое уведомление ушло из трея — пересчитываем бейдж
         const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const w of wins) {
             if (w.url.includes(url) && 'focus' in w) {
