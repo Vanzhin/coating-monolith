@@ -25,3 +25,24 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => { /* SW не критичен */ });
     });
 }
+
+// Бейдж-счётчик на иконке PWA (ставит sw.js на пуш). Когда приложение открыто/на переднем
+// плане — уведомления считаем увиденными: гасим бейдж и закрываем висящие уведомления, чтобы
+// счётчик обнулился. Где Badging API нет — тихо пропускаем.
+function clearAppBadgeAndTray() {
+    if (navigator.clearAppBadge) {
+        navigator.clearAppBadge().catch(() => { /* бейдж не критичен */ });
+    }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+            .then((reg) => reg.getNotifications())
+            .then((list) => list.forEach((n) => n.close()))
+            .catch(() => { /* трей не критичен */ });
+    }
+}
+window.addEventListener('load', clearAppBadgeAndTray);
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        clearAppBadgeAndTray();
+    }
+});

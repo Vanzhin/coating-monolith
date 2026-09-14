@@ -67,7 +67,27 @@ self.addEventListener('fetch', (event) => {
 });
 
 /* ===== Web Push ===== */
-// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление.
+
+// Бейдж-счётчик на иконке установленной PWA = число ещё висящих уведомлений (вариант A,
+// без серверного счётчика непрочитанного). Ставим на пуш, пересчитываем на клик, сбрасываем
+// при открытии приложения (см. app.js). Где Badging API нет — тихо пропускаем.
+async function refreshAppBadge() {
+    if (!self.navigator || typeof self.navigator.setAppBadge !== 'function') {
+        return;
+    }
+    try {
+        const count = (await self.registration.getNotifications()).length;
+        if (count > 0) {
+            await self.navigator.setAppBadge(count);
+        } else if (typeof self.navigator.clearAppBadge === 'function') {
+            await self.navigator.clearAppBadge();
+        }
+    } catch (e) {
+        // бейдж не критичен
+    }
+}
+
+// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление + бейдж.
 self.addEventListener('push', (event) => {
     let data = {};
     try {
@@ -75,25 +95,30 @@ self.addEventListener('push', (event) => {
     } catch (e) {
         data = { body: event.data ? event.data.text() : '' };
     }
-    event.waitUntil(self.registration.showNotification(data.title || 'Уведомление', {
-        body: data.body || '',
-        icon: '/icons/android-chrome-192x192.png',
-        data: { url: data.url || '/' },
-    }));
+    event.waitUntil((async () => {
+        await self.registration.showNotification(data.title || 'Уведомление', {
+            body: data.body || '',
+            icon: '/icons/android-chrome-192x192.png',
+            data: { url: data.url || '/' },
+        });
+        await refreshAppBadge();
+    })());
 });
 
 // Клик по уведомлению → сфокусировать существующее окно PWA или открыть новое.
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     const url = (event.notification.data && event.notification.data.url) || '/';
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
-            for (const w of wins) {
-                if (w.url.includes(url) && 'focus' in w) return w.focus();
+    event.waitUntil((async () => {
+        await refreshAppBadge(); // закрытое уведомление ушло из трея — пересчитываем бейдж
+        const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const w of wins) {
+            if (w.url.includes(url) && 'focus' in w) {
+                return w.focus();
             }
-            return self.clients.openWindow(url);
-        })
-    );
+        }
+        return self.clients.openWindow(url);
+    })());
 });
 
 // Подписка протухла/сменилась → переподписываемся тем же ключом и досылаем на бэк.
