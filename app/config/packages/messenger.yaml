@@ -28,6 +28,9 @@ framework:
         routing:
             # Route your messages to the transports
             'App\Shared\Domain\Message\ChannelVerificationMessage': async
+            # Рассылка уведомления — I/O (web push/почта): в async, чтобы запрос не блокировался.
+            # Персист Notification синхронный (в транзакции команды), доставку делает воркер.
+            'App\Notifications\Domain\Event\NotificationCreatedEvent': async
 
 # when@test:
 #    framework:

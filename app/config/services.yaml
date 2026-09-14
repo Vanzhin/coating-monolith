@@ -61,6 +61,10 @@ services:
     resource: '../src/Users/Infrastructure/Controller'
     tags: [ 'controller.service_arguments' ]
 
+  App\Notifications\Infrastructure\Controller\:
+    resource: '../src/Notifications/Infrastructure/Controller'
+    tags: [ 'controller.service_arguments' ]
+
   App\Coatings\Infrastructure\Api\SurfaceTreatment\:
     resource: '../src/Coatings/Infrastructure/Api/SurfaceTreatment'
     tags: [ 'controller.service_arguments' ]
@@ -180,6 +184,12 @@ services:
     alias: App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository
   App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository
+
+  App\Notifications\Domain\Repository\NotificationRepositoryInterface:
+    alias: App\Notifications\Infrastructure\Repository\NotificationRepository
+
+  App\Shared\Domain\Service\UnreadNotificationCounterInterface:
+    alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
 
   #Валидатор почты
   App\Users\Infrastructure\Service\Validation\EmailListValidator:
