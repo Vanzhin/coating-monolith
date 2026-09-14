@@ -35,7 +35,6 @@ final class NotificationTest extends TestCase
 
         self::assertCount(1, $events);
         self::assertInstanceOf(NotificationCreatedEvent::class, $events[0]);
-        self::assertSame('Покрытие обновлено', $events[0]->message);
         self::assertSame($notification->getId(), $events[0]->notificationId);
     }
 

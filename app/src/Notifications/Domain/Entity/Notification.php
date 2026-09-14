@@ -33,7 +33,7 @@ class Notification extends Aggregate
         // Создание уведомления = намерение доставить: событие поднимается здесь и уедет на шину
         // при сохранении (PublishDomainEventsOnFlushListener), где хендлер сделает рассылку по
         // каналам владельца. Doctrine при гидрации из БД конструктор не зовёт — на загрузке не стрельнёт.
-        $this->raise(new NotificationCreatedEvent($id->jsonSerialize(), $ownerUlid, $message));
+        $this->raise(new NotificationCreatedEvent($id->jsonSerialize()));
     }
 
     public function markRead(): void

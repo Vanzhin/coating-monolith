@@ -22,6 +22,11 @@ class NotificationRepository extends ServiceEntityRepository implements Notifica
         $this->getEntityManager()->flush();
     }
 
+    public function findById(string $id): ?Notification
+    {
+        return $this->find($id);
+    }
+
     public function countUnread(string $ownerUlid): int
     {
         return (int) $this->createQueryBuilder('n')

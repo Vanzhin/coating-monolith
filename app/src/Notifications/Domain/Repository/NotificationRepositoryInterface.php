@@ -10,6 +10,8 @@ interface NotificationRepositoryInterface
 {
     public function add(Notification $notification): void;
 
+    public function findById(string $id): ?Notification;
+
     /**
      * Число непрочитанных уведомлений владельца — источник для бейджа на иконке PWA.
      */
