@@ -62,8 +62,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # GHA-кэш (type=gha) снят: бэкенд стабильно отдавал 504 на импорте манифеста
+          # кэша и валил сборку. Собираем без слоёвого кэша. Нужна скорость сборки —
+          # вернуть через registry-кэш на ghcr (type=registry,ref=...:buildcache), не type=gha.
           build-args: |
             INSTALL_XDEBUG=${{ vars.INSTALL_XDEBUG || 'false' }}
             APP_SECRET=${{ secrets.APP_SECRET }}
