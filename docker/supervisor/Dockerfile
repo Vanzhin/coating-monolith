@@ -1,7 +1,8 @@
 FROM php:8.3-cli-alpine3.19
 
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-RUN chmod +x /usr/local/bin/install-php-extensions
+# Установщик расширений берём из Docker-Hub образа автора, а не ADD-ом с GitHub-релизов:
+# тот эндпоинт отдавал 504 и валил сборку. Бинарь в образе уже исполняемый — chmod не нужен.
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
 
 RUN apk add --update zip unzip grep wget bash supervisor
 
