@@ -46,7 +46,7 @@ final class Notification extends Aggregate
     // getId(), getOwnerUlid(), getMessage(), getCreatedAt(), isRead(), getReadAt()
 }
 ```
-Инвариант «title не пуст» — в конструкторе (кидает `AppException`). Юнит-тест на конструктор + `markRead` (идемпотентность).
+Инвариант «message не пуст» — в конструкторе (кидает `AppException`). Конструктор также поднимает `NotificationCreatedEvent` (для async-рассылки — см. Application). Юнит-тест: конструктор + `markRead` (идемпотентность) + поднятие события.
 
 ### `Repository/NotificationRepositoryInterface.php`
 ```php
@@ -106,10 +106,9 @@ $payload = json_encode([
 
 ### `Command/SendNotification/`
 - `SendNotificationCommand extends Command` — `(string $ownerUlid, string $message)`.
-- `SendNotificationCommandHandler implements CommandHandlerInterface`:
-  1. `new Notification(Uuid::fromString(UuidService::generate()), ownerUlid, message, new \DateTimeImmutable())` → `notificationRepository->add()`;
-  2. доставка в WEB_PUSH-каналы владельца: `channelRepository->findByOwnerAndType($ownerUlid, WEB_PUSH)` (Users) → на каждый `channelNotifierService->notify($channel, $message)`. (Оркестрация в Application, кросс-контекст — допустимо.)
-- (Result не нужен — void.)
+- `SendNotificationCommandHandler implements CommandHandlerInterface` — **только создаёт и сохраняет**: `new Notification(UuidService::generateUuid(), ownerUlid, message, new \DateTimeImmutable())` → `notificationRepository->add()`. Result не нужен (void).
+- **Рассылка — не в хендлере, а через доменное событие (async).** `Notification` в конструкторе поднимает `NotificationCreatedEvent(notificationId, ownerUlid, message)`; на сохранении `PublishDomainEventsOnFlushListener` публикует его, событие роутится на `async` (messenger.yaml) → `Notifications/Infrastructure/EventHandler/NotificationCreatedEventHandler` в воркере делает фан-аут: `channelRepository->findByOwnerAndType($ownerUlid, WEB_PUSH)` → на каждый `channelNotifierService->notify($channel, $message)`. I/O-доставка уходит из запроса.
+- Известная развилка (из ревью): событие публикуется на `postFlush` до COMMIT транзакции команды (publish-before-commit) — редкая гонка счётчика / призрачный пуш; строгий фикс (dispatch-after-commit / outbox) — отдельная кросс-модульная задача.
 
 ### `Command/MarkNotificationsRead/`
 - `MarkNotificationsReadCommand extends Command` — `(string $ownerUlid)`.
@@ -126,7 +125,7 @@ App\Notifications\Infrastructure\Controller\:
 ```
 
 ### `SendTestWebPush` (правка) — продюсер
-Вместо прямой отправки: резолвит `ownerUlid` по email и диспатчит `SendNotificationCommand($ownerUlid, $message)`. Так тест наполняет инбокс и идёт по боевому пути (доставка + бейдж). Отчёт FCM печатать больше нельзя (уходит в notify) — команда просто рапортует «отправлено N»; либо оставить диагностический прямой режим под флагом `--raw`. Развилка: **упрощаем до «отправлено»** (диагностика 410/201 своё отжила — доставка проверена).
+Вместо прямой отправки: резолвит `ownerUlid` по email и диспатчит `SendNotificationCommand($ownerUlid, $message)`. Так тест наполняет инбокс и идёт по боевому пути; доставка — асинхронно (воркер), поэтому команда рапортует «уведомление создано, доставка async». Отчёт FCM не печатаем (ушёл в notify) — диагностика 410/201 своё отжила, доставка проверена.
 
 ## Фронт
 

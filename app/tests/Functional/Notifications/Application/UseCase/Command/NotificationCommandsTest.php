@@ -64,4 +64,22 @@ final class NotificationCommandsTest extends KernelTestCase
 
         self::assertSame(0, $this->notifications->countUnread($this->ownerUlid));
     }
+
+    public function test_mark_all_read_is_scoped_to_owner(): void
+    {
+        // Второй пользователь с непрочитанным — mark-read для первого не должен его трогать
+        // (raw-SQL UPDATE ... WHERE owner_id — пинним изоляцию по владельцу).
+        $other = new User(new Email('notif_other_'.bin2hex(random_bytes(4)).'@example.com'));
+        $other->setPassword('pass', static::getContainer()->get(UserPasswordHasherInterface::class));
+        $this->em->persist($other);
+        $this->em->flush();
+
+        $this->commandBus->execute(new SendNotificationCommand($this->ownerUlid, 'мне'));
+        $this->commandBus->execute(new SendNotificationCommand($other->getUlid(), 'другому'));
+
+        $this->commandBus->execute(new MarkNotificationsReadCommand($this->ownerUlid));
+
+        self::assertSame(0, $this->notifications->countUnread($this->ownerUlid));
+        self::assertSame(1, $this->notifications->countUnread($other->getUlid()), 'mark-read не должен трогать чужие уведомления');
+    }
 }

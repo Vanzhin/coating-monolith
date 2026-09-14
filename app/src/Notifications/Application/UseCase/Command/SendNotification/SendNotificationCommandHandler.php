@@ -8,7 +8,6 @@ use App\Notifications\Domain\Entity\Notification;
 use App\Notifications\Domain\Repository\NotificationRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\UuidService;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Создаёт и сохраняет уведомление пользователя. Само сохранение (persist+flush) публикует
@@ -25,7 +24,7 @@ readonly class SendNotificationCommandHandler implements CommandHandlerInterface
     public function __invoke(SendNotificationCommand $command): void
     {
         $notification = new Notification(
-            Uuid::fromString(UuidService::generate()),
+            UuidService::generateUuid(),
             $command->ownerUlid,
             $command->message,
             new \DateTimeImmutable(),

@@ -1,0 +1,7 @@
+framework:
+    messenger:
+        transports:
+            # В тестах async не должен уходить в реальный Redis: DAMADoctrineTestBundle откатывает
+            # только БД, не Redis, поэтому сообщения оставались бы в стриме и тесты зависели бы от
+            # поднятого Redis. in-memory делает функциональные тесты герметичными.
+            async: 'in-memory://'
