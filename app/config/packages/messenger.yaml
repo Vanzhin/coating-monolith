@@ -33,6 +33,8 @@ framework:
             # Рассылка уведомления — I/O (web push/почта): в async, чтобы запрос не блокировался.
             # Персист Notification синхронный (в транзакции команды), доставку делает воркер.
             'App\Notifications\Domain\Event\NotificationCreatedEvent': async
+            # Активация пользователя → уведомление админу: тоже async (в воркере).
+            'App\Users\Domain\Event\UserActivatedEvent': async
 
 # when@test:
 #    framework:
