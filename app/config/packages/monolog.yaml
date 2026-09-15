@@ -15,6 +15,10 @@ monolog:
             handler: deduplicated
         deduplicated:
             type: deduplication
+            # store — писабельный путь вне /app: в рантайме www-data не пишет в /app (var/cache/prod),
+            # а дефолтный store падал там Permission denied на каждой ошибке. /tmp контейнера доступен;
+            # окна дедупликации (time) хватает эфемерного /tmp.
+            store: '/tmp/monolog_dedup'
             # the time in seconds during which duplicate entries are discarded (default: 60)
             time: 10
             handler: telegram

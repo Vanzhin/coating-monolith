@@ -101,7 +101,9 @@ class TokenService implements TokenServiceInterface
         if ($exist) {
             $now = new \DateTimeImmutable();
 
-            return $exist->getExpiresAt()->getTimestamp() - $now->getTimestamp();
+            // Истёкший, но ещё лежащий в Redis токен даёт отрицательную разницу — обнуляем, иначе
+            // throttle (makeToken/контроллер) посчитает «через ~-N мин» и заблокирует новую выдачу.
+            return max(0, $exist->getExpiresAt()->getTimestamp() - $now->getTimestamp());
         }
 
         return 0;
