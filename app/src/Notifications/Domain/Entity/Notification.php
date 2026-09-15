@@ -38,7 +38,6 @@ class Notification extends Aggregate
 
     public function markRead(): void
     {
-        // Идемпотентно: повторная отметка не сдвигает момент прочтения.
         if ($this->isRead) {
             return;
         }

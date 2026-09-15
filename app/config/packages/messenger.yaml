@@ -1,6 +1,8 @@
 framework:
     messenger:
         default_bus: command.bus
+        # Исчерпавшие ретраи сообщения — в failed-транспорт (инспекция/replay), а не молчаливый дроп.
+        failure_transport: failed
         buses:
             command.bus:
                 middleware:

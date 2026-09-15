@@ -51,6 +51,7 @@ final class Notification extends Aggregate
 ### `Repository/NotificationRepositoryInterface.php`
 ```php
 public function add(Notification $notification): void;
+public function findById(string $id): ?Notification;  // re-fetch в обработчике события
 public function countUnread(string $ownerUlid): int;
 public function markAllReadForOwner(string $ownerUlid): void;
 ```
@@ -173,10 +174,9 @@ Notifications:
 
 ## Тесты
 
-- Unit `tests/Unit/Notifications/Domain/Entity/NotificationTest.php`: конструктор (пустой message → AppException), `markRead` идемпотентно (двойной вызов — один `readAt`).
-- Functional `tests/Functional/Notifications/Application/UseCase/Command/SendNotification/SendNotificationCommandHandlerTest.php`: вызов создаёт unread-строку; `countUnread` растёт; повторный — +1.
-- Functional `.../MarkNotificationsRead/...Test.php`: после mark-read `countUnread` = 0.
-- `WebPushNotifierTest`: payload содержит `badge` (мок счётчика).
+- Unit `tests/Unit/Notifications/Domain/Entity/NotificationTest.php`: конструктор (пустой message → AppException), `markRead` идемпотентно, поднятие `NotificationCreatedEvent`.
+- Functional `tests/Functional/Notifications/Application/UseCase/Command/NotificationCommandsTest.php` (один файл на обе команды): SendNotification создаёт unread + растит `countUnread`; MarkNotificationsRead сбрасывает в 0; отдельный кейс — mark-read scoped по владельцу (не трогает чужое → пиннит raw-SQL).
+- **Известное ограничение покрытия:** happy-path `WebPushNotifier::notify` (сборка payload с `badge`) юнит-тестом не покрыт — `new WebPush` инстанцируется инлайн, без шва отправку не мокнуть. Ввод шва (инъекция отправителя) — бэклог (та же находка в ревью Web Push). Бейдж проверяем вручную на устройстве.
 - Фронт (sw.js/app.js) — PHP-тесты не трогают; проверка вручную (телефон: пуш → бейдж N; открыл → 0).
 
 ## Порядок реализации (по шагам, апрув после каждого)
