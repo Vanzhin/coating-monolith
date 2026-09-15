@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
-use DateTimeImmutable;
-
 final readonly class Token
 {
     public function __construct(
         private string $token,
         private string $subjectId,
-        private DateTimeImmutable $expiresAt,
-    )
-    {
+        private \DateTimeImmutable $expiresAt,
+    ) {
     }
 
     public function getSubjectId(): string
