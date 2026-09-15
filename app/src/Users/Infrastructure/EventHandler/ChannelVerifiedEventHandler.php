@@ -11,6 +11,7 @@ use App\Users\Domain\Event\ChannelVerifiedEvent;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Domain\Repository\UserRepositoryInterface;
 use App\Users\Domain\Service\Validation\EmailValidatorInterface;
+use Psr\Log\LoggerInterface;
 
 readonly class ChannelVerifiedEventHandler implements EventHandlerInterface
 {
@@ -19,6 +20,7 @@ readonly class ChannelVerifiedEventHandler implements EventHandlerInterface
         private ChannelRepositoryInterface $channelRepository,
         private EmailValidatorInterface $emailValidator,
         private ChannelNotifierService $channelNotifierService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -34,7 +36,16 @@ readonly class ChannelVerifiedEventHandler implements EventHandlerInterface
             $user->makeActiveInternally();
             $this->userRepository->add($user);
 
-            $this->channelNotifierService->notify($channel, 'Канал верифицирован');
+            // Подтверждающее уведомление — best-effort: сетевой сбой (напр. SMTP 451) НЕ должен
+            // откатывать верификацию канала и активацию пользователя. Логируем и продолжаем.
+            try {
+                $this->channelNotifierService->notify($channel, 'Канал верифицирован');
+            } catch (\Throwable $e) {
+                $this->logger->error('Не удалось отправить подтверждение верификации канала', [
+                    'channelId' => $channel->getId(),
+                    'exception' => $e,
+                ]);
+            }
         }
     }
 }
