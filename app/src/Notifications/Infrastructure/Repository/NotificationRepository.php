@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Notifications\Infrastructure\Repository;
 
 use App\Notifications\Domain\Entity\Notification;
+use App\Notifications\Domain\Repository\NotificationFilter;
 use App\Notifications\Domain\Repository\NotificationRepositoryInterface;
+use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 class NotificationRepository extends ServiceEntityRepository implements NotificationRepositoryInterface
@@ -25,6 +28,25 @@ class NotificationRepository extends ServiceEntityRepository implements Notifica
     public function findById(string $id): ?Notification
     {
         return $this->find($id);
+    }
+
+    public function findByFilter(NotificationFilter $filter): PaginationResult
+    {
+        $qb = $this->createQueryBuilder('n')
+            ->where('n.ownerUlid = :owner')
+            ->setParameter('owner', $filter->ownerUlid)
+            ->orderBy('n.createdAt', 'DESC');
+
+        if (null !== $filter->isRead) {
+            $qb->andWhere('n.isRead = :read')->setParameter('read', $filter->isRead);
+        }
+
+        $qb->setMaxResults($filter->getPager()->getLimit());
+        $qb->setFirstResult($filter->getPager()->getOffset());
+
+        $paginator = new Paginator($qb->getQuery());
+
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
     public function countUnread(string $ownerUlid): int
