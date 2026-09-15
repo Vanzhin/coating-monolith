@@ -6,7 +6,7 @@ import { Controller } from '@hotwired/stimulus';
  * солнце/луна (targets light/dark). Перенесено из inline-<script> base.html.twig.
  */
 export default class extends Controller {
-    static targets = ['light', 'dark'];
+    static targets = ['light', 'dark', 'switch'];
 
     connect() {
         this.sync();
@@ -16,6 +16,7 @@ export default class extends Controller {
         const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         if (this.hasLightTarget) this.lightTarget.classList.toggle('d-none', isDark);
         if (this.hasDarkTarget) this.darkTarget.classList.toggle('d-none', !isDark);
+        if (this.hasSwitchTarget) this.switchTarget.checked = isDark;
     }
 
     toggle() {

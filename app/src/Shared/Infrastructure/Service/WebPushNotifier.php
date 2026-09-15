@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Service;
 
 use App\Shared\Domain\Service\NotifierInterface;
+use App\Shared\Domain\Service\UnreadNotificationCounterInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Entity\ChannelType;
@@ -27,6 +28,7 @@ readonly class WebPushNotifier implements NotifierInterface
         private string $vapidPrivateKey,
         private string $vapidSubject,
         private ChannelRepositoryInterface $channelRepository,
+        private UnreadNotificationCounterInterface $unreadCounter,
         private LoggerInterface $logger,
     ) {
     }
@@ -55,7 +57,12 @@ readonly class WebPushNotifier implements NotifierInterface
             'privateKey' => $this->vapidPrivateKey,
         ]]);
 
-        $payload = json_encode(['title' => self::NOTIFICATION_TITLE, 'body' => $message], JSON_UNESCAPED_UNICODE);
+        // badge — число непрочитанных владельца: SW ставит его на иконку PWA (setAppBadge).
+        $payload = json_encode([
+            'title' => self::NOTIFICATION_TITLE,
+            'body' => $message,
+            'badge' => $this->unreadCounter->countForOwner($channel->getOwner()->getUlid()),
+        ], JSON_UNESCAPED_UNICODE);
         $report = $webPush->sendOneNotification($subscription, false === $payload ? null : $payload);
 
         if ($report->isSuccess()) {

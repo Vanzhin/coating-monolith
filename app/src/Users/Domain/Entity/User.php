@@ -8,6 +8,7 @@ use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\Service\UuidService;
 use App\Users\Domain\Entity\ValueObject\Email;
+use App\Users\Domain\Event\UserActivatedEvent;
 use App\Users\Domain\Event\UserCreatedEvent;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -113,10 +114,13 @@ class User extends Aggregate implements AuthUserInterface
 
     public function makeActiveInternally(): void
     {
-        if ($this->getVerifiedChannels()->isEmpty()) {
+        // Событие поднимаем только на переходе false→true, чтобы не слать повторно при
+        // повторной верификации каналов уже активного пользователя.
+        if ($this->isActive || $this->getVerifiedChannels()->isEmpty()) {
             return;
         }
         $this->isActive = true;
+        $this->raise(new UserActivatedEvent($this->ulid));
     }
 
     public function isActive(): bool

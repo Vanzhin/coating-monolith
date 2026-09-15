@@ -1,6 +1,8 @@
 framework:
     messenger:
         default_bus: command.bus
+        # Исчерпавшие ретраи сообщения — в failed-транспорт (инспекция/replay), а не молчаливый дроп.
+        failure_transport: failed
         buses:
             command.bus:
                 middleware:
@@ -28,6 +30,11 @@ framework:
         routing:
             # Route your messages to the transports
             'App\Shared\Domain\Message\ChannelVerificationMessage': async
+            # Рассылка уведомления — I/O (web push/почта): в async, чтобы запрос не блокировался.
+            # Персист Notification синхронный (в транзакции команды), доставку делает воркер.
+            'App\Notifications\Domain\Event\NotificationCreatedEvent': async
+            # Активация пользователя → уведомление админу: тоже async (в воркере).
+            'App\Users\Domain\Event\UserActivatedEvent': async
 
 # when@test:
 #    framework:

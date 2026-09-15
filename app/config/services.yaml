@@ -22,6 +22,7 @@ services:
       $vapidPublicKey: '%env(VAPID_PUBLIC_KEY)%'
       $vapidPrivateKey: '%env(VAPID_PRIVATE_KEY)%'
       $vapidSubject: '%env(VAPID_SUBJECT)%'
+      $adminNotifyEmail: '%env(ADMIN_NOTIFY_EMAIL)%'
 
   # makes classes in src/ available to be used as services
   # this creates a service per class whose id is the fully-qualified class name
@@ -59,6 +60,10 @@ services:
 
   App\Users\Infrastructure\Controller\:
     resource: '../src/Users/Infrastructure/Controller'
+    tags: [ 'controller.service_arguments' ]
+
+  App\Notifications\Infrastructure\Controller\:
+    resource: '../src/Notifications/Infrastructure/Controller'
     tags: [ 'controller.service_arguments' ]
 
   App\Coatings\Infrastructure\Api\SurfaceTreatment\:
@@ -180,6 +185,12 @@ services:
     alias: App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository
   App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository
+
+  App\Notifications\Domain\Repository\NotificationRepositoryInterface:
+    alias: App\Notifications\Infrastructure\Repository\NotificationRepository
+
+  App\Shared\Domain\Service\UnreadNotificationCounterInterface:
+    alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
 
   #Валидатор почты
   App\Users\Infrastructure\Service\Validation\EmailListValidator:

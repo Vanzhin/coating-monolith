@@ -68,17 +68,15 @@ self.addEventListener('fetch', (event) => {
 
 /* ===== Web Push ===== */
 
-// Бейдж-счётчик на иконке установленной PWA = число ещё висящих уведомлений (вариант A,
-// без серверного счётчика непрочитанного). Ставим на пуш, пересчитываем на клик, сбрасываем
-// при открытии приложения (см. app.js). Где Badging API нет — тихо пропускаем.
-async function refreshAppBadge() {
-    if (!self.navigator || typeof self.navigator.setAppBadge !== 'function') {
+// Бейдж на иконке PWA = число непрочитанных, приходит с сервера в payload.badge. Ставит SW на пуш,
+// сбрасывает приложение при открытии (см. app.js). Где Badging API нет — тихо пропускаем.
+async function applyBadge(badge) {
+    if (typeof badge !== 'number' || !self.navigator || typeof self.navigator.setAppBadge !== 'function') {
         return;
     }
     try {
-        const count = (await self.registration.getNotifications()).length;
-        if (count > 0) {
-            await self.navigator.setAppBadge(count);
+        if (badge > 0) {
+            await self.navigator.setAppBadge(badge);
         } else if (typeof self.navigator.clearAppBadge === 'function') {
             await self.navigator.clearAppBadge();
         }
@@ -87,7 +85,16 @@ async function refreshAppBadge() {
     }
 }
 
-// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление + бейдж.
+// Сообщаем открытым вкладкам о новом уведомлении, чтобы обновить бейдж вживую (без перезагрузки).
+// Слушает notifications_live_controller на <body>. unread — актуальное число непрочитанных.
+async function notifyClients(unread) {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+        w.postMessage({ type: 'notification', unread: typeof unread === 'number' ? unread : null });
+    }
+}
+
+// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление + бейдж + вкладкам.
 self.addEventListener('push', (event) => {
     let data = {};
     try {
@@ -101,19 +108,20 @@ self.addEventListener('push', (event) => {
             icon: '/icons/android-chrome-192x192.png',
             data: { url: data.url || '/' },
         });
-        await refreshAppBadge();
+        await applyBadge(data.badge);
+        await notifyClients(data.badge);
     })());
 });
 
 // Клик по уведомлению → сфокусировать существующее окно PWA или открыть новое.
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = (event.notification.data && event.notification.data.url) || '/';
+    // Уведомления ведут в раздел (пер-уведомление url нет): фокусируем открытое окно на нём либо открываем.
+    const url = '/cabinet/notifications';
     event.waitUntil((async () => {
-        await refreshAppBadge(); // закрытое уведомление ушло из трея — пересчитываем бейдж
         const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const w of wins) {
-            if (w.url.includes(url) && 'focus' in w) {
+            if (new URL(w.url).pathname === url && 'focus' in w) {
                 return w.focus();
             }
         }

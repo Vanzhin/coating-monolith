@@ -1,0 +1,7 @@
+{# Единый бейдж непрочитанных уведомлений — один компонент на все места (колокол, сайдбар,
+   шторка «Ещё», меню профиля). Всегда в DOM (скрыт при 0), чтобы live-обновление
+   (notifications_live_controller по сообщению от service worker) показывало/меняло число без
+   перезагрузки. Позиционирование под конкретное место — через параметр `class`. #}
+{% set unread = unread_notifications_count() %}
+<span class="badge rounded-pill text-bg-primary {{ class|default('') }}{% if unread <= 0 %} d-none{% endif %}"
+      data-notifications-live-target="badge">{{ unread }}</span>

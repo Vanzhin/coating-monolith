@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Shared\Infrastructure\Service;
 
+use App\Shared\Domain\Service\UnreadNotificationCounterInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\WebPushNotifier;
 use App\Users\Domain\Entity\Channel;
@@ -26,6 +27,7 @@ final class WebPushNotifierTest extends TestCase
             'priv',
             'mailto:x@example.com',
             $this->createMock(ChannelRepositoryInterface::class),
+            $this->createMock(UnreadNotificationCounterInterface::class),
             new NullLogger(),
         );
     }

@@ -73,6 +73,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Certificates/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Certificates\Domain\Aggregate'
                 alias: Certificates
+            Notifications:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Notifications/Infrastructure/Database/ORM'
+                prefix: 'App\Notifications\Domain\Entity'
+                alias: Notifications
 
 
 #            App:

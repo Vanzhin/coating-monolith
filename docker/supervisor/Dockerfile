@@ -6,7 +6,7 @@ COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensio
 
 RUN apk add --update zip unzip grep wget bash supervisor
 
-RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2
+RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2 gmp
 
 COPY docker/supervisor/conf.d/supervisord.conf /etc/supervisor/supervisord.conf
 RUN rm  -rf /tmp/* /var/cache/apk/*

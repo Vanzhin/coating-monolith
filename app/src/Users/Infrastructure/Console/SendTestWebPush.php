@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Console;
 
-use App\Shared\Infrastructure\Exception\AppException;
-use App\Users\Domain\Entity\ChannelType;
-use App\Users\Domain\Entity\ValueObject\PushSubscription;
-use App\Users\Domain\Repository\ChannelRepositoryInterface;
+use App\Notifications\Application\UseCase\Command\SendNotification\SendNotificationCommand;
+use App\Shared\Application\Command\CommandBusInterface;
 use App\Users\Domain\Repository\UserRepositoryInterface;
-use Minishlink\WebPush\Subscription;
-use Minishlink\WebPush\WebPush;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,19 +15,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Ручная проверка доставки web push: шлёт тестовое уведомление во все WEB_PUSH-каналы юзера
- * и печатает отчёт FCM по каждой подписке (success/status/reason). Триггеров событий пока нет —
- * это единственный способ «пнуть» подписку локально и увидеть, что вернул push-сервис.
+ * Ручная проверка уведомлений: создаёт уведомление пользователю через боевой путь
+ * (SendNotificationCommand → Notification → доменное событие). Доставка в web push и бейдж —
+ * асинхронно воркером (messenger:consume async, у нас manager_supervisor). Триггеров событий пока
+ * нет — это способ «пнуть» доставку локально/на проде.
  */
-#[AsCommand(name: 'app:push:test', description: 'Отправить тестовый web push всем подпискам пользователя')]
+#[AsCommand(name: 'app:push:test', description: 'Создать тестовое уведомление пользователю (доставка — асинхронно)')]
 final class SendTestWebPush extends Command
 {
     public function __construct(
         private readonly UserRepositoryInterface $userRepository,
-        private readonly ChannelRepositoryInterface $channelRepository,
-        private readonly string $vapidPublicKey,
-        private readonly string $vapidPrivateKey,
-        private readonly string $vapidSubject,
+        private readonly CommandBusInterface $commandBus,
     ) {
         parent::__construct();
     }
@@ -56,46 +50,9 @@ final class SendTestWebPush extends Command
             return Command::FAILURE;
         }
 
-        $channels = $this->channelRepository->findByOwnerAndType($user->getUlid(), ChannelType::WEB_PUSH->value);
-        if ([] === $channels) {
-            $io->warning('У пользователя нет web-push подписок. Включи уведомления в браузере и повтори.');
+        $this->commandBus->execute(new SendNotificationCommand($user->getUlid(), $message));
 
-            return Command::SUCCESS;
-        }
-
-        $webPush = new WebPush(['VAPID' => [
-            'subject' => $this->vapidSubject,
-            'publicKey' => $this->vapidPublicKey,
-            'privateKey' => $this->vapidPrivateKey,
-        ]]);
-        $payload = json_encode(['title' => 'Уведомление', 'body' => $message], JSON_UNESCAPED_UNICODE);
-
-        $rows = [];
-        foreach ($channels as $channel) {
-            try {
-                $subscription = PushSubscription::fromJson($channel->getValue());
-            } catch (AppException) {
-                $rows[] = ['—', 'битый JSON', '', ''];
-
-                continue;
-            }
-            $report = $webPush->sendOneNotification(Subscription::create($subscription->jsonSerialize()), false === $payload ? null : $payload);
-            $response = $report->getResponse();
-            $expired = $report->isSubscriptionExpired();
-            if ($expired) {
-                // Мёртвую подписку чистим — как боевой WebPushNotifier.
-                $this->channelRepository->remove($channel);
-            }
-            $rows[] = [
-                substr($subscription->endpoint, -24),
-                $report->isSuccess() ? 'OK' : ($expired ? 'протухла (удалена)' : 'ОТКАЗ'),
-                null !== $response ? (string) $response->getStatusCode() : '',
-                $report->isSuccess() ? '' : substr($report->getReason(), 0, 60),
-            ];
-        }
-
-        $io->table(['endpoint (хвост)', 'итог', 'HTTP', 'причина'], $rows);
-        $io->success('Готово. success = FCM принял пуш; дальше показ зависит от ОС/браузера.');
+        $io->success('Уведомление создано. Доставка в web push и бейдж — асинхронно (нужен запущенный messenger-воркер). Если пуш не пришёл — включи уведомления в браузере.');
 
         return Command::SUCCESS;
     }
