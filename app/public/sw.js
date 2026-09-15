@@ -85,7 +85,16 @@ async function applyBadge(badge) {
     }
 }
 
-// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление + бейдж.
+// Сообщаем открытым вкладкам о новом уведомлении, чтобы обновить бейдж вживую (без перезагрузки).
+// Слушает notifications_live_controller на <body>. unread — актуальное число непрочитанных.
+async function notifyClients(unread) {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+        w.postMessage({ type: 'notification', unread: typeof unread === 'number' ? unread : null });
+    }
+}
+
+// Приходит пуш (даже без открытой вкладки) → показываем системное уведомление + бейдж + вкладкам.
 self.addEventListener('push', (event) => {
     let data = {};
     try {
@@ -100,17 +109,19 @@ self.addEventListener('push', (event) => {
             data: { url: data.url || '/' },
         });
         await applyBadge(data.badge);
+        await notifyClients(data.badge);
     })());
 });
 
 // Клик по уведомлению → сфокусировать существующее окно PWA или открыть новое.
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = (event.notification.data && event.notification.data.url) || '/';
+    // Уведомления ведут в раздел (пер-уведомление url нет): фокусируем открытое окно на нём либо открываем.
+    const url = '/cabinet/notifications';
     event.waitUntil((async () => {
         const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const w of wins) {
-            if (w.url.includes(url) && 'focus' in w) {
+            if (new URL(w.url).pathname === url && 'focus' in w) {
                 return w.focus();
             }
         }

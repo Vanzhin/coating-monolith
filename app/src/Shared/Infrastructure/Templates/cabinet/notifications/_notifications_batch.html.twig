@@ -1,0 +1,20 @@
+{# Батч уведомлений. Используется:
+   - основным index.html.twig для первой страницы (через components/infinite_list.html.twig);
+   - ListAction в режиме ?partial=1 — догрузка по «Показать ещё» и live-перерисовка по пушу; тогда
+     возвращается ТОЛЬКО этот partial.
+   Переменные: notifications — list<NotificationDTO>. Пустое состояние — здесь же, чтобы живая
+   перерисовка работала и из пустого инбокса. Непрочитанное отличаем жирным текстом. #}
+{% if notifications is empty %}
+    <div class="py-5 text-center">
+        <i class="bi bi-bell fs-1 text-body-secondary opacity-50"></i>
+        <div class="fw-light h3 mt-2 mb-1">Пока нет уведомлений</div>
+        <p class="lead text-body-secondary mb-0">Здесь появятся изменения по вашим покрытиям и системам.</p>
+    </div>
+{% else %}
+    {% for n in notifications %}
+        <div class="p-3 rounded-3 bg-body-tertiary">
+            <div class="{{ n.isRead ? '' : 'fw-semibold' }}">{{ n.message }}</div>
+            <div class="small text-body-secondary mt-1">{{ n.createdAt|timeAgo }}</div>
+        </div>
+    {% endfor %}
+{% endif %}

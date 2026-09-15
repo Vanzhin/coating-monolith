@@ -1,0 +1,12 @@
+{# Весь блок списка уведомлений (infinite-list с кнопкой «Показать ещё»). Отдаётся:
+   - основным index.html.twig (первая отрисовка);
+   - ListAction в режиме ?fragment=list — для живой перерисовки по пушу (notifications_live),
+     чтобы кнопка/номера страниц пересчитались сервером, а не осталась рассинхронизованная.
+   Переменная: result — GetUserNotificationsQueryResult. #}
+{% include 'components/infinite_list.html.twig' with {
+    items_template: 'cabinet/notifications/_notifications_batch.html.twig',
+    items_params: { notifications: result.notifications },
+    total_pages: result.pager.total_pages,
+    base_url: path('app_notifications_list'),
+    wrapper_class: 'd-flex flex-column gap-2',
+} only %}

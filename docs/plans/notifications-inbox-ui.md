@@ -48,6 +48,14 @@
 
 Теперь, когда раздел существует, клик по пуш-баннеру ведёт в него: в `notificationclick` (`app/public/sw.js`) цель — `/cabinet/notifications` (в Деплое 1 клик открывал приложение, т.к. раздела ещё не было). Проще всего — фиксировано открывать `/cabinet/notifications` (пер-уведомление `url` нет). Бамп версии SW не требуется (обновляется по diff).
 
+## Реальная вёрстка — переиспользуем существующее (не изобретать)
+
+Свериться с кодом перед версткой (макет-артефакт был эскизом, часть стилей в нём выдумана — `.mrow`/`.avatar` в приложении НЕТ):
+- **Профиль-хаб — НОВАЯ страница `/cabinet/profile`** (новый `ProfileController`). Существующий `/cabinet` (`app_cabinet`, `cabinet/index.html.twig`) — это ОБЗОР возможностей, не профиль; его не переделываем.
+- **Вход в профиль уже есть — переиспользуем, не плодим пункт:** десктоп — пункт аккаунта в `_shell/_sidebar.html.twig` (`app-sidebar-foot`: `<a href="{{ path('app_cabinet') }}"><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span></a>`) → перенаправить на `app_cabinet_profile` + повесить бейдж-счётчик. Мобилка — аккаунт-блок в offcanvas `#mainMenu` (base.html.twig) + колокол `bi-bell` со счётчиком в мобильной шапке `.blog-header-bar` (base.html.twig:90-98) → на `/cabinet/notifications`. Таб-бар (`_bottom_nav`) и сайдбар-nav (`nav_items`) — только домен, не трогаем.
+- **Кирпичи (все существуют, нового CSS не добавляем):** страница — `{% extends 'base.html.twig' %}` + `main.container-fluid.py-3`; хедер — плашка `p-3 mb-3 rounded-3 bg-body-tertiary` с `h1.h3` + email (как `cabinet/index.html.twig:33-41`). Меню профиля — `list-group list-group-flush` в тертиарной плашке (как аккаунт-список в `#mainMenu`) ЛИБО `.ecard`. Строка уведомления — `.ecard` (медиа `bi-bell` + текст + `.ecard-meta` время) или тертиарная плашка; непрочитанное — оттенком `accent-subtle` + точка (существующими утилитами). Пустое — `{% include 'components/empty.html.twig' %}` (иконка `bi-bell`). Время — `|timeAgo`. Бейдж-счётчик — паттерн `document/index.html.twig` (`position-relative` + `span.position-absolute.top-0.start-100.translate-middle.badge.rounded-pill`). Push-тумблер — `_notifications_button.html.twig` (перенести из «Ещё»). Кнопки — `btn-sm btn-outline-primary` / `btn-outline-secondary`.
+- Маршруты: `app_cabinet_profile` (`/cabinet/profile`, GET), список — `app_notifications_list` (`/cabinet/notifications`, GET), mark-read — уже есть (`/cabinet/notifications/read`).
+
 ## Тесты
 
 - Functional `GetUserNotificationsQueryHandler` (реальная БД): пагинация, сортировка DESC, фильтр `isRead`.
