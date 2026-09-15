@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Security\ResponseFormatter;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\ChannelNotifierService;
 use App\Users\Application\Service\AccessControl\ChannelAccessControl;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Domain\Service\TokenServiceInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,6 +26,7 @@ class SendChannelTokenAction extends AbstractController
         private readonly ChannelAccessControl $channelAccessControl,
         private readonly ResponseFormatter $responseFormatter,
         private readonly ChannelNotifierService $channelNotifier,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -107,10 +110,22 @@ class SendChannelTokenAction extends AbstractController
                     ]
                 )
             );
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
+            // Человекочитаемая доменная ошибка (напр. «канал не поддерживается») — показываем как есть.
+            return $this->json(
+                $this->responseFormatter->formatError($e->getMessage(), Response::HTTP_BAD_REQUEST),
+                Response::HTTP_BAD_REQUEST
+            );
+        } catch (\Throwable $e) {
+            // Инфраструктурный сбой (напр. SMTP) — техдетали в лог, пользователю нейтрально, без утечки внутренностей.
+            $this->logger->error('Не удалось отправить код верификации канала', [
+                'channelId' => $channel->getId(),
+                'exception' => $e,
+            ]);
+
             return $this->json(
                 $this->responseFormatter->formatError(
-                    'Ошибка при отправке кода: '.$e->getMessage(),
+                    'Не удалось отправить код. Попробуйте позже.',
                     Response::HTTP_INTERNAL_SERVER_ERROR
                 ),
                 Response::HTTP_INTERNAL_SERVER_ERROR
