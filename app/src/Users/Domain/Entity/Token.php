@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Users\Domain\Entity;
 
+use DateTimeImmutable;
+
 final readonly class Token
 {
     public function __construct(
         private string $token,
         private string $subjectId,
-        private \DateTimeImmutable $expiresAt,
-    ) {
-        if ($expiresAt <= new \DateTimeImmutable()) {
-            throw new \InvalidArgumentException('Expiration date must be in the future');
-        }
+        private DateTimeImmutable $expiresAt,
+    )
+    {
     }
 
     public function getSubjectId(): string
