@@ -163,6 +163,9 @@ jobs:
             DEFAULT_FROM_ADDR=${{ vars.DEFAULT_FROM_ADDR }}
             DEFAULT_FROM_NAME="${{ vars.DEFAULT_FROM_NAME }}"
             INFO_ADMIN_EMAIL=${{ vars.INFO_ADMIN_EMAIL }}
+            # Кому слать уведомление о новом активном пользователе (email ROLE_ADMIN-юзера).
+            # Литерал — чтобы работало без заведения GH-переменной; хочешь гибче — верни ${{ vars.ADMIN_NOTIFY_EMAIL }}.
+            ADMIN_NOTIFY_EMAIL=admin@1helper.ru
             MAILER_DSN=smtp://${SMTP_USERNAME}:${SMTP_PASSWORD}@${SMTP_HOST}:${SMTP_PORT}
 
             # Telegram logging

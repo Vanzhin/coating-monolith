@@ -12,6 +12,9 @@ parameters:
   general_proposal_template_upload_dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Resources/%general_proposal_template_upload%'
   document_scans_upload_dir: '%kernel.project_dir%/var/uploads/certificates/document_scans'
   elasticsearch.config_dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ES/config'
+  # Дефолт: если ADMIN_NOTIFY_EMAIL не задан в окружении — пустая строка, а не падение резолва
+  # env-переменной. Пустой email → админ не найден → уведомление о новом юзере просто пропускается.
+  env(ADMIN_NOTIFY_EMAIL): ''
 
 services:
   # default configuration for services in *this* file
