@@ -6,6 +6,7 @@ namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\Service\UuidService;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Helper\ExceptionHelperTrait;
 use App\Users\Application\DTO\Channel\ChannelDTO;
 use App\Users\Application\UseCase\Command\CreateChannel\CreateChannelCommand;
@@ -15,6 +16,7 @@ use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +29,7 @@ class ChannelVerificationAction extends AbstractController
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly ChannelRepositoryInterface $channelRepository,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -83,7 +86,15 @@ class ChannelVerificationAction extends AbstractController
 
                 return $this->redirectToRoute('app_cabinet');
             } catch (\Exception $e) {
-                $this->addFlash('error', $this->getOriginalExceptionMessage($e));
+                // Доменную ошибку (истёк/неверный код) показываем как есть; инфраструктурную — в лог,
+                // пользователю нейтрально, без утечки внутренностей.
+                $original = $this->getOriginalException($e);
+                if ($original instanceof AppException) {
+                    $this->addFlash('error', $original->getMessage());
+                } else {
+                    $this->logger->error('Ошибка верификации канала', ['exception' => $e]);
+                    $this->addFlash('error', 'Не удалось завершить верификацию. Попробуйте позже.');
+                }
                 // Падаем в render формы с показом flash-ошибки.
             }
         }

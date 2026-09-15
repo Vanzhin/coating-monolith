@@ -6,6 +6,7 @@ namespace App\Users\Infrastructure\Controller\Channel;
 
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\Service\UuidService;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Helper\ExceptionHelperTrait;
 use App\Users\Application\DTO\Channel\ChannelDTO;
 use App\Users\Application\UseCase\Command\CreateChannel\CreateChannelCommand;
@@ -13,6 +14,7 @@ use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Entity\User;
 use App\Users\Infrastructure\Form\CreateChannelFormType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +27,8 @@ class CreateChannelAction extends AbstractController
     use ExceptionHelperTrait;
 
     public function __construct(
-        private readonly CommandBusInterface $commandBus
+        private readonly CommandBusInterface $commandBus,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -150,8 +153,17 @@ class CreateChannelAction extends AbstractController
             }
         }
 
-        // Общая обработка ошибок
-        $this->addFlash('error', $this->getOriginalExceptionMessage($e));
+        // Доменную ошибку (человекочитаемую) показываем как есть; инфраструктурную — в лог,
+        // пользователю нейтрально, без утечки внутренностей наружу.
+        $original = $this->getOriginalException($e);
+        if ($original instanceof AppException) {
+            $this->addFlash('error', $original->getMessage());
+
+            return;
+        }
+
+        $this->logger->error('Не удалось создать канал', ['exception' => $e]);
+        $this->addFlash('error', 'Не удалось создать канал. Попробуйте позже.');
     }
 
     /**
