@@ -22,12 +22,8 @@
         {% endif %}
     </nav>
     <div class="app-sidebar-foot">
-        <a href="{{ path('app_cabinet') }}" class="app-nav-item"><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span></a>
-        <button type="button" class="app-nav-item app-theme" data-controller="theme-toggle" data-action="click->theme-toggle#toggle" aria-label="Переключить тему">
-            <i class="bi bi-sun-fill" data-theme-toggle-target="light"></i>
-            <i class="bi bi-moon-stars-fill d-none" data-theme-toggle-target="dark"></i>
-            <span>Тема</span>
-        </button>
-        <a href="{{ path('app_logout') }}" class="app-nav-item text-danger"><i class="bi bi-box-arrow-right"></i><span>Выйти</span></a>
+        <a href="{{ path('app_cabinet_profile') }}" class="app-nav-item"><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span>
+            {% include '_shell/_notifications_badge.html.twig' with {class: 'ms-auto'} %}
+        </a>
     </div>
 </aside>

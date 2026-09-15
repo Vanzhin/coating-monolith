@@ -431,3 +431,18 @@ button.rec-sec-head:hover {
         transition: none;
     }
 }
+
+/* Крупный тоггл для настроек — удобная тап-зона на мобилке (~2× стандартного BS-свитча).
+   Без метки внутри обёртки, поэтому обнуляем служебный отступ/маргин BS и задаём размер явно. */
+.form-switch.form-switch-lg {
+    padding-left: 0;
+    min-height: 0;
+    margin: 0;
+}
+.form-switch.form-switch-lg .form-check-input {
+    width: 3.5rem;
+    height: 2rem;
+    margin: 0;
+    float: none;
+    cursor: pointer;
+}

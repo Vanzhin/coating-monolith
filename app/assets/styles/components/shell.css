@@ -96,22 +96,6 @@ main {
     }
 }
 
-.user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    background-color: #dee2e6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.user-avatar i {
-    font-size: 16px;
-    color: #6c757d;
-}
-
 /* Offcanvas меню. var(--bs-border-color) вместо хардкода — иначе на тёмной
    теме шапка шторки уходит светлой полосой. */
 .offcanvas-header {
@@ -189,10 +173,6 @@ main {
 }
 #mainMenu [data-bs-toggle="collapse"][aria-expanded="false"] .bi-chevron-down {
     transform: rotate(-90deg);
-}
-
-.user-email {
-    font-weight: 500;
 }
 
 /* Кнопка переключения темы: одинаковый размер с .menu-toggle. */

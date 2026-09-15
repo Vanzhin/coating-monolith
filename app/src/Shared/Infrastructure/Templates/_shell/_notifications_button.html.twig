@@ -1,11 +1,20 @@
-{# Кнопка включения web-push уведомлений (PWA). Показывается авторизованным при заданном
-   VAPID-ключе; контроллер сам прячет её, если браузер не поддерживает push или разрешение
-   отклонено. Параметр class — доп. классы под контекст. #}
-<div data-controller="push-subscribe" data-push-subscribe-key-value="{{ vapid_public_key }}">
-    <button type="button"
-            class="btn btn-outline-secondary {{ class|default('') }}"
-            data-push-subscribe-target="button"
-            data-action="click->push-subscribe#toggle">
-        <i class="bi bi-bell me-2"></i><span data-push-subscribe-target="label">Включить уведомления</span>
-    </button>
+{# Блок настройки push (иконка + описание слева, крупный тоггл справа). Включено = есть активная подписка.
+   Контроллер сам прячет блок, если браузер не поддерживает push или разрешение отклонено. #}
+<div data-controller="push-subscribe" data-push-subscribe-key-value="{{ vapid_public_key }}"
+     class="p-3 mb-3 rounded-3 bg-body-tertiary d-flex justify-content-between align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-send fs-3 text-body-secondary flex-shrink-0"></i>
+        <div>
+            <div class="fw-medium">Push-уведомления</div>
+            <div class="form-text mt-0">
+                Баннеры на устройстве, в том числе когда приложение закрыто. Сами уведомления всё равно
+                копятся в разделе «Уведомления» — выключение отключает только баннеры.
+            </div>
+        </div>
+    </div>
+    <div class="form-check form-switch form-switch-lg flex-shrink-0">
+        <input class="form-check-input" type="checkbox" role="switch"
+               data-push-subscribe-target="switch"
+               data-action="change->push-subscribe#toggle" aria-label="Push-уведомления">
+    </div>
 </div>

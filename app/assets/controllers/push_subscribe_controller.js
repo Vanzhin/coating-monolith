@@ -1,12 +1,13 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Подписка на web-push (PWA). По клику: запрос разрешения → pushManager.subscribe → POST подписки
- * на бэк (создаёт WEB_PUSH-канал). Если уже подписан — выключает. Требует https/localhost + SW.
- * Браузер без поддержки push или с отклонённым разрешением — кнопку прячем.
+ * Тоггл web-push (PWA). Состояние свитча = есть ли активная подписка. Вкл → запрос разрешения →
+ * pushManager.subscribe → POST на бэк (создаёт WEB_PUSH-канал). Выкл → unsubscribe. Если бэк не
+ * принял (или разрешение не дали) — откатываем локальную подписку и сам свитч. Браузер без push
+ * или с отклонённым разрешением — свитч прячем. Требует https/localhost + SW.
  */
 export default class extends Controller {
-    static targets = ['button', 'label'];
+    static targets = ['switch'];
     static values = { key: String };
 
     async connect() {
@@ -16,49 +17,68 @@ export default class extends Controller {
 
             return;
         }
-        this.setLabel((await this.currentSubscription()) ? 'Уведомления включены' : 'Включить уведомления');
+        this.switchTarget.checked = Boolean(await this.currentSubscription());
     }
 
     async toggle() {
         if (!this.supported) {
             return;
         }
-        this.buttonTarget.disabled = true;
+        const wantOn = this.switchTarget.checked;
+        this.switchTarget.disabled = true;
         try {
-            const existing = await this.currentSubscription();
-            if (existing) {
-                await existing.unsubscribe();
-                this.setLabel('Включить уведомления');
+            if (wantOn) {
+                await this.enable();
+            } else {
+                await this.disable();
+            }
+        } finally {
+            this.switchTarget.disabled = false;
+        }
+    }
 
-                return;
-            }
-            if ('granted' !== await Notification.requestPermission()) {
-                return;
-            }
+    async enable() {
+        if (await this.currentSubscription()) {
+            return; // уже включено
+        }
+        if ('granted' !== await Notification.requestPermission()) {
+            this.switchTarget.checked = false; // разрешение не дали — откат тумблера
+
+            return;
+        }
+        let subscription = null;
+        try {
             const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.subscribe({
+            subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: this.urlBase64ToUint8Array(this.keyValue),
             });
-            // Успех только если бэк реально принял подписку. Иначе (422/403/500 или
-            // редирект на логин при протухшей сессии) откатываем локальную подписку,
-            // чтобы браузер и сервер не разъехались, и не врём «включено».
-            try {
-                const res = await fetch('/cabinet/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify(subscription),
-                });
-                if (!res.ok || res.redirected) {
-                    throw new Error('subscribe rejected');
-                }
-                this.setLabel('Уведомления включены');
-            } catch (e) {
-                await subscription.unsubscribe();
-                this.setLabel('Не удалось включить, попробуйте позже');
+            const res = await fetch('/cabinet/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify(subscription),
+            });
+            if (!res.ok || res.redirected) {
+                throw new Error('subscribe rejected');
             }
-        } finally {
-            this.buttonTarget.disabled = false;
+        } catch (e) {
+            // subscribe() упал или бэк не принял — откатываем локальную подписку и тумблер, чтобы
+            // браузер и сервер не разъезжались, а промис не улетал необработанным.
+            if (subscription) {
+                try {
+                    await subscription.unsubscribe();
+                } catch (_) {
+                    // best-effort
+                }
+            }
+            this.switchTarget.checked = false;
+        }
+    }
+
+    async disable() {
+        const existing = await this.currentSubscription();
+        if (existing) {
+            await existing.unsubscribe();
         }
     }
 
@@ -66,12 +86,6 @@ export default class extends Controller {
         const registration = await navigator.serviceWorker.ready;
 
         return registration.pushManager.getSubscription();
-    }
-
-    setLabel(text) {
-        if (this.hasLabelTarget) {
-            this.labelTarget.textContent = text;
-        }
     }
 
     /** VAPID public key (base64url) → Uint8Array для applicationServerKey. */
