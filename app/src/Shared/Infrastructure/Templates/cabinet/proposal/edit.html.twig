@@ -160,5 +160,8 @@
                 </div>
             </div>
         </form>
+
+        {# Модалка удаления элемента — ВНЕ формы редактирования (её POST-форма не должна быть вложенной). #}
+        {% include 'components/delete_modal.html.twig' %}
     </div>
 {% endblock %}

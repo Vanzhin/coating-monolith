@@ -7,7 +7,9 @@ namespace App\ChemicalResistance\Infrastructure\Controller\Assessment;
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\DeleteAssessment\DeleteAssessmentCommand;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -22,12 +24,15 @@ use Symfony\Component\Routing\Annotation\Route;
 )]
 class DeleteAction extends AbstractController
 {
-    public function __construct(private readonly CommandBusInterface $commandBus)
-    {
+    public function __construct(
+        private readonly CommandBusInterface $commandBus,
+        private readonly CsrfGuard $csrfGuard,
+    ) {
     }
 
-    public function __invoke(string $coatingId, string $assessmentId): Response
+    public function __invoke(Request $request, string $coatingId, string $assessmentId): Response
     {
+        $this->csrfGuard->assertValid('delete', $request->request->getString('_token'));
         try {
             $this->commandBus->execute(new DeleteAssessmentCommand($assessmentId));
             $this->addFlash('assessment_removed_success', 'Оценка удалена.');

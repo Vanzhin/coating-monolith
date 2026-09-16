@@ -8,7 +8,7 @@
      • data-bs-url="<полный URL>"  — приоритет (query-параметры или маршрутный
        плейсхолдер не 'id', напр. assessmentId + substanceIds);
      • data-bs-id="<id>" + include c параметром {delete: '<route>'} → path(delete,{id}).
-   Ссылка удаления — GET (как во всём приложении). #}
+   Удаление — POST-форма с CSRF-токеном (интеншн 'delete'); JS проставляет form.action. #}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -19,7 +19,10 @@
             </div>
             <div class="modal-footer border-0 pt-0 d-flex gap-2">
                 <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
-                <a class="btn btn-danger flex-fill" data-role="confirm"><i class="bi bi-trash3 me-1"></i>Удалить</a>
+                <form method="post" data-role="confirm-form" class="flex-fill m-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete') }}">
+                    <button type="submit" class="btn btn-danger w-100"><i class="bi bi-trash3 me-1"></i>Удалить</button>
+                </form>
             </div>
         </div>
     </div>
@@ -35,16 +38,16 @@
             const id = button.getAttribute('data-bs-id');
             const url = button.getAttribute('data-bs-url');
             const titleEl = deleteModal.querySelector('[data-role="title"]');
-            const confirmLink = deleteModal.querySelector('a[data-role="confirm"]');
+            const confirmForm = deleteModal.querySelector('form[data-role="confirm-form"]');
 
             titleEl.textContent = title ? `Удалить ${title}?` : 'Удалить?';
 
             if (url) {
-                confirmLink.setAttribute('href', url);
+                confirmForm.setAttribute('action', url);
             }{% if delete is defined %} else {
                 const placeholder = "00000000-0000-0000-0000-000000000000";
                 const path = "{{ path(delete, {'id': '00000000-0000-0000-0000-000000000000'}) }}";
-                confirmLink.setAttribute('href', path.replace(placeholder, id));
+                confirmForm.setAttribute('action', path.replace(placeholder, id));
             }{% endif %}
         });
     })();

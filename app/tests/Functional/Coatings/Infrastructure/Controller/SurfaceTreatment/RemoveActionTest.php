@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\SurfaceTreatme
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -16,6 +17,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class RemoveActionTest extends WebTestCase
 {
+    use ExtractsCsrfTokenTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $adminEmail;
@@ -104,7 +107,8 @@ final class RemoveActionTest extends WebTestCase
         $admin = $em->getRepository(User::class)->findOneBy(['email.value' => $this->adminEmail]);
         $this->client->loginUser($admin);
 
-        $this->client->request('POST', sprintf('/cabinet/coating/surface-treatment/%s/remove', $this->treatmentId));
+        $token = $this->deleteCsrfToken($this->client);
+        $this->client->request('POST', sprintf('/cabinet/coating/surface-treatment/%s/remove', $this->treatmentId), ['_token' => $token]);
 
         self::assertResponseRedirects('/cabinet/coating/surface-treatment/list');
 

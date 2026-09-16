@@ -6,22 +6,28 @@ namespace App\Certificates\Infrastructure\Controller\Issuer;
 
 use App\Certificates\Application\UseCase\Command\DeleteIssuer\DeleteIssuerCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(
     path: '/cabinet/certificate/issuer/{id}/delete',
     name: 'app_cabinet_certificate_issuer_delete',
+    methods: ['POST'],
 )]
 final class DeleteAction extends AbstractController
 {
-    public function __construct(private readonly CommandBusInterface $commandBus)
-    {
+    public function __construct(
+        private readonly CommandBusInterface $commandBus,
+        private readonly CsrfGuard $csrfGuard,
+    ) {
     }
 
-    public function __invoke(string $id): Response
+    public function __invoke(Request $request, string $id): Response
     {
+        $this->csrfGuard->assertValid('delete', $request->request->getString('_token'));
         try {
             $this->commandBus->execute(new DeleteIssuerCommand($id));
             $this->addFlash('issuer_removed_success', 'Организация удалена.');

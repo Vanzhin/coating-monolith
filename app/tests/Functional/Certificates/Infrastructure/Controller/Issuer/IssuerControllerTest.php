@@ -9,6 +9,7 @@ use App\Certificates\Application\UseCase\Command\CreateIssuer\CreateIssuerComman
 use App\Certificates\Domain\Aggregate\Issuer\Issuer;
 use App\Certificates\Domain\Repository\IssuerRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -19,6 +20,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class IssuerControllerTest extends WebTestCase
 {
+    use ExtractsCsrfTokenTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private IssuerRepositoryInterface $repo;
@@ -140,7 +143,8 @@ final class IssuerControllerTest extends WebTestCase
         $suffix = bin2hex(random_bytes(3));
         $id = $this->createIssuer('Удаляемый-'.$suffix);
 
-        $this->client->request('GET', '/cabinet/certificate/issuer/'.$id.'/delete');
+        $token = $this->deleteCsrfToken($this->client);
+        $this->client->request('POST', '/cabinet/certificate/issuer/'.$id.'/delete', ['_token' => $token]);
         self::assertResponseRedirects('/cabinet/certificate/issuer');
 
         $this->em->clear();

@@ -13,6 +13,7 @@ use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,6 +25,7 @@ class ManufacturerController extends AbstractController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
+        private readonly CsrfGuard $csrfGuard,
     ) {
     }
 
@@ -97,9 +99,10 @@ class ManufacturerController extends AbstractController
         return $this->render('admin/coating/manufacturer/form.html.twig', compact('inputData'));
     }
 
-    #[Route(path: '/{id}/delete', name: 'delete')]
-    public function delete(string $id): Response
+    #[Route(path: '/{id}/delete', name: 'delete', methods: ['POST'])]
+    public function delete(Request $request, string $id): Response
     {
+        $this->csrfGuard->assertValid('delete', $request->request->getString('_token'));
         $error = null;
         try {
             $command = new RemoveManufacturerCommand($id);

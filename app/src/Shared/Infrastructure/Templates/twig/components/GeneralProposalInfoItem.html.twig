@@ -87,9 +87,12 @@
         </div>
         {% if coat.id and (itemDtoCollection|filter(coat => coat.id != null ))|length >1 %}
             <div class="btn-group me-2">
-                <a href="{{ path('app_cabinet_proposals_general_proposal_item_delete', {proposal_id: coat.proposalId, item_id: coat.id}) }}"
+                <a href="#"
                    type="button"
-                   class="btn btn-outline-danger">Удалить<i class="bi bi-trash3"></i>
+                   class="btn btn-outline-danger"
+                   data-bs-toggle="modal" data-bs-target="#deleteModal"
+                   data-bs-title="элемент формы"
+                   data-bs-url="{{ path('app_cabinet_proposals_general_proposal_item_delete', {proposal_id: coat.proposalId, item_id: coat.id}) }}">Удалить<i class="bi bi-trash3"></i>
                 </a>
             </div>
         {% endif %}
