@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventListener\Exception;
 
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -47,10 +48,16 @@ class ExceptionListener
      */
     public function exceptionToArray(\Throwable $exception): array
     {
+        $debug = (bool) $this->containerBag->get('kernel.debug');
+        // Человекочитаемое сообщение несут только AppException (наши доменные ошибки) и
+        // HttpException (framework-уровень). Всё остальное (DBAL/SQL, TypeError, SMTP и т.п.)
+        // в проде маскируем — иначе утекает схема БД/внутренности. Под debug показываем как есть.
+        $clientSafe = $exception instanceof AppException || $exception instanceof HttpExceptionInterface;
+
         $data = [
-            'message' => $exception->getMessage(),
+            'message' => ($debug || $clientSafe) ? $exception->getMessage() : 'Internal Server Error',
         ];
-        if ($this->containerBag->get('kernel.debug')) {
+        if ($debug) {
             $data = array_merge(
                 $data,
                 [

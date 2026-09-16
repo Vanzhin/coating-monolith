@@ -18,6 +18,18 @@ use App\Shared\Infrastructure\Exception\AppException;
  */
 final readonly class PushSubscription implements \JsonSerializable
 {
+    /**
+     * Хосты реальных push-сервисов. endpoint от браузера обязан быть https к одному из них — иначе
+     * WebPushNotifier делал бы server-side POST на произвольный адрес (SSRF, напр. 169.254.169.254).
+     * Суффикс с ведущей точкой = субдомены (web.push.apple.com), без точки = точный хост.
+     */
+    private const ALLOWED_ENDPOINT_HOSTS = [
+        'fcm.googleapis.com',
+        '.push.apple.com',
+        'updates.push.services.mozilla.com',
+        '.notify.windows.com',
+    ];
+
     public function __construct(
         public string $endpoint,
         public string $publicKey,
@@ -29,26 +41,26 @@ final readonly class PushSubscription implements \JsonSerializable
     }
 
     /**
-     * Разбирает браузерный payload ({endpoint, keys:{p256dh, auth}}). Любое отклонение формата —
-     * невалидная подписка (HTTP 422).
+     * Разбирает браузерный payload ({endpoint, keys:{p256dh, auth}}) — НЕДОВЕРЕННЫЙ вход, поэтому
+     * тут же валидируем endpoint по allowlist push-сервисов (SSRF-инвариант). Любое отклонение — 422.
      */
     public static function fromBrowserPayload(mixed $payload): self
     {
-        $keys = is_array($payload) ? ($payload['keys'] ?? null) : null;
-        $endpoint = is_array($payload) ? ($payload['endpoint'] ?? null) : null;
-        $publicKey = is_array($keys) ? ($keys['p256dh'] ?? null) : null;
-        $authToken = is_array($keys) ? ($keys['auth'] ?? null) : null;
-
-        if (!is_string($endpoint) || !is_string($publicKey) || !is_string($authToken)) {
-            throw new AppException('Некорректная push-подписка.');
-        }
+        [$endpoint, $publicKey, $authToken] = self::parse($payload);
+        self::assertAllowedEndpoint($endpoint);
 
         return new self($endpoint, $publicKey, $authToken);
     }
 
+    /**
+     * Гидрация из БД — данные уже прошли allowlist при создании; НЕ перепроверяем хост, чтобы смена
+     * allowlist не ломала отправку по уже сохранённым подпискам.
+     */
     public static function fromJson(string $json): self
     {
-        return self::fromBrowserPayload(json_decode($json, true));
+        [$endpoint, $publicKey, $authToken] = self::parse(json_decode($json, true));
+
+        return new self($endpoint, $publicKey, $authToken);
     }
 
     public function toJson(): string
@@ -65,5 +77,47 @@ final readonly class PushSubscription implements \JsonSerializable
             'endpoint' => $this->endpoint,
             'keys' => ['p256dh' => $this->publicKey, 'auth' => $this->authToken],
         ];
+    }
+
+    /**
+     * @return array{string, string, string}
+     */
+    private static function parse(mixed $payload): array
+    {
+        $keys = is_array($payload) ? ($payload['keys'] ?? null) : null;
+        $endpoint = is_array($payload) ? ($payload['endpoint'] ?? null) : null;
+        $publicKey = is_array($keys) ? ($keys['p256dh'] ?? null) : null;
+        $authToken = is_array($keys) ? ($keys['auth'] ?? null) : null;
+
+        if (!is_string($endpoint) || !is_string($publicKey) || !is_string($authToken)) {
+            throw new AppException('Некорректная push-подписка.');
+        }
+
+        return [$endpoint, $publicKey, $authToken];
+    }
+
+    private static function assertAllowedEndpoint(string $endpoint): void
+    {
+        $parts = parse_url($endpoint);
+        $scheme = $parts['scheme'] ?? null;
+        $host = isset($parts['host']) ? strtolower($parts['host']) : null;
+
+        if ('https' !== $scheme || null === $host || !self::isAllowedHost($host)) {
+            throw new AppException('Недопустимый адрес push-подписки.');
+        }
+    }
+
+    private static function isAllowedHost(string $host): bool
+    {
+        foreach (self::ALLOWED_ENDPOINT_HOSTS as $allowed) {
+            $matches = str_starts_with($allowed, '.')
+                ? str_ends_with($host, $allowed)
+                : $host === $allowed;
+            if ($matches) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

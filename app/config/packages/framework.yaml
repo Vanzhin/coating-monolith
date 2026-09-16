@@ -37,6 +37,12 @@ framework:
             policy: 'sliding_window'
             limit: 15
             interval: '1 hour'
+        # Верификация канала: тормозим перебор 6-значного OTP. Ключ — id юзера (перебирает под
+        # своим аккаунтом). 900k-пространство при 5/15мин + TTL кода 5мин делает подбор невозможным.
+        channel_verify_per_user:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
 
     #esi: true
     #fragments: true

@@ -15,6 +15,11 @@ security:
     login:
       pattern: ^/api/auth/token/login
       stateless: true
+      # Тормозим онлайн-брутфорс/credential stuffing по JWT-логину. Лимитер cache-backed
+      # (не сессия) — работает и на stateless. Ключ — email+IP (+ глобально по IP).
+      login_throttling:
+        max_attempts: 5
+        interval: '15 minutes'
       json_login:
         username_path: email
         check_path: /api/auth/token/login # or api_login_check as defined in config/routes.yaml
@@ -43,6 +48,11 @@ security:
       lazy: true
       provider: users
       entry_point: App\Shared\Application\Security\LoginFormAuthenticator # or 'form_login'
+      # Тормозим перебор паролей на веб-логине (форма). Работает с кастомным
+      # passport-аутентификатором (LoginFormAuthenticator несёт UserBadge).
+      login_throttling:
+        max_attempts: 5
+        interval: '15 minutes'
       logout:
         path: app_logout
       custom_authenticator: App\Shared\Application\Security\LoginFormAuthenticator
