@@ -152,3 +152,14 @@
     /* На десктопе мобильные CTA-кнопки прячем — вход в правой карточке. */
     .land-split .ls-left .land-cta { display: none; }
 }
+
+/* Honeypot-ловушка на форме регистрации: уводим за экран, но оставляем в DOM и доступной
+   для автозаполнения бота. Не display:none — часть ботов пропускает невидимое. Человек
+   поле не видит; заполнено оно только ботом → бэк (RegistrationBotGuard) отклоняет. */
+.hp-guard {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}

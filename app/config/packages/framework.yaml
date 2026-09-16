@@ -30,6 +30,13 @@ framework:
             policy: 'sliding_window'
             limit: 30
             interval: '1 hour'
+        # Регистрация по IP: бэкстоп анти-бота. honeypot + time-trap ловят большинство ботов,
+        # это — тормоз на массовый флуд с одного адреса. Лимит с запасом на NAT (несколько
+        # человек за одним IP), т.к. основную работу делают honeypot/time-trap.
+        registration_per_ip:
+            policy: 'sliding_window'
+            limit: 15
+            interval: '1 hour'
 
     #esi: true
     #fragments: true
