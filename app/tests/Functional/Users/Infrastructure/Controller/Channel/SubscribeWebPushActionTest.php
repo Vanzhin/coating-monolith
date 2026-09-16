@@ -12,6 +12,7 @@ use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Подписка на web push: авторизованный POST создаёт verified WEB_PUSH-канал; аноним не пускается.
@@ -81,6 +82,31 @@ final class SubscribeWebPushActionTest extends WebTestCase
         $channels = $em->getRepository(Channel::class)->findBy(['owner' => $user, 'type' => ChannelType::WEB_PUSH]);
         self::assertCount(1, $channels);
         self::assertTrue($channels[0]->isVerified());
+    }
+
+    public function test_subscribe_replaces_existing_web_push_channels(): void
+    {
+        // Два прежних web_push (разные endpoint) — имитация накопившихся дублей/сирот.
+        foreach (['https://web.push.apple.com/old1', 'https://web.push.apple.com/old2'] as $ep) {
+            $this->em->persist(new Channel(
+                Uuid::v7(),
+                ChannelType::WEB_PUSH,
+                json_encode(['endpoint' => $ep, 'keys' => ['p256dh' => 'p', 'auth' => 'a']]),
+                $this->user,
+            ));
+        }
+        $this->em->flush();
+
+        $this->client->loginUser($this->user);
+        $this->client->request('POST', '/cabinet/push/subscribe', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(self::SUBSCRIPTION));
+
+        self::assertResponseIsSuccessful();
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->email]);
+        $channels = $em->getRepository(Channel::class)->findBy(['owner' => $user, 'type' => ChannelType::WEB_PUSH]);
+        self::assertCount(1, $channels, 'прежние подписки снесены, осталась ровно одна (новая)');
     }
 
     public function test_invalid_subscription_is_rejected(): void
