@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Proposals\Infrastructure\Controller;
 
 use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTOTransformer;
+use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessControl;
 use App\Proposals\Application\UseCase\Command\UpdateGeneralProposalInfo\UpdateGeneralProposalInfoCommand;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemApplicationMethod;
 use App\Proposals\Domain\Aggregate\Proposal\CoatingSystemCorrosiveCategory;
@@ -32,6 +33,7 @@ class UpdateAction extends BaseController
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
         private readonly GeneralProposalInfoMapper $generalProposalInfoMapper,
         private readonly CoatingsAdapter $coatingsAdapter,
+        private readonly GeneralProposalInfoAccessControl $accessControl,
         LoggerInterface $logger,
     ) {
         parent::__construct($logger);
@@ -53,6 +55,13 @@ class UpdateAction extends BaseController
             $proposal = $this->generalProposalInfoFetcher->getRequiredGeneralProposalInfo($id);
             if (!$proposal) {
                 $this->addFlash('general_proposal_info_update_error', sprintf('Форма с идентификатором "%s" не найдена.', $id));
+
+                return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
+            }
+            // Гейт до рендера и до POST: не-владельца уводим списком, иначе чужая форма (цены/слои)
+            // утекла бы в шаблон, а POST перезаписал бы её. Хендлер дополнительно гейтит canEdit.
+            if (!$this->accessControl->canView($proposal)) {
+                $this->addFlash('general_proposal_info_update_error', 'Недостаточно прав для доступа к этой форме.');
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
