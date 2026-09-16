@@ -165,6 +165,7 @@
                                           }) }}"
                                           class="d-inline"
                                           onsubmit="return confirm('Удалить оценку химстойкости?')">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete') }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="bi bi-trash"></i>
                                         </button>
