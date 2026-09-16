@@ -9,7 +9,9 @@ monolog:
             action_level: error
             # to also log 400 level errors (but not 404's):
             # action_level: error
-            excluded_http_codes: [ 401, 403, 404 ]
+            # 405 (method not allowed) — клиентская ошибка, не алертим (иначе GET на POST-only
+            # роут шлёт в Telegram; в CI с токеном-заглушкой это роняло запрос).
+            excluded_http_codes: [ 401, 403, 404, 405 ]
             channels: [ "!event", "!security", "!doctrine", "!deprecation", "!console" ]
 #            channels: [ "!deprecation" ]
             handler: deduplicated
