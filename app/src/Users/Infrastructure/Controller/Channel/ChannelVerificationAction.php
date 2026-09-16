@@ -18,8 +18,10 @@ use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ChannelVerificationAction extends AbstractController
@@ -30,6 +32,8 @@ class ChannelVerificationAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly ChannelRepositoryInterface $channelRepository,
         private readonly LoggerInterface $logger,
+        #[Autowire(service: 'limiter.channel_verify_per_user')]
+        private readonly RateLimiterFactory $channelVerifyPerUserLimiter,
     ) {
     }
 
@@ -70,32 +74,42 @@ class ChannelVerificationAction extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Узкий try: ловим доменный AppException ровно над verify-командой.
-            // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx
-            // с реальным сообщением вместо «Undefined $form».
-            try {
-                /** @var Channel $channel */
-                $channel = $form->get('channel')->getData();
-                $token = $form->get('token')->getData();
-                $this->commandBus->execute(
-                    new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
-                );
+            // Rate-limit перебора OTP: 5 попыток/15мин на юзера (см. framework.yaml). Считаем каждую
+            // отправку валидной формы; исчерпан — не выполняем команду, показываем ошибку.
+            $limit = $this->channelVerifyPerUserLimiter->create($user->getId())->consume();
+            if (!$limit->isAccepted()) {
+                $this->addFlash('error', sprintf(
+                    'Слишком много попыток верификации. Попробуйте через %d мин.',
+                    max(1, (int) ceil(($limit->getRetryAfter()->getTimestamp() - time()) / 60)),
+                ));
+            } else {
+                // Узкий try: ловим доменный AppException ровно над verify-командой.
+                // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx
+                // с реальным сообщением вместо «Undefined $form».
+                try {
+                    /** @var Channel $channel */
+                    $channel = $form->get('channel')->getData();
+                    $token = $form->get('token')->getData();
+                    $this->commandBus->execute(
+                        new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
+                    );
 
-                $this->addFlash('success', 'Канал успешно верифицирован!');
-                $this->addFlash('success', 'Аккаунт успешно активирован!');
+                    $this->addFlash('success', 'Канал успешно верифицирован!');
+                    $this->addFlash('success', 'Аккаунт успешно активирован!');
 
-                return $this->redirectToRoute('app_cabinet');
-            } catch (\Exception $e) {
-                // Доменную ошибку (истёк/неверный код) показываем как есть; инфраструктурную — в лог,
-                // пользователю нейтрально, без утечки внутренностей.
-                $original = $this->getOriginalException($e);
-                if ($original instanceof AppException) {
-                    $this->addFlash('error', $original->getMessage());
-                } else {
-                    $this->logger->error('Ошибка верификации канала', ['exception' => $e]);
-                    $this->addFlash('error', 'Не удалось завершить верификацию. Попробуйте позже.');
+                    return $this->redirectToRoute('app_cabinet');
+                } catch (\Exception $e) {
+                    // Доменную ошибку (истёк/неверный код) показываем как есть; инфраструктурную — в лог,
+                    // пользователю нейтрально, без утечки внутренностей.
+                    $original = $this->getOriginalException($e);
+                    if ($original instanceof AppException) {
+                        $this->addFlash('error', $original->getMessage());
+                    } else {
+                        $this->logger->error('Ошибка верификации канала', ['exception' => $e]);
+                        $this->addFlash('error', 'Не удалось завершить верификацию. Попробуйте позже.');
+                    }
+                    // Падаем в render формы с показом flash-ошибки.
                 }
-                // Падаем в render формы с показом flash-ошибки.
             }
         }
 
