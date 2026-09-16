@@ -12,6 +12,11 @@ export default class extends Controller {
     static targets = ['badge', 'list'];
 
     connect() {
+        // На странице списка (ListAction уже пометил всё прочитанным) гасим бейдж на иконке PWA —
+        // это единственное место «увидел», согласованное с серверной пометкой. НЕ на каждой навигации.
+        if (this.hasListTarget && navigator.clearAppBadge) {
+            navigator.clearAppBadge().catch(() => { /* бейдж не критичен */ });
+        }
         if (!('serviceWorker' in navigator)) {
             return;
         }
