@@ -24,13 +24,14 @@ framework:
                     auto_setup: true
                     delete_after_ack: true
                     stream_max_entries: 10000
-            # Dead-letter на Redis (redis-messenger уже установлен; doctrine-транспорт в образе
-            # отсутствовал → воркер крашился при попытке сложить провалившееся сообщение).
-            # Отдельный стрим failed_messages; НЕ delete_after_ack — сообщения ждут инспекции/replay.
+            # Dead-letter на Redis. ВАЖНО: redis-messenger берёт имя стрима из ПУТИ DSN
+            # (Connection.php: $pathParts[1]) и перетирает options.stream — поэтому стрим задаём
+            # именно путём (/failed_messages). Иначе делили бы стрим "0" с async, где включён
+            # delete_after_ack, а он запрещён при >1 consumer-группе на одном стриме.
+            # НЕ delete_after_ack — сообщения лежат до инспекции/replay.
             failed:
-                dsn: 'redis://%env(resolve:REDIS_HOST)%/0'
+                dsn: 'redis://%env(resolve:REDIS_HOST)%/failed_messages'
                 options:
-                    stream: failed_messages
                     group: failed
                     consumer: failed
                     auto_setup: true
