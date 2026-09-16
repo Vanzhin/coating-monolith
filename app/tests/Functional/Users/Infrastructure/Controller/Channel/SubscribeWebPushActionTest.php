@@ -84,10 +84,11 @@ final class SubscribeWebPushActionTest extends WebTestCase
         self::assertTrue($channels[0]->isVerified());
     }
 
-    public function test_subscribe_replaces_existing_web_push_channels(): void
+    public function test_subscribe_keeps_channels_of_other_devices(): void
     {
-        // Два прежних web_push (разные endpoint) — имитация накопившихся дублей/сирот.
-        foreach (['https://web.push.apple.com/old1', 'https://web.push.apple.com/old2'] as $ep) {
+        // Два канала других устройств (другие endpoint) — подписка нового устройства их НЕ трогает,
+        // пуш должен идти на все устройства сразу.
+        foreach (['https://web.push.apple.com/desktop', 'https://web.push.apple.com/phone'] as $ep) {
             $this->em->persist(new Channel(
                 Uuid::v7(),
                 ChannelType::WEB_PUSH,
@@ -106,7 +107,30 @@ final class SubscribeWebPushActionTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->email]);
         $channels = $em->getRepository(Channel::class)->findBy(['owner' => $user, 'type' => ChannelType::WEB_PUSH]);
-        self::assertCount(1, $channels, 'прежние подписки снесены, осталась ровно одна (новая)');
+        self::assertCount(3, $channels, 'подписки других устройств выжили, добавилась ещё одна');
+    }
+
+    public function test_subscribe_same_endpoint_does_not_duplicate(): void
+    {
+        // Тот же endpoint, что и в подписке — переподписка того же устройства дубль не плодит.
+        $this->em->persist(new Channel(
+            Uuid::v7(),
+            ChannelType::WEB_PUSH,
+            json_encode(['endpoint' => self::SUBSCRIPTION['endpoint'], 'keys' => ['p256dh' => 'p', 'auth' => 'a']]),
+            $this->user,
+        ));
+        $this->em->flush();
+
+        $this->client->loginUser($this->user);
+        $this->client->request('POST', '/cabinet/push/subscribe', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(self::SUBSCRIPTION));
+
+        self::assertResponseIsSuccessful();
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->email]);
+        $channels = $em->getRepository(Channel::class)->findBy(['owner' => $user, 'type' => ChannelType::WEB_PUSH]);
+        self::assertCount(1, $channels, 'тот же endpoint — дубль не создаётся');
     }
 
     public function test_invalid_subscription_is_rejected(): void

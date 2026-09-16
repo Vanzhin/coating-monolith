@@ -7,10 +7,13 @@ namespace App\Users\Application\UseCase\Command\UnsubscribeWebPush;
 use App\Shared\Application\Command\Command;
 
 /**
- * Отписать текущего пользователя от web push — удаляем ВСЕ его WEB_PUSH-каналы (на всех устройствах).
- * Выключение пуша задумано как «выкл везде», чтобы не путаться, где подписка есть, а где нет.
- * Владелец берётся из аутентификации в хендлере.
+ * Отписать текущее устройство пользователя от web push — удаляем его WEB_PUSH-канал по endpoint.
+ * Канал на устройство: выключение на одном устройстве не трогает подписки других. Владелец берётся
+ * из аутентификации в хендлере, endpoint — от браузера (какую именно подписку гасим).
  */
 readonly class UnsubscribeWebPushCommand extends Command
 {
+    public function __construct(public string $endpoint)
+    {
+    }
 }
