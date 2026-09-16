@@ -76,6 +76,17 @@ export default class extends Controller {
     }
 
     async disable() {
+        // Выключение = выкл на всех устройствах: просим бэк удалить ВСЕ WEB_PUSH-каналы юзера,
+        // затем отписываем локальный браузер. Порядок: сначала сервер (чтобы запись точно ушла),
+        // потом браузер — оба best-effort, чтобы не разъезжались.
+        try {
+            await fetch('/cabinet/push/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+        } catch (e) {
+            // не критично — попробуем ещё раз при следующем выключении
+        }
         const existing = await this.currentSubscription();
         if (existing) {
             await existing.unsubscribe();
