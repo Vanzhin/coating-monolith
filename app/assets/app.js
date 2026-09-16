@@ -26,31 +26,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Бейдж на иконке PWA (ставит sw.js из payload = число непрочитанных). Когда приложение открыто/
-// на переднем плане — считаем уведомления увиденными: помечаем прочитанным на сервере (сброс
-// счётчика, в т.ч. между устройствами) и гасим бейдж. POST только для залогиненного — маркер
-// has-app-shell на <body> ставит base.html.twig под {% if app.user %}.
-let lastReadPostAt = 0;
-function markNotificationsSeen() {
-    if (navigator.clearAppBadge) {
-        navigator.clearAppBadge().catch(() => { /* бейдж не критичен */ });
-    }
-    // POST throttl'им: visibilitychange частит (alt-tab), а сброс идемпотентен — не чаще раза в 30с.
-    const now = Date.now();
-    if (now - lastReadPostAt < 30000) {
-        return;
-    }
-    lastReadPostAt = now;
-    if (document.body.classList.contains('has-app-shell')) {
-        fetch('/cabinet/notifications/read', {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        }).catch(() => { /* не критично */ });
-    }
-}
-window.addEventListener('load', markNotificationsSeen);
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        markNotificationsSeen();
-    }
-});
+// «Прочитано» помечается ТОЛЬКО при открытии списка уведомлений (ListAction), а не при открытии
+// приложения/фокусе вкладки — иначе счётчик непрочитанного сбрасывался бы на любой навигации.
+// Бейдж на иконке PWA (setAppBadge из sw.js = число непрочитанных) гасит страница списка
+// (notifications_live_controller) при просмотре — согласованно с серверной пометкой прочитанным.
