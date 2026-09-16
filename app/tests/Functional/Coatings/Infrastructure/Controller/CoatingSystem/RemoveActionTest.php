@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Controller\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
+use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -18,6 +19,7 @@ use Symfony\Component\Uid\Uuid;
 final class RemoveActionTest extends WebTestCase
 {
     use SurfaceTreatmentFixtureTrait;
+    use ExtractsCsrfTokenTrait;
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
@@ -93,7 +95,8 @@ final class RemoveActionTest extends WebTestCase
 
     public function test_post_removes_system_and_redirects(): void
     {
-        $this->client->request('POST', sprintf('/cabinet/coating/coating-system/%s/remove', $this->systemId));
+        $token = $this->deleteCsrfToken($this->client);
+        $this->client->request('POST', sprintf('/cabinet/coating/coating-system/%s/remove', $this->systemId), ['_token' => $token]);
 
         self::assertResponseRedirects('/cabinet/coating/coating-system/list');
 
