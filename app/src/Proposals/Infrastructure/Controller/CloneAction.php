@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Proposals\Infrastructure\Controller;
 
 use App\Proposals\Application\DTO\GeneralProposalInfo\GeneralProposalInfoDTOTransformer;
+use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessControl;
 use App\Proposals\Application\UseCase\Command\CreateGeneralProposalInfo\CreateGeneralProposalInfoCommand;
 use App\Proposals\Domain\Service\GeneralProposalInfoFetcher;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use App\Shared\Infrastructure\Controller\BaseController;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +25,8 @@ class CloneAction extends BaseController
         private readonly CommandBusInterface $commandBus,
         private readonly GeneralProposalInfoFetcher $generalProposalInfoFetcher,
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
+        private readonly GeneralProposalInfoAccessControl $accessControl,
+        private readonly AuthUserFetcherInterface $authUserFetcher,
         LoggerInterface $logger
     ) {
         parent::__construct($logger);
@@ -37,8 +41,14 @@ class CloneAction extends BaseController
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
+            if (!$this->accessControl->canView($proposal)) {
+                $this->addFlash('general_proposal_info_created_error', 'Недостаточно прав для клонирования этой формы.');
+
+                return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
+            }
             $dto = $this->generalProposalInfoDTOTransformer->fromEntity($proposal);
             $dto->number = self::PREFIX.$dto->number.'-'.random_int(10, 9999);
+            $dto->ownerId = $this->authUserFetcher->getAuthUserId(); // клон принадлежит текущему юзеру, не источнику
             $command = new CreateGeneralProposalInfoCommand($dto);
             $result = $this->commandBus->execute($command);
             $this->addFlash('general_proposal_info_created_success', sprintf('Форма "%s" добавлена.', $dto->number));
