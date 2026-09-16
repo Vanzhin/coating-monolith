@@ -52,4 +52,63 @@ final class PushSubscriptionTest extends TestCase
         yield 'пустой endpoint' => [['endpoint' => '', 'keys' => ['p256dh' => 'p', 'auth' => 'a']]];
         yield 'keys не массив' => [['endpoint' => 'e', 'keys' => 'x']];
     }
+
+    /**
+     * @dataProvider disallowedEndpoints
+     */
+    public function test_rejects_disallowed_endpoint(string $endpoint): void
+    {
+        $this->expectException(AppException::class);
+        PushSubscription::fromBrowserPayload([
+            'endpoint' => $endpoint,
+            'keys' => ['p256dh' => 'p', 'auth' => 'a'],
+        ]);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function disallowedEndpoints(): iterable
+    {
+        yield 'http (не https)' => ['http://fcm.googleapis.com/fcm/send/x'];
+        yield 'SSRF: link-local IP' => ['https://169.254.169.254/latest/meta-data/'];
+        yield 'SSRF: localhost' => ['https://localhost/x'];
+        yield 'чужой хост' => ['https://evil.example.com/x'];
+        yield 'near-miss apple' => ['https://notpush.apple.com/x'];
+    }
+
+    /**
+     * @dataProvider allowedEndpoints
+     */
+    public function test_accepts_allowlisted_endpoint(string $endpoint): void
+    {
+        $sub = PushSubscription::fromBrowserPayload([
+            'endpoint' => $endpoint,
+            'keys' => ['p256dh' => 'p', 'auth' => 'a'],
+        ]);
+
+        self::assertSame($endpoint, $sub->endpoint);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function allowedEndpoints(): iterable
+    {
+        yield 'FCM (Chrome)' => ['https://fcm.googleapis.com/fcm/send/x'];
+        yield 'Apple (Safari)' => ['https://web.push.apple.com/xxx'];
+        yield 'Mozilla (Firefox)' => ['https://updates.push.services.mozilla.com/wpush/v2/xxx'];
+        yield 'WNS (Edge)' => ['https://db5.notify.windows.com/w/?token=xxx'];
+    }
+
+    public function test_from_json_does_not_enforce_allowlist(): void
+    {
+        // Хранимые подписки грузим лениво: смена allowlist не должна ломать отправку по ним.
+        $json = (string) json_encode([
+            'endpoint' => 'https://legacy.push.example/x',
+            'keys' => ['p256dh' => 'p', 'auth' => 'a'],
+        ]);
+
+        self::assertSame('https://legacy.push.example/x', PushSubscription::fromJson($json)->endpoint);
+    }
 }
