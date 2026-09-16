@@ -53,6 +53,21 @@
                         {{ form_errors(registrationForm.plainPassword) }}
                     </div>
 
+                    {# Анти-бот (решение на бэке, RegistrationBotGuard). honeypot: человек это поле
+                       не видит (спрятано .hp-guard), бот заполняет → отказ. ts: подписанная метка
+                       времени рендера — слишком быстрый сабмит = бот. #}
+                    <div class="hp-guard" aria-hidden="true">
+                        <label for="{{ registrationForm.website.vars.id }}">Не заполняйте это поле</label>
+                        <input type="text"
+                               id="{{ registrationForm.website.vars.id }}"
+                               name="{{ registrationForm.website.vars.full_name }}"
+                               value="{{ registrationForm.website.vars.value }}"
+                               tabindex="-1" autocomplete="off">
+                    </div>
+                    <input type="hidden"
+                           name="{{ registrationForm.ts.vars.full_name }}"
+                           value="{{ registrationForm.ts.vars.value }}">
+
                     {{ form_widget(registrationForm._token) }}
 
                     <button class="auth-btn auth-btn-primary" type="submit">
