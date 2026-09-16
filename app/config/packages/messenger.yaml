@@ -24,7 +24,16 @@ framework:
                     auto_setup: true
                     delete_after_ack: true
                     stream_max_entries: 10000
-            failed: 'doctrine://default?queue_name=failed'
+            # Dead-letter на Redis (redis-messenger уже установлен; doctrine-транспорт в образе
+            # отсутствовал → воркер крашился при попытке сложить провалившееся сообщение).
+            # Отдельный стрим failed_messages; НЕ delete_after_ack — сообщения ждут инспекции/replay.
+            failed:
+                dsn: 'redis://%env(resolve:REDIS_HOST)%/0'
+                options:
+                    stream: failed_messages
+                    group: failed
+                    consumer: failed
+                    auto_setup: true
             sync: 'sync://'
 
         routing:
