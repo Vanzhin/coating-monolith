@@ -25,6 +25,7 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -39,6 +40,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class BySubstanceAssessmentActionsTest extends WebTestCase
 {
+    use ExtractsCsrfTokenTrait;
+
     private const CREATE_URL = '/cabinet/chemical-resistance/by-substance/assessment/create';
 
     private KernelBrowser $client;
@@ -245,7 +248,8 @@ final class BySubstanceAssessmentActionsTest extends WebTestCase
 
     public function test_admin_deletes_assessment(): void
     {
-        $this->client->request('POST', $this->deleteUrl($this->assessmentAId));
+        $token = $this->deleteCsrfToken($this->client);
+        $this->client->request('POST', $this->deleteUrl($this->assessmentAId), ['_token' => $token]);
 
         self::assertResponseRedirects();
 

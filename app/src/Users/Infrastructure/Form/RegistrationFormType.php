@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Users\Infrastructure\Form;
 
+use App\Users\Infrastructure\Security\FormTimestampSigner;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Email;
@@ -14,10 +19,14 @@ use Symfony\Component\Validator\Constraints\Regex;
 
 class RegistrationFormType extends AbstractType
 {
+    public function __construct(
+        private readonly FormTimestampSigner $timestampSigner,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-//            ->add('name')
             ->add('email', EmailType::class, [
                 'constraints' => [
                     new NotBlank(),
@@ -46,13 +55,21 @@ class RegistrationFormType extends AbstractType
                         'message' => 'Пароль должен содержать хотя бы одну цифру',
                     ]),
                 ],
+            ])
+            // Анти-бот (решение принимает RegistrationBotGuard на бэке; фронт только рисует).
+            // honeypot: поле-ловушка — человек его не видит (спрятано в шаблоне), бот заполняет.
+            ->add('website', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+            ])
+            // time-trap: подписанная метка времени рендера; сабмит быстрее порога = бот.
+            ->add('ts', HiddenType::class, [
+                'mapped' => false,
+                'data' => $this->timestampSigner->mint(),
             ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        //        $resolver->setDefaults([
-        //            'data_class' => User::class,
-        //        ]);
     }
 }

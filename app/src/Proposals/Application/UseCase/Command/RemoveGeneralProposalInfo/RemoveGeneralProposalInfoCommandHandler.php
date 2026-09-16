@@ -8,6 +8,7 @@ use App\Proposals\Application\Service\AccessControl\GeneralProposalInfoAccessCon
 use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\AssertService;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 readonly class RemoveGeneralProposalInfoCommandHandler implements CommandHandlerInterface
 {
@@ -21,13 +22,9 @@ readonly class RemoveGeneralProposalInfoCommandHandler implements CommandHandler
     {
         $proposalInfo = $this->generalProposalInfoRepository->findOneById($command->id);
         AssertService::notNull($proposalInfo, 'Форма не найдена.');
-        AssertService::true(
-            $this->generalProposalInfoAccessControl->canDeleteGeneralProposalInfo(
-                $proposalInfo->getOwnerId(),
-                $command->id
-            ),
-            'Запрещено.'
-        );
+        if (!$this->generalProposalInfoAccessControl->canEdit($proposalInfo)) {
+            throw new ForbiddenException();
+        }
         $this->generalProposalInfoRepository->remove($proposalInfo);
 
         return new RemoveGeneralProposalInfoCommandResult();

@@ -18,6 +18,7 @@ use App\Proposals\Domain\Repository\GeneralProposalInfoItemRepositoryInterface;
 use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\AssertService;
+use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandlerInterface
 {
@@ -32,15 +33,11 @@ readonly class UpdateGeneralProposalInfoCommandHandler implements CommandHandler
 
     public function __invoke(UpdateGeneralProposalInfoCommand $command): UpdateGeneralProposalInfoCommandResult
     {
-        AssertService::true(
-            $this->generalProposalInfoAccessControl->canUpdateGeneralProposalInfo(
-                $command->generalProposalInfoDTO->ownerId,
-                $command->proposalInfoId
-            ),
-            'Запрещено.'
-        );
         $generalProposalInfo = $this->generalProposalInfoRepository->findOneById($command->proposalInfoId);
         AssertService::notNull($generalProposalInfo, 'Форма не найдена.');
+        if (!$this->generalProposalInfoAccessControl->canEdit($generalProposalInfo)) {
+            throw new ForbiddenException();
+        }
         $generalProposalInfo->setNumber($command->generalProposalInfoDTO->number);
         $generalProposalInfo->setDescription($command->generalProposalInfoDTO->description);
         $generalProposalInfo->setBasis($command->generalProposalInfoDTO->basis);

@@ -4,52 +4,39 @@ declare(strict_types=1);
 
 namespace App\Proposals\Application\Service\AccessControl;
 
-use App\Proposals\Domain\Repository\GeneralProposalInfoRepositoryInterface;
-use App\Shared\Application\Security\AuthChecker;
-use App\Shared\Domain\Security\Role;
-use App\Shared\Domain\Service\AssertService;
+use App\Proposals\Domain\Aggregate\Proposal\GeneralProposalInfo;
+use App\Shared\Application\Security\AccessGuard;
+use App\Shared\Domain\Security\AuthUserFetcherInterface;
 
 /**
- * Служба проверки прав доступа к формам
+ * Права на форму КП. Resource-based: в проверку передаётся УЖЕ ЗАГРУЖЕННЫЙ агрегат, «кто актор»
+ * берётся из аутентификации (AuthUserFetcher), а НЕ от вызывающего — иначе гейт тавтологичен
+ * (owner ресурса сравнивается сам с собой и всегда проходит). Доступ имеет управляющий
+ * (админ/системный принципал) ИЛИ владелец формы.
  */
 readonly class GeneralProposalInfoAccessControl
 {
     public function __construct(
-        private AuthChecker $authChecker,
-        private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
+        private AccessGuard $accessGuard,
+        private AuthUserFetcherInterface $authUserFetcher,
     ) {
     }
 
-    /**
-     * Может ли пользователь удалить форму?
-     */
-    public function canDeleteGeneralProposalInfo(string $userId, string $proposalInfoId): bool
+    public function canView(GeneralProposalInfo $proposalInfo): bool
     {
-        if ($this->isAdmin()) {
-            return true;
-        }
-        $proposalInfo = $this->generalProposalInfoRepository->findOneById($proposalInfoId);
-        AssertService::notNull($proposalInfo, sprintf('Форма с идентификатором %s не найдена.', $proposalInfoId));
-
-        return $proposalInfo->isOwnedBy($userId);
+        return $this->isOwnerOrManager($proposalInfo);
     }
 
-    /**
-     * Может ли пользователь изменить форму?
-     */
-    public function canUpdateGeneralProposalInfo(string $userId, string $proposalInfoId): bool
+    public function canEdit(GeneralProposalInfo $proposalInfo): bool
     {
-        if ($this->isAdmin()) {
-            return true;
-        }
-        $proposalInfo = $this->generalProposalInfoRepository->findOneById($proposalInfoId);
-        AssertService::notNull($proposalInfo, sprintf('Форма с идентификатором %s не найдена.', $proposalInfoId));
-
-        return $proposalInfo->isOwnedBy($userId);
+        return $this->isOwnerOrManager($proposalInfo);
     }
 
-    private function isAdmin(): bool
+    private function isOwnerOrManager(GeneralProposalInfo $proposalInfo): bool
     {
-        return $this->authChecker->isGranted(Role::ROLE_ADMIN);
+        // Короткое замыкание: управляющему (в т.ч. системному принципалу консоли) владение не сверяем,
+        // getAuthUserId() для него не вызывается — важно, у консоли нет залогиненного юзера.
+        return $this->accessGuard->isManager()
+            || $proposalInfo->isOwnedBy($this->authUserFetcher->getAuthUserId());
     }
 }

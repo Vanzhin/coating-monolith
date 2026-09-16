@@ -17,6 +17,7 @@ use App\Certificates\Domain\Repository\DocumentsFilter;
 use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -28,6 +29,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class DocumentControllerTest extends WebTestCase
 {
+    use ExtractsCsrfTokenTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private DocumentRepositoryInterface $repo;
@@ -145,7 +148,8 @@ final class DocumentControllerTest extends WebTestCase
     {
         $id = $this->createViaBus('DEL-'.bin2hex(random_bytes(3)));
 
-        $this->client->request('GET', '/cabinet/certificate/document/'.$id.'/delete');
+        $token = $this->deleteCsrfToken($this->client);
+        $this->client->request('POST', '/cabinet/certificate/document/'.$id.'/delete', ['_token' => $token]);
         self::assertResponseRedirects('/cabinet/certificate/document');
 
         $this->em->clear();
