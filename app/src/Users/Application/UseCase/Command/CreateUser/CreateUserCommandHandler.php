@@ -20,7 +20,7 @@ readonly class CreateUserCommandHandler implements CommandHandlerInterface
     public function __invoke(CreateUserCommand $command): CreateUserCommandResult
     {
         if (null !== $this->userRepository->getByEmail($command->email)) {
-            throw new AppException('Пользователь с такой почтой уже существует.');
+            throw new AppException('Регистрация с такими данными невозможна.');
         }
 
         $user = $this->userFactory->create($command->email, $command->password);
