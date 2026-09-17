@@ -13,8 +13,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * Журнал изменений покрытий (все объекты класса) с фильтром по актору. Доступен всем
- * авторизованным (просмотр, не мутация), поэтому canEdit тут не проверяется.
+ * Журнал изменений покрытий (все объекты класса) с фильтром по актору. Только для админов:
+ * гейт в GetClassAuditLogQueryHandler (AuditAccessControl → ForbiddenException, 403);
+ * UI-ссылка на журнал — под canEdit.
  */
 #[Route(path: '/cabinet/coating/coating/audit-journal', name: 'app_cabinet_coating_coating_audit_journal', methods: ['GET'])]
 class AuditJournalAction extends AbstractController
