@@ -1,32 +1,40 @@
-/* Лента аудита (История покрытия + журнал класса). Каждая запись — карточка как везде
-   в приложении: те же значения, что у .ecard (surface + мягкая тень + радиус 14, без рамок).
-   Лежат на фоне страницы (без внешней тонированной панели). Токены из tokens.css. */
-.audit-entry {
-    background: var(--surface);
-    border-radius: 14px;
-    padding: 13px;
-    box-shadow: var(--shadow, 0 1px 2px rgba(16, 24, 40, .05));
-    margin-bottom: 10px;
-}
-.audit-entry:last-child { margin-bottom: 0; }
+/* Лента аудита (История покрытия + журнал класса). Единая карточка — тот же
+   .ecard, что и в списках покрытий/систем: медиа-слот с иконкой действия слева +
+   тело с мета-строкой и строками изменений. Каркас/тень/радиус приходят из
+   .ecard + .ecard-media (entity-card.css); тут — только специфика аудита:
+   вертикальная лента, окраска иконки/действия по типу, diff-тона. Токены — tokens.css. */
 
+/* Лента — столбик карточек (не грид .ecard-grid). */
+.audit-feed { display: flex; flex-direction: column; gap: 10px; }
+
+/* Иконка действия в медиа-слоте: .ecard-media даёт квадрат/фон/радиус,
+   тут — только цвет по смыслу (создано/изменено/удалено). */
+.audit-entry__icon--created { color: var(--ok); }
+.audit-entry__icon--updated { color: var(--bs-primary); }
+.audit-entry__icon--deleted { color: var(--danger-strong); }
+
+/* Мета-строка: объект (в журнале) · актор · дата · действие. */
 .audit-entry__meta {
     font-size: 12px;
     font-weight: 600;
     color: var(--bs-secondary-color);
     margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
 }
-.audit-entry__sep { margin: 0 4px; color: var(--faint, var(--bs-secondary-color)); }
+.audit-entry__sep { color: var(--faint, var(--bs-secondary-color)); }
+.audit-entry__obj { color: var(--bs-link-color); font-weight: 650; text-decoration: none; }
+.audit-entry__obj:hover { text-decoration: underline; }
+.audit-entry__actor { font-weight: 650; color: inherit; }
+.audit-entry__date { color: inherit; font-variant-numeric: tabular-nums; }
 
-/* Поля meta-строки. По умолчанию наследуют тон/вес от .audit-entry__meta — правило
-   нужно явно для actor: в журнале это ссылка на объект, а у <a> Bootstrap задаёт
-   свой color напрямую (перебивает наследование). action/date идут для симметрии. */
-.audit-entry__actor,
-.audit-entry__action,
-.audit-entry__date {
-    color: inherit;
-}
-.audit-entry__actor { font-weight: 650; }
+/* Слово-действие в мете — тон по типу (в тон окраске иконки). */
+.audit-entry__action { font-weight: 650; color: inherit; }
+.audit-entry__action--created { color: var(--ok); }
+.audit-entry__action--updated { color: var(--bs-primary); }
+.audit-entry__action--deleted { color: var(--danger-strong); }
 
 .audit-entry__field {
     font-size: 13.5px;

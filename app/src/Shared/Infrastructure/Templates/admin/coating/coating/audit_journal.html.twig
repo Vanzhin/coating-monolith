@@ -1,14 +1,8 @@
 {% extends '/cabinet/index.html.twig' %}
-{% import 'admin/coating/coating/_audit_value.html.twig' as audit_value %}
 
 {% block title %}{{ parent() }} | Журнал изменений: Покрытия{% endblock %}
 
 {% block content %}
-    {% set actionLabels = {
-        created: 'Создано',
-        updated: 'Изменено',
-        deleted: 'Удалено',
-    } %}
     {% set listRoute = 'app_cabinet_coating_coating_audit_journal' %}
     {% set activeFacetsCount = selectedActors|length + selectedCoatings|length %}
 
@@ -102,34 +96,13 @@
             {% endblock %}
         {% endembed %}
 
-        <div>
+        <div class="audit-feed">
             {% for entry in log %}
-                <div class="audit-entry">
-                    <div class="audit-entry__meta">
-                        <a href="{{ path('app_cabinet_coating_coating_history', {id: entry.entityId}) }}"
-                           class="audit-entry__actor text-decoration-none">{{ entityTitles[entry.entityId]|default(entry.entityId) }}</a>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__actor">{{ entry.actorLabel }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__date">{{ entry.occurredAt|date('d.m.Y H:i') }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__action">{{ actionLabels[entry.action.value] ?? entry.action.value }}</span>
-                    </div>
-                    {% for change in entry.changes %}
-                        <div class="audit-entry__field">
-                            <span class="audit-entry__label">{{ change.label }}:</span>
-                            {% if change.op.value == 'set' %}
-                                <span class="audit-entry__old">{{ audit_value.display(change.old) }}</span>
-                                <i class="bi bi-arrow-right audit-entry__arrow"></i>
-                                <span class="audit-entry__new">{{ audit_value.display(change.new) }}</span>
-                            {% elseif change.op.value == 'add' %}
-                                <span class="audit-entry__add">+ {{ audit_value.display(change.new) }}</span>
-                            {% else %}
-                                <span class="audit-entry__remove">− {{ audit_value.display(change.old) }}</span>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% include 'admin/coating/coating/_audit_entry.html.twig' with {
+                    entry: entry,
+                    objectTitle: entityTitles[entry.entityId]|default(entry.entityId),
+                    objectUrl: path('app_cabinet_coating_coating_history', {id: entry.entityId}),
+                } only %}
             {% else %}
                 <p class="text-body-secondary mb-0">Изменений пока нет.</p>
             {% endfor %}
