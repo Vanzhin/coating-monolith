@@ -1,0 +1,53 @@
+/* Лента аудита (вкладка «История» покрытия). Без рамок (дизайн-линия «без рамок») —
+   каждая запись отличается тоном/тенью, не линиями. Только существующие токены
+   из tokens.css: --sunken/--surface (панели), --diff-* (было→стало), --ok/--danger-strong
+   (добавлено/удалено), --faint/--bs-secondary-color (мутed текст). */
+.audit-entry {
+    background: var(--sunken);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+.audit-entry:last-child { margin-bottom: 0; }
+
+.audit-entry__meta {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin-bottom: 6px;
+}
+.audit-entry__sep { margin: 0 4px; color: var(--faint, var(--bs-secondary-color)); }
+
+.audit-entry__field {
+    font-size: 13.5px;
+    padding: 3px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px;
+}
+.audit-entry__label {
+    color: var(--faint, var(--bs-secondary-color));
+    font-weight: 600;
+}
+
+/* set: было (приглушено, зачёркнуто) → стало (выделено diff-тоном). */
+.audit-entry__old {
+    color: var(--bs-secondary-color);
+    text-decoration: line-through;
+}
+.audit-entry__arrow {
+    color: var(--faint, var(--bs-secondary-color));
+    font-size: 11px;
+}
+.audit-entry__new {
+    color: var(--diff-txt);
+    background: var(--diff-bg);
+    font-weight: 650;
+    border-radius: 6px;
+    padding: 1px 6px;
+}
+
+/* add / remove — тон ok/danger, как в остальных бейджах проекта (.b-ok и т.п.). */
+.audit-entry__add { color: var(--ok); font-weight: 600; }
+.audit-entry__remove { color: var(--danger-strong); font-weight: 600; }
