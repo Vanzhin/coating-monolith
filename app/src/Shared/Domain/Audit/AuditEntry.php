@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace App\Shared\Domain\Audit;
 
 /** Запись аудита. Append-only. seq генерит БД, в ORM не мапится в Деплое 1. */
-final class AuditEntry
+class AuditEntry
 {
     public function __construct(
         private readonly string $id,
