@@ -1,23 +1,24 @@
-/* 1helper service worker (без Workbox).
-   Стратегия — network-first для same-origin GET: всегда берём свежее из сети,
-   ответ используем как офлайн-fallback. В рантайме в кэш кладём ТОЛЬКО статику
-   (см. isCacheablePath): HTML-страницы (в т.ч. авторизованная оболочка с email
-   юзера), JSON и приватное туда НЕ попадают — иначе на общем устройстве офлайн
-   отдал бы чужую идентичность/данные. Офлайн-оболочку страниц даёт PRECACHE,
-   который тянется АНОНИМНО (без кук), поэтому без чьей-либо шапки. Смена версии
-   кэша ниже вычищает старый (app-v6) кэш, куда приватное уже могло попасть. */
-const CACHE = 'app-v7';
-// Раздел «Инструменты» офлайн-first: страницы предкэшируем, чтобы калькулятор открывался
-// без сети даже на холодном кэше (JS/CSS-бандл подтянется network-first при первом заходе).
-const PRECACHE = ['/offline.html', '/icons/android-chrome-192x192.png', '/tools', '/tools/mix', '/tools/film', '/tools/consumption'];
+/* 1helper service worker (динамический — отдаётся SwAction, НЕ статик public/sw.js).
+   PRECACHE и версия кэша подставляются с актуальными (в проде хешированными) URL ассетов бандла,
+   поэтому калькуляторы /tools открываются офлайн «на холодную». Стратегия:
+   - cache-first для CACHE_FIRST (ассеты бандла — иммутабельны/хешированы, + offline.html/иконка):
+     мгновенно из кэша, фолбэк в сеть;
+   - network-first для остального, ВКЛЮЧАЯ страницы /tools — залогиненный онлайн видит свою оболочку,
+     офлайн навигация фолбэчит на анонимный precache, ассеты берутся cache-first → калькулятор работает.
+   В рантайм-кэш кладём ТОЛЬКО статику; приватное/HTML (оболочка с email юзера) — нет. Precache тянем
+   анонимно (credentials:'omit'), чтобы в офлайне не отдать чужую идентичность. Версия кэша меняется на
+   деплое (хеши ассетов) → activate вычищает старый кэш. */
+const CACHE = 'app-{{ cacheVersion }}';
+const PRECACHE = {{ precacheUrls|json_encode(constant('JSON_UNESCAPED_SLASHES'))|raw }};
+const CACHE_FIRST = new Set({{ cacheFirstUrls|json_encode(constant('JSON_UNESCAPED_SLASHES'))|raw }});
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE)
-            // credentials:'omit' — тянем без кук: в офлайн-кэше должна лежать анонимная
-            // оболочка (без email/ссылок в кабинет), кто бы ни был залогинен при установке.
-            .then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { credentials: 'omit' }))))
-            .then(() => self.skipWaiting())
+        caches.open(CACHE).then((c) => Promise.all(
+            // Индивидуально + catch (не all-or-nothing addAll): один недоступный URL не рушит precache.
+            // credentials:'omit' — анонимно: офлайн-оболочка без email/кабинета, ассеты публичны.
+            PRECACHE.map((u) => c.add(new Request(u, { credentials: 'omit' })).catch(() => {}))
+        )).then(() => self.skipWaiting())
     );
 });
 
@@ -29,16 +30,13 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Что безопасно и осмысленно держать в офлайн-кэше. Приватное и динамику не кэшируем.
+// Только успешный полный ответ своего origin: не 206 (Range) и не redirect/opaque — Cache.put на них падает.
 function isCacheableResponse(res) {
-    // Только успешный полный ответ своего origin: не 206 (Range) и не redirect/opaque —
-    // Cache.put на таких падает.
     return res.status === 200 && res.type === 'basic';
 }
 
-function isCacheablePath(url) {
-    // Кэшируем в рантайме ТОЛЬКО статику. HTML (в т.ч. авторизованная оболочка),
-    // JSON и приватное не кэшируем; офлайн-страницы даёт анонимный PRECACHE.
+// В рантайме кэшируем ТОЛЬКО статику по расширению. HTML (авторизованная оболочка), JSON, приватное — нет.
+function isRuntimeCacheable(url) {
     if (url.search) return false; // ?query — не плодим варианты одного ресурса
     return /\.(css|js|mjs|png|jpe?g|svg|gif|ico|woff2?|ttf|webp)$/.test(url.pathname);
 }
@@ -49,10 +47,27 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(req.url);
     if (url.origin !== location.origin) return;
 
+    // Ассеты бандла + offline.html + иконка — cache-first (иммутабельны, identity-neutral).
+    if (CACHE_FIRST.has(url.pathname)) {
+        event.respondWith(
+            caches.match(req).then((hit) => hit || fetch(new Request(req, { credentials: 'omit' }))
+                .then((res) => {
+                    if (isCacheableResponse(res)) {
+                        const copy = res.clone();
+                        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+                    }
+                    return res;
+                })
+                .catch(() => (req.mode === 'navigate' ? caches.match('/offline.html') : Response.error())))
+        );
+        return;
+    }
+
+    // Остальное (в т.ч. страницы /tools) — network-first: свежее из сети, офлайн-фолбэк на кэш/precache.
     event.respondWith(
         fetch(req)
             .then((res) => {
-                if (isCacheableResponse(res) && isCacheablePath(url)) {
+                if (isCacheableResponse(res) && isRuntimeCacheable(url)) {
                     const copy = res.clone();
                     caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
                 }
