@@ -195,6 +195,9 @@ services:
   App\Shared\Domain\Audit\TrackedClassRepositoryInterface:
     alias: App\Shared\Infrastructure\Repository\TrackedClassRepository
 
+  App\Shared\Domain\Audit\AuditPolicyInterface:
+    alias: App\Shared\Infrastructure\Audit\CachedAuditPolicy
+
   App\Shared\Domain\Service\UnreadNotificationCounterInterface:
     alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
 
