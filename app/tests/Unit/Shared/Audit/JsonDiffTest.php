@@ -65,4 +65,14 @@ final class JsonDiffTest extends TestCase
         $o = $this->d->diff($mk(2), $mk(9), 'vo');
         self::assertSame([ChangeOp::Set, 'vo.b'], [$o[0]->op, $o[0]->path]);
     }
+
+    public function testEmptyListGainsElements(): void
+    {
+        $o = $this->d->diff([], [1, 2, 3], 'tags');
+        self::assertCount(3, $o);
+        $ops = array_map(static fn ($c) => [$c->op, $c->path, $c->new], $o);
+        self::assertContains([ChangeOp::Add, 'tags', 1], $ops);
+        self::assertContains([ChangeOp::Add, 'tags', 2], $ops);
+        self::assertContains([ChangeOp::Add, 'tags', 3], $ops);
+    }
 }

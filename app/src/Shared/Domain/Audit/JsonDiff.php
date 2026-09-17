@@ -24,9 +24,9 @@ final class JsonDiff
             return [FieldChange::set($path, $old, $new)]; // скаляр/смена типа (напр. null→дерево)
         }
 
-        // Empty arrays are compatible with both lists and maps — treat as same type as counterpart
-        $oldIsList = !empty($old) && array_is_list($old);
-        $newIsList = !empty($new) && array_is_list($new);
+        // Empty arrays defer to the other side's shape (both-empty already short-circuited above)
+        $oldIsList = [] === $old ? array_is_list($new) : array_is_list($old);
+        $newIsList = [] === $new ? array_is_list($old) : array_is_list($new);
 
         if ($oldIsList !== $newIsList) {
             return [FieldChange::set($path, $old, $new)];
