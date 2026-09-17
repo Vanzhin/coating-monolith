@@ -198,18 +198,6 @@
                     </div>
                 {% endif %}
             </div>
-            <div class="modal-footer">
-                {% if canEdit %}
-                    {# История — только для управляющего (админ/система), не всем авторизованным. #}
-                    <a href="{{ path('app_cabinet_coating_coating_history', {id: coating.id}) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-clock-history"></i> История
-                    </a>
-                    <a href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil"></i> Редактировать
-                    </a>
-                {% endif %}
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-            </div>
         </div>
     </div>
 </div>

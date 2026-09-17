@@ -72,19 +72,6 @@
 
                 <div class="small text-body-secondary mt-3">Обновлено: {{ document.updatedAt|date('d.m.Y') }}</div>
             </div>
-            <div class="modal-footer">
-                {% if document.hasFile %}
-                    <a href="{{ path('app_cabinet_certificate_document_download', {id: document.id}) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-file-earmark-arrow-down"></i> Скачать PDF
-                    </a>
-                {% endif %}
-                {% if canEdit %}
-                    <a href="{{ path('app_cabinet_certificate_document_update', {id: document.id}) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil"></i> Редактировать
-                    </a>
-                {% endif %}
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-            </div>
         </div>
     </div>
 </div>
