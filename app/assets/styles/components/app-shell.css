@@ -93,3 +93,17 @@
 @media (prefers-reduced-motion: reduce) {
     @view-transition { navigation: none; }
 }
+
+/* Офлайн-баннер: тонкая полоса, показывает контроллер offline-indicator при потере сети.
+   Дизайн-система: warn-токены (тема-aware), без жёсткой рамки. hidden должен побеждать flex. */
+.offline-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    background: var(--warn-subtle);
+    color: var(--warn);
+}
+.offline-banner[hidden] { display: none; }
+.offline-banner a { color: var(--warn); font-weight: 600; margin-left: auto; }

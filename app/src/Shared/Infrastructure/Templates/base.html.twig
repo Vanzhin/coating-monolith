@@ -84,6 +84,13 @@
 
 {# Основной контент. На десктопе (lg+) смещается вправо под сайдбар (см. app-shell.css). #}
 <div class="app-content">
+{# Офлайн-баннер (глобально): контроллер offline-indicator показывает его при потере сети и прячет
+   при возврате. Стартует hidden — без вспышки в онлайне. Калькуляторы /tools работают офлайн. #}
+<div class="offline-banner" data-controller="offline-indicator" role="status" hidden>
+    <i class="bi bi-wifi-off"></i>
+    <span>Нет сети — калькуляторы работают офлайн.</span>
+    <a href="{{ path('app_tools_index') }}">Открыть</a>
+</div>
 {% block header %}
     {# Шапка-карточка с логотипом — только на мобиле (.app-header-mobile);
        на десктопе бренд — в сайдбаре. #}
@@ -187,6 +194,23 @@
                        class="list-group-item list-group-item-action{{ current_route starts with 'app_tools' ? ' active' : '' }}"
                        data-action="click->offcanvas-autoclose#close">
                         <i class="bi bi-calculator me-2"></i>Инструменты
+                        <span class="badge text-bg-secondary ms-2">офлайн</span>
+                    </a>
+                    {# Прямые ссылки на калькуляторы — работают без сети. #}
+                    <a href="{{ path('app_tools_mix') }}"
+                       class="list-group-item list-group-item-action ps-5{{ current_route == 'app_tools_mix' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-droplet-half me-2"></i>Смешивание
+                    </a>
+                    <a href="{{ path('app_tools_film') }}"
+                       class="list-group-item list-group-item-action ps-5{{ current_route == 'app_tools_film' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-layers me-2"></i>Мокрая плёнка
+                    </a>
+                    <a href="{{ path('app_tools_consumption') }}"
+                       class="list-group-item list-group-item-action ps-5{{ current_route == 'app_tools_consumption' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-bucket me-2"></i>Расход
                     </a>
                 </div>
             </div>
