@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\Audit;
 
 use App\Shared\Domain\Audit\AuditPolicyInterface;
@@ -16,7 +18,8 @@ final class CachedAuditPolicy implements AuditPolicyInterface
     public function __construct(
         private readonly TrackedClassRepositoryInterface $repo,
         private readonly CacheInterface $cache,
-    ) {}
+    ) {
+    }
 
     public function trackedFields(string $entityClass): array
     {
@@ -36,5 +39,8 @@ final class CachedAuditPolicy implements AuditPolicyInterface
         $this->cache->delete($this->key($entityClass));
     }
 
-    private function key(string $entityClass): string { return 'audit.tracked.'.str_replace('\\', '.', $entityClass); }
+    private function key(string $entityClass): string
+    {
+        return 'audit.tracked.'.str_replace('\\', '.', $entityClass);
+    }
 }

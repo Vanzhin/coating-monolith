@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\EventListener\Doctrine;
 
 use App\Shared\Domain\Audit\AuditAction;
@@ -27,7 +29,8 @@ final class AuditOnFlushListener
         private readonly AuditPolicyInterface $policy,
         private readonly JsonDiff $jsonDiff,
         private readonly AuthUserFetcherInterface $auth,
-    ) {}
+    ) {
+    }
 
     public function onFlush(OnFlushEventArgs $args): void
     {

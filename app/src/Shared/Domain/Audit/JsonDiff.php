@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Domain\Audit;
 
 /**
@@ -40,6 +42,7 @@ final class JsonDiff
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new
+     *
      * @return list<FieldChange>
      */
     private function diffMap(array $old, array $new, string $path): array
@@ -63,8 +66,10 @@ final class JsonDiff
 
     /**
      * Списки — по глубокому равенству элементов (без ключа идентичности).
+     *
      * @param list<mixed> $old
      * @param list<mixed> $new
+     *
      * @return list<FieldChange>
      */
     private function diffList(array $old, array $new, string $path): array

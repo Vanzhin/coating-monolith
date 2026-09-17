@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\Shared\Audit;
 
 use App\Shared\Domain\Audit\AuditPolicyInterface;
@@ -10,7 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class CachedAuditPolicyTest extends KernelTestCase
 {
-    public function testReadsAndInvalidates(): void
+    public function test_reads_and_invalidates(): void
     {
         self::bootKernel();
         $policy = self::getContainer()->get(AuditPolicyInterface::class);

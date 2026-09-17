@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\Shared\Audit;
 
 use App\Shared\Domain\Audit\TrackedClass;
@@ -9,7 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class TrackedClassRepositoryTest extends KernelTestCase
 {
-    public function testSaveFindRemove(): void
+    public function test_save_find_remove(): void
     {
         self::bootKernel();
         $repo = self::getContainer()->get(TrackedClassRepositoryInterface::class);
@@ -24,7 +26,7 @@ final class TrackedClassRepositoryTest extends KernelTestCase
         self::assertNull($repo->findByClass($class));
     }
 
-    public function testCoatingSeed(): void
+    public function test_coating_seed(): void
     {
         self::bootKernel();
         $found = self::getContainer()->get(TrackedClassRepositoryInterface::class)

@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\Database\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
@@ -8,7 +10,10 @@ use Doctrine\Migrations\AbstractMigration;
 /** Конфиг трекаемых классов (FQCN + карта поле→подпись). Сид дефолта для Coating. Идемпотентно. */
 final class Version20260916121000 extends AbstractMigration
 {
-    public function getDescription(): string { return 'Create audit_tracked_class config table and seed Coating.'; }
+    public function getDescription(): string
+    {
+        return 'Create audit_tracked_class config table and seed Coating.';
+    }
 
     public function up(Schema $schema): void
     {
@@ -34,5 +39,8 @@ final class Version20260916121000 extends AbstractMigration
         SQL);
     }
 
-    public function down(Schema $schema): void { $this->addSql('DROP TABLE IF EXISTS audit_tracked_class'); }
+    public function down(Schema $schema): void
+    {
+        $this->addSql('DROP TABLE IF EXISTS audit_tracked_class');
+    }
 }

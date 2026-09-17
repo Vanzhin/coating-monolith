@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Domain\Audit;
 
 use App\Shared\Infrastructure\Exception\AppException;
@@ -25,17 +27,31 @@ class TrackedClass
         $this->fields = $this->normalizeFields($fields);
     }
 
-    public function id(): string { return $this->id; }
-    public function entityClass(): string { return $this->entityClass; }
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    public function entityClass(): string
+    {
+        return $this->entityClass;
+    }
 
     /** @return array<string, string> */
-    public function fields(): array { return $this->fields; }
+    public function fields(): array
+    {
+        return $this->fields;
+    }
 
     /** @param array<string, string> $fields */
-    public function retrack(array $fields): void { $this->fields = $this->normalizeFields($fields); }
+    public function retrack(array $fields): void
+    {
+        $this->fields = $this->normalizeFields($fields);
+    }
 
     /**
      * @param array<string, string> $fields
+     *
      * @return array<string, string>
      */
     private function normalizeFields(array $fields): array

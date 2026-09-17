@@ -73,7 +73,7 @@ class UpdateAction extends AbstractController
                 return $this->render('admin/coating/coating/form.html.twig', array_merge(
                     compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'),
                     ['coatingBases' => CoatingBase::cases(), 'glossOptions' => Gloss::cases(),
-                     'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? [])],
+                        'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? [])],
                 ));
             } catch (\Exception $e) {
                 $error = $e->getMessage();

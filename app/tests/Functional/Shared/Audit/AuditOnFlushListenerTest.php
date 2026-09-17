@@ -27,7 +27,7 @@ final class AuditOnFlushListenerTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
 
-    public function testUpdatingCoatingTitleWritesAuditRow(): void
+    public function test_updating_coating_title_writes_audit_row(): void
     {
         self::bootKernel();
         $this->authenticateAsSystem();

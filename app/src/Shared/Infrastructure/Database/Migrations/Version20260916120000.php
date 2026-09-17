@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\Database\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
@@ -8,7 +10,10 @@ use Doctrine\Migrations\AbstractMigration;
 /** Append-only журнал; триггер блокирует UPDATE/DELETE (Уровень 1). Идемпотентно. */
 final class Version20260916120000 extends AbstractMigration
 {
-    public function getDescription(): string { return 'Create append-only audit_log with UPDATE/DELETE-blocking trigger.'; }
+    public function getDescription(): string
+    {
+        return 'Create append-only audit_log with UPDATE/DELETE-blocking trigger.';
+    }
 
     public function up(Schema $schema): void
     {

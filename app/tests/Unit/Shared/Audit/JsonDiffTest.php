@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\Shared\Audit;
 
 use App\Shared\Domain\Audit\ChangeOp;
@@ -9,30 +11,40 @@ use PHPUnit\Framework\TestCase;
 final class JsonDiffTest extends TestCase
 {
     private JsonDiff $d;
-    protected function setUp(): void { $this->d = new JsonDiff(); }
 
-    public function testScalarSet(): void
+    protected function setUp(): void
+    {
+        $this->d = new JsonDiff();
+    }
+
+    public function test_scalar_set(): void
     {
         $o = $this->d->diff('X', 'Y', 'title');
         self::assertCount(1, $o);
         self::assertSame([ChangeOp::Set, 'title', 'X', 'Y'], [$o[0]->op, $o[0]->path, $o[0]->old, $o[0]->new]);
     }
 
-    public function testEqualProducesNothing(): void
+    public function test_equal_produces_nothing(): void
     {
         self::assertSame([], $this->d->diff(5, 5, 'x'));
-        $mk = static fn (): object => new class implements \JsonSerializable { public function jsonSerialize(): array { return ['a' => 1]; } };
+        $mk = static fn (): object => new class() implements \JsonSerializable {
+            /** @return array<string, mixed> */
+            public function jsonSerialize(): array
+            {
+                return ['a' => 1];
+            }
+        };
         self::assertSame([], $this->d->diff($mk(), $mk(), 'vo'));
     }
 
-    public function testNestedMapDrillsToScalar(): void
+    public function test_nested_map_drills_to_scalar(): void
     {
         $o = $this->d->diff(['min' => 100, 'max' => 350], ['min' => 120, 'max' => 350], 'dftRange');
         self::assertCount(1, $o);
         self::assertSame([ChangeOp::Set, 'dftRange.min'], [$o[0]->op, $o[0]->path]);
     }
 
-    public function testMapKeyAddedThenRemoved(): void
+    public function test_map_key_added_then_removed(): void
     {
         $old = ['children' => []];
         $new = ['children' => ['immersion' => ['x' => 1]]];
@@ -45,7 +57,7 @@ final class JsonDiffTest extends TestCase
         self::assertSame([ChangeOp::Remove, 'tree.children.immersion'], [$o2[0]->op, $o2[0]->path]);
     }
 
-    public function testListElementAddRemove(): void
+    public function test_list_element_add_remove(): void
     {
         $old = [['t' => 20, 'm' => 240], ['t' => 35, 'm' => 120], ['t' => 40, 'm' => 90]];
         $new = [['t' => 20, 'm' => 360], ['t' => 40, 'm' => 90]]; // 20 изменён, 35 удалён, 40 без изменений
@@ -56,17 +68,24 @@ final class JsonDiffTest extends TestCase
         self::assertContains([ChangeOp::Add, 'default'], $ops);
     }
 
-    public function testVoNormalizedThenDiffed(): void
+    public function test_vo_normalized_then_diffed(): void
     {
         $mk = static fn (int $b): object => new class($b) implements \JsonSerializable {
-            public function __construct(private int $b) {}
-            public function jsonSerialize(): array { return ['a' => 1, 'b' => $this->b]; }
+            public function __construct(private int $b)
+            {
+            }
+
+            /** @return array<string, mixed> */
+            public function jsonSerialize(): array
+            {
+                return ['a' => 1, 'b' => $this->b];
+            }
         };
         $o = $this->d->diff($mk(2), $mk(9), 'vo');
         self::assertSame([ChangeOp::Set, 'vo.b'], [$o[0]->op, $o[0]->path]);
     }
 
-    public function testEmptyListGainsElements(): void
+    public function test_empty_list_gains_elements(): void
     {
         $o = $this->d->diff([], [1, 2, 3], 'tags');
         self::assertCount(3, $o);

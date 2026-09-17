@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Functional\Shared\Audit;
 
 use App\Shared\Domain\Audit\TrackedClass;
@@ -9,7 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class TrackedFieldsAreMappedTest extends KernelTestCase
 {
-    public function testEveryConfiguredFieldExistsInMetadata(): void
+    public function test_every_configured_field_exists_in_metadata(): void
     {
         self::bootKernel();
         $em = self::getContainer()->get(EntityManagerInterface::class);

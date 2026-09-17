@@ -24,7 +24,7 @@ use Symfony\Component\Uid\Uuid;
 
 final class CoatingOptimisticLockTest extends KernelTestCase
 {
-    public function testStaleVersionThrows(): void
+    public function test_stale_version_throws(): void
     {
         self::bootKernel();
         $em = self::getContainer()->get(EntityManagerInterface::class);

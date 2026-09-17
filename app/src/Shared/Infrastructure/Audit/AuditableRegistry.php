@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\Audit;
 
 use App\Shared\Domain\Audit\AuditEntry;
@@ -12,7 +14,9 @@ final class AuditableRegistry
     private const INTERNAL = [AuditEntry::class, TrackedClass::class];
     private const TECHNICAL_FIELDS = ['id', 'version'];
 
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
     /** @return list<class-string> */
     public function auditableClasses(): array

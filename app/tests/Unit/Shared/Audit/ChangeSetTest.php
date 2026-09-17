@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Tests\Unit\Shared\Audit;
 
 use App\Shared\Domain\Audit\ChangeSet;
@@ -8,9 +10,12 @@ use PHPUnit\Framework\TestCase;
 
 final class ChangeSetTest extends TestCase
 {
-    public function testEmpty(): void { self::assertTrue((new ChangeSet())->isEmpty()); }
+    public function test_empty(): void
+    {
+        self::assertTrue((new ChangeSet())->isEmpty());
+    }
 
-    public function testRoundTrip(): void
+    public function test_round_trip(): void
     {
         $set = new ChangeSet(FieldChange::set('a', 1, 2), FieldChange::remove('b', 'x'));
         $json = $set->jsonSerialize();
