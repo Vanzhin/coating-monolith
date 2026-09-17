@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Shared\Audit;
 
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Audit\AuditAction;
 use App\Shared\Domain\Audit\AuditEntry;
 use App\Shared\Domain\Audit\AuditEntryRepositoryInterface;
@@ -44,26 +45,78 @@ final class AuditEntryRepositoryTest extends KernelTestCase
         self::assertGreaterThan($rows[1]->seq(), $rows[0]->seq());
     }
 
-    public function test_for_class_filters_by_actor(): void
+    public function test_for_class_returns_all_when_both_facets_empty(): void
+    {
+        [$repo, $class] = $this->seedTwoEntitiesTwoActors();
+
+        $all = $repo->forClass($class, new StringCollection(), new StringCollection(), Pager::fromPage(1, 10));
+
+        self::assertCount(3, $all);
+    }
+
+    public function test_for_class_filters_by_actor_ids(): void
+    {
+        [$repo, $class] = $this->seedTwoEntitiesTwoActors();
+
+        $onlyActor1 = $repo->forClass($class, new StringCollection('actor-1'), new StringCollection(), Pager::fromPage(1, 10));
+
+        self::assertCount(2, $onlyActor1);
+        foreach ($onlyActor1 as $entry) {
+            self::assertSame('actor-1', $entry->actorId());
+        }
+    }
+
+    public function test_for_class_filters_by_entity_ids(): void
+    {
+        [$repo, $class, $eid1, $eid2] = $this->seedTwoEntitiesTwoActors();
+
+        $onlyEid2 = $repo->forClass($class, new StringCollection(), new StringCollection($eid2), Pager::fromPage(1, 10));
+
+        self::assertCount(1, $onlyEid2);
+        self::assertSame($eid2, $onlyEid2[0]->entityId());
+    }
+
+    public function test_for_class_combines_actor_and_entity_facets(): void
+    {
+        [$repo, $class, $eid1] = $this->seedTwoEntitiesTwoActors();
+
+        $combined = $repo->forClass(
+            $class,
+            new StringCollection('actor-1'),
+            new StringCollection($eid1),
+            Pager::fromPage(1, 10),
+        );
+
+        self::assertCount(1, $combined);
+        self::assertSame('actor-1', $combined[0]->actorId());
+        self::assertSame($eid1, $combined[0]->entityId());
+    }
+
+    /**
+     * Три записи одного класса: (eid1,actor-1), (eid1,actor-2), (eid2,actor-1) —
+     * покрывает фильтр по актору, по покрытию и их комбинацию.
+     *
+     * @return array{0: AuditEntryRepositoryInterface, 1: string, 2: string, 3: string}
+     */
+    private function seedTwoEntitiesTwoActors(): array
     {
         self::bootKernel();
         $em = self::getContainer()->get(EntityManagerInterface::class);
         $repo = self::getContainer()->get(AuditEntryRepositoryInterface::class);
         $class = 'App\\Y'.substr(md5((string) mt_rand()), 0, 8);
-        $eid = 'c-'.substr(md5((string) mt_rand()), 0, 8);
+        $eid1 = 'c-'.substr(md5((string) mt_rand()), 0, 8);
+        $eid2 = 'c-'.substr(md5((string) mt_rand()), 0, 8);
 
-        $em->persist(new AuditEntry(Uuid::uuid4()->toString(), $class, $eid, AuditAction::Updated,
+        $em->persist(new AuditEntry(Uuid::uuid4()->toString(), $class, $eid1, AuditAction::Updated,
             new ChangeSet(FieldChange::set('title', 'a', 'b')), 'actor-1', new \DateTimeImmutable()));
         $em->flush();
-        $em->persist(new AuditEntry(Uuid::uuid4()->toString(), $class, $eid, AuditAction::Updated,
+        $em->persist(new AuditEntry(Uuid::uuid4()->toString(), $class, $eid1, AuditAction::Updated,
             new ChangeSet(FieldChange::set('title', 'b', 'c')), 'actor-2', new \DateTimeImmutable()));
         $em->flush();
+        $em->persist(new AuditEntry(Uuid::uuid4()->toString(), $class, $eid2, AuditAction::Updated,
+            new ChangeSet(FieldChange::set('title', 'c', 'd')), 'actor-1', new \DateTimeImmutable()));
+        $em->flush();
 
-        $all = $repo->forClass($class, null, Pager::fromPage(1, 10));
-        self::assertCount(2, $all);
-
-        $onlyActor1 = $repo->forClass($class, 'actor-1', Pager::fromPage(1, 10));
-        self::assertCount(1, $onlyActor1);
-        self::assertSame('actor-1', $onlyActor1[0]->actorId());
+        return [$repo, $class, $eid1, $eid2];
     }
 }

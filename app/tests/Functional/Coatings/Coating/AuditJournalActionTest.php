@@ -26,7 +26,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Smoke-тест админ-журнала: маршрут резолвится в AuditJournalAction (не в {id}-роут),
- * отдаёт изменения покрытий, фильтр по актору вырезает записи чужого актора.
+ * отдаёт изменения покрытий, фильтры по актору (actorIds[]) и покрытию (coatingIds[])
+ * вырезают записи чужого актора/покрытия и пропускают совпадающие.
  * Доступ закрыт для не-админов (AuditAccessControl).
  */
 final class AuditJournalActionTest extends WebTestCase
@@ -35,6 +36,7 @@ final class AuditJournalActionTest extends WebTestCase
     private EntityManagerInterface $em;
     private string $adminEmail;
     private string $userEmail;
+    private string $adminId;
     private string $coatingId;
     private string $manufacturerId;
     private string $updatedTitle;
@@ -64,6 +66,7 @@ final class AuditJournalActionTest extends WebTestCase
         $refRoles->setValue($admin, ['ROLE_ADMIN']);
 
         $this->em->persist($admin);
+        $this->adminId = $admin->getId();
 
         $regularUser = new User(new Email($this->userEmail));
         $regularUser->setPassword('test_password', $hasher);
@@ -170,12 +173,42 @@ final class AuditJournalActionTest extends WebTestCase
 
     public function test_actor_filter_hides_entries_of_other_actors(): void
     {
-        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actor' => 'nonmatching-actor-id']);
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actorIds' => ['nonmatching-actor-id']]);
 
         self::assertResponseIsSuccessful();
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringNotContainsString($this->updatedTitle, $html);
+    }
+
+    public function test_actor_filter_shows_entries_of_matching_actor(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actorIds' => [$this->adminId]]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringContainsString($this->updatedTitle, $html);
+    }
+
+    public function test_coating_filter_hides_entries_of_other_coatings(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['coatingIds' => ['nonmatching-coating-id']]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringNotContainsString($this->updatedTitle, $html);
+    }
+
+    public function test_coating_filter_shows_entries_of_matching_coating(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['coatingIds' => [$this->coatingId]]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringContainsString($this->updatedTitle, $html);
     }
 
     public function test_non_admin_gets_403(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Repository;
 
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Audit\AuditEntry;
 use App\Shared\Domain\Audit\AuditEntryRepositoryInterface;
 use App\Shared\Domain\Repository\Pager;
@@ -27,15 +28,30 @@ final class AuditEntryRepository extends ServiceEntityRepository implements Audi
             ->getQuery()->getResult();
     }
 
-    public function forClass(string $entityClass, ?string $actorId, Pager $pager): array
+    public function forClass(string $entityClass, StringCollection $actorIds, StringCollection $entityIds, Pager $pager): array
     {
         $qb = $this->base($pager)
             ->andWhere('a.entityClass = :c')->setParameter('c', $entityClass);
-        if (null !== $actorId) {
-            $qb->andWhere('a.actorId = :actor')->setParameter('actor', $actorId);
-        }
+        $this->applyActorFacet($qb, $actorIds);
+        $this->applyEntityFacet($qb, $entityIds);
 
         return $qb->getQuery()->getResult();
+    }
+
+    private function applyActorFacet(QueryBuilder $qb, StringCollection $actorIds): void
+    {
+        if (0 === $actorIds->count()) {
+            return;
+        }
+        $qb->andWhere('a.actorId IN (:actors)')->setParameter('actors', $actorIds->getList());
+    }
+
+    private function applyEntityFacet(QueryBuilder $qb, StringCollection $entityIds): void
+    {
+        if (0 === $entityIds->count()) {
+            return;
+        }
+        $qb->andWhere('a.entityId IN (:ids)')->setParameter('ids', $entityIds->getList());
     }
 
     private function base(Pager $pager): QueryBuilder

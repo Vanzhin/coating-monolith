@@ -10,15 +10,16 @@ use App\Shared\Application\Audit\AuditLogView;
 use App\Shared\Application\Audit\Query\GetClassAuditLog\GetClassAuditLogQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * Журнал изменений покрытий (все объекты класса) с фильтром по актору. Только для админов:
- * гейт в GetClassAuditLogQueryHandler (AuditAccessControl → ForbiddenException, 403);
- * UI-ссылка на журнал — под canEdit.
+ * Журнал изменений покрытий (все объекты класса) с фильтром по актору и покрытию.
+ * Только для админов: гейт в GetClassAuditLogQueryHandler (AuditAccessControl →
+ * ForbiddenException, 403); UI-ссылка на журнал — под canEdit.
  */
 #[Route(path: '/cabinet/coating/coating/audit-journal', name: 'app_cabinet_coating_coating_audit_journal', methods: ['GET'])]
 class AuditJournalAction extends AbstractController
@@ -26,19 +27,23 @@ class AuditJournalAction extends AbstractController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CoatingRepositoryInterface $coatingRepository,
+        private readonly QueryParams $queryParams,
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $actorId = $request->query->get('actor') ?: null;
+        $actorIds = $this->queryParams->stringCollection($request, 'actorIds');
+        $coatingIds = $this->queryParams->stringCollection($request, 'coatingIds');
         $page = max(1, (int) $request->query->get('page', 1));
 
-        $log = $this->queryBus->execute(new GetClassAuditLogQuery(Coating::class, $actorId, $page));
+        $log = $this->queryBus->execute(new GetClassAuditLogQuery(Coating::class, $actorIds, $coatingIds, $page));
 
         return $this->render('admin/coating/coating/audit_journal.html.twig', [
             'log' => $log,
-            'actorId' => $actorId,
+            'actorId' => $actorIds->getFirst(),
+            'selectedActorIds' => $actorIds,
+            'selectedCoatingIds' => $coatingIds,
             'entityTitles' => $this->titlesByEntityId($log),
         ]);
     }

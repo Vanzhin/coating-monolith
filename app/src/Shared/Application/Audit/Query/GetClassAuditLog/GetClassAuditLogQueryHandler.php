@@ -32,7 +32,8 @@ final readonly class GetClassAuditLogQueryHandler implements QueryHandlerInterfa
 
         $entries = $this->repository->forClass(
             $query->entityClass,
-            $query->actorId,
+            $query->actorIds,
+            $query->entityIds,
             Pager::fromPage($query->page, self::PER_PAGE),
         );
 
