@@ -169,6 +169,13 @@ final class AuditJournalActionTest extends WebTestCase
         // Ссылка на объект показывает заголовок покрытия текстом, а не голый UUID
         // (id остаётся только в href, куда ведёт ссылка).
         self::assertMatchesRegularExpression('/>'.preg_quote($this->updatedTitle, '/').'<\/a>/', $html);
+
+        // Стандартный chip-фасет-шелл: обе фасетки (актор + покрытия) отрисованы
+        // как typeahead-виджеты (coating-tags controller) с рабочими suggest-эндпоинтами.
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-controller="coating-tags"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_users_suggest'), $html);
+        self::assertStringContainsString($router->generate('app_cabinet_coating_coating_suggest'), $html);
     }
 
     public function test_actor_filter_hides_entries_of_other_actors(): void
@@ -189,6 +196,11 @@ final class AuditJournalActionTest extends WebTestCase
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString($this->updatedTitle, $html);
+        // Чип фасета «Актор» гидрирован email'ом (server-side резолв id → email
+        // через GetUsersByIdsQuery), а не голым ulid — email лежит в JSON
+        // data-coating-tags-existing-value виджета шторки (HTML-escaped кавычки).
+        $expectedActorChip = '[{&quot;id&quot;:&quot;'.$this->adminId.'&quot;,&quot;title&quot;:&quot;'.$this->adminEmail.'&quot;}]';
+        self::assertStringContainsString($expectedActorChip, $html);
     }
 
     public function test_coating_filter_hides_entries_of_other_coatings(): void
@@ -209,6 +221,10 @@ final class AuditJournalActionTest extends WebTestCase
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString($this->updatedTitle, $html);
+        // Чип фасета «Покрытия» гидрирован названием (server-side резолв id →
+        // title через CoatingRepository::findByIds), а не голым uuid.
+        $expectedCoatingChip = '[{&quot;id&quot;:&quot;'.$this->coatingId.'&quot;,&quot;title&quot;:&quot;'.$this->updatedTitle.'&quot;}]';
+        self::assertStringContainsString($expectedCoatingChip, $html);
     }
 
     public function test_non_admin_gets_403(): void

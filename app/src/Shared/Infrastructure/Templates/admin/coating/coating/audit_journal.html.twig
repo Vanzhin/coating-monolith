@@ -9,6 +9,8 @@
         updated: 'Изменено',
         deleted: 'Удалено',
     } %}
+    {% set listRoute = 'app_cabinet_coating_coating_audit_journal' %}
+    {% set activeFacetsCount = selectedActors|length + selectedCoatings|length %}
 
     <div class="p-2 p-md-3">
         <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-body-tertiary">
@@ -18,20 +20,89 @@
             </a>
         </div>
 
-        <form method="get" action="{{ path('app_cabinet_coating_coating_audit_journal') }}"
-              class="d-flex flex-wrap align-items-center gap-2 mb-3 p-3 rounded-3 bg-body-tertiary">
-            <label for="auditJournalActor" class="form-label small text-muted mb-0">Актор (id)</label>
-            <input type="text" id="auditJournalActor" name="actor" value="{{ actorId }}"
-                   class="form-control form-control-sm w-auto" placeholder="ulid пользователя или «system»">
-            <button type="submit" class="btn btn-sm btn-primary">Показать</button>
-            {% if actorId %}
-                <a href="{{ path('app_cabinet_coating_coating_audit_journal') }}" class="btn btn-sm btn-outline-secondary">
-                    Сбросить
-                </a>
-            {% endif %}
-        </form>
+        {# Стандартный chip-фасет-шелл кабинета (тот же, что у списка покрытий):
+           chip-row с чипами активных фасетов + шторка «Все фильтры» с typeahead
+           по актору/покрытию. Без свободного поиска и сортировки — тут их нет. #}
+        {% embed 'components/entity_search.html.twig' with {
+            list_route: listRoute,
+            form_id: 'auditJournalForm',
+            has_search: false,
+            active_count: activeFacetsCount,
+            drawer_id: 'auditJournalFiltersOffcanvas',
+            drawer_form_id: 'auditJournalFiltersForm',
+        } %}
+            {% block chips %}
+                {# --- Актор (multi) --- #}
+                {% if selectedActors|length > 0 %}
+                    {% for a in selectedActors %}
+                        {% set restIds = selectedActors|filter(x => x.id != a.id)|map(x => x.id) %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({actorIds: restIds, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать «{{ a.title }}» из фильтра">
+                            {{ a.title }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="actor">
+                        Актор
+                    </button>
+                {% endif %}
 
-        <div class="p-3 rounded-3 bg-body-tertiary">
+                {# --- Покрытия (multi) --- #}
+                {% if selectedCoatings|length > 0 %}
+                    {% for c in selectedCoatings %}
+                        {% set restIds = selectedCoatings|filter(x => x.id != c.id)|map(x => x.id) %}
+                        {% set removeUrl = path(listRoute, app.request.query.all|merge({coatingIds: restIds, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}"
+                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
+                           title="Убрать «{{ c.title }}» из фильтра">
+                            {{ c.title }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="coating">
+                        Покрытия
+                    </button>
+                {% endif %}
+            {% endblock %}
+
+            {% block drawer %}
+                {# Актор: typeahead по email (app_cabinet_users_suggest), гидрация
+                   чипов через уже резолвленный selectedActors (id+email). #}
+                <div id="facet-actor" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <h6 class="fw-semibold mb-2">Актор</h6>
+                    <input type="text"
+                           data-controller="coating-tags"
+                           data-coating-tags-existing-value="{{ selectedActors|json_encode }}"
+                           data-coating-tags-suggest-url-value="{{ path('app_cabinet_users_suggest') }}"
+                           data-coating-tags-create-url-value=""
+                           data-coating-tags-hidden-input-name-value="actorIds[]"
+                           data-coating-tags-allow-create-value="false"
+                           class="form-control form-control-sm"
+                           placeholder="Начните вводить email...">
+                </div>
+
+                {# Покрытия: typeahead по названию (app_cabinet_coating_coating_suggest),
+                   зеркалит фасет «Покрытие» списка документов. #}
+                <div id="facet-coating" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <h6 class="fw-semibold mb-2">Покрытия</h6>
+                    <input type="text"
+                           data-controller="coating-tags"
+                           data-coating-tags-existing-value="{{ selectedCoatings|json_encode }}"
+                           data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                           data-coating-tags-create-url-value=""
+                           data-coating-tags-hidden-input-name-value="coatingIds[]"
+                           data-coating-tags-allow-create-value="false"
+                           class="form-control form-control-sm"
+                           placeholder="Начните вводить покрытие...">
+                </div>
+            {% endblock %}
+        {% endembed %}
+
+        <div>
             {% for entry in log %}
                 <div class="audit-entry">
                     <div class="audit-entry__meta">
