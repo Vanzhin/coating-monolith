@@ -4,7 +4,9 @@
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
                   https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
     <entity name="App\Shared\Domain\Audit\TrackedClass" table="audit_tracked_class">
-        <id name="id" type="uuid" column="id"/>
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
         <field name="entityClass" type="string" column="entity_class" length="255" unique="true"/>
         <field name="fields" type="json" column="fields"/>
     </entity>
