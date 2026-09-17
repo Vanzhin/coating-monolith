@@ -201,6 +201,9 @@ services:
   App\Shared\Domain\Audit\AuditPolicyInterface:
     alias: App\Shared\Infrastructure\Audit\CachedAuditPolicy
 
+  App\Shared\Domain\Audit\ActorResolverInterface:
+    alias: App\Users\Infrastructure\Audit\UserActorResolver
+
   App\Shared\Domain\Service\UnreadNotificationCounterInterface:
     alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
 

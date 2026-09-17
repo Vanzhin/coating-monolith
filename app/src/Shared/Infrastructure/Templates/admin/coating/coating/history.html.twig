@@ -1,4 +1,5 @@
 {% extends '/cabinet/index.html.twig' %}
+{% import 'admin/coating/coating/_audit_value.html.twig' as audit_value %}
 
 {% block title %}{{ parent() }} | История: {{ coating.title }}{% endblock %}
 
@@ -31,13 +32,13 @@
                         <div class="audit-entry__field">
                             <span class="audit-entry__label">{{ change.label }}:</span>
                             {% if change.op.value == 'set' %}
-                                <span class="audit-entry__old">{{ change.old is iterable ? change.old|json_encode : change.old }}</span>
+                                <span class="audit-entry__old">{{ audit_value.display(change.old) }}</span>
                                 <i class="bi bi-arrow-right audit-entry__arrow"></i>
-                                <span class="audit-entry__new">{{ change.new is iterable ? change.new|json_encode : change.new }}</span>
+                                <span class="audit-entry__new">{{ audit_value.display(change.new) }}</span>
                             {% elseif change.op.value == 'add' %}
-                                <span class="audit-entry__add">+ {{ change.new is iterable ? change.new|json_encode : change.new }}</span>
+                                <span class="audit-entry__add">+ {{ audit_value.display(change.new) }}</span>
                             {% else %}
-                                <span class="audit-entry__remove">− {{ change.old is iterable ? change.old|json_encode : change.old }}</span>
+                                <span class="audit-entry__remove">− {{ audit_value.display(change.old) }}</span>
                             {% endif %}
                         </div>
                     {% endfor %}

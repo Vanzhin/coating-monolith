@@ -1,0 +1,13 @@
+{% macro display(value) %}
+    {%- if value is same as(true) -%}
+        Да
+    {%- elseif value is same as(false) -%}
+        Нет
+    {%- elseif value is null -%}
+        —
+    {%- elseif value is iterable -%}
+        {{ value|json_encode }}
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{% endmacro %}

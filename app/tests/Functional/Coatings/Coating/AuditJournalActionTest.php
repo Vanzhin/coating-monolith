@@ -111,8 +111,10 @@ final class AuditJournalActionTest extends WebTestCase
         $this->em->flush();
 
         // Мутация — источник записи с action=Updated, которую ищет журнал.
+        // isZincRich заодно проверяет человекочитаемое «Да»/«Нет» вместо «1»/пустоты.
         $this->updatedTitle = 'AuditJournalUpdated_'.$suffix;
         $coating->setTitle($this->updatedTitle);
+        $coating->setIsZincRich(true);
         $this->em->flush();
 
         $this->coatingId = $coating->getId();
@@ -159,7 +161,11 @@ final class AuditJournalActionTest extends WebTestCase
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString('Журнал изменений', $html);
         self::assertStringContainsString($this->updatedTitle, $html);
-        self::assertStringContainsString($this->coatingId, $html);
+        self::assertStringContainsString($this->adminEmail, $html);
+        self::assertStringContainsString('Да', $html);
+        // Ссылка на объект показывает заголовок покрытия текстом, а не голый UUID
+        // (id остаётся только в href, куда ведёт ссылка).
+        self::assertMatchesRegularExpression('/>'.preg_quote($this->updatedTitle, '/').'<\/a>/', $html);
     }
 
     public function test_actor_filter_hides_entries_of_other_actors(): void

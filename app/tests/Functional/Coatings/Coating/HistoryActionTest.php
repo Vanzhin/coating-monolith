@@ -70,6 +70,11 @@ final class HistoryActionTest extends WebTestCase
         $refActive2->setValue($regularUser, true);
 
         $this->em->persist($regularUser);
+        $this->em->flush();
+
+        // Логинимся ДО создания/правки покрытия, чтобы actorId аудит-записей был
+        // ulid этого юзера (см. AuditJournalActionTest — тот же приём).
+        $this->client->loginUser($admin);
 
         /** @var ManufacturerSpecification $manufacturerSpec */
         $manufacturerSpec = $container->get(ManufacturerSpecification::class);
@@ -102,10 +107,12 @@ final class HistoryActionTest extends WebTestCase
         $this->em->persist($coating);
         $this->em->flush();
 
+        // Мутация булевого поля — проверяем человекочитаемое «Да»/«Нет» вместо «1»/пустоты.
+        $coating->setIsZincRich(true);
+        $this->em->flush();
+
         $this->coatingId = $coating->getId();
         $this->manufacturerId = $manufacturer->getId();
-
-        $this->client->loginUser($admin);
     }
 
     protected function tearDown(): void
@@ -148,6 +155,8 @@ final class HistoryActionTest extends WebTestCase
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString($this->coatingTitle, $html);
         self::assertStringContainsString('История', $html);
+        self::assertStringContainsString($this->adminEmail, $html);
+        self::assertStringContainsString('Да', $html);
     }
 
     public function test_missing_id_redirects_to_list(): void

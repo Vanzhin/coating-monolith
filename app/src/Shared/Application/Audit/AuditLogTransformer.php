@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Shared\Application\Audit;
 
+use App\Shared\Domain\Audit\ActorResolverInterface;
 use App\Shared\Domain\Audit\AuditEntry;
 use App\Shared\Domain\Audit\AuditPolicyInterface;
 use App\Shared\Domain\Audit\FieldChange;
-use App\Shared\Domain\Security\SystemUser;
 
 /** AuditEntry → view-DTO. Подпись поля — из карты TrackedClass.fields; нет ключа → сам path. */
 final class AuditLogTransformer
 {
-    public function __construct(private readonly AuditPolicyInterface $policy)
-    {
+    public function __construct(
+        private readonly AuditPolicyInterface $policy,
+        private readonly ActorResolverInterface $actorResolver,
+    ) {
     }
 
     public function view(AuditEntry $e): AuditLogView
@@ -27,7 +29,7 @@ final class AuditLogTransformer
         return new AuditLogView(
             $e->action(),
             $e->actorId(),
-            SystemUser::ID === $e->actorId() ? 'Система' : $e->actorId(),
+            $this->actorResolver->resolve($e->actorId()),
             $e->occurredAt(),
             $e->entityId(),
             $changes,
