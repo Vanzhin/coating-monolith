@@ -192,6 +192,9 @@ services:
   App\Notifications\Domain\Repository\NotificationRepositoryInterface:
     alias: App\Notifications\Infrastructure\Repository\NotificationRepository
 
+  App\Shared\Domain\Audit\TrackedClassRepositoryInterface:
+    alias: App\Shared\Infrastructure\Repository\TrackedClassRepository
+
   App\Shared\Domain\Service\UnreadNotificationCounterInterface:
     alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
 
