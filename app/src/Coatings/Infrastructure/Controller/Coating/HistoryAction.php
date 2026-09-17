@@ -15,8 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * Вкладка «История» покрытия — лента изменений из журнала аудита. Доступна всем
- * авторизованным (просмотр, не мутация), поэтому canEdit тут не проверяется.
+ * Вкладка «История» покрытия — лента изменений из журнала аудита. Доступ только
+ * управляющему (админ/система) — гейт в GetEntityAuditLogQueryHandler через
+ * AuditAccessControl, тонкий контроллер его не проверяет.
  */
 #[Route(path: '/cabinet/coating/coating/{id}/history', name: 'app_cabinet_coating_coating_history', methods: ['GET'])]
 class HistoryAction extends AbstractController
@@ -30,7 +31,7 @@ class HistoryAction extends AbstractController
         /** @var GetCoatingQueryResult $coating */
         $coating = $this->queryBus->execute(new GetCoatingQuery($id));
         if (!$coating->coatingDTO) {
-            $this->addFlash('manufacturer_update_error', sprintf('Coating with id "%s" not found.', $id));
+            $this->addFlash('coating_not_found_error', sprintf('Покрытие с идентификатором "%s" не найдено.', $id));
 
             return $this->redirectToRoute('app_cabinet_coating_coating_list');
         }

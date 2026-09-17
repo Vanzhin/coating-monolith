@@ -22,10 +22,12 @@
         is_empty: result.coatings is empty,
     } %}
     {% block header_actions %}
-        <a href="{{ path('app_cabinet_coating_coating_audit_journal') }}"
-           class="btn btn-outline-secondary btn-sm" title="Журнал изменений">
-            <i class="bi bi-clock-history"></i>
-        </a>
+        {% if canEdit %}
+            <a href="{{ path('app_cabinet_coating_coating_audit_journal') }}"
+               class="btn btn-outline-secondary btn-sm" title="Журнал изменений">
+                <i class="bi bi-clock-history"></i>
+            </a>
+        {% endif %}
     {% endblock %}
 
     {% block above_list %}

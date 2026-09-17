@@ -18,6 +18,16 @@
 }
 .audit-entry__sep { margin: 0 4px; color: var(--faint, var(--bs-secondary-color)); }
 
+/* Поля meta-строки. По умолчанию наследуют тон/вес от .audit-entry__meta — правило
+   нужно явно для actor: в журнале это ссылка на объект, а у <a> Bootstrap задаёт
+   свой color напрямую (перебивает наследование). action/date идут для симметрии. */
+.audit-entry__actor,
+.audit-entry__action,
+.audit-entry__date {
+    color: inherit;
+}
+.audit-entry__actor { font-weight: 650; }
+
 .audit-entry__field {
     font-size: 13.5px;
     padding: 3px 0;

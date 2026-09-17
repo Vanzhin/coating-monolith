@@ -24,12 +24,13 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Uid\Uuid;
 
-/** Smoke-тест вкладки «История»: маршрут рендерит шаблон без Twig-ошибок для обычного
- *  авторизованного пользователя (просмотр доступен всем, не только ROLE_ADMIN). */
+/** Smoke-тест вкладки «История»: маршрут рендерит шаблон без Twig-ошибок для
+ *  ROLE_ADMIN (просмотр закрыт для не-админов, см. AuditAccessControl). */
 final class HistoryActionTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $em;
+    private string $adminEmail;
     private string $userEmail;
     private string $coatingId;
     private string $coatingTitle;
@@ -44,17 +45,31 @@ final class HistoryActionTest extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
 
         $suffix = uniqid('', true);
-        $this->userEmail = 'test_coating_history_'.$suffix.'@example.com';
+        $this->adminEmail = 'test_coating_history_admin_'.$suffix.'@example.com';
+        $this->userEmail = 'test_coating_history_user_'.$suffix.'@example.com';
 
         $hasher = $container->get(UserPasswordHasherInterface::class);
-        $user = new User(new Email($this->userEmail));
-        $user->setPassword('test_password', $hasher);
+        $admin = new User(new Email($this->adminEmail));
+        $admin->setPassword('test_password', $hasher);
 
-        $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
-        $ref->setValue($user, true);
+        $refActive = new \ReflectionProperty($admin, 'isActive');
+        $refActive->setAccessible(true);
+        $refActive->setValue($admin, true);
 
-        $this->em->persist($user);
+        $refRoles = new \ReflectionProperty($admin, 'roles');
+        $refRoles->setAccessible(true);
+        $refRoles->setValue($admin, ['ROLE_ADMIN']);
+
+        $this->em->persist($admin);
+
+        $regularUser = new User(new Email($this->userEmail));
+        $regularUser->setPassword('test_password', $hasher);
+
+        $refActive2 = new \ReflectionProperty($regularUser, 'isActive');
+        $refActive2->setAccessible(true);
+        $refActive2->setValue($regularUser, true);
+
+        $this->em->persist($regularUser);
 
         /** @var ManufacturerSpecification $manufacturerSpec */
         $manufacturerSpec = $container->get(ManufacturerSpecification::class);
@@ -90,7 +105,7 @@ final class HistoryActionTest extends WebTestCase
         $this->coatingId = $coating->getId();
         $this->manufacturerId = $manufacturer->getId();
 
-        $this->client->loginUser($user);
+        $this->client->loginUser($admin);
     }
 
     protected function tearDown(): void
@@ -109,9 +124,11 @@ final class HistoryActionTest extends WebTestCase
                 $em->remove($manufacturer);
             }
 
-            $user = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
-            if (null !== $user) {
-                $em->remove($user);
+            foreach ([$this->adminEmail, $this->userEmail] as $email) {
+                $user = $em->getRepository(User::class)->findOneBy(['email.value' => $email]);
+                if (null !== $user) {
+                    $em->remove($user);
+                }
             }
 
             $em->flush();
@@ -138,5 +155,16 @@ final class HistoryActionTest extends WebTestCase
         $this->client->request('GET', '/cabinet/coating/coating/'.UuidService::generateUuid().'/history');
 
         self::assertResponseRedirects('/cabinet/coating/coating/list');
+    }
+
+    public function test_non_admin_gets_403(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $regularUser = $em->getRepository(User::class)->findOneBy(['email.value' => $this->userEmail]);
+        $this->client->loginUser($regularUser);
+
+        $this->client->request('GET', '/cabinet/coating/coating/'.$this->coatingId.'/history');
+
+        self::assertResponseStatusCodeSame(403);
     }
 }
