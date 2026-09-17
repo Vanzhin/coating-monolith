@@ -9,6 +9,7 @@
            can_edit: canEdit,
            is_empty: result.manufacturers is empty,
        } %}
+           {% block header_actions %}...доп. кнопки в шапке слева от «+»...{% endblock %}
            {% block above_list %}...поиск/фильтры...{% endblock %}
            {% block list_content %}...список карточек...{% endblock %}
            {% block below_list %}...пейджер...{% endblock %}
@@ -27,12 +28,15 @@
        единый стиль зон со шторкой "Все фильтры". #}
     <div class="d-flex flex-md-row align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
         <h2 class="text-body-emphasis mb-0">{{ title }}</h2>
-        {% if can_edit and create_route %}
-            <a href="{{ path(create_route) }}"
-               class="btn btn-soft-success" title="Добавить">
-                <i class="bi bi-plus-lg"></i>
-            </a>
-        {% endif %}
+        <div class="d-flex align-items-center gap-2">
+            {% block header_actions %}{% endblock %}
+            {% if can_edit and create_route %}
+                <a href="{{ path(create_route) }}"
+                   class="btn btn-soft-success" title="Добавить">
+                    <i class="bi bi-plus-lg"></i>
+                </a>
+            {% endif %}
+        </div>
     </div>
 
     {# Group 2: search + chip-row + прочий above_list-контент. #}
