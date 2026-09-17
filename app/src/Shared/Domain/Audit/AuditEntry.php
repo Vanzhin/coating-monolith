@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Audit;
 
-/** Запись аудита. Append-only. seq генерит БД, в ORM не мапится в Деплое 1. */
+/** Запись аудита. Append-only. seq генерит БД (identity), ORM читает его обратно после INSERT. */
 class AuditEntry
 {
+    private ?int $seq = null;
+
     public function __construct(
         private readonly string $id,
         private readonly string $entityClass,
@@ -51,5 +53,10 @@ class AuditEntry
     public function occurredAt(): \DateTimeImmutable
     {
         return $this->occurredAt;
+    }
+
+    public function seq(): ?int
+    {
+        return null === $this->seq ? null : (int) $this->seq;
     }
 }

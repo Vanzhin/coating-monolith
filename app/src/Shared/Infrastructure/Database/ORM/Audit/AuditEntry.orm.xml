@@ -13,5 +13,6 @@
         <field name="changes" type="audit_change_set" column="changes"/>
         <field name="actorId" type="string" column="actor_id" length="64"/>
         <field name="occurredAt" type="datetime_immutable" column="occurred_at"/>
+        <field name="seq" type="bigint" column="seq" insertable="false" updatable="false" generated="INSERT"/>
     </entity>
 </doctrine-mapping>
