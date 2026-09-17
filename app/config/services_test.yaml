@@ -82,3 +82,6 @@ services:
 
   App\Shared\Infrastructure\Audit\CachedAuditPolicy:
     public: true
+
+  App\Shared\Infrastructure\Audit\AuditableRegistry:
+    public: true
