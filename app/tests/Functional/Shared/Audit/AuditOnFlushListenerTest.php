@@ -15,6 +15,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Audit\AuditAction;
 use App\Shared\Domain\Audit\AuditEntry;
 use App\Shared\Domain\Audit\AuditPolicyInterface;
 use App\Shared\Domain\Service\UuidService;
@@ -35,18 +36,34 @@ final class AuditOnFlushListenerTest extends KernelTestCase
 
         $coating = $this->createPersistedCoating($em);
         $id = $coating->getId();
+        $createdTitle = $coating->getTitle();
 
-        $coating->setTitle('Аудит-проба '.substr(md5((string) mt_rand()), 0, 6));
+        $newTitle = 'Аудит-проба '.substr(md5((string) mt_rand()), 0, 6);
+        $coating->setTitle($newTitle);
         $em->flush();
 
+        // Скоуп на action=Updated: createPersistedCoating() сам порождает строку Created
+        // (recordEvenIfEmpty=true у вставок, JsonDiff даёт set('title', null, <созданный title>)),
+        // и она удовлетворяла бы тем же критериям без фильтра по action — тест должен доказывать
+        // именно путь обновления, а не побочный эффект создания.
         $rows = $em->getRepository(AuditEntry::class)->findBy(
-            ['entityClass' => Coating::class, 'entityId' => $id],
+            ['entityClass' => Coating::class, 'entityId' => $id, 'action' => AuditAction::Updated],
             ['occurredAt' => 'DESC'],
             5,
         );
-        self::assertNotEmpty($rows);
+        self::assertNotEmpty($rows, 'Ожидалась хотя бы одна строка audit_log с action=Updated');
         self::assertSame('system', $rows[0]->actorId());
-        self::assertContains('title', array_map(static fn ($c) => $c->path, $rows[0]->changes()->all()));
+
+        $titleChange = null;
+        foreach ($rows[0]->changes()->all() as $change) {
+            if ('title' === $change->path) {
+                $titleChange = $change;
+                break;
+            }
+        }
+        self::assertNotNull($titleChange, 'В строке Updated должно быть изменение поля title');
+        self::assertSame($createdTitle, $titleChange->old);
+        self::assertSame($newTitle, $titleChange->new);
     }
 
     /** Собирает и сохраняет минимальное валидное покрытие — тестовая БД без фикстур. */
