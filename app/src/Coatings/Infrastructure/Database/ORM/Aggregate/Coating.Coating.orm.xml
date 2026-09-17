@@ -7,6 +7,7 @@
         <id name="id" type="uuid">
             <generator strategy="NONE"/>
         </id>
+        <field name="version" type="integer" column="version" version="true"/>
         <field name="title" type="string" length="100" unique="true"/>
         <field name="description" type="string" length="1500" nullable="true"/>
         <field name="volumeSolid" column="volume_solid" type="integer" length="3"/>

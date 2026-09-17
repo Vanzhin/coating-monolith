@@ -79,3 +79,9 @@ services:
 
   App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes:
     public: true
+
+  App\Shared\Infrastructure\Audit\CachedAuditPolicy:
+    public: true
+
+  App\Shared\Infrastructure\Audit\AuditableRegistry:
+    public: true
