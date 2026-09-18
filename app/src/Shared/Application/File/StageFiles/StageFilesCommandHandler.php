@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class StageFilesCommandHandler implements CommandHandlerInterface
 {
     private const MAX_BYTES = 15 * 1024 * 1024;
+    // Широкий allow-list tmp-зоны. Должен быть НАДмножеством mime всех двухфазных FilePurpose:
+    // что прошло stage, но не проходит purpose-констрейнты, отобьётся уже на promote.
     private const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
     public function __construct(private FileStorage $storage)

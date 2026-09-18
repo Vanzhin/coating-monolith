@@ -9,6 +9,8 @@ use App\Shared\Domain\File\StoredFile;
 use App\Shared\Domain\File\StoredFileRepositoryInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Support\File\FakePurpose;
+use App\Tests\Support\File\Max1x1ImagePurpose;
+use App\Tests\Support\File\TinyBytesPurpose;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -16,8 +18,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class FlysystemFileStorageTest extends KernelTestCase
 {
-    private const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
     private FileStorage $storage;
     private FilesystemOperator $fs;
     private StoredFileRepositoryInterface $repo;
@@ -142,6 +142,31 @@ final class FlysystemFileStorageTest extends KernelTestCase
         self::assertNotNull($this->storage->get($fresh->id()));
     }
 
+    public function test_store_rejects_oversize_file(): void
+    {
+        // TinyBytesPurpose разрешает 1 байт — pdf заведомо больше.
+        $this->expectException(AppException::class);
+        $this->storage->store(new TinyBytesPurpose(), 'owner-1', $this->upload($this->pdfBytes(), 'd.pdf'));
+    }
+
+    public function test_store_rejects_image_exceeding_dimensions(): void
+    {
+        // Max1x1ImagePurpose допускает максимум 1x1 — картинка 2x2 отбивается.
+        $this->expectException(AppException::class);
+        $this->storage->store(new Max1x1ImagePurpose(), 'owner-1', $this->upload($this->pngBytes(2, 2), 'big.png'));
+    }
+
+    public function test_promote_enforces_purpose_image_dimensions(): void
+    {
+        // Габариты в stage не проверяются (широкий guard) — 2x2 стейджится, но promote под
+        // Max1x1ImagePurpose обязан отбить по dimension-констрейнту.
+        $staged = $this->storage->stage('user-7', $this->upload($this->pngBytes(2, 2), 'big.png'));
+        $this->createdIds[] = $staged->id();
+
+        $this->expectException(AppException::class);
+        $this->storage->promote($staged->id(), new Max1x1ImagePurpose(), 'owner-5');
+    }
+
     private function upload(string $bytes, string $name): UploadedFile
     {
         $path = tempnam(sys_get_temp_dir(), 'up_');
@@ -155,8 +180,14 @@ final class FlysystemFileStorageTest extends KernelTestCase
         return "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
     }
 
-    private function pngBytes(): string
+    private function pngBytes(int $width = 1, int $height = 1): string
     {
-        return base64_decode(self::PNG_1X1, true);
+        $image = imagecreatetruecolor($width, $height);
+        ob_start();
+        imagepng($image);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $bytes;
     }
 }

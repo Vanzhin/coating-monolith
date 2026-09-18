@@ -39,7 +39,7 @@ final readonly class FlysystemFileStorage implements FileStorage
             new \DateTimeImmutable(),
         );
         $this->filesystem->write($stored->storageKey(), $file->getContent());
-        $this->repository->add($stored);
+        $this->persistOrRollbackBytes($stored);
 
         return $stored;
     }
@@ -58,7 +58,7 @@ final readonly class FlysystemFileStorage implements FileStorage
             $now->modify(self::STAGE_TTL),
         );
         $this->filesystem->write($staged->storageKey(), $file->getContent());
-        $this->repository->add($staged);
+        $this->persistOrRollbackBytes($staged);
 
         return $staged;
     }
@@ -66,11 +66,16 @@ final readonly class FlysystemFileStorage implements FileStorage
     public function promote(string $uuid, FilePurpose $purpose, string $ownerId): StoredFile
     {
         $file = $this->require($uuid);
+        // Полная валидация против конкретного назначения (stage применял лишь широкий guard):
+        // mime/размер + габариты изображения (читаем уже сохранённые байты — S3-safe).
         $this->validateMeta($file->mime(), $file->size(), $purpose->constraints());
+        $this->assertStoredImageWithinBounds($file, $purpose->constraints());
 
         $oldKey = $file->storageKey();
         $file->promote($purpose, $ownerId);
         $this->filesystem->move($oldKey, $file->storageKey());
+        // Известное ограничение (design §9): не атомарно — при провале flush байты уже на новом
+        // ключе, а строка откатится к старому. Реконсиляция — вне scope backbone.
         $this->repository->add($file);
 
         return $file;
@@ -144,20 +149,42 @@ final readonly class FlysystemFileStorage implements FileStorage
     {
         $this->validateMeta($this->mime($file), (int) $file->getSize(), $constraints);
 
-        if (null === $constraints->maxWidth() && null === $constraints->maxHeight()) {
+        if (!$this->hasImageBounds($constraints)) {
             return;
         }
         $dimensions = @getimagesize($file->getPathname());
         if (false === $dimensions) {
             throw new AppException('Не удалось прочитать изображение.');
         }
-        [$width, $height] = $dimensions;
+        $this->assertDimensions($dimensions[0], $dimensions[1], $constraints);
+    }
+
+    /** Габариты уже сохранённого изображения (promote): байты читаем через Flysystem — S3-safe. */
+    private function assertStoredImageWithinBounds(StoredFile $file, FileConstraints $constraints): void
+    {
+        if (!$this->hasImageBounds($constraints)) {
+            return;
+        }
+        $dimensions = @getimagesizefromstring($this->filesystem->read($file->storageKey()));
+        if (false === $dimensions) {
+            throw new AppException('Не удалось прочитать изображение.');
+        }
+        $this->assertDimensions($dimensions[0], $dimensions[1], $constraints);
+    }
+
+    private function assertDimensions(int $width, int $height, FileConstraints $constraints): void
+    {
         if (null !== $constraints->maxWidth() && $width > $constraints->maxWidth()) {
             throw new AppException('Ширина изображения превышает допустимую.');
         }
         if (null !== $constraints->maxHeight() && $height > $constraints->maxHeight()) {
             throw new AppException('Высота изображения превышает допустимую.');
         }
+    }
+
+    private function hasImageBounds(FileConstraints $constraints): bool
+    {
+        return null !== $constraints->maxWidth() || null !== $constraints->maxHeight();
     }
 
     private function validateMeta(string $mime, int $size, FileConstraints $constraints): void
@@ -167,6 +194,19 @@ final readonly class FlysystemFileStorage implements FileStorage
         }
         if (!in_array($mime, $constraints->mimeTypes(), true)) {
             throw new AppException('Недопустимый тип файла.');
+        }
+    }
+
+    /** Пишем строку реестра; при провале flush убираем осиротевшие байты (design §9). */
+    private function persistOrRollbackBytes(StoredFile $file): void
+    {
+        try {
+            $this->repository->add($file);
+        } catch (\Throwable $e) {
+            if ($this->filesystem->fileExists($file->storageKey())) {
+                $this->filesystem->delete($file->storageKey());
+            }
+            throw $e;
         }
     }
 

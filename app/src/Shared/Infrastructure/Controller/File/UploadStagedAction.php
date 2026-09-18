@@ -32,10 +32,11 @@ final class UploadStagedAction extends AbstractController
 
     public function __invoke(Request $request): JsonResponse
     {
-        $files = array_values(array_filter(
-            $request->files->all()['files'] ?? [],
-            static fn ($f): bool => $f instanceof UploadedFile,
-        ));
+        // Клиент может прислать один файл под `files` (не `files[]`) — тогда это UploadedFile,
+        // а не массив. Нормализуем в список, иначе array_filter упал бы TypeError мимо try/catch.
+        $raw = $request->files->all()['files'] ?? [];
+        $raw = $raw instanceof UploadedFile ? [$raw] : (array) $raw;
+        $files = array_values(array_filter($raw, static fn ($f): bool => $f instanceof UploadedFile));
 
         try {
             /** @var StageFilesCommandResult $result */
@@ -45,7 +46,8 @@ final class UploadStagedAction extends AbstractController
         } catch (\Exception $e) {
             $status = $e instanceof AppException ? $e->getCode() : Response::HTTP_BAD_REQUEST;
 
-            return new JsonResponse(['error' => $e->getMessage()], $status);
+            // Ключ `message`: глобальный ResponseDTOTransformer на 4xx читает только его.
+            return new JsonResponse(['message' => $e->getMessage()], $status);
         }
 
         return new JsonResponse([

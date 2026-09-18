@@ -16,8 +16,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class UploadStagedActionTest extends WebTestCase
 {
-    private const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private string $userEmail;
@@ -83,6 +81,23 @@ final class UploadStagedActionTest extends WebTestCase
         $this->client->request('POST', '/cabinet/file/stage', [], ['files' => [$this->upload('just text', 'n.txt')]]);
 
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        // Сообщение об ошибке должно доехать: глобальный враппер на 4xx читает ключ `message`.
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('error', $data['result']);
+        self::assertNotEmpty($data['message']);
+    }
+
+    public function test_anonymous_request_is_rejected(): void
+    {
+        self::ensureKernelShutdown();
+        $anon = static::createClient();
+        $anon->request('POST', '/cabinet/file/stage', [], ['files' => [$this->upload($this->pngBytes(), 'p.png')]]);
+
+        // Незалогиненный упирается в firewall (^/cabinet → IS_AUTHENTICATED): редирект на логин.
+        self::assertTrue(
+            $anon->getResponse()->isRedirect() || 401 === $anon->getResponse()->getStatusCode(),
+            'Аноним не должен попадать на endpoint загрузки',
+        );
     }
 
     private function upload(string $bytes, string $name): UploadedFile
@@ -95,7 +110,13 @@ final class UploadStagedActionTest extends WebTestCase
 
     private function pngBytes(): string
     {
-        return base64_decode(self::PNG_1X1, true);
+        $image = imagecreatetruecolor(1, 1);
+        ob_start();
+        imagepng($image);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $bytes;
     }
 
     private function setPrivate(object $obj, string $prop, mixed $value): void
