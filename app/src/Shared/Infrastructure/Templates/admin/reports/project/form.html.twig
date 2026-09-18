@@ -1,0 +1,64 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление проекта' : 'Добавление проекта' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set listUrl = path('app_cabinet_reports_project_list') %}
+{% set formId = 'project-form' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_reports_project_update', {id: inputData.id})
+    : path('app_cabinet_reports_project_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle, back_url: listUrl, save_form_id: formId, save_label: submitLabel,
+    } %}
+        {% block sections %}
+            <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100">
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div id="sec-main" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
+                            <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
+                                   class="form-control" required autofocus maxlength="100"
+                                   placeholder="Например, Усольский калийный комбинат">
+                        </div>
+                        <div class="col-md-6"
+                             data-controller="async-typeahead"
+                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                             data-async-typeahead-placeholder-value="Найти контрагента…"
+                             data-async-typeahead-min-length-value="1">
+                            <label for="counterpartySelect" class="form-label">Заказчик</label>
+                            <select id="counterpartySelect" name="counterpartyId" data-async-typeahead-target="select" required>
+                                <option value="">Выберите...</option>
+                                {% if inputData.counterpartyId is defined and inputData.counterpartyId %}
+                                    <option value="{{ inputData.counterpartyId }}" selected>{{ inputData.counterpartyTitle|default('') }}</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Описание</label>
+                            <textarea name="description" id="inputDescription" class="form-control" rows="3"
+                                      maxlength="750" placeholder="Необязательно">{{ inputData.description|default('') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
