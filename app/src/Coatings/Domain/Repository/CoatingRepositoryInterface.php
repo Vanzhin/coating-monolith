@@ -24,4 +24,12 @@ interface CoatingRepositoryInterface
      * @return list<Coating> возвращает в том же порядке, что и $ids; отсутствующие id просто опущены
      */
     public function findByIds(StringCollection $ids): array;
+
+    /**
+     * Все покрытия целиком (порядок по названию) — источник для лёгкой suggest-проекции и
+     * офлайн-выгрузки каталога на устройство. Проекция в CoatingSuggestDTO — в Application.
+     *
+     * @return list<Coating>
+     */
+    public function allForSuggest(): array;
 }

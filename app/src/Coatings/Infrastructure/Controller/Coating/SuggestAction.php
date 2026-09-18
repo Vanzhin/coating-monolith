@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\Coating;
 
-use App\Coatings\Application\DTO\Coatings\CoatingSuggestDTO;
 use App\Coatings\Application\UseCase\Query\SearchCoatings\SearchCoatingsQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatings\SearchCoatingsQueryResult;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
+use App\Coatings\Infrastructure\Api\CoatingSuggestNormalizer;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,25 +47,7 @@ final class SuggestAction extends AbstractController
             pager: Pager::fromPage($page, $limit),
         )));
 
-        $items = array_map(
-            static fn (CoatingSuggestDTO $coating): array => [
-                'id' => $coating->id,
-                'title' => $coating->title,
-                'base' => $coating->base,
-                'dftMin' => $coating->dftMin,
-                'dftMax' => $coating->dftMax,
-                // Сухой остаток — для калькуляторов толщины плёнки и расхода.
-                'volumeSolid' => $coating->volumeSolid,
-                // Фасовка и плотность — для калькулятора расхода (вёдра, масса).
-                'pack' => $coating->pack,
-                'massDensity' => $coating->massDensity,
-                // Соотношение смешивания для калькулятора инструментов (null у однокомпонентных).
-                'mixingRatio' => null === $coating->mixingRatio
-                    ? null
-                    : ['volume' => $coating->mixingRatio->volume, 'mass' => $coating->mixingRatio->mass],
-            ],
-            $result->coatings,
-        );
+        $items = array_map([CoatingSuggestNormalizer::class, 'toArray'], $result->coatings);
 
         return new JsonResponse([
             'items' => $items,

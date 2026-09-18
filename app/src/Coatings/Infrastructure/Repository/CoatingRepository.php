@@ -82,4 +82,10 @@ class CoatingRepository extends ServiceEntityRepository implements CoatingReposi
 
         return $ordered;
     }
+
+    public function allForSuggest(): array
+    {
+        // Весь каталог одним запросом (≤1000 покрытий) — детерминированный порядок по названию.
+        return array_values($this->findBy([], ['title' => 'ASC']));
+    }
 }
