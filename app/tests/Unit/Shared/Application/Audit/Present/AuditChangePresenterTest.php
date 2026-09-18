@@ -174,6 +174,43 @@ final class AuditChangePresenterTest extends TestCase
         self::assertNull($p);
     }
 
+    /**
+     * Домен разрешает 3 уровня: root(default) → children по среде эксплуатации →
+     * grandchildren по основе последующего ЛКМ (CoatingRecoatingTreeValidator). Путь
+     * grandchild-узла: `children.<envKey>.children.<baseKey>.default.<temp>[...]`.
+     */
+    public function test_recoating_tree_grandchild_point_time_in_minutes_edited(): void
+    {
+        $c = FieldChange::set('minRecoatingInterval.children.atmospheric.children.ep.default.20.time_in_minutes', 540, 480);
+        $p = $this->presenter->present($c, 'Мин. интервал перекрытия', AuditFieldKind::RecoatingTree);
+
+        self::assertNotNull($p);
+        self::assertSame('Мин. интервал перекрытия над слоем «atmospheric / ep», 20 °C', $p->label);
+        self::assertSame('9 ч', $p->oldText);
+        self::assertSame('8 ч', $p->newText);
+    }
+
+    public function test_recoating_tree_grandchild_is_calculated_flag_is_hidden(): void
+    {
+        $c = FieldChange::set('minRecoatingInterval.children.atmospheric.children.ep.default.20.is_calculated', false, true);
+        $p = $this->presenter->present($c, 'Мин. интервал перекрытия', AuditFieldKind::RecoatingTree);
+
+        self::assertNull($p);
+    }
+
+    public function test_recoating_tree_child_whole_node_added(): void
+    {
+        $node = ['default' => [['temperature_at' => 20, 'time_in_minutes' => 480, 'is_calculated' => false]], 'children' => []];
+        $c = FieldChange::add('minRecoatingInterval.children.atmospheric', $node);
+        $p = $this->presenter->present($c, 'Мин. интервал перекрытия', AuditFieldKind::RecoatingTree);
+
+        self::assertNotNull($p);
+        self::assertSame(ChangeOp::Add, $p->op);
+        self::assertSame('Мин. интервал перекрытия над слоем «atmospheric»', $p->label);
+        self::assertSame('', $p->oldText);
+        self::assertSame('20 °C — 8 ч', $p->newText);
+    }
+
     public function test_dft_whole_field(): void
     {
         $old = ['min' => 80, 'max' => 150, 'tds_dft' => 100, 'type' => 'мкм'];

@@ -69,15 +69,41 @@ final class AuditChangePresenter
         }
 
         if ('children' === $tail[0]) {
-            $key = $tail[1] ?? '';
-            $label = sprintf('%s над слоем «%s»', $fieldLabel, $key);
-
-            // tail[2] — сегмент 'default' узла-ребёнка (RecoatingIntervalTree::jsonSerialize),
-            // отбрасывается так же, как и у корня дерева.
-            return $this->presentPoint($c, $label, $tail[3] ?? '', array_slice($tail, 4));
+            return $this->presentRecoatingTreeChild($c, $fieldLabel, $tail);
         }
 
         return null; // неизвестная структура пути внутри дерева — скрыть, а не падать
+    }
+
+    /**
+     * Обходит цепочку `children.<key>` ПРОИЗВОЛЬНОЙ глубины: конкретный домен может
+     * разрешать несколько уровней вложенности (например, среда → основа последующего
+     * ЛКМ), но презентер глубину не хардкодит — идёт, пока встречает пары
+     * 'children'+ключ, копит ключи для подписи «над слоем «k1 / k2»».
+     *
+     * @param list<string> $tail начинается с 'children'
+     */
+    private function presentRecoatingTreeChild(FieldChange $c, string $fieldLabel, array $tail): ?PresentedChange
+    {
+        $keys = [];
+        $i = 0;
+        while (isset($tail[$i], $tail[$i + 1]) && 'children' === $tail[$i]) {
+            $keys[] = $tail[$i + 1];
+            $i += 2;
+        }
+
+        $label = sprintf('%s над слоем «%s»', $fieldLabel, implode(' / ', $keys));
+        $remaining = array_slice($tail, $i);
+
+        if ([] === $remaining) {
+            return $this->presentWhole($c, $label); // целый узел добавлен/удалён
+        }
+
+        if ('default' === $remaining[0]) {
+            return $this->presentPoint($c, $label, $remaining[1] ?? '', array_slice($remaining, 2));
+        }
+
+        return null; // неизвестный хвост внутри узла — скрыть
     }
 
     /** @param list<string> $tail */
