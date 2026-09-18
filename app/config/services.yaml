@@ -11,6 +11,7 @@ parameters:
   general_proposal_template_upload: 'proposals/templates'
   general_proposal_template_upload_dir: '%kernel.project_dir%/src/Proposals/Infrastructure/Resources/%general_proposal_template_upload%'
   document_scans_upload_dir: '%kernel.project_dir%/var/uploads/certificates/document_scans'
+  file_storage_upload_dir: '%kernel.project_dir%/var/uploads/file_storage'
   elasticsearch.config_dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ES/config'
   # Дефолт: если ADMIN_NOTIFY_EMAIL не задан в окружении — пустая строка, а не падение резолва
   # env-переменной. Пустой email → админ не найден → уведомление о новом юзере просто пропускается.
@@ -130,6 +131,15 @@ services:
   App\Certificates\Infrastructure\Storage\DocumentFileStorage:
     arguments:
       $filesystem: '@oneup_flysystem.document_scans_filesystem'
+
+  # Единое хранилище файлов (Shared). Биндим filesystem по id (автоалиаса для flysystem-сервисов нет).
+  App\Shared\Infrastructure\File\FlysystemFileStorage:
+    arguments:
+      $filesystem: '@oneup_flysystem.file_storage_filesystem'
+
+  App\Shared\Domain\File\FileStorage:
+    alias: App\Shared\Infrastructure\File\FlysystemFileStorage
+    public: true
 
   # Telegram
   telegram_handler:
