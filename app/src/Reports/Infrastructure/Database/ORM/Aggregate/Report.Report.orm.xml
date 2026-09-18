@@ -1,0 +1,32 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Reports\Domain\Aggregate\Report\Report" table="report">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="ownerId" type="string" length="26" column="owner_id"/>
+        <field name="reviewerId" type="string" length="26" column="reviewer_id" nullable="true"/>
+        <field name="type" type="string" length="30" column="type_key" nullable="true"
+               enum-type="App\Reports\Domain\Aggregate\Report\ReportType"/>
+        <field name="status" type="string" length="20" column="status"
+               enum-type="App\Reports\Domain\Aggregate\Report\ReportStatus"/>
+        <field name="reportDate" type="date_immutable" column="report_date" nullable="true"/>
+        <field name="actNumber" type="string" length="100" column="act_number" nullable="true"/>
+        <field name="projectId" type="string" length="36" column="project_id" nullable="true"/>
+        <field name="projectTitle" type="string" length="255" column="project_title" nullable="true"/>
+        <field name="customerId" type="string" length="36" column="customer_id" nullable="true"/>
+        <field name="customerTitle" type="string" length="255" column="customer_title" nullable="true"/>
+        <field name="contractorId" type="string" length="36" column="contractor_id" nullable="true"/>
+        <field name="contractorTitle" type="string" length="255" column="contractor_title" nullable="true"/>
+        <field name="systemId" type="string" length="36" column="system_id" nullable="true"/>
+        <field name="systemTitle" type="string" length="255" column="system_title" nullable="true"/>
+        <field name="content" type="json" column="content"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
+        <field name="version" type="integer" column="version" version="true"/>
+    </entity>
+
+</doctrine-mapping>
