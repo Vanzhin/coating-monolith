@@ -32,6 +32,7 @@ final class DurationHumanizerTest extends TestCase
         yield 'minutes only' => [45, '45 мин'];
         yield 'day and minutes, zero hours dropped' => [1470, '1 сут 30 мин'];
         yield 'day and hour, top two only, minutes dropped' => [1500, '1 сут 1 ч'];
+        yield 'three nonzero units, real truncation not just zero-filtering' => [1525, '1 сут 1 ч'];
     }
 
     /**
