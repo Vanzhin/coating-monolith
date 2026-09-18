@@ -29,6 +29,11 @@ final class AuditLogTransformerTest extends TestCase
                 return $this->map;
             }
 
+            public function fieldKinds(string $entityClass): array
+            {
+                return [];
+            }
+
             public function invalidate(string $entityClass): void
             {
             }
