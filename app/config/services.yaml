@@ -219,6 +219,9 @@ services:
   App\Shared\Domain\Audit\AuditEntryRepositoryInterface:
     alias: App\Shared\Infrastructure\Repository\AuditEntryRepository
 
+  App\Shared\Domain\File\StoredFileRepositoryInterface:
+    alias: App\Shared\Infrastructure\Repository\StoredFileRepository
+
   App\Shared\Domain\Audit\AuditPolicyInterface:
     alias: App\Shared\Infrastructure\Audit\CachedAuditPolicy
 

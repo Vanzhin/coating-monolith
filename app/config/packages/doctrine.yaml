@@ -86,6 +86,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ORM/Audit'
                 prefix: 'App\Shared\Domain\Audit'
                 alias: Audit
+            SharedFile:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ORM/File'
+                prefix: 'App\Shared\Domain\File'
+                alias: SharedFile
 
 
 #            App:
