@@ -184,4 +184,21 @@ final class JsonDiffTest extends TestCase
         self::assertCount(1, $o);
         self::assertSame([ChangeOp::Set, 'f.2.name', 'b', 'c'], [$o[0]->op, $o[0]->path, $o[0]->old, $o[0]->new]);
     }
+
+    public function test_keyed_diff_without_path_prefix_has_no_leading_dot(): void
+    {
+        // Minor из ревью: diff() без префикса пути — сегмент по ключу идентичности не
+        // должен начинаться с точки (симметрично diffMap, где '' === $path даёт (string) $key).
+        $old = [
+            ['temperature_at' => 5, 'time_in_minutes' => 960, 'is_calculated' => false],
+            ['temperature_at' => 10, 'time_in_minutes' => 360, 'is_calculated' => false],
+        ];
+        $new = [
+            ['temperature_at' => 5, 'time_in_minutes' => 900, 'is_calculated' => false],
+            ['temperature_at' => 10, 'time_in_minutes' => 360, 'is_calculated' => false],
+        ];
+        $o = $this->d->diff($old, $new);
+        self::assertCount(1, $o);
+        self::assertSame([ChangeOp::Set, '5.time_in_minutes', 960, 900], [$o[0]->op, $o[0]->path, $o[0]->old, $o[0]->new]);
+    }
 }

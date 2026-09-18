@@ -177,7 +177,7 @@ final class JsonDiff
             $inOld = array_key_exists($marker, $oldByMarker);
             $inNew = array_key_exists($marker, $newByMarker);
             $identityValue = $inOld ? $oldByMarker[$marker][$key] : $newByMarker[$marker][$key];
-            $sub = $path.'.'.$identityValue;
+            $sub = '' === $path ? (string) $identityValue : $path.'.'.$identityValue;
 
             if ($inOld && $inNew) {
                 $changes = [...$changes, ...$this->diff($oldByMarker[$marker], $newByMarker[$marker], $sub)];
