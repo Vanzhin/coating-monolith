@@ -55,6 +55,9 @@ services:
     App\Coatings\Domain\Compliance\StandardEvaluator:
       tags: ['app.standard_evaluator']
 
+    App\Shared\Domain\Templating\TemplateRenderer:
+      tags: ['app.template_renderer']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -173,6 +176,11 @@ services:
   App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
+
+  # Движок заполнения шаблонов: фасад-диспетчер получает все драйверы (docx/xlsx) через тег
+  App\Shared\Infrastructure\Service\TemplateRendering:
+    arguments:
+      - !tagged_iterator app.template_renderer
 
   App\Coatings\Domain\Compliance\SystemComplianceEvaluator:
     arguments:
