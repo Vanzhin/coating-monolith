@@ -7,7 +7,10 @@ namespace App\Shared\Domain\Audit;
 /**
  * Дженерик структурный дифф двух значений → список изменений (set/add/remove) по путям.
  * VO нормализуется полным round-trip json_encode/decode. Карты идут вглубь до скаляра
- * (add/remove ключей-веток). Списки сопоставляются по глубокому равенству элементов:
+ * (add/remove ключей-веток). Списки МАП, у которых есть общий ключ идентичности (см.
+ * findIdentityKey), сопоставляются по значению этого ключа — правка одного элемента
+ * превращается в точечный set по под-пути, а не в remove+add всего элемента. Списки
+ * скаляров и списки мап без такого ключа — по глубокому равенству элементов (fallback):
  * только в old → remove, только в new → add (правка элемента = remove+add). Равные
  * значения → пусто (гасит ложную грязь Doctrine: сравнение VO по ссылке).
  */
@@ -65,7 +68,8 @@ final class JsonDiff
     }
 
     /**
-     * Списки — по глубокому равенству элементов (без ключа идентичности).
+     * Списки: если у элементов есть общий ключ идентичности — сопоставляем по нему
+     * (точечный дифф), иначе — fallback к сравнению по глубокому равенству.
      *
      * @param list<mixed> $old
      * @param list<mixed> $new
@@ -73,6 +77,129 @@ final class JsonDiff
      * @return list<FieldChange>
      */
     private function diffList(array $old, array $new, string $path): array
+    {
+        $identityKey = $this->findIdentityKey($old, $new);
+
+        return null !== $identityKey
+            ? $this->diffListByIdentityKey($old, $new, $path, $identityKey)
+            : $this->diffListByEquality($old, $new, $path);
+    }
+
+    /**
+     * Ищет ключ идентичности для списка мап: ключ, присутствующий в КАЖДОМ элементе old
+     * И new, чьё значение — ненулевой скаляр и уникально внутри old и внутри new по
+     * отдельности. Берём первый подходящий ключ в порядке ключей первого элемента old
+     * (детерминированно). Нет кандидата (список скаляров, список мап без общего уникального
+     * поля, пустой список) → null, вызывающий код уходит в fallback по равенству.
+     *
+     * @param list<mixed> $old
+     * @param list<mixed> $new
+     */
+    private function findIdentityKey(array $old, array $new): int|string|null
+    {
+        if ([] === $old || [] === $new) {
+            return null;
+        }
+        foreach ([...$old, ...$new] as $item) {
+            if (!is_array($item)) {
+                return null; // список скаляров (или смешанный) — ключа идентичности не бывает
+            }
+        }
+
+        foreach (array_keys($old[0]) as $candidate) {
+            if ($this->isUniqueScalarKey($candidate, $old) && $this->isUniqueScalarKey($candidate, $new)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Проверяет, что $key есть во всех элементах $items, его значение — ненулевой
+     * скаляр, и эти значения не повторяются (годится как ключ идентичности).
+     *
+     * @param list<array<int|string, mixed>> $items
+     */
+    private function isUniqueScalarKey(int|string $key, array $items): bool
+    {
+        $seenMarkers = [];
+        foreach ($items as $item) {
+            if (!array_key_exists($key, $item) || !is_scalar($item[$key])) {
+                return false;
+            }
+            $marker = $this->scalarMarker($item[$key]); // тип+значение — bool(1) не путаем с int(1)
+            if (isset($seenMarkers[$marker])) {
+                return false; // дубликат значения — не годится как идентификатор
+            }
+            $seenMarkers[$marker] = true;
+        }
+
+        return true;
+    }
+
+    private function scalarMarker(bool|int|float|string $value): string
+    {
+        return get_debug_type($value).':'.$value;
+    }
+
+    /**
+     * Сопоставляет элементы по значению ключа идентичности $key: обе стороны есть →
+     * рекурсивный diff под-пути (изменившееся поле точки даёт точечный set, ключ
+     * идентичности не меняется и в дифф не попадает); только new → add; только old → remove.
+     * Порядок обхода: сначала значения ключа из old (в порядке old), затем новые из new.
+     *
+     * @param list<array<int|string, mixed>> $old
+     * @param list<array<int|string, mixed>> $new
+     *
+     * @return list<FieldChange>
+     */
+    private function diffListByIdentityKey(array $old, array $new, string $path, int|string $key): array
+    {
+        $oldByMarker = [];
+        foreach ($old as $item) {
+            $oldByMarker[$this->scalarMarker($item[$key])] = $item;
+        }
+        $newByMarker = [];
+        foreach ($new as $item) {
+            $newByMarker[$this->scalarMarker($item[$key])] = $item;
+        }
+
+        $order = array_keys($oldByMarker);
+        foreach (array_keys($newByMarker) as $marker) {
+            if (!array_key_exists($marker, $oldByMarker)) {
+                $order[] = $marker;
+            }
+        }
+
+        $changes = [];
+        foreach ($order as $marker) {
+            $inOld = array_key_exists($marker, $oldByMarker);
+            $inNew = array_key_exists($marker, $newByMarker);
+            $identityValue = $inOld ? $oldByMarker[$marker][$key] : $newByMarker[$marker][$key];
+            $sub = '' === $path ? (string) $identityValue : $path.'.'.$identityValue;
+
+            if ($inOld && $inNew) {
+                $changes = [...$changes, ...$this->diff($oldByMarker[$marker], $newByMarker[$marker], $sub)];
+            } elseif ($inNew) {
+                $changes[] = FieldChange::add($sub, $newByMarker[$marker]); // новый элемент целиком
+            } else {
+                $changes[] = FieldChange::remove($sub, $oldByMarker[$marker]); // убранный элемент целиком
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Списки без ключа идентичности — по глубокому равенству элементов (как раньше).
+     *
+     * @param list<mixed> $old
+     * @param list<mixed> $new
+     *
+     * @return list<FieldChange>
+     */
+    private function diffListByEquality(array $old, array $new, string $path): array
     {
         $newRemaining = $new;
         $changes = [];

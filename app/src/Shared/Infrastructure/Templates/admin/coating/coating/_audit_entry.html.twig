@@ -1,0 +1,43 @@
+{# Единая карточка записи аудита. Один вид для «Истории покрытия» и «Журнала
+   изменений»: каркас .ecard (медиа-слот + тело), как у карточек списков.
+   Медиа-слот держит иконку действия, окрашенную по смыслу (создано/изменено/удалено).
+   Параметры:
+     entry       — AuditLogView (entityId, actorLabel, occurredAt, action, changes)
+     objectTitle — string|null: заголовок объекта (в журнале), null/не задан в истории
+     objectUrl   — string|null: ссылка на объект (в журнале), null/не задан в истории #}
+{% set actionLabels = { created: 'Создано', updated: 'Изменено', deleted: 'Удалено' } %}
+{% set actionIcons = { created: 'bi-plus-lg', updated: 'bi-pencil', deleted: 'bi-trash3' } %}
+{% set act = entry.action.value %}
+
+<div class="ecard audit-entry">
+    <div class="ecard-media audit-entry__icon--{{ act }}">
+        <i class="bi {{ actionIcons[act] ?? 'bi-dot' }}"></i>
+    </div>
+    <div class="ecard-body">
+        <div class="audit-entry__meta">
+            {% if objectUrl is defined and objectUrl %}
+                <a href="{{ objectUrl }}" class="audit-entry__obj">{{ objectTitle }}</a>
+                <span class="audit-entry__sep">·</span>
+            {% endif %}
+            <span class="audit-entry__actor">{{ entry.actorLabel }}</span>
+            <span class="audit-entry__sep">·</span>
+            <span class="audit-entry__date">{{ entry.occurredAt|date('d.m.Y H:i') }}</span>
+            <span class="audit-entry__sep">·</span>
+            <span class="audit-entry__action audit-entry__action--{{ act }}">{{ actionLabels[act] ?? act }}</span>
+        </div>
+        {% for change in entry.changes %}
+            <div class="audit-entry__field">
+                <span class="audit-entry__label">{{ change.label }}:</span>
+                {% if change.op.value == 'set' %}
+                    <span class="audit-entry__old">{{ change.oldText }}</span>
+                    <i class="bi bi-arrow-right audit-entry__arrow"></i>
+                    <span class="audit-entry__new">{{ change.newText }}</span>
+                {% elseif change.op.value == 'add' %}
+                    <span class="audit-entry__add">+ {{ change.newText }}</span>
+                {% else %}
+                    <span class="audit-entry__remove">− {{ change.oldText }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>

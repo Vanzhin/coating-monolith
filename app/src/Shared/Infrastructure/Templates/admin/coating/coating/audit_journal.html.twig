@@ -3,11 +3,8 @@
 {% block title %}{{ parent() }} | Журнал изменений: Покрытия{% endblock %}
 
 {% block content %}
-    {% set actionLabels = {
-        created: 'Создано',
-        updated: 'Изменено',
-        deleted: 'Удалено',
-    } %}
+    {% set listRoute = 'app_cabinet_coating_coating_audit_journal' %}
+    {% set activeFacetsCount = actorIds|length + coatingIds|length %}
 
     <div class="p-2 p-md-3">
         <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-body-tertiary">
@@ -17,47 +14,81 @@
             </a>
         </div>
 
-        <form method="get" action="{{ path('app_cabinet_coating_coating_audit_journal') }}"
-              class="d-flex flex-wrap align-items-center gap-2 mb-3 p-3 rounded-3 bg-body-tertiary">
-            <label for="auditJournalActor" class="form-label small text-muted mb-0">Актор (id)</label>
-            <input type="text" id="auditJournalActor" name="actor" value="{{ actorId }}"
-                   class="form-control form-control-sm w-auto" placeholder="ulid пользователя или «system»">
-            <button type="submit" class="btn btn-sm btn-primary">Показать</button>
-            {% if actorId %}
-                <a href="{{ path('app_cabinet_coating_coating_audit_journal') }}" class="btn btn-sm btn-outline-secondary">
-                    Сбросить
-                </a>
-            {% endif %}
-        </form>
+        {# Стандартный chip-фасет-шелл кабинета (тот же, что у списка покрытий):
+           chip-row с чипами активных фасетов + шторка «Все фильтры» с typeahead
+           по актору/покрытию. Без свободного поиска и сортировки — тут их нет. #}
+        {% embed 'components/entity_search.html.twig' with {
+            list_route: listRoute,
+            form_id: 'auditJournalForm',
+            has_search: false,
+            active_count: activeFacetsCount,
+            drawer_id: 'auditJournalFiltersOffcanvas',
+            drawer_form_id: 'auditJournalFiltersForm',
+        } %}
+            {% block chips %}
+                {# Актор и Покрытия — typeahead-фасеты. По конвенции кабинета (coating_system/list)
+                   их выбор живёт в шторке (чипы клиент гидрирует by-ids), а в chip-row — только
+                   кнопка-переход к секции фасета. Активность подсвечиваем цветом кнопки, счётчик
+                   выбранного несёт бейдж «Все фильтры». #}
+                <button type="button"
+                        class="btn btn-sm {{ actorIds|length > 0 ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        data-action="click->facet-jump#jump" data-facet-jump-facet-param="actor">
+                    Актор{% if actorIds|length > 0 %} · {{ actorIds|length }}{% endif %}
+                </button>
 
-        <div class="p-3 rounded-3 bg-body-tertiary">
-            {% for entry in log %}
-                <div class="audit-entry">
-                    <div class="audit-entry__meta">
-                        <a href="{{ path('app_cabinet_coating_coating_history', {id: entry.entityId}) }}"
-                           class="audit-entry__actor text-decoration-none">{{ entry.entityId }}</a>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__actor">{{ entry.actorLabel }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__date">{{ entry.occurredAt|date('d.m.Y H:i') }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__action">{{ actionLabels[entry.action.value] ?? entry.action.value }}</span>
-                    </div>
-                    {% for change in entry.changes %}
-                        <div class="audit-entry__field">
-                            <span class="audit-entry__label">{{ change.label }}:</span>
-                            {% if change.op.value == 'set' %}
-                                <span class="audit-entry__old">{{ change.old is iterable ? change.old|json_encode : change.old }}</span>
-                                <i class="bi bi-arrow-right audit-entry__arrow"></i>
-                                <span class="audit-entry__new">{{ change.new is iterable ? change.new|json_encode : change.new }}</span>
-                            {% elseif change.op.value == 'add' %}
-                                <span class="audit-entry__add">+ {{ change.new is iterable ? change.new|json_encode : change.new }}</span>
-                            {% else %}
-                                <span class="audit-entry__remove">− {{ change.old is iterable ? change.old|json_encode : change.old }}</span>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                <button type="button"
+                        class="btn btn-sm {{ coatingIds|length > 0 ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        data-action="click->facet-jump#jump" data-facet-jump-facet-param="coating">
+                    Покрытия{% if coatingIds|length > 0 %} · {{ coatingIds|length }}{% endif %}
+                </button>
+            {% endblock %}
+
+            {% block drawer %}
+                {# Актор: typeahead по email (app_cabinet_users_suggest). Чипы выбранного
+                   восстанавливаются клиентом из id в URL через by-ids (app_cabinet_users_by_ids) —
+                   серверного резолва нет (конвенция фильтров: id в URL, чипы гидрирует клиент). #}
+                <div id="facet-actor" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <h6 class="fw-semibold mb-2">Актор</h6>
+                    <input type="text"
+                           data-controller="coating-tags"
+                           data-coating-tags-existing-value="[]"
+                           data-coating-tags-suggest-url-value="{{ path('app_cabinet_users_suggest') }}"
+                           data-coating-tags-create-url-value=""
+                           data-coating-tags-hidden-input-name-value="actorIds[]"
+                           data-coating-tags-allow-create-value="false"
+                           data-coating-tags-preselected-ids-value="{{ actorIds|json_encode }}"
+                           data-coating-tags-resolve-url-value="{{ path('app_cabinet_users_by_ids') }}"
+                           class="form-control form-control-sm"
+                           placeholder="Начните вводить email...">
                 </div>
+
+                {# Покрытия: typeahead по названию (app_cabinet_coating_coating_suggest), чипы —
+                   клиентская гидрация by-ids (app_cabinet_coating_coating_by_ids), как в
+                   coating_system/list. #}
+                <div id="facet-coating" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                    <h6 class="fw-semibold mb-2">Покрытия</h6>
+                    <input type="text"
+                           data-controller="coating-tags"
+                           data-coating-tags-existing-value="[]"
+                           data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                           data-coating-tags-create-url-value=""
+                           data-coating-tags-hidden-input-name-value="coatingIds[]"
+                           data-coating-tags-allow-create-value="false"
+                           data-coating-tags-preselected-ids-value="{{ coatingIds|json_encode }}"
+                           data-coating-tags-resolve-url-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
+                           class="form-control form-control-sm"
+                           placeholder="Начните вводить покрытие...">
+                </div>
+            {% endblock %}
+        {% endembed %}
+
+        <div class="audit-feed">
+            {% for entry in log %}
+                {% include 'admin/coating/coating/_audit_entry.html.twig' with {
+                    entry: entry,
+                    objectTitle: entityTitles[entry.entityId]|default(entry.entityId),
+                    objectUrl: path('app_cabinet_coating_coating_history', {id: entry.entityId}),
+                } only %}
             {% else %}
                 <p class="text-body-secondary mb-0">Изменений пока нет.</p>
             {% endfor %}

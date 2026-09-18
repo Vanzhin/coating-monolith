@@ -91,14 +91,6 @@
 
                 <div class="small text-body-secondary mt-3">Обновлено: {{ system.updatedAt|date('d.m.Y') }}</div>
             </div>
-            <div class="modal-footer">
-                {% if canEdit %}
-                    <a href="{{ path('app_cabinet_coating_system_update', {id: system.id}) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil"></i> Редактировать
-                    </a>
-                {% endif %}
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-            </div>
         </div>
     </div>
 </div>

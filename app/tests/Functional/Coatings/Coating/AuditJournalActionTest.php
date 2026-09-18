@@ -26,7 +26,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Smoke-тест админ-журнала: маршрут резолвится в AuditJournalAction (не в {id}-роут),
- * отдаёт изменения покрытий, фильтр по актору вырезает записи чужого актора.
+ * отдаёт изменения покрытий, фильтры по актору (actorIds[]) и покрытию (coatingIds[])
+ * вырезают записи чужого актора/покрытия и пропускают совпадающие.
  * Доступ закрыт для не-админов (AuditAccessControl).
  */
 final class AuditJournalActionTest extends WebTestCase
@@ -35,6 +36,7 @@ final class AuditJournalActionTest extends WebTestCase
     private EntityManagerInterface $em;
     private string $adminEmail;
     private string $userEmail;
+    private string $adminId;
     private string $coatingId;
     private string $manufacturerId;
     private string $updatedTitle;
@@ -64,6 +66,7 @@ final class AuditJournalActionTest extends WebTestCase
         $refRoles->setValue($admin, ['ROLE_ADMIN']);
 
         $this->em->persist($admin);
+        $this->adminId = $admin->getId();
 
         $regularUser = new User(new Email($this->userEmail));
         $regularUser->setPassword('test_password', $hasher);
@@ -111,8 +114,10 @@ final class AuditJournalActionTest extends WebTestCase
         $this->em->flush();
 
         // Мутация — источник записи с action=Updated, которую ищет журнал.
+        // isZincRich заодно проверяет человекочитаемое «Да»/«Нет» вместо «1»/пустоты.
         $this->updatedTitle = 'AuditJournalUpdated_'.$suffix;
         $coating->setTitle($this->updatedTitle);
+        $coating->setIsZincRich(true);
         $this->em->flush();
 
         $this->coatingId = $coating->getId();
@@ -159,17 +164,69 @@ final class AuditJournalActionTest extends WebTestCase
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString('Журнал изменений', $html);
         self::assertStringContainsString($this->updatedTitle, $html);
-        self::assertStringContainsString($this->coatingId, $html);
+        self::assertStringContainsString($this->adminEmail, $html);
+        self::assertStringContainsString('Да', $html);
+        // Ссылка на объект показывает заголовок покрытия текстом, а не голый UUID
+        // (id остаётся только в href, куда ведёт ссылка).
+        self::assertMatchesRegularExpression('/>'.preg_quote($this->updatedTitle, '/').'<\/a>/', $html);
+
+        // Стандартный chip-фасет-шелл: обе фасетки (актор + покрытия) отрисованы
+        // как typeahead-виджеты (coating-tags controller) с рабочими suggest-эндпоинтами.
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-controller="coating-tags"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_users_suggest'), $html);
+        self::assertStringContainsString($router->generate('app_cabinet_coating_coating_suggest'), $html);
     }
 
     public function test_actor_filter_hides_entries_of_other_actors(): void
     {
-        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actor' => 'nonmatching-actor-id']);
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actorIds' => ['nonmatching-actor-id']]);
 
         self::assertResponseIsSuccessful();
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringNotContainsString($this->updatedTitle, $html);
+    }
+
+    public function test_actor_filter_shows_entries_of_matching_actor(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['actorIds' => [$this->adminId]]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringContainsString($this->updatedTitle, $html);
+        // Чип фасета «Актор» НЕ резолвится на сервере: в шторку уходит только id из URL
+        // (preselected-ids), email клиент дотягивает by-ids-гидрацией (конвенция фильтров,
+        // как в coating_system/list). Проверяем id в preselected-ids и рабочий by-ids-роут.
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-coating-tags-preselected-ids-value="[&quot;'.$this->adminId.'&quot;]"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_users_by_ids'), $html);
+    }
+
+    public function test_coating_filter_hides_entries_of_other_coatings(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['coatingIds' => ['nonmatching-coating-id']]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringNotContainsString($this->updatedTitle, $html);
+    }
+
+    public function test_coating_filter_shows_entries_of_matching_coating(): void
+    {
+        $this->client->request('GET', '/cabinet/coating/coating/audit-journal', ['coatingIds' => [$this->coatingId]]);
+
+        self::assertResponseIsSuccessful();
+
+        $html = $this->client->getResponse()->getContent();
+        self::assertStringContainsString($this->updatedTitle, $html);
+        // Чип фасета «Покрытия» тоже не резолвится на сервере: id из URL в preselected-ids,
+        // название клиент дотягивает by-ids (app_cabinet_coating_coating_by_ids).
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-coating-tags-preselected-ids-value="[&quot;'.$this->coatingId.'&quot;]"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_coating_coating_by_ids'), $html);
     }
 
     public function test_non_admin_gets_403(): void

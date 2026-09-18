@@ -197,6 +197,19 @@ services:
   App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface:
     alias: App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository
 
+  # Аудит: цепочка хуманизации значений — порядок ФИКСИРОВАН явным списком
+  # (специфичные шейпы → Scalar → JsonFallback последним), tagged_iterator тут
+  # не даёт детерминированного порядка без ручных priority на каждом форматтере.
+  App\Shared\Application\Audit\Present\ValueHumanizer:
+    arguments:
+      - '@App\Shared\Application\Audit\Present\Formatter\DftRangeFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\DurationSeriesFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\RecoatingTreeFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\ThermalLimitsFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\MixingRatioFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\ScalarFormatter'
+      - '@App\Shared\Application\Audit\Present\Formatter\JsonFallbackFormatter'
+
   App\Notifications\Domain\Repository\NotificationRepositoryInterface:
     alias: App\Notifications\Infrastructure\Repository\NotificationRepository
 
@@ -208,6 +221,9 @@ services:
 
   App\Shared\Domain\Audit\AuditPolicyInterface:
     alias: App\Shared\Infrastructure\Audit\CachedAuditPolicy
+
+  App\Shared\Domain\Audit\ActorResolverInterface:
+    alias: App\Users\Infrastructure\Audit\UserActorResolver
 
   App\Shared\Domain\Service\UnreadNotificationCounterInterface:
     alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter

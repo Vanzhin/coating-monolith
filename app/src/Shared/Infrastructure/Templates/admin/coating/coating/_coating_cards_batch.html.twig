@@ -41,6 +41,11 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
+                                <a class="dropdown-item" href="{{ path('app_cabinet_coating_coating_history', {id: coating.id}) }}">
+                                    <i class="bi bi-clock-history me-2"></i>История
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item" href="{{ path('app_cabinet_coating_coating_update', {id: coating.id}) }}">
                                     <i class="bi bi-pencil me-2"></i>Редактировать
                                 </a>

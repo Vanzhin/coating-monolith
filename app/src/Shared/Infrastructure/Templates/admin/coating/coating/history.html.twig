@@ -3,12 +3,6 @@
 {% block title %}{{ parent() }} | История: {{ coating.title }}{% endblock %}
 
 {% block content %}
-    {% set actionLabels = {
-        created: 'Создано',
-        updated: 'Изменено',
-        deleted: 'Удалено',
-    } %}
-
     <div class="p-2 p-md-3">
         <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-body-tertiary">
             <h1 class="h3 mb-0">История: {{ coating.title }}</h1>
@@ -17,31 +11,9 @@
             </a>
         </div>
 
-        <div class="p-3 rounded-3 bg-body-tertiary">
+        <div class="audit-feed">
             {% for entry in log %}
-                <div class="audit-entry">
-                    <div class="audit-entry__meta">
-                        <span class="audit-entry__actor">{{ entry.actorLabel }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__date">{{ entry.occurredAt|date('d.m.Y H:i') }}</span>
-                        <span class="audit-entry__sep">·</span>
-                        <span class="audit-entry__action">{{ actionLabels[entry.action.value] ?? entry.action.value }}</span>
-                    </div>
-                    {% for change in entry.changes %}
-                        <div class="audit-entry__field">
-                            <span class="audit-entry__label">{{ change.label }}:</span>
-                            {% if change.op.value == 'set' %}
-                                <span class="audit-entry__old">{{ change.old is iterable ? change.old|json_encode : change.old }}</span>
-                                <i class="bi bi-arrow-right audit-entry__arrow"></i>
-                                <span class="audit-entry__new">{{ change.new is iterable ? change.new|json_encode : change.new }}</span>
-                            {% elseif change.op.value == 'add' %}
-                                <span class="audit-entry__add">+ {{ change.new is iterable ? change.new|json_encode : change.new }}</span>
-                            {% else %}
-                                <span class="audit-entry__remove">− {{ change.old is iterable ? change.old|json_encode : change.old }}</span>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% include 'admin/coating/coating/_audit_entry.html.twig' with { entry: entry } only %}
             {% else %}
                 <p class="text-body-secondary mb-0">Изменений пока нет.</p>
             {% endfor %}
