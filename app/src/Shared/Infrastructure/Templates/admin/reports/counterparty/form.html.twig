@@ -1,0 +1,51 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление контрагента' : 'Добавление контрагента' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set listUrl = path('app_cabinet_reports_counterparty_list') %}
+{% set formId = 'counterparty-form' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_reports_counterparty_update', {id: inputData.id})
+    : path('app_cabinet_reports_counterparty_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle, back_url: listUrl, save_form_id: formId, save_label: submitLabel,
+    } %}
+        {% block sections %}
+            <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100">
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div id="sec-main" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
+                            <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
+                                   class="form-control" required autofocus maxlength="100"
+                                   placeholder="Например, ООО «ЕвроХим-УКК»">
+                        </div>
+                        <div class="col-12">
+                            <label for="inputDescription" class="form-label">Описание</label>
+                            <textarea name="description" id="inputDescription" class="form-control" rows="3"
+                                      maxlength="750" placeholder="Необязательно">{{ inputData.description|default('') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

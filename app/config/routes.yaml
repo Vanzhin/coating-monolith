@@ -42,6 +42,10 @@ certificates:
   resource: ../src/Certificates/Infrastructure/Controller
   type: attribute
 
+reports:
+  resource: ../src/Reports/Infrastructure/Controller
+  type: attribute
+
 notifications:
   resource: ../src/Notifications/Infrastructure/Controller
   type: attribute

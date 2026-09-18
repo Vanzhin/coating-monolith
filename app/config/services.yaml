@@ -185,6 +185,15 @@ services:
 
   App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
+
+  App\Reports\Domain\Repository\CounterpartyRepositoryInterface:
+    alias: App\Reports\Infrastructure\Repository\CounterpartyRepository
+
+  App\Reports\Domain\Repository\ProjectRepositoryInterface:
+    alias: App\Reports\Infrastructure\Repository\ProjectRepository
+
+  App\Reports\Domain\Repository\ReportRepositoryInterface:
+    alias: App\Reports\Infrastructure\Repository\ReportRepository
     public: true
 
   # Движок заполнения шаблонов: фасад-диспетчер получает все драйверы (docx/xlsx) через тег

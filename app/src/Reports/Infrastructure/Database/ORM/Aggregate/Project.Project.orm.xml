@@ -1,0 +1,17 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Reports\Domain\Aggregate\Project\Project" table="reports_project">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="title" type="string" length="100" unique="true"/>
+        <field name="description" type="string" length="750" nullable="true"/>
+        <many-to-one field="counterparty" target-entity="App\Reports\Domain\Aggregate\Counterparty\Counterparty">
+            <join-column name="counterparty_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
+    </entity>
+
+</doctrine-mapping>
