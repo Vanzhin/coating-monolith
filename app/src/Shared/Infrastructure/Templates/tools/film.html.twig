@@ -16,10 +16,12 @@
 
     {% if app.user %}
         <div class="mix-coating p-3 rounded-3 bg-body-tertiary"
-             data-controller="async-typeahead"
+             data-controller="async-typeahead catalog-sync"
              data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+             data-async-typeahead-source-value="catalog"
              data-async-typeahead-placeholder-value="Найти покрытие…"
              data-async-typeahead-min-length-value="3"
+             data-catalog-sync-endpoint-value="{{ path('app_cabinet_coating_coating_catalog') }}"
              data-action="async-typeahead:select->film-calculator#applyFromCoating async-typeahead:deselect->film-calculator#clearCoating">
             <label class="mix-coating-lbl" for="filmCoatingSelect">Из покрытия</label>
             <select id="filmCoatingSelect" data-async-typeahead-target="select">

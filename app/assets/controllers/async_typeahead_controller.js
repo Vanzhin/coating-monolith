@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import Tagify from '@yaireo/tagify';
+import * as catalogStore from '../catalog_store.js';
 
 /**
  * Превращает обычный <select> в typeahead-поле с асинхронным поиском через API.
@@ -29,6 +30,9 @@ export default class extends Controller {
         endpoint: String,
         placeholder: { type: String, default: 'Поиск...' },
         minLength: { type: Number, default: 2 },
+        // source='catalog' — искать в офлайн-сторе покрытий (local-first), сеть только как фолбэк.
+        // Пусто (по умолчанию) — прежний сетевой путь, существующие потребители не затронуты.
+        source: { type: String, default: '' },
     };
 
     connect() {
@@ -154,6 +158,16 @@ export default class extends Controller {
      * @returns {Promise<{items: Array, page: number, hasMore: boolean}|null>}
      */
     async _fetchPage(query, page) {
+        // Local-first источник «каталог покрытий»: ищем в офлайн-сторе IndexedDB. Одной страницей
+        // (весь матч ≤1000), пагинации нет. Сетевой фолбэк — только если стор пуст И есть сеть.
+        if ('catalog' === this.sourceValue) {
+            const items = await catalogStore.search(query, 50);
+            if (items.length > 0 || !navigator.onLine) {
+                return { items, page: 1, hasMore: false };
+            }
+            // холодный стор (ни разу не синкали) + онлайн → падаем в сетевой путь ниже
+        }
+
         try {
             const url = `${this.endpointValue}?q=${encodeURIComponent(query)}&page=${page}`;
             const response = await fetch(url, {
