@@ -196,11 +196,12 @@ final class AuditJournalActionTest extends WebTestCase
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString($this->updatedTitle, $html);
-        // Чип фасета «Актор» гидрирован email'ом (server-side резолв id → email
-        // через GetUsersByIdsQuery), а не голым ulid — email лежит в JSON
-        // data-coating-tags-existing-value виджета шторки (HTML-escaped кавычки).
-        $expectedActorChip = '[{&quot;id&quot;:&quot;'.$this->adminId.'&quot;,&quot;title&quot;:&quot;'.$this->adminEmail.'&quot;}]';
-        self::assertStringContainsString($expectedActorChip, $html);
+        // Чип фасета «Актор» НЕ резолвится на сервере: в шторку уходит только id из URL
+        // (preselected-ids), email клиент дотягивает by-ids-гидрацией (конвенция фильтров,
+        // как в coating_system/list). Проверяем id в preselected-ids и рабочий by-ids-роут.
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-coating-tags-preselected-ids-value="[&quot;'.$this->adminId.'&quot;]"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_users_by_ids'), $html);
     }
 
     public function test_coating_filter_hides_entries_of_other_coatings(): void
@@ -221,10 +222,11 @@ final class AuditJournalActionTest extends WebTestCase
 
         $html = $this->client->getResponse()->getContent();
         self::assertStringContainsString($this->updatedTitle, $html);
-        // Чип фасета «Покрытия» гидрирован названием (server-side резолв id →
-        // title через CoatingRepository::findByIds), а не голым uuid.
-        $expectedCoatingChip = '[{&quot;id&quot;:&quot;'.$this->coatingId.'&quot;,&quot;title&quot;:&quot;'.$this->updatedTitle.'&quot;}]';
-        self::assertStringContainsString($expectedCoatingChip, $html);
+        // Чип фасета «Покрытия» тоже не резолвится на сервере: id из URL в preselected-ids,
+        // название клиент дотягивает by-ids (app_cabinet_coating_coating_by_ids).
+        $router = $this->client->getContainer()->get('router');
+        self::assertStringContainsString('data-coating-tags-preselected-ids-value="[&quot;'.$this->coatingId.'&quot;]"', $html);
+        self::assertStringContainsString($router->generate('app_cabinet_coating_coating_by_ids'), $html);
     }
 
     public function test_non_admin_gets_403(): void

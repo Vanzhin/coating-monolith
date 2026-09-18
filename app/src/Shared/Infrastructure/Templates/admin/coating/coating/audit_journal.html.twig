@@ -4,7 +4,7 @@
 
 {% block content %}
     {% set listRoute = 'app_cabinet_coating_coating_audit_journal' %}
-    {% set activeFacetsCount = selectedActors|length + selectedCoatings|length %}
+    {% set activeFacetsCount = actorIds|length + coatingIds|length %}
 
     <div class="p-2 p-md-3">
         <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-3 bg-body-tertiary">
@@ -26,70 +26,56 @@
             drawer_form_id: 'auditJournalFiltersForm',
         } %}
             {% block chips %}
-                {# --- Актор (multi) --- #}
-                {% if selectedActors|length > 0 %}
-                    {% for a in selectedActors %}
-                        {% set restIds = selectedActors|filter(x => x.id != a.id)|map(x => x.id) %}
-                        {% set removeUrl = path(listRoute, app.request.query.all|merge({actorIds: restIds, page: null})|filter(v => v is not null)) %}
-                        <a href="{{ removeUrl }}"
-                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
-                           title="Убрать «{{ a.title }}» из фильтра">
-                            {{ a.title }} <i class="bi bi-x-lg"></i>
-                        </a>
-                    {% endfor %}
-                {% else %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="actor">
-                        Актор
-                    </button>
-                {% endif %}
+                {# Актор и Покрытия — typeahead-фасеты. По конвенции кабинета (coating_system/list)
+                   их выбор живёт в шторке (чипы клиент гидрирует by-ids), а в chip-row — только
+                   кнопка-переход к секции фасета. Активность подсвечиваем цветом кнопки, счётчик
+                   выбранного несёт бейдж «Все фильтры». #}
+                <button type="button"
+                        class="btn btn-sm {{ actorIds|length > 0 ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        data-action="click->facet-jump#jump" data-facet-jump-facet-param="actor">
+                    Актор{% if actorIds|length > 0 %} · {{ actorIds|length }}{% endif %}
+                </button>
 
-                {# --- Покрытия (multi) --- #}
-                {% if selectedCoatings|length > 0 %}
-                    {% for c in selectedCoatings %}
-                        {% set restIds = selectedCoatings|filter(x => x.id != c.id)|map(x => x.id) %}
-                        {% set removeUrl = path(listRoute, app.request.query.all|merge({coatingIds: restIds, page: null})|filter(v => v is not null)) %}
-                        <a href="{{ removeUrl }}"
-                           class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
-                           title="Убрать «{{ c.title }}» из фильтра">
-                            {{ c.title }} <i class="bi bi-x-lg"></i>
-                        </a>
-                    {% endfor %}
-                {% else %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-action="click->facet-jump#jump" data-facet-jump-facet-param="coating">
-                        Покрытия
-                    </button>
-                {% endif %}
+                <button type="button"
+                        class="btn btn-sm {{ coatingIds|length > 0 ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        data-action="click->facet-jump#jump" data-facet-jump-facet-param="coating">
+                    Покрытия{% if coatingIds|length > 0 %} · {{ coatingIds|length }}{% endif %}
+                </button>
             {% endblock %}
 
             {% block drawer %}
-                {# Актор: typeahead по email (app_cabinet_users_suggest), гидрация
-                   чипов через уже резолвленный selectedActors (id+email). #}
+                {# Актор: typeahead по email (app_cabinet_users_suggest). Чипы выбранного
+                   восстанавливаются клиентом из id в URL через by-ids (app_cabinet_users_by_ids) —
+                   серверного резолва нет (конвенция фильтров: id в URL, чипы гидрирует клиент). #}
                 <div id="facet-actor" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                     <h6 class="fw-semibold mb-2">Актор</h6>
                     <input type="text"
                            data-controller="coating-tags"
-                           data-coating-tags-existing-value="{{ selectedActors|json_encode }}"
+                           data-coating-tags-existing-value="[]"
                            data-coating-tags-suggest-url-value="{{ path('app_cabinet_users_suggest') }}"
                            data-coating-tags-create-url-value=""
                            data-coating-tags-hidden-input-name-value="actorIds[]"
                            data-coating-tags-allow-create-value="false"
+                           data-coating-tags-preselected-ids-value="{{ actorIds|json_encode }}"
+                           data-coating-tags-resolve-url-value="{{ path('app_cabinet_users_by_ids') }}"
                            class="form-control form-control-sm"
                            placeholder="Начните вводить email...">
                 </div>
 
-                {# Покрытия: typeahead по названию (app_cabinet_coating_coating_suggest),
-                   зеркалит фасет «Покрытие» списка документов. #}
+                {# Покрытия: typeahead по названию (app_cabinet_coating_coating_suggest), чипы —
+                   клиентская гидрация by-ids (app_cabinet_coating_coating_by_ids), как в
+                   coating_system/list. #}
                 <div id="facet-coating" class="p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                     <h6 class="fw-semibold mb-2">Покрытия</h6>
                     <input type="text"
                            data-controller="coating-tags"
-                           data-coating-tags-existing-value="{{ selectedCoatings|json_encode }}"
+                           data-coating-tags-existing-value="[]"
                            data-coating-tags-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
                            data-coating-tags-create-url-value=""
                            data-coating-tags-hidden-input-name-value="coatingIds[]"
                            data-coating-tags-allow-create-value="false"
+                           data-coating-tags-preselected-ids-value="{{ coatingIds|json_encode }}"
+                           data-coating-tags-resolve-url-value="{{ path('app_cabinet_coating_coating_by_ids') }}"
                            class="form-control form-control-sm"
                            placeholder="Начните вводить покрытие...">
                 </div>
