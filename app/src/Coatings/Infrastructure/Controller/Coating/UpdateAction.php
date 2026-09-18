@@ -19,6 +19,7 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Validation\Validator;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -66,6 +67,14 @@ class UpdateAction extends AbstractController
                 $this->addFlash('manufacturer_updated_success', sprintf('Покрытие "%s" обновлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
+            } catch (OptimisticLockException) {
+                $error = 'Покрытие только что изменил другой пользователь. Обновите страницу и повторите.';
+
+                return $this->render('admin/coating/coating/form.html.twig', array_merge(
+                    compact('error', 'inputData', 'pagedManufacturers', 'pagedCoatingTags'),
+                    ['coatingBases' => CoatingBase::cases(), 'glossOptions' => Gloss::cases(),
+                        'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? [])],
+                ));
             } catch (\Exception $e) {
                 $error = $e->getMessage();
 

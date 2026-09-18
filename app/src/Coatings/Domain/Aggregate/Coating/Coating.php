@@ -22,6 +22,8 @@ class Coating extends Aggregate
     public const COAT_TYPE = 'CoatingCoatType';
 
     public readonly Uuid $id;
+    /** Оптимистичная блокировка (Doctrine @Version). Конкурентность, не аудит — домен об аудите не знает. */
+    private int $version = 1;
     private string $title;
     private string $description;
     private int $volumeSolid;
@@ -116,6 +118,11 @@ class Coating extends Aggregate
     public function getId(): string
     {
         return $this->id->toRfc4122();
+    }
+
+    public function version(): int
+    {
+        return $this->version;
     }
 
     public function getTitle(): string

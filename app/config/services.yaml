@@ -55,6 +55,9 @@ services:
     App\Coatings\Domain\Compliance\StandardEvaluator:
       tags: ['app.standard_evaluator']
 
+    App\Shared\Domain\Templating\TemplateRenderer:
+      tags: ['app.template_renderer']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -174,6 +177,11 @@ services:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
     public: true
 
+  # Движок заполнения шаблонов: фасад-диспетчер получает все драйверы (docx/xlsx) через тег
+  App\Shared\Infrastructure\Service\TemplateRendering:
+    arguments:
+      - !tagged_iterator app.template_renderer
+
   App\Coatings\Domain\Compliance\SystemComplianceEvaluator:
     arguments:
       - !tagged_iterator app.standard_evaluator
@@ -191,6 +199,15 @@ services:
 
   App\Notifications\Domain\Repository\NotificationRepositoryInterface:
     alias: App\Notifications\Infrastructure\Repository\NotificationRepository
+
+  App\Shared\Domain\Audit\TrackedClassRepositoryInterface:
+    alias: App\Shared\Infrastructure\Repository\TrackedClassRepository
+
+  App\Shared\Domain\Audit\AuditEntryRepositoryInterface:
+    alias: App\Shared\Infrastructure\Repository\AuditEntryRepository
+
+  App\Shared\Domain\Audit\AuditPolicyInterface:
+    alias: App\Shared\Infrastructure\Audit\CachedAuditPolicy
 
   App\Shared\Domain\Service\UnreadNotificationCounterInterface:
     alias: App\Notifications\Infrastructure\Service\UnreadNotificationCounter
