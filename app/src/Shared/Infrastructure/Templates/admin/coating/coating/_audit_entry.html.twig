@@ -5,7 +5,6 @@
      entry       — AuditLogView (entityId, actorLabel, occurredAt, action, changes)
      objectTitle — string|null: заголовок объекта (в журнале), null/не задан в истории
      objectUrl   — string|null: ссылка на объект (в журнале), null/не задан в истории #}
-{% import 'admin/coating/coating/_audit_value.html.twig' as audit_value %}
 {% set actionLabels = { created: 'Создано', updated: 'Изменено', deleted: 'Удалено' } %}
 {% set actionIcons = { created: 'bi-plus-lg', updated: 'bi-pencil', deleted: 'bi-trash3' } %}
 {% set act = entry.action.value %}
@@ -30,13 +29,13 @@
             <div class="audit-entry__field">
                 <span class="audit-entry__label">{{ change.label }}:</span>
                 {% if change.op.value == 'set' %}
-                    <span class="audit-entry__old">{{ audit_value.display(change.old) }}</span>
+                    <span class="audit-entry__old">{{ change.oldText }}</span>
                     <i class="bi bi-arrow-right audit-entry__arrow"></i>
-                    <span class="audit-entry__new">{{ audit_value.display(change.new) }}</span>
+                    <span class="audit-entry__new">{{ change.newText }}</span>
                 {% elseif change.op.value == 'add' %}
-                    <span class="audit-entry__add">+ {{ audit_value.display(change.new) }}</span>
+                    <span class="audit-entry__add">+ {{ change.newText }}</span>
                 {% else %}
-                    <span class="audit-entry__remove">− {{ audit_value.display(change.old) }}</span>
+                    <span class="audit-entry__remove">− {{ change.oldText }}</span>
                 {% endif %}
             </div>
         {% endfor %}
