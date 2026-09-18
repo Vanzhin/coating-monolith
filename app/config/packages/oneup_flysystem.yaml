@@ -7,9 +7,14 @@ oneup_flysystem:
     document_scans_adapter:
       local:
         location: '%document_scans_upload_dir%'
+    file_storage_adapter:
+      local:
+        location: '%file_storage_upload_dir%'
 
   filesystems:
     upload_general_proposal:
       adapter: upload_general_proposal_adapter
     document_scans:
       adapter: document_scans_adapter
+    file_storage:
+      adapter: file_storage_adapter
