@@ -90,6 +90,27 @@ final class ReportPagesTest extends WebTestCase
         self::assertSelectorTextContains('body', 'SMOKE-01');
     }
 
+    public function test_fill_form_renders_and_saves(): void
+    {
+        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'FILL-01']);
+        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
+        $this->reportIds[] = $id;
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form textarea, form input, form select');
+
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'content' => [
+                'control_area' => ['description' => 'Балка Б-1'],
+                'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
+                'conclusion' => ['text' => 'ок'],
+            ],
+        ]);
+        self::assertResponseRedirects('/cabinet/report/'.$id);
+    }
+
     private function setPrivate(object $obj, string $prop, mixed $value): void
     {
         $ref = new \ReflectionProperty($obj, $prop);
