@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Reports\Domain\Service;
 
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\ApplicationBlock;
 use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
@@ -26,6 +27,7 @@ final class ReportContentValidatorTest extends TestCase
         $registry = new BlockRegistry([
             new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            new ApplicationBlock(),
         ]);
         $this->validator = new ReportContentValidator($registry);
     }
@@ -100,6 +102,35 @@ final class ReportContentValidatorTest extends TestCase
     {
         $content = $this->validContent();
         $content['instruments'] = ['items' => 'не список'];
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_valid_layers_pass_strict(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $content = $this->validContent();
+        $content['application'] = ['layers' => [
+            ['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80, 'surface_temp' => 12],
+            ['material' => 'Эмаль ХВ-785', 'dry_film_mean' => 60],
+        ]];
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_layer_missing_required_material_throws_strict(): void
+    {
+        $content = $this->validContent();
+        $content['application'] = ['layers' => [['dry_film_mean' => 80]]]; // слой без материала (required)
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_layers_over_limit_throws(): void
+    {
+        $content = $this->validContent();
+        $content['application'] = ['layers' => array_fill(0, 5, ['material' => 'Слой'])]; // 5 > 4
 
         $this->expectException(AppException::class);
         $this->validator->validate(ReportType::TrialApplication, $content, strict: false);

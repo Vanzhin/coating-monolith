@@ -24,8 +24,7 @@ enum ReportType: string
     }
 
     /**
-     * Композиция блоков типа (порядок = порядок в акте). Растёт по мере реализации блоков
-     * (сейчас — только скалярные блоки инкремента 3a).
+     * Композиция блоков типа (порядок = порядок в акте). Растёт по мере реализации блоков.
      *
      * @return list<BlockKey>
      */
@@ -34,12 +33,14 @@ enum ReportType: string
         return match ($this) {
             self::ReferenceArea => [
                 BlockKey::SurfacePrep,
+                BlockKey::Application,
                 BlockKey::Notes,
                 BlockKey::Commission,
             ],
             self::TrialApplication => [
                 BlockKey::SurfacePrep,
                 BlockKey::Instruments,
+                BlockKey::Application,
                 BlockKey::Process,
                 BlockKey::Recommendations,
                 BlockKey::Conclusion,

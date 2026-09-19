@@ -15,7 +15,8 @@ use App\Shared\Domain\Templating\TextValue;
  * Проектор отчёта в плоский RenderData для движка шаблонов. Ключи (латиница snake_case):
  * шапка — act_number/report_date/report_type/status/project_title/customer_title/contractor_title/
  * system_title; блоки — «{blockKey}_{fieldKey}» (напр. surface_prep_rustGrade, conclusion_text).
- * Presence-driven: пустые не кладём (в шаблоне это опциональные {{x?}}). В 3a — только скаляры.
+ * Presence-driven: пустые не кладём (в шаблоне это опциональные {{x?}}). Слои → индексные ключи
+ * application_layerN_* + application_layer_count; списки → текст.
  * Форматирование значений на поле/тип — здесь (override под аудит-форматтеры добавим позже).
  */
 final readonly class ReportRenderDataProjector
@@ -47,13 +48,18 @@ final readonly class ReportRenderDataProjector
                     continue;
                 }
                 foreach ($definition->fields() as $field) {
+                    if (FieldType::Layers === $field->type) {
+                        $this->projectLayers($values, $blockKey->value, $field, $blockData[$field->key] ?? null);
+
+                        continue;
+                    }
                     if (FieldType::ListRows === $field->type) {
                         $this->put($values, $blockKey->value.'_'.$field->key, $this->formatList($field, $blockData[$field->key] ?? null));
 
                         continue;
                     }
                     if (!$field->type->isScalar()) {
-                        continue; // Layers/медиа — позже
+                        continue; // ссылки/медиа — позже
                     }
                     $this->put($values, $blockKey->value.'_'.$field->key, $this->formatScalar($field, $blockData[$field->key] ?? null));
                 }
@@ -83,6 +89,33 @@ final readonly class ReportRenderDataProjector
             FieldType::Bool => $value ? 'Да' : 'Нет',
             default => is_scalar($value) ? (string) $value : null,
         };
+    }
+
+    /**
+     * Слои → индексированные ключи (движок плоский, без повтора): для слоя N (с 1) и под-поля f —
+     * ключ «{block}_layer{N}_{f}», плюс «{block}_layer_count». По счётчику потребитель выбирает шаблон.
+     *
+     * @param array<string, TextValue> $values
+     */
+    private function projectLayers(array &$values, string $blockKeyValue, Field $field, mixed $value): void
+    {
+        if (!is_array($value) || [] === $value) {
+            return;
+        }
+
+        $index = 0;
+        foreach ($value as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            ++$index;
+            foreach ($field->itemFields as $sub) {
+                $this->put($values, sprintf('%s_layer%d_%s', $blockKeyValue, $index, $sub->key), $this->formatScalar($sub, $row[$sub->key] ?? null));
+            }
+        }
+        if ($index > 0) {
+            $this->put($values, $blockKeyValue.'_layer_count', (string) $index);
+        }
     }
 
     /**

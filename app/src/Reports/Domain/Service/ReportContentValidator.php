@@ -14,10 +14,13 @@ use App\Shared\Infrastructure\Exception\AppException;
  * Валидирует content отчёта против схемы блоков его типа.
  * - strict=false (черновик/save): неполнота допустима, проверяем только типы заполненных значений.
  * - strict=true  (submitForReview): все обязательные поля должны быть заполнены.
- * В 3a обрабатываются только скалярные поля; композиты/ссылки/медиа — в 3b.
+ * Скаляры и композиты (Layers/List) проверяются; ссылки/медиа (*Ref/PhotoSlot) — позже.
  */
 final readonly class ReportContentValidator
 {
+    /** Движок рендера без повтора → шаблоны только на 1-4 слоя. */
+    private const int MAX_LAYERS = 4;
+
     public function __construct(private BlockRegistry $registry)
     {
     }
@@ -36,6 +39,11 @@ final readonly class ReportContentValidator
 
             foreach ($definition->fields() as $field) {
                 $value = $blockData[$field->key] ?? null;
+                if (FieldType::Layers === $field->type) {
+                    $this->validateLayers($definition->title(), $field, $value, $strict);
+
+                    continue;
+                }
                 if (FieldType::ListRows === $field->type) {
                     $this->validateList($definition->title(), $field, $value, $strict);
 
@@ -51,6 +59,18 @@ final readonly class ReportContentValidator
                 $this->checkType($definition->title(), $field, $value);
             }
         }
+    }
+
+    /**
+     * Слои — тот же список строк, но ограничены числом шаблонных колонок (≤ MAX_LAYERS).
+     * Проекция раскладывает их в индексированные ключи application_layerN_*.
+     */
+    private function validateLayers(string $blockTitle, Field $field, mixed $value, bool $strict): void
+    {
+        if (is_array($value) && array_is_list($value) && count($value) > self::MAX_LAYERS) {
+            throw new AppException(sprintf('Слоёв в блоке «%s» не может быть больше %d.', $blockTitle, self::MAX_LAYERS));
+        }
+        $this->validateList($blockTitle, $field, $value, $strict);
     }
 
     private function validateList(string $blockTitle, Field $field, mixed $value, bool $strict): void

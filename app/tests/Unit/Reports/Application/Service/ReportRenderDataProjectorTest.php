@@ -9,6 +9,7 @@ use App\Reports\Domain\Aggregate\Report\Reference;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\ApplicationBlock;
 use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
@@ -32,6 +33,7 @@ final class ReportRenderDataProjectorTest extends TestCase
             new BlockRegistry([
                 new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
                 new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+                new ApplicationBlock(),
             ]),
         );
     }
@@ -82,6 +84,29 @@ final class ReportRenderDataProjectorTest extends TestCase
 
         // незаполненное поле — presence-driven, ключа нет
         self::assertFalse($data->has('surface_prep_abrasive'));
+    }
+
+    public function test_layers_project_to_indexed_keys(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-02');
+        $report->replaceContent([
+            'application' => ['layers' => [
+                ['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80],
+                ['material' => 'Эмаль ХВ-785', 'dry_film_mean' => 60, 'color' => 'RAL 7040'],
+            ]],
+        ], $now);
+
+        $data = $this->projector->project($report);
+
+        self::assertSame('2', $this->text($data, 'application_layer_count'));
+        self::assertSame('Грунт ЭП-0199', $this->text($data, 'application_layer1_material'));
+        self::assertSame('80', $this->text($data, 'application_layer1_dry_film_mean'));
+        self::assertSame('Эмаль ХВ-785', $this->text($data, 'application_layer2_material'));
+        self::assertSame('RAL 7040', $this->text($data, 'application_layer2_color'));
+        // незаполненные под-поля слоя — presence-driven, ключа нет
+        self::assertFalse($data->has('application_layer1_color'));
+        self::assertFalse($data->has('application_layer3_material'));
     }
 
     private function text(RenderData $data, string $key): string

@@ -8,6 +8,7 @@ use App\Reports\Application\Service\ReportRenderDataProjector;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\ApplicationBlock;
 use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
@@ -41,6 +42,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
         $section->addText('Класс ржавления: {{surface_prep_rustGrade}}');
         $section->addText('Выводы: {{conclusion_text}}');
         $section->addText('Примечания: {{notes_text}}');
+        $section->addText('Слой 1: {{application_layer1_material}} — {{application_layer1_dry_film_mean}} мкм');
 
         $this->templatePath = sys_get_temp_dir().'/report_tpl_'.uniqid().'.docx';
         WordIO::createWriter($phpWord, 'Word2007')->save($this->templatePath);
@@ -59,12 +61,14 @@ final class ReportDocxRenderSmokeTest extends TestCase
             'surface_prep' => ['rustGrade' => 'B'],
             'conclusion' => ['text' => 'Соответствует регламенту.'],
             'notes' => ['text' => 'Без замечаний.'],
+            'application' => ['layers' => [['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80]]],
         ], $now);
 
         $projector = new ReportRenderDataProjector(
             new BlockRegistry([
                 new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
                 new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+                new ApplicationBlock(),
             ]),
         );
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($this->templatePath), $projector->project($report));
@@ -77,6 +81,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
         self::assertStringContainsString('Класс ржавления: B', $text);
         self::assertStringContainsString('Выводы: Соответствует регламенту.', $text);
         self::assertStringContainsString('Примечания: Без замечаний.', $text);
+        self::assertStringContainsString('Слой 1: Грунт ЭП-0199 — 80 мкм', $text);
     }
 
     private function docxText(string $bytes): string
