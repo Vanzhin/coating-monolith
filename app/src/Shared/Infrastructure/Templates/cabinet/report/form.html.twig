@@ -55,14 +55,16 @@
                             <input type="date" name="reportDate" value="{{ reportDate }}" class="form-control">
                         </div>
 
-                        <div class="col-12" data-controller="async-typeahead"
-                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
-                             data-async-typeahead-placeholder-value="Начните вводить систему…">
+                        <div class="col-12" data-controller="system-by-coating"
+                             data-system-by-coating-coating-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
+                             data-system-by-coating-systems-url-value="{{ path('app_cabinet_report_systems_by_coatings') }}"
+                             data-system-by-coating-hidden-name-value="systemId"
+                             {% if editing and report.systemId %}data-system-by-coating-selected-value="{{ {id: report.systemId, title: report.systemTitle}|json_encode }}"{% endif %}>
                             <label class="form-label">Система покрытия</label>
-                            <select name="systemId" data-async-typeahead-target="select">
-                                {% if editing and report.systemId %}<option value="{{ report.systemId }}" selected>{{ report.systemTitle }}</option>{% endif %}
-                            </select>
-                            <div class="form-text">Слои системы попадут в блок «Система (план)». При смене системы план пересобирается.</div>
+                            <div class="mb-2" data-system-by-coating-target="selected"></div>
+                            <input data-system-by-coating-target="coatingInput" placeholder="Введите покрытия для подбора системы…">
+                            <div class="form-text">Введите покрытия — подберём системы с ними (подложка, подготовка, среда). Слои выбранной системы засеются в план.</div>
+                            <div class="mt-2" data-system-by-coating-target="results"></div>
                         </div>
 
                         <div class="col-md-6" data-reference-select-group>

@@ -20,6 +20,10 @@
 .rep-chip:hover { color: var(--bs-body-color); }
 .rep-chip.is-active { background: var(--accent-subtle); color: var(--bs-primary); }
 
+/* Подобранные системы (подбор по покрытиям): кликабельные плитки-опции. */
+.sys-opt { cursor: pointer; transition: box-shadow .12s; }
+.sys-opt:hover { box-shadow: 0 0 0 1px var(--bs-primary); }
+
 /* Поле-ссылка (reference-select) с незавершённым вводом: подсветка, чтобы не потерять текст молча. */
 .tagify.reference-select-warn {
     border-color: var(--warn);
