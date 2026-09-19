@@ -19,6 +19,7 @@ use App\Reports\Domain\Block\Definition\PhotosBlock;
 use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
+use App\Reports\Domain\Block\Definition\SystemBlock;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TextValue;
@@ -35,7 +36,7 @@ final class ReportRenderDataProjectorTest extends TestCase
             new BlockRegistry([
                 new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
                 new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-                new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(),
+                new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
             ]),
         );
     }

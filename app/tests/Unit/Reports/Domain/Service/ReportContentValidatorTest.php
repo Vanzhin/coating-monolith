@@ -16,6 +16,7 @@ use App\Reports\Domain\Block\Definition\PhotosBlock;
 use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
+use App\Reports\Domain\Block\Definition\SystemBlock;
 use App\Reports\Domain\Service\ReportContentValidator;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +30,7 @@ final class ReportContentValidatorTest extends TestCase
         $registry = new BlockRegistry([
             new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(),
+            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
         ]);
         $this->validator = new ReportContentValidator($registry);
     }

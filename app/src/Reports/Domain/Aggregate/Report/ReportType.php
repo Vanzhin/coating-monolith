@@ -34,6 +34,7 @@ enum ReportType: string
             self::ReferenceArea => [
                 BlockKey::ControlArea,
                 BlockKey::SurfacePrep,
+                BlockKey::System,
                 BlockKey::Application,
                 BlockKey::Notes,
                 BlockKey::Photos,
@@ -43,6 +44,7 @@ enum ReportType: string
                 BlockKey::ControlArea,
                 BlockKey::SurfacePrep,
                 BlockKey::Instruments,
+                BlockKey::System,
                 BlockKey::Application,
                 BlockKey::Process,
                 BlockKey::Recommendations,

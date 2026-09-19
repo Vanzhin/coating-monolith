@@ -44,18 +44,40 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
             throw new ForbiddenException();
         }
 
+        $previousContent = $report->getContent();
+        $content = $this->withPreservedSystem($command->content, $previousContent);
+
         $type = $report->getType();
         if (null !== $type) {
-            $this->validator->validate($type, $command->content, strict: false);
+            $this->validator->validate($type, $content, strict: false);
         }
 
-        $previousContent = $report->getContent();
-        $this->promoteStagedPhotos($report, $command->content);
+        $this->promoteStagedPhotos($report, $content);
 
-        $report->replaceContent($command->content, new \DateTimeImmutable());
+        $report->replaceContent($content, new \DateTimeImmutable());
         $this->repository->add($report);
 
-        $this->removeDetachedPhotos($previousContent, $command->content);
+        $this->removeDetachedPhotos($previousContent, $content);
+    }
+
+    /**
+     * Блок «Система (план)» засевается при создании и пользователем не редактируется — несём его из
+     * отчёта, что бы ни прислал клиент (нет засева — убираем, чтобы клиент не завёл план сам).
+     *
+     * @param array<string, mixed> $incoming
+     * @param array<string, mixed> $existing
+     *
+     * @return array<string, mixed>
+     */
+    private function withPreservedSystem(array $incoming, array $existing): array
+    {
+        if (isset($existing['system'])) {
+            $incoming['system'] = $existing['system'];
+        } else {
+            unset($incoming['system']);
+        }
+
+        return $incoming;
     }
 
     /**
