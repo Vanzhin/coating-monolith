@@ -20,9 +20,9 @@ use App\Certificates\Domain\Aggregate\Issuer\Issuer;
 use App\Certificates\Domain\Aggregate\Issuer\Specification\IssuerSpecification;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
 use App\Certificates\Domain\Repository\DocumentsFilter;
-use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Repository\Pager;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,7 +37,7 @@ final class DocumentUseCasesTest extends KernelTestCase
     private CommandBusInterface $commandBus;
     private QueryBusInterface $queryBus;
     private DocumentRepositoryInterface $repo;
-    private DocumentFileStorage $storage;
+    private FileStorage $storage;
     private IssuerSpecification $issuerSpec;
     private EntityManagerInterface $em;
 
@@ -55,7 +55,7 @@ final class DocumentUseCasesTest extends KernelTestCase
         $this->commandBus = $c->get(CommandBusInterface::class);
         $this->queryBus = $c->get(QueryBusInterface::class);
         $this->repo = $c->get(DocumentRepositoryInterface::class);
-        $this->storage = $c->get(DocumentFileStorage::class);
+        $this->storage = $c->get(FileStorage::class);
         $this->issuerSpec = $c->get(IssuerSpecification::class);
         $this->em = $c->get(EntityManagerInterface::class);
 
@@ -84,7 +84,7 @@ final class DocumentUseCasesTest extends KernelTestCase
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         foreach ($this->writtenFiles as $file) {
-            $this->storage->delete($file);
+            $this->storage->remove($file);
         }
         parent::tearDown();
     }
@@ -167,7 +167,7 @@ final class DocumentUseCasesTest extends KernelTestCase
         self::assertNotNull($loaded);
         self::assertNotNull($loaded->getFile());
         $this->writtenFiles[] = (string) $loaded->getFile();
-        self::assertTrue($this->storage->exists((string) $loaded->getFile()));
+        self::assertNotNull($this->storage->get((string) $loaded->getFile()));
     }
 
     public function test_update_replaces_fields_and_references(): void
@@ -206,12 +206,12 @@ final class DocumentUseCasesTest extends KernelTestCase
 
         $this->em->clear();
         $file = (string) $this->repo->findOneById($id)?->getFile();
-        self::assertTrue($this->storage->exists($file));
+        self::assertNotNull($this->storage->get($file));
 
         $this->commandBus->execute(new DeleteDocumentCommand($id));
 
         self::assertNull($this->repo->findOneById($id));
-        self::assertFalse($this->storage->exists($file));
+        self::assertNull($this->storage->get($file));
     }
 
     public function test_get_paged_resolves_issuer_title(): void
