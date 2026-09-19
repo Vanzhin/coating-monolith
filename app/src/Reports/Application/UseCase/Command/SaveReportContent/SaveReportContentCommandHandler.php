@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reports\Application\UseCase\Command\SaveReportContent;
 
 use App\Reports\Application\Service\AccessControl\ReportAccessControl;
+use App\Reports\Application\Service\LayerMaterialResolver;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
 use App\Reports\Domain\File\ReportPhotoPurpose;
@@ -32,6 +33,7 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
         private ReportAccessControl $access,
         private ReportContentValidator $validator,
         private FileStorage $storage,
+        private LayerMaterialResolver $materialResolver,
     ) {
     }
 
@@ -50,6 +52,7 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
 
         $type = $report->getType();
         if (null !== $type) {
+            $content = $this->materialResolver->resolve($type, $content);
             $this->validator->validate($type, $content, strict: false);
         }
 

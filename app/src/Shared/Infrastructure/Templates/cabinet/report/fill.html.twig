@@ -20,6 +20,11 @@
         </select>
     {% elseif t in ['text', 'timerange'] %}
         <input type="text" name="{{ name }}" value="{{ value }}" class="form-control">
+    {% elseif t == 'coating_ref' %}
+        <div data-controller="coating-pick" data-coating-pick-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}">
+            <input type="hidden" name="{{ name }}" value="{{ value.id|default('') }}" data-coating-pick-target="hidden">
+            <input type="text" class="form-control" value="{{ value.title|default('') }}" data-coating-pick-target="search" placeholder="Покрытие…">
+        </div>
     {% else %}
         <div class="text-body-secondary small py-1"><i class="bi bi-hourglass-split me-1"></i>Заполнение — в следующем шаге.</div>
     {% endif %}
@@ -63,7 +68,7 @@
                             <div class="text-body-secondary small">Заполнено из выбранной системы, здесь не редактируется.</div>
                         {% else %}
                             {% for field in section.fields %}
-                                {% if field.type == 'list' %}
+                                {% if field.type in ['list', 'layers'] %}
                                     <div class="mb-2" data-controller="report-list-rows">
                                         <label class="form-label fw-semibold">{{ field.label }}</label>
                                         <div data-report-list-rows-target="rows">
