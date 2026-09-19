@@ -61,7 +61,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
             'surface_prep' => ['rustGrade' => 'B'],
             'conclusion' => ['text' => 'Соответствует регламенту.'],
             'notes' => ['text' => 'Без замечаний.'],
-            'application' => ['layers' => [['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80]]],
+            'application' => ['layers' => [['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film_mean' => 80]]],
         ], $now);
 
         $projector = new ReportRenderDataProjector(

@@ -92,8 +92,8 @@ final class ReportRenderDataProjectorTest extends TestCase
         $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-02');
         $report->replaceContent([
             'application' => ['layers' => [
-                ['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80],
-                ['material' => 'Эмаль ХВ-785', 'dry_film_mean' => 60, 'color' => 'RAL 7040'],
+                ['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film_mean' => 80],
+                ['material' => ['id' => 'c2', 'title' => 'Эмаль ХВ-785'], 'dry_film_mean' => 60, 'color' => 'RAL 7040'],
             ]],
         ], $now);
 

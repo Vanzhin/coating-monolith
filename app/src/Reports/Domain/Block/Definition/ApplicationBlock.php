@@ -11,8 +11,9 @@ use App\Reports\Domain\Block\FieldType;
 
 /**
  * Нанесение по слоям — транспонированная таблица (слои=колонки). Поле `layers` типа Layers: массив
- * строк-слоёв (≤4), каждый — параметры нанесения/контроля. material/color — текст-снимок (в 3b-4
- * станут CoatingRef/colorRef с пикером, засевом из системы и подсказками).
+ * строк-слоёв (≤4), каждый — параметры нанесения/контроля. `material` — CoatingRef (снимок {id,title}
+ * из каталога; id — бэклинк для засева/подсказок). `color` — пока текст (colorRef позже, вместе с
+ * офлайн-кешем цветов).
  */
 final class ApplicationBlock implements BlockDefinition
 {
@@ -32,7 +33,7 @@ final class ApplicationBlock implements BlockDefinition
             new Field('layers', FieldType::Layers, 'Слои', itemFields: [
                 new Field('date', FieldType::Date, 'Дата нанесения'),
                 new Field('time', FieldType::TimeRange, 'Время нанесения'),
-                new Field('material', FieldType::Text, 'Материал', required: true),
+                new Field('material', FieldType::CoatingRef, 'Материал', required: true),
                 new Field('color', FieldType::Text, 'Цвет'),
                 new Field('batch_a', FieldType::Text, '№ партии, комп. А'),
                 new Field('batch_b', FieldType::Text, '№ партии, комп. Б'),

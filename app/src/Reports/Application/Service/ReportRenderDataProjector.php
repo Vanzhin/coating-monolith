@@ -92,6 +92,21 @@ final readonly class ReportRenderDataProjector
     }
 
     /**
+     * Под-поле строки/слоя: ссылка на каталог ({id, title}) → title-снимок (id — бэклинк, в документ
+     * не идёт); иначе — обычное скалярное форматирование.
+     */
+    private function formatSubValue(Field $field, mixed $value): ?string
+    {
+        if (FieldType::CoatingRef === $field->type || FieldType::ColorRef === $field->type) {
+            return is_array($value) && isset($value['title']) && is_string($value['title']) && '' !== $value['title']
+                ? $value['title']
+                : null;
+        }
+
+        return $this->formatScalar($field, $value);
+    }
+
+    /**
      * Слои → индексированные ключи (движок плоский, без повтора): для слоя N (с 1) и под-поля f —
      * ключ «{block}_layer{N}_{f}», плюс «{block}_layer_count». По счётчику потребитель выбирает шаблон.
      *
@@ -110,7 +125,7 @@ final readonly class ReportRenderDataProjector
             }
             ++$index;
             foreach ($field->itemFields as $sub) {
-                $this->put($values, sprintf('%s_layer%d_%s', $blockKeyValue, $index, $sub->key), $this->formatScalar($sub, $row[$sub->key] ?? null));
+                $this->put($values, sprintf('%s_layer%d_%s', $blockKeyValue, $index, $sub->key), $this->formatSubValue($sub, $row[$sub->key] ?? null));
             }
         }
         if ($index > 0) {

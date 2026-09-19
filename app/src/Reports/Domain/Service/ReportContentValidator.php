@@ -135,8 +135,19 @@ final readonly class ReportContentValidator
                     throw new AppException(sprintf('Поле «%s / %s» должно быть строкой.', $blockTitle, $field->label));
                 }
                 break;
+            case FieldType::CoatingRef:
+            case FieldType::ColorRef:
+                // Снимок ссылки на каталог: только shape (id + название непусты), без проверки
+                // существования — снимок самодостаточен и офлайн-безопасен (Вариант A).
+                if (!is_array($value)
+                    || !isset($value['id'], $value['title'])
+                    || !is_string($value['id']) || '' === $value['id']
+                    || !is_string($value['title']) || '' === $value['title']) {
+                    throw new AppException(sprintf('Поле «%s / %s» должно быть ссылкой на каталог (id и название).', $blockTitle, $field->label));
+                }
+                break;
             default:
-                // Композиты/ссылки/медиа (Layers/List/*Ref/PhotoSlot) — в 3a не валидируем.
+                // Медиа (PhotoSlot) — позже.
                 break;
         }
     }

@@ -112,8 +112,8 @@ final class ReportContentValidatorTest extends TestCase
         $this->expectNotToPerformAssertions();
         $content = $this->validContent();
         $content['application'] = ['layers' => [
-            ['material' => 'Грунт ЭП-0199', 'dry_film_mean' => 80, 'surface_temp' => 12],
-            ['material' => 'Эмаль ХВ-785', 'dry_film_mean' => 60],
+            ['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film_mean' => 80, 'surface_temp' => 12],
+            ['material' => ['id' => 'c2', 'title' => 'Эмаль ХВ-785'], 'dry_film_mean' => 60],
         ]];
         $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
     }
@@ -127,10 +127,19 @@ final class ReportContentValidatorTest extends TestCase
         $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
     }
 
+    public function test_layer_material_must_be_ref_shape(): void
+    {
+        $content = $this->validContent();
+        $content['application'] = ['layers' => [['material' => 'Грунт ЭП-0199']]]; // строка вместо ссылки {id,title}
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
     public function test_layers_over_limit_throws(): void
     {
         $content = $this->validContent();
-        $content['application'] = ['layers' => array_fill(0, 5, ['material' => 'Слой'])]; // 5 > 4
+        $content['application'] = ['layers' => array_fill(0, 5, ['material' => ['id' => 'c1', 'title' => 'Слой']])]; // 5 > 4
 
         $this->expectException(AppException::class);
         $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
