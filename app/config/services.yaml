@@ -134,6 +134,12 @@ services:
 
   App\Shared\Domain\File\FileStorage: '@App\Shared\Infrastructure\File\FlysystemFileStorage'
 
+  # Разовая миграция сканов Certificates: читаем из document_scans, пишем в file_storage.
+  App\Certificates\Infrastructure\Console\MigrateScansToFileStorageCommand:
+    arguments:
+      $scansFilesystem: '@oneup_flysystem.document_scans_filesystem'
+      $fileStorageFilesystem: '@oneup_flysystem.file_storage_filesystem'
+
   # Telegram
   telegram_handler:
     class: App\Shared\Infrastructure\Log\TelegramLogHandler
