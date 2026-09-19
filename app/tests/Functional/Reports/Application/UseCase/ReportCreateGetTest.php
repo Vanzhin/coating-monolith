@@ -92,7 +92,7 @@ final class ReportCreateGetTest extends KernelTestCase
 
     public function test_get_returns_dto_with_labels(): void
     {
-        $id = $this->create(ReportType::PaintSample);
+        $id = $this->create(ReportType::ReferenceArea);
 
         $result = $this->queryBus->execute(new GetReportQuery($id));
         \assert($result instanceof GetReportQueryResult);
@@ -100,7 +100,7 @@ final class ReportCreateGetTest extends KernelTestCase
         self::assertNotNull($result->report);
         self::assertSame('created', $result->report->status);
         self::assertSame('Создан', $result->report->statusLabel);
-        self::assertSame('paint_sample', $result->report->typeKey);
+        self::assertSame('reference_area', $result->report->typeKey);
         self::assertSame('Акт выкрасов эталонного участка', $result->report->typeLabel);
     }
 

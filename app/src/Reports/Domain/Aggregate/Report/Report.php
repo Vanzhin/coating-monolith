@@ -132,6 +132,19 @@ class Report extends Aggregate
         $this->updatedAt = $now;
     }
 
+    /**
+     * Заменить содержимое блоков целиком. Валидация против схемы блоков — в Application
+     * (ReportContentValidator) до вызова; агрегат лишь бережёт заморозку.
+     *
+     * @param array<string, mixed> $content
+     */
+    public function replaceContent(array $content, \DateTimeImmutable $now): void
+    {
+        $this->assertMutable();
+        $this->content = $content;
+        $this->updatedAt = $now;
+    }
+
     public function isOwnedBy(string $userId): bool
     {
         return $this->ownerId === $userId;
