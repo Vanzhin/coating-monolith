@@ -9,6 +9,7 @@ use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Definition\ApplicationBlock;
 use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
+use App\Reports\Domain\Block\Definition\ControlAreaBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
 use App\Reports\Domain\Block\Definition\PhotosBlock;
@@ -28,7 +29,7 @@ final class ReportContentValidatorTest extends TestCase
         $registry = new BlockRegistry([
             new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-            new ApplicationBlock(), new PhotosBlock(),
+            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(),
         ]);
         $this->validator = new ReportContentValidator($registry);
     }
@@ -39,6 +40,7 @@ final class ReportContentValidatorTest extends TestCase
     private function validContent(): array
     {
         return [
+            'control_area' => ['description' => 'Балка Б-1, нижняя полка', 'area' => 2.5],
             'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½', 'dedusting' => '2'],
             'conclusion' => ['text' => 'Соответствует регламенту.'],
             'notes' => ['text' => 'Без замечаний.'],
@@ -49,6 +51,15 @@ final class ReportContentValidatorTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
         $this->validator->validate(ReportType::TrialApplication, $this->validContent(), strict: true);
+    }
+
+    public function test_control_area_description_required_strict(): void
+    {
+        $content = $this->validContent();
+        unset($content['control_area']); // участок не описан
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
     }
 
     public function test_light_mode_allows_incomplete(): void
@@ -74,9 +85,10 @@ final class ReportContentValidatorTest extends TestCase
 
     public function test_reference_area_uses_its_own_composition(): void
     {
-        // ReferenceArea = [SurfacePrep, Notes]; Conclusion не входит → его обязательность не требуется.
+        // ReferenceArea не содержит Conclusion → его обязательность не требуется даже в strict.
         $this->expectNotToPerformAssertions();
         $this->validator->validate(ReportType::ReferenceArea, [
+            'control_area' => ['description' => 'Балка Б-1'],
             'surface_prep' => ['rustGrade' => 'A', 'prepDegree' => 'Sa 3'],
         ], strict: true);
     }

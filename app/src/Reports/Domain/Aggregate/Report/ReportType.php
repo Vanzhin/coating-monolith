@@ -32,6 +32,7 @@ enum ReportType: string
     {
         return match ($this) {
             self::ReferenceArea => [
+                BlockKey::ControlArea,
                 BlockKey::SurfacePrep,
                 BlockKey::Application,
                 BlockKey::Notes,
@@ -39,6 +40,7 @@ enum ReportType: string
                 BlockKey::Commission,
             ],
             self::TrialApplication => [
+                BlockKey::ControlArea,
                 BlockKey::SurfacePrep,
                 BlockKey::Instruments,
                 BlockKey::Application,
