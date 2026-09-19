@@ -49,8 +49,10 @@
   (Store после доменной валидации — как сейчас.)
 - `UpdateDocumentCommandHandler`: `store(...)->id()` в `setFile`; старый uuid сносить `FileStorage::remove($old)`.
 - `DeleteDocumentCommandHandler`: `FileStorage::remove($file)` вместо `delete`.
-- `DownloadAction`: `FileStorage::readStream($document->file)`; Content-Type/имя брать из
-  `FileStorage::get($document->file)` (mime + originalName), фолбэк `application/pdf`; сохранить дисposition-логику.
+- `DownloadAction`: `FileStorage::readStream($document->file)`. **Реализация (отклонение, одобрено при
+  ревью):** Content-Type оставлен захардкоженным `application/pdf`, имя — из `document.title` (как было).
+  `CertificatePurpose` допускает только PDF, а `originalName` мигрированных строк = имя документа, не
+  клиентский файл — брать его в имя скачивания хуже. Диспозиция/ASCII-фолбэк сохранены.
 - Обновить функциональные тесты `DocumentUseCasesTest`, `DocumentControllerTest`: инъекция `FileStorage`
   вместо `DocumentFileStorage`; проверки store→uuid→readStream по свежесозданным документам (без миграции).
 - services.yaml: снять биндинг `DocumentFileStorage` (после удаления в Task 3).

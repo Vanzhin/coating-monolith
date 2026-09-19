@@ -83,24 +83,11 @@ final class MigrateScansToFileStorageCommandTest extends KernelTestCase
 
     public function test_migrates_old_key_to_registry_and_new_layout(): void
     {
-        $issuerId = Uuid::v7();
-        $this->em->persist(new Issuer($issuerId, 'Изд-'.bin2hex(random_bytes(3)), $this->issuerSpec));
-        $this->issuerIds[] = $issuerId;
-
         $scanUuid = Uuid::v7()->toRfc4122();
-        $oldKey = $scanUuid.'.pdf';
-        $this->scansFs->write($oldKey, "%PDF-1.4\ntest\n%%EOF");
-        $this->files[] = [$this->scansFs, $oldKey];
-
-        $docId = Uuid::v7();
-        $doc = new Document($docId, DocumentKind::Certificate, 'mig', $issuerId, new \DateTimeImmutable(), null, 'subj', null, null, $oldKey, new Reference(ReferenceType::CoatingSystem, Uuid::v7()));
-        $this->em->persist($doc);
-        $this->em->flush();
-        $this->docIds[] = (string) $docId;
+        $docId = $this->makeDocWithScan($scanUuid.'.pdf');
         $this->storedIds[] = $scanUuid;
 
-        $tester = new CommandTester((new Application(self::$kernel))->find('app:certificates:migrate-scans-to-file-storage'));
-        $tester->execute([]);
+        $tester = $this->runCommand();
         $tester->assertCommandIsSuccessful();
 
         $this->em->clear();
@@ -117,9 +104,75 @@ final class MigrateScansToFileStorageCommandTest extends KernelTestCase
         self::assertNotNull($reloaded);
         self::assertSame($scanUuid, $reloaded->getFile());
 
-        // Идемпотентность: повторный прогон пропускает уже перенесённый.
-        $tester->execute([]);
+        // Идемпотентность: повторный прогон пропускает уже перенесённый (file уже uuid, без .pdf).
+        $again = $this->runCommand();
+        $again->assertCommandIsSuccessful();
+        self::assertStringContainsString('пропущено: 1', $again->getDisplay());
+    }
+
+    public function test_dry_run_reports_without_writing(): void
+    {
+        $scanUuid = Uuid::v7()->toRfc4122();
+        $docId = $this->makeDocWithScan($scanUuid.'.pdf');
+
+        $tester = $this->runCommand(['--dry-run' => true]);
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('dry-run', $tester->getDisplay());
+
+        // Ничего не записано: ни реестр, ни новый файл, Document.file не тронут.
+        $this->em->clear();
+        self::assertNull($this->registry->get($scanUuid));
+        self::assertFalse($this->fileStorageFs->fileExists('certificates/scan/'.$docId.'/'.$scanUuid.'.pdf'));
+        self::assertSame($scanUuid.'.pdf', $this->em->find(Document::class, $docId)?->getFile());
+    }
+
+    public function test_missing_scan_file_is_reported_as_error(): void
+    {
+        // Документ ссылается на ключ, которого нет в document_scans.
+        $this->makeDocWithScan(Uuid::v7()->toRfc4122().'.pdf', writeBytes: false);
+
+        $tester = $this->runCommand();
+
+        self::assertSame(1, $tester->getStatusCode());
+        self::assertStringContainsString('ошибок: 1', $tester->getDisplay());
+    }
+
+    public function test_already_migrated_uuid_is_skipped(): void
+    {
+        // Document.file уже uuid (без .pdf) — считается перенесённым, не трогаем.
+        $this->makeDocWithScan(Uuid::v7()->toRfc4122(), writeBytes: false);
+
+        $tester = $this->runCommand();
         $tester->assertCommandIsSuccessful();
         self::assertStringContainsString('пропущено: 1', $tester->getDisplay());
+    }
+
+    private function makeDocWithScan(string $fileRef, bool $writeBytes = true): Uuid
+    {
+        $issuerId = Uuid::v7();
+        $this->em->persist(new Issuer($issuerId, 'Изд-'.bin2hex(random_bytes(3)), $this->issuerSpec));
+        $this->issuerIds[] = $issuerId;
+
+        if ($writeBytes) {
+            $this->scansFs->write($fileRef, "%PDF-1.4\ntest\n%%EOF");
+            $this->files[] = [$this->scansFs, $fileRef];
+        }
+
+        $docId = Uuid::v7();
+        $doc = new Document($docId, DocumentKind::Certificate, 'mig', $issuerId, new \DateTimeImmutable(), null, 'subj', null, null, $fileRef, new Reference(ReferenceType::CoatingSystem, Uuid::v7()));
+        $this->em->persist($doc);
+        $this->em->flush();
+        $this->docIds[] = (string) $docId;
+
+        return $docId;
+    }
+
+    /** @param array<string, mixed> $input */
+    private function runCommand(array $input = []): CommandTester
+    {
+        $tester = new CommandTester((new Application(self::$kernel))->find('app:certificates:migrate-scans-to-file-storage'));
+        $tester->execute($input);
+
+        return $tester;
     }
 }

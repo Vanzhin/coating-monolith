@@ -79,7 +79,7 @@ final class MigrateScansToFileStorageCommand extends Command
                     $uuid,
                     CertificatePurpose::Scan,
                     (string) $document->getId(),
-                    $oldKey,
+                    $document->getTitle().'.pdf',
                     'application/pdf',
                     'pdf',
                     \strlen($bytes),
@@ -95,7 +95,11 @@ final class MigrateScansToFileStorageCommand extends Command
                 if (!$this->fileStorageFilesystem->fileExists($stored->storageKey())) {
                     $this->fileStorageFilesystem->write($stored->storageKey(), $bytes);
                 }
-                $this->registry->add($stored);
+                // Строка реестра и Document.file — в одной транзакции (persist, не registry->add()
+                // с его внутренним flush): иначе частичный сбой оставит реестр без переключённого
+                // Document.file, а гард идемпотентности навсегда пропустит документ. Байты уже на
+                // диске → повторный прогон пропустит write и до-коммитит остальное.
+                $this->em->persist($stored);
                 $document->setFile($uuid);
                 $this->em->flush();
 
@@ -107,6 +111,12 @@ final class MigrateScansToFileStorageCommand extends Command
             } catch (\Throwable $e) {
                 $io->error(sprintf('Документ %s (%s): %s', $document->getId(), $oldKey, $e->getMessage()));
                 ++$errors;
+                // Упавший flush закрывает EntityManager — дальше persist/flush каскадно падают.
+                // Прерываемся с честным отчётом; команда идемпотентна, перезапуск дочистит.
+                if (!$this->em->isOpen()) {
+                    $io->error('EntityManager закрыт после ошибки — прерываю. Перезапустите команду.');
+                    break;
+                }
             }
         }
 
