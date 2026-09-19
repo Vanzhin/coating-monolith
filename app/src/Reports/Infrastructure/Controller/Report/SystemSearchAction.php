@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reports\Infrastructure\Controller\Report;
 
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
@@ -44,7 +45,10 @@ final class SystemSearchAction extends AbstractController
             'environment' => $s->environmentTitle,
             'prep' => $s->surfaceTreatmentTitle,
             'dft' => $s->totalDft,
-            'layers' => \count($s->layers),
+            'layers' => array_map(
+                static fn (CoatingSystemLayerDTO $l): array => ['title' => $l->coatingTitle, 'dft' => $l->dft],
+                $s->layers,
+            ),
         ], $result->items);
 
         return new JsonResponse($items);
