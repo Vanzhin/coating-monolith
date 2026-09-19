@@ -6,8 +6,12 @@ namespace App\Tests\Unit\Reports\Domain\Service;
 
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
+use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\ProcessBlock;
+use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
 use App\Reports\Domain\Service\ReportContentValidator;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -19,7 +23,10 @@ final class ReportContentValidatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $registry = new BlockRegistry([new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock()]);
+        $registry = new BlockRegistry([
+            new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+            new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+        ]);
         $this->validator = new ReportContentValidator($registry);
     }
 
@@ -69,5 +76,32 @@ final class ReportContentValidatorTest extends TestCase
         $this->validator->validate(ReportType::ReferenceArea, [
             'surface_prep' => ['rustGrade' => 'A', 'prepDegree' => 'Sa 3'],
         ], strict: true);
+    }
+
+    public function test_list_row_missing_required_sub_field_throws_strict(): void
+    {
+        $content = $this->validContent();
+        $content['commission'] = ['items' => [['organization' => 'ООО Литум']]]; // строка без ФИО (required)
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_valid_list_passes_strict(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $content = $this->validContent();
+        $content['commission'] = ['items' => [['name' => 'Н.С. Ванжин', 'organization' => 'ООО Литум']]];
+        $content['instruments'] = ['items' => [['name' => 'Позитектор', 'serial' => '798019']]];
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_non_list_value_throws(): void
+    {
+        $content = $this->validContent();
+        $content['instruments'] = ['items' => 'не список'];
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
     }
 }

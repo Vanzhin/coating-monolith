@@ -8,8 +8,12 @@ use App\Reports\Application\Service\ReportRenderDataProjector;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
+use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\ProcessBlock;
+use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\TemplateFile;
@@ -58,7 +62,10 @@ final class ReportDocxRenderSmokeTest extends TestCase
         ], $now);
 
         $projector = new ReportRenderDataProjector(
-            new BlockRegistry([new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock()]),
+            new BlockRegistry([
+                new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+                new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            ]),
         );
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($this->templatePath), $projector->project($report));
 

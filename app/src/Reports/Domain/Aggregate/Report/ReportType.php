@@ -32,8 +32,20 @@ enum ReportType: string
     public function blockKeys(): array
     {
         return match ($this) {
-            self::ReferenceArea => [BlockKey::SurfacePrep, BlockKey::Notes],
-            self::TrialApplication => [BlockKey::SurfacePrep, BlockKey::Conclusion, BlockKey::Notes],
+            self::ReferenceArea => [
+                BlockKey::SurfacePrep,
+                BlockKey::Notes,
+                BlockKey::Commission,
+            ],
+            self::TrialApplication => [
+                BlockKey::SurfacePrep,
+                BlockKey::Instruments,
+                BlockKey::Process,
+                BlockKey::Recommendations,
+                BlockKey::Conclusion,
+                BlockKey::Notes,
+                BlockKey::Commission,
+            ],
         };
     }
 }

@@ -9,8 +9,12 @@ use App\Reports\Domain\Aggregate\Report\Reference;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
+use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\ProcessBlock;
+use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\RenderData;
@@ -25,7 +29,10 @@ final class ReportRenderDataProjectorTest extends TestCase
     protected function setUp(): void
     {
         $this->projector = new ReportRenderDataProjector(
-            new BlockRegistry([new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock()]),
+            new BlockRegistry([
+                new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+                new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            ]),
         );
     }
 
@@ -44,6 +51,10 @@ final class ReportRenderDataProjectorTest extends TestCase
             'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
             'conclusion' => ['text' => 'Соответствует.'],
             'notes' => ['text' => 'ок'],
+            'commission' => ['items' => [
+                ['organization' => 'ООО Литум', 'name' => 'Н.С. Ванжин'],
+                ['name' => 'А.А. Баранов'],
+            ]],
         ], $now);
 
         $data = $this->projector->project($report);
@@ -63,6 +74,11 @@ final class ReportRenderDataProjectorTest extends TestCase
         self::assertSame('Sa 2½', $this->text($data, 'surface_prep_prepDegree'));
         self::assertSame('Соответствует.', $this->text($data, 'conclusion_text'));
         self::assertSame('ок', $this->text($data, 'notes_text'));
+
+        // список → текст (строки через перевод строки, под-поля через « — »)
+        $commission = $this->text($data, 'commission_items');
+        self::assertStringContainsString('ООО Литум — Н.С. Ванжин', $commission);
+        self::assertStringContainsString('А.А. Баранов', $commission);
 
         // незаполненное поле — presence-driven, ключа нет
         self::assertFalse($data->has('surface_prep_abrasive'));

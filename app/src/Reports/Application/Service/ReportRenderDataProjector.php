@@ -47,8 +47,13 @@ final readonly class ReportRenderDataProjector
                     continue;
                 }
                 foreach ($definition->fields() as $field) {
+                    if (FieldType::ListRows === $field->type) {
+                        $this->put($values, $blockKey->value.'_'.$field->key, $this->formatList($field, $blockData[$field->key] ?? null));
+
+                        continue;
+                    }
                     if (!$field->type->isScalar()) {
-                        continue; // композиты/медиа — в 3b
+                        continue; // Layers/медиа — позже
                     }
                     $this->put($values, $blockKey->value.'_'.$field->key, $this->formatScalar($field, $blockData[$field->key] ?? null));
                 }
@@ -78,5 +83,35 @@ final readonly class ReportRenderDataProjector
             FieldType::Bool => $value ? 'Да' : 'Нет',
             default => is_scalar($value) ? (string) $value : null,
         };
+    }
+
+    /**
+     * Список строк → текст (движок плоский, без повтора): значения под-полей строки через « — »,
+     * строки — через перевод строки. Форматирование базовое, уточним override'ами позже.
+     */
+    private function formatList(Field $field, mixed $value): ?string
+    {
+        if (!is_array($value) || [] === $value) {
+            return null;
+        }
+
+        $lines = [];
+        foreach ($value as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $parts = [];
+            foreach ($field->itemFields as $sub) {
+                $subValue = $row[$sub->key] ?? null;
+                if (null !== $subValue && '' !== $subValue && is_scalar($subValue)) {
+                    $parts[] = (string) $subValue;
+                }
+            }
+            if ([] !== $parts) {
+                $lines[] = implode(' — ', $parts);
+            }
+        }
+
+        return [] === $lines ? null : implode("\n", $lines);
     }
 }

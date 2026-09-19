@@ -11,7 +11,8 @@ namespace App\Reports\Domain\Block;
 final readonly class Field
 {
     /**
-     * @param list<string> $options допустимые значения для FieldType::Enum
+     * @param list<string> $options    допустимые значения для FieldType::Enum
+     * @param list<Field>  $itemFields под-поля строки для композитов (ListRows/Layers)
      */
     public function __construct(
         public string $key,
@@ -21,6 +22,7 @@ final readonly class Field
         public ?string $unit = null,
         public array $options = [],
         public ?string $standard = null,
+        public array $itemFields = [],
     ) {
     }
 }

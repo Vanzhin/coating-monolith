@@ -36,6 +36,11 @@ final readonly class ReportContentValidator
 
             foreach ($definition->fields() as $field) {
                 $value = $blockData[$field->key] ?? null;
+                if (FieldType::ListRows === $field->type) {
+                    $this->validateList($definition->title(), $field, $value, $strict);
+
+                    continue;
+                }
                 if (null === $value || '' === $value) {
                     if ($strict && $field->required) {
                         throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $definition->title(), $field->label));
@@ -44,6 +49,38 @@ final readonly class ReportContentValidator
                     continue;
                 }
                 $this->checkType($definition->title(), $field, $value);
+            }
+        }
+    }
+
+    private function validateList(string $blockTitle, Field $field, mixed $value, bool $strict): void
+    {
+        if (null === $value || [] === $value) {
+            if ($strict && $field->required) {
+                throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $blockTitle, $field->label));
+            }
+
+            return;
+        }
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть списком строк.', $blockTitle, $field->label));
+        }
+
+        $rowScope = $blockTitle.' / '.$field->label;
+        foreach ($value as $row) {
+            if (!is_array($row)) {
+                throw new AppException(sprintf('Строка списка «%s» имеет неверный формат.', $rowScope));
+            }
+            foreach ($field->itemFields as $sub) {
+                $subValue = $row[$sub->key] ?? null;
+                if (null === $subValue || '' === $subValue) {
+                    if ($strict && $sub->required) {
+                        throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $rowScope, $sub->label));
+                    }
+
+                    continue;
+                }
+                $this->checkType($rowScope, $sub, $subValue);
             }
         }
     }
