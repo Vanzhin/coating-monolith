@@ -16,7 +16,7 @@
         back_url: backUrl,
         save_form_id: 'report-form',
         save_label: editing ? 'Сохранить' : 'Создать',
-        anchors: [],
+        anchors: [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-refs', label: 'Ссылки'}],
     } %}
         {% block sections %}
             <form id="report-form" method="post" action="{{ actionUrl }}" class="w-100" novalidate>
@@ -30,8 +30,8 @@
                     </div>
                 {% endif %}
 
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <h6 class="fw-semibold mb-3">Реквизиты</h6>
+                <div id="sec-doc" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Документ</h6>
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Вид документа</label>
@@ -45,7 +45,6 @@
                                 </select>
                             {% endif %}
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label">№ акта</label>
                             <input name="actNumber" value="{{ actNumber }}" class="form-control">
@@ -54,12 +53,17 @@
                             <label class="form-label">Дата</label>
                             <input type="date" name="reportDate" value="{{ reportDate }}" class="form-control">
                         </div>
+                    </div>
+                </div>
 
+                <div id="sec-refs" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Ссылки</h6>
+                    <div class="row g-3">
                         <div class="col-12" data-controller="system-by-coating"
                              data-system-by-coating-coating-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
                              data-system-by-coating-systems-url-value="{{ path('app_cabinet_report_systems_by_coatings') }}"
                              data-system-by-coating-hidden-name-value="systemId"
-                             {% if editing and report.systemId %}data-system-by-coating-selected-value="{{ {id: report.systemId, title: report.systemTitle}|json_encode }}"{% endif %}>
+                             {% if editing and report.systemId %}data-system-by-coating-selected-value="{{ {id: report.systemId, title: report.systemTitle}|json_encode|e('html_attr') }}"{% endif %}>
                             <label class="form-label">Система покрытия</label>
                             <div class="mb-2" data-system-by-coating-target="selected"></div>
                             <input data-system-by-coating-target="coatingInput" placeholder="Введите покрытия для подбора системы…">
@@ -73,7 +77,7 @@
                                    data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
                                    data-reference-select-hidden-name-value="customerId"
-                                   {% if editing and report.customerId %}data-reference-select-existing-value="{{ {id: report.customerId, title: report.customerTitle}|json_encode }}"{% endif %}
+                                   {% if editing and report.customerId %}data-reference-select-existing-value="{{ {id: report.customerId, title: report.customerTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                         </div>
                         <div class="col-md-6" data-reference-select-group>
@@ -82,10 +86,9 @@
                                    data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
                                    data-reference-select-hidden-name-value="contractorId"
-                                   {% if editing and report.contractorId %}data-reference-select-existing-value="{{ {id: report.contractorId, title: report.contractorTitle}|json_encode }}"{% endif %}
+                                   {% if editing and report.contractorId %}data-reference-select-existing-value="{{ {id: report.contractorId, title: report.contractorTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                         </div>
-
                         <div class="col-12" data-reference-select-group>
                             <label class="form-label">Проект</label>
                             <input data-controller="reference-select"
@@ -93,7 +96,7 @@
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
                                    data-reference-select-hidden-name-value="projectId"
                                    data-reference-select-counterparty-name-value="customerId"
-                                   {% if editing and report.projectId %}data-reference-select-existing-value="{{ {id: report.projectId, title: report.projectTitle}|json_encode }}"{% endif %}
+                                   {% if editing and report.projectId %}data-reference-select-existing-value="{{ {id: report.projectId, title: report.projectTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                             <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
                         </div>
