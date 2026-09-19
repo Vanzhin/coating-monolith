@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Reports\Application\UseCase\Command\CreateReport;
 
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Reports\Application\Service\AccessControl\ReportAccessControl;
 use App\Reports\Domain\Aggregate\Report\Reference;
@@ -42,13 +43,18 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
             $command->reportDate,
             $command->actNumber,
         );
+        $system = $this->findSystem($command->systemId);
         $report->applyReferences(
             $this->resolveProject($command->projectId),
             $this->resolveCounterparty($command->customerId),
             $this->resolveCounterparty($command->contractorId),
-            $this->resolveSystem($command->systemId),
+            null === $system ? null : new Reference($system->getId(), $system->getTitle()),
             $now,
         );
+        if (null !== $system) {
+            // Засев плана: слои выбранной системы замораживаются в блок «Система (план)».
+            $report->replaceContent(['system' => ['layers' => $this->seedSystemLayers($system)]], $now);
+        }
         $this->repository->add($report);
 
         return new CreateReportCommandResult($report->getId());
@@ -80,7 +86,7 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
         return new Reference($counterparty->getId(), $counterparty->getTitle());
     }
 
-    private function resolveSystem(?string $id): ?Reference
+    private function findSystem(?string $id): ?CoatingSystem
     {
         if (null === $id) {
             return null;
@@ -90,6 +96,27 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
             throw new AppException('Система покрытия не найдена.', Response::HTTP_NOT_FOUND);
         }
 
-        return new Reference($system->getId(), $system->getTitle());
+        return $system;
+    }
+
+    /**
+     * Снимок слоёв системы (план): материал-ссылка + номинальная ТСП + цвет + порядок.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function seedSystemLayers(CoatingSystem $system): array
+    {
+        $layers = [];
+        foreach ($system->getLayers() as $layer) {
+            $coating = $layer->getCoating();
+            $layers[] = [
+                'material' => ['id' => $coating->getId(), 'title' => $coating->getTitle()],
+                'dft_nominal' => $layer->getDft(),
+                'color' => $layer->getColor()->label(),
+                'order' => $layer->getPosition(),
+            ];
+        }
+
+        return $layers;
     }
 }

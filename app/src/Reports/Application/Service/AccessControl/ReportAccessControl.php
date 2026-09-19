@@ -31,4 +31,10 @@ final readonly class ReportAccessControl
     {
         return $this->guard->isManager() || $report->isOwnedBy($this->userFetcher->getAuthUserId());
     }
+
+    /** Проверка (утвердить/отклонить): админ или назначенный ревьюер. */
+    public function canReview(Report $report): bool
+    {
+        return $this->guard->isManager() || $report->getReviewerId() === $this->userFetcher->getAuthUserId();
+    }
 }
