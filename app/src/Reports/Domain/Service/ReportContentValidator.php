@@ -21,6 +21,9 @@ final readonly class ReportContentValidator
     /** Движок рендера без повтора → шаблоны только на 1-4 слоя. */
     private const int MAX_LAYERS = 4;
 
+    /** Разумный предел числа фото на отчёт. */
+    private const int MAX_PHOTOS = 20;
+
     public function __construct(private BlockRegistry $registry)
     {
     }
@@ -49,6 +52,11 @@ final readonly class ReportContentValidator
 
                     continue;
                 }
+                if (FieldType::PhotoSlot === $field->type) {
+                    $this->validatePhotos($definition->title(), $field, $value, $strict);
+
+                    continue;
+                }
                 if (null === $value || '' === $value) {
                     if ($strict && $field->required) {
                         throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $definition->title(), $field->label));
@@ -69,6 +77,18 @@ final readonly class ReportContentValidator
     {
         if (is_array($value) && array_is_list($value) && count($value) > self::MAX_LAYERS) {
             throw new AppException(sprintf('Слоёв в блоке «%s» не может быть больше %d.', $blockTitle, self::MAX_LAYERS));
+        }
+        $this->validateList($blockTitle, $field, $value, $strict);
+    }
+
+    /**
+     * Фото — тот же список строк ({file: uuid, caption?}), но с пределом числа и без обязательности
+     * (опциональный блок). file (uuid хранёного файла) обязателен в каждой строке.
+     */
+    private function validatePhotos(string $blockTitle, Field $field, mixed $value, bool $strict): void
+    {
+        if (is_array($value) && array_is_list($value) && count($value) > self::MAX_PHOTOS) {
+            throw new AppException(sprintf('Фотографий в блоке «%s» не может быть больше %d.', $blockTitle, self::MAX_PHOTOS));
         }
         $this->validateList($blockTitle, $field, $value, $strict);
     }

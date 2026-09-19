@@ -11,6 +11,7 @@ use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\PhotosBlock;
 use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
@@ -27,7 +28,7 @@ final class ReportContentValidatorTest extends TestCase
         $registry = new BlockRegistry([
             new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-            new ApplicationBlock(),
+            new ApplicationBlock(), new PhotosBlock(),
         ]);
         $this->validator = new ReportContentValidator($registry);
     }
@@ -140,6 +141,38 @@ final class ReportContentValidatorTest extends TestCase
     {
         $content = $this->validContent();
         $content['application'] = ['layers' => array_fill(0, 5, ['material' => ['id' => 'c1', 'title' => 'Слой']])]; // 5 > 4
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_valid_photos_pass_strict(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $content = $this->validContent();
+        $content['photos'] = ['items' => [
+            ['file' => 'uuid-1', 'caption' => 'Общий вид'],
+            ['file' => 'uuid-2'], // подпись необязательна
+        ]];
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_photo_without_file_throws_strict(): void
+    {
+        $content = $this->validContent();
+        $content['photos'] = ['items' => [['caption' => 'Без файла']]]; // file (uuid) обязателен в строгом режиме
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_photos_over_limit_throws(): void
+    {
+        $content = $this->validContent();
+        $content['photos'] = ['items' => array_map(
+            static fn (int $i): array => ['file' => 'uuid-'.$i],
+            range(1, 21), // 21 > 20
+        )];
 
         $this->expectException(AppException::class);
         $this->validator->validate(ReportType::TrialApplication, $content, strict: false);

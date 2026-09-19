@@ -14,6 +14,7 @@ use App\Reports\Domain\Block\Definition\CommissionBlock;
 use App\Reports\Domain\Block\Definition\ConclusionBlock;
 use App\Reports\Domain\Block\Definition\InstrumentsBlock;
 use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\PhotosBlock;
 use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
@@ -33,7 +34,7 @@ final class ReportRenderDataProjectorTest extends TestCase
             new BlockRegistry([
                 new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
                 new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-                new ApplicationBlock(),
+                new ApplicationBlock(), new PhotosBlock(),
             ]),
         );
     }

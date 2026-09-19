@@ -35,6 +35,7 @@ enum ReportType: string
                 BlockKey::SurfacePrep,
                 BlockKey::Application,
                 BlockKey::Notes,
+                BlockKey::Photos,
                 BlockKey::Commission,
             ],
             self::TrialApplication => [
@@ -45,6 +46,7 @@ enum ReportType: string
                 BlockKey::Recommendations,
                 BlockKey::Conclusion,
                 BlockKey::Notes,
+                BlockKey::Photos,
                 BlockKey::Commission,
             ],
         };
