@@ -20,6 +20,13 @@
 .rep-chip:hover { color: var(--bs-body-color); }
 .rep-chip.is-active { background: var(--accent-subtle); color: var(--bs-primary); }
 
+/* Инлайн-подсказки слоя (ТСП/точка росы) — мягкие чипы-предупреждения. */
+.report-hint {
+    display: inline-flex; align-items: center; white-space: normal;
+    font-size: 11.5px; font-weight: 600; color: var(--warn); background: var(--warn-subtle);
+    border-radius: 6px; padding: 2px 8px; margin: 4px 4px 0 0;
+}
+
 /* Подобранные системы (подбор по покрытиям): кликабельные плитки-опции. */
 .sys-opt { cursor: pointer; transition: box-shadow .12s; }
 .sys-opt:hover { box-shadow: 0 0 0 1px var(--bs-primary); }

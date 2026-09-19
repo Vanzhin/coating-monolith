@@ -86,10 +86,12 @@ export default class extends Controller {
         }
         if (data.id) {
             this.hiddenTarget.value = data.id;
+            this.hiddenTarget.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
 
     _onRemove() {
         this.hiddenTarget.value = '';
+        this.hiddenTarget.dispatchEvent(new Event('input', { bubbles: true }));
     }
 }
