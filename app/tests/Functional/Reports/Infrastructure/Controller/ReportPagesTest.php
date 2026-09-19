@@ -111,6 +111,18 @@ final class ReportPagesTest extends WebTestCase
         self::assertResponseRedirects('/cabinet/report/'.$id);
     }
 
+    public function test_download_generates_docx(): void
+    {
+        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'DL-1']);
+        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
+        $this->reportIds[] = $id;
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/download');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('wordprocessingml', (string) $this->client->getResponse()->headers->get('Content-Type'));
+        self::assertNotSame('', (string) $this->client->getResponse()->getContent());
+    }
+
     public function test_submit_then_reviewer_approves(): void
     {
         $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'RV-1']);

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Reports\Application\Service;
 
+use App\Reports\Application\Service\Mapping\ReportTemplateMap;
+use App\Reports\Application\Service\Mapping\TemplateSource;
 use App\Reports\Domain\Aggregate\Report\Report;
+use App\Reports\Domain\Block\BlockKey;
 use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
@@ -12,61 +15,82 @@ use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TextValue;
 
 /**
- * Проектор отчёта в плоский RenderData для движка шаблонов. Ключи (латиница snake_case):
- * шапка — act_number/report_date/report_type/status/project_title/customer_title/contractor_title/
- * system_title; блоки — «{blockKey}_{fieldKey}» (напр. surface_prep_rustGrade, conclusion_text).
- * Presence-driven: пустые не кладём (в шаблоне это опциональные {{x?}}). Слои → индексные ключи
- * application_layerN_* + application_layer_count; списки → текст.
- * Форматирование значений на поле/тип — здесь (override под аудит-форматтеры добавим позже).
+ * Проектор отчёта в плоский RenderData для движка шаблонов — **data-driven по маппингу**
+ * (ReportTemplateMap: «источник → переменная»). Форматирование значений по типу поля — здесь
+ * (даты, списки→текст, слои→индексные ключи, ссылки→title). Presence-driven: пустые не кладём.
+ * Дефолтный маппинг = конвенция ({block}_{field}), поэтому ключи прежние; конструктор отчётов
+ * позже подменит источник маппинга (БД/конфиг), проектор не меняется.
  */
 final readonly class ReportRenderDataProjector
 {
-    public function __construct(private BlockRegistry $registry)
-    {
+    public function __construct(
+        private BlockRegistry $registry,
+        private ReportTemplateMap $map,
+    ) {
     }
 
     public function project(Report $report): RenderData
     {
+        $type = $report->getType();
+        $entries = null !== $type ? $this->map->entriesFor($type) : $this->map->headerEntries();
+        $content = $report->getContent();
         $values = [];
 
-        $this->put($values, 'act_number', $report->getActNumber());
-        $this->put($values, 'report_date', $report->getReportDate()?->format('d.m.Y'));
-        $this->put($values, 'report_type', $report->getType()?->label());
-        $this->put($values, 'status', $report->getStatus()->label());
-        $this->put($values, 'project_title', $report->getProject()?->title);
-        $this->put($values, 'customer_title', $report->getCustomer()?->title);
-        $this->put($values, 'contractor_title', $report->getContractor()?->title);
-        $this->put($values, 'system_title', $report->getSystem()?->title);
+        foreach ($entries as $entry) {
+            if (TemplateSource::Header === $entry->source) {
+                $this->put($values, $entry->variable, $this->headerValue($report, (string) $entry->headerAttr));
 
-        $type = $report->getType();
-        if (null !== $type) {
-            $content = $report->getContent();
-            foreach ($type->blockKeys() as $blockKey) {
-                $definition = $this->registry->get($blockKey);
-                $blockData = $content[$blockKey->value] ?? [];
-                if (!is_array($blockData)) {
-                    continue;
-                }
-                foreach ($definition->fields() as $field) {
-                    if (FieldType::Layers === $field->type) {
-                        $this->projectLayers($values, $blockKey->value, $field, $blockData[$field->key] ?? null);
-
-                        continue;
-                    }
-                    if (FieldType::ListRows === $field->type) {
-                        $this->put($values, $blockKey->value.'_'.$field->key, $this->formatList($field, $blockData[$field->key] ?? null));
-
-                        continue;
-                    }
-                    if (!$field->type->isScalar()) {
-                        continue; // ссылки/медиа — позже
-                    }
-                    $this->put($values, $blockKey->value.'_'.$field->key, $this->formatScalar($field, $blockData[$field->key] ?? null));
-                }
+                continue;
             }
+
+            $field = $this->field((string) $entry->blockKey, (string) $entry->fieldKey);
+            if (null === $field) {
+                continue;
+            }
+            $blockData = is_array($content[$entry->blockKey] ?? null) ? $content[$entry->blockKey] : [];
+            $raw = $blockData[$field->key] ?? null;
+
+            if (FieldType::Layers === $field->type) {
+                $this->projectLayers($values, $entry->variable, $field, $raw);
+            } elseif (FieldType::ListRows === $field->type) {
+                $this->put($values, $entry->variable, $this->formatList($field, $raw));
+            } elseif ($field->type->isScalar()) {
+                $this->put($values, $entry->variable, $this->formatScalar($field, $raw));
+            }
+            // ссылки/медиа (CoatingRef/PhotoSlot) в документ пока не проецируются
         }
 
         return new RenderData($values);
+    }
+
+    private function headerValue(Report $report, string $attr): ?string
+    {
+        return match ($attr) {
+            'actNumber' => $report->getActNumber(),
+            'reportDate' => $report->getReportDate()?->format('d.m.Y'),
+            'reportType' => $report->getType()?->label(),
+            'status' => $report->getStatus()->label(),
+            'projectTitle' => $report->getProject()?->title,
+            'customerTitle' => $report->getCustomer()?->title,
+            'contractorTitle' => $report->getContractor()?->title,
+            'systemTitle' => $report->getSystem()?->title,
+            default => null,
+        };
+    }
+
+    private function field(string $blockKey, string $fieldKey): ?Field
+    {
+        $key = BlockKey::tryFrom($blockKey);
+        if (null === $key || !$this->registry->has($key)) {
+            return null;
+        }
+        foreach ($this->registry->get($key)->fields() as $field) {
+            if ($field->key === $fieldKey) {
+                return $field;
+            }
+        }
+
+        return null;
     }
 
     /**

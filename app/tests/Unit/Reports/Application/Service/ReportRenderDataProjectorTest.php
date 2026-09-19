@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Reports\Application\Service;
 
+use App\Reports\Application\Service\Mapping\ReportTemplateMap;
 use App\Reports\Application\Service\ReportRenderDataProjector;
 use App\Reports\Domain\Aggregate\Report\Reference;
 use App\Reports\Domain\Aggregate\Report\Report;
@@ -32,13 +33,12 @@ final class ReportRenderDataProjectorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->projector = new ReportRenderDataProjector(
-            new BlockRegistry([
-                new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
-                new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-                new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
-            ]),
-        );
+        $registry = new BlockRegistry([
+            new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+            new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
+        ]);
+        $this->projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry));
     }
 
     public function test_projects_header_and_scalar_blocks(): void

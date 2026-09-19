@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Reports\Application\Service;
 
+use App\Reports\Application\Service\Mapping\ReportTemplateMap;
 use App\Reports\Application\Service\ReportRenderDataProjector;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
@@ -67,13 +68,12 @@ final class ReportDocxRenderSmokeTest extends TestCase
             'application' => ['layers' => [['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film_mean' => 80]]],
         ], $now);
 
-        $projector = new ReportRenderDataProjector(
-            new BlockRegistry([
-                new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
-                new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-                new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
-            ]),
-        );
+        $registry = new BlockRegistry([
+            new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+            new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
+        ]);
+        $projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry));
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($this->templatePath), $projector->project($report));
 
         self::assertSame(TemplateFormat::Docx, $doc->format);
