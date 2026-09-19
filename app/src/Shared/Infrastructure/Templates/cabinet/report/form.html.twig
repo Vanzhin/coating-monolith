@@ -1,80 +1,103 @@
 {% extends '/cabinet/index.html.twig' %}
 
-{% block title %}{{ parent() }} | Новый отчёт{% endblock %}
+{% set editing = editing|default(false) %}
+{% set input = input|default({}) %}
+
+{% block title %}{{ parent() }} | {{ editing ? 'Реквизиты отчёта' : 'Новый отчёт' }}{% endblock %}
 
 {% block content %}
-    <div class="p-2 p-md-3">
-        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
-            <h2 class="text-body-emphasis mb-0 fs-4">Новый отчёт</h2>
-            <a href="{{ path('app_cabinet_report_list') }}" class="btn btn-outline-secondary">Отмена</a>
-        </div>
+    {% set actionUrl = editing ? path('app_cabinet_report_edit', {id: report.id}) : path('app_cabinet_report_create') %}
+    {% set backUrl = editing ? path('app_cabinet_report_view', {id: report.id}) : path('app_cabinet_report_list') %}
+    {% set actNumber = editing ? report.actNumber : input.actNumber|default('') %}
+    {% set reportDate = editing ? report.reportDate : input.reportDate|default('') %}
 
-        {% if error is defined and error %}
-            <div class="alert alert-danger">{{ error }}</div>
-        {% endif %}
-
-        <form method="post" action="{{ path('app_cabinet_report_create') }}" class="col-12 col-lg-8 col-xl-6">
-            <div class="card p-3 p-md-4">
-                <div class="mb-3">
-                    <label class="form-label">Вид документа</label>
-                    <select name="type" class="form-select" required>
-                        {% for t in types %}
-                            <option value="{{ t.value }}" {{ input.type|default('') == t.value ? 'selected' : '' }}>{{ t.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label class="form-label">№ акта</label>
-                        <input name="actNumber" value="{{ input.actNumber|default('') }}" class="form-control">
+    {% embed 'components/form_page.html.twig' with {
+        title: editing ? 'Реквизиты отчёта' : 'Новый отчёт',
+        back_url: backUrl,
+        save_form_id: 'report-form',
+        save_label: editing ? 'Сохранить' : 'Создать',
+        anchors: [],
+    } %}
+        {% block sections %}
+            <form id="report-form" method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label">Дата</label>
-                        <input type="date" name="reportDate" value="{{ input.reportDate|default('') }}" class="form-control">
+                {% endif %}
+
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <h6 class="fw-semibold mb-3">Реквизиты</h6>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Вид документа</label>
+                            {% if editing %}
+                                <input class="form-control" value="{{ report.typeLabel }}" disabled>
+                            {% else %}
+                                <select name="type" class="form-select" required>
+                                    {% for t in types %}
+                                        <option value="{{ t.value }}" {{ input.type|default('') == t.value ? 'selected' : '' }}>{{ t.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">№ акта</label>
+                            <input name="actNumber" value="{{ actNumber }}" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Дата</label>
+                            <input type="date" name="reportDate" value="{{ reportDate }}" class="form-control">
+                        </div>
+
+                        <div class="col-12" data-controller="async-typeahead"
+                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
+                             data-async-typeahead-placeholder-value="Начните вводить систему…">
+                            <label class="form-label">Система покрытия</label>
+                            <select name="systemId" data-async-typeahead-target="select">
+                                {% if editing and report.systemId %}<option value="{{ report.systemId }}" selected>{{ report.systemTitle }}</option>{% endif %}
+                            </select>
+                            <div class="form-text">Слои системы попадут в блок «Система (план)». При смене системы план пересобирается.</div>
+                        </div>
+
+                        <div class="col-md-6" data-reference-select-group>
+                            <label class="form-label">Заказчик</label>
+                            <input data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-reference-select-hidden-name-value="customerId"
+                                   {% if editing and report.customerId %}data-reference-select-existing-value="{{ {id: report.customerId, title: report.customerTitle}|json_encode }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                        </div>
+                        <div class="col-md-6" data-reference-select-group>
+                            <label class="form-label">Подрядчик</label>
+                            <input data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-reference-select-hidden-name-value="contractorId"
+                                   {% if editing and report.contractorId %}data-reference-select-existing-value="{{ {id: report.contractorId, title: report.contractorTitle}|json_encode }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                        </div>
+
+                        <div class="col-12" data-reference-select-group>
+                            <label class="form-label">Проект</label>
+                            <input data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
+                                   data-reference-select-hidden-name-value="projectId"
+                                   data-reference-select-counterparty-name-value="customerId"
+                                   {% if editing and report.projectId %}data-reference-select-existing-value="{{ {id: report.projectId, title: report.projectTitle}|json_encode }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                            <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="mb-3" data-controller="async-typeahead"
-                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
-                     data-async-typeahead-placeholder-value="Начните вводить систему…">
-                    <label class="form-label">Система покрытия</label>
-                    <select name="systemId" data-async-typeahead-target="select"></select>
-                    <div class="form-text">Слои системы попадут в блок «Система (план)» — в отчёте не редактируются.</div>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6" data-reference-select-group>
-                        <label class="form-label">Заказчик</label>
-                        <input data-controller="reference-select"
-                               data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                               data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
-                               data-reference-select-hidden-name-value="customerId"
-                               placeholder="Поиск или создать…">
-                    </div>
-                    <div class="col-md-6" data-reference-select-group>
-                        <label class="form-label">Подрядчик</label>
-                        <input data-controller="reference-select"
-                               data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                               data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
-                               data-reference-select-hidden-name-value="contractorId"
-                               placeholder="Поиск или создать…">
-                    </div>
-                </div>
-
-                <div class="mb-3" data-reference-select-group>
-                    <label class="form-label">Проект</label>
-                    <input data-controller="reference-select"
-                           data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
-                           data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
-                           data-reference-select-hidden-name-value="projectId"
-                           data-reference-select-counterparty-name-value="customerId"
-                           placeholder="Поиск или создать…">
-                    <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Создать</button>
-            </div>
-        </form>
-    </div>
+            </form>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

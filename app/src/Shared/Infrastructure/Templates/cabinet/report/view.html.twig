@@ -3,41 +3,36 @@
 {% block title %}{{ parent() }} | {{ report.typeLabel|default('Отчёт') }}{% endblock %}
 
 {% block content %}
-    <div class="p-2 p-md-3 col-12 col-lg-9 col-xl-7 mx-auto">
-        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ path('app_cabinet_report_list') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chevron-left"></i></a>
-                <h2 class="text-body-emphasis mb-0 fs-4">{{ report.typeLabel|default('Отчёт') }}</h2>
+    <div class="p-2 p-md-3">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3 p-3 rounded-3 bg-body-tertiary">
+            <div class="d-flex align-items-center gap-2" style="min-width:0">
+                <a href="{{ path('app_cabinet_report_list') }}" class="btn btn-sm btn-outline-secondary" title="К списку"><i class="bi bi-arrow-left"></i></a>
+                <h2 class="text-body-emphasis mb-0 fs-4 text-truncate">{{ report.typeLabel|default('Отчёт') }}</h2>
             </div>
             {% include 'cabinet/report/_status_pill.html.twig' with {status: report.status, label: report.statusLabel} only %}
         </div>
 
         {% if report.status == 'rejected' and report.rejectionReason %}
-            <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> <strong>Отклонён.</strong> {{ report.rejectionReason }}</div>
-        {% endif %}
-        {% if report.status == 'approved' %}
-            <div class="alert alert-success"><i class="bi bi-lock"></i> Отчёт утверждён и заморожен — правки закрыты.</div>
+            <div class="msg msg-danger mb-3"><i class="bi bi-exclamation-triangle me-1"></i> <strong>Отклонён.</strong> {{ report.rejectionReason }}</div>
+        {% elseif report.status == 'approved' %}
+            <div class="msg msg-success mb-3"><i class="bi bi-lock me-1"></i> Отчёт утверждён и заморожен — правки закрыты.</div>
         {% endif %}
 
-        <div class="card p-3 mb-3">
-            <dl class="row mb-0">
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">№ акта</dt><dd class="col-7 col-sm-8">{{ report.actNumber|default('—') }}</dd>
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Дата</dt><dd class="col-7 col-sm-8">{{ report.reportDate|default('—') }}</dd>
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Проект</dt><dd class="col-7 col-sm-8">{{ report.projectTitle|default('—') }}</dd>
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Заказчик</dt><dd class="col-7 col-sm-8">{{ report.customerTitle|default('—') }}</dd>
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Подрядчик</dt><dd class="col-7 col-sm-8">{{ report.contractorTitle|default('—') }}</dd>
-                <dt class="col-5 col-sm-4 text-body-secondary fw-normal">Система</dt><dd class="col-7 col-sm-8">{{ report.systemTitle|default('—') }}</dd>
-            </dl>
+        <div class="pv-sec">Реквизиты</div>
+        <div class="kv-grid mb-3">
+            <div class="kvi"><span class="k">№ акта</span><span class="v">{{ report.actNumber|default('—') }}</span></div>
+            <div class="kvi"><span class="k">Дата</span><span class="v">{{ report.reportDate|default('—') }}</span></div>
+            <div class="kvi"><span class="k">Проект</span><span class="v">{{ report.projectTitle|default('—') }}</span></div>
+            <div class="kvi"><span class="k">Заказчик</span><span class="v">{{ report.customerTitle|default('—') }}</span></div>
+            <div class="kvi"><span class="k">Подрядчик</span><span class="v">{{ report.contractorTitle|default('—') }}</span></div>
+            <div class="kvi"><span class="k">Система</span><span class="v">{{ report.systemTitle|default('—') }}</span></div>
         </div>
 
         {% if report.status != 'approved' %}
-            <a href="{{ path('app_cabinet_report_fill', {id: report.id}) }}" class="btn btn-primary w-100">
-                <i class="bi bi-pencil-square"></i> Заполнить
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ path('app_cabinet_report_fill', {id: report.id}) }}" class="btn btn-primary"><i class="bi bi-pencil-square me-1"></i> Заполнить</a>
+                <a href="{{ path('app_cabinet_report_edit', {id: report.id}) }}" class="btn btn-soft-primary"><i class="bi bi-sliders me-1"></i> Реквизиты</a>
+            </div>
         {% endif %}
-
-        <div class="alert alert-secondary mt-3 mb-0">
-            <i class="bi bi-info-circle"></i> Слои нанесения, фото и генерация файла — следующие шаги.
-        </div>
     </div>
 {% endblock %}

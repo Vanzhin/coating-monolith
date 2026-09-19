@@ -21,65 +21,80 @@
     {% elseif t in ['text', 'timerange'] %}
         <input type="text" name="{{ name }}" value="{{ value }}" class="form-control">
     {% else %}
-        <div class="text-body-secondary small py-1"><i class="bi bi-hourglass-split"></i> Заполнение — в следующем шаге.</div>
+        <div class="text-body-secondary small py-1"><i class="bi bi-hourglass-split me-1"></i>Заполнение — в следующем шаге.</div>
     {% endif %}
 {% endmacro %}
 
 {% block content %}
-    {% import _self as w %}
-    <div class="p-2 p-md-3 col-12 col-lg-9 col-xl-7 mx-auto">
-        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ path('app_cabinet_report_view', {id: report.id}) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chevron-left"></i></a>
-                <h2 class="text-body-emphasis mb-0 fs-4">{{ report.typeLabel|default('Отчёт') }}</h2>
-            </div>
-            {% include 'cabinet/report/_status_pill.html.twig' with {status: report.status, label: report.statusLabel} only %}
-        </div>
+    {% set anchors = [] %}
+    {% for section in sections %}{% set anchors = anchors|merge([{id: 'blk-' ~ section.key, label: section.title}]) %}{% endfor %}
 
-        {% if error is defined and error %}
-            <div class="alert alert-danger">{{ error }}</div>
-        {% endif %}
+    {% embed 'components/form_page.html.twig' with {
+        title: report.typeLabel|default('Отчёт'),
+        back_url: path('app_cabinet_report_view', {id: report.id}),
+        save_form_id: 'fill-form',
+        save_label: 'Сохранить',
+        anchors: anchors,
+    } %}
+        {% block appbar_extra %}
+            <button type="submit" form="fill-form" name="action" value="submit" class="btn btn-soft-success btn-sm">
+                <i class="bi bi-send d-md-none"></i><span class="d-none d-md-inline">На проверку</span>
+            </button>
+        {% endblock %}
 
-        <form method="post" action="{{ path('app_cabinet_report_fill', {id: report.id}) }}">
-            {% for section in sections %}
-                <details class="card mb-2" {{ loop.first ? 'open' : '' }}>
-                    <summary class="p-3 fw-semibold d-flex align-items-center gap-2" style="cursor:pointer">
-                        {{ section.title }}
-                        {% if section.readOnly %}<span class="badge text-bg-light ms-auto">заполнено</span>{% endif %}
-                    </summary>
-                    <div class="p-3 pt-0">
+        {% block sections %}
+            {% import 'cabinet/report/fill.html.twig' as w %}
+            <form id="fill-form" method="post" action="{{ path('app_cabinet_report_fill', {id: report.id}) }}" class="w-100" novalidate>
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div>
+                    </div>
+                {% endif %}
+
+                {% for section in sections %}
+                    <div id="blk-{{ section.key }}" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2">
+                            {{ section.title }}
+                            {% if section.readOnly %}<span class="badge text-bg-light fw-normal ms-auto">заполнено</span>{% endif %}
+                        </h6>
+
                         {% if section.readOnly %}
-                            <div class="text-body-secondary small">Заполнено из выбранной системы. Видно в просмотре, здесь не редактируется.</div>
+                            <div class="text-body-secondary small">Заполнено из выбранной системы, здесь не редактируется.</div>
                         {% else %}
                             {% for field in section.fields %}
                                 {% if field.type == 'list' %}
-                                    <div class="mb-3" data-controller="report-list-rows">
+                                    <div class="mb-2" data-controller="report-list-rows">
                                         <label class="form-label fw-semibold">{{ field.label }}</label>
                                         <div data-report-list-rows-target="rows">
                                             {% for row in field.value|default([]) %}
-                                                <div class="border rounded-3 p-2 mb-2" data-report-list-rows-target="row">
-                                                    {% for sub in field.itemFields %}
-                                                        <div class="mb-2">
-                                                            <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
-                                                            {{ w.widget('content[' ~ section.key ~ '][' ~ field.key ~ '][' ~ loop.parent.loop.index0 ~ '][' ~ sub.key ~ ']', sub, row[sub.key]|default('')) }}
-                                                        </div>
-                                                    {% endfor %}
-                                                    <button type="button" class="btn btn-sm btn-link text-danger p-0" data-action="report-list-rows#remove">Удалить строку</button>
+                                                <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
+                                                    <div class="row g-2">
+                                                        {% for sub in field.itemFields %}
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                                                {{ w.widget('content[' ~ section.key ~ '][' ~ field.key ~ '][' ~ loop.parent.loop.index0 ~ '][' ~ sub.key ~ ']', sub, row[sub.key]|default('')) }}
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
                                                 </div>
                                             {% endfor %}
                                         </div>
                                         <template data-report-list-rows-target="template">
-                                            <div class="border rounded-3 p-2 mb-2" data-report-list-rows-target="row">
-                                                {% for sub in field.itemFields %}
-                                                    <div class="mb-2">
-                                                        <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
-                                                        {{ w.widget('content[' ~ section.key ~ '][' ~ field.key ~ '][__i__][' ~ sub.key ~ ']', sub, '') }}
-                                                    </div>
-                                                {% endfor %}
-                                                <button type="button" class="btn btn-sm btn-link text-danger p-0" data-action="report-list-rows#remove">Удалить строку</button>
+                                            <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
+                                                <div class="row g-2">
+                                                    {% for sub in field.itemFields %}
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                                            {{ w.widget('content[' ~ section.key ~ '][' ~ field.key ~ '][__i__][' ~ sub.key ~ ']', sub, '') }}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
                                             </div>
                                         </template>
-                                        <button type="button" class="btn btn-soft-success btn-sm" data-action="report-list-rows#add"><i class="bi bi-plus-lg"></i> Добавить</button>
+                                        <button type="button" class="btn btn-soft-success btn-sm" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
                                     </div>
                                 {% else %}
                                     <div class="mb-3">
@@ -90,13 +105,8 @@
                             {% endfor %}
                         {% endif %}
                     </div>
-                </details>
-            {% endfor %}
-
-            <div class="d-flex gap-2 mt-3 position-sticky bottom-0 py-2 bg-body">
-                <button type="submit" name="action" value="save" class="btn btn-outline-primary flex-fill">Сохранить</button>
-                <button type="submit" name="action" value="submit" class="btn btn-primary flex-fill">На проверку</button>
-            </div>
-        </form>
-    </div>
+                {% endfor %}
+            </form>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

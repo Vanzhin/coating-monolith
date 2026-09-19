@@ -14,6 +14,7 @@ export default class extends Controller {
         hiddenName: { type: String, default: '' },
         allowCreate: { type: Boolean, default: true },
         counterpartyName: { type: String, default: '' },
+        existing: { type: Object, default: {} },
     };
 
     connect() {
@@ -40,6 +41,10 @@ export default class extends Controller {
         this.tagify.on('add', this._clearWarn.bind(this));
         this.tagify.on('input', this._clearWarn.bind(this));
         this.tagify.on('blur', this._onBlur.bind(this));
+
+        if (this.existingValue && this.existingValue.id) {
+            this.tagify.addTags([{ value: this.existingValue.title, id: this.existingValue.id }]);
+        }
         this._renderHidden();
     }
 

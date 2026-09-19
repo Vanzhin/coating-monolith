@@ -111,6 +111,24 @@ final class ReportPagesTest extends WebTestCase
         self::assertResponseRedirects('/cabinet/report/'.$id);
     }
 
+    public function test_edit_header_renders_and_updates(): void
+    {
+        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'ED-1']);
+        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
+        $this->reportIds[] = $id;
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/edit');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="actNumber"]');
+
+        $this->client->request('POST', '/cabinet/report/'.$id.'/edit', ['actNumber' => 'ED-2', 'reportDate' => '2026-08-05']);
+        self::assertResponseRedirects('/cabinet/report/'.$id);
+
+        $this->client->request('GET', '/cabinet/report/'.$id);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'ED-2');
+    }
+
     public function test_quick_create_counterparty_then_project(): void
     {
         $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickCP-'.uniqid('', true)]));
