@@ -59,16 +59,15 @@
                 <div id="sec-refs" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h6 class="fw-semibold mb-3">Ссылки</h6>
                     <div class="row g-3">
-                        <div class="col-12" data-controller="system-by-coating"
-                             data-system-by-coating-coating-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-                             data-system-by-coating-systems-url-value="{{ path('app_cabinet_report_systems_by_coatings') }}"
-                             data-system-by-coating-hidden-name-value="systemId"
-                             {% if editing and report.systemId %}data-system-by-coating-selected-value="{{ {id: report.systemId, title: report.systemTitle}|json_encode|e('html_attr') }}"{% endif %}>
+                        <div class="col-12" data-controller="system-select"
+                             data-system-select-search-url-value="{{ path('app_cabinet_report_system_search') }}"
+                             data-system-select-hidden-name-value="systemId"
+                             {% if editing and report.systemId %}data-system-select-selected-value="{{ {id: report.systemId, title: report.systemTitle}|json_encode|e('html_attr') }}"{% endif %}>
                             <label class="form-label">Система покрытия</label>
-                            <div class="mb-2" data-system-by-coating-target="selected"></div>
-                            <input type="text" class="form-control" data-system-by-coating-target="coatingInput" placeholder="Введите покрытия для подбора системы…">
-                            <div class="form-text">Введите покрытия — подберём системы с ними (подложка, подготовка, среда). Слои выбранной системы засеются в план.</div>
-                            <div class="mt-2" data-system-by-coating-target="results"></div>
+                            <div class="mb-2" data-system-select-target="selected"></div>
+                            <input type="text" class="form-control" data-system-select-target="input" placeholder="Поиск системы по названию…">
+                            <div class="form-text">В варианте видны слои, толщина, подложка, подготовка, среда. Слои выбранной системы засеются в план.</div>
+                            <div class="mt-2" data-system-select-target="results"></div>
                         </div>
 
                         <div class="col-12" data-reference-select-group>

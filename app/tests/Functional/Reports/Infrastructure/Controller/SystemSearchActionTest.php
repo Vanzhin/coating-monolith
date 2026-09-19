@@ -13,10 +13,10 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Подбор систем по покрытиям: система, содержащая покрытие, находится по его id и несёт
- * подложку/среду; без покрытий — пусто.
+ * Поиск систем по названию для формы отчёта: находит систему и отдаёт богатую карточку
+ * (слои/толщина/подложка/подготовка/среда). Короткий/пустой запрос — пусто.
  */
-final class SystemsByCoatingsActionTest extends WebTestCase
+final class SystemSearchActionTest extends WebTestCase
 {
     use CoatingSystemLayerTestFixtureTrait;
 
@@ -33,7 +33,7 @@ final class SystemsByCoatingsActionTest extends WebTestCase
         $this->setUpFixture($c, $this->em);
 
         $hasher = $c->get(UserPasswordHasherInterface::class);
-        $user = new User(new Email('sys_by_coat_'.uniqid('', true).'@example.com'));
+        $user = new User(new Email('sys_search_'.uniqid('', true).'@example.com'));
         $user->setPassword('test_password', $hasher);
         (new \ReflectionProperty($user, 'isActive'))->setValue($user, true);
         (new \ReflectionProperty($user, 'roles'))->setValue($user, ['ROLE_ADMIN']);
@@ -48,21 +48,22 @@ final class SystemsByCoatingsActionTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function test_returns_systems_containing_coating(): void
+    public function test_finds_system_by_title_with_rich_card(): void
     {
-        $this->client->request('GET', '/cabinet/report/systems-by-coatings', ['coatingIds' => [(string) $this->coatingId]]);
+        $this->client->request('GET', '/cabinet/report/system-search', ['q' => 'Система']);
         self::assertResponseIsSuccessful();
 
         $data = json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
-        self::assertNotEmpty($data);
+        self::assertNotEmpty($data, 'фикстурная система должна находиться по названию');
         self::assertContains((string) $this->systemId, array_column($data, 'id'));
-        self::assertArrayHasKey('substrate', $data[0]);
-        self::assertArrayHasKey('environment', $data[0]);
+        foreach (['substrate', 'environment', 'prep', 'dft', 'layers'] as $key) {
+            self::assertArrayHasKey($key, $data[0]);
+        }
     }
 
-    public function test_empty_without_coatings(): void
+    public function test_empty_query_returns_empty(): void
     {
-        $this->client->request('GET', '/cabinet/report/systems-by-coatings');
+        $this->client->request('GET', '/cabinet/report/system-search');
         self::assertResponseIsSuccessful();
         self::assertSame([], json_decode((string) $this->client->getResponse()->getContent(), true)['data']);
     }
