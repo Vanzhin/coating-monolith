@@ -19,3 +19,9 @@
 }
 .rep-chip:hover { color: var(--bs-body-color); }
 .rep-chip.is-active { background: var(--accent-subtle); color: var(--bs-primary); }
+
+/* Поле-ссылка (reference-select) с незавершённым вводом: подсветка, чтобы не потерять текст молча. */
+.tagify.reference-select-warn {
+    border-color: var(--warn);
+    box-shadow: 0 0 0 .15rem color-mix(in srgb, var(--warn) 30%, transparent);
+}

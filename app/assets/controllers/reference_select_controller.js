@@ -29,10 +29,31 @@ export default class extends Controller {
         this._debounceTimer = null;
         this._fetchSeq = 0;
 
+        this.hint = document.createElement('div');
+        this.hint.className = 'form-text text-warning d-none';
+        this.hint.textContent = 'Выберите из списка или нажмите «+ Создать» — иначе не сохранится.';
+        (this.element.closest('[data-reference-select-group]') || this.element.parentElement).appendChild(this.hint);
+
         this.tagify.on('input', this._onInput.bind(this));
         this.tagify.on('add', this._onAdd.bind(this));
         this.tagify.on('change', this._renderHidden.bind(this));
+        this.tagify.on('add', this._clearWarn.bind(this));
+        this.tagify.on('input', this._clearWarn.bind(this));
+        this.tagify.on('blur', this._onBlur.bind(this));
         this._renderHidden();
+    }
+
+    _onBlur() {
+        const leftover = (this.tagify.state.inputText || '').trim();
+        if (leftover !== '') {
+            this.tagify.DOM.scope.classList.add('reference-select-warn');
+            this.hint.classList.remove('d-none');
+        }
+    }
+
+    _clearWarn() {
+        this.tagify.DOM.scope.classList.remove('reference-select-warn');
+        this.hint.classList.add('d-none');
     }
 
     disconnect() {
