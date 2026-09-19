@@ -1,0 +1,21 @@
+/* Отчёты: статус-пилюли и фильтр-чипы списка. На семантических токенах (tokens.css),
+   тот же язык, что у ecard-бейджей: цвет + subtle-фон, радиус 6, без рамок. */
+
+.rep-pill {
+    display: inline-flex; align-items: center; white-space: nowrap;
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+}
+.rep-pill--draft { color: var(--bs-secondary-color); background: var(--sunken); }
+.rep-pill--inwork { color: var(--bs-primary); background: var(--accent-subtle); }
+.rep-pill--review { color: var(--warn); background: var(--warn-subtle); }
+.rep-pill--approved { color: var(--ok); background: var(--ok-subtle); }
+.rep-pill--rejected { color: var(--danger-strong); background: var(--danger-subtle); }
+
+/* Фильтр-чипы статуса — как soft-borderless-чипы: оттенком, без рамки. */
+.rep-chip {
+    flex-shrink: 0; border: 0; text-decoration: none; white-space: nowrap;
+    font-size: 12.5px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
+    background: var(--sunken); color: var(--bs-secondary-color);
+}
+.rep-chip:hover { color: var(--bs-body-color); }
+.rep-chip.is-active { background: var(--accent-subtle); color: var(--bs-primary); }

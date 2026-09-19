@@ -190,6 +190,11 @@
                             <i class="bi {{ item.icon }} me-2"></i>{{ item.label }}
                         </a>
                     {% endfor %}
+                    <a href="{{ path('app_cabinet_report_list') }}"
+                       class="list-group-item list-group-item-action{{ current_route starts with 'app_cabinet_report_' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-clipboard-data me-2"></i>Отчёты
+                    </a>
                     <a href="{{ path('app_tools_index') }}"
                        class="list-group-item list-group-item-action{{ current_route starts with 'app_tools' ? ' active' : '' }}"
                        data-action="click->offcanvas-autoclose#close">

@@ -1,0 +1,59 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Отчёты{% endblock %}
+
+{% block content %}
+    {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
+    {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
+    {% set statuses = {'': 'Все', 'created': 'Черновики', 'in_work': 'В работе', 'under_review': 'На проверке', 'approved': 'Утверждённые', 'rejected': 'Отклонённые'} %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Отчёты',
+        create_route: 'app_cabinet_report_create',
+        can_edit: true,
+        is_empty: result.reports is empty,
+        reports: result.reports,
+        search: search,
+        status: status,
+        statuses: statuses,
+        total_pages: totalPages,
+        base_url: path('app_cabinet_report_list', baseQuery),
+    } only %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_report_list') }}" class="mb-3">
+                <div class="input-group">
+                    <input type="search" name="search" value="{{ search }}" class="form-control"
+                           placeholder="Поиск по № акта или проекту" minlength="2" maxlength="50">
+                    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                    {% if search %}<a href="{{ path('app_cabinet_report_list', status ? {status: status} : {}) }}" class="btn btn-outline-secondary">Сброс</a>{% endif %}
+                </div>
+            </form>
+            <div class="d-flex gap-2 overflow-auto pb-2 mb-2">
+                {% for key, label in statuses %}
+                    {% set q = search ? {search: search} : {} %}
+                    {% set q = key ? q|merge({status: key}) : q %}
+                    {% set active = (key == '' and not status) or status == key %}
+                    <a href="{{ path('app_cabinet_report_list', q) }}" class="rep-chip {{ active ? 'is-active' : '' }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block list_content %}
+            {% include 'components/infinite_list.html.twig' with {
+                items_template: 'cabinet/report/_report_cards_batch.html.twig',
+                items_params: { reports: reports },
+                total_pages: total_pages,
+                base_url: base_url,
+                wrapper_class: 'ecard-grid',
+            } only %}
+        {% endblock %}
+
+        {% block empty_state %}
+            <div class="text-center text-body-secondary py-5">
+                <i class="bi bi-clipboard-data fs-1 d-block mb-2 opacity-50"></i>
+                Пока нет отчётов. Создайте первый — кнопка «+» вверху.
+            </div>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

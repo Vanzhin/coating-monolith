@@ -1,0 +1,17 @@
+{% for r in reports %}
+    <a class="ecard" href="{{ path('app_cabinet_report_view', {id: r.id}) }}">
+        <div class="ecard-media"><i class="bi bi-clipboard-data"></i></div>
+        <div class="ecard-body">
+            <div class="ecard-head">
+                <div class="ecard-title">{{ r.typeLabel|default('Отчёт') }}</div>
+                {% include 'cabinet/report/_status_pill.html.twig' with {status: r.status, label: r.statusLabel} only %}
+            </div>
+            <div class="ecard-desc">{{ r.actNumber ? '№ ' ~ r.actNumber : 'Без номера' }}{% if r.projectTitle %} · {{ r.projectTitle }}{% endif %}</div>
+            <div class="ecard-meta">
+                {% if r.systemTitle %}<span>{{ r.systemTitle }}</span>{% endif %}
+                {% if r.layerCount %}<span>Слоёв: <b>{{ r.layerCount }}</b></span>{% endif %}
+                <span class="ms-auto">{{ r.reportDate|default(r.updatedAt) }}</span>
+            </div>
+        </div>
+    </a>
+{% endfor %}

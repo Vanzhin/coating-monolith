@@ -1,0 +1,72 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Новый отчёт{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
+            <h2 class="text-body-emphasis mb-0 fs-4">Новый отчёт</h2>
+            <a href="{{ path('app_cabinet_report_list') }}" class="btn btn-outline-secondary">Отмена</a>
+        </div>
+
+        {% if error is defined and error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_cabinet_report_create') }}" class="col-12 col-lg-8 col-xl-6">
+            <div class="card p-3 p-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Вид документа</label>
+                    <select name="type" class="form-select" required>
+                        {% for t in types %}
+                            <option value="{{ t.value }}" {{ input.type|default('') == t.value ? 'selected' : '' }}>{{ t.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">№ акта</label>
+                        <input name="actNumber" value="{{ input.actNumber|default('') }}" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Дата</label>
+                        <input type="date" name="reportDate" value="{{ input.reportDate|default('') }}" class="form-control">
+                    </div>
+                </div>
+
+                <div class="mb-3" data-controller="async-typeahead"
+                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_system_suggest') }}"
+                     data-async-typeahead-placeholder-value="Начните вводить систему…">
+                    <label class="form-label">Система покрытия</label>
+                    <select name="systemId" data-async-typeahead-target="select"></select>
+                    <div class="form-text">Слои системы попадут в блок «Система (план)» — в отчёте не редактируются.</div>
+                </div>
+
+                <div class="mb-3" data-controller="async-typeahead"
+                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                     data-async-typeahead-placeholder-value="Проект…">
+                    <label class="form-label">Проект</label>
+                    <select name="projectId" data-async-typeahead-target="select"></select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6" data-controller="async-typeahead"
+                         data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                         data-async-typeahead-placeholder-value="Заказчик…">
+                        <label class="form-label">Заказчик</label>
+                        <select name="customerId" data-async-typeahead-target="select"></select>
+                    </div>
+                    <div class="col-md-6" data-controller="async-typeahead"
+                         data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                         data-async-typeahead-placeholder-value="Подрядчик…">
+                        <label class="form-label">Подрядчик</label>
+                        <select name="contractorId" data-async-typeahead-target="select"></select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Создать</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
