@@ -43,26 +43,34 @@
                     <div class="form-text">Слои системы попадут в блок «Система (план)» — в отчёте не редактируются.</div>
                 </div>
 
-                <div class="mb-3" data-controller="async-typeahead"
-                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_project_suggest') }}"
-                     data-async-typeahead-placeholder-value="Проект…">
-                    <label class="form-label">Проект</label>
-                    <select name="projectId" data-async-typeahead-target="select"></select>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6" data-reference-select-group>
+                        <label class="form-label">Заказчик</label>
+                        <input data-controller="reference-select"
+                               data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                               data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                               data-reference-select-hidden-name-value="customerId"
+                               placeholder="Поиск или создать…">
+                    </div>
+                    <div class="col-md-6" data-reference-select-group>
+                        <label class="form-label">Подрядчик</label>
+                        <input data-controller="reference-select"
+                               data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                               data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                               data-reference-select-hidden-name-value="contractorId"
+                               placeholder="Поиск или создать…">
+                    </div>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6" data-controller="async-typeahead"
-                         data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                         data-async-typeahead-placeholder-value="Заказчик…">
-                        <label class="form-label">Заказчик</label>
-                        <select name="customerId" data-async-typeahead-target="select"></select>
-                    </div>
-                    <div class="col-md-6" data-controller="async-typeahead"
-                         data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                         data-async-typeahead-placeholder-value="Подрядчик…">
-                        <label class="form-label">Подрядчик</label>
-                        <select name="contractorId" data-async-typeahead-target="select"></select>
-                    </div>
+                <div class="mb-3" data-reference-select-group>
+                    <label class="form-label">Проект</label>
+                    <input data-controller="reference-select"
+                           data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                           data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
+                           data-reference-select-hidden-name-value="projectId"
+                           data-reference-select-counterparty-name-value="customerId"
+                           placeholder="Поиск или создать…">
+                    <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100">Создать</button>

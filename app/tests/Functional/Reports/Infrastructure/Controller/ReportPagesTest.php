@@ -111,6 +111,23 @@ final class ReportPagesTest extends WebTestCase
         self::assertResponseRedirects('/cabinet/report/'.$id);
     }
 
+    public function test_quick_create_counterparty_then_project(): void
+    {
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickCP-'.uniqid('', true)]));
+        self::assertResponseStatusCodeSame(201);
+        // Глобальный ResponseListener оборачивает JSON в {data:{…}}.
+        $cp = json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
+        self::assertNotEmpty($cp['id']);
+
+        // Проект без заказчика — 422.
+        $this->client->request('POST', '/cabinet/reports/project/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickPrj']));
+        self::assertResponseStatusCodeSame(422);
+
+        // Проект с заказчиком — 201.
+        $this->client->request('POST', '/cabinet/reports/project/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickPrj-'.uniqid('', true), 'counterpartyId' => $cp['id']]));
+        self::assertResponseStatusCodeSame(201);
+    }
+
     private function setPrivate(object $obj, string $prop, mixed $value): void
     {
         $ref = new \ReflectionProperty($obj, $prop);
