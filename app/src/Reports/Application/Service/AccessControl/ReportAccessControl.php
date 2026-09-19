@@ -26,6 +26,12 @@ final readonly class ReportAccessControl
         return $this->userFetcher->getAuthUserId();
     }
 
+    /** Админ/система видит все отчёты; остальные — только свои. */
+    public function isManager(): bool
+    {
+        return $this->guard->isManager();
+    }
+
     /** Правка/просмотр: владелец или админ. */
     public function canEdit(Report $report): bool
     {
