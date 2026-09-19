@@ -23,6 +23,7 @@ class Report extends Aggregate
     // Ссылки на пользователя — ulid-строка (User.id = ulid, length 26), не Uuid.
     private string $ownerId;
     private ?string $reviewerId = null;
+    private ?string $rejectionReason = null;
     // null — отчёт без предустановленного типа: композиция из собственного набора блоков (Д4, позже).
     private ?ReportType $type;
     private ReportStatus $status;
@@ -61,10 +62,11 @@ class Report extends Aggregate
         $this->updatedAt = $now;
     }
 
-    /** Взять в работу: Создан/Отклонён → В работе. */
+    /** Взять в работу: Создан/Отклонён → В работе. Причина прошлого отклонения снимается. */
     public function startWork(\DateTimeImmutable $now): void
     {
         $this->transitionTo(ReportStatus::InWork, $now);
+        $this->rejectionReason = null;
     }
 
     /** Отправить на проверку: В работе → На проверке. */
@@ -79,10 +81,11 @@ class Report extends Aggregate
         $this->transitionTo(ReportStatus::Approved, $now);
     }
 
-    /** Отклонить (ревьюер): На проверке → Отклонён. */
-    public function reject(\DateTimeImmutable $now): void
+    /** Отклонить (ревьюер): На проверке → Отклонён, с причиной для автора. */
+    public function reject(?string $reason, \DateTimeImmutable $now): void
     {
         $this->transitionTo(ReportStatus::Rejected, $now);
+        $this->rejectionReason = $reason;
     }
 
     private function transitionTo(ReportStatus $to, \DateTimeImmutable $now): void
@@ -178,6 +181,11 @@ class Report extends Aggregate
     public function getReviewerId(): ?string
     {
         return $this->reviewerId;
+    }
+
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
     }
 
     public function getType(): ?ReportType

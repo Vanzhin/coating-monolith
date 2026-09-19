@@ -57,15 +57,18 @@ final class ReportTest extends TestCase
         $report->startWork($this->now);
     }
 
-    public function test_rejected_goes_back_to_work(): void
+    public function test_rejected_goes_back_to_work_and_clears_reason(): void
     {
         $report = $this->report();
         $report->startWork($this->now);
         $report->submitForReview($this->now);
-        $report->reject($this->now);
-        $report->startWork($this->now);
+        $report->reject('Не заполнены приборы', $this->now);
+        self::assertSame(ReportStatus::Rejected, $report->getStatus());
+        self::assertSame('Не заполнены приборы', $report->getRejectionReason());
 
+        $report->startWork($this->now); // доработка после отклонения
         self::assertSame(ReportStatus::InWork, $report->getStatus());
+        self::assertNull($report->getRejectionReason()); // причина снята
     }
 
     public function test_cannot_submit_directly_from_created(): void

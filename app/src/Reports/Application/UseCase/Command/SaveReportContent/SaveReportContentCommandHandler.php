@@ -6,6 +6,7 @@ namespace App\Reports\Application\UseCase\Command\SaveReportContent;
 
 use App\Reports\Application\Service\AccessControl\ReportAccessControl;
 use App\Reports\Domain\Aggregate\Report\Report;
+use App\Reports\Domain\Aggregate\Report\ReportStatus;
 use App\Reports\Domain\File\ReportPhotoPurpose;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Reports\Domain\Service\ReportContentValidator;
@@ -54,10 +55,20 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
 
         $this->promoteStagedPhotos($report, $content);
 
-        $report->replaceContent($content, new \DateTimeImmutable());
+        $now = new \DateTimeImmutable();
+        $this->autoStartWork($report, $now);
+        $report->replaceContent($content, $now);
         $this->repository->add($report);
 
         $this->removeDetachedPhotos($previousContent, $content);
+    }
+
+    /** Сохранение черновика само берёт отчёт «в работу»: Создан/Отклонён → В работе. */
+    private function autoStartWork(Report $report, \DateTimeImmutable $now): void
+    {
+        if (in_array($report->getStatus(), [ReportStatus::Created, ReportStatus::Rejected], true)) {
+            $report->startWork($now);
+        }
     }
 
     /**
