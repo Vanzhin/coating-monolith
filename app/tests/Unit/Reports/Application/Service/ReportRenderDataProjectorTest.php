@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\Reports\Application\Service;
+
+use App\Reports\Application\Service\ReportRenderDataProjector;
+use App\Reports\Domain\Aggregate\Report\Reference;
+use App\Reports\Domain\Aggregate\Report\Report;
+use App\Reports\Domain\Aggregate\Report\ReportType;
+use App\Reports\Domain\Block\BlockRegistry;
+use App\Reports\Domain\Block\Definition\ConclusionBlock;
+use App\Reports\Domain\Block\Definition\NotesBlock;
+use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
+use App\Shared\Domain\Service\UuidService;
+use App\Shared\Domain\Templating\RenderData;
+use App\Shared\Domain\Templating\TextValue;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
+
+final class ReportRenderDataProjectorTest extends TestCase
+{
+    private ReportRenderDataProjector $projector;
+
+    protected function setUp(): void
+    {
+        $this->projector = new ReportRenderDataProjector(
+            new BlockRegistry([new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock()]),
+        );
+    }
+
+    public function test_projects_header_and_scalar_blocks(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-01');
+        $report->applyReferences(
+            new Reference('p1', 'Усольский ГОК'),
+            new Reference('c1', 'ЕвроХим'),
+            new Reference('c2', 'НПП НГТ'),
+            null,
+            $now,
+        );
+        $report->replaceContent([
+            'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
+            'conclusion' => ['text' => 'Соответствует.'],
+            'notes' => ['text' => 'ок'],
+        ], $now);
+
+        $data = $this->projector->project($report);
+
+        // шапка
+        self::assertSame('АКТ-01', $this->text($data, 'act_number'));
+        self::assertSame('05.08.2026', $this->text($data, 'report_date'));
+        self::assertSame('Акт опытного нанесения', $this->text($data, 'report_type'));
+        self::assertSame('Создан', $this->text($data, 'status'));
+        self::assertSame('Усольский ГОК', $this->text($data, 'project_title'));
+        self::assertSame('ЕвроХим', $this->text($data, 'customer_title'));
+        self::assertSame('НПП НГТ', $this->text($data, 'contractor_title'));
+        self::assertFalse($data->has('system_title')); // null-ссылка → ключа нет
+
+        // блоки: {blockKey}_{fieldKey}
+        self::assertSame('B', $this->text($data, 'surface_prep_rustGrade'));
+        self::assertSame('Sa 2½', $this->text($data, 'surface_prep_prepDegree'));
+        self::assertSame('Соответствует.', $this->text($data, 'conclusion_text'));
+        self::assertSame('ок', $this->text($data, 'notes_text'));
+
+        // незаполненное поле — presence-driven, ключа нет
+        self::assertFalse($data->has('surface_prep_abrasive'));
+    }
+
+    private function text(RenderData $data, string $key): string
+    {
+        $value = $data->get($key);
+        self::assertInstanceOf(TextValue::class, $value);
+
+        return $value->value;
+    }
+}
