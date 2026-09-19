@@ -111,6 +111,31 @@ final class ReportPagesTest extends WebTestCase
         self::assertResponseRedirects('/cabinet/report/'.$id);
     }
 
+    public function test_submit_then_reviewer_approves(): void
+    {
+        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'RV-1']);
+        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
+        $this->reportIds[] = $id;
+
+        // Заполняем обязательное и сразу отправляем на проверку.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'submit',
+            'content' => [
+                'control_area' => ['description' => 'Балка Б-1'],
+                'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
+                'conclusion' => ['text' => 'соответствует'],
+            ],
+        ]);
+        self::assertResponseRedirects('/cabinet/report/'.$id);
+
+        // Ревьюер (админ) утверждает.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/approve');
+        self::assertResponseRedirects('/cabinet/report/'.$id);
+
+        $this->client->request('GET', '/cabinet/report/'.$id);
+        self::assertSelectorTextContains('body', 'Утверждён');
+    }
+
     public function test_edit_header_renders_and_updates(): void
     {
         $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'ED-1']);

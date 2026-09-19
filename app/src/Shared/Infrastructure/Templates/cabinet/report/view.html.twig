@@ -34,5 +34,22 @@
                 <a href="{{ path('app_cabinet_report_edit', {id: report.id}) }}" class="btn btn-soft-primary"><i class="bi bi-sliders me-1"></i> Реквизиты</a>
             </div>
         {% endif %}
+
+        {% if report.status == 'under_review' and is_granted('ROLE_ADMIN') %}
+            <div class="pv-sec">Проверка</div>
+            <div class="d-flex gap-2 flex-wrap mb-2">
+                <form method="post" action="{{ path('app_cabinet_report_approve', {id: report.id}) }}">
+                    <button class="btn btn-soft-success" type="submit"><i class="bi bi-check-lg me-1"></i>Утвердить</button>
+                </form>
+                <button class="btn btn-soft-danger" type="button" data-bs-toggle="collapse" data-bs-target="#rejectForm"><i class="bi bi-x-lg me-1"></i>Отклонить…</button>
+            </div>
+            <div class="collapse" id="rejectForm">
+                <form method="post" action="{{ path('app_cabinet_report_reject', {id: report.id}) }}" class="p-3 rounded-3 bg-body-tertiary">
+                    <label class="form-label">Причина отклонения</label>
+                    <textarea name="reason" class="form-control mb-2" rows="2" placeholder="Что доработать автору"></textarea>
+                    <button class="btn btn-danger" type="submit">Отклонить отчёт</button>
+                </form>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
