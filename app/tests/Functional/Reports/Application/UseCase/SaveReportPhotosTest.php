@@ -99,6 +99,20 @@ final class SaveReportPhotosTest extends KernelTestCase
         self::assertNull($this->storage->get($uuid));
     }
 
+    public function test_saving_without_photos_key_keeps_existing(): void
+    {
+        $reportId = $this->createReport();
+        $uuid = $this->stagePhoto();
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['photos' => ['items' => [['file' => $uuid]]]]));
+        $this->em->clear();
+        self::assertNotNull($this->storage->get($uuid));
+
+        // Сохранение формы без блока photos не должно тронуть привязанные фото.
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['notes' => ['text' => 'правка без фото']]));
+        $this->em->clear();
+        self::assertNotNull($this->storage->get($uuid), 'фото не должно удаляться, если блок photos не прислан');
+    }
+
     public function test_reference_to_missing_file_throws(): void
     {
         $reportId = $this->createReport();
