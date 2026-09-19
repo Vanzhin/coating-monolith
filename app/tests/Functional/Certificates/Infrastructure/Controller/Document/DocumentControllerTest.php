@@ -14,8 +14,8 @@ use App\Certificates\Domain\Aggregate\Issuer\Issuer;
 use App\Certificates\Domain\Aggregate\Issuer\Specification\IssuerSpecification;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
 use App\Certificates\Domain\Repository\DocumentsFilter;
-use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Repository\Pager;
 use App\Tests\Support\ExtractsCsrfTokenTrait;
 use App\Users\Domain\Entity\User;
@@ -35,7 +35,7 @@ final class DocumentControllerTest extends WebTestCase
     private EntityManagerInterface $em;
     private DocumentRepositoryInterface $repo;
     private CommandBusInterface $commandBus;
-    private DocumentFileStorage $storage;
+    private FileStorage $storage;
     private IssuerSpecification $issuerSpec;
     private string $userEmail;
     private ?string $viewerEmail = null;
@@ -54,7 +54,7 @@ final class DocumentControllerTest extends WebTestCase
         $this->em = $c->get(EntityManagerInterface::class);
         $this->repo = $c->get(DocumentRepositoryInterface::class);
         $this->commandBus = $c->get(CommandBusInterface::class);
-        $this->storage = $c->get(DocumentFileStorage::class);
+        $this->storage = $c->get(FileStorage::class);
         $this->issuerSpec = $c->get(IssuerSpecification::class);
 
         $this->userEmail = 'doc_ctrl_'.uniqid('', true).'@example.com';
@@ -99,7 +99,7 @@ final class DocumentControllerTest extends WebTestCase
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
         foreach ($this->writtenFiles as $file) {
-            $this->storage->delete($file);
+            $this->storage->remove($file);
         }
         parent::tearDown();
     }

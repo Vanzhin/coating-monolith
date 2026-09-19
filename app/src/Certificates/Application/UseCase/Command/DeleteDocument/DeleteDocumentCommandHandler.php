@@ -6,8 +6,8 @@ namespace App\Certificates\Application\UseCase\Command\DeleteDocument;
 
 use App\Certificates\Application\Service\AccessControl\DocumentAccessControl;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
-use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,7 +16,7 @@ final readonly class DeleteDocumentCommandHandler implements CommandHandlerInter
 {
     public function __construct(
         private DocumentRepositoryInterface $repository,
-        private DocumentFileStorage $storage,
+        private FileStorage $storage,
         private DocumentAccessControl $access,
     ) {
     }
@@ -35,7 +35,7 @@ final readonly class DeleteDocumentCommandHandler implements CommandHandlerInter
         $file = $document->getFile();
         $this->repository->remove($document);
         if (null !== $file) {
-            $this->storage->delete($file);
+            $this->storage->remove($file);
         }
     }
 }

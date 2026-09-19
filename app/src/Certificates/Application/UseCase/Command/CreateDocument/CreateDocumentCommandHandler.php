@@ -6,9 +6,10 @@ namespace App\Certificates\Application\UseCase\Command\CreateDocument;
 
 use App\Certificates\Application\Service\AccessControl\DocumentAccessControl;
 use App\Certificates\Domain\Aggregate\Document\Document;
+use App\Certificates\Domain\File\CertificatePurpose;
 use App\Certificates\Domain\Repository\DocumentRepositoryInterface;
-use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
@@ -16,7 +17,7 @@ final readonly class CreateDocumentCommandHandler implements CommandHandlerInter
 {
     public function __construct(
         private DocumentRepositoryInterface $repository,
-        private DocumentFileStorage $storage,
+        private FileStorage $storage,
         private DocumentAccessControl $access,
     ) {
     }
@@ -43,7 +44,7 @@ final readonly class CreateDocumentCommandHandler implements CommandHandlerInter
             ...$command->references,
         );
         if (null !== $command->file) {
-            $document->setFile($this->storage->store($command->file));
+            $document->setFile($this->storage->store(CertificatePurpose::Scan, (string) $document->getId(), $command->file)->id());
         }
         $this->repository->add($document);
 

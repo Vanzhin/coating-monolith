@@ -127,19 +127,12 @@ services:
       #      $fileSystem: '@oneup_flysystem.upload_general_proposal_filesystem'
       $pathToDirectory: '%general_proposal_template_upload_dir%'
 
-  # Хранилище PDF-сканов документов (контекст Certificates). Автоалиаса для flysystem-сервисов нет — биндим по id.
-  App\Certificates\Infrastructure\Storage\DocumentFileStorage:
-    arguments:
-      $filesystem: '@oneup_flysystem.document_scans_filesystem'
-
   # Единое хранилище файлов (Shared). Биндим filesystem по id (автоалиаса для flysystem-сервисов нет).
   App\Shared\Infrastructure\File\FlysystemFileStorage:
     arguments:
       $filesystem: '@oneup_flysystem.file_storage_filesystem'
 
-  App\Shared\Domain\File\FileStorage:
-    alias: App\Shared\Infrastructure\File\FlysystemFileStorage
-    public: true
+  App\Shared\Domain\File\FileStorage: '@App\Shared\Infrastructure\File\FlysystemFileStorage'
 
   # Telegram
   telegram_handler:

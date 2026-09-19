@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Certificates\Infrastructure\Controller\Document;
 
 use App\Certificates\Application\UseCase\Query\GetDocument\GetDocumentQuery;
-use App\Certificates\Infrastructure\Storage\DocumentFileStorage;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -23,7 +23,7 @@ final class DownloadAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly DocumentFileStorage $storage,
+        private readonly FileStorage $storage,
     ) {
     }
 
