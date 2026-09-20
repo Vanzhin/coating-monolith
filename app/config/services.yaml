@@ -59,6 +59,9 @@ services:
     App\Shared\Domain\Templating\TemplateRenderer:
       tags: ['app.template_renderer']
 
+    App\Reports\Domain\Block\BlockDefinition:
+      tags: ['app.report_block']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -199,6 +202,11 @@ services:
   App\Shared\Infrastructure\Service\TemplateRendering:
     arguments:
       - !tagged_iterator app.template_renderer
+
+  # Реестр блоков отчёта: все BlockDefinition (docx-подобные секции) через тег
+  App\Reports\Domain\Block\BlockRegistry:
+    arguments:
+      - !tagged_iterator app.report_block
 
   App\Coatings\Domain\Compliance\SystemComplianceEvaluator:
     arguments:

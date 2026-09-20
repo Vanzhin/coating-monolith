@@ -9,6 +9,7 @@
         </id>
         <field name="ownerId" type="string" length="26" column="owner_id"/>
         <field name="reviewerId" type="string" length="26" column="reviewer_id" nullable="true"/>
+        <field name="rejectionReason" type="text" column="rejection_reason" nullable="true"/>
         <field name="type" type="string" length="30" column="type_key" nullable="true"
                enum-type="App\Reports\Domain\Aggregate\Report\ReportType"/>
         <field name="status" type="string" length="20" column="status"

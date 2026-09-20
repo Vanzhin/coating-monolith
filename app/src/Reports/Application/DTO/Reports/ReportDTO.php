@@ -13,6 +13,7 @@ class ReportDTO
     public ?string $typeLabel = null;
     public string $status;
     public string $statusLabel;
+    public ?string $rejectionReason = null;
     public ?string $reportDate = null;
     public ?string $actNumber = null;
     public ?string $projectId = null;
