@@ -43,11 +43,21 @@ final class SwAction extends AbstractController
             $this->generateUrl('app_tools_consumption'),
         ];
 
+        // Версия кэша = хеш СОДЕРЖИМОГО ассетов. В проде имена хешированы (меняются на деплое); в dev
+        // имена стабильны (`app.js`) — по контенту ловим пересборку. Контент (в отличие от mtime)
+        // через Docker-шару синхронизируется надёжно. Иначе SW держал бы старый app.js вечно
+        // (cache-first) и правки JS не долетали бы без ручной чистки кэша.
+        $publicDir = (string) $this->getParameter('kernel.project_dir').'/public';
+        $signature = array_map(static function (string $url) use ($publicDir): string {
+            $path = $publicDir.(parse_url($url, PHP_URL_PATH) ?: '');
+
+            return $url.':'.(is_file($path) ? (string) hash_file('crc32b', $path) : '0');
+        }, $assets);
+
         $response = $this->render('sw.js.twig', [
             'precacheUrls' => array_values(array_merge($pages, $cacheFirst)),
             'cacheFirstUrls' => array_values($cacheFirst),
-            // Версия кэша меняется вместе с хешами ассетов → activate чистит старый precache на деплое.
-            'cacheVersion' => substr(sha1(implode('|', $assets)), 0, 12),
+            'cacheVersion' => substr(sha1(implode('|', $signature)), 0, 12),
         ]);
         $response->headers->set('Content-Type', 'application/javascript');
         // Браузер должен видеть новую версию SW сразу после деплоя, а не из HTTP-кэша.

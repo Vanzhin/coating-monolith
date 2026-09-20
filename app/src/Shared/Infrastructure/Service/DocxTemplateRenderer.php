@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\Service;
 use App\Shared\Domain\Templating\ImageValue;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RenderedDocument;
+use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Domain\Templating\TemplateFormat;
 use App\Shared\Domain\Templating\TemplateRenderer;
@@ -111,6 +112,12 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
         }
 
+        // Повторяемые группы: шаблон их «знает» (строка таблицы). Пустой список допустим (строка удалится),
+        // поэтому в missing не попадают; но из «unused» их исключаем.
+        foreach (array_keys($parsed['repeats']) as $group) {
+            $templateNames[$group] = true;
+        }
+
         $unused = array_values(array_diff($data->variableNames(), array_keys($templateNames)));
 
         return new ValidationResult(
@@ -134,6 +141,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $states = $this->blockStates($parsed['blocks'], $data);
 
         foreach ($states as $name => $state) {
+            if (isset($parsed['repeats'][$name])) {
+                continue; // повторяемый блок — обрабатывается ниже (cloneBlock по количеству)
+            }
             if ('keep' === $state) {
                 $processor->cloneBlock($name, 1);
             } else {
@@ -147,6 +157,18 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 continue; // блок удалён — токен уже вырезан
             }
             $this->fill($processor, $value['token'], $value['logical'], $data);
+        }
+
+        // Повторяемые группы {{group.sub}}: обёрнуты маркерами {{group}}…{{/group}} → список Word
+        // (cloneBlock); иначе — строка таблицы (cloneRow). Пусто → регион/строка удаляются.
+        foreach ($parsed['repeats'] as $group => $info) {
+            $value = $data->get($group);
+            $rows = $value instanceof RepeatValue ? $value->rows : [];
+            if (isset($parsed['blocks'][$group])) {
+                $this->repeatBlock($processor, $group, $info['subs'], $rows);
+            } else {
+                $this->repeatRow($processor, $info['anchor'], $group, $info['subs'], $rows);
+            }
         }
 
         return new RenderedDocument($this->toBytes($processor), TemplateFormat::Docx);
@@ -173,6 +195,54 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 return;
             }
             $processor->setImageValue($token, $this->imageOptions($value));
+        }
+    }
+
+    /**
+     * Повтор строкой таблицы (cloneRow): клонирует `<w:tr>` с anchor по количеству и заполняет
+     * `{{group.sub#i}}`. Пусто → удаляет строку-шаблон (единственная строка → уйдёт вся таблица).
+     *
+     * @param list<string>                $subs
+     * @param list<array<string, string>> $rows
+     */
+    private function repeatRow(DocxMacroProcessor $processor, string $anchor, string $group, array $subs, array $rows): void
+    {
+        if ([] === $rows) {
+            $processor->deleteRow($anchor);
+
+            return;
+        }
+        $mapped = [];
+        foreach ($rows as $row) {
+            $entry = [];
+            foreach ($subs as $sub) {
+                $entry[$group.'.'.$sub] = $row[$sub] ?? '';
+            }
+            $mapped[] = $entry;
+        }
+        $processor->cloneRowAndSetValues($anchor, $mapped);
+    }
+
+    /**
+     * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} по количеству
+     * (список Word — нумерацию проставит сам), заполняет `{{group.sub#i}}`. Пусто → удаляет регион.
+     *
+     * @param list<string>                $subs
+     * @param list<array<string, string>> $rows
+     */
+    private function repeatBlock(DocxMacroProcessor $processor, string $group, array $subs, array $rows): void
+    {
+        if ([] === $rows) {
+            $processor->deleteBlock($group);
+
+            return;
+        }
+        $processor->cloneBlock($group, count($rows), true, true); // indexVariables → {{group.sub#i}}
+        foreach ($rows as $i => $row) {
+            $rowNumber = $i + 1;
+            foreach ($subs as $sub) {
+                $processor->setValue($group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
+            }
         }
     }
 
@@ -205,7 +275,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
      *
      * @return array{
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
-     *     blocks: array<string, list<string>>
+     *     blocks: array<string, list<string>>,
+     *     repeats: array<string, array{subs: list<string>, anchor: string}>
      * }
      */
     private function parse(DocxMacroProcessor $processor): array
@@ -218,6 +289,22 @@ final class DocxTemplateRenderer implements TemplateRenderer
         foreach ($allTokens as $token) {
             if (str_starts_with($token, '/')) {
                 $closeSet[substr($token, 1)] = true;
+            }
+        }
+
+        // повторяемые группы: точечные токены {{group.sub}} (строка таблицы). Все токены группы — в одной
+        // строке; anchor — любой из них (cloneRow индексирует всю строку). Из flat-значений исключаем.
+        $repeats = [];
+        $repeatMembers = [];
+        foreach ($allTokens as $token) {
+            if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $token, $m)) {
+                $group = $m[1];
+                $sub = $m[2];
+                $repeatMembers[$token] = true;
+                $repeats[$group] ??= ['subs' => [], 'anchor' => $token];
+                if (!in_array($sub, $repeats[$group]['subs'], true)) {
+                    $repeats[$group]['subs'][] = $sub;
+                }
             }
         }
 
@@ -236,6 +323,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 $stack[] = $content;
                 $blocks[$content] ??= [];
                 continue;
+            }
+            if (isset($repeatMembers[$content])) {
+                continue; // член повторяемой группы — не flat-значение и не член блока
             }
 
             $optionalMark = str_ends_with($content, '?');
@@ -258,8 +348,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
         // 2) колонтитулы/сноски: плейсхолдеры вне тела — как обычные top-level значения
         //    (опциональные блоки поддерживаются только в теле документа)
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/') || isset($closeSet[$token])) {
-                continue; // маркер блока — не значение
+            if (str_starts_with($token, '/') || isset($closeSet[$token]) || isset($repeatMembers[$token])) {
+                continue; // маркер блока или член повторяемой группы — не значение
             }
 
             $optionalMark = str_ends_with($token, '?');
@@ -277,7 +367,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
             ];
         }
 
-        return ['values' => $values, 'blocks' => $blocks];
+        return ['values' => $values, 'blocks' => $blocks, 'repeats' => $repeats];
     }
 
     /**

@@ -19,6 +19,8 @@ doctrine:
             substrate_scope: App\Coatings\Infrastructure\Database\DBAL\SubstrateScopeType
             document_references: App\Certificates\Infrastructure\Database\DBAL\DocumentReferencesType
             audit_change_set: App\Shared\Infrastructure\Database\DBAL\ChangeSetType
+            reports_reference: App\Reports\Infrastructure\Database\DBAL\ReferenceType
+            datetime_interval: App\Shared\Infrastructure\Database\DBAL\DateTimeIntervalType
         mapping_types:
             jsonb: json
     orm:
@@ -31,6 +33,7 @@ doctrine:
             string_functions:
                 TS_MATCH: App\Coatings\Infrastructure\Database\DQL\TsMatch
                 TO_TSQUERY: App\Coatings\Infrastructure\Database\DQL\ToTsquery
+                JSONB_GET_TEXT: App\Reports\Infrastructure\Database\DQL\JsonbGetText
             numeric_functions:
                 TS_RANK_CD: App\Coatings\Infrastructure\Database\DQL\TsRankCd
                 WORD_SIMILARITY: App\Coatings\Infrastructure\Database\DQL\WordSimilarity

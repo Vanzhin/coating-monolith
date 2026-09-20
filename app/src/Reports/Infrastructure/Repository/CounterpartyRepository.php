@@ -80,7 +80,7 @@ class CounterpartyRepository extends ServiceEntityRepository implements Counterp
         /** @var list<Counterparty> $result */
         $result = $this->createQueryBuilder('c')
             ->where('LOWER(c.title) LIKE LOWER(:q)')
-            ->setParameter('q', $this->escapeLike($needle).'%')
+            ->setParameter('q', '%'.$this->escapeLike($needle).'%')
             ->orderBy('c.title', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()

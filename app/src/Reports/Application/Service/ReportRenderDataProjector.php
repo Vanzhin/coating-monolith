@@ -12,7 +12,9 @@ use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
 use App\Shared\Domain\Templating\RenderData;
+use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
+use App\Shared\Domain\ValueObject\DateTimeInterval;
 
 /**
  * Проектор отчёта в плоский RenderData для движка шаблонов — **data-driven по маппингу**
@@ -54,6 +56,10 @@ final readonly class ReportRenderDataProjector
                 $this->projectLayers($values, $entry->variable, $field, $raw);
             } elseif (FieldType::ListRows === $field->type) {
                 $this->put($values, $entry->variable, $this->formatList($field, $raw));
+                $this->projectRepeat($values, (string) $entry->blockKey, $field, $raw);
+            } elseif (FieldType::StringList === $field->type) {
+                $this->put($values, $entry->variable, $this->formatStringList($raw));
+                $this->projectStringListRepeat($values, (string) $entry->blockKey, $raw);
             } elseif ($field->type->isScalar()) {
                 $this->put($values, $entry->variable, $this->formatScalar($field, $raw));
             }
@@ -74,8 +80,25 @@ final readonly class ReportRenderDataProjector
             'customerTitle' => $report->getCustomer()?->title,
             'contractorTitle' => $report->getContractor()?->title,
             'systemTitle' => $report->getSystem()?->title,
+            'address' => $report->getAddress(),
+            'workPeriod' => $this->formatPeriod($report->getWorkPeriod()),
             default => null,
         };
+    }
+
+    /** Период работ → «с ДД.ММ.ГГГГ по ДД.ММ.ГГГГ» (открытый с одной стороны — только одна граница). */
+    private function formatPeriod(?DateTimeInterval $period): ?string
+    {
+        if (null === $period) {
+            return null;
+        }
+        $from = $period->getFrom()?->format('d.m.Y');
+        $to = $period->getTo()?->format('d.m.Y');
+        if (null !== $from && null !== $to) {
+            return sprintf('с %s по %s', $from, $to);
+        }
+
+        return null !== $from ? 'с '.$from : 'по '.$to;
     }
 
     private function field(string $blockKey, string $fieldKey): ?Field
@@ -148,13 +171,228 @@ final readonly class ReportRenderDataProjector
                 continue;
             }
             ++$index;
+            $base = sprintf('%s_layer%d', $blockKeyValue, $index);
             foreach ($field->itemFields as $sub) {
-                $this->put($values, sprintf('%s_layer%d_%s', $blockKeyValue, $index, $sub->key), $this->formatSubValue($sub, $row[$sub->key] ?? null));
+                $subValue = $row[$sub->key] ?? null;
+                $prefix = $base.'_'.$sub->key;
+                if (FieldType::Thickness === $sub->type) {
+                    $this->projectThickness($values, $prefix, $subValue);
+
+                    continue;
+                }
+                if (FieldType::NumberRange === $sub->type) {
+                    $this->projectNumberRange($values, $prefix, $subValue);
+
+                    continue;
+                }
+                if (FieldType::Thinner === $sub->type) {
+                    $this->projectThinner($values, $prefix, $subValue);
+
+                    continue;
+                }
+                if (FieldType::DateTimeRange === $sub->type) {
+                    // Период нанесения → дата (последняя) в {base}_date, интервал времени в {base}_time.
+                    $this->projectAppliedPeriod($values, $base, $subValue);
+
+                    continue;
+                }
+                $this->put($values, $prefix, $this->formatSubValue($sub, $subValue));
             }
         }
         if ($index > 0) {
             $this->put($values, $blockKeyValue.'_layer_count', (string) $index);
         }
+    }
+
+    /**
+     * Толщина слоя {min,max,mean} → ключи `{prefix}_min|_max|_mean` + `{prefix}_range` («мин–макс»).
+     * range/mean совпадают со старыми плейсхолдерами dry_film_range/dry_film_mean — шаблон не меняется.
+     *
+     * @param array<string, TextValue> $values
+     */
+    private function projectThickness(array &$values, string $prefix, mixed $value): void
+    {
+        if (!is_array($value)) {
+            return;
+        }
+        $min = $value['min'] ?? null;
+        $max = $value['max'] ?? null;
+        $this->put($values, $prefix.'_min', is_scalar($min) ? (string) $min : null);
+        $this->put($values, $prefix.'_max', is_scalar($max) ? (string) $max : null);
+        $this->put($values, $prefix.'_mean', is_scalar($value['mean'] ?? null) ? (string) $value['mean'] : null);
+        if (is_scalar($min) && '' !== (string) $min && is_scalar($max) && '' !== (string) $max) {
+            $this->put($values, $prefix.'_range', sprintf('%s–%s', (string) $min, (string) $max));
+        }
+    }
+
+    /**
+     * Диапазон толщины без среднего {min,max} → ключи `{prefix}_min|_max` + `{prefix}_range` («мин–макс»).
+     * Для мокрого слоя в акт обычно идёт `{prefix}_range`; отдельные границы — на будущее.
+     *
+     * @param array<string, TextValue> $values
+     */
+    private function projectNumberRange(array &$values, string $prefix, mixed $value): void
+    {
+        if (!is_array($value)) {
+            return;
+        }
+        $min = $value['min'] ?? null;
+        $max = $value['max'] ?? null;
+        $this->put($values, $prefix.'_min', is_scalar($min) ? (string) $min : null);
+        $this->put($values, $prefix.'_max', is_scalar($max) ? (string) $max : null);
+        if (is_scalar($min) && '' !== (string) $min && is_scalar($max) && '' !== (string) $max) {
+            $this->put($values, $prefix.'_range', sprintf('%s–%s', (string) $min, (string) $max));
+        }
+    }
+
+    /**
+     * Разбавитель {name,batch,percent} → под-ключи `{prefix}_name|_batch|_percent` + собранная строка
+     * `{prefix}` вида «7% Название (№ партии XXX)» для плейсхолдера {{..._thinner}}.
+     *
+     * @param array<string, TextValue> $values
+     */
+    private function projectThinner(array &$values, string $prefix, mixed $value): void
+    {
+        if (!is_array($value)) {
+            return;
+        }
+        $name = trim((string) ($value['name'] ?? ''));
+        $batch = trim((string) ($value['batch'] ?? ''));
+        $percent = $value['percent'] ?? null;
+        $percentStr = is_scalar($percent) ? trim((string) $percent) : '';
+
+        $this->put($values, $prefix.'_name', '' !== $name ? $name : null);
+        $this->put($values, $prefix.'_batch', '' !== $batch ? $batch : null);
+        $this->put($values, $prefix.'_percent', '' !== $percentStr ? $percentStr : null);
+
+        $parts = [];
+        if ('' !== $percentStr) {
+            $parts[] = $percentStr.'%';
+        }
+        if ('' !== $name) {
+            $parts[] = $name;
+        }
+        $combined = implode(' ', $parts);
+        if ('' !== $batch) {
+            $combined = trim($combined.sprintf(' (№ партии %s)', $batch));
+        }
+        $this->put($values, $prefix, '' !== $combined ? $combined : null);
+    }
+
+    /**
+     * Период нанесения {from,to} (дата+время) → в акт разными частями: `{base}_date` — дата (последняя,
+     * т.е. `to`; при отсутствии — `from`) дд.мм.гггг; `{base}_time` — интервал «ЧЧ:ММ–ЧЧ:ММ». Плюс
+     * полные `{base}_datetime_from/to` на будущее.
+     *
+     * @param array<string, TextValue> $values
+     */
+    private function projectAppliedPeriod(array &$values, string $base, mixed $value): void
+    {
+        if (!is_array($value)) {
+            return;
+        }
+        $from = $this->parseDateTime($value['from'] ?? null);
+        $to = $this->parseDateTime($value['to'] ?? null);
+        $lastDate = $to ?? $from;
+
+        $this->put($values, $base.'_date', $lastDate?->format('d.m.Y'));
+
+        $time = null;
+        if (null !== $from && null !== $to) {
+            $time = $from->format('H:i').'–'.$to->format('H:i');
+        } elseif (null !== $from) {
+            $time = $from->format('H:i');
+        } elseif (null !== $to) {
+            $time = $to->format('H:i');
+        }
+        $this->put($values, $base.'_time', $time);
+
+        $this->put($values, $base.'_datetime_from', $from?->format('d.m.Y H:i'));
+        $this->put($values, $base.'_datetime_to', $to?->format('d.m.Y H:i'));
+    }
+
+    private function parseDateTime(mixed $value): ?\DateTimeImmutable
+    {
+        if (!is_string($value) || '' === trim($value)) {
+            return null;
+        }
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Список строк-объектов → повторяемая группа (RepeatValue) под ключом блока: по одной записи на строку,
+     * подключи = ключи itemFields (пустые подполя → '', чтобы драйвер очистил все `{{group.sub#i}}`).
+     * Пустой список — группу не кладём (драйвер удалит строку-шаблон). Идёт рядом с плоским `{block}_items`.
+     *
+     * @param array<string, \App\Shared\Domain\Templating\TemplateValue> $values
+     */
+    private function projectRepeat(array &$values, string $groupKey, Field $field, mixed $value): void
+    {
+        if (!is_array($value) || [] === $value) {
+            return;
+        }
+        $rows = [];
+        foreach ($value as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $mapped = [];
+            foreach ($field->itemFields as $sub) {
+                $formatted = $this->formatSubValue($sub, $row[$sub->key] ?? null);
+                $mapped[$sub->key] = null !== $formatted ? $formatted : '';
+            }
+            $rows[] = $mapped;
+        }
+        if ([] !== $rows) {
+            $values[$groupKey] = new RepeatValue($rows);
+        }
+    }
+
+    /**
+     * Список строк → повторяемая группа под ключом блока: по одной записи на непустой пункт, подключ
+     * `text`. Позволяет вставить рекомендации/выводы настоящим списком Word (cloneBlock по `{{group.text}}`)
+     * или строками таблицы. Рядом остаётся плоский нумерованный `{block}_items`.
+     *
+     * @param array<string, \App\Shared\Domain\Templating\TemplateValue> $values
+     */
+    private function projectStringListRepeat(array &$values, string $groupKey, mixed $value): void
+    {
+        if (!is_array($value)) {
+            return;
+        }
+        $rows = [];
+        foreach ($value as $item) {
+            if (is_string($item) && '' !== trim($item)) {
+                $rows[] = ['text' => trim($item)];
+            }
+        }
+        if ([] !== $rows) {
+            $values[$groupKey] = new RepeatValue($rows);
+        }
+    }
+
+    /**
+     * Список строк (рекомендации/выводы) → нумерованный список: «1. …\n2. …». Пустые пункты
+     * отбрасываем. Перенос строки движок Word превращает в мягкий перевод (setValue → <w:br/>).
+     */
+    private function formatStringList(mixed $value): ?string
+    {
+        if (!is_array($value)) {
+            return null;
+        }
+        $lines = [];
+        $n = 0;
+        foreach ($value as $item) {
+            if (is_string($item) && '' !== trim($item)) {
+                $lines[] = sprintf('%d. %s', ++$n, trim($item));
+            }
+        }
+
+        return [] === $lines ? null : implode("\n", $lines);
     }
 
     /**

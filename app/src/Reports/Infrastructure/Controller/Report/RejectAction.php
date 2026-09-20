@@ -31,6 +31,6 @@ final class RejectAction extends AbstractController
             $this->addFlash('danger', $e->getMessage());
         }
 
-        return $this->redirectToRoute('app_cabinet_report_view', ['id' => $id]);
+        return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);
     }
 }

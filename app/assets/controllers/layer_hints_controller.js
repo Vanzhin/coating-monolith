@@ -33,33 +33,49 @@ export default class extends Controller {
 
     async _evaluate() {
         const coatingId = this._val('material');
-        if (coatingId === '') {
+        // Точка росы считается по t воздуха + влажности и без выбранного материала;
+        // предупреждения по порогам — только когда материал задан. Запрос имеет смысл, если есть хоть одно.
+        const hasEnv = this._val('air_temp') !== '' && this._val('humidity') !== '';
+        if (coatingId === '' && !hasEnv) {
             this._render([]);
+            this._setDewPoint(null);
             return;
         }
         this._seq += 1;
         const seq = this._seq;
 
         const u = new URL(this.urlValue, window.location.origin);
-        u.searchParams.set('coatingId', coatingId);
-        const map = { surface_temp: 'surfaceTemp', air_temp: 'airTemp', humidity: 'humidity', dry_film_mean: 'dryFilmMean' };
+        if (coatingId !== '') u.searchParams.set('coatingId', coatingId);
+        const map = { surface_temp: 'surfaceTemp', air_temp: 'airTemp', humidity: 'humidity', mean: 'dryFilmMean', color: 'color' };
         Object.keys(map).forEach(k => {
             const v = this._val(k);
             if (v !== '') u.searchParams.set(map[k], v);
         });
 
         let items = [];
+        let dewPoint = null;
         try {
             const r = await fetch(u, { credentials: 'same-origin' });
             if (r.ok) {
                 const j = await r.json();
-                items = Array.isArray(j.data) ? j.data : (Array.isArray(j) ? j : []);
+                const payload = (j && j.data !== undefined) ? j.data : j;
+                items = Array.isArray(payload) ? payload : (Array.isArray(payload?.warnings) ? payload.warnings : []);
+                dewPoint = (payload && typeof payload.dewPoint === 'number') ? payload.dewPoint : null;
             }
         } catch (err) {
             // сеть недоступна — подсказок просто нет
         }
         if (seq !== this._seq) return;
+        this._setDewPoint(dewPoint);
         this._render(items);
+    }
+
+    /** Точка росы — производная (t воздуха + влажность); поле неактивно, значение считает бэк. */
+    _setDewPoint(value) {
+        const el = this.element.querySelector('[name$="[dew_point]"]');
+        if (el) {
+            el.value = value === null ? '' : String(value);
+        }
     }
 
     _render(items) {

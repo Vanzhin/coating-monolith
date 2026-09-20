@@ -37,6 +37,7 @@
 #}
 {% set anchors = anchors|default([]) %}
 {% set save_label = save_label|default('Сохранить') %}
+{% set save_enabled = save_enabled|default(true) %}
 
 <div class="form-page" data-controller="form-scrollspy">
     <div class="form-appbar">
@@ -47,10 +48,12 @@
             <div class="form-appbar-title">{{ title }}</div>
             <div class="form-appbar-actions">
                 {% block appbar_extra %}{% endblock %}
-                <button type="submit" form="{{ save_form_id }}" class="btn btn-primary btn-sm" title="{{ save_label }}">
-                    <i class="bi bi-check-lg d-md-none"></i>
-                    <span class="d-none d-md-inline">{{ save_label }}</span>
-                </button>
+                {% if save_enabled %}
+                    <button type="submit" form="{{ save_form_id }}" class="btn btn-primary btn-sm" title="{{ save_label }}">
+                        <i class="bi bi-check-lg d-md-none"></i>
+                        <span class="d-none d-md-inline">{{ save_label }}</span>
+                    </button>
+                {% endif %}
             </div>
         </div>
 
@@ -82,7 +85,9 @@
     </div>
 
     <div class="form-savebar">
-        <a href="{{ back_url }}" class="btn btn-outline-secondary">Отмена</a>
-        <button type="submit" form="{{ save_form_id }}" class="btn btn-primary">{{ save_label }}</button>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">{{ save_enabled ? 'Отмена' : 'Назад' }}</a>
+        {% if save_enabled %}
+            <button type="submit" form="{{ save_form_id }}" class="btn btn-primary">{{ save_label }}</button>
+        {% endif %}
     </div>
 </div>

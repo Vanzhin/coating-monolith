@@ -20,6 +20,11 @@ final readonly class FormFieldView
         public array $options,
         public array $itemFields,
         public mixed $value,
+        public bool $positive = false,
+        public bool $percent = false,
+        public bool $computed = false,
+        public int $group = 0,
+        public int $rows = 2,
     ) {
     }
 }

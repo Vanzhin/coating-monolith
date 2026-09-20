@@ -32,6 +32,9 @@ export default class extends Controller {
         this.tagify.on('remove', this._onRemove.bind(this));
 
         if (initialId && initialTitle) {
+            // enforceWhitelist:true отвергает теги вне whitelist → кладём предзаполнение в whitelist,
+            // иначе сохранённое покрытие не отрисуется при открытии.
+            this.tagify.whitelist = [{ value: initialTitle, id: initialId }];
             this.tagify.addTags([{ value: initialTitle, id: initialId }]);
         }
     }

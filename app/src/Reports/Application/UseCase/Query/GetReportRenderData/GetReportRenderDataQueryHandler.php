@@ -40,9 +40,11 @@ final readonly class GetReportRenderDataQueryHandler implements QueryHandlerInte
             throw new AppException('У отчёта не задан вид документа — нечего формировать.');
         }
 
+        // Число слоёв для выбора шаблона — по системе покрытия, выбранной на старте отчёта (план),
+        // а не по факту нанесения: структура акта (число колонок) задаётся выбранной системой.
         $content = $report->getContent();
-        $layers = $content['application']['layers'] ?? null;
-        $layerCount = is_array($layers) ? \count($layers) : 0;
+        $sysLayers = $content['system']['layers'] ?? null;
+        $layerCount = is_array($sysLayers) ? \count($sysLayers) : 0;
 
         return new GetReportRenderDataQueryResult(
             $this->projector->project($report),

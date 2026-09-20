@@ -37,6 +37,23 @@ final readonly class RenderData
         return array_map(strval(...), array_keys($this->values));
     }
 
+    /**
+     * Имена значений-групп (RepeatValue) — для повторяемых строк таблицы в драйвере.
+     *
+     * @return list<string>
+     */
+    public function repeatGroupNames(): array
+    {
+        $names = [];
+        foreach ($this->values as $name => $value) {
+            if ($value instanceof RepeatValue) {
+                $names[] = (string) $name;
+            }
+        }
+
+        return $names;
+    }
+
     public function get(string $name): ?TemplateValue
     {
         return $this->values[$name] ?? null;

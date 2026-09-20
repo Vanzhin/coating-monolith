@@ -11,6 +11,7 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class SaveReportContentTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private ReportRepositoryInterface $reports;
@@ -32,6 +34,7 @@ final class SaveReportContentTest extends KernelTestCase
         $this->commandBus = $c->get(CommandBusInterface::class);
         $this->reports = $c->get(ReportRepositoryInterface::class);
         $this->em = $c->get(EntityManagerInterface::class);
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
         $this->authenticateAsSystem();
     }
 
@@ -47,12 +50,13 @@ final class SaveReportContentTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
     private function createReport(): string
     {
-        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication));
+        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication, systemId: (string) $this->systemId));
         \assert($result instanceof CreateReportCommandResult);
         $this->reportIds[] = $result->id;
 
@@ -70,8 +74,13 @@ final class SaveReportContentTest extends KernelTestCase
         $this->commandBus->execute(new SaveReportContentCommand($id, $content));
         $this->em->clear();
 
+        // Засеянный план системы сохраняется рядом с присланными блоками — сверяем присланное поблочно.
         // assertEquals, не assertSame: jsonb нормализует порядок ключей (===-идентичность не гарантирована).
-        self::assertEquals($content, $this->reports->findOneById($id)?->getContent());
+        $stored = $this->reports->findOneById($id)?->getContent();
+        self::assertIsArray($stored);
+        self::assertArrayHasKey('system', $stored); // засев плана уцелел
+        self::assertEquals($content['surface_prep'], $stored['surface_prep']);
+        self::assertEquals($content['notes'], $stored['notes']);
     }
 
     public function test_invalid_enum_rejected(): void

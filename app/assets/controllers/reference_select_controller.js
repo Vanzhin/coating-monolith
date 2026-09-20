@@ -184,6 +184,16 @@ export default class extends Controller {
             input.value = chosen.id;
             input.className = 'reference-select-hidden';
             group.appendChild(input);
+
+            // Скрытый title-компаньон: чтобы при ошибке формы чип восстановился из самой формы
+            // (без резолва id в БД). Хендлер его игнорирует — сохраняет по id.
+            const titleName = /Id$/.test(this.hiddenNameValue) ? this.hiddenNameValue.replace(/Id$/, 'Title') : `${this.hiddenNameValue}Title`;
+            const titleInput = document.createElement('input');
+            titleInput.type = 'hidden';
+            titleInput.name = titleName;
+            titleInput.value = chosen.value || '';
+            titleInput.className = 'reference-select-hidden';
+            group.appendChild(titleInput);
         }
     }
 }

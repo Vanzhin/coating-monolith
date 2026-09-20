@@ -25,7 +25,9 @@ export default class extends Controller {
         const rows = this.rowsTarget.querySelectorAll('[data-report-list-rows-target="row"]');
         rows.forEach((row, index) => {
             row.querySelectorAll('[name]').forEach((el) => {
-                el.name = el.name.replace(/\[(?:\d+|__i__)\](\[[^\]]*\])$/, `[${index}]$1`);
+                // Заменяем ТОЛЬКО индекс строки — скобку сразу после content[block][field].
+                // Хвост (в т.ч. вложенные подполя [applied][from], [thinner][name]) не трогаем.
+                el.name = el.name.replace(/^(content\[[^\]]*\]\[[^\]]*\])\[(?:\d+|__i__)\]/, `$1[${index}]`);
             });
         });
     }

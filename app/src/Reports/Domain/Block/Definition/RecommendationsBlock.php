@@ -24,10 +24,8 @@ final class RecommendationsBlock implements BlockDefinition
     public function fields(): array
     {
         return [
-            new Field('items', FieldType::ListRows, 'Рекомендации', itemFields: [
-                new Field('title', FieldType::Text, 'Заголовок'),
-                new Field('text', FieldType::TextArea, 'Рекомендация', required: true),
-            ]),
+            // Список строк-рекомендаций; в акт — нумерованным списком. Каждая запись — textarea (4 строки).
+            new Field('items', FieldType::StringList, 'Рекомендации', rows: 4),
         ];
     }
 }

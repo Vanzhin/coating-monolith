@@ -16,14 +16,12 @@
                enum-type="App\Reports\Domain\Aggregate\Report\ReportStatus"/>
         <field name="reportDate" type="date_immutable" column="report_date" nullable="true"/>
         <field name="actNumber" type="string" length="100" column="act_number" nullable="true"/>
-        <field name="projectId" type="string" length="36" column="project_id" nullable="true"/>
-        <field name="projectTitle" type="string" length="255" column="project_title" nullable="true"/>
-        <field name="customerId" type="string" length="36" column="customer_id" nullable="true"/>
-        <field name="customerTitle" type="string" length="255" column="customer_title" nullable="true"/>
-        <field name="contractorId" type="string" length="36" column="contractor_id" nullable="true"/>
-        <field name="contractorTitle" type="string" length="255" column="contractor_title" nullable="true"/>
-        <field name="systemId" type="string" length="36" column="system_id" nullable="true"/>
-        <field name="systemTitle" type="string" length="255" column="system_title" nullable="true"/>
+        <field name="address" type="string" length="255" column="address" nullable="true"/>
+        <field name="workPeriod" type="datetime_interval" column="work_period" nullable="true"/>
+        <field name="project" type="reports_reference" column="project" nullable="true"/>
+        <field name="customer" type="reports_reference" column="customer" nullable="true"/>
+        <field name="contractor" type="reports_reference" column="contractor" nullable="true"/>
+        <field name="system" type="reports_reference" column="system" nullable="true"/>
         <field name="content" type="json" column="content"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at"/>

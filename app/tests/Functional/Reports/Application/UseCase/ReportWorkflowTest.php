@@ -15,6 +15,7 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -26,6 +27,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReportWorkflowTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private ReportRepositoryInterface $reports;
@@ -40,6 +42,7 @@ final class ReportWorkflowTest extends KernelTestCase
         $this->commandBus = $c->get(CommandBusInterface::class);
         $this->reports = $c->get(ReportRepositoryInterface::class);
         $this->em = $c->get(EntityManagerInterface::class);
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
         $this->authenticateAsSystem();
     }
 
@@ -55,6 +58,7 @@ final class ReportWorkflowTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
@@ -66,13 +70,13 @@ final class ReportWorkflowTest extends KernelTestCase
         return [
             'control_area' => ['description' => 'Балка Б-1, нижняя полка', 'area' => 2.5],
             'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
-            'conclusion' => ['text' => 'Соответствует регламенту.'],
+            'conclusion' => ['text' => ['Соответствует регламенту.']],
         ];
     }
 
     private function createReport(): string
     {
-        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication));
+        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication, systemId: (string) $this->systemId));
         \assert($result instanceof CreateReportCommandResult);
         $this->reportIds[] = $result->id;
 

@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Report;
 
 use App\Reports\Application\UseCase\Query\GetPagedReports\GetPagedReportsQuery;
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
+use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportsFilter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
@@ -42,6 +43,7 @@ final class ListAction extends AbstractController
             'result' => $result,
             'search' => $search,
             'status' => $status?->value,
+            'types' => ReportType::cases(),
         ]);
     }
 }

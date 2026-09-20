@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Report;
 
 use App\Reports\Application\UseCase\Query\GetReportRenderData\GetReportRenderDataQuery;
 use App\Reports\Application\UseCase\Query\GetReportRenderData\GetReportRenderDataQueryResult;
+use App\Reports\Infrastructure\Service\ReportReadinessChecker;
 use App\Reports\Infrastructure\Service\ReportTemplateLocator;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -26,6 +27,7 @@ final class GenerateReportAction extends AbstractController
         private readonly QueryBusInterface $queryBus,
         private readonly ReportTemplateLocator $locator,
         private readonly TemplateRendering $rendering,
+        private readonly ReportReadinessChecker $readiness,
     ) {
     }
 
@@ -35,12 +37,20 @@ final class GenerateReportAction extends AbstractController
             $result = $this->queryBus->execute(new GetReportRenderDataQuery($id));
             \assert($result instanceof GetReportRenderDataQueryResult);
 
+            // Проверка перед формированием: чего не хватает по обязательным полям шаблона акта.
+            $missing = $this->readiness->missing($result);
+            if ([] !== $missing) {
+                $this->addFlash('warning', 'Нельзя сформировать акт — не заполнено: '.implode(', ', $missing).'.');
+
+                return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);
+            }
+
             $template = $this->locator->locate($result->type, $result->layerCount);
             $doc = $this->rendering->render($template, $result->data);
         } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());
 
-            return $this->redirectToRoute('app_cabinet_report_view', ['id' => $id]);
+            return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);
         }
 
         $name = 'Акт-'.($result->actNumber ?: $id).'.'.$doc->extension();

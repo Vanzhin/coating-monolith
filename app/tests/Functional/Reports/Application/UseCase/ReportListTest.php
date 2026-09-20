@@ -16,6 +16,7 @@ use App\Reports\Domain\Repository\ReportsFilter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -27,6 +28,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReportListTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private QueryBusInterface $queryBus;
@@ -45,6 +47,7 @@ final class ReportListTest extends KernelTestCase
         $this->reports = $c->get(ReportRepositoryInterface::class);
         $this->em = $c->get(EntityManagerInterface::class);
         $this->suffix = bin2hex(random_bytes(3));
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
         $this->authenticateAsSystem();
     }
 
@@ -60,6 +63,7 @@ final class ReportListTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
@@ -68,6 +72,7 @@ final class ReportListTest extends KernelTestCase
         $result = $this->commandBus->execute(new CreateReportCommand(
             type: ReportType::TrialApplication,
             actNumber: $tag.'-'.$this->suffix,
+            systemId: (string) $this->systemId,
         ));
         \assert($result instanceof CreateReportCommandResult);
         $this->reportIds[] = $result->id;

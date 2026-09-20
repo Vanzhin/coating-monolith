@@ -8,6 +8,12 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
+use App\Shared\Domain\Aggregate\ValueObject\CoatingThickness;
+use App\Shared\Domain\Aggregate\ValueObject\Percent;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Aggregate\ValueObject\Thinner;
+use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
 
 /**
@@ -57,6 +63,11 @@ final readonly class ReportContentValidator
 
                     continue;
                 }
+                if (FieldType::StringList === $field->type) {
+                    $this->validateStringList($definition->title(), $field, $value, $strict);
+
+                    continue;
+                }
                 if (null === $value || '' === $value) {
                     if ($strict && $field->required) {
                         throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $definition->title(), $field->label));
@@ -93,6 +104,37 @@ final readonly class ReportContentValidator
         $this->validateList($blockTitle, $field, $value, $strict);
     }
 
+    /**
+     * Список строк (рекомендации/выводы): плоский массив строк. Пустые пункты допустимы (отбросятся
+     * при проекции). Обязательное поле в strict → нужен хотя бы один непустой пункт.
+     */
+    private function validateStringList(string $blockTitle, Field $field, mixed $value, bool $strict): void
+    {
+        if (null === $value || [] === $value) {
+            if ($strict && $field->required) {
+                throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $blockTitle, $field->label));
+            }
+
+            return;
+        }
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть списком строк.', $blockTitle, $field->label));
+        }
+
+        $nonEmpty = 0;
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new AppException(sprintf('Поле «%s / %s» должно быть списком строк.', $blockTitle, $field->label));
+            }
+            if ('' !== trim($item)) {
+                ++$nonEmpty;
+            }
+        }
+        if ($strict && $field->required && 0 === $nonEmpty) {
+            throw new AppException(sprintf('Не заполнено обязательное поле: %s / %s.', $blockTitle, $field->label));
+        }
+    }
+
     private function validateList(string $blockTitle, Field $field, mixed $value, bool $strict): void
     {
         if (null === $value || [] === $value) {
@@ -125,6 +167,98 @@ final readonly class ReportContentValidator
         }
     }
 
+    /**
+     * Толщина сухого слоя — объект {min,max,mean}. Пусто (все поля не заполнены) — допустимо. Иначе
+     * все три обязаны быть числами; инвариант «>0 и min≤max» стережёт VO CoatingThickness.
+     */
+    private function checkThickness(string $blockTitle, Field $field, mixed $value): void
+    {
+        if (!is_array($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть объектом толщины (мин/макс/средняя).', $blockTitle, $field->label));
+        }
+        $parts = ['min' => $value['min'] ?? '', 'max' => $value['max'] ?? '', 'mean' => $value['mean'] ?? ''];
+        if ('' === implode('', array_map(static fn ($v): string => (string) $v, $parts))) {
+            return; // не заполнено — опционально
+        }
+        foreach ($parts as $subValue) {
+            if (!is_numeric($subValue)) {
+                throw new AppException(sprintf('Поле «%s / %s»: мин/макс/средняя должны быть числами.', $blockTitle, $field->label));
+            }
+        }
+        new CoatingThickness(
+            new PositiveNumberRange((float) $parts['min'], (float) $parts['max']),
+            new PositiveNumber((float) $parts['mean']),
+        );
+    }
+
+    /**
+     * Диапазон толщины без среднего — объект {min,max}. Пусто (обе границы не заполнены) — допустимо.
+     * Иначе обе обязаны быть числами; инвариант «>0 и min≤max» стережёт VO PositiveNumberRange.
+     */
+    private function checkNumberRange(string $blockTitle, Field $field, mixed $value): void
+    {
+        if (!is_array($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть диапазоном (мин/макс).', $blockTitle, $field->label));
+        }
+        $min = (string) ($value['min'] ?? '');
+        $max = (string) ($value['max'] ?? '');
+        if ('' === $min && '' === $max) {
+            return; // не заполнено — опционально
+        }
+        if (!is_numeric($min) || !is_numeric($max)) {
+            throw new AppException(sprintf('Поле «%s / %s»: мин/макс должны быть числами.', $blockTitle, $field->label));
+        }
+        new PositiveNumberRange((float) $min, (float) $max);
+    }
+
+    /**
+     * Разбавитель — объект {name, batch, percent}. Пусто — допустимо. Иначе процент (если задан) —
+     * число; инвариант [0;100] стережёт Percent внутри VO Thinner.
+     */
+    private function checkThinner(string $blockTitle, Field $field, mixed $value): void
+    {
+        if (!is_array($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть объектом разбавителя.', $blockTitle, $field->label));
+        }
+        $name = trim((string) ($value['name'] ?? ''));
+        $batch = trim((string) ($value['batch'] ?? ''));
+        $percent = (string) ($value['percent'] ?? '');
+        if ('' === $name && '' === $batch && '' === $percent) {
+            return; // не заполнено — опционально
+        }
+        if ('' !== $percent && !is_numeric($percent)) {
+            throw new AppException(sprintf('Поле «%s / %s»: количество (%%) должно быть числом.', $blockTitle, $field->label));
+        }
+        new Thinner($name, $batch, new Percent((float) $percent));
+    }
+
+    /**
+     * Период нанесения — объект {from,to} (дата+время). Пусто — допустимо. Иначе — валидные
+     * дата/время; инвариант «from ≤ to» и «хотя бы одна граница» стережёт VO DateTimeInterval.
+     */
+    private function checkDateTimeRange(string $blockTitle, Field $field, mixed $value): void
+    {
+        if (!is_array($value)) {
+            throw new AppException(sprintf('Поле «%s / %s» должно быть периодом (с/по).', $blockTitle, $field->label));
+        }
+        $from = trim((string) ($value['from'] ?? ''));
+        $to = trim((string) ($value['to'] ?? ''));
+        if ('' === $from && '' === $to) {
+            return; // не заполнено — опционально
+        }
+        $parse = function (string $raw, string $part) use ($blockTitle, $field): ?\DateTimeImmutable {
+            if ('' === $raw) {
+                return null;
+            }
+            try {
+                return new \DateTimeImmutable($raw);
+            } catch (\Throwable) {
+                throw new AppException(sprintf('Поле «%s / %s»: «%s» — неверная дата/время.', $blockTitle, $field->label, $part));
+            }
+        };
+        new DateTimeInterval($parse($from, 'с'), $parse($to, 'по'));
+    }
+
     private function checkType(string $blockTitle, Field $field, mixed $value): void
     {
         switch ($field->type) {
@@ -136,6 +270,12 @@ final readonly class ReportContentValidator
             case FieldType::Number:
                 if (!is_numeric($value)) {
                     throw new AppException(sprintf('Поле «%s / %s» должно быть числом.', $blockTitle, $field->label));
+                }
+                if ($field->positive) {
+                    new PositiveNumber((float) $value); // инвариант «> 0» — в VO, не дублируем
+                }
+                if ($field->percent) {
+                    new Percent((float) $value); // инвариант «[0;100]» — в VO
                 }
                 break;
             case FieldType::Bool:
@@ -165,6 +305,18 @@ final readonly class ReportContentValidator
                     || !is_string($value['title']) || '' === $value['title']) {
                     throw new AppException(sprintf('Поле «%s / %s» должно быть ссылкой на каталог (id и название).', $blockTitle, $field->label));
                 }
+                break;
+            case FieldType::Thickness:
+                $this->checkThickness($blockTitle, $field, $value);
+                break;
+            case FieldType::NumberRange:
+                $this->checkNumberRange($blockTitle, $field, $value);
+                break;
+            case FieldType::Thinner:
+                $this->checkThinner($blockTitle, $field, $value);
+                break;
+            case FieldType::DateTimeRange:
+                $this->checkDateTimeRange($blockTitle, $field, $value);
                 break;
             default:
                 // Медиа (PhotoSlot) — позже.

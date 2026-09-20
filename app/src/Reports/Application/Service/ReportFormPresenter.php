@@ -68,6 +68,11 @@ final readonly class ReportFormPresenter
             $field->options,
             $itemFields,
             $value,
+            $field->positive,
+            $field->percent,
+            $field->computed,
+            $field->group,
+            $field->rows,
         );
     }
 }

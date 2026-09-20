@@ -51,8 +51,9 @@ export default class extends Controller {
     }
 
     async _search(q) {
-        if (q === '') {
-            this.resultsTarget.innerHTML = '';
+        // FTS-поиск систем требует ≥3 символов (SearchQuery.MIN_LENGTH) — короче не шлём.
+        if (q.length < 3) {
+            this.resultsTarget.innerHTML = q === '' ? '' : '<div class="form-text">Введите минимум 3 символа</div>';
             return;
         }
         this._seq += 1;

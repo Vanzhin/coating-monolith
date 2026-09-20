@@ -39,6 +39,9 @@
 /* Подобранные системы (подбор по покрытиям): кликабельные плитки-опции. */
 .sys-opt { cursor: pointer; transition: box-shadow .12s; }
 .sys-opt:hover { box-shadow: 0 0 0 1px var(--bs-primary); }
+/* Список вариантов не растягивает модалку: ~2-3 карточки, дальше — скролл внутри.
+   Гориз. запас — чтобы hover-обводка карточек не обрезалась краем скролл-контейнера. */
+.sys-results { max-height: 300px; overflow-y: auto; overflow-x: hidden; padding: 2px 4px; }
 
 /* Поле-ссылка (reference-select) с незавершённым вводом: подсветка, чтобы не потерять текст молча. */
 .tagify.reference-select-warn {

@@ -34,6 +34,8 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
             $now,
             $command->reportDate,
             $command->actNumber,
+            $command->address,
+            $command->workPeriod,
         );
         $system = $this->references->findSystem($command->systemId);
         $report->applyReferences(
@@ -43,9 +45,7 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
             $this->references->systemReference($system),
             $now,
         );
-        if (null !== $system) {
-            $report->replaceContent(['system' => ['layers' => $this->references->seedSystemLayers($system)]], $now);
-        }
+        $report->replaceContent(['system' => ['layers' => $this->references->seedSystemLayers($system)]], $now);
         $this->repository->add($report);
 
         return new CreateReportCommandResult($report->getId());

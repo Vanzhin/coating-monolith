@@ -31,6 +31,8 @@ final readonly class ReportTemplateMap
             TemplateMapEntry::header('reportDate', 'report_date'),
             TemplateMapEntry::header('reportType', 'report_type'),
             TemplateMapEntry::header('status', 'status'),
+            TemplateMapEntry::header('address', 'address'),
+            TemplateMapEntry::header('workPeriod', 'work_period'),
             TemplateMapEntry::header('projectTitle', 'project_title'),
             TemplateMapEntry::header('customerTitle', 'customer_title'),
             TemplateMapEntry::header('contractorTitle', 'contractor_title'),

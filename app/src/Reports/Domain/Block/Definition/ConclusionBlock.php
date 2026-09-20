@@ -24,7 +24,8 @@ final class ConclusionBlock implements BlockDefinition
     public function fields(): array
     {
         return [
-            new Field('text', FieldType::TextArea, 'Выводы и заключение', required: true),
+            // Список строк-выводов; в акт — нумерованным списком. Обязателен ≥1 пункт. Запись — textarea (4 строки).
+            new Field('text', FieldType::StringList, 'Выводы и заключение', required: true, rows: 4),
         ];
     }
 }

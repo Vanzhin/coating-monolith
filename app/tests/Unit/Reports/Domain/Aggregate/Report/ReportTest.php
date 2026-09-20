@@ -99,7 +99,28 @@ final class ReportTest extends TestCase
         $report->approve($this->now);
 
         $this->expectException(AppException::class);
-        $report->updateHeader(null, 'АКТ-1', $this->now);
+        $report->updateHeader(null, 'АКТ-1', null, null, $this->now);
+    }
+
+    public function test_unapproved_report_is_deletable(): void
+    {
+        $report = $this->report();
+        $report->assertDeletable(); // Создан — можно удалить
+        $report->startWork($this->now);
+        $report->assertDeletable(); // В работе — тоже
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_approved_report_cannot_be_deleted(): void
+    {
+        $report = $this->report();
+        $report->startWork($this->now);
+        $report->submitForReview($this->now);
+        $report->approve($this->now);
+
+        $this->expectException(AppException::class);
+        $report->assertDeletable();
     }
 
     public function test_repeated_action_is_noop(): void

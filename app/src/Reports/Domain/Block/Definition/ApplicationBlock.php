@@ -30,25 +30,41 @@ final class ApplicationBlock implements BlockDefinition
     public function fields(): array
     {
         return [
+            // Общие для нанесения (в акте указываются один раз): метод и насосная система/аппарат.
+            // Список методов зеркалит Proposals\CoatingSystemApplicationMethod (без кросс-контекстной
+            // связи — options блока это plain-строки, как у surface_prep).
+            new Field('method', FieldType::Enum, 'Метод нанесения', options: [
+                'Воздушное нанесение',
+                'Воздушное или безвоздушное нанесение',
+                'Безвоздушное нанесение',
+                'Кисть, валик',
+                'Воздушное или безвоздушное нанесение, кисть, валик',
+                'Мастерок, кельма, шпатель, игольчатый валик',
+            ]),
+            new Field('pump_system', FieldType::Text, 'Аппарат / насосная система'),
+            // Поля слоя визуально разбиты на подгруппы (group) и отображаются в порядке групп 1→3→2:
+            //   1 — материал и нанесение, 3 — толщина и контроль, 2 — климатические параметры (в конец).
+            // Проектор/валидатор работают по ключам, порядок и group на них не влияют.
             new Field('layers', FieldType::Layers, 'Слои', itemFields: [
-                new Field('date', FieldType::Date, 'Дата нанесения'),
-                new Field('time', FieldType::TimeRange, 'Время нанесения'),
-                new Field('material', FieldType::CoatingRef, 'Материал', required: true),
-                new Field('color', FieldType::Text, 'Цвет'),
-                new Field('batch_a', FieldType::Text, '№ партии, комп. А'),
-                new Field('batch_b', FieldType::Text, '№ партии, комп. Б'),
-                new Field('thinner', FieldType::Text, 'Разбавитель'),
-                new Field('method', FieldType::Text, 'Метод нанесения'),
-                new Field('nozzle', FieldType::Text, 'Сопло'),
-                new Field('humidity', FieldType::Number, 'Отн. влажность', unit: '%'),
-                new Field('air_temp', FieldType::Number, 'Температура воздуха', unit: '°C'),
-                new Field('surface_temp', FieldType::Number, 'Температура поверхности', unit: '°C'),
-                new Field('dew_point', FieldType::Number, 'Точка росы', unit: '°C'),
-                new Field('wet_film', FieldType::Number, 'Толщина мокрого слоя', unit: 'мкм'),
-                new Field('dry_film_range', FieldType::Text, 'Диапазон сухого слоя'),
-                new Field('dry_film_mean', FieldType::Number, 'Средняя ТСП', unit: 'мкм'),
-                new Field('visual_control', FieldType::TextArea, 'Визуальный контроль (ВИК)'),
-                new Field('note', FieldType::Text, 'Примечание'),
+                // Группа 1 — материал и нанесение. Период: полные дата+время начала/конца; в акт дата
+                // (последняя) в {{..._date}}, интервал времени «ЧЧ:ММ–ЧЧ:ММ» в {{..._time}}.
+                new Field('applied', FieldType::DateTimeRange, 'Дата и время нанесения (с / по)', group: 1),
+                new Field('material', FieldType::CoatingRef, 'Материал', required: true, group: 1),
+                new Field('color', FieldType::Text, 'Цвет', group: 1),
+                new Field('batch_a', FieldType::Text, '№ партии, комп. А', group: 1),
+                new Field('batch_b', FieldType::Text, '№ партии, комп. Б', group: 1),
+                new Field('thinner', FieldType::Thinner, 'Разбавитель (название / № партии / %)', group: 1),
+                new Field('nozzle', FieldType::Text, 'Сопло', group: 1),
+                // Группа 3 — толщина и контроль.
+                new Field('wet_film', FieldType::NumberRange, 'Толщина мокрого слоя (мин/макс), мкм', unit: 'мкм', group: 3),
+                new Field('dry_film', FieldType::Thickness, 'Толщина сухого слоя (мин/макс/средняя), мкм', group: 3),
+                new Field('visual_control', FieldType::TextArea, 'Визуальный контроль (ВИК)', group: 3),
+                new Field('note', FieldType::Text, 'Примечание', group: 3),
+                // Группа 2 — климатические параметры (отображается последней).
+                new Field('humidity', FieldType::Number, 'Отн. влажность', unit: '%', percent: true, group: 2),
+                new Field('air_temp', FieldType::Number, 'Температура воздуха', unit: '°C', group: 2),
+                new Field('surface_temp', FieldType::Number, 'Температура поверхности', unit: '°C', group: 2),
+                new Field('dew_point', FieldType::Number, 'Точка росы', unit: '°C', computed: true, group: 2),
             ]),
         ];
     }

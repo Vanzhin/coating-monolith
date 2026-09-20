@@ -28,6 +28,8 @@
 | `{{report_date}}` | дата, формат `дд.мм.гггг` |
 | `{{report_type}}` | название вида акта |
 | `{{status}}` | статус (Создан / В работе / На проверке / Утверждён / Отклонён) |
+| `{{address?}}` | адрес объекта (текст) |
+| `{{work_period?}}` | период работ, «с дд.мм.гггг по дд.мм.гггг» (открытый — одна граница) |
 | `{{project_title}}` | проект (снимок названия) |
 | `{{customer_title}}` | заказчик |
 | `{{contractor_title}}` | подрядчик |
@@ -46,7 +48,7 @@
 ### Подготовка поверхности (`surface_prep`)
 - `{{surface_prep_rustGrade}}` — степень ржавления
 - `{{surface_prep_prepDegree}}` — степень подготовки
-- `{{surface_prep_abrasive?}}` — абразив
+- `{{surface_prep_blasting_media?}}` — абразив (материал струйной очистки)
 - `{{surface_prep_roughness?}}` — шероховатость
 - `{{surface_prep_dedusting?}}` — обеспыливание
 
@@ -61,34 +63,50 @@
 - `{{instruments_items?}}` — список (строки: название — серийный — датчик)
 
 ### Нанесение — факт (`application`), слои N = 1..`{{application_layer_count}}`
-- `{{application_layer{N}_date?}}` — дата нанесения
-- `{{application_layer{N}_time?}}` — время
+Общие поля блока (не по слою): `{{application_method?}}` — метод нанесения, `{{application_pump_system?}}` — аппарат/насосная система.
+- Период нанесения (поле `applied`, дата+время с/по одним значением) → в акт разными частями:
+  `{{application_layer{N}_date?}}` — дата (последняя, дд.мм.гггг), `{{application_layer{N}_time?}}` —
+  интервал «ЧЧ:ММ–ЧЧ:ММ»; полные — `{{application_layer{N}_datetime_from?}}` / `{{..._datetime_to?}}`.
 - `{{application_layer{N}_material}}` — материал (название)
 - `{{application_layer{N}_color?}}` — цвет
 - `{{application_layer{N}_batch_a?}}` — № партии, комп. А
 - `{{application_layer{N}_batch_b?}}` — № партии, комп. Б
-- `{{application_layer{N}_thinner?}}` — разбавитель
-- `{{application_layer{N}_method?}}` — метод нанесения
+- `{{application_layer{N}_thinner?}}` — разбавитель, собранная строка «7% Название (№ партии XXX)»
+- `{{application_layer{N}_thinner_name?}}` / `{{..._thinner_batch?}}` / `{{..._thinner_percent?}}` — части разбавителя
 - `{{application_layer{N}_nozzle?}}` — сопло
 - `{{application_layer{N}_humidity?}}` — отн. влажность, %
 - `{{application_layer{N}_air_temp?}}` — t воздуха, °C
 - `{{application_layer{N}_surface_temp?}}` — t поверхности, °C
 - `{{application_layer{N}_dew_point?}}` — точка росы, °C
-- `{{application_layer{N}_wet_film?}}` — толщина мокрого слоя, мкм
-- `{{application_layer{N}_dry_film_range?}}` — диапазон сухого слоя
-- `{{application_layer{N}_dry_film_mean?}}` — средняя ТСП, мкм
+- `{{application_layer{N}_wet_film_min?}}` / `{{..._wet_film_max?}}` — толщина мокрого слоя (мин/макс), мкм
+- `{{application_layer{N}_wet_film_range?}}` — готовая строка диапазона «мин–макс»
+- `{{application_layer{N}_dry_film_min?}}` / `{{..._dry_film_max?}}` / `{{..._dry_film_mean?}}` — толщина сухого слоя (мин/макс/средняя), мкм
+- `{{application_layer{N}_dry_film_range?}}` — готовая строка диапазона «мин–макс»
 - `{{application_layer{N}_visual_control?}}` — ВИК
 - `{{application_layer{N}_note?}}` — примечание
 - `{{application_layer_count?}}` — число слоёв
 
 ### Дефекты/процесс (`process`)
-- `{{process_items?}}` — список (строки: описание — пункт — действие)
+- плоско: `{{process_items?}}` — текст «Несоответствие — Корректирующее действие», по строке на запись
+- таблицей (повтор строки): ячейки `{{process.description}}` (Несоответствие), `{{process.action}}` (Корректирующее действие) в одной строке-шаблоне → клонируется по числу записей
 
 ### Рекомендации (`recommendations`)
-- `{{recommendations_items?}}` — список (строки: заголовок — текст)
+- плоско: `{{recommendations_items?}}` — нумерованный текст «1. …\n2. …» (перенос → `<w:br/>`)
+- списком/таблицей (повтор): `{{recommendations.text}}` — в строке таблицы (cloneRow) или в абзаце-пункте внутри `{{recommendations}}…{{/recommendations}}` (cloneBlock, настоящий список Word)
 
 ### Вывод (`conclusion`)
-- `{{conclusion_text}}` — заключение (обязателен на отправке для акта опытного нанесения)
+- плоско: `{{conclusion_text?}}` — нумерованный текст «1. …\n2. …», обязателен ≥1 пункт на отправке
+- списком (повтор): `{{conclusion.text}}` внутри `{{conclusion}}…{{/conclusion}}` (cloneBlock) или строкой таблицы
+
+### Комиссия (`commission`)
+- плоско: `{{commission_items?}}` — текст «Организация — Должность — ФИО — Дата», по строке на члена
+- таблицей (повтор строки): `{{commission.organization}}`, `{{commission.position}}`, `{{commission.name}}`, `{{commission.date}}` в одной строке-шаблоне
+
+### Повторяемые группы — правила
+- Точечная нотация `{{group.sub}}` = повторяемая группа `group` (имя = ключ блока), подполя = ключи itemFields (у списков строк подполе `text`). Без `?`.
+- Строка таблицы: в ОДНОЙ строке только плейсхолдеры одной группы (cloneRow индексирует всю строку). Пустой список → строка удаляется (единственная строка → уйдёт вся таблица).
+- Абзац-список: обернуть один абзац-пункт в `{{group}}…{{/group}}` (маркеры каждый в своём абзаце, движок их уберёт). Пустой список → регион удаляется.
+- Плоские `{{block_items}}`/`{{conclusion_text}}` остаются как запасной вариант.
 
 ### Примечания (`notes`)
 - `{{notes_text?}}` — примечания

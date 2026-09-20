@@ -36,28 +36,15 @@ final readonly class UpdateReportHeaderCommandHandler implements CommandHandlerI
         }
 
         $now = new \DateTimeImmutable();
-        $previousSystemId = $report->getSystem()?->id;
-
-        $report->updateHeader($command->reportDate, $command->actNumber, $now);
-        $system = $this->references->findSystem($command->systemId);
+        $report->updateHeader($command->reportDate, $command->actNumber, $command->address, $command->workPeriod, $now);
+        // Систему выбрали при создании — сохраняем её снимок нетронутым, меняем только стороны.
         $report->applyReferences(
             $this->references->resolveProject($command->projectId),
             $this->references->resolveCounterparty($command->customerId),
             $this->references->resolveCounterparty($command->contractorId),
-            $this->references->systemReference($system),
+            $report->getSystem(),
             $now,
         );
-
-        // Система сменилась → пере-засев плана (иначе оставляем прежний снимок слоёв нетронутым).
-        if ($command->systemId !== $previousSystemId) {
-            $content = $report->getContent();
-            if (null !== $system) {
-                $content['system'] = ['layers' => $this->references->seedSystemLayers($system)];
-            } else {
-                unset($content['system']);
-            }
-            $report->replaceContent($content, $now);
-        }
 
         $this->repository->add($report);
     }

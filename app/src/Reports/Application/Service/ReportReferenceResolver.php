@@ -52,10 +52,11 @@ final readonly class ReportReferenceResolver
         return new Reference($counterparty->getId(), $counterparty->getTitle());
     }
 
-    public function findSystem(?string $id): ?CoatingSystem
+    /** Система покрытия обязательна для отчёта: без неё нечего засевать и не выбрать шаблон акта. */
+    public function findSystem(?string $id): CoatingSystem
     {
         if (null === $id) {
-            return null;
+            throw new AppException('Выберите систему покрытия — она обязательна для отчёта.');
         }
         $system = Uuid::isValid($id) ? $this->systems->findById(Uuid::fromString($id)) : null;
         if (null === $system) {
@@ -65,9 +66,9 @@ final readonly class ReportReferenceResolver
         return $system;
     }
 
-    public function systemReference(?CoatingSystem $system): ?Reference
+    public function systemReference(CoatingSystem $system): Reference
     {
-        return null === $system ? null : new Reference($system->getId(), $system->getTitle());
+        return new Reference($system->getId(), $system->getTitle());
     }
 
     /**

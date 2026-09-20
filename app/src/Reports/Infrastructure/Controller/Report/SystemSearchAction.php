@@ -11,6 +11,7 @@ use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSys
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +31,12 @@ final class SystemSearchAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $search = SearchQuery::tryFromString(trim((string) $request->query->get('q', '')));
+        // Слишком короткий/длинный запрос — не ошибка для typeahead, просто нет вариантов.
+        try {
+            $search = SearchQuery::tryFromString(trim((string) $request->query->get('q', '')));
+        } catch (AppException) {
+            return new JsonResponse([]);
+        }
         if (null === $search) {
             return new JsonResponse([]);
         }

@@ -6,6 +6,7 @@ namespace App\Reports\Application\UseCase\Command\CreateReport;
 
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Shared\Application\Command\Command;
+use App\Shared\Domain\ValueObject\DateTimeInterval;
 
 final readonly class CreateReportCommand extends Command
 {
@@ -17,6 +18,8 @@ final readonly class CreateReportCommand extends Command
         public ?string $customerId = null,
         public ?string $contractorId = null,
         public ?string $systemId = null,
+        public ?string $address = null,
+        public ?DateTimeInterval $workPeriod = null,
     ) {
     }
 }

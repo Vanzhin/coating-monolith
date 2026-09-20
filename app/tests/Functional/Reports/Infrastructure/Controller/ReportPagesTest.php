@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Reports\Infrastructure\Controller;
 
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -13,11 +14,13 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Смоук страниц отчётов: список / форма создания рендерятся, создание ведёт на просмотр.
- * Проверяет рантайм-склейку шаблонов (list_page + infinite_list + форма) под залогиненным юзером.
+ * Смоук страниц отчётов: список с модалкой создания; создание (вид+система) ведёт на заполнение;
+ * реквизиты и блоки — на одной странице заполнения. Проверяет рантайм-склейку шаблонов под юзером.
  */
 final class ReportPagesTest extends WebTestCase
 {
+    use CoatingSystemLayerTestFixtureTrait;
+
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     /** @var list<string> */
@@ -30,6 +33,7 @@ final class ReportPagesTest extends WebTestCase
         $this->client = static::createClient();
         $c = $this->client->getContainer();
         $this->em = $c->get(EntityManagerInterface::class);
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
 
         $hasher = $c->get(UserPasswordHasherInterface::class);
         $user = new User(new Email('report_pages_'.uniqid('', true).'@example.com'));
@@ -56,6 +60,7 @@ final class ReportPagesTest extends WebTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
@@ -66,35 +71,26 @@ final class ReportPagesTest extends WebTestCase
         self::assertSelectorTextContains('h2', 'Отчёты');
     }
 
-    public function test_create_form_renders(): void
+    public function test_create_modal_present_on_list(): void
     {
-        $this->client->request('GET', '/cabinet/report/new');
+        $this->client->request('GET', '/cabinet/report');
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('select[name="type"]');
+        self::assertSelectorExists('#reportCreateModal');
+        self::assertSelectorExists('#reportCreateModal select[name="type"]');
     }
 
-    public function test_create_redirects_to_view(): void
+    public function test_create_redirects_to_fill(): void
     {
-        $this->client->request('POST', '/cabinet/report/new', [
-            'type' => 'trial_application',
-            'actNumber' => 'SMOKE-01',
-        ]);
-        self::assertResponseRedirects();
+        $id = $this->createReport();
 
-        $location = (string) $this->client->getResponse()->headers->get('Location');
-        self::assertMatchesRegularExpression('#/cabinet/report/[0-9a-f-]{36}$#', $location);
-        $this->reportIds[] = substr($location, strrpos($location, '/') + 1);
-
-        $this->client->request('GET', $location);
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'SMOKE-01');
+        self::assertSelectorExists('form input[name="actNumber"]'); // реквизиты — на странице заполнения
     }
 
     public function test_fill_form_renders_and_saves(): void
     {
-        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'FILL-01']);
-        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
-        $this->reportIds[] = $id;
+        $id = $this->createReport();
 
         $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
         self::assertResponseIsSuccessful();
@@ -102,20 +98,89 @@ final class ReportPagesTest extends WebTestCase
 
         $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
             'action' => 'save',
+            'actNumber' => 'FILL-01',
+            'systemId' => (string) $this->systemId,
             'content' => [
                 'control_area' => ['description' => 'Балка Б-1'],
                 'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
-                'conclusion' => ['text' => 'ок'],
+                'conclusion' => ['text' => ['ок']],
             ],
         ]);
-        self::assertResponseRedirects('/cabinet/report/'.$id);
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
+    }
+
+    public function test_requisites_saved_via_fill(): void
+    {
+        $id = $this->createReport();
+
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'actNumber' => 'ED-2',
+            'reportDate' => '2026-08-05',
+            'address' => 'г. Березовский',
+            'systemId' => (string) $this->systemId,
+        ]);
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
+        self::assertResponseIsSuccessful();
+        // Реквизиты теперь — значения инпутов формы, не текст.
+        self::assertSelectorExists('input[name="actNumber"][value="ED-2"]');
+        self::assertSelectorExists('input[name="address"][value="г. Березовский"]');
+    }
+
+    public function test_references_saved_via_fill(): void
+    {
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'Заказчик-'.uniqid('', true)]));
+        $cp = json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
+
+        $id = $this->createReport();
+        // Ссылки + контент (слои) одним сохранением — как реальная форма.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'systemId' => (string) $this->systemId,
+            'customerId' => $cp['id'],
+            'customerTitle' => $cp['title'],
+            'content' => ['application' => ['layers' => [['material' => (string) $this->coatingId]]]],
+        ]);
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+        // Сохранённый заказчик возвращается в форму как existing-value (id в разметке).
+        self::assertStringContainsString($cp['id'], $html);
+        // И слой нанесения сохранился (id покрытия в hidden coating_ref).
+        self::assertStringContainsString((string) $this->coatingId, $html);
+    }
+
+    public function test_error_rerender_keeps_system_plan(): void
+    {
+        $id = $this->createReport();
+
+        // Невалидная влажность (percent) → ошибка валидации → ре-рендер, а не редирект.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'systemId' => (string) $this->systemId,
+            'content' => ['application' => ['layers' => [['material' => (string) $this->coatingId, 'humidity' => '-5']]]],
+        ]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Процент'); // сообщение об ошибке показано
+        // Блок «Система (план)» readOnly не в POST — но на ре-рендере берётся из отчёта, не пустой.
+        self::assertStringNotContainsString('Система без слоёв', (string) $this->client->getResponse()->getContent());
     }
 
     public function test_download_generates_docx(): void
     {
-        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'DL-1']);
-        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
-        $this->reportIds[] = $id;
+        $id = $this->createReport();
+
+        // Реквизиты (№ акта) + факт нанесения (материал слоя 1) — иначе проверка готовности блокирует акт.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'actNumber' => 'DL-1',
+            'systemId' => (string) $this->systemId,
+            'content' => ['application' => ['layers' => [['material' => (string) $this->coatingId]]]],
+        ]);
 
         $this->client->request('GET', '/cabinet/report/'.$id.'/download');
         self::assertResponseIsSuccessful();
@@ -125,45 +190,27 @@ final class ReportPagesTest extends WebTestCase
 
     public function test_submit_then_reviewer_approves(): void
     {
-        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'RV-1']);
-        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
-        $this->reportIds[] = $id;
+        $id = $this->createReport();
 
         // Заполняем обязательное и сразу отправляем на проверку.
         $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
             'action' => 'submit',
+            'actNumber' => 'RV-1',
+            'systemId' => (string) $this->systemId,
             'content' => [
                 'control_area' => ['description' => 'Балка Б-1'],
                 'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
-                'conclusion' => ['text' => 'соответствует'],
+                'conclusion' => ['text' => ['соответствует']],
             ],
         ]);
-        self::assertResponseRedirects('/cabinet/report/'.$id);
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
 
         // Ревьюер (админ) утверждает.
         $this->client->request('POST', '/cabinet/report/'.$id.'/approve');
-        self::assertResponseRedirects('/cabinet/report/'.$id);
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
 
-        $this->client->request('GET', '/cabinet/report/'.$id);
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
         self::assertSelectorTextContains('body', 'Утверждён');
-    }
-
-    public function test_edit_header_renders_and_updates(): void
-    {
-        $this->client->request('POST', '/cabinet/report/new', ['type' => 'trial_application', 'actNumber' => 'ED-1']);
-        $id = substr((string) $this->client->getResponse()->headers->get('Location'), -36);
-        $this->reportIds[] = $id;
-
-        $this->client->request('GET', '/cabinet/report/'.$id.'/edit');
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="actNumber"]');
-
-        $this->client->request('POST', '/cabinet/report/'.$id.'/edit', ['actNumber' => 'ED-2', 'reportDate' => '2026-08-05']);
-        self::assertResponseRedirects('/cabinet/report/'.$id);
-
-        $this->client->request('GET', '/cabinet/report/'.$id);
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'ED-2');
     }
 
     public function test_quick_create_counterparty_then_project(): void
@@ -181,6 +228,21 @@ final class ReportPagesTest extends WebTestCase
         // Проект с заказчиком — 201.
         $this->client->request('POST', '/cabinet/reports/project/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickPrj-'.uniqid('', true), 'counterpartyId' => $cp['id']]));
         self::assertResponseStatusCodeSame(201);
+    }
+
+    /** Создать отчёт через POST (вид+система) и вернуть его id (редирект ведёт на страницу заполнения). */
+    private function createReport(): string
+    {
+        $this->client->request('POST', '/cabinet/report/new', [
+            'type' => 'trial_application',
+            'systemId' => (string) $this->systemId,
+        ]);
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertMatchesRegularExpression('#/cabinet/report/[0-9a-f-]{36}/fill$#', $location);
+        preg_match('#/report/([0-9a-f-]{36})/fill#', $location, $m);
+        $this->reportIds[] = $m[1];
+
+        return $m[1];
     }
 
     private function setPrivate(object $obj, string $prop, mixed $value): void

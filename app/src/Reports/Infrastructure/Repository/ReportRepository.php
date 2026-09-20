@@ -56,7 +56,7 @@ class ReportRepository extends ServiceEntityRepository implements ReportReposito
         }
         if (null !== $filter->search && '' !== trim($filter->search)) {
             $needle = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($filter->search)).'%';
-            $qb->andWhere('LOWER(r.actNumber) LIKE LOWER(:q) OR LOWER(r.projectTitle) LIKE LOWER(:q)')
+            $qb->andWhere("LOWER(r.actNumber) LIKE LOWER(:q) OR LOWER(JSONB_GET_TEXT(r.project, 'title')) LIKE LOWER(:q)")
                 ->setParameter('q', $needle);
         }
         if (null !== $filter->pager) {

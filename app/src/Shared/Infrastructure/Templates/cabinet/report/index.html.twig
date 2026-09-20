@@ -9,7 +9,7 @@
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Отчёты',
-        create_route: 'app_cabinet_report_create',
+        create_route: null,
         can_edit: true,
         is_empty: result.reports is empty,
         reports: result.reports,
@@ -19,6 +19,13 @@
         total_pages: totalPages,
         base_url: path('app_cabinet_report_list', baseQuery),
     } only %}
+        {% block header_actions %}
+            <button type="button" class="btn btn-soft-success" title="Добавить"
+                    data-bs-toggle="modal" data-bs-target="#reportCreateModal">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        {% endblock %}
+
         {% block above_list %}
             <form method="get" action="{{ path('app_cabinet_report_list') }}" class="mb-3">
                 <div class="input-group">
@@ -47,6 +54,7 @@
                 base_url: base_url,
                 wrapper_class: 'ecard-grid',
             } only %}
+            {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_report_delete'} %}
         {% endblock %}
 
         {% block empty_state %}
@@ -56,4 +64,6 @@
             </div>
         {% endblock %}
     {% endembed %}
+
+    {% include 'cabinet/report/_create_modal.html.twig' with {types: types} %}
 {% endblock %}

@@ -27,10 +27,9 @@ final class LayerHintsAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
+        // coatingId может быть пуст: точка росы (t воздуха+влажность) считается и без покрытия;
+        // предупреждения по порогам/цвету — только когда покрытие выбрано (решает хендлер).
         $coatingId = trim((string) $request->query->get('coatingId', ''));
-        if ('' === $coatingId) {
-            return new JsonResponse([]);
-        }
 
         $result = $this->queryBus->execute(new EvaluateLayerConditionsQuery(
             coatingId: $coatingId,
@@ -38,6 +37,7 @@ final class LayerHintsAction extends AbstractController
             surfaceTemp: $this->num($request, 'surfaceTemp'),
             airTemp: $this->num($request, 'airTemp'),
             humidity: $this->num($request, 'humidity'),
+            color: trim((string) $request->query->get('color', '')) ?: null,
         ));
         \assert($result instanceof EvaluateLayerConditionsQueryResult);
 
@@ -46,7 +46,7 @@ final class LayerHintsAction extends AbstractController
             $result->warnings,
         );
 
-        return new JsonResponse($items);
+        return new JsonResponse(['warnings' => $items, 'dewPoint' => $result->dewPoint]);
     }
 
     private function num(Request $request, string $key): ?float

@@ -11,7 +11,9 @@ final readonly class EvaluateLayerConditionsQueryResult
     /**
      * @param list<LayerWarning> $warnings
      */
-    public function __construct(public array $warnings)
-    {
+    public function __construct(
+        public array $warnings,
+        public ?float $dewPoint = null,
+    ) {
     }
 }
