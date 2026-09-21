@@ -102,6 +102,22 @@ final class ReportTest extends TestCase
         $report->updateHeader(null, 'АКТ-1', null, null, $this->now);
     }
 
+    public function test_incomplete_header_blocks_document(): void
+    {
+        $report = $this->report(); // без № акта/адреса/периода/ссылок — только дата из конструктора
+
+        $missing = $report->missingRequiredHeaderLabels();
+        self::assertContains('№ акта', $missing);
+        self::assertContains('Адрес объекта', $missing);
+        self::assertContains('Заказчик', $missing);
+        self::assertContains('Подрядчик', $missing);
+        self::assertContains('Проект', $missing);
+        self::assertContains('Система покрытия', $missing);
+
+        $this->expectException(AppException::class);
+        $report->assertHeaderComplete();
+    }
+
     public function test_unapproved_report_is_deletable(): void
     {
         $report = $this->report();

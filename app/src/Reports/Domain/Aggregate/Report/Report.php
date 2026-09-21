@@ -177,6 +177,53 @@ class Report extends Aggregate
         }
     }
 
+    /**
+     * Обязательные реквизиты шапки — нужны для ЛЮБОГО акта (независимо от типа): № акта, дата, адрес,
+     * период работ (обе границы), заказчик, подрядчик, проект, система. Это свойства агрегата, не блоки,
+     * поэтому проверяются здесь, а не в ReportContentValidator (тот про содержимое блоков).
+     *
+     * @return list<string> человекочитаемые названия незаполненных (пусто — реквизиты полны)
+     */
+    public function missingRequiredHeaderLabels(): array
+    {
+        $missing = [];
+        if (null === $this->actNumber || '' === trim($this->actNumber)) {
+            $missing[] = '№ акта';
+        }
+        if (null === $this->reportDate) {
+            $missing[] = 'Дата';
+        }
+        if (null === $this->address || '' === trim($this->address)) {
+            $missing[] = 'Адрес объекта';
+        }
+        if (null === $this->workPeriod || null === $this->workPeriod->getFrom() || null === $this->workPeriod->getTo()) {
+            $missing[] = 'Период работ (с/по)';
+        }
+        if (null === $this->customer) {
+            $missing[] = 'Заказчик';
+        }
+        if (null === $this->contractor) {
+            $missing[] = 'Подрядчик';
+        }
+        if (null === $this->project) {
+            $missing[] = 'Проект';
+        }
+        if (null === $this->system) {
+            $missing[] = 'Система покрытия';
+        }
+
+        return $missing;
+    }
+
+    /** Гейт готовности акта по реквизитам: отправка на проверку и генерация файла требуют полной шапки. */
+    public function assertHeaderComplete(): void
+    {
+        $missing = $this->missingRequiredHeaderLabels();
+        if ([] !== $missing) {
+            throw new AppException('Не заполнены обязательные реквизиты: '.implode(', ', $missing).'.');
+        }
+    }
+
     private function normalizeActNumber(?string $actNumber): ?string
     {
         return $this->normalizeText($actNumber);

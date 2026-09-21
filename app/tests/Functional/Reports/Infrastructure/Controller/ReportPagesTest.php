@@ -174,13 +174,16 @@ final class ReportPagesTest extends WebTestCase
     {
         $id = $this->createReport();
 
-        // Реквизиты (№ акта) + факт нанесения (материал слоя 1) — иначе проверка готовности блокирует акт.
-        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+        // Полная обязательная шапка + обязательные поля блоков + материал под шаблон.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', array_merge($this->fullRequisites(), [
             'action' => 'save',
-            'actNumber' => 'DL-1',
-            'systemId' => (string) $this->systemId,
-            'content' => ['application' => ['layers' => [['material' => (string) $this->coatingId]]]],
-        ]);
+            'content' => [
+                'control_area' => ['description' => 'Балка Б-1'],
+                'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
+                'conclusion' => ['text' => ['соответствует']],
+                'application' => ['layers' => [['material' => (string) $this->coatingId]]],
+            ],
+        ]));
 
         $this->client->request('GET', '/cabinet/report/'.$id.'/download');
         self::assertResponseIsSuccessful();
@@ -188,21 +191,35 @@ final class ReportPagesTest extends WebTestCase
         self::assertNotSame('', (string) $this->client->getResponse()->getContent());
     }
 
+    public function test_download_blocked_when_required_fields_missing(): void
+    {
+        $id = $this->createReport();
+
+        // Только реквизиты, без обязательных полей блоков — гейт полноты по домену не пустит.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'actNumber' => 'DL-2',
+            'systemId' => (string) $this->systemId,
+            'content' => ['application' => ['layers' => [['material' => (string) $this->coatingId]]]],
+        ]);
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/download');
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill'); // не отдаёт файл — редирект с ошибкой
+    }
+
     public function test_submit_then_reviewer_approves(): void
     {
         $id = $this->createReport();
 
-        // Заполняем обязательное и сразу отправляем на проверку.
-        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+        // Полная шапка + обязательные поля блоков → отправка на проверку.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', array_merge($this->fullRequisites(), [
             'action' => 'submit',
-            'actNumber' => 'RV-1',
-            'systemId' => (string) $this->systemId,
             'content' => [
                 'control_area' => ['description' => 'Балка Б-1'],
                 'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
                 'conclusion' => ['text' => ['соответствует']],
             ],
-        ]);
+        ]));
         self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
 
         // Ревьюер (админ) утверждает.
@@ -228,6 +245,46 @@ final class ReportPagesTest extends WebTestCase
         // Проект с заказчиком — 201.
         $this->client->request('POST', '/cabinet/reports/project/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickPrj-'.uniqid('', true), 'counterpartyId' => $cp['id']]));
         self::assertResponseStatusCodeSame(201);
+    }
+
+    /**
+     * Поля POST для ПОЛНОЙ обязательной шапки (создаёт заказчика/подрядчика/проект).
+     *
+     * @return array<string, mixed>
+     */
+    private function fullRequisites(): array
+    {
+        $customer = $this->quickCounterparty('Заказчик-'.uniqid('', true));
+        $contractor = $this->quickCounterparty('Подрядчик-'.uniqid('', true));
+        $project = $this->quickProject('Проект-'.uniqid('', true), $customer['id']);
+
+        return [
+            'actNumber' => 'AN-'.uniqid('', true),
+            'reportDate' => '2026-09-21',
+            'address' => 'г. Самара',
+            'workFrom' => '2026-09-21',
+            'workTo' => '2026-09-25',
+            'systemId' => (string) $this->systemId,
+            'customerId' => $customer['id'], 'customerTitle' => $customer['title'],
+            'contractorId' => $contractor['id'], 'contractorTitle' => $contractor['title'],
+            'projectId' => $project['id'], 'projectTitle' => $project['title'],
+        ];
+    }
+
+    /** @return array{id: string, title: string} */
+    private function quickCounterparty(string $title): array
+    {
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => $title]));
+
+        return json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
+    }
+
+    /** @return array{id: string, title: string} */
+    private function quickProject(string $title, string $counterpartyId): array
+    {
+        $this->client->request('POST', '/cabinet/reports/project/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => $title, 'counterpartyId' => $counterpartyId]));
+
+        return json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
     }
 
     /** Создать отчёт через POST (вид+система) и вернуть его id (редирект ведёт на страницу заполнения). */

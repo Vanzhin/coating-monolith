@@ -5,15 +5,21 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Reports\Application\UseCase;
 
 use App\Reports\Application\UseCase\Command\ApproveReport\ApproveReportCommand;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
+use App\Reports\Application\UseCase\Command\CreateProject\CreateProjectCommand;
+use App\Reports\Application\UseCase\Command\CreateProject\CreateProjectCommandResult;
 use App\Reports\Application\UseCase\Command\CreateReport\CreateReportCommand;
 use App\Reports\Application\UseCase\Command\CreateReport\CreateReportCommandResult;
 use App\Reports\Application\UseCase\Command\RejectReport\RejectReportCommand;
 use App\Reports\Application\UseCase\Command\SaveReportContent\SaveReportContentCommand;
 use App\Reports\Application\UseCase\Command\SubmitForReview\SubmitForReviewCommand;
+use App\Reports\Application\UseCase\Command\UpdateReportHeader\UpdateReportHeaderCommand;
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -83,6 +89,42 @@ final class ReportWorkflowTest extends KernelTestCase
         return $result->id;
     }
 
+    /** Полная обязательная шапка (реквизиты + ссылки) — иначе submit/генерация не пройдут гейт полноты. */
+    private function fillFullHeader(string $id): void
+    {
+        $suffix = uniqid('', true);
+        $customerId = $this->createCounterparty('Заказчик-'.$suffix);
+        $contractorId = $this->createCounterparty('Подрядчик-'.$suffix);
+        $projectId = $this->createProject('Проект-'.$suffix, $customerId);
+
+        $this->commandBus->execute(new UpdateReportHeaderCommand(
+            reportId: $id,
+            reportDate: new \DateTimeImmutable('2026-09-21'),
+            actNumber: 'AN-'.$suffix,
+            projectId: $projectId,
+            customerId: $customerId,
+            contractorId: $contractorId,
+            address: 'г. Самара',
+            workPeriod: new DateTimeInterval(new \DateTimeImmutable('2026-09-21'), new \DateTimeImmutable('2026-09-25')),
+        ));
+    }
+
+    private function createCounterparty(string $title): string
+    {
+        $r = $this->commandBus->execute(new CreateCounterpartyCommand($title));
+        \assert($r instanceof CreateCounterpartyCommandResult);
+
+        return $r->id;
+    }
+
+    private function createProject(string $title, string $counterpartyId): string
+    {
+        $r = $this->commandBus->execute(new CreateProjectCommand($title, $counterpartyId));
+        \assert($r instanceof CreateProjectCommandResult);
+
+        return $r->id;
+    }
+
     private function status(string $id): ReportStatus
     {
         $this->em->clear();
@@ -105,6 +147,7 @@ final class ReportWorkflowTest extends KernelTestCase
     public function test_submit_incomplete_is_blocked_by_strict_validation(): void
     {
         $id = $this->createReport();
+        $this->fillFullHeader($id); // шапка полна — проверяем блокировку именно по обязательным полям блоков
         // Лёгкое сохранение неполного черновика проходит (тип-чек заполненного), но submit — нет.
         $this->commandBus->execute(new SaveReportContentCommand($id, ['notes' => ['text' => 'мало данных']]));
 
@@ -115,6 +158,7 @@ final class ReportWorkflowTest extends KernelTestCase
     public function test_happy_path_submit_approve_then_frozen(): void
     {
         $id = $this->createReport();
+        $this->fillFullHeader($id);
         $this->commandBus->execute(new SaveReportContentCommand($id, $this->validContent()));
         $this->commandBus->execute(new SubmitForReviewCommand($id));
         self::assertSame(ReportStatus::UnderReview, $this->status($id));
@@ -130,6 +174,7 @@ final class ReportWorkflowTest extends KernelTestCase
     public function test_reject_with_reason_then_resume_clears_it(): void
     {
         $id = $this->createReport();
+        $this->fillFullHeader($id);
         $this->commandBus->execute(new SaveReportContentCommand($id, $this->validContent()));
         $this->commandBus->execute(new SubmitForReviewCommand($id));
         $this->commandBus->execute(new RejectReportCommand($id, 'Нет данных по приборам'));

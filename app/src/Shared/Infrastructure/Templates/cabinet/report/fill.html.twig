@@ -147,27 +147,27 @@
                             <input class="form-control" value="{{ report.systemTitle|default('—') }}" disabled>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">№ акта</label>
+                            <label class="form-label">№ акта <span class="text-danger">*</span></label>
                             <input name="actNumber" value="{{ input.actNumber }}" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Дата</label>
+                            <label class="form-label">Дата <span class="text-danger">*</span></label>
                             <input type="date" name="reportDate" value="{{ input.reportDate }}" class="form-control">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Адрес объекта</label>
+                            <label class="form-label">Адрес объекта <span class="text-danger">*</span></label>
                             <input name="address" value="{{ input.address }}" class="form-control" placeholder="г. Березовский">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Работы с</label>
+                            <label class="form-label">Работы с <span class="text-danger">*</span></label>
                             <input type="date" name="workFrom" value="{{ input.workFrom }}" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Работы по</label>
+                            <label class="form-label">Работы по <span class="text-danger">*</span></label>
                             <input type="date" name="workTo" value="{{ input.workTo }}" class="form-control">
                         </div>
                         <div class="col-12" data-reference-select-group>
-                            <label class="form-label">Заказчик</label>
+                            <label class="form-label">Заказчик <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" data-controller="reference-select"
                                    data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
@@ -176,7 +176,7 @@
                                    placeholder="Поиск или создать…">
                         </div>
                         <div class="col-12" data-reference-select-group>
-                            <label class="form-label">Подрядчик</label>
+                            <label class="form-label">Подрядчик <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" data-controller="reference-select"
                                    data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
@@ -185,7 +185,7 @@
                                    placeholder="Поиск или создать…">
                         </div>
                         <div class="col-12" data-reference-select-group>
-                            <label class="form-label">Проект</label>
+                            <label class="form-label">Проект <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" data-controller="reference-select"
                                    data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
                                    data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"

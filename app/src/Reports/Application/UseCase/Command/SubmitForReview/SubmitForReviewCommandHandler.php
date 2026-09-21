@@ -35,6 +35,8 @@ final readonly class SubmitForReviewCommandHandler implements CommandHandlerInte
             throw new ForbiddenException();
         }
 
+        // Полнота перед отправкой: обязательные реквизиты шапки + обязательные поля блоков.
+        $report->assertHeaderComplete();
         $type = $report->getType();
         if (null !== $type) {
             $this->validator->validate($type, $report->getContent(), strict: true);
