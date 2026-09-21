@@ -25,9 +25,8 @@ final class ProcessBlock implements BlockDefinition
     {
         return [
             new Field('items', FieldType::ListRows, 'Несоответствия', itemFields: [
-                new Field('description', FieldType::TextArea, 'Несоответствие', required: true),
-                new Field('clause', FieldType::Text, 'Пункт регламента'),
-                new Field('action', FieldType::TextArea, 'Корректирующее действие'),
+                new Field('description', FieldType::TextArea, 'Несоответствие', required: true, rows: 5),
+                new Field('action', FieldType::TextArea, 'Корректирующее действие', required: true, rows: 5),
             ]),
         ];
     }

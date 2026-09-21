@@ -13,6 +13,7 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -20,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReportCreateGetTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private QueryBusInterface $queryBus;
@@ -36,6 +38,7 @@ final class ReportCreateGetTest extends KernelTestCase
         $this->queryBus = $container->get(QueryBusInterface::class);
         $this->repo = $container->get(ReportRepositoryInterface::class);
         $this->em = $container->get(EntityManagerInterface::class);
+        $this->setUpFixture($container, $this->em); // система обязательна: заводим одну (1 слой)
 
         $this->authenticateAsSystem();
     }
@@ -53,12 +56,13 @@ final class ReportCreateGetTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
     private function create(?ReportType $type, ?\DateTimeImmutable $date = null, ?string $act = null): string
     {
-        $result = $this->commandBus->execute(new CreateReportCommand($type, $date, $act));
+        $result = $this->commandBus->execute(new CreateReportCommand($type, $date, $act, systemId: (string) $this->systemId));
         \assert($result instanceof CreateReportCommandResult);
         $this->createdIds[] = $result->id;
 
@@ -77,7 +81,11 @@ final class ReportCreateGetTest extends KernelTestCase
         self::assertSame('АКТ-01', $report->getActNumber()); // triм
         self::assertSame('2026-08-05', $report->getReportDate()?->format('Y-m-d'));
         self::assertNotSame('', $report->getOwnerId());
-        self::assertSame([], $report->getContent());
+        // Система обязательна → её слои засеяны в план сразу при создании.
+        $content = $report->getContent();
+        self::assertArrayHasKey('system', $content);
+        self::assertIsArray($content['system']['layers']);
+        self::assertCount(1, $content['system']['layers']);
     }
 
     public function test_type_can_be_null(): void

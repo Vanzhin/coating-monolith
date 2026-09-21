@@ -102,7 +102,7 @@ class ProjectRepository extends ServiceEntityRepository implements ProjectReposi
             ->addSelect('c')
             ->leftJoin('p.counterparty', 'c')
             ->where('LOWER(p.title) LIKE LOWER(:q)')
-            ->setParameter('q', $this->escapeLike($needle).'%')
+            ->setParameter('q', '%'.$this->escapeLike($needle).'%')
             ->orderBy('p.title', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()

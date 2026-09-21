@@ -99,7 +99,44 @@ final class ReportTest extends TestCase
         $report->approve($this->now);
 
         $this->expectException(AppException::class);
-        $report->updateHeader(null, 'АКТ-1', $this->now);
+        $report->updateHeader(null, 'АКТ-1', null, null, $this->now);
+    }
+
+    public function test_incomplete_header_blocks_document(): void
+    {
+        $report = $this->report(); // без № акта/адреса/периода/ссылок — только дата из конструктора
+
+        $missing = $report->missingRequiredHeaderLabels();
+        self::assertContains('№ акта', $missing);
+        self::assertContains('Адрес объекта', $missing);
+        self::assertContains('Заказчик', $missing);
+        self::assertContains('Подрядчик', $missing);
+        self::assertContains('Проект', $missing);
+        self::assertContains('Система покрытия', $missing);
+
+        $this->expectException(AppException::class);
+        $report->assertHeaderComplete();
+    }
+
+    public function test_unapproved_report_is_deletable(): void
+    {
+        $report = $this->report();
+        $report->assertDeletable(); // Создан — можно удалить
+        $report->startWork($this->now);
+        $report->assertDeletable(); // В работе — тоже
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_approved_report_cannot_be_deleted(): void
+    {
+        $report = $this->report();
+        $report->startWork($this->now);
+        $report->submitForReview($this->now);
+        $report->approve($this->now);
+
+        $this->expectException(AppException::class);
+        $report->assertDeletable();
     }
 
     public function test_repeated_action_is_noop(): void

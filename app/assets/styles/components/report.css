@@ -1,0 +1,50 @@
+/* Отчёты: статус-пилюли и фильтр-чипы списка. На семантических токенах (tokens.css),
+   тот же язык, что у ecard-бейджей: цвет + subtle-фон, радиус 6, без рамок. */
+
+.rep-pill {
+    display: inline-flex; align-items: center; white-space: nowrap;
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+}
+.rep-pill--draft { color: var(--bs-secondary-color); background: var(--sunken); }
+.rep-pill--inwork { color: var(--bs-primary); background: var(--accent-subtle); }
+.rep-pill--review { color: var(--warn); background: var(--warn-subtle); }
+.rep-pill--approved { color: var(--ok); background: var(--ok-subtle); }
+.rep-pill--rejected { color: var(--danger-strong); background: var(--danger-subtle); }
+
+/* Фильтр-чипы статуса — как soft-borderless-чипы: оттенком, без рамки. */
+.rep-chip {
+    flex-shrink: 0; border: 0; text-decoration: none; white-space: nowrap;
+    font-size: 12.5px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
+    background: var(--sunken); color: var(--bs-secondary-color);
+}
+.rep-chip:hover { color: var(--bs-body-color); }
+.rep-chip.is-active { background: var(--accent-subtle); color: var(--bs-primary); }
+
+/* Фото отчёта — плитки загрузки. */
+.report-photos { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.report-photo { width: 120px; }
+.report-photo-preview { aspect-ratio: 1; border-radius: 10px; background: var(--sunken); display: grid; place-items: center; overflow: hidden; color: var(--bs-secondary-color); font-size: 24px; }
+.report-photo-img { width: 100%; height: 100%; object-fit: cover; }
+.report-photo-badge { font-size: 10.5px; font-weight: 600; color: var(--warn); min-height: 14px; }
+.report-photo[data-state="uploading"] .report-photo-badge { color: var(--bs-secondary-color); }
+.report-photo[data-state="pending"] .report-photo-preview { border: 1px dashed var(--warn); }
+
+/* Инлайн-подсказки слоя (ТСП/точка росы) — мягкие чипы-предупреждения. */
+.report-hint {
+    display: inline-flex; align-items: center; white-space: normal;
+    font-size: 11.5px; font-weight: 600; color: var(--warn); background: var(--warn-subtle);
+    border-radius: 6px; padding: 2px 8px; margin: 4px 4px 0 0;
+}
+
+/* Подобранные системы (подбор по покрытиям): кликабельные плитки-опции. */
+.sys-opt { cursor: pointer; transition: box-shadow .12s; }
+.sys-opt:hover { box-shadow: 0 0 0 1px var(--bs-primary); }
+/* Список вариантов не растягивает модалку: ~2-3 карточки, дальше — скролл внутри.
+   Гориз. запас — чтобы hover-обводка карточек не обрезалась краем скролл-контейнера. */
+.sys-results { max-height: 300px; overflow-y: auto; overflow-x: hidden; padding: 2px 4px; }
+
+/* Поле-ссылка (reference-select) с незавершённым вводом: подсветка, чтобы не потерять текст молча. */
+.tagify.reference-select-warn {
+    border-color: var(--warn);
+    box-shadow: 0 0 0 .15rem color-mix(in srgb, var(--warn) 30%, transparent);
+}

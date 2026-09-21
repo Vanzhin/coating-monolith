@@ -13,6 +13,7 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\File\StoredFile;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -25,6 +26,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final class SaveReportPhotosTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private ReportRepositoryInterface $reports;
@@ -43,6 +45,7 @@ final class SaveReportPhotosTest extends KernelTestCase
         $this->reports = $c->get(ReportRepositoryInterface::class);
         $this->storage = $c->get(FileStorage::class);
         $this->em = $c->get(EntityManagerInterface::class);
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
         $this->authenticateAsSystem();
     }
 
@@ -61,6 +64,7 @@ final class SaveReportPhotosTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
@@ -99,6 +103,20 @@ final class SaveReportPhotosTest extends KernelTestCase
         self::assertNull($this->storage->get($uuid));
     }
 
+    public function test_saving_without_photos_key_keeps_existing(): void
+    {
+        $reportId = $this->createReport();
+        $uuid = $this->stagePhoto();
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['photos' => ['items' => [['file' => $uuid]]]]));
+        $this->em->clear();
+        self::assertNotNull($this->storage->get($uuid));
+
+        // Сохранение формы без блока photos не должно тронуть привязанные фото.
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['notes' => ['text' => 'правка без фото']]));
+        $this->em->clear();
+        self::assertNotNull($this->storage->get($uuid), 'фото не должно удаляться, если блок photos не прислан');
+    }
+
     public function test_reference_to_missing_file_throws(): void
     {
         $reportId = $this->createReport();
@@ -111,7 +129,7 @@ final class SaveReportPhotosTest extends KernelTestCase
 
     private function createReport(): string
     {
-        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication));
+        $result = $this->commandBus->execute(new CreateReportCommand(ReportType::TrialApplication, systemId: (string) $this->systemId));
         \assert($result instanceof CreateReportCommandResult);
         $this->reportIds[] = $result->id;
 

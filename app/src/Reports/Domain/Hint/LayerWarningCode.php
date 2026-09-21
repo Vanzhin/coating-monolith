@@ -11,4 +11,5 @@ enum LayerWarningCode: string
     case DftAboveMax = 'dft_above_max';
     case SurfaceBelowApplicationTemp = 'surface_below_application_temp';
     case CondensationRisk = 'condensation_risk';
+    case ColorNotInPalette = 'color_not_in_palette';
 }

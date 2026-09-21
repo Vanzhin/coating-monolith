@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reports\Domain\Aggregate\Report;
 
 use App\Shared\Domain\Aggregate\Aggregate;
+use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
@@ -29,15 +30,15 @@ class Report extends Aggregate
     private ReportStatus $status;
     private ?\DateTimeImmutable $reportDate;
     private ?string $actNumber;
-    // Ссылки-снимки на справочные сущности: id (связь/аналитика) + title (замороженный снимок).
-    private ?string $projectId = null;
-    private ?string $projectTitle = null;
-    private ?string $customerId = null;
-    private ?string $customerTitle = null;
-    private ?string $contractorId = null;
-    private ?string $contractorTitle = null;
-    private ?string $systemId = null;
-    private ?string $systemTitle = null;
+    // Адрес объекта (текст) и период проведения работ (интервал дат) — реквизиты-шапка.
+    private ?string $address = null;
+    private ?DateTimeInterval $workPeriod = null;
+    // Ссылки-снимки на справочные сущности: VO {id (связь/аналитика), title (замороженный снимок)}.
+    // null-поле = ссылки нет. Хранятся как JSON (DBAL reports_reference).
+    private ?Reference $project = null;
+    private ?Reference $customer = null;
+    private ?Reference $contractor = null;
+    private ?Reference $system = null;
     /** @var array<string, mixed> данные по блокам; схема/валидация — реестр блоков (позже) */
     private array $content = [];
     private \DateTimeImmutable $createdAt;
@@ -51,6 +52,8 @@ class Report extends Aggregate
         \DateTimeImmutable $now,
         ?\DateTimeImmutable $reportDate = null,
         ?string $actNumber = null,
+        ?string $address = null,
+        ?DateTimeInterval $workPeriod = null,
     ) {
         $this->id = $id;
         $this->ownerId = $ownerId;
@@ -58,6 +61,8 @@ class Report extends Aggregate
         $this->status = ReportStatus::Created;
         $this->reportDate = $reportDate;
         $this->actNumber = $this->normalizeActNumber($actNumber);
+        $this->address = $this->normalizeText($address);
+        $this->workPeriod = $workPeriod;
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -107,11 +112,18 @@ class Report extends Aggregate
         $this->updatedAt = $now;
     }
 
-    public function updateHeader(?\DateTimeImmutable $reportDate, ?string $actNumber, \DateTimeImmutable $now): void
-    {
+    public function updateHeader(
+        ?\DateTimeImmutable $reportDate,
+        ?string $actNumber,
+        ?string $address,
+        ?DateTimeInterval $workPeriod,
+        \DateTimeImmutable $now,
+    ): void {
         $this->assertMutable();
         $this->reportDate = $reportDate;
         $this->actNumber = $this->normalizeActNumber($actNumber);
+        $this->address = $this->normalizeText($address);
+        $this->workPeriod = $workPeriod;
         $this->updatedAt = $now;
     }
 
@@ -124,14 +136,10 @@ class Report extends Aggregate
         \DateTimeImmutable $now,
     ): void {
         $this->assertMutable();
-        $this->projectId = $project?->id;
-        $this->projectTitle = $project?->title;
-        $this->customerId = $customer?->id;
-        $this->customerTitle = $customer?->title;
-        $this->contractorId = $contractor?->id;
-        $this->contractorTitle = $contractor?->title;
-        $this->systemId = $system?->id;
-        $this->systemTitle = $system?->title;
+        $this->project = $project;
+        $this->customer = $customer;
+        $this->contractor = $contractor;
+        $this->system = $system;
         $this->updatedAt = $now;
     }
 
@@ -161,11 +169,71 @@ class Report extends Aggregate
         }
     }
 
+    /** Утверждённый отчёт иммутабелен — удалять нельзя. */
+    public function assertDeletable(): void
+    {
+        if ($this->status->isFrozen()) {
+            throw new AppException('Утверждённый отчёт нельзя удалить.');
+        }
+    }
+
+    /**
+     * Обязательные реквизиты шапки — нужны для ЛЮБОГО акта (независимо от типа): № акта, дата, адрес,
+     * период работ (обе границы), заказчик, подрядчик, проект, система. Это свойства агрегата, не блоки,
+     * поэтому проверяются здесь, а не в ReportContentValidator (тот про содержимое блоков).
+     *
+     * @return list<string> человекочитаемые названия незаполненных (пусто — реквизиты полны)
+     */
+    public function missingRequiredHeaderLabels(): array
+    {
+        $missing = [];
+        if (null === $this->actNumber || '' === trim($this->actNumber)) {
+            $missing[] = '№ акта';
+        }
+        if (null === $this->reportDate) {
+            $missing[] = 'Дата';
+        }
+        if (null === $this->address || '' === trim($this->address)) {
+            $missing[] = 'Адрес объекта';
+        }
+        if (null === $this->workPeriod || null === $this->workPeriod->getFrom() || null === $this->workPeriod->getTo()) {
+            $missing[] = 'Период работ (с/по)';
+        }
+        if (null === $this->customer) {
+            $missing[] = 'Заказчик';
+        }
+        if (null === $this->contractor) {
+            $missing[] = 'Подрядчик';
+        }
+        if (null === $this->project) {
+            $missing[] = 'Проект';
+        }
+        if (null === $this->system) {
+            $missing[] = 'Система покрытия';
+        }
+
+        return $missing;
+    }
+
+    /** Гейт готовности акта по реквизитам: отправка на проверку и генерация файла требуют полной шапки. */
+    public function assertHeaderComplete(): void
+    {
+        $missing = $this->missingRequiredHeaderLabels();
+        if ([] !== $missing) {
+            throw new AppException('Не заполнены обязательные реквизиты: '.implode(', ', $missing).'.');
+        }
+    }
+
     private function normalizeActNumber(?string $actNumber): ?string
     {
-        $actNumber = null === $actNumber ? null : trim($actNumber);
+        return $this->normalizeText($actNumber);
+    }
 
-        return '' === $actNumber ? null : $actNumber;
+    private function normalizeText(?string $value): ?string
+    {
+        $value = null === $value ? null : trim($value);
+
+        return '' === $value ? null : $value;
     }
 
     public function getId(): string
@@ -208,29 +276,34 @@ class Report extends Aggregate
         return $this->actNumber;
     }
 
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function getWorkPeriod(): ?DateTimeInterval
+    {
+        return $this->workPeriod;
+    }
+
     public function getProject(): ?Reference
     {
-        return $this->reference($this->projectId, $this->projectTitle);
+        return $this->project;
     }
 
     public function getCustomer(): ?Reference
     {
-        return $this->reference($this->customerId, $this->customerTitle);
+        return $this->customer;
     }
 
     public function getContractor(): ?Reference
     {
-        return $this->reference($this->contractorId, $this->contractorTitle);
+        return $this->contractor;
     }
 
     public function getSystem(): ?Reference
     {
-        return $this->reference($this->systemId, $this->systemTitle);
-    }
-
-    private function reference(?string $id, ?string $title): ?Reference
-    {
-        return null !== $id && null !== $title ? new Reference($id, $title) : null;
+        return $this->system;
     }
 
     /**

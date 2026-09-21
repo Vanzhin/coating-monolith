@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Reports\Application\Service;
 
+use App\Reports\Application\Service\Mapping\ReportTemplateMap;
 use App\Reports\Application\Service\ReportRenderDataProjector;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportType;
@@ -62,18 +63,17 @@ final class ReportDocxRenderSmokeTest extends TestCase
         $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, '01-05-08-2026');
         $report->replaceContent([
             'surface_prep' => ['rustGrade' => 'B'],
-            'conclusion' => ['text' => 'Соответствует регламенту.'],
+            'conclusion' => ['text' => ['Соответствует регламенту.']],
             'notes' => ['text' => 'Без замечаний.'],
-            'application' => ['layers' => [['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film_mean' => 80]]],
+            'application' => ['layers' => [['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dry_film' => ['min' => 60, 'max' => 90, 'mean' => 80]]]],
         ], $now);
 
-        $projector = new ReportRenderDataProjector(
-            new BlockRegistry([
-                new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
-                new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
-                new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
-            ]),
-        );
+        $registry = new BlockRegistry([
+            new SurfacePrepBlock(), new ConclusionBlock(), new NotesBlock(),
+            new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
+            new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
+        ]);
+        $projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry));
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($this->templatePath), $projector->project($report));
 
         self::assertSame(TemplateFormat::Docx, $doc->format);
@@ -82,7 +82,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
         self::assertStringContainsString('АКТ № 01-05-08-2026', $text);
         self::assertStringContainsString('Акт опытного нанесения', $text);
         self::assertStringContainsString('Класс ржавления: B', $text);
-        self::assertStringContainsString('Выводы: Соответствует регламенту.', $text);
+        self::assertStringContainsString('Выводы: 1. Соответствует регламенту.', $text);
         self::assertStringContainsString('Примечания: Без замечаний.', $text);
         self::assertStringContainsString('Слой 1: Грунт ЭП-0199 — 80 мкм', $text);
     }

@@ -10,6 +10,10 @@
                 <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
             </a>
         {% endfor %}
+        <a href="{{ path('app_cabinet_report_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_report_' ? ' active' : '' }}"
+           {% if current_route starts with 'app_cabinet_report_' %}aria-current="page"{% endif %}>
+            <i class="bi bi-clipboard-data"></i><span>Отчёты</span>
+        </a>
         <a href="{{ path('app_tools_index') }}" class="app-nav-item{{ current_route starts with 'app_tools' ? ' active' : '' }}"
            {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
             <i class="bi bi-calculator"></i><span>Инструменты</span>

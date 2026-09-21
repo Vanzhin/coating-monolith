@@ -1,0 +1,8 @@
+{% set map = {
+    created: 'rep-pill--draft',
+    in_work: 'rep-pill--inwork',
+    under_review: 'rep-pill--review',
+    approved: 'rep-pill--approved',
+    rejected: 'rep-pill--rejected',
+} %}
+<span class="rep-pill {{ map[status]|default('rep-pill--draft') }}">{{ label }}</span>

@@ -1,0 +1,38 @@
+{# Модалка создания отчёта: вид документа (сегменты) + система (обязательна). Форма POST → создание
+   черновика (план засеян) → страница заполнения. Триггер — кнопка «+» на списке. #}
+<div class="modal fade" id="reportCreateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_cabinet_report_create') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новый отчёт</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Вид документа</label>
+                        <select name="type" class="form-select" required>
+                            {% for t in types %}
+                                <option value="{{ t.value }}">{{ t.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div data-controller="system-select"
+                         data-system-select-search-url-value="{{ path('app_cabinet_report_system_search') }}"
+                         data-system-select-hidden-name-value="systemId">
+                        <label class="form-label">Система покрытия <span class="text-danger">*</span></label>
+                        <div class="mb-2" data-system-select-target="selected"></div>
+                        <input type="text" class="form-control" data-system-select-target="input" placeholder="Поиск системы по названию…">
+                        <div class="form-text">Обязательна: задаёт число слоёв акта и засевает план.</div>
+                        <div class="mt-2 sys-results" data-system-select-target="results"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

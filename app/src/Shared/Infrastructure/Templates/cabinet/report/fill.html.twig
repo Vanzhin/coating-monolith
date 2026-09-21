@@ -1,0 +1,319 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Заполнение отчёта{% endblock %}
+
+{% macro widget(name, field, value) %}
+    {% set t = field.type %}
+    {% if t == 'textarea' %}
+        <textarea name="{{ name }}" class="form-control" rows="{{ field.rows|default(2) }}">{{ value }}</textarea>
+    {% elseif t == 'number' %}
+        <div class="input-group">
+            <input type="number" step="any" {% if field.percent %}min="0" max="100"{% elseif field.positive %}min="0"{% endif %}{% if field.computed %} readonly{% endif %} name="{{ name }}" value="{{ value }}" class="form-control{% if field.computed %} bg-body-secondary{% endif %}"{% if field.computed %} placeholder="рассчитывается автоматически"{% endif %}>
+            {% if field.unit %}<span class="input-group-text">{{ field.unit }}</span>{% endif %}
+        </div>
+    {% elseif t == 'date' %}
+        <input type="date" name="{{ name }}" value="{{ value }}" class="form-control">
+    {% elseif t == 'enum' %}
+        <select name="{{ name }}" class="form-select">
+            <option value=""></option>
+            {% for opt in field.options %}<option value="{{ opt }}" {{ value == opt ? 'selected' : '' }}>{{ opt }}</option>{% endfor %}
+        </select>
+    {% elseif t in ['text', 'timerange'] %}
+        <input type="text" name="{{ name }}" value="{{ value }}" class="form-control">
+    {% elseif t == 'coating_ref' %}
+        <div data-controller="coating-pick" data-coating-pick-suggest-url-value="{{ path('app_cabinet_coating_coating_suggest') }}">
+            <input type="hidden" name="{{ name }}" value="{{ value.id|default('') }}" data-coating-pick-target="hidden">
+            <input type="text" class="form-control" value="{{ value.title|default('') }}" data-coating-pick-target="search" placeholder="Покрытие…">
+        </div>
+    {% elseif t == 'thickness' %}
+        <div class="row g-1">
+            <div class="col-4"><input type="number" step="any" min="0" name="{{ name }}[min]" value="{{ value.min|default('') }}" class="form-control" placeholder="мин"></div>
+            <div class="col-4"><input type="number" step="any" min="0" name="{{ name }}[max]" value="{{ value.max|default('') }}" class="form-control" placeholder="макс"></div>
+            <div class="col-4"><input type="number" step="any" min="0" name="{{ name }}[mean]" value="{{ value.mean|default('') }}" class="form-control" placeholder="средн."></div>
+        </div>
+    {% elseif t == 'number_range' %}
+        <div class="row g-1">
+            <div class="col-6"><input type="number" step="any" min="0" name="{{ name }}[min]" value="{{ value.min|default('') }}" class="form-control" placeholder="мин"></div>
+            <div class="col-6"><input type="number" step="any" min="0" name="{{ name }}[max]" value="{{ value.max|default('') }}" class="form-control" placeholder="макс"></div>
+        </div>
+    {% elseif t == 'thinner' %}
+        <div class="row g-1">
+            <div class="col-12 col-md-5"><input type="text" name="{{ name }}[name]" value="{{ value.name|default('') }}" class="form-control" placeholder="растворитель"></div>
+            <div class="col-7 col-md-4"><input type="text" name="{{ name }}[batch]" value="{{ value.batch|default('') }}" class="form-control" placeholder="№ партии"></div>
+            <div class="col-5 col-md-3"><input type="number" step="any" min="0" max="100" name="{{ name }}[percent]" value="{{ value.percent|default('') }}" class="form-control" placeholder="%"></div>
+        </div>
+    {% elseif t == 'datetime_range' %}
+        <div class="row g-1">
+            <div class="col-6"><input type="datetime-local" name="{{ name }}[from]" value="{{ value.from|default('') }}" class="form-control" aria-label="с"></div>
+            <div class="col-6"><input type="datetime-local" name="{{ name }}[to]" value="{{ value.to|default('') }}" class="form-control" aria-label="по"></div>
+        </div>
+    {% else %}
+        <div class="text-body-secondary small py-1"><i class="bi bi-hourglass-split me-1"></i>Заполнение — в следующем шаге.</div>
+    {% endif %}
+{% endmacro %}
+
+{# Под-поля строки композита с визуальной разбивкой на подгруппы (field.group): каждая группа —
+   отдельный инсет-блок (мягкий оттенок, различаем не линией). group=0 → один блок на все поля. #}
+{% macro row_fields(namePrefix, itemFields, row) %}
+    {% set prevGroup = null %}
+    {% for sub in itemFields %}
+        {# loop.first обязателен: на первой итерации prevGroup=null, а sub.group=0 (группа по умолчанию),
+           и «0 != null» в Twig — false, иначе блок не откроется, а закрывающие </div> сломают карточку. #}
+        {% if loop.first or sub.group != prevGroup %}
+            {% if not loop.first %}</div></div>{% endif %}
+            <div class="p-2 mb-2 rounded-3 bg-body-tertiary"><div class="row g-2">
+            {% set prevGroup = sub.group %}
+        {% endif %}
+        <div class="col-md-6">
+            <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
+            {{ _self.widget(namePrefix ~ '[' ~ sub.key ~ ']', sub, row[sub.key]|default('')) }}
+        </div>
+        {% if loop.last %}</div></div>{% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% block content %}
+    {% set anchors = [{id: 'sec-req', label: 'Общие сведения'}] %}
+    {% for section in sections %}{% set anchors = anchors|merge([{id: 'blk-' ~ section.key, label: section.title}]) %}{% endfor %}
+
+    {% set frozen = report.status == 'approved' %}
+
+    {% embed 'components/form_page.html.twig' with {
+        title: report.typeLabel|default('Отчёт'),
+        back_url: path('app_cabinet_report_list'),
+        save_form_id: 'fill-form',
+        save_label: 'Сохранить',
+        save_enabled: not frozen,
+        anchors: anchors,
+    } %}
+        {% block appbar_extra %}
+            {% include 'cabinet/report/_status_pill.html.twig' with {status: report.status, label: report.statusLabel} only %}
+            <a href="{{ path('app_cabinet_report_download', {id: report.id}) }}" class="btn btn-soft-secondary btn-sm" title="Скачать .docx">
+                <i class="bi bi-download"></i><span class="d-none d-md-inline ms-1">.docx</span>
+            </a>
+            {% if report.status not in ['approved', 'under_review'] %}
+                <button type="submit" form="fill-form" name="action" value="submit" class="btn btn-soft-success btn-sm">
+                    <i class="bi bi-send d-md-none"></i><span class="d-none d-md-inline">На проверку</span>
+                </button>
+            {% endif %}
+        {% endblock %}
+
+        {% block sections %}
+            {% if report.status == 'rejected' and report.rejectionReason %}
+                <div class="msg msg-danger mb-3"><i class="bi bi-exclamation-triangle me-1"></i> <strong>Отклонён.</strong> {{ report.rejectionReason }}</div>
+            {% elseif frozen %}
+                <div class="msg msg-success mb-3"><i class="bi bi-lock me-1"></i> Отчёт утверждён и заморожен — правки закрыты.</div>
+            {% endif %}
+
+            {% if report.status == 'under_review' and is_granted('ROLE_ADMIN') %}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <h6 class="fw-semibold mb-2">Проверка</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <form method="post" action="{{ path('app_cabinet_report_approve', {id: report.id}) }}">
+                            <button class="btn btn-soft-success" type="submit"><i class="bi bi-check-lg me-1"></i>Утвердить</button>
+                        </form>
+                        <button class="btn btn-soft-danger" type="button" data-bs-toggle="collapse" data-bs-target="#rejectForm"><i class="bi bi-x-lg me-1"></i>Отклонить…</button>
+                    </div>
+                    <div class="collapse mt-2" id="rejectForm">
+                        <form method="post" action="{{ path('app_cabinet_report_reject', {id: report.id}) }}">
+                            <label class="form-label">Причина отклонения</label>
+                            <textarea name="reason" class="form-control mb-2" rows="2" placeholder="Что доработать автору"></textarea>
+                            <button class="btn btn-danger" type="submit">Отклонить отчёт</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% import 'cabinet/report/fill.html.twig' as w %}
+            <form id="fill-form" method="post" action="{{ path('app_cabinet_report_fill', {id: report.id}) }}" class="w-100" novalidate>
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div>
+                    </div>
+                {% endif %}
+
+                <fieldset class="border-0 p-0 m-0"{{ frozen ? ' disabled' : '' }}>
+
+                <div id="sec-req" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Общие сведения</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Вид документа</label>
+                            <input class="form-control" value="{{ report.typeLabel }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Система покрытия</label>
+                            <input class="form-control" value="{{ report.systemTitle|default('—') }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">№ акта <span class="text-danger">*</span></label>
+                            <input name="actNumber" value="{{ input.actNumber }}" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Дата <span class="text-danger">*</span></label>
+                            <input type="date" name="reportDate" value="{{ input.reportDate }}" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Адрес объекта <span class="text-danger">*</span></label>
+                            <input name="address" value="{{ input.address }}" class="form-control" placeholder="г. Березовский">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Работы с <span class="text-danger">*</span></label>
+                            <input type="date" name="workFrom" value="{{ input.workFrom }}" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Работы по <span class="text-danger">*</span></label>
+                            <input type="date" name="workTo" value="{{ input.workTo }}" class="form-control">
+                        </div>
+                        <div class="col-12" data-reference-select-group>
+                            <label class="form-label">Заказчик <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-reference-select-hidden-name-value="customerId"
+                                   {% if input.customer %}data-reference-select-existing-value="{{ input.customer|json_encode|e('html_attr') }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                        </div>
+                        <div class="col-12" data-reference-select-group>
+                            <label class="form-label">Подрядчик <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-reference-select-hidden-name-value="contractorId"
+                                   {% if input.contractor %}data-reference-select-existing-value="{{ input.contractor|json_encode|e('html_attr') }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                        </div>
+                        <div class="col-12" data-reference-select-group>
+                            <label class="form-label">Проект <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" data-controller="reference-select"
+                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
+                                   data-reference-select-hidden-name-value="projectId"
+                                   data-reference-select-counterparty-name-value="customerId"
+                                   {% if input.project %}data-reference-select-existing-value="{{ input.project|json_encode|e('html_attr') }}"{% endif %}
+                                   placeholder="Поиск или создать…">
+                            <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% for section in sections %}
+                    <div id="blk-{{ section.key }}" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2">
+                            {{ section.title }}
+                            {% if section.readOnly %}<span class="badge text-bg-light fw-normal ms-auto">заполнено</span>{% endif %}
+                        </h6>
+
+                        {% if section.readOnly %}
+                            {% for field in section.fields %}
+                                {% if field.type in ['list', 'layers'] %}
+                                    {% for row in field.value|default([]) %}
+                                        <div class="p-2 mb-2 rounded-3 bg-body">
+                                            <div class="row g-2">
+                                                {% for sub in field.itemFields %}
+                                                    {% set v = row[sub.key]|default(null) %}
+                                                    {% set text = sub.type == 'coating_ref' ? (v.title|default('')) : (v|default('')) %}
+                                                    {% if text is not empty %}
+                                                        <div class="col-md-6">
+                                                            <span class="text-body-secondary small">{{ sub.label }}:</span>
+                                                            <span class="fw-semibold">{{ text }}{% if sub.unit %} {{ sub.unit }}{% endif %}</span>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-body-secondary small">Система без слоёв.</div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="form-text mt-1">Заполнено из выбранной системы, здесь не редактируется.</div>
+                        {% else %}
+                            {% for field in section.fields %}
+                                {% if field.type in ['list', 'layers'] %}
+                                    <div class="mb-2" data-controller="report-list-rows">
+                                        {# Не дублируем заголовок секции: если единственное list-поле названо как блок. #}
+                                        {% if field.label != section.title %}<label class="form-label fw-semibold">{{ field.label }}</label>{% endif %}
+                                        <div data-report-list-rows-target="rows">
+                                            {% for row in field.value|default([]) %}
+                                                <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row"{% if field.type == 'layers' %} data-controller="layer-hints" data-layer-hints-url-value="{{ path('app_cabinet_report_layer_hints') }}"{% endif %}>
+                                                    {{ w.row_fields('content[' ~ section.key ~ '][' ~ field.key ~ '][' ~ loop.index0 ~ ']', field.itemFields, row) }}
+                                                    {% if field.type == 'layers' %}<div data-layer-hints-target="output"></div>{% endif %}
+                                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <template data-report-list-rows-target="template">
+                                            <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
+                                                {{ w.row_fields('content[' ~ section.key ~ '][' ~ field.key ~ '][__i__]', field.itemFields, {}) }}
+                                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+                                            </div>
+                                        </template>
+                                        <button type="button" class="btn btn-soft-success btn-sm" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
+                                    </div>
+                                {% elseif field.type == 'string_list' %}
+                                    <div class="mb-2" data-controller="report-list-rows">
+                                        {% if field.label != section.title %}<label class="form-label fw-semibold">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>{% endif %}
+                                        {# Устойчивость к старой форме данных: строка → один пункт; объект {text} → его text. #}
+                                        {% set items = field.value is iterable ? field.value : (field.value|default('') != '' ? [field.value] : []) %}
+                                        <div data-report-list-rows-target="rows">
+                                            {% for item in items %}
+                                                <div class="d-flex gap-2 mb-2 align-items-start" data-report-list-rows-target="row">
+                                                    <textarea name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}]" class="form-control" rows="{{ field.rows|default(4) }}">{{ item is iterable ? (item.text|default('')) : item }}</textarea>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <template data-report-list-rows-target="template">
+                                            <div class="d-flex gap-2 mb-2 align-items-start" data-report-list-rows-target="row">
+                                                <textarea name="content[{{ section.key }}][{{ field.key }}][__i__]" class="form-control" rows="{{ field.rows|default(4) }}"></textarea>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+                                            </div>
+                                        </template>
+                                        <button type="button" class="btn btn-soft-success btn-sm" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
+                                    </div>
+                                {% elseif field.type == 'photo_slot' %}
+                                    <div class="mb-3" data-controller="report-photos" data-report-photos-stage-url-value="{{ path('app_cabinet_file_stage') }}">
+                                        <label class="form-label fw-semibold">{{ field.label }}</label>
+                                        <div class="report-photos" data-report-photos-target="tiles">
+                                            {% for row in field.value|default([]) %}
+                                                <div class="report-photo" data-report-photos-target="tile" data-state="ok">
+                                                    <div class="report-photo-preview"><i class="bi bi-image"></i></div>
+                                                    <div class="report-photo-badge"></div>
+                                                    <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][file]" value="{{ row.file|default('') }}" data-report-photos-target="file">
+                                                    <input type="text" class="form-control form-control-sm mt-1" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][caption]" value="{{ row.caption|default('') }}" placeholder="Подпись">
+                                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 mt-1" data-action="report-photos#remove">убрать</button>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <template data-report-photos-target="template">
+                                            <div class="report-photo" data-report-photos-target="tile">
+                                                <div class="report-photo-preview"><i class="bi bi-image"></i></div>
+                                                <div class="report-photo-badge"></div>
+                                                <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][__i__][file]" value="" data-report-photos-target="file">
+                                                <input type="text" class="form-control form-control-sm mt-1" name="content[{{ section.key }}][{{ field.key }}][__i__][caption]" value="" placeholder="Подпись">
+                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 mt-1" data-action="report-photos#remove">убрать</button>
+                                            </div>
+                                        </template>
+                                        <label class="btn btn-soft-success btn-sm mt-1">
+                                            <i class="bi bi-camera me-1"></i>Добавить фото
+                                            <input type="file" accept="image/*" multiple hidden data-report-photos-target="input" data-action="change->report-photos#pick">
+                                        </label>
+                                        <div class="form-text">Фото грузятся онлайн. Нет сети — добавится и догрузится при подключении.</div>
+                                    </div>
+                                {% else %}
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                        {{ w.widget('content[' ~ section.key ~ '][' ~ field.key ~ ']', field, field.value|default('')) }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </fieldset>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

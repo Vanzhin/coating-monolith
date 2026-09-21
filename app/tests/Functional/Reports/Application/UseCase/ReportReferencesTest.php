@@ -16,6 +16,7 @@ use App\Reports\Domain\Repository\ProjectRepositoryInterface;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Tests\Functional\Coatings\Application\UseCase\Command\Layer\CoatingSystemLayerTestFixtureTrait;
 use App\Tests\Support\AuthenticatesActorTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -23,6 +24,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReportReferencesTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
+    use CoatingSystemLayerTestFixtureTrait;
 
     private CommandBusInterface $commandBus;
     private ReportRepositoryInterface $reports;
@@ -45,6 +47,7 @@ final class ReportReferencesTest extends KernelTestCase
         $this->projects = $c->get(ProjectRepositoryInterface::class);
         $this->counterparties = $c->get(CounterpartyRepositoryInterface::class);
         $this->em = $c->get(EntityManagerInterface::class);
+        $this->setUpFixture($c, $this->em); // система обязательна: заводим одну (1 слой)
 
         $this->authenticateAsSystem();
     }
@@ -71,6 +74,7 @@ final class ReportReferencesTest extends KernelTestCase
         } catch (\Throwable $e) {
             fwrite(STDERR, 'tearDown cleanup error: '.$e->getMessage()."\n");
         }
+        $this->tearDownFixture($this->em);
         parent::tearDown();
     }
 
@@ -104,6 +108,7 @@ final class ReportReferencesTest extends KernelTestCase
             projectId: $projectId,
             customerId: $customerId,
             contractorId: $contractorId,
+            systemId: (string) $this->systemId,
         ));
         \assert($result instanceof CreateReportCommandResult);
         $this->reportIds[] = $result->id;
@@ -127,15 +132,20 @@ final class ReportReferencesTest extends KernelTestCase
         self::assertSame($contractorId, $contractor->id);
         self::assertSame('Подрядчик-'.$suffix, $contractor->title);
 
-        self::assertNull($report->getSystem());
+        // Система обязательна — снимок должен быть проставлен.
+        $system = $report->getSystem();
+        self::assertNotNull($system);
+        self::assertSame((string) $this->systemId, $system->id);
     }
 
     public function test_unknown_project_throws(): void
     {
+        // Система валидна — единственное невалидное здесь именно проект.
         $this->expectException(AppException::class);
         $this->commandBus->execute(new CreateReportCommand(
             type: ReportType::TrialApplication,
             projectId: 'no-such-project',
+            systemId: (string) $this->systemId,
         ));
     }
 

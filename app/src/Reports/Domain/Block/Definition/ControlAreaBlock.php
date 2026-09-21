@@ -29,7 +29,7 @@ final class ControlAreaBlock implements BlockDefinition
     {
         return [
             new Field('description', FieldType::TextArea, 'Участок', required: true),
-            new Field('area', FieldType::Number, 'Площадь', unit: 'м²'),
+            new Field('area', FieldType::Number, 'Площадь', unit: 'м²', positive: true),
         ];
     }
 }

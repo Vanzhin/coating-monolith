@@ -18,6 +18,7 @@ final readonly class EvaluateLayerConditionsQuery extends Query
         public ?float $surfaceTemp = null,
         public ?float $airTemp = null,
         public ?float $humidity = null,
+        public ?string $color = null,
     ) {
     }
 }

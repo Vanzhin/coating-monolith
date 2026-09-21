@@ -21,8 +21,13 @@ enum FieldType: string
     case CoatingRef = 'coating_ref';
     case ColorRef = 'color_ref';
     case ProductRef = 'product_ref';
+    case Thickness = 'thickness';
+    case NumberRange = 'number_range';
+    case Thinner = 'thinner';
+    case DateTimeRange = 'datetime_range';
     case Layers = 'layers';
     case ListRows = 'list';
+    case StringList = 'string_list';
     case PhotoSlot = 'photo_slot';
 
     public function isScalar(): bool

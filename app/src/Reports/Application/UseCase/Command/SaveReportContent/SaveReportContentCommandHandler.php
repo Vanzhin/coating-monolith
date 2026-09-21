@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reports\Application\UseCase\Command\SaveReportContent;
 
 use App\Reports\Application\Service\AccessControl\ReportAccessControl;
+use App\Reports\Application\Service\LayerMaterialResolver;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
 use App\Reports\Domain\File\ReportPhotoPurpose;
@@ -32,6 +33,7 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
         private ReportAccessControl $access,
         private ReportContentValidator $validator,
         private FileStorage $storage,
+        private LayerMaterialResolver $materialResolver,
     ) {
     }
 
@@ -48,19 +50,31 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
         $previousContent = $report->getContent();
         $content = $this->withPreservedSystem($command->content, $previousContent);
 
+        // Фото трогаем ТОЛЬКО если клиент прислал блок photos (управляет им). Иначе несём прежние —
+        // чтобы сохранение формы без фото-секции не стёрло уже привязанные снимки.
+        $photosManaged = array_key_exists('photos', $command->content);
+        if (!$photosManaged && isset($previousContent['photos'])) {
+            $content['photos'] = $previousContent['photos'];
+        }
+
         $type = $report->getType();
         if (null !== $type) {
+            $content = $this->materialResolver->resolve($type, $content);
             $this->validator->validate($type, $content, strict: false);
         }
 
-        $this->promoteStagedPhotos($report, $content);
+        if ($photosManaged) {
+            $this->promoteStagedPhotos($report, $content);
+        }
 
         $now = new \DateTimeImmutable();
         $this->autoStartWork($report, $now);
         $report->replaceContent($content, $now);
         $this->repository->add($report);
 
-        $this->removeDetachedPhotos($previousContent, $content);
+        if ($photosManaged) {
+            $this->removeDetachedPhotos($previousContent, $content);
+        }
     }
 
     /** Сохранение черновика само берёт отчёт «в работу»: Создан/Отклонён → В работе. */

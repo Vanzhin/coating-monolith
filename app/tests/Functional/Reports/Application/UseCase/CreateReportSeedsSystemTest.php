@@ -94,6 +94,23 @@ final class CreateReportSeedsSystemTest extends KernelTestCase
         self::assertSame('черновик', $content['notes']['text']);
     }
 
+    public function test_layer_material_id_resolved_to_snapshot(): void
+    {
+        $reportId = $this->createReportWithSystem();
+
+        // Форма шлёт материал слоя как id покрытия — бэк должен резолвить в снимок {id,title}.
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, [
+            'application' => ['layers' => [['material' => (string) $this->coatingId, 'dry_film_mean' => 80]]],
+        ]));
+        $this->em->clear();
+
+        $content = $this->reports->findOneById($reportId)?->getContent();
+        self::assertIsArray($content);
+        self::assertIsArray($content['application']['layers'][0]['material']);
+        self::assertSame((string) $this->coatingId, $content['application']['layers'][0]['material']['id']);
+        self::assertNotSame('', $content['application']['layers'][0]['material']['title']);
+    }
+
     private function createReportWithSystem(): string
     {
         $result = $this->commandBus->execute(new CreateReportCommand(

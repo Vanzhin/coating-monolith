@@ -23,6 +23,10 @@ class ReportDTOTransformer
         $dto->rejectionReason = $report->getRejectionReason();
         $dto->reportDate = $report->getReportDate()?->format('Y-m-d');
         $dto->actNumber = $report->getActNumber();
+        $dto->address = $report->getAddress();
+        $workPeriod = $report->getWorkPeriod();
+        $dto->workFrom = $workPeriod?->getFrom()?->format('Y-m-d');
+        $dto->workTo = $workPeriod?->getTo()?->format('Y-m-d');
 
         $project = $report->getProject();
         $dto->projectId = $project?->id;

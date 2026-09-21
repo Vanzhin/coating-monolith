@@ -43,7 +43,7 @@ final class ReportContentValidatorTest extends TestCase
         return [
             'control_area' => ['description' => 'Балка Б-1, нижняя полка', 'area' => 2.5],
             'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½', 'dedusting' => '2'],
-            'conclusion' => ['text' => 'Соответствует регламенту.'],
+            'conclusion' => ['text' => ['Соответствует регламенту.']],
             'notes' => ['text' => 'Без замечаний.'],
         ];
     }
@@ -52,6 +52,24 @@ final class ReportContentValidatorTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
         $this->validator->validate(ReportType::TrialApplication, $this->validContent(), strict: true);
+    }
+
+    public function test_negative_area_rejected(): void
+    {
+        $content = $this->validContent();
+        $content['control_area']['area'] = -5; // площадь не может быть отрицательной
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_zero_area_rejected(): void
+    {
+        $content = $this->validContent();
+        $content['control_area']['area'] = 0; // площадь должна быть строго положительной
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
     }
 
     public function test_control_area_description_required_strict(): void
@@ -145,6 +163,54 @@ final class ReportContentValidatorTest extends TestCase
     {
         $content = $this->validContent();
         $content['application'] = ['layers' => [['material' => 'Грунт ЭП-0199']]]; // строка вместо ссылки {id,title}
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_string_list_valid_passes(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $content = $this->validContent();
+        $content['recommendations'] = ['items' => ['Промыть пресной водой', 'Контроль ТСП через 24 ч']];
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_string_list_required_empty_throws_strict(): void
+    {
+        $content = $this->validContent();
+        $content['conclusion'] = ['text' => ['', '   ']]; // только пустые пункты
+        $content['recommendations'] = ['items' => []];
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: true);
+    }
+
+    public function test_string_list_non_string_item_throws(): void
+    {
+        $content = $this->validContent();
+        $content['recommendations'] = ['items' => ['ок', 42]];
+
+        $this->expectException(AppException::class);
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_wet_film_range_passes(): void
+    {
+        $this->expectNotToPerformAssertions();
+        $content = $this->validContent();
+        $content['application'] = ['layers' => [
+            ['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'wet_film' => ['min' => 60, 'max' => 90]],
+        ]];
+        $this->validator->validate(ReportType::TrialApplication, $content, strict: false);
+    }
+
+    public function test_wet_film_inverted_range_throws(): void
+    {
+        $content = $this->validContent();
+        $content['application'] = ['layers' => [
+            ['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'wet_film' => ['min' => 90, 'max' => 60]], // min > max
+        ]];
 
         $this->expectException(AppException::class);
         $this->validator->validate(ReportType::TrialApplication, $content, strict: false);

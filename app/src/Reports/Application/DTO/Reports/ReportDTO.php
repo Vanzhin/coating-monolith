@@ -16,6 +16,9 @@ class ReportDTO
     public ?string $rejectionReason = null;
     public ?string $reportDate = null;
     public ?string $actNumber = null;
+    public ?string $address = null;
+    public ?string $workFrom = null;
+    public ?string $workTo = null;
     public ?string $projectId = null;
     public ?string $projectTitle = null;
     public ?string $customerId = null;

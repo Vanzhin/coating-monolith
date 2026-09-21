@@ -20,11 +20,46 @@ final readonly class LayerConditionEvaluator
     }
 
     /**
+     * Климатические подсказки — НЕ зависят от покрытия: риск конденсата (t поверхности vs точка росы,
+     * запас по ISO 8502-4). Считается всегда, когда есть замеры воздуха/влажности/поверхности.
+     *
      * @return list<LayerWarning>
      */
-    public function evaluate(PositiveNumberRange $dft, int $applicationMinTemp, LayerMeasurements $m): array
+    public function evaluateClimate(LayerMeasurements $m): array
+    {
+        if (null === $m->surfaceTemp || null === $m->airTemp || null === $m->humidity || $m->humidity <= 0 || $m->humidity > 100) {
+            return [];
+        }
+
+        $dewPoint = $this->dewPoint->dewPoint($m->airTemp, new Percent($m->humidity));
+        if ($this->dewPoint->isSurfaceAcceptable($m->surfaceTemp, $dewPoint)) {
+            return [];
+        }
+
+        return [new LayerWarning(
+            LayerWarningCode::CondensationRisk,
+            sprintf(
+                'Риск конденсата: температура поверхности %s °C ниже допустимой %.1f °C (точка росы %.1f °C + запас 3 °C).',
+                $m->surfaceTemp,
+                $this->dewPoint->minSurfaceTemperature($dewPoint),
+                $dewPoint,
+            ),
+        )];
+    }
+
+    /**
+     * Подсказки против порогов покрытия: цвет вне палитры, ТСП вне диапазона, поверхность холоднее
+     * минимальной температуры нанесения. Требуют загруженного покрытия.
+     *
+     * @return list<LayerWarning>
+     */
+    public function evaluateAgainstCoating(PositiveNumberRange $dft, int $applicationMinTemp, ColorPalette $palette, LayerMeasurements $m): array
     {
         $warnings = [];
+
+        if (null !== $m->color && '' !== trim($m->color) && !$palette->accepts($m->color)) {
+            $warnings[] = new LayerWarning(LayerWarningCode::ColorNotInPalette, sprintf('Цвет «%s» не входит в палитру покрытия.', trim($m->color)));
+        }
 
         if (null !== $m->dryFilmMean) {
             if ($m->dryFilmMean < $dft->getMin()) {
@@ -36,21 +71,6 @@ final readonly class LayerConditionEvaluator
 
         if (null !== $m->surfaceTemp && $m->surfaceTemp < $applicationMinTemp) {
             $warnings[] = new LayerWarning(LayerWarningCode::SurfaceBelowApplicationTemp, sprintf('Температура поверхности %s °C ниже минимальной для нанесения %d °C.', $m->surfaceTemp, $applicationMinTemp));
-        }
-
-        if (null !== $m->surfaceTemp && null !== $m->airTemp && null !== $m->humidity && $m->humidity > 0 && $m->humidity <= 100) {
-            $dewPoint = $this->dewPoint->dewPoint($m->airTemp, new Percent($m->humidity));
-            if (!$this->dewPoint->isSurfaceAcceptable($m->surfaceTemp, $dewPoint)) {
-                $warnings[] = new LayerWarning(
-                    LayerWarningCode::CondensationRisk,
-                    sprintf(
-                        'Риск конденсата: температура поверхности %s °C ниже допустимой %.1f °C (точка росы %.1f °C + запас 3 °C).',
-                        $m->surfaceTemp,
-                        $this->dewPoint->minSurfaceTemperature($dewPoint),
-                        $dewPoint,
-                    ),
-                );
-            }
         }
 
         return $warnings;

@@ -13,6 +13,8 @@ final readonly class Field
     /**
      * @param list<string> $options    допустимые значения для FieldType::Enum
      * @param list<Field>  $itemFields под-поля строки для композитов (ListRows/Layers)
+     * @param int          $group      номер визуальной подгруппы в строке композита (0 — без группировки);
+     *                                 соседние поля с одним номером рендерятся вместе, смена номера — разделитель
      */
     public function __construct(
         public string $key,
@@ -23,6 +25,11 @@ final readonly class Field
         public array $options = [],
         public ?string $standard = null,
         public array $itemFields = [],
+        public bool $positive = false,
+        public bool $percent = false,
+        public bool $computed = false,
+        public int $group = 0,
+        public int $rows = 2,
     ) {
     }
 }
