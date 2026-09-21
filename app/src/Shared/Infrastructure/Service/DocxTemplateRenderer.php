@@ -15,6 +15,7 @@ use App\Shared\Domain\Templating\TemplateVariable;
 use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Domain\Templating\ValidationResult;
 use App\Shared\Infrastructure\Exception\AppException;
+use PhpOffice\PhpWord\Exception\Exception as PhpWordException;
 
 /**
  * Драйвер docx-шаблонов на PhpWord. Возможности: text + image + optional block.
@@ -27,6 +28,9 @@ use App\Shared\Infrastructure\Exception\AppException;
 final class DocxTemplateRenderer implements TemplateRenderer
 {
     private const DEFAULT_MAX_IMAGE_WIDTH_PX = 600;
+
+    /** Предохранитель от бесконечного цикла при обработке повторяемой группы в нескольких местах. */
+    private const MAX_REPEAT_OCCURRENCES = 100;
 
     public function supports(TemplateFile $template): bool
     {
@@ -161,14 +165,28 @@ final class DocxTemplateRenderer implements TemplateRenderer
 
         // Повторяемые группы {{group.sub}}: обёрнуты маркерами {{group}}…{{/group}} → список Word
         // (cloneBlock); иначе — строка таблицы (cloneRow). Пусто → регион/строка удаляются.
-        foreach ($parsed['repeats'] as $group => $info) {
-            $value = $data->get($group);
-            $rows = $value instanceof RepeatValue ? $value->rows : [];
-            if (isset($parsed['blocks'][$group])) {
-                $this->repeatBlock($processor, $group, $info['subs'], $rows);
-            } else {
-                $this->repeatRow($processor, $info['anchor'], $group, $info['subs'], $rows);
+        // Кривой шаблон (точечный токен не в строке таблицы/блоке, маркеры не абзацами) роняет PhpWord —
+        // ловим и отдаём человекочитаемую ошибку вместо 500.
+        try {
+            foreach ($parsed['repeats'] as $group => $info) {
+                $value = $data->get($group);
+                $rows = $value instanceof RepeatValue ? $value->rows : [];
+                if (isset($parsed['blocks'][$group])) {
+                    $this->repeatBlock($processor, $group, $info['subs'], $rows);
+                } else {
+                    $this->repeatRow($processor, $info['anchor'], $group, $info['subs'], $rows);
+                }
             }
+        } catch (PhpWordException $e) {
+            throw new AppException('Шаблон: не удалось обработать повторяемую группу. Плейсхолдеры {{группа.поле}} должны быть в одной строке таблицы, либо в блоке {{группа}}…{{/группа}} (маркеры — каждый в своём абзаце).', log: ['error' => $e->getMessage()], previous: $e);
+        }
+
+        // Guard: в ТЕЛЕ не должно остаться сырых плейсхолдеров. Остаток = кривой шаблон (группы делят
+        // строку, subs в разных строках, маркеры не оформлены) — тихая порча документа. Колонтитулы не
+        // проверяем: повтор там не поддержан, cloneRow/cloneBlock их не трогают (см. normalizeMacros).
+        $leftover = $processor->orderedMacros();
+        if ([] !== $leftover) {
+            throw new AppException(sprintf('Шаблон: не заполнены плейсхолдеры: %s. Проверьте оформление повторяемых групп/блоков.', implode(', ', $leftover)), log: ['leftover' => $leftover]);
         }
 
         return new RenderedDocument($this->toBytes($processor), TemplateFormat::Docx);
@@ -201,17 +219,14 @@ final class DocxTemplateRenderer implements TemplateRenderer
     /**
      * Повтор строкой таблицы (cloneRow): клонирует `<w:tr>` с anchor по количеству и заполняет
      * `{{group.sub#i}}`. Пусто → удаляет строку-шаблон (единственная строка → уйдёт вся таблица).
+     * Одна группа может встречаться в НЕСКОЛЬКИХ таблицах — обрабатываем ВСЕ вхождения (cloneRow берёт
+     * первое сырое, поэтому крутим, пока anchor ещё есть в документе).
      *
      * @param list<string>                $subs
      * @param list<array<string, string>> $rows
      */
     private function repeatRow(DocxMacroProcessor $processor, string $anchor, string $group, array $subs, array $rows): void
     {
-        if ([] === $rows) {
-            $processor->deleteRow($anchor);
-
-            return;
-        }
         $mapped = [];
         foreach ($rows as $row) {
             $entry = [];
@@ -220,28 +235,40 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
             $mapped[] = $entry;
         }
-        $processor->cloneRowAndSetValues($anchor, $mapped);
+
+        $guard = 0;
+        while (in_array($anchor, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+            if ([] === $mapped) {
+                $processor->deleteRow($anchor);
+            } else {
+                $processor->cloneRowAndSetValues($anchor, $mapped);
+            }
+        }
     }
 
     /**
      * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} по количеству
      * (список Word — нумерацию проставит сам), заполняет `{{group.sub#i}}`. Пусто → удаляет регион.
+     * Группа может встречаться в НЕСКОЛЬКИХ местах — крутим, пока маркер {{group}} ещё есть.
      *
      * @param list<string>                $subs
      * @param list<array<string, string>> $rows
      */
     private function repeatBlock(DocxMacroProcessor $processor, string $group, array $subs, array $rows): void
     {
-        if ([] === $rows) {
-            $processor->deleteBlock($group);
+        $guard = 0;
+        while (in_array($group, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+            if ([] === $rows) {
+                $processor->deleteBlock($group);
 
-            return;
-        }
-        $processor->cloneBlock($group, count($rows), true, true); // indexVariables → {{group.sub#i}}
-        foreach ($rows as $i => $row) {
-            $rowNumber = $i + 1;
-            foreach ($subs as $sub) {
-                $processor->setValue($group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
+                continue;
+            }
+            $processor->cloneBlock($group, count($rows), true, true); // indexVariables → {{group.sub#i}}
+            foreach ($rows as $i => $row) {
+                $rowNumber = $i + 1;
+                foreach ($subs as $sub) {
+                    $processor->setValue($group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
+                }
             }
         }
     }
@@ -294,9 +321,11 @@ final class DocxTemplateRenderer implements TemplateRenderer
 
         // повторяемые группы: точечные токены {{group.sub}} (строка таблицы). Все токены группы — в одной
         // строке; anchor — любой из них (cloneRow индексирует всю строку). Из flat-значений исключаем.
+        // ТОЛЬКО по телу (orderedMacros): cloneRow/cloneBlock работают по tempDocumentMainPart, повтор в
+        // колонтитуле не поддержан (иначе anchor есть, а cloneRow не найдёт → PhpWord-Exception → 500).
         $repeats = [];
         $repeatMembers = [];
-        foreach ($allTokens as $token) {
+        foreach ($mainContents as $token) {
             if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $token, $m)) {
                 $group = $m[1];
                 $sub = $m[2];
@@ -348,8 +377,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
         // 2) колонтитулы/сноски: плейсхолдеры вне тела — как обычные top-level значения
         //    (опциональные блоки поддерживаются только в теле документа)
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/') || isset($closeSet[$token]) || isset($repeatMembers[$token])) {
-                continue; // маркер блока или член повторяемой группы — не значение
+            if (str_starts_with($token, '/') || isset($closeSet[$token]) || isset($repeatMembers[$token])
+                || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
+                continue; // маркер блока / член повторяемой группы / точечный синтаксис (в т.ч. в колонтитуле) — не flat-значение
             }
 
             $optionalMark = str_ends_with($token, '?');
@@ -422,7 +452,10 @@ final class DocxTemplateRenderer implements TemplateRenderer
         }
 
         try {
-            return new DocxMacroProcessor($template->path);
+            $processor = new DocxMacroProcessor($template->path);
+            $processor->normalizeMacros(); // схлопнуть разбитые Word'ом макросы (иначе cloneRow/setValue не найдут)
+
+            return $processor;
         } catch (\Throwable $e) {
             throw new AppException('Не удалось открыть docx-шаблон.', log: ['path' => $template->path], previous: $e);
         }
