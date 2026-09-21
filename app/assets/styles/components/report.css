@@ -48,3 +48,8 @@
     border-color: var(--warn);
     box-shadow: 0 0 0 .15rem color-mix(in srgb, var(--warn) 30%, transparent);
 }
+
+/* Сворачиваемые блоки формы заполнения: клик по заголовку прячет тело (заполнил — свернул). */
+.report-block-toggle { cursor: pointer; }
+.report-block-chevron { transition: transform .15s ease; }
+.report-block-toggle[aria-expanded="false"] .report-block-chevron { transform: rotate(-90deg); }

@@ -136,7 +136,12 @@
                 <fieldset class="border-0 p-0 m-0"{{ frozen ? ' disabled' : '' }}>
 
                 <div id="sec-req" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <h6 class="fw-semibold mb-3">Общие сведения</h6>
+                    <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2 report-block-toggle" role="button"
+                        data-bs-toggle="collapse" data-bs-target="#body-sec-req" aria-expanded="true" aria-controls="body-sec-req">
+                        Общие сведения
+                        <i class="bi bi-chevron-down ms-auto report-block-chevron"></i>
+                    </h6>
+                    <div id="body-sec-req" class="collapse show">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Вид документа</label>
@@ -196,14 +201,18 @@
                             <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
                         </div>
                     </div>
+                    </div>
                 </div>
 
                 {% for section in sections %}
                     <div id="blk-{{ section.key }}" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                        <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2">
+                        <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2 report-block-toggle" role="button"
+                            data-bs-toggle="collapse" data-bs-target="#body-blk-{{ section.key }}" aria-expanded="true" aria-controls="body-blk-{{ section.key }}">
                             {{ section.title }}
-                            {% if section.readOnly %}<span class="badge text-bg-light fw-normal ms-auto">заполнено</span>{% endif %}
+                            {% if section.readOnly %}<span class="badge text-bg-light fw-normal">заполнено</span>{% endif %}
+                            <i class="bi bi-chevron-down ms-auto report-block-chevron"></i>
                         </h6>
+                        <div id="body-blk-{{ section.key }}" class="collapse show">
 
                         {% if section.readOnly %}
                             {% for field in section.fields %}
@@ -310,6 +319,7 @@
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
+                        </div>
                     </div>
                 {% endfor %}
                 </fieldset>
