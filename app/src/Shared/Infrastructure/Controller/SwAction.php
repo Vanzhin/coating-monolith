@@ -34,9 +34,11 @@ final class SwAction extends AbstractController
         // Identity-neutral и иммутабельное (хешированные ассеты, офлайн-страница, иконка) — cache-first.
         $cacheFirst = array_merge($assets, ['/offline.html', '/icons/android-chrome-192x192.png']);
 
-        // Страницы /tools предкэшируем (офлайн-фолбэк), но отдаём network-first (залогиненный онлайн
-        // видит свою оболочку), поэтому в cache-first наборе их НЕТ.
+        // Стартовый экран PWA (/app) + страницы /tools предкэшируем (офлайн-фолбэк), но отдаём
+        // network-first (залогиненный онлайн видит свежую страницу), поэтому в cache-first наборе их НЕТ.
+        // /app — входная дверь PWA (start_url): без неё офлайн-запуск с иконки не открывается.
         $pages = [
+            $this->generateUrl('app_shell'),
             $this->generateUrl('app_tools_index'),
             $this->generateUrl('app_tools_mix'),
             $this->generateUrl('app_tools_film'),
