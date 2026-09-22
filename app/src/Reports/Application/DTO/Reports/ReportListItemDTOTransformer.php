@@ -8,7 +8,7 @@ use App\Reports\Domain\Aggregate\Report\Report;
 
 class ReportListItemDTOTransformer
 {
-    public function fromEntity(Report $report): ReportListItemDTO
+    public function fromEntity(Report $report, ?string $ownerLabel = null): ReportListItemDTO
     {
         $type = $report->getType();
 
@@ -21,7 +21,10 @@ class ReportListItemDTOTransformer
         $dto->actNumber = $report->getActNumber();
         $dto->reportDate = $report->getReportDate()?->format('d.m.Y');
         $dto->projectTitle = $report->getProject()?->title;
+        $dto->customerTitle = $report->getCustomer()?->title;
+        $dto->contractorTitle = $report->getContractor()?->title;
         $dto->systemTitle = $report->getSystem()?->title;
+        $dto->ownerLabel = $ownerLabel;
         $dto->layerCount = $this->layerCount($report->getContent());
         $dto->updatedAt = $report->getUpdatedAt()->format('d.m.Y');
 
@@ -29,15 +32,16 @@ class ReportListItemDTOTransformer
     }
 
     /**
-     * @param iterable<Report> $reports
+     * @param iterable<Report>      $reports
+     * @param array<string, string> $ownerLabels ownerId → email (только админу; иначе пусто)
      *
      * @return list<ReportListItemDTO>
      */
-    public function fromEntityList(iterable $reports): array
+    public function fromEntityList(iterable $reports, array $ownerLabels = []): array
     {
         $items = [];
         foreach ($reports as $report) {
-            $items[] = $this->fromEntity($report);
+            $items[] = $this->fromEntity($report, $ownerLabels[$report->getOwnerId()] ?? null);
         }
 
         return $items;
