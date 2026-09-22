@@ -1,0 +1,43 @@
+{# Ядро калькулятора точки росы — страница /tools/dew-point и модалка-шит (значок у поля точки росы
+   на заполнении). Логика — dew_point_calculator_controller (Магнус + вердикт ISO 8502-4). Из покрытия
+   не сеется. #}
+<div data-controller="dew-point-calculator">
+    <div class="p-3 rounded-3 bg-body-tertiary film-card">
+        <div class="film-row">
+            <span class="film-label">Температура воздуха</span>
+            <input type="text" inputmode="decimal" class="form-control film-fld"
+                   data-dew-point-calculator-target="airTemp" data-action="input->dew-point-calculator#onInput"
+                   aria-label="Температура воздуха" placeholder="напр. 20">
+            <span class="film-unit">°C</span>
+        </div>
+        <div class="film-row">
+            <span class="film-label">Относительная влажность</span>
+            <input type="text" inputmode="decimal" class="form-control film-fld"
+                   data-dew-point-calculator-target="humidity" data-action="input->dew-point-calculator#onInput"
+                   aria-label="Относительная влажность" placeholder="напр. 60">
+            <span class="film-unit">%</span>
+        </div>
+
+        <hr class="film-sep">
+
+        <div class="film-row">
+            <span class="film-label">Точка росы<small>рассчитано</small></span>
+            <span class="film-fld film-eff-val" data-dew-point-calculator-target="dewPoint" aria-live="polite">—</span>
+            <span class="film-unit">°C</span>
+        </div>
+
+        <hr class="film-sep">
+
+        <div class="film-row">
+            <span class="film-label">Температура поверхности<small>для вердикта</small></span>
+            <input type="text" inputmode="decimal" class="form-control film-fld"
+                   data-dew-point-calculator-target="surfaceTemp" data-action="input->dew-point-calculator#onInput"
+                   aria-label="Температура поверхности" placeholder="напр. 15">
+            <span class="film-unit">°C</span>
+        </div>
+
+        <p class="mt-2 mb-0"><span class="badge" data-dew-point-calculator-target="verdict" hidden></span></p>
+
+        <p class="mix-hint">Точка росы — из температуры воздуха и влажности. Введите температуру поверхности: наносить можно, если она выше точки росы минимум на 3 °C (ISO 8502-4), иначе риск конденсата.</p>
+    </div>
+</div>

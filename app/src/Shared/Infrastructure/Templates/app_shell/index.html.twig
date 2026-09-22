@@ -32,6 +32,12 @@
             <span class="tool-card-desc">Мокрая и сухая плёнка с учётом сухого остатка и разбавления.</span>
         </a>
 
+        <a class="tool-card" href="{{ path('app_tools_dew') }}">
+            <span class="tool-card-ic"><i class="bi bi-thermometer-snow"></i></span>
+            <span class="tool-card-title">Точка росы</span>
+            <span class="tool-card-desc">Точка росы и риск конденсата по температуре и влажности.</span>
+        </a>
+
         {% if authenticated %}
             <a class="tool-card" href="{{ path('app_cabinet') }}">
                 <span class="tool-card-ic"><i class="bi bi-grid-1x2"></i></span>
