@@ -10,20 +10,26 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportsFilter;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Uid\Ulid;
+use Symfony\Component\Uid\Uuid;
 
 /**
- * Список отчётов текущего пользователя (админ — все). Поиск + «загрузить ещё» (partial=1 отдаёт
- * только пачку карточек следующей страницы). Owner-scoping — в хендлере, не тут.
+ * Список отчётов текущего пользователя (админ — все). Поиск + фасеты (владелец/заказчик/подрядчик/
+ * проект) + «загрузить ещё» (partial=1 отдаёт только пачку карточек следующей страницы).
+ * Owner-scoping — в хендлере, не тут. Фасеты сущностей рисуются в шаблоне только админу.
  */
 #[Route(path: '/cabinet/report', name: 'app_cabinet_report_list', methods: ['GET'])]
 final class ListAction extends AbstractController
 {
-    public function __construct(private readonly QueryBusInterface $queryBus)
-    {
+    public function __construct(
+        private readonly QueryBusInterface $queryBus,
+        private readonly QueryParams $queryParams,
+    ) {
     }
 
     public function __invoke(Request $request): Response
@@ -32,7 +38,21 @@ final class ListAction extends AbstractController
         $search = trim((string) $request->query->get('search', '')) ?: null;
         $status = ReportStatus::tryFrom((string) $request->query->get('status', ''));
 
-        $filter = new ReportsFilter(pager: Pager::fromPage($page, 20), status: $status, search: $search);
+        // owner — ULID (User.id); заказчик/подрядчик/проект — UUID. Битые id тихо отсеиваем.
+        $ownerIds = $this->queryParams->stringCollection($request, 'ownerIds', [Ulid::class, 'isValid'], unique: true);
+        $customerIds = $this->queryParams->stringCollection($request, 'customerIds', [Uuid::class, 'isValid'], unique: true);
+        $contractorIds = $this->queryParams->stringCollection($request, 'contractorIds', [Uuid::class, 'isValid'], unique: true);
+        $projectIds = $this->queryParams->stringCollection($request, 'projectIds', [Uuid::class, 'isValid'], unique: true);
+
+        $filter = new ReportsFilter(
+            pager: Pager::fromPage($page, 20),
+            ownerIds: $ownerIds,
+            customerIds: $customerIds,
+            contractorIds: $contractorIds,
+            projectIds: $projectIds,
+            status: $status,
+            search: $search,
+        );
         $result = $this->queryBus->execute(new GetPagedReportsQuery($filter));
 
         if ($request->query->getBoolean('partial')) {
@@ -44,6 +64,10 @@ final class ListAction extends AbstractController
             'search' => $search,
             'status' => $status?->value,
             'types' => ReportType::cases(),
+            'ownerIds' => $ownerIds->getList(),
+            'customerIds' => $customerIds->getList(),
+            'contractorIds' => $contractorIds->getList(),
+            'projectIds' => $projectIds->getList(),
         ]);
     }
 }

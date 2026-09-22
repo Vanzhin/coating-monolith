@@ -32,6 +32,9 @@
             <div class="ecard-desc">{{ r.actNumber ? '№ ' ~ r.actNumber : 'Без номера' }}{% if r.projectTitle %} · {{ r.projectTitle }}{% endif %}</div>
             <div class="ecard-meta">
                 {% if r.systemTitle %}<span>{{ r.systemTitle }}</span>{% endif %}
+                {% if r.customerTitle %}<span>Заказчик: {{ r.customerTitle }}</span>{% endif %}
+                {% if r.contractorTitle %}<span>Подрядчик: {{ r.contractorTitle }}</span>{% endif %}
+                {% if r.ownerLabel %}<span>Владелец: {{ r.ownerLabel }}</span>{% endif %}
                 {% if r.layerCount %}<span>Слоёв: <b>{{ r.layerCount }}</b></span>{% endif %}
                 <span class="ms-auto">{{ r.reportDate|default(r.updatedAt) }}</span>
             </div>

@@ -15,7 +15,11 @@ class ReportListItemDTO
     public ?string $actNumber = null;
     public ?string $reportDate = null;
     public ?string $projectTitle = null;
+    public ?string $customerTitle = null;
+    public ?string $contractorTitle = null;
     public ?string $systemTitle = null;
+    /** email владельца — заполняется только админу (трансформер получает карту). */
+    public ?string $ownerLabel = null;
     public int $layerCount = 0;
     public string $updatedAt;
 }

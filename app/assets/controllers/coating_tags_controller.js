@@ -35,11 +35,15 @@ export default class extends Controller {
         // resolveUrl?ids[]=… и рисуем чипы. Пусто → поведение не меняется.
         preselectedIds: { type: Array, default: [] },
         resolveUrl: { type: String, default: '' },
+        // Лимит чипов. 0 = без лимита (дефолт, обратная совместимость). 1 — одиночный
+        // фасет (владелец/заказчик в фильтре отчётов): Tagify не даст выбрать второй.
+        maxTags: { type: Number, default: 0 },
     };
 
     connect() {
         this.tagify = new Tagify(this.element, {
             whitelist: [],
+            maxTags: this.maxTagsValue > 0 ? this.maxTagsValue : Infinity,
             dropdown: {
                 enabled: 1,
                 maxItems: 20,

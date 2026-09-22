@@ -48,8 +48,22 @@ class ReportRepository extends ServiceEntityRepository implements ReportReposito
     {
         $qb = $this->createQueryBuilder('r')->orderBy('r.updatedAt', 'DESC');
 
-        if (null !== $filter->ownerId) {
-            $qb->andWhere('r.ownerId = :owner')->setParameter('owner', $filter->ownerId);
+        // owner — скалярная колонка; заказчик/подрядчик/проект — id внутри JSONB Reference-колонок.
+        // Внутри фасета OR (IN), между фасетами AND. Пустой StringCollection = фасет не задан.
+        if ($filter->ownerIds->count() > 0) {
+            $qb->andWhere('r.ownerId IN (:ownerIds)')->setParameter('ownerIds', $filter->ownerIds->getList());
+        }
+        if ($filter->customerIds->count() > 0) {
+            $qb->andWhere("JSONB_GET_TEXT(r.customer, 'id') IN (:customerIds)")
+                ->setParameter('customerIds', $filter->customerIds->getList());
+        }
+        if ($filter->contractorIds->count() > 0) {
+            $qb->andWhere("JSONB_GET_TEXT(r.contractor, 'id') IN (:contractorIds)")
+                ->setParameter('contractorIds', $filter->contractorIds->getList());
+        }
+        if ($filter->projectIds->count() > 0) {
+            $qb->andWhere("JSONB_GET_TEXT(r.project, 'id') IN (:projectIds)")
+                ->setParameter('projectIds', $filter->projectIds->getList());
         }
         if (null !== $filter->status) {
             $qb->andWhere('r.status = :status')->setParameter('status', $filter->status->value);
