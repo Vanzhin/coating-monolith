@@ -15,6 +15,8 @@ final readonly class Field
      * @param list<Field>  $itemFields под-поля строки для композитов (ListRows/Layers)
      * @param int          $group      номер визуальной подгруппы в строке композита (0 — без группировки);
      *                                 соседние поля с одним номером рендерятся вместе, смена номера — разделитель
+     * @param ?string      $calculator ключ калькулятора-помощника у поля ('wet-film'|'dew-point'): форма
+     *                                 рисует значок, открывающий калькулятор в шторке (засев из покрытия слоя)
      */
     public function __construct(
         public string $key,
@@ -30,6 +32,7 @@ final readonly class Field
         public bool $computed = false,
         public int $group = 0,
         public int $rows = 2,
+        public ?string $calculator = null,
     ) {
     }
 }

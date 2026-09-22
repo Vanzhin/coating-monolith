@@ -56,7 +56,7 @@ final class ApplicationBlock implements BlockDefinition
                 new Field('thinner', FieldType::Thinner, 'Разбавитель (название / № партии / %)', group: 1),
                 new Field('nozzle', FieldType::Text, 'Сопло', group: 1),
                 // Группа 3 — толщина и контроль.
-                new Field('wet_film', FieldType::NumberRange, 'Толщина мокрого слоя (мин/макс), мкм', unit: 'мкм', group: 3),
+                new Field('wet_film', FieldType::NumberRange, 'Толщина мокрого слоя (мин/макс), мкм', unit: 'мкм', group: 3, calculator: 'wet-film'),
                 new Field('dry_film', FieldType::Thickness, 'Толщина сухого слоя (мин/макс/средняя), мкм', group: 3),
                 new Field('visual_control', FieldType::TextArea, 'Визуальный контроль (ВИК)', group: 3),
                 new Field('note', FieldType::Text, 'Примечание', group: 3),
@@ -64,7 +64,7 @@ final class ApplicationBlock implements BlockDefinition
                 new Field('humidity', FieldType::Number, 'Отн. влажность', unit: '%', percent: true, group: 2),
                 new Field('air_temp', FieldType::Number, 'Температура воздуха', unit: '°C', group: 2),
                 new Field('surface_temp', FieldType::Number, 'Температура поверхности', unit: '°C', group: 2),
-                new Field('dew_point', FieldType::Number, 'Точка росы', unit: '°C', computed: true, group: 2),
+                new Field('dew_point', FieldType::Number, 'Точка росы', unit: '°C', computed: true, group: 2, calculator: 'dew-point'),
             ]),
         ];
     }

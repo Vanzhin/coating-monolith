@@ -73,6 +73,7 @@ final readonly class ReportFormPresenter
             $field->computed,
             $field->group,
             $field->rows,
+            $field->calculator,
         );
     }
 }
