@@ -3,7 +3,7 @@
   "short_name": "1helper",
   "description": "Каталог покрытий, подбор по среде и сравнение",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#ffffff",
