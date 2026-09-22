@@ -18,16 +18,7 @@
                     </div>
                 {% endif %}
 
-                {% if app.session.flashBag.peekAll()|length > 0 %}
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        {% for key, messages in app.flashes() %}
-                            {% for message in messages %}
-                                <span>{{ message }}</span>
-                            {% endfor %}
-                        {% endfor %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endif %}
+                {# Флеши рендерит base.html.twig единым тостом (flash-messages) — тут не дублируем. #}
 
                 {# Хедер кабинета — тертиарная карточка с приветствием и ролью. #}
                 <div class="p-3 mb-3 rounded-3 bg-body-tertiary">

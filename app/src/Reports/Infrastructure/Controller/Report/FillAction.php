@@ -15,6 +15,7 @@ use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -63,9 +64,10 @@ final class FillAction extends AbstractController
                 }
 
                 return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);
-            } catch (\Exception $e) {
-                // Ошибку показываем, введённое — сохраняем целиком из формы (как inputData в
-                // форме покрытий): скаляры + чипы ссылок (id и title-компаньон шлёт reference-select).
+            } catch (AppException $e) {
+                // ТОЛЬКО доменные ошибки (валидация/доступ) показываем inline, введённое сохраняем из
+                // формы. Технические (ФС/сеть и пр.) НЕ ловим — их подхватит MutationErrorListener:
+                // залогирует с ref-кодом и покажет generic-тост, не утекая внутренностями наружу.
                 return $this->renderForm($id, $content, $e->getMessage(), $this->inputFromPayload($payload));
             }
         }
