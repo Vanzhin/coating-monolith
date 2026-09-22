@@ -65,7 +65,11 @@
             {% set prevGroup = sub.group %}
         {% endif %}
         <div class="col-md-6">
-            <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}</label>
+            <label class="form-label small mb-1">{{ sub.label }}{% if sub.required %} <span class="text-danger">*</span>{% endif %}{% if sub.calculator %} <button type="button" class="btn btn-sm btn-link p-0 ms-1 align-baseline" title="Калькулятор"
+                    data-controller="calc-launcher" data-action="calc-launcher#open"
+                    data-calc-launcher-calc-value="{{ sub.calculator }}"
+                    data-calc-launcher-modal-value="{{ sub.calculator == 'dew-point' ? 'dewPointCalcModal' : 'wetFilmCalcModal' }}"
+                    data-calc-launcher-context-url-value="{{ path('app_cabinet_coating_coating_calc_context', {id: '__CID__'}) }}"><i class="bi bi-calculator"></i></button>{% endif %}</label>
             {{ _self.widget(namePrefix ~ '[' ~ sub.key ~ ']', sub, row[sub.key]|default('')) }}
         </div>
         {% if loop.last %}</div></div>{% endif %}
@@ -324,6 +328,18 @@
                 {% endfor %}
                 </fieldset>
             </form>
+
+            {# Калькуляторы-помощники в шторке. ВНЕ формы: их сегмент-радио не должны уходить в сабмит
+               отчёта. Значки calc-launcher у полей слоёв (точка росы, мокрая плёнка) открывают их;
+               мокрую плёнку засеваем сухим остатком покрытия слоя по клику. #}
+            {% include 'components/_calculator_sheet.html.twig' with {
+                id: 'dewPointCalcModal', title: 'Точка росы и конденсация',
+                partial: 'tools/_dew_point_calculator.html.twig',
+            } only %}
+            {% include 'components/_calculator_sheet.html.twig' with {
+                id: 'wetFilmCalcModal', title: 'Толщина плёнки',
+                partial: 'tools/_film_calculator.html.twig',
+            } only %}
         {% endblock %}
     {% endembed %}
 {% endblock %}

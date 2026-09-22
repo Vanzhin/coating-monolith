@@ -1,0 +1,16 @@
+{# Калькулятор в шторке (.modal-sheet — снизу на мобиле, центр-диалог на десктопе, как быстрый
+   просмотр). Параметры: id, title, partial (ядро калькулятора из tools/_*_calculator.html.twig).
+   Открывает значок calc-launcher; для покрытие-зависимых он засевает калькулятор из покрытия слоя. #}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-sheet modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="{{ id }}Label">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                {% include partial %}
+            </div>
+        </div>
+    </div>
+</div>

@@ -4,7 +4,7 @@
 {% block meta_description %}<meta name="description" content="Онлайн-калькулятор толщины плёнки: сколько мокрой плёнки набрать, чтобы получить нужную сухую (WFT/DFT), с учётом сухого остатка по объёму и разбавления. Считает в обе стороны, без регистрации.">{% endblock %}
 
 {% block body %}
-<div class="tools-page" data-controller="film-calculator">
+<div class="tools-page">
     <nav class="tools-crumbs">
         <a href="{{ path('app_tools_index') }}">Инструменты</a>
         <i class="bi bi-chevron-right"></i>
@@ -14,72 +14,7 @@
     <h1 class="tools-h1">Толщина плёнки: мокрая и сухая</h1>
     <p class="tools-intro">Сколько мокрой плёнки набрать, чтобы после высыхания получить нужную сухую — с учётом сухого остатка по объёму и разбавления. Считает в обе стороны.</p>
 
-    {% if app.user %}
-        <div class="mix-coating p-3 rounded-3 bg-body-tertiary"
-             data-controller="async-typeahead"
-             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-             data-async-typeahead-placeholder-value="Найти покрытие…"
-             data-async-typeahead-min-length-value="3"
-             data-action="async-typeahead:select->film-calculator#applyFromCoating async-typeahead:deselect->film-calculator#clearCoating">
-            <label class="mix-coating-lbl" for="filmCoatingSelect">Из покрытия</label>
-            <select id="filmCoatingSelect" data-async-typeahead-target="select">
-                <option value="">Найти покрытие…</option>
-            </select>
-            <p class="mix-coating-msg msg msg-warning" data-film-calculator-target="coatingMsg" hidden></p>
-        </div>
-    {% else %}
-        <div class="tools-cta">
-            <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
-            <p class="tools-cta-text">Войдите, чтобы подставлять сухой остаток из базы покрытий автоматически.</p>
-            <a class="btn btn-primary" href="{{ path('app_login', {_target_path: app.request.requestUri}) }}">Войти</a>
-        </div>
-    {% endif %}
-
-    <div class="p-3 rounded-3 bg-body-tertiary film-card">
-        <div class="film-row">
-            <span class="film-label">Сухой остаток<small>по объёму</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="vs" data-action="input->film-calculator#onInput"
-                   aria-label="Сухой остаток по объёму" placeholder="напр. 65">
-            <span class="film-unit">%</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Разбавление<small>растворитель по объёму</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="dilution" data-action="input->film-calculator#onInput"
-                   aria-label="Разбавление" placeholder="0">
-            <span class="film-unit">%</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Фактический сухой остаток<small>после разбавления</small></span>
-            <span class="film-fld film-eff-val" data-film-calculator-target="effVs" aria-live="polite">—</span>
-            <span class="film-unit">%</span>
-        </div>
-
-        <hr class="film-sep">
-
-        <div class="film-row">
-            <span class="film-label">Сухая плёнка<small>DFT — цель</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="dry" data-action="input->film-calculator#onInput"
-                   aria-label="Сухая плёнка (DFT)">
-            <span class="film-unit">мкм</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Мокрая плёнка<small>WFT — сколько набрать</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="wet" data-action="input->film-calculator#onInput"
-                   aria-label="Мокрая плёнка (WFT)">
-            <span class="film-unit">мкм</span>
-        </div>
-
-        <p class="mix-hint">Введите толщину в любую строку — вторая пересчитается. Опорное поле обведено. Сухой остаток и разбавление — параметры.</p>
-    </div>
-
-    <p class="tools-note">
-        <i class="bi bi-info-circle"></i>
-        <span>Это расчёт по номинальному сухому остатку. Фактическая толщина может отличаться: погрешность измерения, профиль (шероховатость) поверхности, потери на распыление и неравномерность нанесения.</span>
-    </p>
+    {% include 'tools/_film_calculator.html.twig' %}
 
     <details class="tools-details">
         <summary>Как рассчитать толщину плёнки</summary>

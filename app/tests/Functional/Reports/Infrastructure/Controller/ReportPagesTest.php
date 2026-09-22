@@ -88,6 +88,18 @@ final class ReportPagesTest extends WebTestCase
         self::assertSelectorExists('form input[name="actNumber"]'); // реквизиты — на странице заполнения
     }
 
+    public function test_fill_page_has_calculator_launchers(): void
+    {
+        $id = $this->createReport();
+
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
+        self::assertResponseIsSuccessful();
+        // Значки-калькуляторы у полей слоёв (мокрая плёнка / точка росы) + их шторки на странице.
+        self::assertSelectorExists('[data-controller="calc-launcher"]');
+        self::assertSelectorExists('#wetFilmCalcModal');
+        self::assertSelectorExists('#dewPointCalcModal');
+    }
+
     public function test_fill_form_renders_and_saves(): void
     {
         $id = $this->createReport();

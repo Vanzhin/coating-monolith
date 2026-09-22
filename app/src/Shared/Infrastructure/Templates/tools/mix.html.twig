@@ -4,7 +4,7 @@
 {% block meta_description %}<meta name="description" content="Онлайн-калькулятор смешивания двухкомпонентных красок и покрытий по пропорции. Посчитайте, сколько основы и отвердителя нужно на объём смеси или сколько добавить по одному компоненту. Без регистрации.">{% endblock %}
 
 {% block body %}
-<div class="tools-page" data-controller="mix-calculator">
+<div class="tools-page">
     <nav class="tools-crumbs">
         <a href="{{ path('app_tools_index') }}">Инструменты</a>
         <i class="bi bi-chevron-right"></i>
@@ -14,78 +14,7 @@
     <h1 class="tools-h1">Калькулятор смешивания компонентов</h1>
     <p class="tools-intro">Сколько основы и отвердителя нужно на заданный объём смеси — или сколько добавить, если один компонент уже отмерен.</p>
 
-    {% if app.user %}
-        <div class="mix-coating p-3 rounded-3 bg-body-tertiary"
-             data-controller="async-typeahead"
-             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-             data-async-typeahead-placeholder-value="Найти покрытие…"
-             data-async-typeahead-min-length-value="3"
-             data-action="async-typeahead:select->mix-calculator#applyFromCoating async-typeahead:deselect->mix-calculator#clearCoating">
-            <label class="mix-coating-lbl" for="mixCoatingSelect">Из покрытия</label>
-            <select id="mixCoatingSelect" data-async-typeahead-target="select">
-                <option value="">Найти покрытие…</option>
-            </select>
-
-            <div class="mix-base" data-mix-calculator-target="baseSeg" hidden>
-                <div class="duration-seg" role="group" aria-label="База соотношения">
-                    <input type="radio" class="btn-check" name="mixBase" id="mixBaseVolume" value="volume" checked
-                           data-action="change->mix-calculator#changeBase">
-                    <label class="duration-seg-btn" for="mixBaseVolume">Объём</label>
-                    <input type="radio" class="btn-check" name="mixBase" id="mixBaseMass" value="mass"
-                           data-action="change->mix-calculator#changeBase">
-                    <label class="duration-seg-btn" for="mixBaseMass">Масса</label>
-                </div>
-            </div>
-
-            <p class="mix-coating-msg msg msg-warning" data-mix-calculator-target="coatingMsg" hidden></p>
-        </div>
-    {% else %}
-        <div class="tools-cta">
-            <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
-            <p class="tools-cta-text">Войдите, чтобы искать покрытия и подставлять их пропорции автоматически.</p>
-            <a class="btn btn-primary" href="{{ path('app_login', {_target_path: app.request.requestUri}) }}">Войти</a>
-        </div>
-    {% endif %}
-
-    <div class="p-3 rounded-3 bg-body-tertiary mix-card">
-        <div class="mix-cols mix-cols-head">
-            <span>Компонент</span>
-            <span>Часть</span>
-            <span>Количество</span>
-        </div>
-
-        <div data-mix-calculator-target="rows">
-            <div class="mix-row" data-mix-calculator-target="row">
-                <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">1</span></span>
-                <input type="text" inputmode="decimal" class="form-control mix-part"
-                       data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 1">
-                <input type="text" inputmode="decimal" class="form-control mix-qty"
-                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 1">
-            </div>
-            <div class="mix-row" data-mix-calculator-target="row">
-                <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">2</span></span>
-                <input type="text" inputmode="decimal" class="form-control mix-part"
-                       data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 2">
-                <input type="text" inputmode="decimal" class="form-control mix-qty"
-                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 2">
-            </div>
-        </div>
-
-        <button type="button" class="mix-add" data-action="mix-calculator#addComponent">
-            <i class="bi bi-plus-lg"></i> Добавить компонент
-        </button>
-
-        <hr class="mix-sep">
-
-        <div class="mix-row mix-total">
-            <span class="mix-name">Итого</span>
-            <span class="mix-part-sum" data-mix-calculator-target="totalPart">0</span>
-            <input type="text" inputmode="decimal" class="form-control mix-qty"
-                   data-mix-calculator-target="totalQty" data-action="input->mix-calculator#onInput" aria-label="Итоговое количество смеси">
-        </div>
-
-        <p class="mix-hint">Введите количество в любую строку или в «Итого» — остальные пересчитаются по пропорции.</p>
-    </div>
+    {% include 'tools/_mix_calculator.html.twig' %}
 
     <details class="tools-details">
         <summary>Как рассчитать смешивание</summary>
@@ -99,19 +28,5 @@
             <p>Числа безразмерные: считайте в литрах, миллилитрах или килограммах — пропорция сохраняется.</p>
         </div>
     </details>
-
-    {# Шаблон строки компонента — клонируется контроллером при добавлении (без дублирования разметки в JS). #}
-    <template data-mix-calculator-target="rowTemplate">
-        <div class="mix-row" data-mix-calculator-target="row">
-            <span class="mix-name">
-                Компонент <span data-mix-calculator-target="rowNum"></span>
-                <button type="button" class="mix-remove" data-action="mix-calculator#removeComponent" aria-label="Убрать компонент"><i class="bi bi-x-lg"></i></button>
-            </span>
-            <input type="text" inputmode="decimal" class="form-control mix-part"
-                   data-mix-calculator-target="part" data-action="input->mix-calculator#onInput">
-            <input type="text" inputmode="decimal" class="form-control mix-qty"
-                   data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput">
-        </div>
-    </template>
 </div>
 {% endblock %}

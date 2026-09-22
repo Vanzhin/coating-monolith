@@ -234,6 +234,21 @@ export default class extends Controller {
     }
 
     /**
+     * Программно выбирает ПОЛНЫЙ item (со всеми доп. полями, напр. volumeSolid/mixingRatio) —
+     * addTags триггерит 'add', и наружу уходит select с целым item, как при ручном выборе.
+     * Используется значком-калькулятором на строке слоя: подставить покрытие слоя в поле «Из покрытия».
+     * @param {{id: string, title: string}} item
+     */
+    selectFullItem(item) {
+        if (!this._tagify || !item || !item.id) return;
+        const tag = { ...item, value: item.title ?? item.description ?? '' };
+        this._tagify.removeAllTags();
+        this._tagify.whitelist = [tag]; // enforceWhitelist: тег должен быть в whitelist (как preselected)
+        this._tagify.addTags([tag]);
+        this._hidden.value = item.id;
+    }
+
+    /**
      * Сбрасывает выбор (нет тега, пустой hidden) — например при смене типа ссылки,
      * когда прежний объект уже не валиден для нового suggest-эндпоинта.
      */

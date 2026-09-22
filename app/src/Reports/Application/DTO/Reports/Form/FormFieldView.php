@@ -25,6 +25,7 @@ final readonly class FormFieldView
         public bool $computed = false,
         public int $group = 0,
         public int $rows = 2,
+        public ?string $calculator = null,
     ) {
     }
 }
