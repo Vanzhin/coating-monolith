@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}1helper — приложение{% endblock %}
+{% block meta_description %}<meta name="description" content="1helper — калькуляторы для нанесения покрытий. Инструменты работают офлайн, без входа.">{% endblock %}
+
+{% block body %}
+{# Публичная оболочка PWA: открывается офлайн, инструменты доступны. Онлайн залогиненного
+   app_shell_controller клиентски форвардит в кабинет. #}
+<div class="tools-hub"
+     data-controller="app-shell"
+     data-app-shell-authenticated-value="{{ authenticated ? 'true' : 'false' }}"
+     data-app-shell-cabinet-url-value="{{ path('app_cabinet') }}">
+    <h1 class="tools-h1">1helper</h1>
+    <p class="tools-lead">Инструменты для нанесения — работают без сети.</p>
+
+    <div class="tools-grid">
+        <a class="tool-card" href="{{ path('app_tools_mix') }}">
+            <span class="tool-card-ic"><i class="bi bi-droplet-half"></i></span>
+            <span class="tool-card-title">Смешивание компонентов</span>
+            <span class="tool-card-desc">Дозировки рабочей смеси по пропорции.</span>
+        </a>
+
+        <a class="tool-card" href="{{ path('app_tools_consumption') }}">
+            <span class="tool-card-ic"><i class="bi bi-bucket"></i></span>
+            <span class="tool-card-title">Расход материала</span>
+            <span class="tool-card-desc">Сколько краски на площадь при нужной толщине сухой плёнки.</span>
+        </a>
+
+        <a class="tool-card" href="{{ path('app_tools_film') }}">
+            <span class="tool-card-ic"><i class="bi bi-water"></i></span>
+            <span class="tool-card-title">Толщина плёнки</span>
+            <span class="tool-card-desc">Мокрая и сухая плёнка с учётом сухого остатка и разбавления.</span>
+        </a>
+
+        {% if authenticated %}
+            <a class="tool-card" href="{{ path('app_cabinet') }}">
+                <span class="tool-card-ic"><i class="bi bi-grid-1x2"></i></span>
+                <span class="tool-card-title">Кабинет</span>
+                <span class="tool-card-desc">Каталог, отчёты, документы — доступны онлайн.</span>
+            </a>
+        {% else %}
+            <a class="tool-card" href="{{ path('app_login') }}">
+                <span class="tool-card-ic"><i class="bi bi-box-arrow-in-right"></i></span>
+                <span class="tool-card-title">Войти</span>
+                <span class="tool-card-desc">Доступ к каталогу покрытий и кабинету.</span>
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
