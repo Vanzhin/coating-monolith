@@ -62,6 +62,9 @@ services:
     App\Reports\Domain\Block\BlockDefinition:
       tags: ['app.report_block']
 
+    App\Shared\Application\File\FileAccessControl:
+      tags: ['app.file_access_control']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true

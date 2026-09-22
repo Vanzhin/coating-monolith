@@ -288,7 +288,7 @@
                                         <div class="report-photos" data-report-photos-target="tiles">
                                             {% for row in field.value|default([]) %}
                                                 <div class="report-photo" data-report-photos-target="tile" data-state="ok">
-                                                    <div class="report-photo-preview"><i class="bi bi-image"></i></div>
+                                                    <div class="report-photo-preview">{% if row.file %}<img class="report-photo-img" src="{{ path('app_cabinet_file_get', {uuid: row.file}) }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
                                                     <div class="report-photo-badge"></div>
                                                     <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][file]" value="{{ row.file|default('') }}" data-report-photos-target="file">
                                                     <input type="text" class="form-control form-control-sm mt-1" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][caption]" value="{{ row.caption|default('') }}" placeholder="Подпись">
