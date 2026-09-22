@@ -8,6 +8,7 @@ use App\Reports\Application\UseCase\Command\UpdateProject\UpdateProjectCommand;
 use App\Reports\Application\UseCase\Query\GetProject\GetProjectQuery;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -49,7 +50,7 @@ final class UpdateAction extends AbstractController
                 $this->addFlash('project_updated_success', sprintf('Проект «%s» обновлён.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_reports_project_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         } else {

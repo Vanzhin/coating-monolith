@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Counterparty;
 
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,7 +37,7 @@ final class AddAction extends AbstractController
                 $this->addFlash('counterparty_created_success', sprintf('Контрагент «%s» добавлен.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_reports_counterparty_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         }

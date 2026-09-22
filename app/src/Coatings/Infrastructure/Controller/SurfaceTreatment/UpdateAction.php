@@ -53,7 +53,7 @@ class UpdateAction extends AbstractController
                 $this->addFlash('surface_treatment_updated_success', 'Подготовка поверхности обновлена.');
 
                 return $this->redirectToRoute('app_cabinet_surface_treatment_list');
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('cabinet/coating/surface_treatment/form.html.twig', [

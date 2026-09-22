@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Counterparty;
 
 use App\Reports\Application\UseCase\Command\DeleteCounterparty\DeleteCounterpartyCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,7 @@ final class DeleteAction extends AbstractController
         try {
             $this->commandBus->execute(new DeleteCounterpartyCommand($id));
             $this->addFlash('counterparty_removed_success', 'Контрагент удалён.');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $this->addFlash('counterparty_removed_error', $e->getMessage());
         }
 

@@ -18,6 +18,7 @@ use App\Coatings\Infrastructure\Mapper\CoatingMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Validation\Validator;
 use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -60,7 +61,7 @@ class UpdateAction extends AbstractController
                 $inputData['id'] = $id;
                 $errors = $this->validator->validate($inputData, $this->coatingMapper->getValidationCollectionCoating());
                 if ($errors) {
-                    throw new \Exception(current($errors)->getFullMessage());
+                    throw new AppException(current($errors)->getFullMessage());
                 }
                 $dto = $this->coatingMapper->buildCoatingDtoFromInputData($inputData);
                 $this->commandBus->execute(new UpdateCoatingCommand($id, $dto));
@@ -75,7 +76,7 @@ class UpdateAction extends AbstractController
                     ['coatingBases' => CoatingBase::cases(), 'glossOptions' => Gloss::cases(),
                         'existingTagsJson' => $this->hydrator->hydrateAsJson($inputData['tags'] ?? [])],
                 ));
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('admin/coating/coating/form.html.twig', array_merge(

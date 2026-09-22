@@ -6,6 +6,7 @@ namespace App\ChemicalResistance\Infrastructure\Controller\Assessment;
 
 use App\ChemicalResistance\Application\UseCase\Command\Assessment\DeleteAssessment\DeleteAssessmentCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +39,7 @@ class DeleteFromSubstanceAction extends AbstractController
         try {
             $this->commandBus->execute(new DeleteAssessmentCommand($assessmentId));
             $this->addFlash('assessment_updated_success', 'Покрытие убрано из вещества.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('assessment_error', $e->getMessage());
         }
 

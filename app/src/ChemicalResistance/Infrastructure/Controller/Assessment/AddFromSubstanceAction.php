@@ -59,7 +59,7 @@ class AddFromSubstanceAction extends AbstractController
                 noteIds: [],
             ));
             $this->addFlash('assessment_created_success', 'Покрытие добавлено к веществу.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('assessment_error', $e->getMessage());
         }
 

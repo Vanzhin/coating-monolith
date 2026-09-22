@@ -13,6 +13,7 @@ use App\Coatings\Domain\Repository\ManufacturersFilter;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -53,7 +54,7 @@ class ManufacturerController extends AbstractController
                 $this->addFlash('manufacturer_created_success', sprintf('Производитель "%s" был добавлен.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
@@ -83,7 +84,7 @@ class ManufacturerController extends AbstractController
                 $this->addFlash('manufacturer_updated_success', sprintf('Производитель "%s" был обновлен.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_coating_manufacturer_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('admin/coating/manufacturer/form.html.twig', compact('error', 'inputData'));
@@ -108,7 +109,7 @@ class ManufacturerController extends AbstractController
             $command = new RemoveManufacturerCommand($id);
             $this->commandBus->execute($command);
             $this->addFlash('manufacturer_removed_success', 'Производитель удален.');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $error = $e->getMessage();
         }
 

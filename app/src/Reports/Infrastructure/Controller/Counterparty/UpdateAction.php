@@ -8,6 +8,7 @@ use App\Reports\Application\UseCase\Command\UpdateCounterparty\UpdateCounterpart
 use App\Reports\Application\UseCase\Query\GetCounterparty\GetCounterpartyQuery;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,7 +49,7 @@ final class UpdateAction extends AbstractController
                 $this->addFlash('counterparty_updated_success', sprintf('Контрагент «%s» обновлён.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_reports_counterparty_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         } else {

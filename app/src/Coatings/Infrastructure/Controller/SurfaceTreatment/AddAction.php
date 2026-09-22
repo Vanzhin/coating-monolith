@@ -43,7 +43,7 @@ class AddAction extends AbstractController
                 $this->addFlash('surface_treatment_created_success', 'Подготовка поверхности добавлена.');
 
                 return $this->redirectToRoute('app_cabinet_surface_treatment_list');
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('cabinet/coating/surface_treatment/form.html.twig', [

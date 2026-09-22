@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\EventListener\Exception;
 
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Shared\Infrastructure\Http\RequestFormat;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,8 +15,6 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ExceptionListener
 {
-    public const MIME_JSON = 'application/json';
-
     public function __construct(private ContainerBagInterface $containerBag)
     {
     }
@@ -23,10 +22,9 @@ class ExceptionListener
     #[AsEventListener(priority: 190)]
     public function onKernelException(ExceptionEvent $event): void
     {
-        // Получаем MIME тип из заголовка Accept
-        $acceptHeader = $event->getRequest()->headers->get('Accept');
-
-        if (self::MIME_JSON === $acceptHeader) {
+        // Ждёт ли клиент JSON — единая логика (AJAX / Accept с application/json / формат json),
+        // не хрупкое точное сравнение Accept.
+        if (RequestFormat::expectsJson($event->getRequest())) {
             $exception = $event->getThrowable();
             $response = new JsonResponse();
             $response->setData($this->exceptionToArray($exception));

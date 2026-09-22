@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Project;
 
 use App\Reports\Application\UseCase\Command\DeleteProject\DeleteProjectCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,7 @@ final class DeleteAction extends AbstractController
         try {
             $this->commandBus->execute(new DeleteProjectCommand($id));
             $this->addFlash('project_removed_success', 'Проект удалён.');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $this->addFlash('project_removed_error', $e->getMessage());
         }
 

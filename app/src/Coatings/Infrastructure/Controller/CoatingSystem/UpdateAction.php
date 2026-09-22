@@ -69,7 +69,7 @@ class UpdateAction extends AbstractController
                 $this->addFlash('coating_system_updated_success', sprintf('Система покрытий "%s" обновлена.', $command->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_system_list');
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
                 $inputData = $this->rehydrator->enrichInputDataWithTitles($inputData);
                 $rawTagIds = array_map(

@@ -12,6 +12,7 @@ use App\Certificates\Infrastructure\Mapper\DocumentMapper;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -46,7 +47,7 @@ final class AddAction extends AbstractController
                 $this->addFlash('document_created_success', 'Документ добавлен.');
 
                 return $this->redirectToRoute('app_cabinet_certificate_document_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         }

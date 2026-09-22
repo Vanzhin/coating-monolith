@@ -14,7 +14,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(
@@ -43,11 +42,11 @@ final class UploadStagedAction extends AbstractController
             $result = $this->commandBus->execute(
                 new StageFilesCommand($this->authUser->getAuthUserId(), $files),
             );
-        } catch (\Exception $e) {
-            $status = $e instanceof AppException ? $e->getCode() : Response::HTTP_BAD_REQUEST;
-
+        } catch (AppException $e) {
+            // Только доменные ошибки stage'а показываем клиенту; техническое улетает выше в
+            // ExceptionListener (JSON-эндпоинт) и маскируется под 500, не утекая внутренностями.
             // Ключ `message`: глобальный ResponseDTOTransformer на 4xx читает только его.
-            return new JsonResponse(['message' => $e->getMessage()], $status);
+            return new JsonResponse(['message' => $e->getMessage()], $e->getCode());
         }
 
         return new JsonResponse([
