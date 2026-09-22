@@ -6,6 +6,7 @@
     {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
     {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
     {% set statuses = {'': 'Все', 'created': 'Черновики', 'in_work': 'В работе', 'under_review': 'На проверке', 'approved': 'Утверждённые', 'rejected': 'Отклонённые'} %}
+    {% set activeCount = ownerIds|length + customerIds|length + contractorIds|length + projectIds|length + (status ? 1 : 0) %}
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Отчёты',
@@ -16,6 +17,11 @@
         search: search,
         status: status,
         statuses: statuses,
+        activeCount: activeCount,
+        ownerIds: ownerIds,
+        customerIds: customerIds,
+        contractorIds: contractorIds,
+        projectIds: projectIds,
         total_pages: totalPages,
         base_url: path('app_cabinet_report_list', baseQuery),
     } only %}
@@ -27,23 +33,114 @@
         {% endblock %}
 
         {% block above_list %}
-            <form method="get" action="{{ path('app_cabinet_report_list') }}" class="mb-3">
-                <div class="input-group">
-                    <input type="search" name="search" value="{{ search }}" class="form-control"
-                           placeholder="Поиск по № акта или проекту" minlength="2" maxlength="50">
+            {% embed 'components/entity_search.html.twig' with {
+                list_route: 'app_cabinet_report_list',
+                form_id: 'reportListForm',
+                search_name: 'search',
+                search_value: search,
+                search_placeholder: 'Поиск по № акта или проекту',
+                search_minlength: 2,
+                search_maxlength: 50,
+                active_count: activeCount,
+                drawer_id: 'allReportFiltersOffcanvas',
+                drawer_form_id: 'allReportFiltersForm',
+            } %}
+                {# Статус — быстрый дропдаун в chip-row (как facet-дропдаун в покрытиях). #}
+                {% block chips %}
+                    <div class="dropdown flex-shrink-0">
+                        <button type="button"
+                                class="btn btn-sm {{ status ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Статус">
+                            <i class="bi bi-flag"></i><span class="d-none d-md-inline"> {{ status ? statuses[status] : 'Статус' }}</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for key, label in statuses %}
+                                {% set st = key ?: null %}
+                                {% set q = app.request.query.all|merge({status: st, page: null})|filter(v => v is not null) %}
+                                {% set isActive = (status == key) or (not status and key == '') %}
+                                <li><a class="dropdown-item {{ isActive ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', q) }}">{{ label }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endblock %}
+
+                {# Статус живёт в chip-row (не в форме шторки) — пробрасываем его hidden, чтобы «Показать» не сбросил. #}
+                {% block drawer_hidden %}
                     {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
-                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
-                    {% if search %}<a href="{{ path('app_cabinet_report_list', status ? {status: status} : {}) }}" class="btn btn-outline-secondary">Сброс</a>{% endif %}
-                </div>
-            </form>
-            <div class="d-flex gap-2 overflow-auto pb-2 mb-2">
-                {% for key, label in statuses %}
-                    {% set q = search ? {search: search} : {} %}
-                    {% set q = key ? q|merge({status: key}) : q %}
-                    {% set active = (key == '' and not status) or status == key %}
-                    <a href="{{ path('app_cabinet_report_list', q) }}" class="rep-chip {{ active ? 'is-active' : '' }}">{{ label }}</a>
-                {% endfor %}
-            </div>
+                {% endblock %}
+
+                {# Фасеты сущностей — только админу (suggest под ROLE_ADMIN). Бэкенд универсальный:
+                   открыть обычным пользователям = снять guard с suggest/by-ids и убрать этот if. #}
+                {% block drawer %}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        {# === Секция: Владелец (одиночный) === #}
+                        <div id="facet-owner" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                            <h6 class="fw-semibold mb-2">Владелец</h6>
+                            <input type="text"
+                                   data-controller="coating-tags"
+                                   data-coating-tags-existing-value="[]"
+                                   data-coating-tags-suggest-url-value="{{ path('app_cabinet_users_suggest') }}"
+                                   data-coating-tags-create-url-value=""
+                                   data-coating-tags-hidden-input-name-value="ownerIds[]"
+                                   data-coating-tags-allow-create-value="false"
+                                   data-coating-tags-max-tags-value="1"
+                                   data-coating-tags-preselected-ids-value="{{ ownerIds|json_encode }}"
+                                   data-coating-tags-resolve-url-value="{{ path('app_cabinet_users_by_ids') }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Начните вводить email...">
+                        </div>
+
+                        {# === Секция: Заказчик (одиночный) === #}
+                        <div id="facet-customer" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                            <h6 class="fw-semibold mb-2">Заказчик</h6>
+                            <input type="text"
+                                   data-controller="coating-tags"
+                                   data-coating-tags-existing-value="[]"
+                                   data-coating-tags-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-coating-tags-create-url-value=""
+                                   data-coating-tags-hidden-input-name-value="customerIds[]"
+                                   data-coating-tags-allow-create-value="false"
+                                   data-coating-tags-max-tags-value="1"
+                                   data-coating-tags-preselected-ids-value="{{ customerIds|json_encode }}"
+                                   data-coating-tags-resolve-url-value="{{ path('app_cabinet_reports_counterparty_by_ids') }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Начните вводить заказчика...">
+                        </div>
+
+                        {# === Секция: Подрядчики (мультивыбор) === #}
+                        <div id="facet-contractor" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                            <h6 class="fw-semibold mb-2">Подрядчики</h6>
+                            <input type="text"
+                                   data-controller="coating-tags"
+                                   data-coating-tags-existing-value="[]"
+                                   data-coating-tags-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-coating-tags-create-url-value=""
+                                   data-coating-tags-hidden-input-name-value="contractorIds[]"
+                                   data-coating-tags-allow-create-value="false"
+                                   data-coating-tags-preselected-ids-value="{{ contractorIds|json_encode }}"
+                                   data-coating-tags-resolve-url-value="{{ path('app_cabinet_reports_counterparty_by_ids') }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Начните вводить подрядчика...">
+                        </div>
+
+                        {# === Секция: Проекты (мультивыбор) === #}
+                        <div id="facet-project" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                            <h6 class="fw-semibold mb-2">Проекты</h6>
+                            <input type="text"
+                                   data-controller="coating-tags"
+                                   data-coating-tags-existing-value="[]"
+                                   data-coating-tags-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                                   data-coating-tags-create-url-value=""
+                                   data-coating-tags-hidden-input-name-value="projectIds[]"
+                                   data-coating-tags-allow-create-value="false"
+                                   data-coating-tags-preselected-ids-value="{{ projectIds|json_encode }}"
+                                   data-coating-tags-resolve-url-value="{{ path('app_cabinet_reports_project_by_ids') }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Начните вводить проект...">
+                        </div>
+                    {% endif %}
+                {% endblock %}
+            {% endembed %}
         {% endblock %}
 
         {% block list_content %}
