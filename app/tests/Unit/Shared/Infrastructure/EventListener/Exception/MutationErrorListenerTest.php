@@ -99,7 +99,7 @@ final class MutationErrorListenerTest extends TestCase
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator->method('generate')->willReturn(self::HOME);
 
-        $logger = new class extends AbstractLogger {
+        $logger = new class() extends AbstractLogger {
             /** @var list<array{mixed, string|\Stringable, array<string,mixed>}> */
             public array $entries = [];
 
