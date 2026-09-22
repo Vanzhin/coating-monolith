@@ -61,7 +61,7 @@ class UpdateFromSubstanceAction extends AbstractController
                 noteIds: $assessment->getNoteIds()->getList(),
             ));
             $this->addFlash('assessment_updated_success', 'Химстойкость обновлена.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('assessment_error', $e->getMessage());
         }
 

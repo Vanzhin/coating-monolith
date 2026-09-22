@@ -6,6 +6,7 @@ namespace App\Certificates\Infrastructure\Controller\Document;
 
 use App\Certificates\Application\UseCase\Command\DeleteDocument\DeleteDocumentCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,7 @@ final class DeleteAction extends AbstractController
         try {
             $this->commandBus->execute(new DeleteDocumentCommand($id));
             $this->addFlash('document_removed_success', 'Документ удалён.');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $this->addFlash('document_removed_error', $e->getMessage());
         }
 

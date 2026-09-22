@@ -8,6 +8,7 @@ use App\Reports\Application\UseCase\Command\CreateReport\CreateReportCommand;
 use App\Reports\Application\UseCase\Command\CreateReport\CreateReportCommandResult;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +41,7 @@ final class AddAction extends AbstractController
             \assert($result instanceof CreateReportCommandResult);
 
             return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $result->id]);
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());
 
             return $this->redirectToRoute('app_cabinet_report_list');

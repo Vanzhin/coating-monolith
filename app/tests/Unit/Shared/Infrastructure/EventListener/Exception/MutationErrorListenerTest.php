@@ -99,21 +99,21 @@ final class MutationErrorListenerTest extends TestCase
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator->method('generate')->willReturn(self::HOME);
 
-        $logger = new class($this->logs) extends AbstractLogger {
-            /** @param list<array{mixed, string|\Stringable, array<string,mixed>}> $sink */
-            public function __construct(private array &$sink)
-            {
-            }
+        $logger = new class extends AbstractLogger {
+            /** @var list<array{mixed, string|\Stringable, array<string,mixed>}> */
+            public array $entries = [];
 
+            /** @param array<string,mixed> $context */
             public function log($level, $message, array $context = []): void
             {
-                $this->sink[] = [$level, $message, $context];
+                $this->entries[] = [$level, $message, $context];
             }
         };
 
         $listener = new MutationErrorListener($logger, $urlGenerator, $debug);
         $event = new ExceptionEvent($this->createMock(HttpKernelInterface::class), $request, HttpKernelInterface::MAIN_REQUEST, $e);
         $listener($event);
+        $this->logs = $logger->entries;
 
         return $event;
     }

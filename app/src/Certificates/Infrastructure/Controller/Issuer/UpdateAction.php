@@ -8,6 +8,7 @@ use App\Certificates\Application\UseCase\Command\UpdateIssuer\UpdateIssuerComman
 use App\Certificates\Application\UseCase\Query\GetIssuer\GetIssuerQuery;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,7 +45,7 @@ final class UpdateAction extends AbstractController
                 $this->addFlash('issuer_updated_success', sprintf('Организация «%s» обновлена.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_certificate_issuer_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         } else {

@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Report;
 
 use App\Reports\Application\UseCase\Command\DeleteReport\DeleteReportCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,7 @@ final class DeleteAction extends AbstractController
             $this->addFlash('success', 'Отчёт удалён.');
 
             return $this->redirectToRoute('app_cabinet_report_list');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());
 
             return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);

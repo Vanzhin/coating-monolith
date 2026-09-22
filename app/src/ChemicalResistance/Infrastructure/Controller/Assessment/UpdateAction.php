@@ -75,7 +75,7 @@ class UpdateAction extends AbstractController
                 $this->addFlash('assessment_updated_success', 'Оценка обновлена.');
 
                 return $this->redirectToRoute('app_cabinet_coating_chem_resistance_edit', ['coatingId' => $coatingId]);
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render('admin/chemical_resistance/assessment/form.html.twig', [

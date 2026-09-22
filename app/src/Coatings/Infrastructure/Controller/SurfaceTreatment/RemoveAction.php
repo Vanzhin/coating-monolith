@@ -6,6 +6,7 @@ namespace App\Coatings\Infrastructure\Controller\SurfaceTreatment;
 
 use App\Coatings\Application\UseCase\Command\RemoveSurfaceTreatment\RemoveSurfaceTreatmentCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +28,7 @@ class RemoveAction extends AbstractController
         try {
             $this->commandBus->execute(new RemoveSurfaceTreatmentCommand($id));
             $this->addFlash('surface_treatment_removed_success', 'Подготовка поверхности удалена.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('surface_treatment_error', $e->getMessage());
         }
 

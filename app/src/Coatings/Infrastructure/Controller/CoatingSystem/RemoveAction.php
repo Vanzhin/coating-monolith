@@ -6,6 +6,7 @@ namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
 use App\Coatings\Application\UseCase\Command\RemoveCoatingSystem\RemoveCoatingSystemCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +28,7 @@ class RemoveAction extends AbstractController
         try {
             $this->commandBus->execute(new RemoveCoatingSystemCommand($id));
             $this->addFlash('coating_system_removed_success', 'Система покрытий удалена.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('coating_system_error', $e->getMessage());
         }
 

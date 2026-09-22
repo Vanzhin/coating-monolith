@@ -6,6 +6,7 @@ namespace App\Certificates\Infrastructure\Controller\Issuer;
 
 use App\Certificates\Application\UseCase\Command\CreateIssuer\CreateIssuerCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,7 +34,7 @@ final class AddAction extends AbstractController
                 $this->addFlash('issuer_created_success', sprintf('Организация «%s» добавлена.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_certificate_issuer_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         }

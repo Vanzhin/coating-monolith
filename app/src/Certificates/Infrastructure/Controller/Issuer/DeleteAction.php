@@ -6,6 +6,7 @@ namespace App\Certificates\Infrastructure\Controller\Issuer;
 
 use App\Certificates\Application\UseCase\Command\DeleteIssuer\DeleteIssuerCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Security\CsrfGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,7 @@ final class DeleteAction extends AbstractController
         try {
             $this->commandBus->execute(new DeleteIssuerCommand($id));
             $this->addFlash('issuer_removed_success', 'Организация удалена.');
-        } catch (\Exception|\Error $e) {
+        } catch (AppException $e) {
             $this->addFlash('issuer_removed_error', $e->getMessage());
         }
 

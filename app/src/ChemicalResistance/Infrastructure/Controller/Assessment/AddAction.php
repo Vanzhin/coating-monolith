@@ -47,7 +47,7 @@ class AddAction extends AbstractController
                 noteIds: AssessmentInputParser::noteIds($payload['noteIds'] ?? []),
             ));
             $this->addFlash('assessment_created_success', 'Оценка добавлена.');
-        } catch (\Exception $e) {
+        } catch (AppException $e) {
             $this->addFlash('assessment_error', $e->getMessage());
         }
 

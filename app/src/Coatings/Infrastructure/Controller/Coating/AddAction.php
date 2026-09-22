@@ -60,7 +60,7 @@ class AddAction extends AbstractController
                 $this->addFlash('manufacturer_created_success', sprintf('Покрытие "%s" добавлено.', $dto->title));
 
                 return $this->redirectToRoute('app_cabinet_coating_coating_list');
-            } catch (\Exception $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
 
                 return $this->render(

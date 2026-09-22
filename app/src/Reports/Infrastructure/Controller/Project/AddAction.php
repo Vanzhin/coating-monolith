@@ -6,6 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Project;
 
 use App\Reports\Application\UseCase\Command\CreateProject\CreateProjectCommand;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,7 +38,7 @@ final class AddAction extends AbstractController
                 $this->addFlash('project_created_success', sprintf('Проект «%s» добавлен.', $inputData['title'] ?? ''));
 
                 return $this->redirectToRoute('app_cabinet_reports_project_list');
-            } catch (\Exception|\Error $e) {
+            } catch (AppException $e) {
                 $error = $e->getMessage();
             }
         }
