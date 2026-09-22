@@ -54,4 +54,15 @@ final class ToolsPagesTest extends WebTestCase
         self::assertSelectorExists('[data-controller="consumption-calculator"]');
         self::assertSelectorExists('details');
     }
+
+    public function test_dew_point_calculator_is_public_and_renders(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/tools/dew-point');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'росы');
+        self::assertSelectorExists('[data-controller="dew-point-calculator"]');
+        self::assertSelectorExists('details');
+    }
 }

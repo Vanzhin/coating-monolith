@@ -24,6 +24,7 @@ final class SwActionTest extends WebTestCase
         self::assertStringContainsString("const CACHE = 'app-", $body, 'версия кэша подставлена');
         self::assertStringContainsString('/app', $body, 'стартовый экран PWA в precache (иначе офлайн-запуск с иконки не откроется)');
         self::assertStringContainsString('/tools', $body, 'страницы калькуляторов в precache');
+        self::assertStringContainsString('/tools/dew-point', $body, 'калькулятор точки росы в precache (офлайн)');
         self::assertStringContainsString('/build/', $body, 'ассеты бандла в precache (иначе офлайн-калькулятор не заведётся)');
         self::assertStringContainsString("addEventListener('install'", $body);
         self::assertStringContainsString("addEventListener('fetch'", $body);
