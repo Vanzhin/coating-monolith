@@ -4,7 +4,7 @@
 {% block meta_description %}<meta name="description" content="Онлайн-калькулятор расхода лакокрасочного материала: сколько краски нужно на площадь при заданной толщине сухой плёнки, с учётом сухого остатка и потерь. Считает объём, массу и число вёдер. Без регистрации.">{% endblock %}
 
 {% block body %}
-<div class="tools-page" data-controller="consumption-calculator">
+<div class="tools-page">
     <nav class="tools-crumbs">
         <a href="{{ path('app_tools_index') }}">Инструменты</a>
         <i class="bi bi-chevron-right"></i>
@@ -14,121 +14,7 @@
     <h1 class="tools-h1">Калькулятор расхода краски</h1>
     <p class="tools-intro">Сколько краски нужно на площадь при заданной толщине сухой плёнки — с учётом сухого остатка и потерь. И сколько площади хватит на заданный объём.</p>
 
-    {% if app.user %}
-        <div class="mix-coating p-3 rounded-3 bg-body-tertiary"
-             data-controller="async-typeahead"
-             data-async-typeahead-endpoint-value="{{ path('app_cabinet_coating_coating_suggest') }}"
-             data-async-typeahead-placeholder-value="Найти покрытие…"
-             data-async-typeahead-min-length-value="3"
-             data-action="async-typeahead:select->consumption-calculator#applyFromCoating async-typeahead:deselect->consumption-calculator#clearCoating">
-            <label class="mix-coating-lbl" for="consumptionCoatingSelect">Из покрытия</label>
-            <select id="consumptionCoatingSelect" data-async-typeahead-target="select">
-                <option value="">Найти покрытие…</option>
-            </select>
-            <p class="mix-coating-msg msg msg-warning" data-consumption-calculator-target="coatingMsg" hidden></p>
-        </div>
-    {% else %}
-        <div class="tools-cta">
-            <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
-            <p class="tools-cta-text">Войдите, чтобы подставлять данные покрытия (сухой остаток, плотность, фасовку) автоматически.</p>
-            <a class="btn btn-primary" href="{{ path('app_login', {_target_path: app.request.requestUri}) }}">Войти</a>
-        </div>
-    {% endif %}
-
-    <div class="p-3 rounded-3 bg-body-tertiary film-card">
-        <div class="film-row">
-            <span class="film-label">Сухая плёнка<small>DFT — цель</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="dft" data-action="input->consumption-calculator#onInput"
-                   aria-label="Сухая плёнка (DFT)">
-            <span class="film-unit">мкм</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Сухой остаток<small>по объёму</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="vs" data-action="input->consumption-calculator#onInput"
-                   aria-label="Сухой остаток по объёму" placeholder="напр. 65">
-            <span class="film-unit">%</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Потери<small>распыление, профиль, переходы</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="loss" data-action="input->consumption-calculator#onInput"
-                   aria-label="Потери" placeholder="0">
-            <span class="film-unit">%</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Коэффициент<small>на потери (связан)</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="coefficient" data-action="input->consumption-calculator#onInput"
-                   aria-label="Коэффициент на потери">
-            <span class="film-unit">×</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Плотность<small>для массы</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="density" data-action="input->consumption-calculator#onInput"
-                   aria-label="Плотность" placeholder="напр. 1.4">
-            <span class="film-unit">кг/л</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Фасовка<small>для числа вёдер</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="pack" data-action="input->consumption-calculator#onInput"
-                   aria-label="Фасовка (объём тары)" placeholder="напр. 20">
-            <span class="film-unit">л</span>
-        </div>
-        <div class="film-row">
-            <span class="film-label">Площадь<small>сколько красим</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="area" data-action="input->consumption-calculator#onInput"
-                   aria-label="Площадь">
-            <span class="film-unit">м²</span>
-        </div>
-
-        <hr class="film-sep">
-
-        {# Единицы расхода/итога: Объём/Масса. Масса требует плотности (поле выше). #}
-        <div class="film-unit-seg">
-            <div class="duration-seg" role="group" aria-label="Единицы расхода">
-                <input type="radio" class="btn-check" name="consUnit" id="consUnitVolume" value="volume" checked
-                       data-action="change->consumption-calculator#changeUnit">
-                <label class="duration-seg-btn" for="consUnitVolume">Объём</label>
-                <input type="radio" class="btn-check" name="consUnit" id="consUnitMass" value="mass"
-                       data-action="change->consumption-calculator#changeUnit">
-                <label class="duration-seg-btn" for="consUnitMass">Масса</label>
-            </div>
-        </div>
-
-        <div class="film-row">
-            <span class="film-label">Расход<small>практический</small></span>
-            <span class="film-fld film-eff-val" data-consumption-calculator-target="rate" aria-live="polite">—</span>
-            <span class="film-unit" data-consumption-calculator-target="rateUnit">л/м²</span>
-        </div>
-
-        <hr class="film-sep">
-
-        <div class="film-row">
-            <span class="film-label">Всего<small>сколько нужно</small></span>
-            <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-consumption-calculator-target="total" data-action="input->consumption-calculator#onInput"
-                   aria-label="Всего краски">
-            <span class="film-unit" data-consumption-calculator-target="totalUnit">л</span>
-        </div>
-        <div class="film-row" data-consumption-calculator-target="packsRow" hidden>
-            <span class="film-label">Вёдер<small>округление вверх</small></span>
-            <span class="film-fld film-eff-val" data-consumption-calculator-target="packs" aria-live="polite">—</span>
-            <span class="film-unit">шт</span>
-        </div>
-        <p class="film-packs-note" data-consumption-calculator-target="packsNote" hidden></p>
-
-        <p class="mix-hint">Введите площадь или «всего» — второе пересчитается. Потери и коэффициент связаны. Масса — при заданной плотности, вёдра — при заданной фасовке. Данные покрытия подставятся автоматически при выборе.</p>
-    </div>
-
-    <p class="tools-note">
-        <i class="bi bi-info-circle"></i>
-        <span>Это расчёт по номинальному сухому остатку. Фактический расход может отличаться: погрешность измерения, профиль (шероховатость) поверхности, потери на распыление и неравномерность нанесения.</span>
-    </p>
+    {% include 'tools/_consumption_calculator.html.twig' %}
 
     <details class="tools-details">
         <summary>Как рассчитать расход</summary>
