@@ -47,7 +47,7 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
         );
         $report->replaceContent(['system' => [
             'layers' => $this->references->seedSystemLayers($system),
-            'dft_nominal_total' => $system->totalDft(), // номинальная ТСП покрытия — доменный расчёт системы, замораживаем снимком
+            'dft_nominal_total' => $system->totalDft, // номинальная ТСП покрытия — доменный расчёт системы (из DTO), замораживаем снимком
         ]], $now);
         $this->repository->add($report);
 
