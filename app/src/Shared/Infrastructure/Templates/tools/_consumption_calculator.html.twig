@@ -88,10 +88,11 @@
             </div>
         </div>
 
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Расход<small>практический</small></span>
-            <span class="film-fld film-eff-val" data-consumption-calculator-target="rate" aria-live="polite">—</span>
+            <span class="film-fld film-eff-val" data-consumption-calculator-target="rate" data-copy-value-target="source" aria-live="polite">—</span>
             <span class="film-unit" data-consumption-calculator-target="rateUnit">л/м²</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <hr class="film-sep">

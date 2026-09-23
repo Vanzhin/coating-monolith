@@ -3,37 +3,41 @@
    не сеется. #}
 <div data-controller="dew-point-calculator">
     <div class="p-3 rounded-3 bg-body-tertiary film-card">
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Температура воздуха</span>
             <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-dew-point-calculator-target="airTemp" data-action="input->dew-point-calculator#onInput"
+                   data-dew-point-calculator-target="airTemp" data-copy-value-target="source" data-action="input->dew-point-calculator#onInput"
                    aria-label="Температура воздуха" placeholder="напр. 20">
             <span class="film-unit">°C</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Относительная влажность</span>
             <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-dew-point-calculator-target="humidity" data-action="input->dew-point-calculator#onInput"
+                   data-dew-point-calculator-target="humidity" data-copy-value-target="source" data-action="input->dew-point-calculator#onInput"
                    aria-label="Относительная влажность" placeholder="напр. 60">
             <span class="film-unit">%</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <hr class="film-sep">
 
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Точка росы<small>рассчитано</small></span>
-            <span class="film-fld film-eff-val" data-dew-point-calculator-target="dewPoint" aria-live="polite">—</span>
+            <span class="film-fld film-eff-val" data-dew-point-calculator-target="dewPoint" data-copy-value-target="source" aria-live="polite">—</span>
             <span class="film-unit">°C</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <hr class="film-sep">
 
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Температура поверхности<small>для вердикта</small></span>
             <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-dew-point-calculator-target="surfaceTemp" data-action="input->dew-point-calculator#onInput"
+                   data-dew-point-calculator-target="surfaceTemp" data-copy-value-target="source" data-action="input->dew-point-calculator#onInput"
                    aria-label="Температура поверхности" placeholder="напр. 15">
             <span class="film-unit">°C</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <p class="mt-2 mb-0"><span class="badge" data-dew-point-calculator-target="verdict" hidden></span></p>
