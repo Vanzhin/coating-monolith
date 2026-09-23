@@ -43,19 +43,21 @@
         </div>
 
         <div data-mix-calculator-target="rows">
-            <div class="mix-row" data-mix-calculator-target="row">
+            <div class="mix-row" data-mix-calculator-target="row" data-controller="copy-value">
                 <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">1</span></span>
                 <input type="text" inputmode="decimal" class="form-control mix-part"
                        data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 1">
                 <input type="text" inputmode="decimal" class="form-control mix-qty"
-                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 1">
+                       data-mix-calculator-target="qty" data-copy-value-target="source" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 1">
+                <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
             </div>
-            <div class="mix-row" data-mix-calculator-target="row">
+            <div class="mix-row" data-mix-calculator-target="row" data-controller="copy-value">
                 <span class="mix-name">Компонент <span data-mix-calculator-target="rowNum">2</span></span>
                 <input type="text" inputmode="decimal" class="form-control mix-part"
                        data-mix-calculator-target="part" data-action="input->mix-calculator#onInput" aria-label="Часть компонента 2">
                 <input type="text" inputmode="decimal" class="form-control mix-qty"
-                       data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 2">
+                       data-mix-calculator-target="qty" data-copy-value-target="source" data-action="input->mix-calculator#onInput" aria-label="Количество компонента 2">
+                <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
             </div>
         </div>
 
@@ -65,11 +67,12 @@
 
         <hr class="mix-sep">
 
-        <div class="mix-row mix-total">
+        <div class="mix-row mix-total" data-controller="copy-value">
             <span class="mix-name">Итого</span>
             <span class="mix-part-sum" data-mix-calculator-target="totalPart">0</span>
             <input type="text" inputmode="decimal" class="form-control mix-qty"
-                   data-mix-calculator-target="totalQty" data-action="input->mix-calculator#onInput" aria-label="Итоговое количество смеси">
+                   data-mix-calculator-target="totalQty" data-copy-value-target="source" data-action="input->mix-calculator#onInput" aria-label="Итоговое количество смеси">
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <p class="mix-hint">Введите количество в любую строку или в «Итого» — остальные пересчитаются по пропорции.</p>
@@ -77,7 +80,7 @@
 
     {# Шаблон строки компонента — клонируется контроллером при добавлении (без дублирования разметки в JS). #}
     <template data-mix-calculator-target="rowTemplate">
-        <div class="mix-row" data-mix-calculator-target="row">
+        <div class="mix-row" data-mix-calculator-target="row" data-controller="copy-value">
             <span class="mix-name">
                 Компонент <span data-mix-calculator-target="rowNum"></span>
                 <button type="button" class="mix-remove" data-action="mix-calculator#removeComponent" aria-label="Убрать компонент"><i class="bi bi-x-lg"></i></button>
@@ -85,7 +88,8 @@
             <input type="text" inputmode="decimal" class="form-control mix-part"
                    data-mix-calculator-target="part" data-action="input->mix-calculator#onInput">
             <input type="text" inputmode="decimal" class="form-control mix-qty"
-                   data-mix-calculator-target="qty" data-action="input->mix-calculator#onInput">
+                   data-mix-calculator-target="qty" data-copy-value-target="source" data-action="input->mix-calculator#onInput">
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
     </template>
 </div>

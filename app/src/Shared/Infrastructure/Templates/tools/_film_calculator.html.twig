@@ -46,19 +46,21 @@
 
         <hr class="film-sep">
 
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Сухая плёнка<small>DFT — цель</small></span>
             <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="dry" data-action="input->film-calculator#onInput"
+                   data-film-calculator-target="dry" data-copy-value-target="source" data-action="input->film-calculator#onInput"
                    aria-label="Сухая плёнка (DFT)">
             <span class="film-unit">мкм</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
-        <div class="film-row">
+        <div class="film-row" data-controller="copy-value">
             <span class="film-label">Мокрая плёнка<small>WFT — сколько набрать</small></span>
             <input type="text" inputmode="decimal" class="form-control film-fld"
-                   data-film-calculator-target="wet" data-action="input->film-calculator#onInput"
+                   data-film-calculator-target="wet" data-copy-value-target="source" data-action="input->film-calculator#onInput"
                    aria-label="Мокрая плёнка (WFT)">
             <span class="film-unit">мкм</span>
+            <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
         </div>
 
         <p class="mix-hint">Введите толщину в любую строку — вторая пересчитается. Опорное поле обведено. Сухой остаток и разбавление — параметры.</p>
