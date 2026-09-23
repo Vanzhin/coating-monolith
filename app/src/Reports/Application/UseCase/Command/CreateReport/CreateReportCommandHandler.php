@@ -45,7 +45,10 @@ final readonly class CreateReportCommandHandler implements CommandHandlerInterfa
             $this->references->systemReference($system),
             $now,
         );
-        $report->replaceContent(['system' => ['layers' => $this->references->seedSystemLayers($system)]], $now);
+        $report->replaceContent(['system' => [
+            'layers' => $this->references->seedSystemLayers($system),
+            'dft_nominal_total' => $system->totalDft, // номинальная ТСП покрытия — доменный расчёт системы (из DTO), замораживаем снимком
+        ]], $now);
         $this->repository->add($report);
 
         return new CreateReportCommandResult($report->getId());

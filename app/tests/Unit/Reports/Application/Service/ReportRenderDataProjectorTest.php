@@ -125,6 +125,42 @@ final class ReportRenderDataProjectorTest extends TestCase
         self::assertFalse($data->has('application_layer3_material'));
     }
 
+    public function test_system_nominal_dft_total_projects_from_snapshot(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-06');
+        // Тотал заморожен снимком при создании (CoatingSystem::totalDft) — проектор его лишь пробрасывает.
+        $report->replaceContent([
+            'system' => [
+                'layers' => [
+                    ['material' => ['id' => 'c1', 'title' => 'Грунт ЭП-0199'], 'dft_nominal' => 80],
+                    ['material' => ['id' => 'c2', 'title' => 'Эмаль ХВ-785'], 'dft_nominal' => 120, 'color' => 'RAL 7040'],
+                ],
+                'dft_nominal_total' => 200,
+            ],
+        ], $now);
+
+        $data = $this->projector->project($report);
+
+        self::assertSame('200', $this->text($data, 'system_dft_nominal_total'));
+        self::assertSame('80', $this->text($data, 'system_layer1_dft_nominal'));
+        self::assertSame('120', $this->text($data, 'system_layer2_dft_nominal'));
+    }
+
+    public function test_old_report_without_seeded_total_has_no_key(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-07');
+        // Старый отчёт (создан до засева тотала) — ключа в снимке нет → переменной тоже нет (в шаблоне {{...?}}).
+        $report->replaceContent([
+            'system' => ['layers' => [
+                ['material' => ['id' => 'c1', 'title' => 'Грунт'], 'dft_nominal' => 80],
+            ]],
+        ], $now);
+
+        self::assertFalse($this->projector->project($report)->has('system_dft_nominal_total'));
+    }
+
     public function test_list_rows_project_to_repeat_group_and_flat(): void
     {
         $now = new \DateTimeImmutable('2026-08-05');

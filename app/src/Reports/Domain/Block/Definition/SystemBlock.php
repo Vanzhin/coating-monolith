@@ -35,6 +35,9 @@ final class SystemBlock implements BlockDefinition
                 new Field('color', FieldType::Text, 'Цвет'),
                 new Field('order', FieldType::Number, 'Слой'),
             ]),
+            // Номинальная ТСП покрытия — сумма номиналов слоёв. Считает домен (CoatingSystem::totalDft),
+            // засевается снимком при создании отчёта; computed — не редактируется, только отображается/выводится.
+            new Field('dft_nominal_total', FieldType::Number, 'Номинальная ТСП покрытия', unit: 'мкм', computed: true),
         ];
     }
 }
