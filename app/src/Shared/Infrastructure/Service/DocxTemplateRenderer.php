@@ -18,12 +18,19 @@ use App\Shared\Infrastructure\Exception\AppException;
 use PhpOffice\PhpWord\Exception\Exception as PhpWordException;
 
 /**
- * Драйвер docx-шаблонов на PhpWord. Возможности: text + image + optional block.
+ * Драйвер docx-шаблонов на PhpWord. Возможности: text + image + optional block + inline optional segment.
  *
  * Опциональность:
- *  - плейсхолдер {{name?}} — опциональный «на месте» (нет данных → чистим);
- *  - блок {{opt_x}} … {{/opt_x}} — регион удаляется целиком, если данных внутри нет (presence-driven,
- *    all-or-none). Маркеры блока стоят каждый в своём абзаце.
+ *  - плейсхолдер {{name?}} — опциональный «на месте» (нет данных → чистим ТОЛЬКО плейсхолдер, литерал
+ *    вокруг остаётся);
+ *  - блок {{opt_x}} … {{/opt_x}} — регион (абзацного уровня) удаляется целиком, если данных внутри нет
+ *    (presence-driven, all-or-none). Маркеры блока стоят каждый в своём абзаце;
+ *  - инлайн-сегмент {{?name}} … {{/?name}} — вырезает литерал ВМЕСТЕ с плейсхолдером, когда данных нет
+ *    (то, что {{name?}} и абзацный блок не умеют). Работает в одну строку/ячейку. Критерий по name:
+ *    верхний уровень → has(name) (для повторяемой группы = есть строки, годится обернуть заголовок над
+ *    списком); внутри повторяемой строки/блока → непустое подполе строки (по #i).
+ *    НЕ разворачивает повтор — для «регион повторяется по строкам» это блок {{group}}…{{/group}}.
+ *    Внутри повтора имя сегмента = ключ подполя, НЕ имя группы.
  */
 final class DocxTemplateRenderer implements TemplateRenderer
 {
@@ -181,6 +188,17 @@ final class DocxTemplateRenderer implements TemplateRenderer
             throw new AppException('Шаблон: не удалось обработать повторяемую группу. Плейсхолдеры {{группа.поле}} должны быть в одной строке таблицы, либо в блоке {{группа}}…{{/группа}} (маркеры — каждый в своём абзаце).', log: ['error' => $e->getMessage()], previous: $e);
         }
 
+        // Инлайновые сегменты верхнего уровня {{?name}}…{{/?name}}: строго ПОСЛЕ повторов — внутри повтора
+        // сегменты уже сняты по #i (resolveRowSegments), а top-level regex индексированные не трогает. Есть
+        // поле/группа (has) → раскрыть регион, нет → вырезать целиком (заголовок над пустым списком и т.п.).
+        $segmentPresence = [];
+        foreach ($parsed['segments'] as $segmentName) {
+            $value = $data->get($segmentName);
+            // группа «присутствует», только если в ней есть строки (пустой RepeatValue → сегмент вырезать)
+            $segmentPresence[$segmentName] = $value instanceof RepeatValue ? [] !== $value->rows : $data->has($segmentName);
+        }
+        $processor->resolveTopLevelSegments($segmentPresence);
+
         // Guard: в ТЕЛЕ не должно остаться сырых плейсхолдеров. Остаток = кривой шаблон (группы делят
         // строку, subs в разных строках, маркеры не оформлены) — тихая порча документа. Колонтитулы не
         // проверяем: повтор там не поддержан, cloneRow/cloneBlock их не трогают (см. normalizeMacros).
@@ -244,6 +262,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 $processor->cloneRowAndSetValues($anchor, $mapped);
             }
         }
+
+        // Инлайновые сегменты подполей ({{?sub#i}}…{{/?sub#i}}) — вырезать по пустоте подполя строки.
+        $processor->resolveRowSegments($rows);
     }
 
     /**
@@ -271,6 +292,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 }
             }
         }
+
+        // Инлайновые сегменты подполей ({{?sub#i}}…{{/?sub#i}}) — вырезать по пустоте подполя строки.
+        $processor->resolveRowSegments($rows);
     }
 
     /**
@@ -303,7 +327,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
      * @return array{
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
      *     blocks: array<string, list<string>>,
-     *     repeats: array<string, array{subs: list<string>, anchor: string}>
+     *     repeats: array<string, array{subs: list<string>, anchor: string}>,
+     *     segments: list<string>
      * }
      */
     private function parse(DocxMacroProcessor $processor): array
@@ -311,9 +336,13 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $mainContents = $processor->orderedMacros();     // тело, по порядку — для структуры блоков
         $allTokens = $processor->getVariables();          // тело + колонтитулы — полный набор переменных
 
-        // маркеры блоков распознаём по паре {{name}} / {{/name}}
+        // маркеры блоков распознаём по паре {{name}} / {{/name}}; {{/?name}} — закрытие инлайн-сегмента,
+        // не блок (иначе substr дал бы фантомный блок "?name")
         $closeSet = [];
         foreach ($allTokens as $token) {
+            if (str_starts_with($token, '/?')) {
+                continue;
+            }
             if (str_starts_with($token, '/')) {
                 $closeSet[substr($token, 1)] = true;
             }
@@ -340,10 +369,21 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $values = [];
         $blocks = [];
         $stack = [];
+        $segmentStack = [];
+        $segmentNames = [];
         $seenLogical = [];
 
         // 1) тело: значения + membership блоков в порядке появления
         foreach ($mainContents as $content) {
+            if (str_starts_with($content, '/?')) {
+                array_pop($segmentStack); // закрытие инлайн-сегмента {{/?name}}
+                continue;
+            }
+            if (1 === preg_match('/^\?([a-z0-9_]+)$/', $content, $seg)) {
+                $segmentStack[] = $seg[1]; // открытие инлайн-сегмента {{?name}}
+                $segmentNames[$seg[1]] = true;
+                continue;
+            }
             if (str_starts_with($content, '/')) {
                 array_pop($stack);
                 continue;
@@ -364,7 +404,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
             $values[] = [
                 'logical' => $logical,
                 'token' => $content,
-                'optional' => $optionalMark || null !== $block,
+                // внутри инлайн-сегмента значение опционально (нет данных → сегмент вырежется, а не missing)
+                'optional' => $optionalMark || null !== $block || [] !== $segmentStack,
                 'block' => $block,
             ];
             $seenLogical[$logical] = true;
@@ -377,9 +418,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
         // 2) колонтитулы/сноски: плейсхолдеры вне тела — как обычные top-level значения
         //    (опциональные блоки поддерживаются только в теле документа)
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/') || isset($closeSet[$token]) || isset($repeatMembers[$token])
-                || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
-                continue; // маркер блока / член повторяемой группы / точечный синтаксис (в т.ч. в колонтитуле) — не flat-значение
+            if (str_starts_with($token, '/') || str_starts_with($token, '?') || isset($closeSet[$token])
+                || isset($repeatMembers[$token]) || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
+                continue; // маркер блока/сегмента / член повторяемой группы / точечный синтаксис — не flat-значение
             }
 
             $optionalMark = str_ends_with($token, '?');
@@ -397,7 +438,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
             ];
         }
 
-        return ['values' => $values, 'blocks' => $blocks, 'repeats' => $repeats];
+        return ['values' => $values, 'blocks' => $blocks, 'repeats' => $repeats, 'segments' => array_keys($segmentNames)];
     }
 
     /**
