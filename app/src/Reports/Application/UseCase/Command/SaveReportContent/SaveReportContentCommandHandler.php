@@ -50,12 +50,15 @@ final readonly class SaveReportContentCommandHandler implements CommandHandlerIn
         $previousContent = $report->getContent();
         $content = $this->withPreservedSystem($command->content, $previousContent);
 
-        // Фото трогаем ТОЛЬКО если клиент прислал блок photos (управляет им). Иначе несём прежние —
-        // чтобы сохранение формы без фото-секции не стёрло уже привязанные снимки.
+        // Фото трогаем ТОЛЬКО если клиент прислал блок photos (управляет им). Пустой блок присылает
+        // служебный маркер content[photos][managed] (форма), чтобы удаление ВСЕХ фото не пропало: без
+        // него пустой блок не дал бы ключа photos в POST, и прежние фото вернулись бы.
         $photosManaged = array_key_exists('photos', $command->content);
         if (!$photosManaged && isset($previousContent['photos'])) {
             $content['photos'] = $previousContent['photos'];
         }
+        // Маркер — служебный, в контенте не храним.
+        unset($content['photos']['managed']);
 
         $type = $report->getType();
         if (null !== $type) {
