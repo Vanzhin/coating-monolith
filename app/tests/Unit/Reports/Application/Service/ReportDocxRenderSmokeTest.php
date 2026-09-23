@@ -81,7 +81,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
         $text = $this->docxText($doc->content);
         self::assertStringContainsString('АКТ № 01-05-08-2026', $text);
         self::assertStringContainsString('Акт опытного нанесения', $text);
-        self::assertStringContainsString('Класс ржавления: B', $text);
+        self::assertStringContainsString('Класс ржавления: Степень B по ГОСТ Р ИСО 8501-1-2014', $text);
         self::assertStringContainsString('Выводы: 1. Соответствует регламенту.', $text);
         self::assertStringContainsString('Примечания: Без замечаний.', $text);
         self::assertStringContainsString('Слой 1: Грунт ЭП-0199 — 80 мкм', $text);

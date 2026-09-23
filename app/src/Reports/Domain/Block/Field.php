@@ -7,16 +7,23 @@ namespace App\Reports\Domain\Block;
 /**
  * Описание одного поля блока: ключ, тип, подпись, обязательность. Для enum — допустимые значения
  * (options) и опц. ссылка на норму (standard, напр. «ISO 8501-1»); для number — единица (unit).
+ * Enum-поле может быть привязано к PHP-enum ($enum): короткий `value` идёт в форму/валидацию (options),
+ * полное `documentText()` — в документ (проектор).
  */
 final readonly class Field
 {
+    /** @var list<string> допустимые значения для FieldType::Enum */
+    public array $options;
+
     /**
-     * @param list<string> $options    допустимые значения для FieldType::Enum
+     * @param list<string> $options    допустимые значения для FieldType::Enum; пусто + задан $enum → берём из его кейсов
      * @param list<Field>  $itemFields под-поля строки для композитов (ListRows/Layers)
      * @param int          $group      номер визуальной подгруппы в строке композита (0 — без группировки);
      *                                 соседние поля с одним номером рендерятся вместе, смена номера — разделитель
      * @param ?string      $calculator ключ калькулятора-помощника у поля ('wet-film'|'dew-point'): форма
      *                                 рисует значок, открывающий калькулятор в шторке (засев из покрытия слоя)
+     * @param ?string      $enum       class-string BackedEnum c DocumentTextEnum: короткий value (форма) +
+     *                                 полное documentText() (документ)
      */
     public function __construct(
         public string $key,
@@ -24,7 +31,7 @@ final readonly class Field
         public string $label,
         public bool $required = false,
         public ?string $unit = null,
-        public array $options = [],
+        array $options = [],
         public ?string $standard = null,
         public array $itemFields = [],
         public bool $positive = false,
@@ -33,6 +40,12 @@ final readonly class Field
         public int $group = 0,
         public int $rows = 2,
         public ?string $calculator = null,
+        public ?string $enum = null,
     ) {
+        $this->options = [] !== $options
+            ? $options
+            : (null !== $enum && is_a($enum, \BackedEnum::class, true)
+                ? array_values(array_map(static fn (\BackedEnum $case): string => (string) $case->value, $enum::cases()))
+                : []);
     }
 }
