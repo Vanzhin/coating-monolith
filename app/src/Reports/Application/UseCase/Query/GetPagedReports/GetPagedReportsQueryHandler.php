@@ -45,8 +45,10 @@ final readonly class GetPagedReportsQueryHandler implements QueryHandlerInterfac
             customerIds: $query->filter->customerIds,
             contractorIds: $query->filter->contractorIds,
             projectIds: $query->filter->projectIds,
+            type: $query->filter->type,
             status: $query->filter->status,
             search: $query->filter->search,
+            sort: $query->filter->sort,
         );
         $paginator = $this->repository->findByFilter($filter);
 

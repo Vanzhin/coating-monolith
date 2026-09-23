@@ -7,6 +7,7 @@ namespace App\Reports\Infrastructure\Repository;
 use App\Reports\Domain\Aggregate\Report\Report;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Reports\Domain\Repository\ReportsFilter;
+use App\Reports\Domain\Repository\ReportsSort;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -46,7 +47,7 @@ class ReportRepository extends ServiceEntityRepository implements ReportReposito
 
     public function findByFilter(ReportsFilter $filter): PaginationResult
     {
-        $qb = $this->createQueryBuilder('r')->orderBy('r.updatedAt', 'DESC');
+        $qb = $this->createQueryBuilder('r');
 
         // owner — скалярная колонка; заказчик/подрядчик/проект — id внутри JSONB Reference-колонок.
         // Внутри фасета OR (IN), между фасетами AND. Пустой StringCollection = фасет не задан.
@@ -65,6 +66,9 @@ class ReportRepository extends ServiceEntityRepository implements ReportReposito
             $qb->andWhere("JSONB_GET_TEXT(r.project, 'id') IN (:projectIds)")
                 ->setParameter('projectIds', $filter->projectIds->getList());
         }
+        if (null !== $filter->type) {
+            $qb->andWhere('r.type = :type')->setParameter('type', $filter->type->value);
+        }
         if (null !== $filter->status) {
             $qb->andWhere('r.status = :status')->setParameter('status', $filter->status->value);
         }
@@ -73,6 +77,14 @@ class ReportRepository extends ServiceEntityRepository implements ReportReposito
             $qb->andWhere("LOWER(r.actNumber) LIKE LOWER(:q) OR LOWER(JSONB_GET_TEXT(r.project, 'title')) LIKE LOWER(:q)")
                 ->setParameter('q', $needle);
         }
+
+        // Сортировка (дефолт — по дате создания, сначала новые).
+        match ($filter->sort) {
+            ReportsSort::DEFAULT => $qb->orderBy('r.createdAt', 'DESC'),
+            ReportsSort::CREATED_ASC => $qb->orderBy('r.createdAt', 'ASC'),
+            ReportsSort::UPDATED_DESC => $qb->orderBy('r.updatedAt', 'DESC'),
+        };
+
         if (null !== $filter->pager) {
             $qb->setMaxResults($filter->pager->getLimit())->setFirstResult($filter->pager->getOffset());
         }

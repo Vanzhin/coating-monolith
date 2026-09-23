@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Reports\Domain\Repository;
 
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
+use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 
@@ -22,8 +23,10 @@ class ReportsFilter
         public StringCollection $customerIds = new StringCollection(),
         public StringCollection $contractorIds = new StringCollection(),
         public StringCollection $projectIds = new StringCollection(),
+        public ?ReportType $type = null,
         public ?ReportStatus $status = null,
         public ?string $search = null,
+        public ReportsSort $sort = ReportsSort::DEFAULT,
     ) {
     }
 }
