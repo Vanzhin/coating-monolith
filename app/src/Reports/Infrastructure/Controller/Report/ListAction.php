@@ -8,6 +8,7 @@ use App\Reports\Application\UseCase\Query\GetPagedReports\GetPagedReportsQuery;
 use App\Reports\Domain\Aggregate\Report\ReportStatus;
 use App\Reports\Domain\Aggregate\Report\ReportType;
 use App\Reports\Domain\Repository\ReportsFilter;
+use App\Reports\Domain\Repository\ReportsSort;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
@@ -37,6 +38,9 @@ final class ListAction extends AbstractController
         $page = $request->query->get('page') ? (int) $request->query->get('page') : null;
         $search = trim((string) $request->query->get('search', '')) ?: null;
         $status = ReportStatus::tryFrom((string) $request->query->get('status', ''));
+        $type = ReportType::tryFrom((string) $request->query->get('type', ''));
+        $sortRaw = $request->query->get('sort');
+        $sort = (is_string($sortRaw) ? ReportsSort::tryFrom($sortRaw) : null) ?? ReportsSort::DEFAULT;
 
         // owner — ULID (User.id); заказчик/подрядчик/проект — UUID. Битые id тихо отсеиваем.
         $ownerIds = $this->queryParams->stringCollection($request, 'ownerIds', [Ulid::class, 'isValid'], unique: true);
@@ -50,8 +54,10 @@ final class ListAction extends AbstractController
             customerIds: $customerIds,
             contractorIds: $contractorIds,
             projectIds: $projectIds,
+            type: $type,
             status: $status,
             search: $search,
+            sort: $sort,
         );
         $result = $this->queryBus->execute(new GetPagedReportsQuery($filter));
 
@@ -63,7 +69,10 @@ final class ListAction extends AbstractController
             'result' => $result,
             'search' => $search,
             'status' => $status?->value,
+            'type' => $type?->value,
             'types' => ReportType::cases(),
+            'sort' => $sort,
+            'sortOptions' => ReportsSort::cases(),
             'ownerIds' => $ownerIds->getList(),
             'customerIds' => $customerIds->getList(),
             'contractorIds' => $contractorIds->getList(),
