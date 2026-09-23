@@ -6,7 +6,8 @@
     {% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
     {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
     {% set statuses = {'': 'Все', 'created': 'Черновики', 'in_work': 'В работе', 'under_review': 'На проверке', 'approved': 'Утверждённые', 'rejected': 'Отклонённые'} %}
-    {% set activeCount = ownerIds|length + customerIds|length + contractorIds|length + projectIds|length + (status ? 1 : 0) %}
+    {% set activeCount = ownerIds|length + customerIds|length + contractorIds|length + projectIds|length + (status ? 1 : 0) + (type ? 1 : 0) %}
+    {% set defaultSort = constant('App\\Reports\\Domain\\Repository\\ReportsSort::DEFAULT') %}
 
     {% embed 'components/list_page.html.twig' with {
         title: 'Отчёты',
@@ -17,6 +18,11 @@
         search: search,
         status: status,
         statuses: statuses,
+        type: type,
+        types: types,
+        sort: sort,
+        sortOptions: sortOptions,
+        defaultSort: defaultSort,
         activeCount: activeCount,
         ownerIds: ownerIds,
         customerIds: customerIds,
@@ -41,11 +47,14 @@
                 search_placeholder: 'Поиск по № акта или проекту',
                 search_minlength: 2,
                 search_maxlength: 50,
+                sort_options: sortOptions|map(o => {value: o.value, label: o.label}),
+                sort_current: sort.value,
+                sort_default: defaultSort.value,
                 active_count: activeCount,
                 drawer_id: 'allReportFiltersOffcanvas',
                 drawer_form_id: 'allReportFiltersForm',
             } %}
-                {# Статус — быстрый дропдаун в chip-row (как facet-дропдаун в покрытиях). #}
+                {# Статус и тип — быстрые дропдауны в chip-row (как facet-дропдаун в покрытиях). #}
                 {% block chips %}
                     <div class="dropdown flex-shrink-0">
                         <button type="button"
@@ -62,11 +71,30 @@
                             {% endfor %}
                         </ul>
                     </div>
+
+                    {% set typeLabel = 'Тип' %}
+                    {% for t in types|filter(t => t.value == type) %}{% set typeLabel = t.label %}{% endfor %}
+                    <div class="dropdown flex-shrink-0">
+                        <button type="button"
+                                class="btn btn-sm {{ type ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Тип отчёта">
+                            <i class="bi bi-clipboard-data"></i><span class="d-none d-md-inline"> {{ typeLabel }}</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% set qAll = app.request.query.all|merge({type: null, page: null})|filter(v => v is not null) %}
+                            <li><a class="dropdown-item {{ not type ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', qAll) }}">Все</a></li>
+                            {% for t in types %}
+                                {% set q = app.request.query.all|merge({type: t.value, page: null})|filter(v => v is not null) %}
+                                <li><a class="dropdown-item {{ type == t.value ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', q) }}">{{ t.label }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endblock %}
 
-                {# Статус живёт в chip-row (не в форме шторки) — пробрасываем его hidden, чтобы «Показать» не сбросил. #}
+                {# Статус и тип живут в chip-row (не в форме шторки) — пробрасываем их hidden, чтобы «Показать» не сбросил. #}
                 {% block drawer_hidden %}
                     {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                    {% if type %}<input type="hidden" name="type" value="{{ type }}">{% endif %}
                 {% endblock %}
 
                 {# Фасеты сущностей — только админу (suggest под ROLE_ADMIN). Бэкенд универсальный:
