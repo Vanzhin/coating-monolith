@@ -54,52 +54,74 @@
                 drawer_id: 'allReportFiltersOffcanvas',
                 drawer_form_id: 'allReportFiltersForm',
             } %}
-                {# Статус и тип — быстрые дропдауны в chip-row (как facet-дропдаун в покрытиях). #}
+                {# Популярные фильтры пилюлями в chip-row (как у покрытий): активен → залитый чип со
+                   сбросом, иначе → кнопка, открывающая шторку на этом фасете (facet-jump). #}
                 {% block chips %}
-                    <div class="dropdown flex-shrink-0">
-                        <button type="button"
-                                class="btn btn-sm {{ status ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
-                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Статус">
-                            <i class="bi bi-flag"></i><span class="d-none d-md-inline"> {{ status ? statuses[status] : 'Статус' }}</span>
+                    {% if status %}
+                        {% set statusReset = path('app_cabinet_report_list', app.request.query.all|merge({status: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ statusReset }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр статуса">
+                            {{ statuses[status] }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="click->facet-jump#jump" data-facet-jump-facet-param="status">
+                            Статус
                         </button>
-                        <ul class="dropdown-menu">
-                            {% for key, label in statuses %}
-                                {% set st = key ?: null %}
-                                {% set q = app.request.query.all|merge({status: st, page: null})|filter(v => v is not null) %}
-                                {% set isActive = (status == key) or (not status and key == '') %}
-                                <li><a class="dropdown-item {{ isActive ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', q) }}">{{ label }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    {% endif %}
 
-                    {% set typeLabel = 'Тип' %}
-                    {% for t in types|filter(t => t.value == type) %}{% set typeLabel = t.label %}{% endfor %}
-                    <div class="dropdown flex-shrink-0">
-                        <button type="button"
-                                class="btn btn-sm {{ type ? 'btn-primary' : 'btn-outline-secondary' }} dropdown-toggle"
-                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Тип отчёта">
-                            <i class="bi bi-clipboard-data"></i><span class="d-none d-md-inline"> {{ typeLabel }}</span>
+                    {% if type %}
+                        {% set typeChipLabel = 'Тип' %}
+                        {% for t in types|filter(t => t.value == type) %}{% set typeChipLabel = t.label %}{% endfor %}
+                        {% set typeReset = path('app_cabinet_report_list', app.request.query.all|merge({type: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ typeReset }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр типа">
+                            {{ typeChipLabel }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="click->facet-jump#jump" data-facet-jump-facet-param="type">
+                            Тип отчёта
                         </button>
-                        <ul class="dropdown-menu">
-                            {% set qAll = app.request.query.all|merge({type: null, page: null})|filter(v => v is not null) %}
-                            <li><a class="dropdown-item {{ not type ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', qAll) }}">Все</a></li>
-                            {% for t in types %}
-                                {% set q = app.request.query.all|merge({type: t.value, page: null})|filter(v => v is not null) %}
-                                <li><a class="dropdown-item {{ type == t.value ? 'active' : '' }}" href="{{ path('app_cabinet_report_list', q) }}">{{ t.label }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    {% endif %}
                 {% endblock %}
 
-                {# Статус и тип живут в chip-row (не в форме шторки) — пробрасываем их hidden, чтобы «Показать» не сбросил. #}
+                {# Сортировка живёт в chip-row (ссылки), не в форме шторки — пробрасываем hidden, чтобы «Показать» её не сбросил. #}
                 {% block drawer_hidden %}
-                    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
-                    {% if type %}<input type="hidden" name="type" value="{{ type }}">{% endif %}
+                    {% if sort.value != defaultSort.value %}<input type="hidden" name="sort" value="{{ sort.value }}">{% endif %}
                 {% endblock %}
 
                 {# Фасеты сущностей — только админу (suggest под ROLE_ADMIN). Бэкенд универсальный:
                    открыть обычным пользователям = снять guard с suggest/by-ids и убрать этот if. #}
                 {% block drawer %}
+                    {# === Статус (всем) === #}
+                    <div id="facet-status" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Статус</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for key, label in statuses %}
+                                {% if key %}
+                                    <label class="facet-pill">
+                                        <input type="radio" name="status" value="{{ key }}" {% if status == key %}checked{% endif %}>{{ label }}
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="status" value="" {% if not status %}checked{% endif %}>Все
+                            </label>
+                        </div>
+                    </div>
+
+                    {# === Тип отчёта (всем) === #}
+                    <div id="facet-type" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Тип отчёта</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for t in types %}
+                                <label class="facet-pill">
+                                    <input type="radio" name="type" value="{{ t.value }}" {% if type == t.value %}checked{% endif %}>{{ t.label }}
+                                </label>
+                            {% endfor %}
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="type" value="" {% if not type %}checked{% endif %}>Все
+                            </label>
+                        </div>
+                    </div>
+
                     {% if is_granted('ROLE_ADMIN') %}
                         {# === Секция: Владелец (одиночный) === #}
                         <div id="facet-owner" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
