@@ -87,6 +87,9 @@
    (одна колонка), иначе карточки вылезали бы за контур на мобиле. */
 .ecard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: .75rem; align-items: stretch; }
 .ecard-grid .ecard { height: 100%; }
+/* Единая высота карточек: ряды равняются по самой высокой (напр. заполненный отчёт
+   с заказчиком/подрядчиком/владельцем в мете не выпирает над пустыми). Контент не режется. */
+.ecard-grid--uniform { grid-auto-rows: 1fr; }
 
 /* FAB создания (мобайл) — плавающая кнопка над таб-панелью. */
 .fab-create {
