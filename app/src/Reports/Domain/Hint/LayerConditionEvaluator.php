@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Reports\Domain\Hint;
 
-use App\Coatings\Domain\Service\DewPointCalculator;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Service\DewPointCalculator;
 
 /**
  * Мягкие подсказки при заполнении слоя: сверяет фактические замеры с порогами покрытия и физикой

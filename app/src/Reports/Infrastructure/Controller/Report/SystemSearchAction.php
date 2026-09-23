@@ -8,8 +8,6 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemLayerDTO;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
-use App\Coatings\Domain\Repository\CoatingSystemsFilter;
-use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,15 +31,15 @@ final class SystemSearchAction extends AbstractController
     {
         // Слишком короткий/длинный запрос — не ошибка для typeahead, просто нет вариантов.
         try {
-            $search = SearchQuery::tryFromString(trim((string) $request->query->get('q', '')));
+            $query = SearchCoatingSystemsQuery::bySearch(trim((string) $request->query->get('q', '')));
         } catch (AppException) {
             return new JsonResponse([]);
         }
-        if (null === $search) {
+        if (null === $query) {
             return new JsonResponse([]);
         }
 
-        $result = $this->queryBus->execute(new SearchCoatingSystemsQuery(new CoatingSystemsFilter(search: $search)));
+        $result = $this->queryBus->execute($query);
         \assert($result instanceof SearchCoatingSystemsQueryResult);
 
         $items = array_map(static fn (CoatingSystemDTO $s): array => [

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Reports\Domain\Hint;
 
-use App\Coatings\Domain\Service\DewPointCalculator;
 use App\Reports\Domain\Hint\ColorPalette;
 use App\Reports\Domain\Hint\LayerConditionEvaluator;
 use App\Reports\Domain\Hint\LayerMeasurements;
 use App\Reports\Domain\Hint\LayerWarningCode;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Service\DewPointCalculator;
 use PHPUnit\Framework\TestCase;
 
 final class LayerConditionEvaluatorTest extends TestCase

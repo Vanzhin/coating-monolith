@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Coatings\Domain\Service;
+namespace App\Shared\Domain\Service;
 
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -10,8 +10,8 @@ use App\Shared\Infrastructure\Exception\AppException;
 /**
  * Физика точки росы и правило конденсации при нанесении (ISO 8502-4): наносить можно, только если
  * температура поверхности выше точки росы на запас (обычно +3 °C) — иначе на поверхности конденсат
- * и адгезия под угрозой. Живёт в домене как источник истины; фронт дублирует формулу лишь ради
- * офлайна (как FilmThicknessCalculator).
+ * и адгезия под угрозой. Чистая физика, не привязана к контексту (используют Reports и раздел
+ * «Инструменты») → живёт в Shared. Фронт дублирует формулу лишь ради офлайна.
  *
  * Точка росы из температуры воздуха и относительной влажности — формула Магнуса
  * (коэффициенты Alduchov–Eskridge, 1996; погрешность < 0.4 °C в диапазоне 0..60 °C):

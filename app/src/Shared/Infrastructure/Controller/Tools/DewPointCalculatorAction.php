@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Публичная страница калькулятора точки росы. Считает в браузере (Stimulus dew_point_calculator) —
- * серверных вычислений нет. Формула зеркалит доменный DewPointCalculator (Магнус).
+ * серверных вычислений нет. Формула зеркалит Shared\Domain\Service\DewPointCalculator (Магнус).
  */
 #[Route('/tools/dew-point', name: 'app_tools_dew', methods: ['GET'])]
 final class DewPointCalculatorAction extends AbstractController

@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace App\Reports\Application\UseCase\Query\EvaluateLayerConditions;
 
-use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
-use App\Coatings\Domain\Service\DewPointCalculator;
+use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQuery;
+use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQueryResult;
 use App\Reports\Domain\Hint\ColorPalette;
 use App\Reports\Domain\Hint\LayerConditionEvaluator;
 use App\Reports\Domain\Hint\LayerMeasurements;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Service\DewPointCalculator;
 
 /**
- * Читает пороги покрытия из каталога (кросс-контекст, как CreateReport читает систему) и прогоняет
- * замеры слоя через доменное правило. Покрытие не найдено → пустой список (без подсказок по порогам).
+ * Читает пороги покрытия из каталога через опубликованный query Coatings (DTO, не домен/репозиторий)
+ * и прогоняет замеры слоя через доменное правило. Покрытие не найдено → пустой список порогов.
  */
 final readonly class EvaluateLayerConditionsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private CoatingRepositoryInterface $coatings,
+        private QueryBusInterface $queryBus,
         private LayerConditionEvaluator $evaluator,
         private DewPointCalculator $dewPoint,
     ) {
@@ -38,12 +41,16 @@ final readonly class EvaluateLayerConditionsQueryHandler implements QueryHandler
         // Риск конденсата зависит только от климата — подсказываем и без выбранного покрытия.
         $warnings = $this->evaluator->evaluateClimate($measurements);
 
-        // Пороговые подсказки (цвет/ТСП/t нанесения) — только когда покрытие выбрано и найдено.
-        $coating = '' !== $query->coatingId ? $this->coatings->findOneById($query->coatingId) : null;
+        // Пороговые подсказки (цвет/ТСП/t нанесения) — только когда покрытие выбрано и найдено в каталоге.
+        $coating = null;
+        if ('' !== $query->coatingId) {
+            $result = $this->queryBus->execute(new GetCoatingQuery($query->coatingId));
+            $coating = $result instanceof GetCoatingQueryResult ? $result->coatingDTO : null;
+        }
         if (null !== $coating) {
             $labels = [];
-            foreach ($coating->getPossibleColors() as $color) {
-                foreach ([$color->getName(), $color->getRal(), $color->label()] as $label) {
+            foreach ($coating->possibleColors as $color) {
+                foreach ([$color->name, $color->ral, $color->label] as $label) {
                     if (null !== $label && '' !== $label) {
                         $labels[] = $label;
                     }
@@ -51,9 +58,9 @@ final readonly class EvaluateLayerConditionsQueryHandler implements QueryHandler
             }
 
             $warnings = array_merge($this->evaluator->evaluateAgainstCoating(
-                $coating->getDftRange()->range,
-                $coating->getApplicationMinTemp(),
-                new ColorPalette($coating->isTintable(), $labels),
+                new PositiveNumberRange($coating->dftRange->min, $coating->dftRange->max),
+                $coating->applicationMinTemp,
+                new ColorPalette($coating->isTintable, $labels),
                 $measurements,
             ), $warnings);
         }
