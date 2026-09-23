@@ -3,7 +3,7 @@
         <a class="ecard-media" href="{{ path('app_cabinet_report_fill', {id: r.id}) }}"><i class="bi bi-clipboard-data"></i></a>
         <div class="ecard-body">
             <div class="ecard-head">
-                <a class="ecard-title" href="{{ path('app_cabinet_report_fill', {id: r.id}) }}">{{ r.typeLabel|default('Отчёт') }}</a>
+                <a class="ecard-title" href="{{ path('app_cabinet_report_fill', {id: r.id}) }}">{{ r.actNumber ? '№ ' ~ r.actNumber : 'Без номера' }}</a>
                 {% include 'cabinet/report/_status_pill.html.twig' with {status: r.status, label: r.statusLabel} only %}
                 <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
                     <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
@@ -29,7 +29,7 @@
                     </ul>
                 </div>
             </div>
-            <div class="ecard-desc">{{ r.actNumber ? '№ ' ~ r.actNumber : 'Без номера' }}{% if r.projectTitle %} · {{ r.projectTitle }}{% endif %}</div>
+            <div class="ecard-desc">{{ r.typeLabel|default('Отчёт') }}{% if r.projectTitle %} · {{ r.projectTitle }}{% endif %}</div>
             <div class="ecard-meta">
                 {% if r.systemTitle %}<span>{{ r.systemTitle }}</span>{% endif %}
                 {% if r.customerTitle %}<span>Заказчик: {{ r.customerTitle }}</span>{% endif %}
