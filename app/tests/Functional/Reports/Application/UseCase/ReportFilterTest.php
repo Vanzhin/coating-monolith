@@ -18,6 +18,7 @@ use App\Reports\Domain\Repository\CounterpartyRepositoryInterface;
 use App\Reports\Domain\Repository\ProjectRepositoryInterface;
 use App\Reports\Domain\Repository\ReportRepositoryInterface;
 use App\Reports\Domain\Repository\ReportsFilter;
+use App\Reports\Domain\Repository\ReportsSort;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -128,6 +129,53 @@ final class ReportFilterTest extends KernelTestCase
         self::assertSame(0, $this->countMatching(ownerIds: [(string) new Ulid()]));
     }
 
+    public function test_filters_by_type(): void
+    {
+        $this->create('T', ReportType::TrialApplication);
+        $this->create('R', ReportType::ReferenceArea);
+        $this->em->clear();
+
+        self::assertSame(2, $this->countMatching());
+        self::assertSame(1, $this->countMatching(type: ReportType::TrialApplication));
+        self::assertSame(1, $this->countMatching(type: ReportType::ReferenceArea));
+    }
+
+    public function test_sorts_by_created_date(): void
+    {
+        $older = $this->create('OLD');
+        $newer = $this->create('NEW');
+        // Разводим createdAt детерминированно — в одном тесте у обоих иначе одна секунда.
+        $this->setCreatedAt($older, new \DateTimeImmutable('2020-01-01 10:00:00'));
+        $this->setCreatedAt($newer, new \DateTimeImmutable('2024-01-01 10:00:00'));
+        $this->em->clear();
+
+        // Дефолт — createdAt DESC (сначала новые).
+        self::assertSame([$newer, $older], $this->orderedIds(ReportsSort::DEFAULT));
+        // Сначала старые.
+        self::assertSame([$older, $newer], $this->orderedIds(ReportsSort::CREATED_ASC));
+    }
+
+    private function setCreatedAt(string $reportId, \DateTimeImmutable $dt): void
+    {
+        $report = $this->reports->findOneById($reportId);
+        \assert(null !== $report);
+        (new \ReflectionProperty($report, 'createdAt'))->setValue($report, $dt);
+        $this->em->flush();
+    }
+
+    /** @return list<string> */
+    private function orderedIds(ReportsSort $sort): array
+    {
+        $result = $this->queryBus->execute(new GetPagedReportsQuery(new ReportsFilter(
+            pager: Pager::fromPage(1, 50),
+            search: $this->suffix,
+            sort: $sort,
+        )));
+        \assert($result instanceof GetPagedReportsQueryResult);
+
+        return array_map(static fn ($r): string => $r->id, $result->reports);
+    }
+
     private function counterparty(string $tag): string
     {
         $result = $this->commandBus->execute(new CreateCounterpartyCommand($tag.'-'.$this->suffix));
@@ -146,10 +194,10 @@ final class ReportFilterTest extends KernelTestCase
         return $result->id;
     }
 
-    private function create(string $tag): string
+    private function create(string $tag, ReportType $type = ReportType::TrialApplication): string
     {
         $result = $this->commandBus->execute(new CreateReportCommand(
-            type: ReportType::TrialApplication,
+            type: $type,
             actNumber: $tag.'-'.$this->suffix,
             systemId: (string) $this->systemId,
         ));
@@ -179,7 +227,7 @@ final class ReportFilterTest extends KernelTestCase
      * @param list<string> $contractorIds
      * @param list<string> $projectIds
      */
-    private function countMatching(array $ownerIds = [], array $customerIds = [], array $contractorIds = [], array $projectIds = []): int
+    private function countMatching(array $ownerIds = [], array $customerIds = [], array $contractorIds = [], array $projectIds = [], ?ReportType $type = null): int
     {
         $result = $this->queryBus->execute(new GetPagedReportsQuery(new ReportsFilter(
             pager: Pager::fromPage(1, 50),
@@ -187,6 +235,7 @@ final class ReportFilterTest extends KernelTestCase
             customerIds: new StringCollection(...$customerIds),
             contractorIds: new StringCollection(...$contractorIds),
             projectIds: new StringCollection(...$projectIds),
+            type: $type,
             search: $this->suffix,
         )));
         \assert($result instanceof GetPagedReportsQueryResult);
