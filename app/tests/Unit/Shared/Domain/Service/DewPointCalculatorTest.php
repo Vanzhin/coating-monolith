@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Coatings\Domain\Service;
+namespace App\Tests\Unit\Shared\Domain\Service;
 
-use App\Coatings\Domain\Service\DewPointCalculator;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
+use App\Shared\Domain\Service\DewPointCalculator;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
