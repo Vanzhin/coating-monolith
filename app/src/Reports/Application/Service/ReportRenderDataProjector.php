@@ -11,6 +11,7 @@ use App\Reports\Domain\Block\BlockKey;
 use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
+use App\Shared\Domain\Aggregate\Enum\DocumentTextEnum;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
@@ -132,10 +133,28 @@ final readonly class ReportRenderDataProjector
             return null;
         }
 
+        // Enum-поле с привязанным PHP-enum: в документ идёт полное documentText(); неизвестное значение
+        // (напр. старый свободный текст roughness) — печатаем как есть (fallback).
+        if (FieldType::Enum === $field->type && null !== $field->enum && is_scalar($value)) {
+            return $this->enumDocumentText($field->enum, (string) $value) ?? (string) $value;
+        }
+
         return match ($field->type) {
             FieldType::Bool => $value ? 'Да' : 'Нет',
             default => is_scalar($value) ? (string) $value : null,
         };
+    }
+
+    /** Полное наименование классификации для документа: строка-value → documentText() enum'а, иначе null. */
+    private function enumDocumentText(string $enumClass, string $value): ?string
+    {
+        if (!is_a($enumClass, DocumentTextEnum::class, true) || !is_a($enumClass, \BackedEnum::class, true)) {
+            return null;
+        }
+
+        $case = $enumClass::tryFrom($value);
+
+        return $case instanceof DocumentTextEnum ? $case->documentText() : null;
     }
 
     /**

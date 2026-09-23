@@ -8,6 +8,10 @@ use App\Reports\Domain\Block\BlockDefinition;
 use App\Reports\Domain\Block\BlockKey;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
+use App\Shared\Domain\Aggregate\Enum\DedustingClass;
+use App\Shared\Domain\Aggregate\Enum\PreparationDegree;
+use App\Shared\Domain\Aggregate\Enum\RustGrade;
+use App\Shared\Domain\Aggregate\Enum\SurfaceRoughness;
 
 final class SurfacePrepBlock implements BlockDefinition
 {
@@ -24,11 +28,11 @@ final class SurfacePrepBlock implements BlockDefinition
     public function fields(): array
     {
         return [
-            new Field('rustGrade', FieldType::Enum, 'Класс ржавления', required: true, options: ['A', 'B', 'C', 'D'], standard: 'ISO 8501-1'),
-            new Field('prepDegree', FieldType::Enum, 'Степень подготовки', required: true, options: ['Sa 1', 'Sa 2', 'Sa 2½', 'Sa 3', 'St 2', 'St 3'], standard: 'ISO 8501-1'),
+            new Field('rustGrade', FieldType::Enum, 'Класс ржавления', required: true, standard: 'ГОСТ Р ИСО 8501-1-2014', enum: RustGrade::class),
+            new Field('prepDegree', FieldType::Enum, 'Степень подготовки', required: true, standard: 'ISO 8501-1', enum: PreparationDegree::class),
             new Field('blasting_media', FieldType::Text, 'Абразив'),
-            new Field('roughness', FieldType::Text, 'Шероховатость (профиль)'),
-            new Field('dedusting', FieldType::Enum, 'Обеспыливание, класс', options: ['1', '2', '3'], standard: 'ISO 8502-3'),
+            new Field('roughness', FieldType::Enum, 'Шероховатость (профиль)', standard: 'ISO 8503-2', enum: SurfaceRoughness::class),
+            new Field('dedusting', FieldType::Enum, 'Обеспыливание, класс', standard: 'ISO 8502-3', enum: DedustingClass::class),
         ];
     }
 }

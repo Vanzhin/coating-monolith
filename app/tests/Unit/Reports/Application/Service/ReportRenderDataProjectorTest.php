@@ -75,9 +75,9 @@ final class ReportRenderDataProjectorTest extends TestCase
         self::assertSame('НПП НГТ', $this->text($data, 'contractor_title'));
         self::assertFalse($data->has('system_title')); // null-ссылка → ключа нет
 
-        // блоки: {blockKey}_{fieldKey}
-        self::assertSame('B', $this->text($data, 'surface_prep_rustGrade'));
-        self::assertSame('Sa 2½', $this->text($data, 'surface_prep_prepDegree'));
+        // блоки: {blockKey}_{fieldKey}. Enum-поля → полное documentText() (короткий код в форме, полное в акт)
+        self::assertSame('Степень B по ГОСТ Р ИСО 8501-1-2014', $this->text($data, 'surface_prep_rustGrade'));
+        self::assertSame('Абразивоструйная очистка до степени Sa 2½ по ISO 8501-1.', $this->text($data, 'surface_prep_prepDegree'));
         self::assertSame("1. Соответствует.\n2. Допущено к эксплуатации.", $this->text($data, 'conclusion_text'));
         self::assertSame('ок', $this->text($data, 'notes_text'));
 
@@ -88,6 +88,30 @@ final class ReportRenderDataProjectorTest extends TestCase
 
         // незаполненное поле — presence-driven, ключа нет
         self::assertFalse($data->has('surface_prep_abrasive'));
+    }
+
+    public function test_surface_prep_enum_fields_render_full_document_text(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-08');
+        $report->replaceContent([
+            'surface_prep' => ['dedusting' => '2', 'roughness' => 'Средний G'],
+        ], $now);
+
+        $data = $this->projector->project($report);
+
+        self::assertSame('класс 2 по количеству и размеру частиц пыли согласно ISO 8502-3.', $this->text($data, 'surface_prep_dedusting'));
+        self::assertSame('Средний G – между 2 и 3 сегментами, исключая сегмент 3, компаратора G по ISO 8503-2.', $this->text($data, 'surface_prep_roughness'));
+    }
+
+    public function test_unknown_enum_value_falls_back_to_raw_string(): void
+    {
+        $now = new \DateTimeImmutable('2026-08-05');
+        $report = new Report(Uuid::v7(), UuidService::generateUlid(), ReportType::TrialApplication, $now, $now, 'АКТ-09');
+        // старый отчёт: roughness хранит свободный текст, не совпадающий с кейсом enum → печатаем как есть
+        $report->replaceContent(['surface_prep' => ['roughness' => 'Средний профиль G, старый ввод']], $now);
+
+        self::assertSame('Средний профиль G, старый ввод', $this->text($this->projector->project($report), 'surface_prep_roughness'));
     }
 
     public function test_layers_project_to_indexed_keys(): void
