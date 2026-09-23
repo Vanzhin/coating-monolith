@@ -77,6 +77,8 @@ final class CreateReportSeedsSystemTest extends KernelTestCase
         self::assertSame(80, $layer['dft_nominal']);
         self::assertSame(1, $layer['order']);
         self::assertNotSame('', $layer['color']);
+        // Номинальная ТСП покрытия заморожена снимком из CoatingSystem::totalDft (1 слой ×80 = 80).
+        self::assertSame(80, $content['system']['dft_nominal_total']);
     }
 
     public function test_saving_content_preserves_seeded_system(): void
