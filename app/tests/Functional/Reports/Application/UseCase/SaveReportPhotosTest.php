@@ -103,6 +103,25 @@ final class SaveReportPhotosTest extends KernelTestCase
         self::assertNull($this->storage->get($uuid));
     }
 
+    public function test_empty_photos_block_with_marker_removes_all(): void
+    {
+        $reportId = $this->createReport();
+        $uuid = $this->stagePhoto();
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['photos' => ['items' => [['file' => $uuid]]]]));
+        $this->em->clear();
+        self::assertNotNull($this->storage->get($uuid));
+
+        // Пустой блок фото из формы приходит с маркером managed (без items) — удаление ВСЕХ фото
+        // должно сохраниться, а не вернуть прежние (это и был баг: без маркера ключ не приходил).
+        $this->commandBus->execute(new SaveReportContentCommand($reportId, ['photos' => ['managed' => '1']]));
+        $this->em->clear();
+
+        self::assertNull($this->storage->get($uuid), 'все фото удалены — прежние не должны вернуться');
+        $photos = $this->reports->findOneById($reportId)?->getContent()['photos'] ?? [];
+        self::assertSame([], $photos['items'] ?? [], 'items пусты');
+        self::assertArrayNotHasKey('managed', $photos, 'служебный маркер в контенте не хранится');
+    }
+
     public function test_saving_without_photos_key_keeps_existing(): void
     {
         $reportId = $this->createReport();

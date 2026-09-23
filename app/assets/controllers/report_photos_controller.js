@@ -133,6 +133,23 @@ export default class extends Controller {
         this._renumber();
     }
 
+    /** Клик по тумбу — увеличенное фото в лайтбоксе (тот же img.src: сервис-URL сохранённого / blob свежего). */
+    preview(event) {
+        const tile = event.currentTarget.closest('[data-report-photos-target="tile"]');
+        const img = tile && tile.querySelector('img.report-photo-img');
+        if (!img || !img.src) {
+            return; // ещё нет картинки (плитка-заглушка при загрузке)
+        }
+        const overlay = document.createElement('div');
+        overlay.className = 'report-photo-lightbox';
+        const big = document.createElement('img');
+        big.src = img.src;
+        big.alt = '';
+        overlay.appendChild(big);
+        overlay.addEventListener('click', () => overlay.remove());
+        document.body.appendChild(overlay);
+    }
+
     _renumber() {
         const tiles = this.tilesTarget.querySelectorAll('[data-report-photos-target="tile"]');
         tiles.forEach((tile, index) => {

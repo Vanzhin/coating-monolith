@@ -289,24 +289,35 @@
                                 {% elseif field.type == 'photo_slot' %}
                                     <div class="mb-3" data-controller="report-photos" data-report-photos-stage-url-value="{{ path('app_cabinet_file_stage') }}">
                                         <label class="form-label fw-semibold">{{ field.label }}</label>
+                                        {# Маркер: блок фото управляется этим сабмитом всегда, даже когда пусто —
+                                           иначе при удалении всех фото ключ не придёт в POST и сервер вернёт прежние. #}
+                                        <input type="hidden" name="content[{{ section.key }}][managed]" value="1">
                                         <div class="report-photos" data-report-photos-target="tiles">
                                             {% for row in field.value|default([]) %}
-                                                <div class="report-photo" data-report-photos-target="tile" data-state="ok">
-                                                    <div class="report-photo-preview">{% if row.file %}<img class="report-photo-img" src="{{ path('app_cabinet_file_get', {uuid: row.file}) }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
-                                                    <div class="report-photo-badge"></div>
-                                                    <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][file]" value="{{ row.file|default('') }}" data-report-photos-target="file">
-                                                    <input type="text" class="form-control form-control-sm mt-1" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][caption]" value="{{ row.caption|default('') }}" placeholder="Подпись">
-                                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 mt-1" data-action="report-photos#remove">убрать</button>
+                                                <div class="report-photo p-3 rounded-3 bg-body" data-report-photos-target="tile" data-state="ok">
+                                                    <button type="button" class="report-photo-preview" data-action="report-photos#preview" aria-label="Увеличить фото">{% if row.file %}<img class="report-photo-img" src="{{ path('app_cabinet_file_get', {uuid: row.file}) }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</button>
+                                                    <div class="report-photo-main">
+                                                        <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][file]" value="{{ row.file|default('') }}" data-report-photos-target="file">
+                                                        <input type="text" class="form-control form-control-sm" name="content[{{ section.key }}][{{ field.key }}][{{ loop.index0 }}][caption]" value="{{ row.caption|default('') }}" placeholder="Подпись">
+                                                        <div class="report-photo-foot">
+                                                            <span class="report-photo-badge"></span>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-photos#remove"><i class="bi bi-trash"></i></button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             {% endfor %}
                                         </div>
                                         <template data-report-photos-target="template">
-                                            <div class="report-photo" data-report-photos-target="tile">
-                                                <div class="report-photo-preview"><i class="bi bi-image"></i></div>
-                                                <div class="report-photo-badge"></div>
-                                                <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][__i__][file]" value="" data-report-photos-target="file">
-                                                <input type="text" class="form-control form-control-sm mt-1" name="content[{{ section.key }}][{{ field.key }}][__i__][caption]" value="" placeholder="Подпись">
-                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 mt-1" data-action="report-photos#remove">убрать</button>
+                                            <div class="report-photo p-3 rounded-3 bg-body" data-report-photos-target="tile">
+                                                <button type="button" class="report-photo-preview" data-action="report-photos#preview" aria-label="Увеличить фото"><i class="bi bi-image"></i></button>
+                                                <div class="report-photo-main">
+                                                    <input type="hidden" name="content[{{ section.key }}][{{ field.key }}][__i__][file]" value="" data-report-photos-target="file">
+                                                    <input type="text" class="form-control form-control-sm" name="content[{{ section.key }}][{{ field.key }}][__i__][caption]" value="" placeholder="Подпись">
+                                                    <div class="report-photo-foot">
+                                                        <span class="report-photo-badge"></span>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-photos#remove"><i class="bi bi-trash"></i></button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
                                         <label class="btn btn-soft-success btn-sm mt-1">
