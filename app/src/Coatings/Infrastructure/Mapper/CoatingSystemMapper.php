@@ -138,33 +138,21 @@ class CoatingSystemMapper
      */
     public function getValidationCollection(): Assert\Collection
     {
-        return new Assert\Collection([
+        return new Assert\Collection(fields: [
             'title' => [
                 new Assert\NotBlank(),
-                new Assert\Length([
-                    'max' => 100,
-                    'maxMessage' => 'Название не должно быть длиннее {{ limit }} символов.',
-                ]),
+                new Assert\Length(max: 100, maxMessage: 'Название не должно быть длиннее {{ limit }} символов.'),
             ],
             'description' => new Assert\Optional([
-                new Assert\Length([
-                    'max' => 2000,
-                    'maxMessage' => 'Описание не должно быть длиннее {{ limit }} символов.',
-                ]),
+                new Assert\Length(max: 2000, maxMessage: 'Описание не должно быть длиннее {{ limit }} символов.'),
             ]),
             'substrate' => [
                 new Assert\NotBlank(),
-                new Assert\Choice([
-                    'choices' => array_map(fn (Substrate $s) => $s->value, Substrate::cases()),
-                    'message' => 'Недопустимое значение подложки.',
-                ]),
+                new Assert\Choice(choices: array_map(fn (Substrate $s) => $s->value, Substrate::cases()), message: 'Недопустимое значение подложки.'),
             ],
             'environment' => [
                 new Assert\NotBlank(),
-                new Assert\Choice([
-                    'choices' => array_map(fn (EnvironmentType $e) => $e->value, EnvironmentType::cases()),
-                    'message' => 'Недопустимое значение среды эксплуатации.',
-                ]),
+                new Assert\Choice(choices: array_map(fn (EnvironmentType $e) => $e->value, EnvironmentType::cases()), message: 'Недопустимое значение среды эксплуатации.'),
             ],
             'surfaceTreatmentId' => [
                 new Assert\NotBlank(),
@@ -172,7 +160,7 @@ class CoatingSystemMapper
             ],
             'layers' => new Assert\Optional([
                 new Assert\All([
-                    new Assert\Collection([
+                    new Assert\Collection(fields: [
                         'coatingId' => [new Assert\NotBlank(), new Assert\Uuid()],
                         'dft' => [
                             new Assert\NotBlank(),

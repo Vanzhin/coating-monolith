@@ -162,58 +162,50 @@ class CoatingMapper
 
     public function getValidationCollectionCoating(): Assert\Collection
     {
-        return new Assert\Collection([
+        return new Assert\Collection(fields: [
             'title' => [
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
-                new Assert\Length([
-                    'min' => 3, 'max' => 100,
-                    'maxMessage' => 'Название не должно быть длиннее {{ limit }}.',
-                    'minMessage' => 'Название не должно быть короче {{ limit }}.',
-                ]),
+                new Assert\Length(min: 3, max: 100, maxMessage: 'Название не должно быть длиннее {{ limit }}.', minMessage: 'Название не должно быть короче {{ limit }}.'),
             ],
             'description' => [
                 new Assert\NotBlank(),
                 new Assert\Type('string'),
-                new Assert\Length([
-                    'min' => 3, 'max' => 1500,
-                    'maxMessage' => 'Описание не должно быть длиннее {{ limit }}.',
-                    'minMessage' => 'Описание не должно быть короче {{ limit }}.',
-                ]),
+                new Assert\Length(min: 3, max: 1500, maxMessage: 'Описание не должно быть длиннее {{ limit }}.', minMessage: 'Описание не должно быть короче {{ limit }}.'),
             ],
             'volumeSolid' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 10, 'max' => 100, 'notInRangeMessage' => 'Сухой остаток должен быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 10, max: 100, notInRangeMessage: 'Сухой остаток должен быть от {{ min }} до {{ max }}.'),
             ],
             'massDensity' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 0, 'max' => 100, 'notInRangeMessage' => 'Плотность должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 0, max: 100, notInRangeMessage: 'Плотность должна быть от {{ min }} до {{ max }}.'),
             ],
             'tdsDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'ТСП тех карты должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 10, max: 9999, notInRangeMessage: 'ТСП тех карты должна быть от {{ min }} до {{ max }}.'),
             ],
             'minDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'Мин ТСП должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 10, max: 9999, notInRangeMessage: 'Мин ТСП должна быть от {{ min }} до {{ max }}.'),
             ],
             'maxDft' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 10, 'max' => 9999, 'notInRangeMessage' => 'Макс ТСП должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 10, max: 9999, notInRangeMessage: 'Макс ТСП должна быть от {{ min }} до {{ max }}.'),
             ],
             'applicationMinTemp' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => -30, 'max' => 50, 'notInRangeMessage' => 'Мин Т нанесения должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: -30, max: 50, notInRangeMessage: 'Мин Т нанесения должна быть от {{ min }} до {{ max }}.'),
             ],
             'dryingMaxTemp' => new Assert\Optional([
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 0, 'max' => 250, 'notInRangeMessage' => 'Макс Т сушки должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 0, max: 250, notInRangeMessage: 'Макс Т сушки должна быть от {{ min }} до {{ max }}.'),
             ]),
             'dryToTouch' => $this->seriesFieldConstraints(required: true),
             'fullCure' => $this->seriesFieldConstraints(required: true),
@@ -224,15 +216,15 @@ class CoatingMapper
             'pack' => [
                 new Assert\NotBlank(),
                 new Assert\Type('numeric'),
-                new Assert\Range(['min' => 1, 'max' => 1000, 'notInRangeMessage' => 'Упаковка должна быть от {{ min }} до {{ max }}.']),
+                new Assert\Range(min: 1, max: 1000, notInRangeMessage: 'Упаковка должна быть от {{ min }} до {{ max }}.'),
             ],
-            'manufacturer' => new Assert\Collection([
+            'manufacturer' => new Assert\Collection(fields: [
                 'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                 'title' => new Assert\Optional(new Assert\Type('string')),
                 'description' => new Assert\Optional(new Assert\Type('string')),
             ]),
             'tags' => new Assert\Optional([
-                new Assert\All([new Assert\Collection([
+                new Assert\All([new Assert\Collection(fields: [
                     'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                     'title' => new Assert\Optional(new Assert\Type('string')),
                     'type' => new Assert\Optional(new Assert\Type('string')),
@@ -241,7 +233,7 @@ class CoatingMapper
             // Возможные цвета: структурно — валидный id + name/hex (форма шлёт полные данные).
             // Инвариант «не-колеруемое ⇒ ≥1 цвет» — в домене (Coating::applyColorScheme).
             'colors' => new Assert\Optional([
-                new Assert\All([new Assert\Collection([
+                new Assert\All([new Assert\Collection(fields: [
                     'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                     'name' => [new Assert\NotBlank(), new Assert\Type('string')],
                     'ral' => new Assert\Optional([new Assert\Type('string')]),
@@ -249,10 +241,7 @@ class CoatingMapper
                 ])]),
             ]),
             'gloss' => new Assert\Optional([
-                new Assert\Choice([
-                    'choices' => array_map(static fn (Gloss $g) => $g->value, Gloss::cases()),
-                    'message' => 'Недопустимая степень блеска.',
-                ]),
+                new Assert\Choice(choices: array_map(static fn (Gloss $g) => $g->value, Gloss::cases()), message: 'Недопустимая степень блеска.'),
             ]),
             // HTML-чекбокс: строка "on"/отсутствует; в bool кастит buildCoatingDtoFromInputData.
             'isTintable' => new Assert\Optional([new Assert\Type('string')]),
@@ -260,13 +249,10 @@ class CoatingMapper
             // Структурно это опциональная строка; в bool её кастит buildCoatingDtoFromInputData.
             'isZincRich' => new Assert\Optional([new Assert\Type('string')]),
             'recoatingInterpolationModel' => new Assert\Optional([
-                new Assert\Choice([
-                    'choices' => array_map(
-                        static fn (RecoatingInterpolationModel $m) => $m->value,
-                        RecoatingInterpolationModel::cases(),
-                    ),
-                    'message' => 'Недопустимая модель интерполяции.',
-                ]),
+                new Assert\Choice(choices: array_map(
+                    static fn (RecoatingInterpolationModel $m) => $m->value,
+                    RecoatingInterpolationModel::cases(),
+                ), message: 'Недопустимая модель интерполяции.'),
             ]),
             // Структурно: каждое поле секции — пусто или целое число, с человеческим сообщением
             // и явной меткой секции. Инварианты (min<max, peak>max, duration>0) — домен; решение
@@ -287,27 +273,18 @@ class CoatingMapper
     private function exposureFieldConstraints(string $sectionLabel): Assert\Optional
     {
         $integerOrBlank = fn (string $noun): Assert\Optional => new Assert\Optional([
-            new Assert\Regex([
-                'pattern' => '/^(-?\d+)?$/',
-                'message' => sprintf('Секция «%s»: %s должна быть целым числом.', $sectionLabel, $noun),
-            ]),
+            new Assert\Regex(pattern: '/^(-?\d+)?$/', message: sprintf('Секция «%s»: %s должна быть целым числом.', $sectionLabel, $noun)),
         ]);
 
         return new Assert\Optional([
-            new Assert\Collection([
-                'fields' => [
-                    'continuous_min' => $integerOrBlank('минимальная температура'),
-                    'continuous_max' => $integerOrBlank('максимальная температура'),
-                    'peak_max' => $integerOrBlank('пиковая температура'),
-                    'peak_duration_minutes' => new Assert\Optional([
-                        new Assert\Regex([
-                            'pattern' => '/^(-?\d+)?$/',
-                            'message' => sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel),
-                        ]),
-                    ]),
-                ],
-                'allowExtraFields' => true,
-            ]),
+            new Assert\Collection(fields: [
+                'continuous_min' => $integerOrBlank('минимальная температура'),
+                'continuous_max' => $integerOrBlank('максимальная температура'),
+                'peak_max' => $integerOrBlank('пиковая температура'),
+                'peak_duration_minutes' => new Assert\Optional([
+                    new Assert\Regex(pattern: '/^(-?\d+)?$/', message: sprintf('Секция «%s»: длительность пика должна быть целым числом минут.', $sectionLabel)),
+                ]),
+            ], allowExtraFields: true),
         ]);
     }
 
@@ -475,20 +452,14 @@ class CoatingMapper
      */
     private function recoatingNodeConstraints(bool $required): Assert\Collection|Assert\Optional
     {
-        $nodeShape = new Assert\Collection([
-            'fields' => [
-                'default' => new Assert\Optional([
-                    new Assert\Collection([
-                        'fields' => [
-                            'points' => new Assert\Optional($this->pointsListConstraint()),
-                        ],
-                        'allowExtraFields' => true,
-                    ]),
-                ]),
-                'branches' => new Assert\Optional([new Assert\Type('array')]),
-            ],
-            'allowExtraFields' => true,
-        ]);
+        $nodeShape = new Assert\Collection(fields: [
+            'default' => new Assert\Optional([
+                new Assert\Collection(fields: [
+                    'points' => new Assert\Optional($this->pointsListConstraint()),
+                ], allowExtraFields: true),
+            ]),
+            'branches' => new Assert\Optional([new Assert\Type('array')]),
+        ], allowExtraFields: true);
 
         return $required ? $nodeShape : new Assert\Optional([$nodeShape]);
     }
@@ -496,18 +467,15 @@ class CoatingMapper
     private function pointsListConstraint(): Assert\All
     {
         return new Assert\All([
-            new Assert\Collection([
-                'fields' => [
-                    'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
-                    'days' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'hours' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'is_calculated' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'kind' => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
-                ],
-                'allowExtraFields' => true,
-            ]),
+            new Assert\Collection(fields: [
+                'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                'days' => new Assert\Optional([new Assert\Type('numeric')]),
+                'hours' => new Assert\Optional([new Assert\Type('numeric')]),
+                'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                'is_calculated' => new Assert\Optional([new Assert\Type('numeric')]),
+                'kind' => new Assert\Optional([new Assert\Choice(choices: ['duration', 'unlimited', 'unknown'])]),
+            ], allowExtraFields: true),
         ]);
     }
 
@@ -607,18 +575,15 @@ class CoatingMapper
     private function seriesFieldConstraints(bool $required): array
     {
         $rowConstraint = new Assert\All([
-            new Assert\Collection([
-                'fields' => [
-                    'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
-                    'days' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'hours' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
-                    'is_calculated' => new Assert\Optional(new Assert\Type('numeric')),
-                    'kind' => new Assert\Optional([new Assert\Choice(['duration', 'unlimited', 'unknown'])]),
-                ],
-                'allowExtraFields' => true,
-            ]),
+            new Assert\Collection(fields: [
+                'temperature_at' => [new Assert\NotBlank(), new Assert\Type('numeric')],
+                'days' => new Assert\Optional([new Assert\Type('numeric')]),
+                'hours' => new Assert\Optional([new Assert\Type('numeric')]),
+                'minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                'time_in_minutes' => new Assert\Optional([new Assert\Type('numeric')]),
+                'is_calculated' => new Assert\Optional(new Assert\Type('numeric')),
+                'kind' => new Assert\Optional([new Assert\Choice(choices: ['duration', 'unlimited', 'unknown'])]),
+            ], allowExtraFields: true),
         ]);
 
         return $required

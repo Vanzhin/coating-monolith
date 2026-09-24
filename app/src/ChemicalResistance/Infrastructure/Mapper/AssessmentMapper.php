@@ -17,8 +17,8 @@ final class AssessmentMapper
      */
     public function getValidationCollectionCreate(): Assert\Collection
     {
-        return new Assert\Collection([
-            'fields' => [
+        return new Assert\Collection(
+            fields: [
                 'substanceId' => [
                     new Assert\NotBlank(message: 'Выберите вещество.'),
                     new Assert\Type('string'),
@@ -44,8 +44,8 @@ final class AssessmentMapper
                     ]),
                 ]),
             ],
-            'allowExtraFields' => true,
-        ]);
+            allowExtraFields: true,
+        );
     }
 
     /**
@@ -58,9 +58,9 @@ final class AssessmentMapper
         $fields = $create->fields;
         unset($fields['substanceId']);
 
-        return new Assert\Collection([
-            'fields' => $fields,
-            'allowExtraFields' => true,
-        ]);
+        return new Assert\Collection(
+            fields: $fields,
+            allowExtraFields: true,
+        );
     }
 }
