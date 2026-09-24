@@ -44,18 +44,16 @@
 
 ## Фаза 0 — Подготовка (ветка `upgrade-0-prep`, на 7.0)
 
-**Rector — основной инструмент апгрейда (заводим ЗДЕСЬ, используем во всех фазах).**
-- Поставить `rector/rector` (dev), создать `rector.php`: пути `app/src` + `app/tests`, `phpVersion` = текущий
-  таргет фазы, кэш. Наборы подключать ПО ФАЗАМ, не всё сразу:
-  - Фаза 0: `LevelSetList::UP_TO_PHP_83` (текущий рантайм) + базовые code-quality — снять то, что и так висит.
-  - Фаза 1: `PHPUnitSetList` (аннотации→атрибуты `#[Test]`/`#[DataProvider]`, config-миграция) + `UP_TO_PHP_85`.
-  - Фаза 2: `SymfonyLevelSetList::UP_TO_SYMFONY_74` (по мере подъёма миноров) — автоправка deprecations.
-  - Фаза 3: `SymfonyLevelSetList::UP_TO_SYMFONY_80`.
-- Гонять в контейнере (Rector исполняется на рантайм-PHP фазы), процесс: `rector process --dry-run` → ревью
-  диффа → `rector process` → `./run check` → коммит. **Не применять вслепую** — Rector иногда ломает семантику
-  (особенно кастомные VO/домен), диффы читать. Добавить `rector` в `./run` как команду.
-- Что Rector НЕ закрывает и делаем руками: конфиги (`config/packages/*`, Docker, CI), major-бампы бандлов
-  (lexik v3/gesdinet v2 — их миграции ручные), рантайм-логика.
+**Rector — основной инструмент апгрейда, но СТАВИТСЯ В ФАЗЕ 1, не в Фазе 0.** Причина (проверено
+2026-09-24): `rector/rector` 2.x требует `phpstan ^2.1`, а у нас phpstan `^1.11` → установка Rector тянет
+phpstan-мажор (это работа Фазы 1). Плюс наш код уже `self`-deprecations = 0 (гейт `max[self]=0` зелёный) →
+чистить Rector'ом в Фазе 0 нечего. Поэтому Rector заводим в Фазе 1 вместе с phpstan 2.
+- В Фазе 1: `composer require --dev rector/rector` (потянет phpstan 2), `rector.php` (пути `app/src`+`app/tests`,
+  `phpVersion` по фазе), `./run rector`. Наборы ПО ФАЗАМ: Фаза 1 `PHPUnitSetList` (аннотации→атрибуты) +
+  `LevelSetList::UP_TO_PHP_85`; Фаза 2 `SymfonyLevelSetList::UP_TO_SYMFONY_74`; Фаза 3 `...UP_TO_SYMFONY_80`.
+- Процесс: `rector process --dry-run` → ревью диффа → `rector process` → `./run check` → коммит. **Не вслепую**
+  (кастомные VO/домен). Что Rector НЕ закрывает руками: конфиги (`config/packages/*`, Docker, CI), major-бампы
+  бандлов (lexik v3/gesdinet v2 — миграции ручные), рантайм-логика.
 
 **УТОЧНЕНО трассировкой (2026-09-24): крупные deprecations — ВЕНДОРНЫЕ, не наш код → чинятся подъёмом
 Symfony (Фаза 2), НЕ в Фазе 0.** В Фазе 0 нашего-кода вычищать почти нечего.
