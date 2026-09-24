@@ -57,12 +57,15 @@
 - Что Rector НЕ закрывает и делаем руками: конфиги (`config/packages/*`, Docker, CI), major-бампы бандлов
   (lexik v3/gesdinet v2 — их миграции ручные), рантайм-логика.
 
-Вычистить то, что видно уже сейчас (не привязано к минору; часть закроет Rector-Фаза-0):
-- `mb_strlen()/mb_detect_encoding()` с `null` — **412×** в отчёте тестов (PHP 8.1 deprecation, видно в
-  setUp: ReportPagesTest/AuditJournalActionTest и др.). NB: вызовы mb_* в `app/src` в основном ПОД гвардами
-  (`null !== $x && mb_strlen(...)`) — грепом место не найти; трассировать реальный null-путь по
-  `SYMFONY_DEPRECATIONS_HELPER`-трейсу (какой аргумент приходит null), не по гребу src.
-- twig `Environment::mergeGlobals` (twig 3.14, 199×) — найти вызов, заменить.
+**УТОЧНЕНО трассировкой (2026-09-24): крупные deprecations — ВЕНДОРНЫЕ, не наш код → чинятся подъёмом
+Symfony (Фаза 2), НЕ в Фазе 0.** В Фазе 0 нашего-кода вычищать почти нечего.
+- `mb_strlen()/mb_detect_encoding(null)` (~568× unit+functional) — зовут **symfony/form** трансформеры
+  (Percent/Number → поля влажности/температур), symfony/string, symfony/translation. Наш `src` чист
+  (mb_detect_encoding нет, mb_strlen под гвардами). → уйдёт с Symfony 7.4.
+- twig `Environment::mergeGlobals` (199×) — зовёт **symfony/twig-bridge** (`Form/TwigRendererEngine`) при
+  рендере форм. → уйдёт с Symfony 7.4 (twig-bridge/twig-bump).
+
+Реально в Фазе 0 (наш код/конфиг):
 - doctrine-bundle 2.12: `doctrine.orm.controller_resolver.auto_mapping` — задать явно `true` в
   `config/packages/doctrine.yaml`.
 - doctrine/orm ClassMetadataFactory (issue 8893) — разовый ворнинг, оценить.
