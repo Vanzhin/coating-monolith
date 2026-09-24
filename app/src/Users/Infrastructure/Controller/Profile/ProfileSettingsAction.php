@@ -6,7 +6,7 @@ namespace App\Users\Infrastructure\Controller\Profile;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Настройки профиля — редкие переключатели, собранные в одном месте (push-уведомления, тема,

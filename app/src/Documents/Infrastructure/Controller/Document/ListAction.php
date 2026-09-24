@@ -13,7 +13,7 @@ use App\Shared\Domain\Repository\Pager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/document/list', name: 'app_cabinet_document_list', methods: ['GET'])]
 class ListAction extends AbstractController

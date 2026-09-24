@@ -15,7 +15,7 @@ use App\Shared\Infrastructure\Controller\BaseController;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/proposals/{proposalId}/download/{templateId}/{format}', name: 'app_cabinet_proposals_general_proposal_download')]
 class DownloadAction extends BaseController

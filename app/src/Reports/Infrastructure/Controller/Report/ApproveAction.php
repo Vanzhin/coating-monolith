@@ -9,7 +9,7 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Утверждение отчёта ревьюером/админом. Права проверяет хендлер (canReview). Тонкий контроллер:

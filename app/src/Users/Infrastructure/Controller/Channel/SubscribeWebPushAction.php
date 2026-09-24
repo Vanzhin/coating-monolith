@@ -11,7 +11,7 @@ use App\Users\Domain\Entity\ValueObject\PushSubscription;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Приём web-push подписки от браузера (PWA). Только авторизованный (префикс /cabinet). Тело —

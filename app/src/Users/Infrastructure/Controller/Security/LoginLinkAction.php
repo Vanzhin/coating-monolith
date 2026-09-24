@@ -11,8 +11,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\RateLimiter\RateLimiterFactory;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/login_link', name: 'app_login_link')]
 class LoginLinkAction extends AbstractController
@@ -21,11 +21,11 @@ class LoginLinkAction extends AbstractController
         private readonly EventBusInterface $eventBus,
         private readonly UserRepositoryInterface $userRepository,
         // Rate limiters — Symfony auto-wire по имени: framework.rate_limiter.<name>
-        // → RateLimiterFactory <name>Limiter (см. config/packages/framework.yaml).
+        // → RateLimiterFactoryInterface <name>Limiter (см. config/packages/framework.yaml).
         #[Autowire(service: 'limiter.login_link_per_email')]
-        private readonly RateLimiterFactory $loginLinkPerEmailLimiter,
+        private readonly RateLimiterFactoryInterface $loginLinkPerEmailLimiter,
         #[Autowire(service: 'limiter.login_link_per_ip')]
-        private readonly RateLimiterFactory $loginLinkPerIpLimiter,
+        private readonly RateLimiterFactoryInterface $loginLinkPerIpLimiter,
     ) {
     }
 

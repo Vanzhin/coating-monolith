@@ -10,7 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/login_by_link', name: 'app_login_by_link')]
 class LoginLinkProcessAction extends AbstractController
@@ -24,7 +24,7 @@ class LoginLinkProcessAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $hash = $request->get('hash');
+        $hash = $request->query->get('hash');
         if (!$hash) {
             return $this->invalidLinkResponse();
         }

@@ -9,7 +9,7 @@ use App\Users\Application\UseCase\Command\UnsubscribeWebPush\UnsubscribeWebPushC
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Отписка от web push: удаляет WEB_PUSH-канал текущего устройства (по endpoint из тела).
