@@ -117,5 +117,32 @@ Docker-база 8.3→8.5 (сделано, все 4 Dockerfile'а собираю
 - CI правок НЕ требует: версия PHP = FROM Dockerfile'а (tests.yml строит test_php-cli из `docker/php-cli`; deploy.yml собирает
   `docker/${service}/Dockerfile`). root `Dockerfile` CI не собирает (правил для консистентности, не билдил).
 
-ФАЗА 2 ЗАВЕРШЕНА (gate зелёный под 8.5). Осталось до коммита: ручной фронт-смоук (yarn build + браузер — stimulus-bundle 3.x,
-npm-депы не трогались) и прод-смоук после деплоя. НЕ закоммичено (жду апрув). Дальше — Фаза 3 (Symfony 8.0).
+ФАЗА 2 ЗАВЕРШЕНА и ЗАКОММИЧЕНА (ветка upgrade-2-php85: aaea0e0 Docker, 0eabbe1 тулинг+deps, 346095f план, 9ff5b78 gitignore).
+Осталось: ручной фронт-смоук (yarn build + браузер — stimulus-bundle 3.x, npm-депы не трогались) и прод-смоук после деплоя.
+
+## РАЗВЕДКА Фазы 3 — Symfony 8.0 (ветка upgrade-3-sy80 от upgrade-2-php85; probe-резолвом composer, код НЕ начат)
+
+Полный набор под Sy8 **РЕЗОЛВИТСЯ** (0 конфликтов, ~129 пакетов в апдейте). Sy8 тянет БОЛЬШОЙ каскад — не только symfony/*:
+- **symfony/* 7.4→8.0.15** (flex-пин `extra.symfony.require: 8.0.*` + явные строки + `symfony/phpunit-bridge ^8`).
+- **doctrine-bundle 2→3 (3.3.2)** — 2.x (даже 2.19) капит `symfony/cache ^7`, Sy8 не держит вовсе. bundle 3.x требует **DBAL ^4**.
+- **DBAL 3.10→4 (4.4.4)** — ОТЛОЖЕННАЯ миграция стала ЖЁСТКИМ пререквизитом. BC: `Type::getName()` убран (типы регистрируются
+  иначе), сигнатуры `convertTo*Value`, удалены `fetchAll`/`executeUpdate` и пр. Наши кастомные типы под ревизию:
+  `AbstractJsonObjectType`, `ChangeSetType`, `StringCollectionType`, `DateTimeIntervalType`, `DocumentReferencesType`,
+  `MixingRatioType` + регистрация в `Kernel.php`/`doctrine.yaml`.
+- **doctrine/orm ^3.1→^3.3** (под DBAL 4).
+- **doctrine-fixtures-bundle 3→4** (3.x капит doctrine-bundle ^2).
+- **lexik/jwt 2.21→3.2** — config BC (v3 переструктурировал `lexik_jwt_authentication.yaml`, обработку ключей).
+- **gesdinet/jwt-refresh 1.5→2.2** — config/route BC.
+- **monolog-bundle 3.11→4.1** — минорные config-правки.
+- **twig-пин снять** (`>=3.21 <3.29` → без верхней границы): twig-bridge 8.x зовёт НОВЫЙ `unwrap` (1-арг), 3.29+ под него.
+- **readonly-регрессия остаётся**: bundle 3.x = поведение 2.13+ → надо ПОЧИНИТЬ повторную гидрацию readonly-VO
+  (Report::$id, StoredFile::$createdAt) до зелёного gate.
+
+**Предлагаемая декомпозиция (multi-deploy, отдельные ступени/планы — CLAUDE.md):**
+- **3a — Doctrine-каскад**: DBAL 3→4 + orm ^3.3 + doctrine-bundle 2→3 + fixtures 3→4 + **фикс readonly-гидрации** + кастомные
+  DBAL-типы под DBAL4. Можно ли на Symfony 7.4 ОТДЕЛЬНО (до Sy8)? — зависит от symfony-констрейнта doctrine-bundle 3.x (уточнить:
+  если держит ^7.4 — да, чистая изоляция риска DBAL4 от Sy8-ядра). Это самый рискованный кусок.
+- **3b — Symfony 8 ядро**: symfony/* 8.0.* + phpunit-bridge ^8 + снять twig-пин + вычистить оставшиеся deprecations.
+- **3c — Auth-бандлы**: lexik v3 + gesdinet v2 + monolog 4 (config-миграции, не механика — читать UPGRADE каждого).
+
+Драйверы риска Фазы 3: DBAL4 (кастомные типы), lexik/gesdinet config-BC, readonly-фикс. НЕ big-bang — по ступеням, gate+смоук на каждой.
