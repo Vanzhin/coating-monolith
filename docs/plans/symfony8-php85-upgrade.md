@@ -43,7 +43,21 @@
 ---
 
 ## Фаза 0 — Подготовка (ветка `upgrade-0-prep`, на 7.0)
-Вычистить то, что видно уже сейчас (не привязано к минору):
+
+**Rector — основной инструмент апгрейда (заводим ЗДЕСЬ, используем во всех фазах).**
+- Поставить `rector/rector` (dev), создать `rector.php`: пути `app/src` + `app/tests`, `phpVersion` = текущий
+  таргет фазы, кэш. Наборы подключать ПО ФАЗАМ, не всё сразу:
+  - Фаза 0: `LevelSetList::UP_TO_PHP_83` (текущий рантайм) + базовые code-quality — снять то, что и так висит.
+  - Фаза 1: `PHPUnitSetList` (аннотации→атрибуты `#[Test]`/`#[DataProvider]`, config-миграция) + `UP_TO_PHP_85`.
+  - Фаза 2: `SymfonyLevelSetList::UP_TO_SYMFONY_74` (по мере подъёма миноров) — автоправка deprecations.
+  - Фаза 3: `SymfonyLevelSetList::UP_TO_SYMFONY_80`.
+- Гонять в контейнере (Rector исполняется на рантайм-PHP фазы), процесс: `rector process --dry-run` → ревью
+  диффа → `rector process` → `./run check` → коммит. **Не применять вслепую** — Rector иногда ломает семантику
+  (особенно кастомные VO/домен), диффы читать. Добавить `rector` в `./run` как команду.
+- Что Rector НЕ закрывает и делаем руками: конфиги (`config/packages/*`, Docker, CI), major-бампы бандлов
+  (lexik v3/gesdinet v2 — их миграции ручные), рантайм-логика.
+
+Вычистить то, что видно уже сейчас (не привязано к минору; часть закроет Rector-Фаза-0):
 - `mb_strlen()/mb_detect_encoding()` с `null` — **412×** в отчёте тестов (PHP 8.1 deprecation, видно в
   setUp: ReportPagesTest/AuditJournalActionTest и др.). NB: вызовы mb_* в `app/src` в основном ПОД гвардами
   (`null !== $x && mb_strlen(...)`) — грепом место не найти; трассировать реальный null-путь по
