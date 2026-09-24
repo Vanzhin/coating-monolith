@@ -27,10 +27,9 @@ doctrine:
 #        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         auto_mapping: true
         default_entity_manager: default
-        # doctrine-bundle 3: авто-резолв сущностей в аргументы контроллера убран (только false).
-        # У нас контроллеры тонкие (CommandBus+DTO, сущности не инжектятся) — поведение не меняется.
-        controller_resolver:
-            auto_mapping: false
+        # controller_resolver.auto_mapping в doctrine-bundle 3.1 deprecated (принимает только false = дефолт) —
+        # опцию не задаём вовсе. Авто-резолв сущностей в аргументы контроллера в bundle 3 и так убран;
+        # у нас контроллеры тонкие (CommandBus+DTO, сущности не инжектятся) — поведение не меняется.
         dql:
             string_functions:
                 TS_MATCH: App\Coatings\Infrastructure\Database\DQL\TsMatch
@@ -122,8 +121,8 @@ doctrine:
 when@prod:
     doctrine:
         orm:
-            auto_generate_proxy_classes: false
-            proxy_dir: '%kernel.build_dir%/doctrine/orm/Proxies'
+            # doctrine-bundle 3 / orm 3: auto_generate_proxy_classes + proxy_dir убраны (lazy ghost objects
+            # не генерят классы-прокси в файлы). Оставляем только кэш-драйверы.
             query_cache_driver:
                 type: pool
                 pool: doctrine.system_cache_pool
