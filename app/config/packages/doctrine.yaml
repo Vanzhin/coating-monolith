@@ -29,6 +29,9 @@ doctrine:
         auto_mapping: true
         default_entity_manager: default
         enable_lazy_ghost_objects: true
+        # Явно задаём будущий дефолт (doctrine-bundle 2.12 депрекейтит неявный true → станет false в 3.0).
+        controller_resolver:
+            auto_mapping: true
         dql:
             string_functions:
                 TS_MATCH: App\Coatings\Infrastructure\Database\DQL\TsMatch
