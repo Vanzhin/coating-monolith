@@ -21,7 +21,7 @@ abstract class ListValidator implements ValidatorInterface
         protected array $whitelistPatterns = [],
         protected array $blacklistPatterns = [],
         protected bool $whitelistEnabled = true,
-        protected bool $blacklistEnabled = true
+        protected bool $blacklistEnabled = true,
     ) {
     }
 

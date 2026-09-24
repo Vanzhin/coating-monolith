@@ -9,7 +9,7 @@ use App\Shared\Domain\Specification\SpecificationInterface;
 readonly class CoatingSpecification implements SpecificationInterface
 {
     public function __construct(
-        public UniqueTitleCoatingSpecification $uniqueTitleCoatingSpecification
+        public UniqueTitleCoatingSpecification $uniqueTitleCoatingSpecification,
     ) {
     }
 }

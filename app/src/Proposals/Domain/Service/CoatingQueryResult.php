@@ -7,7 +7,7 @@ namespace App\Proposals\Domain\Service;
 class CoatingQueryResult
 {
     public function __construct(
-        public readonly ?CoatingData $coatingData
+        public readonly ?CoatingData $coatingData,
     ) {
     }
 }

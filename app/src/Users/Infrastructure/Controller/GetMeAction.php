@@ -6,7 +6,7 @@ namespace App\Users\Infrastructure\Controller;
 
 use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/users/me', methods: ['GET'])]
 class GetMeAction

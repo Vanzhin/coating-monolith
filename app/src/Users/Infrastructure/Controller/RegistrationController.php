@@ -17,8 +17,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\RateLimiter\RateLimiterFactory;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 
 class RegistrationController extends AbstractController
@@ -35,7 +35,7 @@ class RegistrationController extends AbstractController
         private readonly EmailValidatorInterface $emailListValidator,
         private readonly RegistrationBotGuard $botGuard,
         #[Autowire(service: 'limiter.registration_per_ip')]
-        private readonly RateLimiterFactory $registrationPerIpLimiter,
+        private readonly RateLimiterFactoryInterface $registrationPerIpLimiter,
     ) {
     }
 

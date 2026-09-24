@@ -13,7 +13,7 @@ class GetPagedTagsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly TagRepositoryInterface $coatingTagRepository,
-        private readonly TagDTOTransformer $coatingTagDTOTransformer
+        private readonly TagDTOTransformer $coatingTagDTOTransformer,
     ) {
     }
 

@@ -12,7 +12,7 @@ readonly class GetManufacturerQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private ManufacturerDTOTransformer $manufacturerDTOTransformer
+        private ManufacturerDTOTransformer $manufacturerDTOTransformer,
     ) {
     }
 

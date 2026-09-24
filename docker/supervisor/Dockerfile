@@ -1,4 +1,4 @@
-FROM php:8.3-cli-alpine3.19
+FROM php:8.5-cli-alpine3.24
 
 # Установщик расширений берём из Docker-Hub образа автора, а не ADD-ом с GitHub-релизов:
 # тот эндпоинт отдавал 504 и валил сборку. Бинарь в образе уже исполняемый — chmod не нужен.
@@ -16,7 +16,7 @@ WORKDIR /app
 COPY app /app
 
 # Install composer
-COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install dependencies. --no-scripts обязателен (cache:clear в post-install-cmd

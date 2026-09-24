@@ -12,7 +12,7 @@
             {% set queryParams = queryParams|merge({page: pager.page-1}) %}
             {% if currentPage > 1 %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path(app.request.get('_route'), {...queryParams}) }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), {...queryParams}) }}">
                         <i class="bi bi-arrow-left"></i>
                     </a>
                 </li>
@@ -29,7 +29,7 @@
                 {% else %}
                     <li class="page-item{% if currentPage == loop.index %} active{% endif %}">
                         <a class="page-link"
-                           href="{{ path(app.request.get('_route'), {...queryParams}) }}">{{ loop.index }}</a>
+                           href="{{ path(app.request.attributes.get('_route'), {...queryParams}) }}">{{ loop.index }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
@@ -37,7 +37,7 @@
             {% if currentPage < totalPages %}
                 {% set queryParams = queryParams|merge({page: pager.page+1}) %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path(app.request.get('_route'), {...queryParams}) }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), {...queryParams}) }}">
                         <i class="bi bi-arrow-right"></i>
                     </a>
                 </li>

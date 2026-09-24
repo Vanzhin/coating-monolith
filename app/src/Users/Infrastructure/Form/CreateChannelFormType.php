@@ -33,9 +33,7 @@ class CreateChannelFormType extends AbstractType
                     'id' => 'channel_type',
                 ],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Пожалуйста, выберите тип канала',
-                    ]),
+                    new NotBlank(message: 'Пожалуйста, выберите тип канала'),
                 ],
             ])
             ->add('value', TextType::class, [
@@ -46,15 +44,8 @@ class CreateChannelFormType extends AbstractType
                     'placeholder' => 'Введите значение канала',
                 ],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Пожалуйста, введите значение канала',
-                    ]),
-                    new Length([
-                        'min' => 3,
-                        'max' => 255,
-                        'minMessage' => 'Значение должно содержать минимум {{ limit }} символов',
-                        'maxMessage' => 'Значение должно содержать максимум {{ limit }} символов',
-                    ]),
+                    new NotBlank(message: 'Пожалуйста, введите значение канала'),
+                    new Length(min: 3, max: 255, minMessage: 'Значение должно содержать минимум {{ limit }} символов', maxMessage: 'Значение должно содержать максимум {{ limit }} символов'),
                 ],
             ]);
 
@@ -84,13 +75,8 @@ class CreateChannelFormType extends AbstractType
                         'type' => 'email',
                     ],
                     'constraints' => [
-                        new NotBlank([
-                            'message' => 'Пожалуйста, введите email',
-                        ]),
-                        new Email([
-                            'message' => 'Пожалуйста, введите корректный email адрес',
-                            'mode' => 'strict',
-                        ]),
+                        new NotBlank(message: 'Пожалуйста, введите email'),
+                        new Email(message: 'Пожалуйста, введите корректный email адрес', mode: 'strict'),
                     ],
                 ]);
             } else {
@@ -104,15 +90,8 @@ class CreateChannelFormType extends AbstractType
                         'placeholder' => '@username или user_id',
                     ],
                     'constraints' => [
-                        new NotBlank([
-                            'message' => 'Пожалуйста, введите Telegram username или user_id',
-                        ]),
-                        new Length([
-                            'min' => 3,
-                            'max' => 255,
-                            'minMessage' => 'Значение должно содержать минимум {{ limit }} символов',
-                            'maxMessage' => 'Значение должно содержать максимум {{ limit }} символов',
-                        ]),
+                        new NotBlank(message: 'Пожалуйста, введите Telegram username или user_id'),
+                        new Length(min: 3, max: 255, minMessage: 'Значение должно содержать минимум {{ limit }} символов', maxMessage: 'Значение должно содержать максимум {{ limit }} символов'),
                     ],
                 ]);
             }
@@ -144,13 +123,8 @@ class CreateChannelFormType extends AbstractType
                         'type' => 'email',
                     ],
                     'constraints' => [
-                        new NotBlank([
-                            'message' => 'Пожалуйста, введите email',
-                        ]),
-                        new Email([
-                            'message' => 'Пожалуйста, введите корректный email адрес',
-                            'mode' => 'strict',
-                        ]),
+                        new NotBlank(message: 'Пожалуйста, введите email'),
+                        new Email(message: 'Пожалуйста, введите корректный email адрес', mode: 'strict'),
                     ],
                 ]);
             } else {
@@ -163,15 +137,8 @@ class CreateChannelFormType extends AbstractType
                         'placeholder' => '@username или user_id',
                     ],
                     'constraints' => [
-                        new NotBlank([
-                            'message' => 'Пожалуйста, введите Telegram username или user_id',
-                        ]),
-                        new Length([
-                            'min' => 3,
-                            'max' => 255,
-                            'minMessage' => 'Значение должно содержать минимум {{ limit }} символов',
-                            'maxMessage' => 'Значение должно содержать максимум {{ limit }} символов',
-                        ]),
+                        new NotBlank(message: 'Пожалуйста, введите Telegram username или user_id'),
+                        new Length(min: 3, max: 255, minMessage: 'Значение должно содержать минимум {{ limit }} символов', maxMessage: 'Значение должно содержать максимум {{ limit }} символов'),
                     ],
                 ]);
             }

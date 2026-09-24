@@ -14,7 +14,7 @@ readonly class RemoveGeneralProposalInfoCommandHandler implements CommandHandler
 {
     public function __construct(
         private GeneralProposalInfoRepositoryInterface $generalProposalInfoRepository,
-        private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl
+        private GeneralProposalInfoAccessControl $generalProposalInfoAccessControl,
     ) {
     }
 

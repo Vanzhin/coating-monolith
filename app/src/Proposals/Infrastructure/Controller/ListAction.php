@@ -13,14 +13,14 @@ use App\Users\Domain\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/proposals/list', name: 'app_cabinet_proposals_general_proposal_list', methods: ['GET'])]
 class ListAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly CoatingsAdapter $coatingsAdapter
+        private readonly CoatingsAdapter $coatingsAdapter,
     ) {
     }
 

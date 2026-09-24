@@ -9,7 +9,7 @@ use App\Coatings\Application\UseCase\Query\GetCoating\GetCoatingQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Фрагмент модалки предпросмотра покрытия по id. Кормит Stimulus на вьюхе систем:

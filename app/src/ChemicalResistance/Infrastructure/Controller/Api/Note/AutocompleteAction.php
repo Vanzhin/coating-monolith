@@ -10,7 +10,7 @@ use App\ChemicalResistance\Domain\Repository\NotesFilter;
 use App\Shared\Domain\Repository\Pager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/chemical-resistance/note/autocomplete', name: 'app_api_chemical_resistance_note_autocomplete', methods: ['GET'])]
 class AutocompleteAction

@@ -125,7 +125,7 @@ final class ReportWorkflowTest extends KernelTestCase
         return $r->id;
     }
 
-    private function status(string $id): ReportStatus
+    private function reportStatus(string $id): ReportStatus
     {
         $this->em->clear();
         $report = $this->reports->findOneById($id);
@@ -137,11 +137,11 @@ final class ReportWorkflowTest extends KernelTestCase
     public function test_saving_content_auto_starts_work(): void
     {
         $id = $this->createReport();
-        self::assertSame(ReportStatus::Created, $this->status($id));
+        self::assertSame(ReportStatus::Created, $this->reportStatus($id));
 
         $this->commandBus->execute(new SaveReportContentCommand($id, ['notes' => ['text' => 'черновик']]));
 
-        self::assertSame(ReportStatus::InWork, $this->status($id));
+        self::assertSame(ReportStatus::InWork, $this->reportStatus($id));
     }
 
     public function test_submit_incomplete_is_blocked_by_strict_validation(): void
@@ -161,10 +161,10 @@ final class ReportWorkflowTest extends KernelTestCase
         $this->fillFullHeader($id);
         $this->commandBus->execute(new SaveReportContentCommand($id, $this->validContent()));
         $this->commandBus->execute(new SubmitForReviewCommand($id));
-        self::assertSame(ReportStatus::UnderReview, $this->status($id));
+        self::assertSame(ReportStatus::UnderReview, $this->reportStatus($id));
 
         $this->commandBus->execute(new ApproveReportCommand($id));
-        self::assertSame(ReportStatus::Approved, $this->status($id));
+        self::assertSame(ReportStatus::Approved, $this->reportStatus($id));
 
         // Утверждён — заморожен: сохранение отбивается доменом.
         $this->expectException(AppException::class);

@@ -23,7 +23,7 @@ use App\Shared\Infrastructure\Validation\Validator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/coating/coating', name: 'app_cabinet_coating_coating_create')]
 class AddAction extends AbstractController

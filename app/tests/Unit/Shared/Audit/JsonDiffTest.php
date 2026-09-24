@@ -27,7 +27,7 @@ final class JsonDiffTest extends TestCase
     public function test_equal_produces_nothing(): void
     {
         self::assertSame([], $this->d->diff(5, 5, 'x'));
-        $mk = static fn (): object => new class() implements \JsonSerializable {
+        $mk = static fn (): object => new class implements \JsonSerializable {
             /** @return array<string, mixed> */
             public function jsonSerialize(): array
             {

@@ -7,6 +7,8 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+# Автоген config-builder'а (IDE-хелпер array-shapes), пересоздаётся при сборке kernel — не в git.
+/config/reference.php
 /.env
 
 ###> symfony/phpunit-bridge ###

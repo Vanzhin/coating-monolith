@@ -8,7 +8,7 @@ class Token
 {
     public function __construct(
         private readonly string $token,
-        private readonly \DateInterval $remainingTime
+        private readonly \DateInterval $remainingTime,
     ) {
     }
 

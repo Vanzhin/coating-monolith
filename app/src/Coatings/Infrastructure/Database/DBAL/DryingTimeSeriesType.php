@@ -11,11 +11,6 @@ final class DryingTimeSeriesType extends AbstractJsonObjectType
 {
     public const NAME = 'drying_time_series';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return DryingTimeSeries::class;

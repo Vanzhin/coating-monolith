@@ -6,7 +6,7 @@ namespace App\Reports\Infrastructure\Controller\Report;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Отдельной страницы просмотра нет: отчёт открывается сразу на заполнении/редактировании

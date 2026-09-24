@@ -12,7 +12,7 @@ use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Страница «Химстойкость»: поиск по веществам (мультивыбор, логика AND) → покрытия,

@@ -9,7 +9,7 @@ use App\Users\Application\Service\AccessControl\UserAccessControl;
 use App\Users\Domain\Service\UserFetcherInterface;
 use Symfony\Component\Finder\Exception\AccessDeniedException;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/users/{ulid}', methods: ['GET'])]
 readonly class GetUserAction

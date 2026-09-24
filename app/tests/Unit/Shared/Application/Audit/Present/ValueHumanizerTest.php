@@ -105,7 +105,7 @@ final class ValueHumanizerTest extends TestCase
 
     public function test_formatter_exception_is_caught_and_never_propagates(): void
     {
-        $throwing = new class() implements AuditValueFormatter {
+        $throwing = new class implements AuditValueFormatter {
             public function supports(mixed $value): bool
             {
                 return true;

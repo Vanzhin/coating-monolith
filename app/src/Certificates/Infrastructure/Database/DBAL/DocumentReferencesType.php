@@ -16,11 +16,6 @@ final class DocumentReferencesType extends JsonType
 {
     public const NAME = 'document_references';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
     {
         return 'JSONB';

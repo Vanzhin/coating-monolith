@@ -3,7 +3,9 @@
                   xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
-    <entity name="App\Users\Domain\Entity\RefreshToken" table="refresh_token">
-    </entity>
+    <!-- Поля наследуются от gesdinet mapped-superclass (Gesdinet\...\Entity\RefreshToken):
+         id (integer AUTO) + refreshToken/username/valid. Здесь только конкретная сущность + имя таблицы
+         (singular refresh_token — как в миграции Version20240504124641; суперкласс объявляет refresh_tokens). -->
+    <entity name="App\Users\Domain\Entity\RefreshToken" table="refresh_token"/>
 
 </doctrine-mapping>

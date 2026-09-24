@@ -20,7 +20,7 @@ use App\Shared\Infrastructure\Validation\Validator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/coating/coating-system/{id}/update', name: 'app_cabinet_coating_system_update', requirements: ['id' => '[0-9a-f-]{36}'])]
 class UpdateAction extends AbstractController

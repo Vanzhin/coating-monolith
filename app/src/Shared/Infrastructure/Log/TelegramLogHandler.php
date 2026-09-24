@@ -16,7 +16,7 @@ class TelegramLogHandler extends TelegramBotHandler
         ?bool $disableWebPagePreview = null,
         ?bool $disableNotification = null,
         bool $splitLongMessages = true,
-        bool $delayBetweenMessages = false
+        bool $delayBetweenMessages = false,
     ) {
         $this->setFormatter(new TelegramFormatter());
         parent::__construct(

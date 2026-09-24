@@ -13,7 +13,7 @@ readonly class UpdateManufacturerCommandHandler implements CommandHandlerInterfa
 {
     public function __construct(
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingAccessControl $access
+        private CoatingAccessControl $access,
     ) {
     }
 

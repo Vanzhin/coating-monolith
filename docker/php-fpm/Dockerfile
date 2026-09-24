@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.5-fpm
 
 #ARG timezone
 ARG INSTALL_XDEBUG=false
@@ -27,29 +27,11 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
         libpng-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN set -xe \
-    && docker-php-ext-configure \
-        intl \
-    && docker-php-ext-install \
-        intl \
-        opcache \
-        zip \
-        pdo \
-        pdo_pgsql \
-        bcmath \
-        sockets \
-        gd \
-    && pecl install \
-        apcu \
-        redis \
-        memcached \
-        amqp \
-        && rm -rf /tmp/pear \
-    && docker-php-ext-enable \
-        apcu \
-        redis \
-        memcached \
-        amqp
+# Расширения ставим через install-php-extensions (как в alpine-образах проекта): он знает, какие
+# расширения на PHP 8.5 уже в ядре, и подбирает совместимые pecl-версии (apcu/redis/memcached/amqp).
+# Ручной docker-php-ext-install+pecl ломался на 8.5/trixie: pdo стал частью ядра → пустой modules/*.
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions intl opcache zip pdo_pgsql bcmath sockets gd apcu redis memcached amqp
 
 COPY docker/php-fpm/php.ini /usr/local/etc/php/php.ini
 #RUN sed -i -e "s#TIMEZONE#$timezone#g" /usr/local/etc/php/php.ini
@@ -64,7 +46,7 @@ WORKDIR /app
 COPY app /app
 
 # Install composer
-COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 # Разрешаем composer'у от root'а активировать plugins. Без этой переменной
 # composer 2.x в non-interactive сессии молча отключает ВСЕ plugins

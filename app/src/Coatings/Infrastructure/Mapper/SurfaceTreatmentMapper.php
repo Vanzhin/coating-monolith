@@ -85,36 +85,21 @@ class SurfaceTreatmentMapper
      */
     public function getValidationCollection(): Assert\Collection
     {
-        return new Assert\Collection([
+        return new Assert\Collection(fields: [
             'description' => [
                 new Assert\NotBlank(),
-                new Assert\Length([
-                    'max' => 2000,
-                    'maxMessage' => 'Описание не должно быть длиннее {{ limit }} символов.',
-                ]),
+                new Assert\Length(max: 2000, maxMessage: 'Описание не должно быть длиннее {{ limit }} символов.'),
             ],
             'code' => new Assert\Optional([
-                new Assert\Length([
-                    'max' => 30,
-                    'maxMessage' => 'Код не должен быть длиннее {{ limit }} символов.',
-                ]),
+                new Assert\Length(max: 30, maxMessage: 'Код не должен быть длиннее {{ limit }} символов.'),
             ]),
             'standardCode' => new Assert\Optional([
-                new Assert\Length([
-                    'max' => 100,
-                    'maxMessage' => 'Код стандарта не должен быть длиннее {{ limit }} символов.',
-                ]),
+                new Assert\Length(max: 100, maxMessage: 'Код стандарта не должен быть длиннее {{ limit }} символов.'),
             ]),
             'substrateScope' => [
-                new Assert\Count([
-                    'min' => 1,
-                    'minMessage' => 'Область применения должна содержать хотя бы один элемент.',
-                ]),
+                new Assert\Count(min: 1, minMessage: 'Область применения должна содержать хотя бы один элемент.'),
                 new Assert\All([
-                    new Assert\Choice([
-                        'choices' => array_map(fn (Substrate $s) => $s->value, Substrate::cases()),
-                        'message' => 'Недопустимое значение подложки.',
-                    ]),
+                    new Assert\Choice(choices: array_map(fn (Substrate $s) => $s->value, Substrate::cases()), message: 'Недопустимое значение подложки.'),
                 ]),
             ],
         ], allowExtraFields: true);

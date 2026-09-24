@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<!-- https://docs.phpunit.de/en/11.5/configuration.html -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          backupGlobals="false"
          colors="true"
          bootstrap="tests/bootstrap.php"
-         convertDeprecationsToExceptions="false"
+         failOnDeprecation="false"
 >
     <php>
         <ini name="memory_limit" value="512M" />
@@ -14,9 +14,10 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
-        <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
-        <server name="SYMFONY_PHPUNIT_VERSION" value="9.5" />
         <env name="KERNEL_CLASS" value="App\Shared\Infrastructure\Kernel" />
+        <!-- Апгрейд-гейт: падаем на deprecations ИЗ НАШЕГО кода (self); вендорные (бандлы/doctrine) игнорим,
+             они уйдут с апдейтом на Sy8. Ловит регресс на каждой ступени. -->
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[self]=0" />
     </php>
 
     <testsuites>
@@ -25,17 +26,17 @@
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <source>
         <include>
             <directory suffix=".php">src</directory>
         </include>
-    </coverage>
+    </source>
 
-    <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
-    </listeners>
-
+    <!-- phpunit 11: extensions регистрируются через <bootstrap> (старые <listeners>/<extension> убраны).
+         SymfonyExtension — замена SymfonyTestsListener (deprecation-хелпер, clock-mock);
+         DAMA — обёртка каждого теста в транзакцию с откатом (изоляция БД). -->
     <extensions>
-        <extension class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
+        <bootstrap class="Symfony\Bridge\PhpUnit\SymfonyExtension" />
+        <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
     </extensions>
 </phpunit>

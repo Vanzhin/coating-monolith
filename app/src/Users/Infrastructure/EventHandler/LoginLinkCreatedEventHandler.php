@@ -18,7 +18,7 @@ readonly class LoginLinkCreatedEventHandler implements EventHandlerInterface
         private RedisService $redisService,
         private Mailer $mailer,
         private UserRepositoryInterface $userRepository,
-        private UrlGeneratorInterface $urlGenerator
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 

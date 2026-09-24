@@ -14,7 +14,7 @@ use App\Shared\Infrastructure\Controller\BaseController;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(path: '/cabinet/proposals/{id}/clone', name: 'app_cabinet_proposals_general_proposal_clone')]
 class CloneAction extends BaseController
@@ -27,7 +27,7 @@ class CloneAction extends BaseController
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
         private readonly GeneralProposalInfoAccessControl $accessControl,
         private readonly AuthUserFetcherInterface $authUserFetcher,
-        LoggerInterface $logger
+        LoggerInterface $logger,
     ) {
         parent::__construct($logger);
     }

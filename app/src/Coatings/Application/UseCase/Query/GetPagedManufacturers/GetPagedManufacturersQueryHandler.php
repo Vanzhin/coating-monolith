@@ -13,7 +13,7 @@ class GetPagedManufacturersQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly ManufacturerRepositoryInterface $manufacturerRepository,
-        private readonly ManufacturerDTOTransformer $manufacturerDTOTransformer
+        private readonly ManufacturerDTOTransformer $manufacturerDTOTransformer,
     ) {
     }
 

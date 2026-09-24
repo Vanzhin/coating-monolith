@@ -27,22 +27,12 @@ final class StringCollectionType extends JsonType
         return new StringCollection(...array_map('strval', array_values($arr)));
     }
 
-    public function convertToDatabaseValue($value, AbstractPlatform $platform): mixed
+    public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string
     {
         if ($value instanceof StringCollection) {
             return parent::convertToDatabaseValue($value->getList(), $platform);
         }
 
         return parent::convertToDatabaseValue($value ?? [], $platform);
-    }
-
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
-    public function requiresSQLCommentHint(AbstractPlatform $platform): bool
-    {
-        return true;
     }
 }

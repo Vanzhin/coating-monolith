@@ -7,6 +7,7 @@ namespace App\Coatings\Application\UseCase\Query\SearchCoatingSystemsForSuggest;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Infrastructure\Database\FullTextSearch\PrefixTsQueryBuilder;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final readonly class SearchCoatingSystemsForSuggestQueryHandler implements QueryHandlerInterface
 {
@@ -32,7 +33,7 @@ final readonly class SearchCoatingSystemsForSuggestQueryHandler implements Query
             'like' => '%'.$trimmed.'%',
             'limit' => $q->limit,
         ];
-        $types = ['limit' => \PDO::PARAM_INT];
+        $types = ['limit' => ParameterType::INTEGER];
         if ('' !== $tsquery) {
             $params['lang'] = 'russian';
             $params['tsquery'] = $tsquery;

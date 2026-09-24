@@ -9,7 +9,7 @@ class TokenDTO
     public function __construct(
         public string $token,
         public string $subjectId,
-        public string $expiresAt
+        public string $expiresAt,
     ) {
     }
 }

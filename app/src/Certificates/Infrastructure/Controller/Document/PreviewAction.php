@@ -8,7 +8,7 @@ use App\Certificates\Application\UseCase\Query\GetDocument\GetDocumentQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Фрагмент модалки предпросмотра документа по id. Всплывает по клику на документ в модалке

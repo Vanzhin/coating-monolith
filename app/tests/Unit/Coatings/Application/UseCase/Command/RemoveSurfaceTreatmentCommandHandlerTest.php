@@ -62,7 +62,7 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             }
         };
 
-        $coatingSystemRepo = new class() implements CoatingSystemRepositoryInterface {
+        $coatingSystemRepo = new class implements CoatingSystemRepositoryInterface {
             public function save(CoatingSystem $system): void
             {
             }
