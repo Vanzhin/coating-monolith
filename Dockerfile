@@ -9,7 +9,7 @@ COPY app/webpack.config.js ./
 COPY app/assets ./assets
 RUN npm run build
 
-FROM php:8.3-fpm AS php-base
+FROM php:8.5-fpm AS php-base
 
 # Install system dependencies
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
@@ -31,23 +31,14 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     libpng-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN set -xe \
-    && docker-php-ext-configure intl \
-    && docker-php-ext-install \
-        intl \
-        opcache \
-        zip \
-        pdo \
-        pdo_pgsql \
-        bcmath \
-        sockets \
-        gd \
-    && pecl install apcu redis memcached amqp \
-    && docker-php-ext-enable apcu redis memcached amqp
+# Install PHP extensions через install-php-extensions (как в alpine-образах проекта): знает core-расширения
+# PHP 8.5 и подбирает совместимые pecl-версии. Ручной docker-php-ext-install+pecl ломался на 8.5/trixie
+# (pdo стал частью ядра → пустой modules/*).
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions intl opcache zip pdo_pgsql bcmath sockets gd apcu redis memcached amqp
 
 # Install Composer
-COPY --from=composer:2.7.2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Set working directory
