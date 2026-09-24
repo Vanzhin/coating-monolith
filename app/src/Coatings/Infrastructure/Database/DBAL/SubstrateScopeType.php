@@ -30,7 +30,7 @@ final class SubstrateScopeType extends JsonType
         return array_map(Substrate::from(...), $decoded);
     }
 
-    public function convertToDatabaseValue($value, AbstractPlatform $platform): mixed
+    public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string
     {
         if (null === $value) {
             return null;
