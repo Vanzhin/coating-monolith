@@ -60,7 +60,7 @@ final readonly class CoatingSystemOperatingTemperatureCalculator
     /** Верхняя граница с учётом пика: peak_max, иначе continuous_max. */
     private function upperBound(?ThermalExposureLimitsDTO $limits): ?int
     {
-        return $limits?->peak_max ?? $limits?->continuous_max;
+        return $limits->peak_max ?? $limits?->continuous_max;
     }
 
     /**

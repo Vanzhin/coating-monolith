@@ -67,11 +67,20 @@ class AddAction extends BaseController
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
 
-            return $this->render('cabinet/proposal/create.html.twig', compact(array_keys(get_defined_vars())));
+            return $this->render('cabinet/proposal/create.html.twig', [
+                'data' => $data,
+                'coatings' => $coatings,
+            ]);
         } catch (\Throwable $e) {
             $error = $this->getClientErrorMessage($e);
 
-            return $this->render('cabinet/proposal/create.html.twig', compact(array_keys(get_defined_vars())));
+            return $this->render('cabinet/proposal/create.html.twig', [
+                'error' => $error,
+                'data' => $data ?? null,
+                'coatings' => $coatings ?? null,
+                'inputData' => $inputData ?? null,
+                'dto' => $dto ?? null,
+            ]);
         }
     }
 }

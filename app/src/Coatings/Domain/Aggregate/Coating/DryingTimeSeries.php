@@ -103,7 +103,7 @@ final readonly class DryingTimeSeries implements TimeSeries
     {
         usort($points, fn (TimeAtTemperature $a, TimeAtTemperature $b) => $a->temperatureAt <=> $b->temperatureAt);
 
-        return array_values($points);
+        return $points;
     }
 
     /**

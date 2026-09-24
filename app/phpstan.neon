@@ -1,6 +1,6 @@
 includes:
-	# phpstan 1→2: 148 существующих находок v2 (редундантность array_values/is_array/?->/isset и пр.)
-	# зафиксированы в baseline; разобрать отдельной задачей Rector'ом (dead-code/quality-сеты). Ловим НОВЫЕ.
+	# baseline: оставшиеся находки v2, которые не чистим (защитные is_array/instanceof, PHPUnit-тесты, property-типы).
+	# Механические (compact/array_values/nullsafe) вычищены в коде, PHPDoc-производные сняты treatPhpDocTypesAsCertain.
 	- phpstan-baseline.neon
 
 parameters:
@@ -8,8 +8,10 @@ parameters:
 	paths:
 		- ./src
 		- ./tests
-	# phpstan 2: checkGenericClassInNonGenericObjectType убран. Дженерик-типы не форсим на апгрейде —
-	# игнорим missingType.generics (отдельная задача при желании ужесточить).
+	# @var/PHPDoc-типы НЕ считаем железным фактом: гасит ложные "alreadyNarrowed/impossible" на защитных
+	# проверках (Assert::notNull после /** @var X $u */ и т.п.) — код защитный, удалять его не надо.
+	treatPhpDocTypesAsCertain: false
+	# phpstan 2: checkGenericClassInNonGenericObjectType убран. Дженерик-типы не форсим — игнорим missingType.generics.
 	ignoreErrors:
 		-
 			identifier: missingType.generics

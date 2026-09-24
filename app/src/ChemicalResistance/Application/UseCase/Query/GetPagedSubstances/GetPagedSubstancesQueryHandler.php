@@ -20,8 +20,8 @@ class GetPagedSubstancesQueryHandler implements QueryHandlerInterface
         $paginator = $this->substanceRepository->findByFilter($query->filter);
 
         $pager = new Pager(
-            $query->filter->pager?->page ?? Pager::DEFAULT_PAGE,
-            $query->filter->pager?->perPage ?? Pager::DEFAULT_LIMIT,
+            $query->filter->pager->page ?? Pager::DEFAULT_PAGE,
+            $query->filter->pager->perPage ?? Pager::DEFAULT_LIMIT,
             $paginator->total,
         );
 

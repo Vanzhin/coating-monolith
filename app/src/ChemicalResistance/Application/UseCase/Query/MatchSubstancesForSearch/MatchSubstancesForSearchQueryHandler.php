@@ -80,7 +80,7 @@ final class MatchSubstancesForSearchQueryHandler
             $sql,
             [
                 'coatings' => json_encode(array_values($q->coatingIds), JSON_UNESCAPED_UNICODE),
-                'raw' => json_encode(array_values($rawWords), JSON_UNESCAPED_UNICODE),
+                'raw' => json_encode($rawWords, JSON_UNESCAPED_UNICODE),
                 'tsq' => $tsquery,
                 'lang' => self::FTS_LANG,
             ],

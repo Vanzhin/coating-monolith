@@ -81,18 +81,34 @@ class UpdateAction extends BaseController
                 if ($addItem) {
                     $dto = $result->dto;
 
-                    return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
+                    return $this->render('cabinet/proposal/edit.html.twig', [
+                        'dto' => $dto,
+                        'data' => $data,
+                        'coatings' => $coatings,
+                        'addItem' => $addItem,
+                    ]);
                 }
                 $this->addFlash('general_proposal_info_updated_success', sprintf('Форма "%s" обновлена.', $dto->number));
 
                 return $this->redirectToRoute('app_cabinet_proposals_general_proposal_list');
             }
 
-            return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
+            return $this->render('cabinet/proposal/edit.html.twig', [
+                'dto' => $dto,
+                'data' => $data,
+                'coatings' => $coatings,
+                'addItem' => $addItem,
+            ]);
         } catch (\Throwable $e) {
             $error = $this->getClientErrorMessage($e);
 
-            return $this->render('cabinet/proposal/edit.html.twig', compact(array_keys(get_defined_vars())));
+            return $this->render('cabinet/proposal/edit.html.twig', [
+                'error' => $error,
+                'dto' => $dto ?? null,
+                'data' => $data ?? null,
+                'coatings' => $coatings ?? null,
+                'addItem' => $addItem ?? null,
+            ]);
         }
     }
 }

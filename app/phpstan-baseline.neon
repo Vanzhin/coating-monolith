@@ -1,60 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Call to function is_array\(\) with list\<App\\Certificates\\Domain\\Aggregate\\Document\\Reference\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: src/Certificates/Infrastructure/Database/DBAL/DocumentReferencesType.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<App\\Certificates\\Domain\\Aggregate\\Document\\Reference\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Certificates/Infrastructure/Database/DBAL/DocumentReferencesType.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>page" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/GetPagedNotes/GetPagedNotesQueryHandler.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>perPage" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/GetPagedNotes/GetPagedNotesQueryHandler.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>page" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/GetPagedSubstances/GetPagedSubstancesQueryHandler.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>perPage" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/GetPagedSubstances/GetPagedSubstancesQueryHandler.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<non\-empty\-string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/MatchSubstancesForSearch/MatchSubstancesForSearchQueryHandler.php
-
-		-
-			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/ChemicalResistance/Application/UseCase/Query/MatchSubstancesForSearch/MatchSubstancesForSearchQueryHandler.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>peak_max" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: src/Coatings/Application/Service/CoatingSystemOperatingTemperatureCalculator.php
-
-		-
 			message: '#^Strict comparison using \=\=\= between null and null will always evaluate to true\.$#'
 			identifier: identical.alwaysTrue
 			count: 1
@@ -65,18 +11,6 @@ parameters:
 			identifier: isset.property
 			count: 1
 			path: src/Coatings/Application/UseCase/Command/UpdateCoating/UpdateCoatingCommandHandler.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<App\\Coatings\\Application\\DTO\\CoatingSystems\\CoatingSystemTitleDTO\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Application/UseCase/Query/GetCoatingSystemsByIds/GetCoatingSystemsByIdsQueryHandler.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<object\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Application/UseCase/Query/SearchCoatings/SearchCoatingsQueryHandler.php
 
 		-
 			message: '#^Property App\\Coatings\\Domain\\Aggregate\\Coating\\Coating\:\:\$applicationMinTemp in isset\(\) is not nullable nor uninitialized\.$#'
@@ -109,160 +43,16 @@ parameters:
 			path: src/Coatings/Domain/Aggregate/Coating/Coating.php
 
 		-
-			message: '#^Parameter \#1 \$array \(list\<App\\Coatings\\Domain\\Aggregate\\Coating\\TimeAtTemperature\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Domain/Aggregate/Coating/DryingTimeSeries.php
-
-		-
-			message: '#^Parameter \#1 \$array \(non\-empty\-list\<App\\Coatings\\Domain\\Aggregate\\CoatingSystem\\Substrate\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Domain/Aggregate/SurfaceTreatment/SurfaceTreatment.php
-
-		-
-			message: '#^Call to static method Webmozart\\Assert\\Assert\:\:null\(\) with App\\Coatings\\Domain\\Aggregate\\Tag\\Tag and non\-falsy\-string will always evaluate to false\.$#'
+			message: '#^Call to static method Webmozart\\Assert\\Assert\:\:null\(\) with App\\Coatings\\Domain\\Aggregate\\Tag\\Tag and string will always evaluate to false\.$#'
 			identifier: staticMethod.impossibleType
 			count: 1
 			path: src/Coatings/Domain/Aggregate/Tag/Specification/UniqueTitleAndTypeTagSpecification.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<App\\Coatings\\Application\\DTO\\Coatings\\DryingTimePointDTO\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Infrastructure/Mapper/CoatingMapper.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Coatings/Infrastructure/Search/CoatingSystemFinder.php
 
 		-
 			message: '#^Property App\\Documents\\Domain\\Aggregate\\Document\\Document\:\:\$updatedAt \(DateTimeImmutable\|null\) is never assigned null so it can be removed from the property type\.$#'
 			identifier: property.unusedType
 			count: 1
 			path: src/Documents/Domain/Aggregate/Document/Document.php
-
-		-
-			message: '#^Instanceof between Symfony\\Component\\HttpFoundation\\File\\UploadedFile and Symfony\\Component\\HttpFoundation\\File\\UploadedFile will always evaluate to true\.$#'
-			identifier: instanceof.alwaysTrue
-			count: 1
-			path: src/Documents/Infrastructure/Controller/Api/AddBulkAction.php
-
-		-
-			message: '#^Offset 0 on array\{list\<string\>\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: src/Documents/Infrastructure/Repository/DocumentRepository.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$addItem\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$coatings\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$command\.$#'
-			identifier: variable.undefined
-			count: 8
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$data\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$dto\.$#'
-			identifier: variable.undefined
-			count: 7
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$errors\.$#'
-			identifier: variable.undefined
-			count: 6
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$inputData\.$#'
-			identifier: variable.undefined
-			count: 4
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$result\.$#'
-			identifier: variable.undefined
-			count: 9
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$user\.$#'
-			identifier: variable.undefined
-			count: 5
-			path: src/Proposals/Infrastructure/Controller/AddAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$addItem\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$coatings\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$command\.$#'
-			identifier: variable.undefined
-			count: 8
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$data\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$dto\.$#'
-			identifier: variable.undefined
-			count: 5
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$errors\.$#'
-			identifier: variable.undefined
-			count: 7
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$inputData\.$#'
-			identifier: variable.undefined
-			count: 6
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$proposal\.$#'
-			identifier: variable.undefined
-			count: 4
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
-
-		-
-			message: '#^Call to function compact\(\) contains possibly undefined variable \$result\.$#'
-			identifier: variable.undefined
-			count: 9
-			path: src/Proposals/Infrastructure/Controller/UpdateAction.php
 
 		-
 			message: '#^Parameter \#1 \$values of method App\\Reports\\Application\\Service\\ReportRenderDataProjector\:\:projectLayers\(\) expects array\<string, App\\Shared\\Domain\\Templating\\TextValue\>, array\<string, App\\Shared\\Domain\\Templating\\TemplateValue\> given\.$#'
@@ -277,12 +67,6 @@ parameters:
 			path: src/Reports/Application/Service/ReportRenderDataProjector.php
 
 		-
-			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Reports/Domain/Block/Field.php
-
-		-
 			message: '#^Call to new App\\Shared\\Domain\\Aggregate\\ValueObject\\CoatingThickness\(\) on a separate line has no effect\.$#'
 			identifier: new.resultUnused
 			count: 1
@@ -295,46 +79,16 @@ parameters:
 			path: src/Reports/Domain/Service/ReportContentValidator.php
 
 		-
-			message: '#^Parameter \#1 \$array \(list\<App\\Reports\\Domain\\Aggregate\\Counterparty\\Counterparty\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Reports/Infrastructure/Repository/CounterpartyRepository.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<float\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Shared/Domain/Aggregate/ValueObject/MixDose.php
-
-		-
 			message: '#^Property App\\Shared\\Domain\\Audit\\AuditEntry\:\:\$seq \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
 			identifier: property.unusedType
 			count: 1
 			path: src/Shared/Domain/Audit/AuditEntry.php
 
 		-
-			message: '#^Instanceof between App\\Shared\\Domain\\Templating\\TemplateValue and App\\Shared\\Domain\\Templating\\TemplateValue will always evaluate to true\.$#'
-			identifier: instanceof.alwaysTrue
-			count: 1
-			path: src/Shared/Domain/Templating/RenderData.php
-
-		-
-			message: '#^Parameter \#1 \$array \(non\-empty\-list\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 2
-			path: src/Shared/Infrastructure/Controller/SwAction.php
-
-		-
 			message: '#^Method App\\Shared\\Infrastructure\\Database\\DBAL\\StringCollectionType\:\:convertToDatabaseValue\(\) never returns null so it can be removed from the return type\.$#'
 			identifier: return.unusedType
 			count: 1
 			path: src/Shared/Infrastructure/Database/DBAL/StringCollectionType.php
-
-		-
-			message: '#^Offset 0 on array\{list\<string\>\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: src/Shared/Infrastructure/Database/ES/QueryBuilder.php
 
 		-
 			message: '#^Method App\\Shared\\Infrastructure\\EventListener\\Exception\\ExceptionListener\:\:exceptionToArray\(\) return type has no value type specified in iterable type array\.$#'
@@ -349,24 +103,6 @@ parameters:
 			path: src/Shared/Infrastructure/EventListener/Exception/ExceptionListener.php
 
 		-
-			message: '#^Call to static method Webmozart\\Assert\\Assert\:\:isInstanceOf\(\) with arguments App\\Shared\\Domain\\Security\\AuthUserInterface, ''App\\\\Shared\\\\Domain\\\\Security\\\\AuthUserInterface'' and ''Invalid user type\.'' will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: src/Shared/Infrastructure/Security/AuthUserFetcher.php
-
-		-
-			message: '#^Call to static method Webmozart\\Assert\\Assert\:\:notNull\(\) with App\\Shared\\Domain\\Security\\AuthUserInterface and ''Current user not…'' will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: src/Shared/Infrastructure/Security/AuthUserFetcher.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: src/Shared/Infrastructure/Service/DocxMacroProcessor.php
-
-		-
 			message: '#^Call to static method Webmozart\\Assert\\Assert\:\:notNull\(\) with App\\Users\\Domain\\Entity\\User will always evaluate to true\.$#'
 			identifier: staticMethod.alreadyNarrowedType
 			count: 1
@@ -379,34 +115,10 @@ parameters:
 			path: src/Users/Infrastructure/Service/Validation/ListValidator.php
 
 		-
-			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with list\<array\{title\: string, description\: string, isSystem\: bool\}\> and ''Notes must be an…'' will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: tests/Functional/ChemicalResistance/Application/UseCase/Query/ListCoatingAssessments/ListCoatingAssessmentsQueryHandlerTest.php
-
-		-
 			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with list\<App\\ChemicalResistance\\Application\\DTO\\SubstanceDTO\> will always evaluate to true\.$#'
 			identifier: staticMethod.alreadyNarrowedType
 			count: 1
 			path: tests/Functional/ChemicalResistance/Application/UseCase/Query/SubstanceAutocomplete/SubstanceAutocompleteQueryHandlerTest.php
-
-		-
-			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with App\\Coatings\\Domain\\Aggregate\\Color\\Color will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: tests/Functional/Coatings/Application/UseCase/Command/CreateCoatingSystemColorTest.php
-
-		-
-			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with App\\Coatings\\Domain\\Aggregate\\Color\\Color and ''Цвет слоя должен…'' will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: tests/Functional/Coatings/Infrastructure/Repository/CoatingSystemRepositoryTest.php
-
-		-
-			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with App\\Coatings\\Domain\\Aggregate\\Color\\Color will always evaluate to true\.$#'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: tests/Functional/Coatings/Infrastructure/Repository/CoatingSystemRepositoryTest.php
 
 		-
 			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with App\\Shared\\Domain\\File\\StoredFile will always evaluate to true\.$#'
