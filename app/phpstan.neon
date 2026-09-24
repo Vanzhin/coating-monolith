@@ -1,6 +1,15 @@
+includes:
+	# phpstan 1→2: 148 существующих находок v2 (редундантность array_values/is_array/?->/isset и пр.)
+	# зафиксированы в baseline; разобрать отдельной задачей Rector'ом (dead-code/quality-сеты). Ловим НОВЫЕ.
+	- phpstan-baseline.neon
+
 parameters:
 	level: 6
 	paths:
 		- ./src
 		- ./tests
-	checkGenericClassInNonGenericObjectType: false
+	# phpstan 2: checkGenericClassInNonGenericObjectType убран. Дженерик-типы не форсим на апгрейде —
+	# игнорим missingType.generics (отдельная задача при желании ужесточить).
+	ignoreErrors:
+		-
+			identifier: missingType.generics

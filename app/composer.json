@@ -4,12 +4,12 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "require": {
-    "php": ">=8.2",
+    "php": ">=8.4",
     "ext-ctype": "*",
     "ext-iconv": "*",
     "ext-redis": "*",
     "doctrine/dbal": "^3",
-    "doctrine/doctrine-bundle": "^2.12",
+    "doctrine/doctrine-bundle": "2.12.*",
     "doctrine/doctrine-migrations-bundle": "^3.3",
     "doctrine/orm": "^3.1",
     "elasticsearch/elasticsearch": "^9.0",
@@ -54,13 +54,14 @@
     "webmozart/assert": "^1.11"
   },
   "require-dev": {
-    "dama/doctrine-test-bundle": "^8.0",
+    "dama/doctrine-test-bundle": "^8.6",
     "doctrine/doctrine-fixtures-bundle": "^3.6",
     "fakerphp/faker": "^1.23",
-    "friendsofphp/php-cs-fixer": "^3.57",
-    "liip/test-fixtures-bundle": "^3.0",
-    "phpstan/phpstan": "^1.11",
-    "phpunit/phpunit": "^9.5",
+    "friendsofphp/php-cs-fixer": "^3.95",
+    "liip/test-fixtures-bundle": "^3.9",
+    "phpstan/phpstan": "^2.2",
+    "phpunit/phpunit": "^11",
+    "rector/rector": "^2.0",
     "symfony/browser-kit": "7.4.*",
     "symfony/css-selector": "7.4.*",
     "symfony/maker-bundle": "^1.58",
@@ -72,7 +73,10 @@
       "symfony/flex": true,
       "symfony/runtime": true
     },
-    "sort-packages": true
+    "sort-packages": true,
+    "platform": {
+      "php": "8.5.10"
+    }
   },
   "autoload": {
     "psr-4": {
