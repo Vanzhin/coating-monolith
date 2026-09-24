@@ -9,7 +9,7 @@ use App\Shared\Domain\Specification\SpecificationInterface;
 class TagSpecification implements SpecificationInterface
 {
     public function __construct(
-        public readonly UniqueTitleAndTypeTagSpecification $titleAndTypeTagSpecification
+        public readonly UniqueTitleAndTypeTagSpecification $titleAndTypeTagSpecification,
     ) {
     }
 }

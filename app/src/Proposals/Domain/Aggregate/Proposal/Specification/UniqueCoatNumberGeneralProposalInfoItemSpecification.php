@@ -12,7 +12,7 @@ use App\Shared\Domain\Specification\SpecificationInterface;
 class UniqueCoatNumberGeneralProposalInfoItemSpecification implements SpecificationInterface
 {
     public function __construct(
-        private readonly GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository
+        private readonly GeneralProposalInfoItemRepositoryInterface $generalProposalInfoItemRepository,
     ) {
     }
 

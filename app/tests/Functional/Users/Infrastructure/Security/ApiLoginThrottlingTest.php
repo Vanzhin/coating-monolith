@@ -26,9 +26,13 @@ final class ApiLoginThrottlingTest extends WebTestCase
             $this->attemptLogin($client, $email);
         }
 
+        // Ответ — JSON с \uXXXX-эскейпом кириллицы; декодируем и сверяем поле message
+        // (с Symfony 7.1 login_throttling-сообщение переводится на русский, было англ.).
+        $payload = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertIsArray($payload);
         self::assertStringContainsString(
-            'Too many failed login attempts',
-            (string) $client->getResponse()->getContent(),
+            'Слишком много неудачных попыток входа',
+            (string) ($payload['message'] ?? ''),
             'После 5 неудачных попыток вход должен упираться в login_throttling.',
         );
     }

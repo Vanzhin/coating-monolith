@@ -60,7 +60,7 @@ final class AuditLogTransformerTest extends TestCase
     /** Стаб резолвера: «system» → «Система», известный ulid → email, иначе — сам id. */
     private function actorResolver(): ActorResolverInterface
     {
-        return new class() implements ActorResolverInterface {
+        return new class implements ActorResolverInterface {
             public function resolve(string $actorId): string
             {
                 return match ($actorId) {

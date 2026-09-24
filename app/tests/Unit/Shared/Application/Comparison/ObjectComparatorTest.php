@@ -25,10 +25,10 @@ final class ObjectComparatorTest extends TestCase
 
     public function test_throws_when_objects_are_different_classes(): void
     {
-        $a = new class() {
+        $a = new class {
             public int $x = 1;
         };
-        $b = new class() {
+        $b = new class {
             public int $x = 1;
         };
         $this->expectException(AppException::class);
@@ -37,7 +37,7 @@ final class ObjectComparatorTest extends TestCase
 
     public function test_scalar_fields_equal_marked_not_different(): void
     {
-        $a = new class() {
+        $a = new class {
             public int $x = 1;
             public string $s = 'a';
         };
@@ -83,7 +83,7 @@ final class ObjectComparatorTest extends TestCase
 
     public function test_nested_property_path(): void
     {
-        $makeInner = fn () => new class() {
+        $makeInner = fn () => new class {
             public int $tds = 100;
         };
         $inner1 = $makeInner();

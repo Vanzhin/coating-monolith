@@ -21,7 +21,7 @@ class CoatingData
         public readonly ?float $maxRecoatingInterval,
         public readonly float $fullCure,
         public readonly float $pack,
-        public readonly ?string $thinner
+        public readonly ?string $thinner,
     ) {
     }
 }

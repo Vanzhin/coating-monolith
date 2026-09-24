@@ -12,7 +12,7 @@ readonly class GetDocumentCountByCategoryQueryHandler implements QueryHandlerInt
 {
     public function __construct(
         private DocumentRepositoryInterface $repository,
-        private DocumentCountByCategoryDTOTransformer $dtoTransformer
+        private DocumentCountByCategoryDTOTransformer $dtoTransformer,
     ) {
     }
 

@@ -12,7 +12,7 @@ readonly class UpdateGeneralProposalInfoCommand extends Command
     public function __construct(
         public string $proposalInfoId,
         public GeneralProposalInfoDTO $generalProposalInfoDTO,
-        public bool $returnDtoInResult = false
+        public bool $returnDtoInResult = false,
     ) {
     }
 }

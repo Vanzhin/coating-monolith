@@ -13,7 +13,7 @@ class ChannelDTO
         public ?string $id,
         public ?string $type,
         public ?string $value,
-        public ?string $owner_id
+        public ?string $owner_id,
     ) {
     }
 }

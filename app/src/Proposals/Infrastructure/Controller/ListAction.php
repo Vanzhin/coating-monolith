@@ -20,7 +20,7 @@ class ListAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly CoatingsAdapter $coatingsAdapter
+        private readonly CoatingsAdapter $coatingsAdapter,
     ) {
     }
 

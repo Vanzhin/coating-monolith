@@ -16,7 +16,7 @@ class ProposalDocument extends Aggregate
     public function __construct(
         private readonly ProposalDocumentTemplate $template,
         private readonly GeneralProposalInfo $proposalInfo,
-        private readonly ProposalDocumentFormat $format
+        private readonly ProposalDocumentFormat $format,
     ) {
         $this->id = UuidService::generate();
         $this->createdAt = new \DateTimeImmutable();

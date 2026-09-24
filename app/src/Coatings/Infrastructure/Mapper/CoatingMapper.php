@@ -232,21 +232,21 @@ class CoatingMapper
                 'description' => new Assert\Optional(new Assert\Type('string')),
             ]),
             'tags' => new Assert\Optional([
-                new Assert\All(new Assert\Collection([
+                new Assert\All([new Assert\Collection([
                     'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                     'title' => new Assert\Optional(new Assert\Type('string')),
                     'type' => new Assert\Optional(new Assert\Type('string')),
-                ])),
+                ])]),
             ]),
             // Возможные цвета: структурно — валидный id + name/hex (форма шлёт полные данные).
             // Инвариант «не-колеруемое ⇒ ≥1 цвет» — в домене (Coating::applyColorScheme).
             'colors' => new Assert\Optional([
-                new Assert\All(new Assert\Collection([
+                new Assert\All([new Assert\Collection([
                     'id' => [new Assert\NotBlank(), new Assert\Uuid()],
                     'name' => [new Assert\NotBlank(), new Assert\Type('string')],
                     'ral' => new Assert\Optional([new Assert\Type('string')]),
                     'hex' => [new Assert\NotBlank(), new Assert\Type('string')],
-                ])),
+                ])]),
             ]),
             'gloss' => new Assert\Optional([
                 new Assert\Choice([

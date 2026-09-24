@@ -14,7 +14,7 @@ readonly class Pager
     public function __construct(
         public int $page,
         public int $perPage,
-        public ?int $total_items = null
+        public ?int $total_items = null,
     ) {
         $this->total_pages = $this->total_items ? (int) ceil($this->total_items / $this->perPage) : null;
     }

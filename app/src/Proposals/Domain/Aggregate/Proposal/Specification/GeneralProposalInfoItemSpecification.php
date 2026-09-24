@@ -9,7 +9,7 @@ use App\Shared\Domain\Specification\SpecificationInterface;
 readonly class GeneralProposalInfoItemSpecification implements SpecificationInterface
 {
     public function __construct(
-        public UniqueCoatNumberGeneralProposalInfoItemSpecification $uniqueCoatNumberGeneralProposalInfoItemSpecification
+        public UniqueCoatNumberGeneralProposalInfoItemSpecification $uniqueCoatNumberGeneralProposalInfoItemSpecification,
     ) {
     }
 }

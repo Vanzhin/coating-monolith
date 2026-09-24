@@ -13,7 +13,7 @@ readonly class GetPagedDocumentsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private DocumentRepositoryInterface $repository,
-        private DocumentDTOTransformer $dtoTransformer
+        private DocumentDTOTransformer $dtoTransformer,
     ) {
     }
 

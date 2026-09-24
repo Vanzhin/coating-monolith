@@ -13,7 +13,7 @@ class CoatingsQueryResult
         public readonly array $coatings,
         public readonly int $totalCount,
         public readonly int $page,
-        public readonly int $limit
+        public readonly int $limit,
     ) {
     }
 }

@@ -19,7 +19,7 @@ class Channel extends Aggregate implements VerificationSubjectInterface
         private readonly Uuid $id,
         private ChannelType $type,
         private string $value,
-        private readonly User $owner
+        private readonly User $owner,
     ) {
         // Каналы без OTP (web push — согласие даёт браузер) рождаются подтверждёнными.
         // Email/Telegram требуют верификации кодом → isVerified остаётся false до verify().

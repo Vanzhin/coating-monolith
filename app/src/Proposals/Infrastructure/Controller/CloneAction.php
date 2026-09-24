@@ -27,7 +27,7 @@ class CloneAction extends BaseController
         private readonly GeneralProposalInfoDTOTransformer $generalProposalInfoDTOTransformer,
         private readonly GeneralProposalInfoAccessControl $accessControl,
         private readonly AuthUserFetcherInterface $authUserFetcher,
-        LoggerInterface $logger
+        LoggerInterface $logger,
     ) {
         parent::__construct($logger);
     }

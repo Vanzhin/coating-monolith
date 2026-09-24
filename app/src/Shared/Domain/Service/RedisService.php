@@ -11,7 +11,7 @@ readonly class RedisService
     public function __construct(
         private \Redis $redis,
         // todo сделать так, чтобы на разные сервисы был разный префикс
-        private string $prefix = self::PREFIX
+        private string $prefix = self::PREFIX,
     ) {
     }
 

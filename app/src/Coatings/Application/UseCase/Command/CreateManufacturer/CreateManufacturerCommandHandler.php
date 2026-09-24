@@ -15,7 +15,7 @@ readonly class CreateManufacturerCommandHandler implements CommandHandlerInterfa
     public function __construct(
         private ManufacturerFactory $manufacturerFactory,
         private ManufacturerRepositoryInterface $manufacturerRepository,
-        private CoatingAccessControl $access
+        private CoatingAccessControl $access,
     ) {
     }
 
