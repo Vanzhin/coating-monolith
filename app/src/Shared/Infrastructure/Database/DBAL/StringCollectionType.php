@@ -35,14 +35,4 @@ final class StringCollectionType extends JsonType
 
         return parent::convertToDatabaseValue($value ?? [], $platform);
     }
-
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
-    public function requiresSQLCommentHint(AbstractPlatform $platform): bool
-    {
-        return true;
-    }
 }

@@ -11,11 +11,6 @@ final class MixingRatioType extends AbstractJsonObjectType
 {
     public const NAME = 'mixing_ratio';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return MixingRatio::class;

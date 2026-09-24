@@ -12,11 +12,6 @@ final class SubstrateScopeType extends JsonType
 {
     public const NAME = 'substrate_scope';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     /**
      * @return list<Substrate>|null
      */

@@ -11,11 +11,6 @@ final class ThermalExposureLimitsType extends AbstractJsonObjectType
 {
     public const NAME = 'thermal_exposure_limits';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return ThermalExposureLimits::class;

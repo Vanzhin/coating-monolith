@@ -11,11 +11,6 @@ final class RecoatingIntervalTreeType extends AbstractJsonObjectType
 {
     public const NAME = 'recoating_interval_tree';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return RecoatingIntervalTree::class;

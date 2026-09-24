@@ -11,11 +11,6 @@ final class DftRangeType extends AbstractJsonObjectType
 {
     public const NAME = 'dft_range';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return DftRange::class;

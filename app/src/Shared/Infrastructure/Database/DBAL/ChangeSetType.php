@@ -10,11 +10,6 @@ final class ChangeSetType extends AbstractJsonObjectType
 {
     public const NAME = 'audit_change_set';
 
-    public function getName(): string
-    {
-        return self::NAME;
-    }
-
     protected function valueClass(): string
     {
         return ChangeSet::class;
