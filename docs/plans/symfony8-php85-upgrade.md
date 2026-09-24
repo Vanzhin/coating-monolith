@@ -25,20 +25,23 @@
    `ReflectionProperty::setAccessible deprecated since 8.5`, 334×) → 10/11/**12**. Значит **бамп PHP 8.5
    тянет апгрейд dev-тулинга ПЕРВЫМ**.
 
-## Порядок (по просьбе: сначала PHP 8.5, потом Symfony 8)
-Смысловая последовательность — фазы, каждая своя ветка/тег:
+## Порядок — РЕШЕНО: лесенка Symfony ДО PHP 8.5 (вариант A, согласовано 2026-09-24)
+Изначально хотели «PHP 8.5 первым», но это упирается в тулинг (проверено): **cs-fixer 3.57 жёстко
+отказывается на PHP 8.5** (`maximum 8.3.*`), а 8.5-совместимый **cs-fixer 3.95 требует `symfony/process
+^7.2`**, который держит Flex-пин `extra.symfony.require: 7.0.*`. Цепочка: PHP 8.5 → cs-fixer 3.95 →
+symfony/process ≥7.2 → Symfony-лесенка. Поэтому лесенку делаем ПЕРВОЙ (на PHP 8.3, где весь тулинг ещё
+совместим), затем PHP 8.5, затем Sy8. Размещение тулинга: **phpstan 1→2 + rector — в Фазе 1 (лесенка)**
+(8.3-совместимы, не завязаны на symfony; Rector там авто-чинит ladder-deprecations Symfony-сетами — его
+прайм-юз); **cs-fixer 3.95 + phpunit 11 — в Фазе 2 (PHP 8.5)** (cs-fixer завязан на process ≥7.2, до
+лесенки нельзя; phpunit 11 нужен для чистого 8.5). cs-fixer 3.57 и phpunit 9 в Фазе 1 не трогаем — 8.3-ок.
 
-- **Фаза 0 — Подготовка** (на 7.0): вычистить висящие deprecations + прибить «дикие» констрейнты. Без подъёма мажоров.
-- **Фаза 1 — PHP 8.5 рантайм** (остаёмся на Symfony 7.0): апгрейд dev-тулинга (cs-fixer/phpstan/phpunit)
-  до 8.5-совместимых, смена Docker-базы 8.3 → 8.5, CI. Symfony 7.0 на 8.5 РАБОТАЕТ (хост это уже
-  доказывает), но 7.0 EOL — долго на нём не сидим, сразу Фаза 2.
-- **Фаза 2 — Лесенка Symfony 7.0 → 7.4** (на PHP 8.5): по минору, вычистка deprecations под ноль на 7.4.
-- **Фаза 3 — Symfony 8.0** (PHP 8.5 уже есть): подъём `symfony/* : 8.0.*` + обязательные major-бампы бандлов.
-
-Альтернатива (если Фаза 1 на EOL-7.0 не устраивает из-за security): сделать Фазу 2 (ладдер до 7.4) ДО
-смены PHP-базы, а PHP 8.5 — между 7.4 и 8.0. Тогда меньше времени на непатченном 7.0, но «PHP 8.5» приходит
-позже. **Рекомендую именно этот безопасный вариант, если 7.0-на-8.5 не нужен как отдельная веха.** Обе
-последовательности приводят к «PHP 8.5, затем Symfony 8».
+Фазы (каждая — своя ветка/тег):
+- **Фаза 0 — Подготовка** (на 7.0/8.3): config-фиксы + гейт `max[self]=0` + гигиена констрейнтов. ✅ СДЕЛАНО (коммит 53a3707, ветка upgrade-0-prep).
+- **Фаза 1 — Лесенка Symfony 7.0 → 7.4** (на PHP 8.3): по минору 7.1→7.2→7.3→7.4, вычистка deprecations
+  под ноль на 7.4. cs-fixer/phpstan/phpunit НЕ трогаем (8.3-совместимы).
+- **Фаза 2 — PHP 8.5 рантайм** (на Symfony 7.4): dev-тулинг под 8.5 (cs-fixer 3.95 — теперь process=7.4,
+  ОК; phpstan 2; phpunit 11; rector), Docker-база 8.3→8.5 (4 образа), CI, composer `php: >=8.4`.
+- **Фаза 3 — Symfony 8.0** (PHP 8.5 уже есть): `symfony/* : 8.0.*` + обязательные major-бампы бандлов.
 
 ---
 
@@ -49,8 +52,9 @@
 phpstan-мажор (это работа Фазы 1). Плюс наш код уже `self`-deprecations = 0 (гейт `max[self]=0` зелёный) →
 чистить Rector'ом в Фазе 0 нечего. Поэтому Rector заводим в Фазе 1 вместе с phpstan 2.
 - В Фазе 1: `composer require --dev rector/rector` (потянет phpstan 2), `rector.php` (пути `app/src`+`app/tests`,
-  `phpVersion` по фазе), `./run rector`. Наборы ПО ФАЗАМ: Фаза 1 `PHPUnitSetList` (аннотации→атрибуты) +
-  `LevelSetList::UP_TO_PHP_85`; Фаза 2 `SymfonyLevelSetList::UP_TO_SYMFONY_74`; Фаза 3 `...UP_TO_SYMFONY_80`.
+  `phpVersion` по фазе), `./run rector`. Наборы ПО ФАЗАМ: **Фаза 1 (лесенка)** `SymfonyLevelSetList::UP_TO_SYMFONY_74`
+  (по мере минора — прайм-юз Rector); **Фаза 2 (PHP 8.5)** `PHPUnitSetList` (аннотации→атрибуты) +
+  `LevelSetList::UP_TO_PHP_85`; **Фаза 3** `SymfonyLevelSetList::UP_TO_SYMFONY_80`.
 - Процесс: `rector process --dry-run` → ревью диффа → `rector process` → `./run check` → коммит. **Не вслепую**
   (кастомные VO/домен). Что Rector НЕ закрывает руками: конфиги (`config/packages/*`, Docker, CI), major-бампы
   бандлов (lexik v3/gesdinet v2 — миграции ручные), рантайм-логика.
@@ -75,7 +79,8 @@ Symfony (Фаза 2), НЕ в Фазе 0.** В Фазе 0 нашего-кода 
 - Включить `SYMFONY_DEPRECATIONS_HELPER` в тестах (phpunit.xml.dist) — чтобы ступени ловили регресс по числу.
 - **Verify:** `./run check` зелёный, число deprecations в отчёте тестов зафиксировано (baseline).
 
-## Фаза 1 — PHP 8.5 рантайм (ветка `upgrade-1-php85`)
+## Фаза 2 — PHP 8.5 рантайм (ветка `upgrade-2-php85`, на Symfony 7.4)
+(cs-fixer 3.95 теперь ставится чисто — symfony/process уже 7.4.)
 Dev-тулинг (обязательно для 8.5):
 - `friendsofphp/php-cs-fixer` `^3.57` → `^3.95`; прогнать `style:fix`, разобрать новые правила.
 - `phpstan/phpstan` `^1.11` → `^2.2` (MAJOR): обновить `phpstan.neon` (новый формат levels/ignore),
@@ -92,7 +97,7 @@ Dev-тулинг (обязательно для 8.5):
 - composer.json `php: >=8.2` → `>=8.4` (или `>=8.5`), пересобрать образы, `./run check` зелёный НА 8.5.
 - **Verify:** весь стек в контейнере на 8.5, `./run check` зелёный, браузер-смоук.
 
-## Фаза 2 — Лесенка Symfony 7.1 → 7.4 (ветки `upgrade-2-syN`, по минору)
+## Фаза 1 — Лесенка Symfony 7.0 → 7.4 (ветки `upgrade-1-syN`, по минору, на PHP 8.3)
 **Master-рычаг — Flex-пин `extra.symfony.require` в composer.json** (сейчас `"7.0.*"`), он жёстко держит
 ВСЕ symfony/* (включая транзитивные config/http-kernel/…) на миноре. Подтверждено: dry-run подъёма только
 `framework-bundle:7.4.*` падает («Restricting packages listed in symfony/symfony to 7.0.*» → конфликт с
