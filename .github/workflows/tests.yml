@@ -35,6 +35,14 @@ jobs:
         # Тестам этот cache:clear не нужен — kernel бутстрапится через tests/bootstrap.php.
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli composer install --no-interaction --prefer-dist --no-scripts
 
+      - name: Prod-config preflight (compile container as prod)
+        # Остальной гейт гоняет APP_ENV=test → when@prod / config/packages/prod/* НЕ грузятся, и прод-онли
+        # ошибки конфига/wiring проходят в прод и валят деплой (инцидент 2026-09: doctrine-bundle 3 убрал
+        # auto_generate_proxy_classes/proxy_dir из when@prod — старый контейнер снят, новый не встал).
+        # lint:container --env=prod компилирует контейнер в prod (парсинг всего конфига + проверка типов
+        # аргументов сервисов) → ловим такое в CI ДО деплоя. Не требует живой БД/redis (только компиляция).
+        run: docker compose -f docker-compose.test.yml run --rm -e APP_ENV=prod -e APP_DEBUG=0 test_php-cli bin/console lint:container --env=prod
+
       - name: phpstan
         run: docker compose -f docker-compose.test.yml run --rm test_php-cli vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G --no-progress
 
