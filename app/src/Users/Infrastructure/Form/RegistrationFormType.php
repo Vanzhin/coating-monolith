@@ -39,21 +39,10 @@ class RegistrationFormType extends AbstractType
                 'mapped' => false,
                 'attr' => ['autocomplete' => 'new-password'],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Please enter a password',
-                    ]),
-                    new Length([
-                        'min' => 8,
-                        'minMessage' => 'Пароль должен содержать как минимум 8 символов',
-                    ]),
-                    new Regex([
-                        'pattern' => '/[A-ZА-Я]/u',
-                        'message' => 'Пароль должен содержать хотя бы одну заглавную букву',
-                    ]),
-                    new Regex([
-                        'pattern' => '/[0-9]/',
-                        'message' => 'Пароль должен содержать хотя бы одну цифру',
-                    ]),
+                    new NotBlank(message: 'Please enter a password'),
+                    new Length(min: 8, minMessage: 'Пароль должен содержать как минимум 8 символов'),
+                    new Regex(pattern: '/[A-ZА-Я]/u', message: 'Пароль должен содержать хотя бы одну заглавную букву'),
+                    new Regex(pattern: '/[0-9]/', message: 'Пароль должен содержать хотя бы одну цифру'),
                 ],
             ])
             // Анти-бот (решение принимает RegistrationBotGuard на бэке; фронт только рисует).

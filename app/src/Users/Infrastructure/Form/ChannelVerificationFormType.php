@@ -45,9 +45,7 @@ class ChannelVerificationFormType extends AbstractType
                     'id' => 'verification_channel',
                 ],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Пожалуйста, выберите канал для верификации',
-                    ]),
+                    new NotBlank(message: 'Пожалуйста, выберите канал для верификации'),
                 ],
             ])
             ->add('token', TextType::class, [
@@ -59,18 +57,9 @@ class ChannelVerificationFormType extends AbstractType
                     'autocomplete' => 'one-time-code',
                 ],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Пожалуйста, введите код верификации',
-                    ]),
-                    new Length([
-                        'min' => 6,
-                        'max' => 6,
-                        'exactMessage' => 'Код должен содержать ровно 6 цифр',
-                    ]),
-                    new Regex([
-                        'pattern' => '/^[0-9]{6}$/',
-                        'message' => 'Код должен содержать только цифры',
-                    ]),
+                    new NotBlank(message: 'Пожалуйста, введите код верификации'),
+                    new Length(min: 6, max: 6, exactMessage: 'Код должен содержать ровно 6 цифр'),
+                    new Regex(pattern: '/^[0-9]{6}$/', message: 'Код должен содержать только цифры'),
                 ],
             ]);
     }
