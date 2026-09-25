@@ -34,11 +34,21 @@ trait DocxFixtureTrait
     }
 
     /**
+     * Один абзац с несколькими токенами (плейсхолдер + инлайн-регион в одной строке/ячейке) — в отличие
+     * от docxWithParagraphs(), где каждый элемент списка становится СВОИМ абзацем.
+     */
+    private function docxWithInline(string $paragraph): string
+    {
+        return $this->docxWithParagraphs([$paragraph]);
+    }
+
+    /**
      * @return array{
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
      *     blocks: array<string, array{optional: bool, values: list<string>}>,
      *     repeats: array<string, array{subs: list<string>, anchor: string}>,
-     *     segments: list<string>
+     *     segments: list<string>,
+     *     inlineRegions: list<string>
      * }
      */
     private function invokeParse(string $templatePath): array
@@ -51,7 +61,7 @@ trait DocxFixtureTrait
 
         $parseMethod = $rendererReflection->getMethod('parse');
 
-        /** @var array{values: list<array{logical: string, token: string, optional: bool, block: string|null}>, blocks: array<string, array{optional: bool, values: list<string>}>, repeats: array<string, array{subs: list<string>, anchor: string}>, segments: list<string>} $parsed */
+        /** @var array{values: list<array{logical: string, token: string, optional: bool, block: string|null}>, blocks: array<string, array{optional: bool, values: list<string>}>, repeats: array<string, array{subs: list<string>, anchor: string}>, segments: list<string>, inlineRegions: list<string>} $parsed */
         $parsed = $parseMethod->invoke($renderer, $processor);
 
         return $parsed;

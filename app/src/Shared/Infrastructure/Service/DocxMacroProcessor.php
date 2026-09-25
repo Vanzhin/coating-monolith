@@ -83,6 +83,51 @@ final class DocxMacroProcessor extends TemplateProcessor
     }
 
     /**
+     * Инлайн ли опциональный регион `{{name?}}…{{/name?}}` — открывающий и закрывающий маркер лежат в
+     * ОДНОМ `<w:p>` (не пересекают границу абзаца). Практика: если между литеральным open- и close-маркером
+     * в сыром `tempDocumentMainPart` НЕТ `</w:p>`, значит оба маркера — в одном абзаце. Используется
+     * `parse()` драйвера, чтобы решить: обрабатывать регион как PhpWord-блок (`deleteBlock`/`cloneBlock`,
+     * абзацного уровня — что рвёт документ, если маркеры на самом деле в одной строке) или как инлайн-регион
+     * (`resolveInlineOptionalRegions`, вырез регэкспом). Нет совпадения (кривой шаблон — незакрытый маркер)
+     * → false, чтобы регион по умолчанию ушёл в прежнюю блочную ветку.
+     */
+    public function isInlineRegion(string $logical): bool
+    {
+        $open = preg_quote(self::$macroOpeningChars, '/');
+        $close = preg_quote(self::$macroClosingChars, '/');
+        $name = preg_quote($logical, '/');
+        $pattern = '/'.$open.$name.'\?'.$close.'(.*?)'.$open.'\/'.$name.'\?'.$close.'/su';
+
+        if (1 !== preg_match($pattern, $this->fixBrokenMacros($this->tempDocumentMainPart), $m)) {
+            return false;
+        }
+
+        return !str_contains($m[1], '</w:p>');
+    }
+
+    /**
+     * Инлайновые опциональные регионы верхнего уровня на `?`-суффикс синтаксисе: `{{name?}}…{{/name?}}`,
+     * маркеры в ОДНОМ абзаце (см. isInlineRegion()). Симметрично resolveTopLevelSegments() (тот же приём
+     * вырезания регэкспом), но под синтаксис блочного опц-региона, а не префикс-сегмента. Присутствие →
+     * маркеры снимаются, внутренний текст остаётся (плейсхолдер `{{name}}` в нём уже заполнен обычным
+     * fill()-проходом драйвера); иначе — регион вырезается целиком вместе с литералом. Вызывать ПОСЛЕ fill().
+     *
+     * @param array<string, bool> $present
+     */
+    public function resolveInlineOptionalRegions(array $present): void
+    {
+        $open = preg_quote(self::$macroOpeningChars, '/');
+        $close = preg_quote(self::$macroClosingChars, '/');
+        $pattern = '/'.$open.'([a-z0-9_]+)\?'.$close.'(.*?)'.$open.'\/\1\?'.$close.'/su';
+
+        $this->tempDocumentMainPart = (string) preg_replace_callback(
+            $pattern,
+            static fn (array $m): string => ($present[$m[1]] ?? false) ? $m[2] : '',
+            $this->tempDocumentMainPart,
+        );
+    }
+
+    /**
      * Инлайновые опциональные сегменты верхнего уровня: `{{?name}}…{{/?name}}`. Вырезают литеральный
      * текст вокруг плейсхолдера, когда данных нет (чего `{{name?}}` и абзацный блок `{{opt}}` не умеют).
      * `$present[name] === true` → маркеры снимаются, внутренний текст остаётся (и дозаполняется обычным

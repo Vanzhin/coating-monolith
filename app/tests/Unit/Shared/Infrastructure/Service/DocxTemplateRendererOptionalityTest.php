@@ -153,6 +153,57 @@ final class DocxTemplateRendererOptionalityTest extends TestCase
     }
 
     /**
+     * Инлайн-регион {{sensor?}}Датчик: {{sensor}}{{/sensor?}} — оба маркера в ОДНОМ абзаце. parse() должен
+     * распознать это автоматически (не по паре close-маркеров, а по отсутствию границы абзаца между ними)
+     * и НЕ регистрировать 'sensor' как блок — иначе деleteBlock/cloneBlock (абзацного уровня) не найдут
+     * маркеры внутри одной строки и порвут документ.
+     */
+    public function test_inline_optional_region_not_registered_as_block(): void
+    {
+        $tpl = $this->docxWithInline('{{sensor?}}Датчик: {{sensor}}{{/sensor?}}');
+
+        try {
+            $parsed = $this->invokeParse($tpl);
+
+            self::assertArrayNotHasKey('sensor', $parsed['blocks']);
+            self::assertContains('sensor', $parsed['inlineRegions']);
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    public function test_inline_optional_region_cut_when_empty(): void
+    {
+        $tpl = $this->docxWithInline('{{sensor?}}Датчик: {{sensor}}{{/sensor?}}');
+
+        try {
+            self::assertStringNotContainsString('Датчик', $this->render($tpl, new RenderData([])));
+            self::assertStringContainsString('Датчик: A1', $this->render($tpl, new RenderData(['sensor' => new TextValue('A1')])));
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    /**
+     * Регресс на баг обрыва документа (тот же класс, что и test_empty_optional_block_removed_content_after_survives,
+     * но для маркеров в одной строке): текст ПОСЛЕ инлайн-региона не должен обрубаться, когда региона нет.
+     */
+    public function test_inline_optional_region_removed_content_after_survives(): void
+    {
+        $tpl = $this->docxWithInline('{{sensor?}}Датчик: {{sensor}}{{/sensor?}} Конец.');
+
+        try {
+            $text = $this->render($tpl, new RenderData([]));
+
+            self::assertStringNotContainsString('{{', $text);
+            self::assertStringNotContainsString('Датчик', $text);
+            self::assertStringContainsString('Конец.', $text);
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    /**
      * @param list<array{logical: string, token: string, optional: bool, block: string|null}> $values
      *
      * @return array{logical: string, token: string, optional: bool, block: string|null}|null
