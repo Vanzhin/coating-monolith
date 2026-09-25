@@ -432,6 +432,37 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
         }
 
+        // Рассинхрон `?` между открывающим и закрывающим маркером региона — испорченный шаблон:
+        // {{note?}}…{{/note}} (или наоборот) не даёт понять, строгий это блок или опциональный регион,
+        // а без проверки один из маркеров молча становится плоским значением/фантомным блоком (см. баг-репорт
+        // задачи). Открывающий маркер региона ищем как ПЕРВЫЙ токен тела с тем же логическим именем — по
+        // конвенции это и есть open (значения с тем же именем ВНУТРИ региона стоят дальше и не мешают);
+        // инлайн-регион пропускаем — isInlineRegion() уже требует буквально {{name?}}…{{/name?}}, там
+        // рассинхрон в принципе не матчится и остаётся неоткрытым регионом, не ложным совпадением.
+        foreach ($closeSet as $logical => $closeOptional) {
+            if (isset($inlineLogicals[$logical])) {
+                continue;
+            }
+
+            foreach ($mainContents as $token) {
+                if (str_starts_with($token, '/') || isset($repeatMembers[$token])) {
+                    continue;
+                }
+
+                $openOptional = str_ends_with($token, '?');
+                $tokenLogical = $openOptional ? substr($token, 0, -1) : $token;
+                if ($tokenLogical !== $logical) {
+                    continue;
+                }
+
+                if ($openOptional !== $closeOptional) {
+                    throw new AppException(sprintf('Шаблон: маркеры региона «%s» рассинхронизированы по «?» — {{%1$s}}…{{/%1$s}} или {{%1$s?}}…{{/%1$s?}}.', $logical));
+                }
+
+                break; // открывающий нашёлся и совпал — по телу дальше искать нечего
+            }
+        }
+
         $values = [];
         $blocks = [];
         $stack = [];

@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Shared\Infrastructure\Service;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Domain\Templating\TextValue;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\DocxTemplateRenderer;
 use PHPUnit\Framework\TestCase;
 
@@ -102,6 +103,25 @@ final class DocxTemplateRendererOptionalityTest extends TestCase
             self::assertNotContains('note', $res->missing);
             self::assertContains('note', $res->skipped);
             self::assertTrue($res->isValid());
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    /**
+     * Открывающий и закрывающий маркер региона расходятся по `?` — {{note?}}…{{/note}} не даёт понять,
+     * строгий это блок или опциональный регион. Вместо тихой порчи структуры parse() должен упасть понятной
+     * ошибкой, называющей имя региона и обе правильные формы.
+     */
+    public function test_mismatched_optional_markers_throws_readable_error(): void
+    {
+        $tpl = $this->docxWithParagraphs(['{{note?}}', '{{note}}', '{{/note}}']); // open с ?, close без ?
+
+        try {
+            $this->expectException(AppException::class);
+            $this->expectExceptionMessageMatches('/note.*маркер|маркер.*note/iu');
+
+            (new DocxTemplateRenderer())->validate(new TemplateFile($tpl), new RenderData([]));
         } finally {
             @unlink($tpl);
         }
