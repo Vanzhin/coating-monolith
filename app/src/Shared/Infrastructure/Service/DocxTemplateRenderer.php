@@ -326,7 +326,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
      *
      * @return array{
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
-     *     blocks: array<string, list<string>>,
+     *     blocks: array<string, array{optional: bool, values: list<string>}>,
      *     repeats: array<string, array{subs: list<string>, anchor: string}>,
      *     segments: list<string>
      * }
@@ -336,16 +336,27 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $mainContents = $processor->orderedMacros();     // тело, по порядку — для структуры блоков
         $allTokens = $processor->getVariables();          // тело + колонтитулы — полный набор переменных
 
-        // маркеры блоков распознаём по паре {{name}} / {{/name}}; {{/?name}} — закрытие инлайн-сегмента,
-        // не блок (иначе substr дал бы фантомный блок "?name")
+        // маркеры блоков распознаём по паре {{name}} / {{/name}} ИЛИ {{name?}} / {{/name?}} (опц. регион);
+        // {{/?name}} — закрытие инлайн-сегмента, не блок (иначе substr дал бы фантомный блок "?name").
+        // Значение в $closeSet = optional-флаг региона (снят с `/name?` через $closeSet[rtrim($n,'?')]).
         $closeSet = [];
         foreach ($allTokens as $token) {
             if (str_starts_with($token, '/?')) {
                 continue;
             }
             if (str_starts_with($token, '/')) {
-                $closeSet[substr($token, 1)] = true;
+                $name = substr($token, 1);
+                $optional = str_ends_with($name, '?');
+                $closeSet[$optional ? substr($name, 0, -1) : $name] = $optional;
             }
+        }
+
+        // Точная литеральная форма открывающего маркера каждого блока: 'name' для строгого, 'name?' для
+        // опционального. Матчим ТОЧНО (не rtrim-ом), иначе плейсхолдер {{note}} внутри блока {{note?}} с
+        // тем же логическим именем ложно распознаётся как повторное открытие региона.
+        $blockOpens = [];
+        foreach ($closeSet as $logical => $optional) {
+            $blockOpens[$optional ? $logical.'?' : $logical] = $logical;
         }
 
         // повторяемые группы: точечные токены {{group.sub}} (строка таблицы). Все токены группы — в одной
@@ -388,9 +399,10 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 array_pop($stack);
                 continue;
             }
-            if (isset($closeSet[$content])) {
-                $stack[] = $content;
-                $blocks[$content] ??= [];
+            if (isset($blockOpens[$content])) {
+                $logical = $blockOpens[$content];
+                $stack[] = $logical;
+                $blocks[$logical] ??= ['optional' => $closeSet[$logical], 'values' => []];
                 continue;
             }
             if (isset($repeatMembers[$content])) {
@@ -404,21 +416,22 @@ final class DocxTemplateRenderer implements TemplateRenderer
             $values[] = [
                 'logical' => $logical,
                 'token' => $content,
-                // внутри инлайн-сегмента значение опционально (нет данных → сегмент вырежется, а не missing)
+                // внутри инлайн-сегмента значение опционально (нет данных → сегмент вырежется, а не missing).
+                // Внутри любого блока — тоже опционально (миссинг-поведение для строгих блоков — след. задача).
                 'optional' => $optionalMark || null !== $block || [] !== $segmentStack,
                 'block' => $block,
             ];
             $seenLogical[$logical] = true;
 
             foreach ($stack as $enclosing) {
-                $blocks[$enclosing][] = $logical;
+                $blocks[$enclosing]['values'][] = $logical;
             }
         }
 
         // 2) колонтитулы/сноски: плейсхолдеры вне тела — как обычные top-level значения
         //    (опциональные блоки поддерживаются только в теле документа)
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/') || str_starts_with($token, '?') || isset($closeSet[$token])
+            if (str_starts_with($token, '/') || str_starts_with($token, '?') || isset($blockOpens[$token])
                 || isset($repeatMembers[$token]) || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
                 continue; // маркер блока/сегмента / член повторяемой группы / точечный синтаксис — не flat-значение
             }
@@ -442,15 +455,15 @@ final class DocxTemplateRenderer implements TemplateRenderer
     }
 
     /**
-     * @param array<string, list<string>> $blocks
+     * @param array<string, array{optional: bool, values: list<string>}> $blocks
      *
      * @return array<string, 'keep'|'delete'|'partial'>
      */
     private function blockStates(array $blocks, RenderData $data): array
     {
         $states = [];
-        foreach ($blocks as $name => $members) {
-            $unique = array_values(array_unique($members));
+        foreach ($blocks as $name => $info) {
+            $unique = array_values(array_unique($info['values']));
             $present = 0;
             foreach ($unique as $member) {
                 if ($data->has($member)) {
