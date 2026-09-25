@@ -107,10 +107,9 @@ final class DocxMacroProcessor extends TemplateProcessor
 
     /**
      * Инлайновые опциональные регионы верхнего уровня на `?`-суффикс синтаксисе: `{{name?}}…{{/name?}}`,
-     * маркеры в ОДНОМ абзаце (см. isInlineRegion()). Симметрично resolveTopLevelSegments() (тот же приём
-     * вырезания регэкспом), но под синтаксис блочного опц-региона, а не префикс-сегмента. Присутствие →
-     * маркеры снимаются, внутренний текст остаётся (плейсхолдер `{{name}}` в нём уже заполнен обычным
-     * fill()-проходом драйвера); иначе — регион вырезается целиком вместе с литералом. Вызывать ПОСЛЕ fill().
+     * маркеры в ОДНОМ абзаце (см. isInlineRegion()) — вырезание регэкспом. Присутствие → маркеры снимаются,
+     * внутренний текст остаётся (плейсхолдер `{{name}}` в нём уже заполнен обычным fill()-проходом
+     * драйвера); иначе — регион вырезается целиком вместе с литералом. Вызывать ПОСЛЕ fill().
      *
      * @param array<string, bool> $present
      */
@@ -123,56 +122,6 @@ final class DocxMacroProcessor extends TemplateProcessor
         $this->tempDocumentMainPart = (string) preg_replace_callback(
             $pattern,
             static fn (array $m): string => ($present[$m[1]] ?? false) ? $m[2] : '',
-            $this->tempDocumentMainPart,
-        );
-    }
-
-    /**
-     * Инлайновые опциональные сегменты верхнего уровня: `{{?name}}…{{/?name}}`. Вырезают литеральный
-     * текст вокруг плейсхолдера, когда данных нет (чего `{{name?}}` и абзацный блок `{{opt}}` не умеют).
-     * `$present[name] === true` → маркеры снимаются, внутренний текст остаётся (и дозаполняется обычным
-     * setValue); иначе регион вырезается целиком. Индексированные `{{?name#i}}` НЕ трогаем (это сегменты
-     * повторяемых групп — их снимает resolveRowSegments), поэтому имя ограничено `[a-z0-9_]+` без `#`.
-     * Вызывать ПОСЛЕ обработки повторов.
-     *
-     * @param array<string, bool> $present
-     */
-    public function resolveTopLevelSegments(array $present): void
-    {
-        $open = preg_quote(self::$macroOpeningChars, '/');
-        $close = preg_quote(self::$macroClosingChars, '/');
-        $pattern = '/'.$open.'\?([a-z0-9_]+)'.$close.'(.*?)'.$open.'\/\?\1'.$close.'/su';
-
-        $this->tempDocumentMainPart = (string) preg_replace_callback(
-            $pattern,
-            static fn (array $m): string => ($present[$m[1]] ?? false) ? $m[2] : '',
-            $this->tempDocumentMainPart,
-        );
-    }
-
-    /**
-     * Инлайновые опциональные сегменты ВНУТРИ клонированной повторяемой группы: `{{?sub#i}}…{{/?sub#i}}`.
-     * PhpWord при cloneRow/cloneBlock проиндексировал маркеры `#i` вместе с плейсхолдерами, поэтому номер
-     * строки берём прямо из маркера: непустое `rows[i-1][sub]` → маркеры снять (внутренний текст, уже
-     * заполненный, остаётся), пусто → регион вырезать. Вызывать сразу после клонирования группы.
-     *
-     * @param list<array<string, string>> $rows
-     */
-    public function resolveRowSegments(array $rows): void
-    {
-        $open = preg_quote(self::$macroOpeningChars, '/');
-        $close = preg_quote(self::$macroClosingChars, '/');
-        $pattern = '/'.$open.'\?([a-z0-9_]+)#(\d+)'.$close.'(.*?)'.$open.'\/\?\1#\2'.$close.'/su';
-
-        $this->tempDocumentMainPart = (string) preg_replace_callback(
-            $pattern,
-            static function (array $m) use ($rows): string {
-                $sub = $m[1];
-                $rowIndex = (int) $m[2] - 1;
-                $value = $rows[$rowIndex][$sub] ?? '';
-
-                return '' === trim((string) $value) ? '' : $m[3];
-            },
             $this->tempDocumentMainPart,
         );
     }

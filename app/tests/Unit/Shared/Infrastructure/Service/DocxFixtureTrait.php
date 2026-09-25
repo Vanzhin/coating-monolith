@@ -47,7 +47,6 @@ trait DocxFixtureTrait
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
      *     blocks: array<string, array{optional: bool, values: list<string>}>,
      *     repeats: array<string, array{subs: list<string>, anchor: string}>,
-     *     segments: list<string>,
      *     inlineRegions: list<string>
      * }
      */
@@ -61,7 +60,7 @@ trait DocxFixtureTrait
 
         $parseMethod = $rendererReflection->getMethod('parse');
 
-        /** @var array{values: list<array{logical: string, token: string, optional: bool, block: string|null}>, blocks: array<string, array{optional: bool, values: list<string>}>, repeats: array<string, array{subs: list<string>, anchor: string}>, segments: list<string>, inlineRegions: list<string>} $parsed */
+        /** @var array{values: list<array{logical: string, token: string, optional: bool, block: string|null}>, blocks: array<string, array{optional: bool, values: list<string>}>, repeats: array<string, array{subs: list<string>, anchor: string}>, inlineRegions: list<string>} $parsed */
         $parsed = $parseMethod->invoke($renderer, $processor);
 
         return $parsed;
