@@ -22,10 +22,17 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
-      # manager_php-cli — one-shot init: migrations + keypair + cache:warmup +
-      # chown var/. php-fpm стартует ТОЛЬКО когда init завершился 0-кодом.
-      manager_php-cli:
-        condition: service_completed_successfully
+    # Инит (миграции+cache+jwt+warmup) больше НЕ через depends_on — он гоняется отдельным
+    # гейт-шагом ДО `up` (deploy.yml: `--profile init run --rm manager_php-cli`). Иначе падение
+    # инита оставляло старый php-fpm убитым, а новый — не стартовавшим (прод лёг).
+    # Healthcheck: пингуем FastCGI-порт через php (php гарантированно в образе) — чтобы `up --wait`
+    # дождался РЕАЛЬНО живого fpm, а не просто «контейнер запущен».
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     working_dir: /app
 
   manager_supervisor:
@@ -38,8 +45,7 @@ services:
         condition: service_started
       manager_db:
         condition: service_healthy
-      manager_php-cli:
-        condition: service_completed_successfully
+    # Инит гоняется отдельным гейт-шагом ДО `up` (см. php-fpm-комментарий и deploy.yml).
     command: bash -c "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"
     volumes:
       - ./app/.env:/app/.env:ro
@@ -69,6 +75,9 @@ services:
     hostname: ${DOMAIN}
     working_dir: /app
     image: ${REGISTRY}/${IMAGE_NAME}-php-cli:${TAG:-latest}
+    # profiles: init — исключён из обычного `up -d`. Запускается ТОЛЬКО явным гейт-шагом
+    # `docker compose --profile init run --rm manager_php-cli` ДО свопа (deploy.yml).
+    profiles: ["init"]
     command:
       - bash
       - -c
