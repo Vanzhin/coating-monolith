@@ -232,20 +232,23 @@ final class DocxTemplateRendererRepeatTest extends TestCase
 
     /**
      * Опциональный ({{recs?}}…{{/recs?}}) блок-повтор с пустым списком — validate() уходит в skipped, не
-     * missing (файл собрать МОЖНО). Проверяем только validate(): полный render() опциональных БЛОЧНЫХ
-     * регионов сейчас не находит маркер `{{recs?}}` по литералу (`cloneBlock`/`deleteBlock` PhpWord ищут
-     * ТОЧНОЕ совпадение имени, а не логическое) — известный пробел вне объёма этой задачи (render() для
-     * опционального блока — соседняя задача).
+     * missing (файл собрать МОЖНО), и render() реально собирает файл: регион уходит целиком, контент после
+     * него цел (cloneBlock/deleteBlock матчат литерал маркера `recs?`, не логическое имя `recs`).
      */
     public function test_empty_optional_block_repeat_is_skipped_not_missing(): void
     {
-        $path = $this->docxWithParagraphs(['Заголовок раздела', '{{recs?}}', '{{recs.text}}', '{{/recs?}}']);
+        $path = $this->docxWithParagraphs(['Заголовок раздела', '{{recs?}}', '{{recs.text}}', '{{/recs?}}', 'После.']);
 
         try {
             $result = (new DocxTemplateRenderer())->validate(new TemplateFile($path), new RenderData(['recs' => new RepeatValue([])]));
             self::assertNotContains('recs', $result->missing);
             self::assertContains('recs', $result->skipped);
             self::assertTrue($result->isValid());
+
+            $text = $this->renderTpl($path, new RenderData(['recs' => new RepeatValue([])]));
+            self::assertStringContainsString('Заголовок раздела', $text);
+            self::assertStringContainsString('После.', $text); // контент после региона не обрублен
+            self::assertStringNotContainsString('{{', $text);
         } finally {
             @unlink($path);
         }

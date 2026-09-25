@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Shared\Infrastructure\Service;
 
+use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Infrastructure\Service\DocxTemplateRenderer;
 use PhpOffice\PhpWord\IOFactory as WordIO;
@@ -54,5 +55,25 @@ trait DocxFixtureTrait
         $parsed = $parseMethod->invoke($renderer, $processor);
 
         return $parsed;
+    }
+
+    /**
+     * Полный render() + вытянуть текст word/document.xml (без тегов, схлопнутые пробелы) — для тестов,
+     * проверяющих итоговое содержимое документа (не только структуру parse()).
+     */
+    private function render(string $templatePath, RenderData $data): string
+    {
+        $doc = (new DocxTemplateRenderer())->render(new TemplateFile($templatePath), $data);
+
+        $outPath = sys_get_temp_dir().'/docx_out_'.uniqid().'.docx';
+        file_put_contents($outPath, $doc->content);
+
+        $zip = new \ZipArchive();
+        $zip->open($outPath);
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+        @unlink($outPath);
+
+        return trim((string) preg_replace('/\s+/', ' ', strip_tags(str_replace('<', ' <', $xml))));
     }
 }

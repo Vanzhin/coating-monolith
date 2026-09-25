@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Shared\Infrastructure\Service;
 
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TemplateFile;
+use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Infrastructure\Service\DocxTemplateRenderer;
 use PHPUnit\Framework\TestCase;
 
@@ -101,6 +102,51 @@ final class DocxTemplateRendererOptionalityTest extends TestCase
             self::assertNotContains('note', $res->missing);
             self::assertContains('note', $res->skipped);
             self::assertTrue($res->isValid());
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    /**
+     * Регресс на баг обрыва документа: PhpWord cloneBlock()/deleteBlock() матчат литерал маркера в
+     * документе, а не логическое имя. Опциональный регион {{proc?}}…{{/proc?}} в тексте — литерал 'proc?',
+     * не 'proc'; передача logical-имени без '?' не находит маркер → deleteBlock молча не удаляет регион,
+     * контент ПОСЛЕ региона обрывается ({{leftover}}-guard рвёт документ). Пустой опц-блок должен уйти
+     * целиком, а контент после — остаться целым.
+     */
+    public function test_empty_optional_block_removed_content_after_survives(): void
+    {
+        $tpl = $this->docxWithParagraphs([
+            'Процесс:', '{{proc?}}', '1. {{proc}}', '{{/proc?}}',
+            'Рекомендации: {{rec?}}',
+        ]);
+
+        try {
+            $text = $this->render($tpl, new RenderData(['rec' => new TextValue('носить каску')])); // proc пуст
+
+            self::assertStringNotContainsString('{{', $text);
+            self::assertStringContainsString('Рекомендации: носить каску', $text); // контент после НЕ обрублен
+            self::assertStringNotContainsString('1.', $text); // тело региона ушло
+        } finally {
+            @unlink($tpl);
+        }
+    }
+
+    /**
+     * Симметричная ветка того же бага: 'keep'-состояние опционального блока зовёт cloneBlock() тем же
+     * логическим именем — без литерал-фикса регион с данными тоже не находится и остаётся сырым `{{note?}}`
+     * в документе (leftover-guard кинул бы AppException).
+     */
+    public function test_optional_block_with_data_is_cloned_and_filled(): void
+    {
+        $tpl = $this->docxWithParagraphs(['{{note?}}', 'Замечание: {{note}}', '{{/note?}}', 'Конец.']);
+
+        try {
+            $text = $this->render($tpl, new RenderData(['note' => new TextValue('скол на кромке')]));
+
+            self::assertStringNotContainsString('{{', $text);
+            self::assertStringContainsString('Замечание: скол на кромке', $text);
+            self::assertStringContainsString('Конец.', $text);
         } finally {
             @unlink($tpl);
         }

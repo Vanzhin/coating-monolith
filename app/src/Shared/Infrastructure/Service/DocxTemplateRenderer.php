@@ -180,10 +180,11 @@ final class DocxTemplateRenderer implements TemplateRenderer
             if (isset($parsed['repeats'][$name])) {
                 continue; // повторяемый блок — обрабатывается ниже (cloneBlock по количеству)
             }
+            $marker = $this->phpWordBlockMarker($name, $parsed['blocks'][$name]['optional']);
             if ('keep' === $state) {
-                $processor->cloneBlock($name, 1);
+                $processor->cloneBlock($marker, 1);
             } else {
-                $processor->deleteBlock($name);
+                $processor->deleteBlock($marker);
             }
         }
 
@@ -204,7 +205,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 $value = $data->get($group);
                 $rows = $value instanceof RepeatValue ? $value->rows : [];
                 if (isset($parsed['blocks'][$group])) {
-                    $this->repeatBlock($processor, $group, $info['subs'], $rows);
+                    $this->repeatBlock($processor, $group, $parsed['blocks'][$group]['optional'], $info['subs'], $rows);
                 } else {
                     $this->repeatRow($processor, $info['anchor'], $group, $info['subs'], $rows);
                 }
@@ -293,23 +294,29 @@ final class DocxTemplateRenderer implements TemplateRenderer
     }
 
     /**
-     * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} по количеству
-     * (список Word — нумерацию проставит сам), заполняет `{{group.sub#i}}`. Пусто → удаляет регион.
-     * Группа может встречаться в НЕСКОЛЬКИХ местах — крутим, пока маркер {{group}} ещё есть.
+     * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} (либо {{group?}}…{{/group?}}
+     * для опционального повтора) по количеству (список Word — нумерацию проставит сам), заполняет
+     * `{{group.sub#i}}`. Пусто → удаляет регион. Группа может встречаться в НЕСКОЛЬКИХ местах — крутим,
+     * пока маркер группы ещё есть.
      *
      * @param list<string>                $subs
      * @param list<array<string, string>> $rows
      */
-    private function repeatBlock(DocxMacroProcessor $processor, string $group, array $subs, array $rows): void
+    private function repeatBlock(DocxMacroProcessor $processor, string $group, bool $optional, array $subs, array $rows): void
     {
+        // literalMarker — как токен реально выглядит в тексте документа (сверка с orderedMacros());
+        // regexMarker — что передать в PhpWord cloneBlock()/deleteBlock() (см. phpWordBlockMarker()).
+        $literalMarker = $optional ? $group.'?' : $group;
+        $regexMarker = $this->phpWordBlockMarker($group, $optional);
+
         $guard = 0;
-        while (in_array($group, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+        while (in_array($literalMarker, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
             if ([] === $rows) {
-                $processor->deleteBlock($group);
+                $processor->deleteBlock($regexMarker);
 
                 continue;
             }
-            $processor->cloneBlock($group, count($rows), true, true); // indexVariables → {{group.sub#i}}
+            $processor->cloneBlock($regexMarker, count($rows), true, true); // indexVariables → {{group.sub#i}}
             foreach ($rows as $i => $row) {
                 $rowNumber = $i + 1;
                 foreach ($subs as $sub) {
@@ -320,6 +327,20 @@ final class DocxTemplateRenderer implements TemplateRenderer
 
         // Инлайновые сегменты подполей ({{?sub#i}}…{{/?sub#i}}) — вырезать по пустоте подполя строки.
         $processor->resolveRowSegments($rows);
+    }
+
+    /**
+     * Литерал маркера блока для PhpWord cloneBlock()/deleteBlock(). PhpWord вставляет $blockname
+     * НАПРЯМУЮ в свой internal-regex (без preg_quote) — для строгого блока логическое имя 'name' совпадает
+     * с литералом маркера {{name}}, поэтому ничего экранировать не нужно. Для опционального региона
+     * литерал в документе — {{name?}}: если передать 'name?' как есть, PhpWord трактует '?' как квантификатор
+     * regex (0-или-1 предыдущего символа), а не литеральный вопрос, и НЕ находит маркер — блок не удаляется
+     * и не клонируется, документ рвётся на }}-хвосте (это и был баг обрыва). Экранируем '?' backslash'ем,
+     * чтобы PhpWord искал его буквально.
+     */
+    private function phpWordBlockMarker(string $logical, bool $optional): string
+    {
+        return $optional ? $logical.'\?' : $logical;
     }
 
     /**
