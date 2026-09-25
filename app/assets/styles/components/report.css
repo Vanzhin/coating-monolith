@@ -40,12 +40,6 @@
    Гориз. запас — чтобы hover-обводка карточек не обрезалась краем скролл-контейнера. */
 .sys-results { max-height: 300px; overflow-y: auto; overflow-x: hidden; padding: 2px 4px; }
 
-/* Поле-ссылка (reference-select) с незавершённым вводом: подсветка, чтобы не потерять текст молча. */
-.tagify.reference-select-warn {
-    border-color: var(--warn);
-    box-shadow: 0 0 0 .15rem color-mix(in srgb, var(--warn) 30%, transparent);
-}
-
 /* Сворачиваемые блоки формы заполнения: клик по заголовку прячет тело (заполнил — свернул). */
 .report-block-toggle { cursor: pointer; }
 .report-block-chevron { transition: transform .15s ease; }

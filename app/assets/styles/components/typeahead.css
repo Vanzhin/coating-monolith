@@ -1,0 +1,28 @@
+/* Общий компонент «поиск-выбор» (typeahead_controller.js): input + выпадайка.
+   Выпадайка вешается на document.body и позиционируется JS-ом (position:fixed под инпутом),
+   поэтому её не режут overflow-контейнеры формы. Вид — штатный Bootstrap .dropdown-menu/.dropdown-item
+   (тема из tokens.css); тут только габариты меню и строка со вспомогательными полями (напр. ИНН). */
+.typeahead-menu {
+    display: none;           /* страховка: скрытое меню на body не должно перехватывать клики */
+    z-index: 1000;
+    max-height: 18rem;
+    overflow-y: auto;
+}
+.typeahead-menu.show {
+    display: block;
+}
+
+.typeahead-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    white-space: normal;
+}
+
+.typeahead-item .ta-aux {
+    color: var(--bs-secondary-color);
+    font-size: .82em;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}

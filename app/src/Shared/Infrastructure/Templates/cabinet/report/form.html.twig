@@ -70,38 +70,45 @@
                             <div class="mt-2" data-system-select-target="results"></div>
                         </div>
 
-                        <div class="col-12" data-reference-select-group>
+                        <div class="col-12">
                             <label class="form-label">Заказчик</label>
-                            <input type="text" class="form-control" data-controller="reference-select"
-                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
-                                   data-reference-select-hidden-name-value="customerId"
-                                   {% if editing and report.customerId %}data-reference-select-existing-value="{{ {id: report.customerId, title: report.customerTitle}|json_encode|e('html_attr') }}"{% endif %}
+                            <input type="text" class="form-control" data-controller="typeahead"
+                                   data-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-typeahead-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-typeahead-create-modal-value="counterparty-create-modal"
+                                   data-typeahead-hidden-name-value="customerId"
+                                   data-typeahead-aux-fields-value="{{ [{field:'tin',label:'ИНН'}]|json_encode|e('html_attr') }}"
+                                   {% if editing and report.customerId %}data-typeahead-existing-value="{{ {id: report.customerId, title: report.customerTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                         </div>
-                        <div class="col-12" data-reference-select-group>
+                        <div class="col-12">
                             <label class="form-label">Подрядчик</label>
-                            <input type="text" class="form-control" data-controller="reference-select"
-                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
-                                   data-reference-select-hidden-name-value="contractorId"
-                                   {% if editing and report.contractorId %}data-reference-select-existing-value="{{ {id: report.contractorId, title: report.contractorTitle}|json_encode|e('html_attr') }}"{% endif %}
+                            <input type="text" class="form-control" data-controller="typeahead"
+                                   data-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-typeahead-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-typeahead-create-modal-value="counterparty-create-modal"
+                                   data-typeahead-hidden-name-value="contractorId"
+                                   data-typeahead-aux-fields-value="{{ [{field:'tin',label:'ИНН'}]|json_encode|e('html_attr') }}"
+                                   {% if editing and report.contractorId %}data-typeahead-existing-value="{{ {id: report.contractorId, title: report.contractorTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                         </div>
-                        <div class="col-12" data-reference-select-group>
+                        <div class="col-12">
                             <label class="form-label">Проект</label>
-                            <input type="text" class="form-control" data-controller="reference-select"
-                                   data-reference-select-suggest-url-value="{{ path('app_cabinet_reports_project_suggest') }}"
-                                   data-reference-select-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
-                                   data-reference-select-hidden-name-value="projectId"
-                                   data-reference-select-counterparty-name-value="customerId"
-                                   {% if editing and report.projectId %}data-reference-select-existing-value="{{ {id: report.projectId, title: report.projectTitle}|json_encode|e('html_attr') }}"{% endif %}
+                            <input type="text" class="form-control" data-controller="typeahead"
+                                   data-typeahead-endpoint-value="{{ path('app_cabinet_reports_project_suggest') }}"
+                                   data-typeahead-create-url-value="{{ path('app_cabinet_reports_project_quick') }}"
+                                   data-typeahead-hidden-name-value="projectId"
+                                   data-typeahead-counterparty-name-value="customerId"
+                                   {% if editing and report.projectId %}data-typeahead-existing-value="{{ {id: report.projectId, title: report.projectTitle}|json_encode|e('html_attr') }}"{% endif %}
                                    placeholder="Поиск или создать…">
                             <div class="form-text">Новый проект создаётся под выбранным заказчиком.</div>
                         </div>
                     </div>
                 </div>
             </form>
+
+            {# Модалка создания контрагента с ИНН (заказчик/подрядчик), ВНЕ формы. Одна на страницу. #}
+            {% include 'components/counterparty_create_modal.html.twig' %}
         {% endblock %}
     {% endembed %}
 {% endblock %}
