@@ -32,6 +32,7 @@ final class AddAction extends AbstractController
             try {
                 $this->commandBus->execute(new CreateCounterpartyCommand(
                     (string) ($inputData['title'] ?? ''),
+                    (string) ($inputData['tin'] ?? ''),
                     $this->nullableString($inputData['description'] ?? null),
                 ));
                 $this->addFlash('counterparty_created_success', sprintf('Контрагент «%s» добавлен.', $inputData['title'] ?? ''));

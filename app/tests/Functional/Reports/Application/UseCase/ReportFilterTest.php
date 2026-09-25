@@ -96,9 +96,9 @@ final class ReportFilterTest extends KernelTestCase
 
     public function test_filters_by_customer_contractor_project_and_owner(): void
     {
-        $cpA = $this->counterparty('A');
-        $cpB = $this->counterparty('B');
-        $cpC = $this->counterparty('C');
+        $cpA = $this->counterparty('A', '1015556392');
+        $cpB = $this->counterparty('B', '1016667560');
+        $cpC = $this->counterparty('C', '1017778739');
         $projP = $this->project('P', $cpA);
 
         // r1: заказчик A, подрядчик B, проект P. r2: заказчик A, подрядчик C, без проекта.
@@ -176,9 +176,9 @@ final class ReportFilterTest extends KernelTestCase
         return array_map(static fn ($r): string => $r->id, $result->reports);
     }
 
-    private function counterparty(string $tag): string
+    private function counterparty(string $tag, string $tin): string
     {
-        $result = $this->commandBus->execute(new CreateCounterpartyCommand($tag.'-'.$this->suffix));
+        $result = $this->commandBus->execute(new CreateCounterpartyCommand($tag.'-'.$this->suffix, $tin));
         \assert($result instanceof CreateCounterpartyCommandResult);
         $this->counterpartyIds[] = $result->id;
 

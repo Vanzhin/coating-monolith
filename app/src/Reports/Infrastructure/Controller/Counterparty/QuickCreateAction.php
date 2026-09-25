@@ -15,8 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Создание контрагента «на лету» из формы отчёта (поиск-или-создай, как теги). Возвращает {id,title}.
- * Авторизация — в CreateCounterparty-хендлере.
+ * Создание контрагента «на лету» из формы отчёта (модалка «Новый контрагент»: название + ИНН).
+ * Возвращает {id, title, tin}. Авторизация и валидность/уникальность ИНН — в домене/хендлере.
  */
 #[Route(path: '/cabinet/reports/counterparty/quick', name: 'app_cabinet_reports_counterparty_quick', methods: ['POST'])]
 final class QuickCreateAction extends AbstractController
@@ -29,14 +29,15 @@ final class QuickCreateAction extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         $title = is_array($payload) ? trim((string) ($payload['title'] ?? '')) : '';
+        $tin = is_array($payload) ? trim((string) ($payload['tin'] ?? '')) : '';
 
         try {
-            $result = $this->commandBus->execute(new CreateCounterpartyCommand($title));
+            $result = $this->commandBus->execute(new CreateCounterpartyCommand($title, $tin));
             \assert($result instanceof CreateCounterpartyCommandResult);
         } catch (AppException $e) {
             return new JsonResponse(['message' => $e->getMessage()], $e->getCode() ?: Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return new JsonResponse(['id' => $result->id, 'title' => $result->title], Response::HTTP_CREATED);
+        return new JsonResponse(['id' => $result->id, 'title' => $result->title, 'tin' => $result->tin], Response::HTTP_CREATED);
     }
 }

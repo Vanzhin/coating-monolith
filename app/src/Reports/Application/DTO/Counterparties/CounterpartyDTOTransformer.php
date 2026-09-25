@@ -13,6 +13,7 @@ class CounterpartyDTOTransformer
         $dto = new CounterpartyDTO();
         $dto->id = $counterparty->getId();
         $dto->title = $counterparty->getTitle();
+        $dto->tin = $counterparty->getTin();
         $dto->description = $counterparty->getDescription();
 
         return $dto;

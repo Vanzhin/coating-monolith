@@ -11,6 +11,7 @@ final readonly class UpdateCounterpartyCommand extends Command
     public function __construct(
         public string $id,
         public string $title,
+        public string $tin,
         public ?string $description = null,
     ) {
     }

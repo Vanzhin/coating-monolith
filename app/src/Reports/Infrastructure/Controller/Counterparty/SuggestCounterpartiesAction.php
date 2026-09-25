@@ -43,7 +43,7 @@ final class SuggestCounterpartiesAction extends AbstractController
         \assert($result instanceof SuggestCounterpartiesQueryResult);
 
         $items = array_map(
-            static fn ($dto) => ['id' => $dto->id, 'title' => $dto->title],
+            static fn ($dto) => ['id' => $dto->id, 'title' => $dto->title, 'tin' => $dto->tin],
             $result->counterparties,
         );
 

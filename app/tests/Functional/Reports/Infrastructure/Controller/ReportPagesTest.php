@@ -143,7 +143,7 @@ final class ReportPagesTest extends WebTestCase
 
     public function test_references_saved_via_fill(): void
     {
-        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'Заказчик-'.uniqid('', true)]));
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'Заказчик-'.uniqid('', true), 'tin' => '2000000100']));
         $cp = json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
 
         $id = $this->createReport();
@@ -244,7 +244,7 @@ final class ReportPagesTest extends WebTestCase
 
     public function test_quick_create_counterparty_then_project(): void
     {
-        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickCP-'.uniqid('', true)]));
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickCP-'.uniqid('', true), 'tin' => '3000000013']));
         self::assertResponseStatusCodeSame(201);
         // Глобальный ResponseListener оборачивает JSON в {data:{…}}.
         $cp = json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
@@ -266,8 +266,8 @@ final class ReportPagesTest extends WebTestCase
      */
     private function fullRequisites(): array
     {
-        $customer = $this->quickCounterparty('Заказчик-'.uniqid('', true));
-        $contractor = $this->quickCounterparty('Подрядчик-'.uniqid('', true));
+        $customer = $this->quickCounterparty('Заказчик-'.uniqid('', true), '2000000082');
+        $contractor = $this->quickCounterparty('Подрядчик-'.uniqid('', true), '2000000090');
         $project = $this->quickProject('Проект-'.uniqid('', true), $customer['id']);
 
         return [
@@ -284,9 +284,9 @@ final class ReportPagesTest extends WebTestCase
     }
 
     /** @return array{id: string, title: string} */
-    private function quickCounterparty(string $title): array
+    private function quickCounterparty(string $title, string $tin): array
     {
-        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => $title]));
+        $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => $title, 'tin' => $tin]));
 
         return json_decode((string) $this->client->getResponse()->getContent(), true)['data'];
     }

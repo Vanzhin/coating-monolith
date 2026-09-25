@@ -27,10 +27,10 @@ final readonly class CreateCounterpartyCommandHandler implements CommandHandlerI
             throw new ForbiddenException();
         }
 
-        // Уникальность title проверяет сам агрегат в setTitle (через spec) — отдельного satisfy не надо.
-        $counterparty = new Counterparty(UuidService::generate(), $command->title, $this->specification, $command->description);
+        // Уникальность title/tin и валидность ИНН проверяет сам агрегат в сеттерах (через VO/spec).
+        $counterparty = new Counterparty(UuidService::generate(), $command->title, $this->specification, $command->tin, $command->description);
         $this->repository->add($counterparty);
 
-        return new CreateCounterpartyCommandResult($counterparty->getId(), $counterparty->getTitle());
+        return new CreateCounterpartyCommandResult($counterparty->getId(), $counterparty->getTitle(), $counterparty->getTin());
     }
 }

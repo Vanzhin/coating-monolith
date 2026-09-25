@@ -10,6 +10,7 @@ final readonly class CreateCounterpartyCommand extends Command
 {
     public function __construct(
         public string $title,
+        public string $tin,
         public ?string $description = null,
     ) {
     }

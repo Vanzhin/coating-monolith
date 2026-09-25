@@ -9,6 +9,7 @@ final readonly class CreateCounterpartyCommandResult
     public function __construct(
         public string $id,
         public string $title,
+        public ?string $tin = null,
     ) {
     }
 }

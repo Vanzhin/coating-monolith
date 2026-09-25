@@ -44,6 +44,7 @@ final class UpdateAction extends AbstractController
                 $this->commandBus->execute(new UpdateCounterpartyCommand(
                     $id,
                     (string) ($inputData['title'] ?? ''),
+                    (string) ($inputData['tin'] ?? ''),
                     $this->nullableString($inputData['description'] ?? null),
                 ));
                 $this->addFlash('counterparty_updated_success', sprintf('Контрагент «%s» обновлён.', $inputData['title'] ?? ''));
@@ -56,6 +57,7 @@ final class UpdateAction extends AbstractController
             $inputData = [
                 'id' => $id,
                 'title' => $result->counterparty->title,
+                'tin' => $result->counterparty->tin,
                 'description' => $result->counterparty->description,
             ];
         }

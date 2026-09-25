@@ -70,9 +70,9 @@ final class ProjectUseCasesTest extends KernelTestCase
         parent::tearDown();
     }
 
-    private function counterparty(string $title): string
+    private function counterparty(string $title, string $tin): string
     {
-        $result = $this->commandBus->execute(new CreateCounterpartyCommand($title));
+        $result = $this->commandBus->execute(new CreateCounterpartyCommand($title, $tin));
         \assert($result instanceof CreateCounterpartyCommandResult);
         $this->counterpartyIds[] = $result->id;
 
@@ -91,7 +91,7 @@ final class ProjectUseCasesTest extends KernelTestCase
     public function test_create_persists_with_counterparty(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $cp = $this->counterparty('Заказчик-'.$suffix);
+        $cp = $this->counterparty('Заказчик-'.$suffix, '1018889907');
         $created = $this->project('УКК-'.$suffix, $cp, 'Обогатительная фабрика');
 
         $loaded = $this->projects->findOneById($created->id);
@@ -111,7 +111,7 @@ final class ProjectUseCasesTest extends KernelTestCase
     public function test_create_duplicate_title_throws(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $cp = $this->counterparty('Зак-'.$suffix);
+        $cp = $this->counterparty('Зак-'.$suffix, '1020001075');
         $this->project('ДублеПроект-'.$suffix, $cp);
 
         $this->expectException(AppException::class);
@@ -121,8 +121,8 @@ final class ProjectUseCasesTest extends KernelTestCase
     public function test_update_changes_title_and_counterparty(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $cpA = $this->counterparty('ЗакА-'.$suffix);
-        $cpB = $this->counterparty('ЗакБ-'.$suffix);
+        $cpA = $this->counterparty('ЗакА-'.$suffix, '1021112243');
+        $cpB = $this->counterparty('ЗакБ-'.$suffix, '2000000011');
         $created = $this->project('Старый-'.$suffix, $cpA);
 
         $this->commandBus->execute(new UpdateProjectCommand($created->id, 'Новый-'.$suffix, $cpB, 'опис.'));
@@ -138,7 +138,7 @@ final class ProjectUseCasesTest extends KernelTestCase
     public function test_delete_removes(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $cp = $this->counterparty('ЗакУд-'.$suffix);
+        $cp = $this->counterparty('ЗакУд-'.$suffix, '2000000029');
         $created = $this->project('Удаляемый-'.$suffix, $cp);
 
         $this->commandBus->execute(new DeleteProjectCommand($created->id));
@@ -149,7 +149,7 @@ final class ProjectUseCasesTest extends KernelTestCase
     public function test_suggest_finds_by_prefix(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $cp = $this->counterparty('ЗакСаг-'.$suffix);
+        $cp = $this->counterparty('ЗакСаг-'.$suffix, '2000000036');
         $created = $this->project('Суггест-'.$suffix, $cp);
 
         $result = $this->queryBus->execute(new SuggestProjectsQuery('Суггест-'.$suffix, 10));

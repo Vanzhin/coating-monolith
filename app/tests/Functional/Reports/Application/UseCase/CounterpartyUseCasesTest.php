@@ -60,9 +60,9 @@ final class CounterpartyUseCasesTest extends KernelTestCase
         parent::tearDown();
     }
 
-    private function create(string $title, ?string $description = null): CreateCounterpartyCommandResult
+    private function create(string $title, string $tin, ?string $description = null): CreateCounterpartyCommandResult
     {
-        $result = $this->commandBus->execute(new CreateCounterpartyCommand($title, $description));
+        $result = $this->commandBus->execute(new CreateCounterpartyCommand($title, $tin, $description));
         \assert($result instanceof CreateCounterpartyCommandResult);
         $this->createdIds[] = $result->id;
 
@@ -72,7 +72,7 @@ final class CounterpartyUseCasesTest extends KernelTestCase
     public function test_create_persists_with_description(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $result = $this->create('ЕвроХим-'.$suffix, 'Заказчик');
+        $result = $this->create('ЕвроХим-'.$suffix, '1005555865', 'Заказчик');
 
         $loaded = $this->repo->findOneById($result->id);
         self::assertNotNull($loaded);
@@ -83,25 +83,25 @@ final class CounterpartyUseCasesTest extends KernelTestCase
     public function test_create_trims_title(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $result = $this->create('  НГТ-'.$suffix.'  ');
+        $result = $this->create('  НГТ-'.$suffix.'  ', '1006667032');
         self::assertSame('НГТ-'.$suffix, $result->title);
     }
 
     public function test_create_duplicate_title_throws(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $this->create('Дубль-'.$suffix);
+        $this->create('Дубль-'.$suffix, '1007778200');
 
         $this->expectException(AppException::class);
-        $this->create('Дубль-'.$suffix);
+        $this->create('Дубль-'.$suffix, '1008889376');
     }
 
     public function test_update_changes_title_and_description(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $created = $this->create('Старое-'.$suffix, 'старое опис.');
+        $created = $this->create('Старое-'.$suffix, '1010000548', 'старое опис.');
 
-        $this->commandBus->execute(new UpdateCounterpartyCommand($created->id, 'Новое-'.$suffix, 'новое опис.'));
+        $this->commandBus->execute(new UpdateCounterpartyCommand($created->id, 'Новое-'.$suffix, '1011111716', 'новое опис.'));
 
         $loaded = $this->repo->findOneById($created->id);
         self::assertNotNull($loaded);
@@ -112,7 +112,7 @@ final class CounterpartyUseCasesTest extends KernelTestCase
     public function test_delete_removes(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $created = $this->create('Удаляемый-'.$suffix);
+        $created = $this->create('Удаляемый-'.$suffix, '1012222881');
 
         $this->commandBus->execute(new DeleteCounterpartyCommand($created->id));
 
@@ -122,7 +122,7 @@ final class CounterpartyUseCasesTest extends KernelTestCase
     public function test_suggest_finds_by_prefix(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $created = $this->create('Суггест-'.$suffix);
+        $created = $this->create('Суггест-'.$suffix, '1013334059');
 
         $result = $this->queryBus->execute(new SuggestCounterpartiesQuery('Суггест-'.$suffix, 10));
         \assert($result instanceof SuggestCounterpartiesQueryResult);
@@ -134,7 +134,7 @@ final class CounterpartyUseCasesTest extends KernelTestCase
     public function test_paged_list_filters_by_title(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $created = $this->create('Списочный-'.$suffix);
+        $created = $this->create('Списочный-'.$suffix, '1014445227');
 
         $result = $this->queryBus->execute(new GetPagedCounterpartiesQuery(
             new CounterpartiesFilter(pager: Pager::fromPage(1, 50), title: 'Списочный-'.$suffix),

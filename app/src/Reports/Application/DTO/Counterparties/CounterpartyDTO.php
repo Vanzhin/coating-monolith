@@ -8,5 +8,6 @@ class CounterpartyDTO
 {
     public string $id;
     public string $title;
+    public ?string $tin = null;
     public ?string $description = null;
 }

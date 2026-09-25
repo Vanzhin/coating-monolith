@@ -36,6 +36,12 @@
                                    class="form-control" required autofocus maxlength="100"
                                    placeholder="Например, ООО «ЕвроХим-УКК»">
                         </div>
+                        <div class="col-md-6">
+                            <label for="inputTin" class="form-label">ИНН</label>
+                            <input type="text" value="{{ inputData.tin|default('') }}" name="tin" id="inputTin"
+                                   class="form-control" required inputmode="numeric" maxlength="12"
+                                   pattern="\d{10}|\d{12}" placeholder="10 или 12 цифр">
+                        </div>
                         <div class="col-12">
                             <label for="inputDescription" class="form-label">Описание</label>
                             <textarea name="description" id="inputDescription" class="form-control" rows="3"
