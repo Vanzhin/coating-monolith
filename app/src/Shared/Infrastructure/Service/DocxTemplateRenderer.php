@@ -74,8 +74,13 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $seen = [];
 
         foreach ($states as $name => $state) {
+            if (isset($parsed['repeats'][$name])) {
+                continue; // повторяемые группы (блок или строка) — отдельная проверка ниже, по факту строк
+            }
             if ('partial' === $state) {
                 $invalidBlocks[] = $name;
+            } elseif ('missing' === $state) {
+                $missing[] = $name;
             }
         }
 
@@ -123,10 +128,30 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
         }
 
-        // Повторяемые группы: шаблон их «знает» (строка таблицы). Пустой список допустим (строка удалится),
-        // поэтому в missing не попадают; но из «unused» их исключаем.
+        // Повторяемые группы: шаблон их «знает» (строка таблицы или {{group}}…{{/group}} блок). Строка
+        // таблицы маркеров не имеет — опциональна по природе, пустой список допустим (строка удалится),
+        // в missing/skipped не попадает (поведение не меняем). Блок-повтор без строк — единообразно с
+        // одиночным плейсхолдером/регионом: строгий ({{group}}…{{/group}}) → missing, опциональный
+        // ({{group?}}…{{/group?}}) → тихо skipped. Строки есть — не трогаем (рендерится как обычно).
         foreach (array_keys($parsed['repeats']) as $group) {
             $templateNames[$group] = true;
+
+            $block = $parsed['blocks'][$group] ?? null;
+            if (null === $block) {
+                continue; // строка таблицы — не блок, опциональна по природе
+            }
+
+            $value = $data->get($group);
+            $hasRows = $value instanceof RepeatValue && [] !== $value->rows;
+            if ($hasRows) {
+                continue;
+            }
+
+            if ($block['optional']) {
+                $skipped[] = $group;
+            } else {
+                $missing[] = $group;
+            }
         }
 
         $unused = array_values(array_diff($data->variableNames(), array_keys($templateNames)));
@@ -457,7 +482,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
     /**
      * @param array<string, array{optional: bool, values: list<string>}> $blocks
      *
-     * @return array<string, 'keep'|'delete'|'partial'>
+     * @return array<string, 'keep'|'delete'|'missing'|'partial'>
      */
     private function blockStates(array $blocks, RenderData $data): array
     {
@@ -472,7 +497,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
 
             if (0 === $present) {
-                $states[$name] = 'delete';
+                // Пусто: опциональный регион тихо выпадает, строгий блокирует сборку файла — единообразно
+                // с одиночным плейсхолдером ({{x}} без данных → missing, {{x?}} → skipped).
+                $states[$name] = $info['optional'] ? 'delete' : 'missing';
             } elseif ($present === count($unique)) {
                 $states[$name] = 'keep';
             } else {

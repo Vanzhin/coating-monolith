@@ -82,16 +82,21 @@ final class DocxTemplateRendererTest extends TestCase
         self::assertTrue($result->isValid());
     }
 
-    public function test_validate_one_component_deletes_block(): void
+    /**
+     * `{{opt_comp_b}}…{{/opt_comp_b}}` — старое (до `?`-синтаксиса) наименование блока, литерально БЕЗ `?`.
+     * Под новым парсером это СТРОГИЙ регион: пустой блок больше не тихо выпадает, а уходит в missing и
+     * блокирует сборку файла — единообразно с DocxTemplateRendererOptionalityTest
+     * ::test_required_empty_region_is_missing.
+     */
+    public function test_validate_strict_block_empty_is_missing(): void
     {
         $result = $this->renderer->validate($this->template(), new RenderData([
             'object' => new TextValue('Балка Б2-3'),
             'base' => new TextValue('Цинкол'),
         ]));
 
-        self::assertSame([], $result->missing);
-        self::assertContains('comp_b_batch', $result->skipped);
-        self::assertTrue($result->isValid());
+        self::assertContains('opt_comp_b', $result->missing);
+        self::assertFalse($result->isValid());
     }
 
     public function test_validate_missing_required(): void
@@ -100,7 +105,7 @@ final class DocxTemplateRendererTest extends TestCase
             'object' => new TextValue('Балка Б2-3'),
         ]));
 
-        self::assertSame(['base'], $result->missing);
+        self::assertSame(['opt_comp_b', 'base'], $result->missing);
         self::assertFalse($result->isValid());
     }
 
@@ -118,17 +123,18 @@ final class DocxTemplateRendererTest extends TestCase
         self::assertSame([], $this->leftoverVariables($doc->content));
     }
 
-    public function test_render_one_component_removes_block(): void
+    /**
+     * Раньше пустой `opt_comp_b` молча удалял блок; теперь строгий (без `?`) пустой блок блокирует
+     * render() целиком — см. комментарий у test_validate_strict_block_empty_is_missing.
+     */
+    public function test_render_throws_when_strict_block_field_missing(): void
     {
-        $doc = $this->renderer->render($this->template(), new RenderData([
+        $this->expectException(AppException::class);
+
+        $this->renderer->render($this->template(), new RenderData([
             'object' => new TextValue('Балка Б2-3'),
             'base' => new TextValue('Цинкол'),
         ]));
-
-        $text = $this->docxText($doc->content);
-        self::assertStringNotContainsString('Комп. Б', $text);
-        self::assertStringContainsString('Объект: Балка Б2-3', $text);
-        self::assertSame([], $this->leftoverVariables($doc->content));
     }
 
     public function test_render_strict_throws_on_missing_required(): void
@@ -142,9 +148,12 @@ final class DocxTemplateRendererTest extends TestCase
 
     public function test_render_blanks_absent_optional(): void
     {
+        // comp_b_batch заполнен нарочно — блок opt_comp_b СТРОГИЙ (без ?), пустым он заблокировал бы
+        // render(); здесь проверяем именно опциональный СКАЛЯР {{comment?}}, а не блок.
         $doc = $this->renderer->render($this->template(), new RenderData([
             'object' => new TextValue('Балка Б2-3'),
             'base' => new TextValue('Цинкол'),
+            'comp_b_batch' => new TextValue('LO00-4059'),
         ]));
 
         $text = $this->docxText($doc->content);
@@ -154,9 +163,11 @@ final class DocxTemplateRendererTest extends TestCase
 
     public function test_render_inserts_image_media(): void
     {
+        // comp_b_batch заполнен нарочно — см. комментарий в test_render_blanks_absent_optional.
         $doc = $this->renderer->render($this->template(), new RenderData([
             'object' => new TextValue('Балка Б2-3'),
             'base' => new TextValue('Цинкол'),
+            'comp_b_batch' => new TextValue('LO00-4059'),
             'photo' => new ImageValue($this->imagePath),
         ]));
 

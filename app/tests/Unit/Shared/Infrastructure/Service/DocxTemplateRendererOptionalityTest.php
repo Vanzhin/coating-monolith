@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Shared\Infrastructure\Service;
 
+use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Infrastructure\Service\DocxTemplateRenderer;
-use PhpOffice\PhpWord\IOFactory as WordIO;
-use PhpOffice\PhpWord\PhpWord;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Опциональные маркеры региона {{x?}}…{{/x?}}: parse() должен распознавать блок как opt-регион,
  * не создавать фантомный блок '<name>?' из закрывающего маркера, и форма blocks[] — теперь
- * array{optional: bool, values: list<string>} вместо плоского list<string>.
+ * array{optional: bool, values: list<string>} вместо плоского list<string>. Плюс validate(): строгий
+ * пустой регион → missing (файл не собрать), опциональный пустой → skipped (тихо выпадает).
  */
 final class DocxTemplateRendererOptionalityTest extends TestCase
 {
+    use DocxFixtureTrait;
+
     public function test_optional_block_marker_parsed_as_optional_region(): void
     {
         $tpl = $this->docxWithParagraphs(['{{note?}}', 'Замечание: {{note}}', '{{/note?}}']);
@@ -75,45 +77,33 @@ final class DocxTemplateRendererOptionalityTest extends TestCase
         }
     }
 
-    /**
-     * @param list<string> $paragraphs
-     */
-    private function docxWithParagraphs(array $paragraphs): string
+    public function test_required_empty_region_is_missing(): void
     {
-        $word = new PhpWord();
-        $section = $word->addSection();
-        foreach ($paragraphs as $paragraph) {
-            $section->addText($paragraph);
+        $tpl = $this->docxWithParagraphs(['{{note}}', 'Замечание: {{note}}', '{{/note}}']); // строгий (без ?)
+
+        try {
+            $res = (new DocxTemplateRenderer())->validate(new TemplateFile($tpl), new RenderData([])); // нет 'note'
+
+            self::assertContains('note', $res->missing);
+            self::assertFalse($res->isValid());
+        } finally {
+            @unlink($tpl);
         }
-
-        $path = sys_get_temp_dir().'/opt_tpl_'.uniqid().'.docx';
-        WordIO::createWriter($word, 'Word2007')->save($path);
-
-        return $path;
     }
 
-    /**
-     * @return array{
-     *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
-     *     blocks: array<string, array{optional: bool, values: list<string>}>,
-     *     repeats: array<string, array{subs: list<string>, anchor: string}>,
-     *     segments: list<string>
-     * }
-     */
-    private function invokeParse(string $templatePath): array
+    public function test_optional_empty_region_is_skipped_not_missing(): void
     {
-        $renderer = new DocxTemplateRenderer();
-        $rendererReflection = new \ReflectionClass($renderer);
+        $tpl = $this->docxWithParagraphs(['{{note?}}', 'Замечание: {{note}}', '{{/note?}}']);
 
-        $loadMethod = $rendererReflection->getMethod('load');
-        $processor = $loadMethod->invoke($renderer, new TemplateFile($templatePath));
+        try {
+            $res = (new DocxTemplateRenderer())->validate(new TemplateFile($tpl), new RenderData([]));
 
-        $parseMethod = $rendererReflection->getMethod('parse');
-
-        /** @var array{values: list<array{logical: string, token: string, optional: bool, block: string|null}>, blocks: array<string, array{optional: bool, values: list<string>}>, repeats: array<string, array{subs: list<string>, anchor: string}>, segments: list<string>} $parsed */
-        $parsed = $parseMethod->invoke($renderer, $processor);
-
-        return $parsed;
+            self::assertNotContains('note', $res->missing);
+            self::assertContains('note', $res->skipped);
+            self::assertTrue($res->isValid());
+        } finally {
+            @unlink($tpl);
+        }
     }
 
     /**

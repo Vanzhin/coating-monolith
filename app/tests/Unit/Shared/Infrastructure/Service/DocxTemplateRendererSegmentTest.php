@@ -183,15 +183,40 @@ final class DocxTemplateRendererSegmentTest extends TestCase
         } finally {
             @unlink($withRows);
         }
+    }
 
-        $empty = $make();
+    /**
+     * Регресс на изменение поведения (соседняя задача с этим тестовым файлом): внутренний блок-повтор тут
+     * СТРОГИЙ ({{process}}…{{/process}}, без `?`) — раньше пустой список молча удалял регион (заголовок
+     * снаружи снимал инлайн-сегмент {{?process}}); теперь строгий пустой повтор уходит в missing и
+     * блокирует сборку файла целиком — единообразно с DocxTemplateRendererOptionalityTest
+     * ::test_required_empty_region_is_missing и DocxTemplateRendererRepeatTest
+     * ::test_empty_list_strict_block_is_missing_and_blocks_render. Чтобы вернуть прежнее «заголовок тихо
+     * исчезает» — автор шаблона помечает внутренний блок опциональным ({{process?}}…{{/process?}}); это
+     * validate()-уровня контракт (см. DocxTemplateRendererRepeatTest
+     * ::test_empty_optional_block_repeat_is_skipped_not_missing) — полный render() опционального
+     * БЛОЧНОГО региона сейчас не находит маркер по литералу, это соседняя задача (render()).
+     */
+    public function test_segment_with_empty_strict_repeat_block_blocks_render(): void
+    {
+        $w = new PhpWord();
+        $s = $w->addSection();
+        $s->addText('{{?process}}');
+        $s->addText('Выявленные несоответствия:');
+        $s->addText('{{process}}');
+        $s->addText('{{process.description}}');
+        $s->addText('{{/process}}');
+        $s->addText('{{/?process}}');
+        $s->addText('Подпись.');
+        $path = sys_get_temp_dir().'/seg_block_empty_'.uniqid().'.docx';
+        WordIO::createWriter($w, 'Word2007')->save($path);
+
         try {
-            $text = $this->render($empty, new RenderData(['process' => new RepeatValue([])]));
-            self::assertStringNotContainsString('Выявленные несоответствия', $text, 'заголовок исчезает с пустым списком');
-            self::assertStringContainsString('Подпись.', $text, 'текст вне сегмента цел');
-            self::assertStringNotContainsString('{{', $text);
+            $result = (new DocxTemplateRenderer())->validate(new TemplateFile($path), new RenderData(['process' => new RepeatValue([])]));
+            self::assertContains('process', $result->missing);
+            self::assertFalse($result->isValid());
         } finally {
-            @unlink($empty);
+            @unlink($path);
         }
     }
 
