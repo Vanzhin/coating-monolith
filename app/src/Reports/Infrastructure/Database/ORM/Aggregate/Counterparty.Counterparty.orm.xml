@@ -9,9 +9,8 @@
         </id>
         <field name="title" type="string" length="100" unique="true"/>
         <field name="description" type="string" length="750" nullable="true"/>
-        <!-- ИНН: Деплой 1 — nullable (legacy без ИНН), unique — PARTIAL-индексом в миграции (не unique="true",
-             тот дал бы полный unique). Деплой 2 переведёт в NOT NULL + полный unique. -->
-        <field name="tin" type="string" length="12" nullable="true"/>
+        <!-- ИНН: Деплой 2 — NOT NULL, unique — полный индекс в миграции (Version20260925130000). -->
+        <field name="tin" type="string" length="12"/>
     </entity>
 
 </doctrine-mapping>
