@@ -242,17 +242,23 @@ jobs:
             # Login to registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Тянем новые образы ПОКА старые контейнеры обслуживают трафик,
-            # затем up -d пересоздаёт только сервисы с изменённым image-хэшем.
-            # manager_php-cli (one-shot init) сам делает composer install +
-            # migrate + wipe cache + warmup + chown, и manager_php-fpm/
-            # manager_supervisor стартуют ТОЛЬКО после его успешного
-            # завершения (см. depends_on: condition: service_completed_successfully
-            # в docker-compose.prod.yml). Никаких отдельных `run --rm ... cache`
-            # команд в pipeline — они дублировали работу и race'ились с
-            # запуском php-fpm.
+            # Тянем новые образы ПОКА старые контейнеры обслуживают трафик (старое не тронуто).
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml --profile init pull
+
+            # ГЕЙТ (migrate-first): инит-контейнер (wipe cache + migrate + jwt + warmup + chown)
+            # гоняется ОТДЕЛЬНЫМ one-shot ДО свопа. Он в profiles:[init], поэтому обычный `up` его
+            # не поднимает, а php-fpm/supervisor больше НЕ завязаны на него через depends_on.
+            # Если инит упал (миграция/что угодно) → set -euo pipefail рвёт скрипт, `up -d` НЕ
+            # выполняется, старый php-fpm остаётся жив → прод продолжает работать («не смог — старое работает»).
+            docker compose -f docker-compose.prod.yml --profile init run --rm manager_php-cli
+
+            # Своп — ТОЛЬКО после успешного инита. --wait ждёт healthcheck нового php-fpm
+            # (реально живой FastCGI, а не просто «контейнер запущен»).
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans --wait
+
+            # Caddy резолвит manager_php-fpm при старте — после пересоздания fpm обновляем DNS.
+            docker compose -f docker-compose.prod.yml restart caddy
 
             echo "Deployment completed successfully!"
             docker images | grep vanzhin
