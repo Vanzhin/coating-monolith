@@ -72,6 +72,16 @@ trait DocxFixtureTrait
      */
     private function render(string $templatePath, RenderData $data): string
     {
+        return trim((string) preg_replace('/\s+/', ' ', strip_tags(str_replace('<', ' <', $this->renderRawMainXml($templatePath, $data)))));
+    }
+
+    /**
+     * Полный render() + вернуть СЫРОЙ word/document.xml — для тестов целостности XML (well-formed, баланс
+     * тегов), которые проверка по тексту (strip_tags) пропускает: Word открывает битый XML молча, строгие
+     * парсеры/LibreOffice — нет.
+     */
+    private function renderRawMainXml(string $templatePath, RenderData $data): string
+    {
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($templatePath), $data);
 
         $outPath = sys_get_temp_dir().'/docx_out_'.uniqid().'.docx';
@@ -83,6 +93,6 @@ trait DocxFixtureTrait
         $zip->close();
         @unlink($outPath);
 
-        return trim((string) preg_replace('/\s+/', ' ', strip_tags(str_replace('<', ' <', $xml))));
+        return $xml;
     }
 }

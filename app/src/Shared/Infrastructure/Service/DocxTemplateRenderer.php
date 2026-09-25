@@ -211,12 +211,32 @@ final class DocxTemplateRenderer implements TemplateRenderer
             throw new AppException('Шаблон: не удалось обработать повторяемую группу. Плейсхолдеры {{группа.поле}} должны быть в одной строке таблицы, либо в блоке {{группа}}…{{/группа}} (маркеры — каждый в своём абзаце).', log: ['error' => $e->getMessage()], previous: $e);
         }
 
+        // Инлайн-регионы ВНУТРИ строк/блоков повтора: точечное имя {{group.sub?}}…{{/group.sub?}}. Повтор
+        // уже развёрнут выше (cloneRow/cloneBlock проставили #i на все макросы клона), поэтому резолвим
+        // по-строчно: присутствие = подполе `sub` строки i непусто. Есть значение → «, датчик X» остаётся,
+        // пусто → регион с сопроводительным литералом вырезается. До плоских регионов и до guard'а.
+        $rowRegionPresence = [];
+        foreach ($parsed['inlineRegions'] as $regionName) {
+            if (1 !== preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $regionName, $m)) {
+                continue; // плоский регион верхнего уровня — ниже
+            }
+            $groupValue = $data->get($m[1]);
+            $rows = $groupValue instanceof RepeatValue ? $groupValue->rows : [];
+            foreach ($rows as $i => $row) {
+                $rowRegionPresence[$regionName.'#'.($i + 1)] = '' !== (string) ($row[$m[2]] ?? '');
+            }
+        }
+        $processor->resolveIndexedInlineOptionalRegions($rowRegionPresence);
+
         // Инлайн-регионы верхнего уровня {{name?}}…{{/name?}} (оба маркера в одном абзаце — см. parse()/
         // isInlineRegion): значение внутри уже заполнено циклом fill() выше, здесь только снимаем/вырезаем
         // маркеры региона по presence. Не разворачивает повтор (только плоское поле верхнего уровня — область
         // задачи), поэтому порядок относительно блоков/повторов не важен, важно лишь ПОСЛЕ fill().
         $inlineRegionPresence = [];
         foreach ($parsed['inlineRegions'] as $inlineRegionName) {
+            if (str_contains($inlineRegionName, '.')) {
+                continue; // точечный регион строки повтора — уже разрешён resolveIndexedInlineOptionalRegions()
+            }
             $inlineRegionPresence[$inlineRegionName] = $data->has($inlineRegionName);
         }
         $processor->resolveInlineOptionalRegions($inlineRegionPresence);
