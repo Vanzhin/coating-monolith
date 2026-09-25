@@ -17,14 +17,9 @@ class UniqueTinCounterpartySpecification implements SpecificationInterface
 
     public function satisfy(Counterparty $counterparty): void
     {
-        $tin = $counterparty->getTin();
-        if (null === $tin) {
-            return; // legacy-контрагент без ИНН — уникальность не проверяем (partial-unique)
-        }
-
-        $exist = $this->repository->findOneByTin($tin);
+        $exist = $this->repository->findOneByTin($counterparty->getTin());
         if (null !== $exist && $exist->getId() !== $counterparty->getId()) {
-            throw new AppException(sprintf('Контрагент с ИНН «%s» уже существует.', $tin));
+            throw new AppException(sprintf('Контрагент с ИНН «%s» уже существует.', $counterparty->getTin()));
         }
     }
 }

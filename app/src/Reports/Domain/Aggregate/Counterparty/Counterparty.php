@@ -23,8 +23,8 @@ class Counterparty extends Aggregate
     private readonly string $id;
     private string $title;
     private ?string $description;
-    /** Нормализованные цифры ИНН. null только у legacy-строк (Деплой 1: колонка nullable, гидрируется мимо конструктора). */
-    private ?string $tin = null;
+    /** Нормализованные цифры ИНН (Деплой 2: NOT NULL — у каждого контрагента задан). */
+    private string $tin;
 
     public function __construct(
         string $id,
@@ -68,7 +68,7 @@ class Counterparty extends Aggregate
         return $this->id;
     }
 
-    public function getTin(): ?string
+    public function getTin(): string
     {
         return $this->tin;
     }
