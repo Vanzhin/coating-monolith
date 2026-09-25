@@ -18,6 +18,8 @@ interface CounterpartyRepositoryInterface
 
     public function findOneByTitle(string $title): ?Counterparty;
 
+    public function findOneByTin(string $tin): ?Counterparty;
+
     public function findByFilter(CounterpartiesFilter $filter): PaginationResult;
 
     /**

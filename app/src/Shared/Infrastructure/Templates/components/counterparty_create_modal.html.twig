@@ -1,0 +1,35 @@
+{# Переиспользуемая модалка создания контрагента (форма отчёта: заказчик/подрядчик).
+   Открывается из typeahead по «+ Создать»: название (предзаполнено) + обязательный ИНН.
+   POST уходит на createUrl виджета-инициатора, созданный контрагент возвращается в тот же виджет. #}
+<div data-controller="counterparty-create-modal">
+    <div class="modal fade" id="counterpartyCreateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новый контрагент</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" data-counterparty-create-modal-target="errorBox"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" data-counterparty-create-modal-target="nameInput"
+                               placeholder="Название организации">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">ИНН</label>
+                        <input type="text" class="form-control" inputmode="numeric" maxlength="12"
+                               data-counterparty-create-modal-target="tinInput" placeholder="10 или 12 цифр">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary"
+                            data-action="click->counterparty-create-modal#submit">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

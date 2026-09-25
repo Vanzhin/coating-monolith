@@ -30,8 +30,9 @@ final readonly class UpdateCounterpartyCommandHandler implements CommandHandlerI
             throw new AppException('Контрагент не найден.', Response::HTTP_NOT_FOUND);
         }
 
-        // setTitle сам проверяет уникальность через spec.
+        // setTitle/setTin сами проверяют уникальность через spec, setTin — ещё и валидность ИНН (VO).
         $counterparty->setTitle($command->title);
+        $counterparty->setTin($command->tin);
         $counterparty->setDescription($command->description);
         $this->repository->add($counterparty);
 

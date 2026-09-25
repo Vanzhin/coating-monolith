@@ -78,9 +78,9 @@ final class ReportReferencesTest extends KernelTestCase
         parent::tearDown();
     }
 
-    private function counterparty(string $title): string
+    private function counterparty(string $title, string $tin): string
     {
-        $r = $this->commandBus->execute(new CreateCounterpartyCommand($title));
+        $r = $this->commandBus->execute(new CreateCounterpartyCommand($title, $tin));
         \assert($r instanceof CreateCounterpartyCommandResult);
         $this->counterpartyIds[] = $r->id;
 
@@ -99,8 +99,8 @@ final class ReportReferencesTest extends KernelTestCase
     public function test_references_resolve_to_snapshots(): void
     {
         $suffix = bin2hex(random_bytes(3));
-        $customerId = $this->counterparty('Заказчик-'.$suffix);
-        $contractorId = $this->counterparty('Подрядчик-'.$suffix);
+        $customerId = $this->counterparty('Заказчик-'.$suffix, '2000000043');
+        $contractorId = $this->counterparty('Подрядчик-'.$suffix, '2000000050');
         $projectId = $this->project('Проект-'.$suffix, $customerId);
 
         $result = $this->commandBus->execute(new CreateReportCommand(

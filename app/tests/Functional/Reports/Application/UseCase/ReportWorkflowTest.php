@@ -93,8 +93,8 @@ final class ReportWorkflowTest extends KernelTestCase
     private function fillFullHeader(string $id): void
     {
         $suffix = uniqid('', true);
-        $customerId = $this->createCounterparty('Заказчик-'.$suffix);
-        $contractorId = $this->createCounterparty('Подрядчик-'.$suffix);
+        $customerId = $this->createCounterparty('Заказчик-'.$suffix, '2000000068');
+        $contractorId = $this->createCounterparty('Подрядчик-'.$suffix, '2000000075');
         $projectId = $this->createProject('Проект-'.$suffix, $customerId);
 
         $this->commandBus->execute(new UpdateReportHeaderCommand(
@@ -109,9 +109,9 @@ final class ReportWorkflowTest extends KernelTestCase
         ));
     }
 
-    private function createCounterparty(string $title): string
+    private function createCounterparty(string $title, string $tin): string
     {
-        $r = $this->commandBus->execute(new CreateCounterpartyCommand($title));
+        $r = $this->commandBus->execute(new CreateCounterpartyCommand($title, $tin));
         \assert($r instanceof CreateCounterpartyCommandResult);
 
         return $r->id;

@@ -45,6 +45,11 @@ class CounterpartyRepository extends ServiceEntityRepository implements Counterp
         return $this->findOneBy(['title' => $title]);
     }
 
+    public function findOneByTin(string $tin): ?Counterparty
+    {
+        return $this->findOneBy(['tin' => $tin]);
+    }
+
     public function findByFilter(CounterpartiesFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('c')->orderBy('c.title', 'ASC');
@@ -77,9 +82,10 @@ class CounterpartyRepository extends ServiceEntityRepository implements Counterp
             return [];
         }
 
+        // Поиск по названию И по ИНН (c.tin у legacy = NULL, LIKE по нему просто не матчит).
         /** @var list<Counterparty> $result */
         $result = $this->createQueryBuilder('c')
-            ->where('LOWER(c.title) LIKE LOWER(:q)')
+            ->where('LOWER(c.title) LIKE LOWER(:q) OR c.tin LIKE :q')
             ->setParameter('q', '%'.$this->escapeLike($needle).'%')
             ->orderBy('c.title', 'ASC')
             ->setMaxResults($limit)

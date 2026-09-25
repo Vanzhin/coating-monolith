@@ -23,15 +23,19 @@ class Counterparty extends Aggregate
     private readonly string $id;
     private string $title;
     private ?string $description;
+    /** Нормализованные цифры ИНН. null только у legacy-строк (Деплой 1: колонка nullable, гидрируется мимо конструктора). */
+    private ?string $tin = null;
 
     public function __construct(
         string $id,
         string $title,
         private readonly CounterpartySpecification $specification,
+        string $tin,
         ?string $description = null,
     ) {
         $this->id = $id;
         $this->setTitle($title);
+        $this->setTin($tin);
         $this->setDescription($description);
     }
 
@@ -53,9 +57,20 @@ class Counterparty extends Aggregate
         $this->description = $description;
     }
 
+    public function setTin(string $tin): void
+    {
+        $this->tin = (new Tin($tin))->value(); // валидность ИНН — в VO; кидает AppException
+        $this->specification->uniqueTin->satisfy($this);
+    }
+
     public function getId(): string
     {
         return $this->id;
+    }
+
+    public function getTin(): ?string
+    {
+        return $this->tin;
     }
 
     public function getTitle(): string

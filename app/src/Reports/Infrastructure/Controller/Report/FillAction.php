@@ -63,6 +63,10 @@ final class FillAction extends AbstractController
                     $this->commandBus->execute(new SubmitForReviewCommand($id));
                 }
 
+                $this->addFlash('success', 'submit' === $payload->get('action')
+                    ? 'Отчёт отправлен на проверку.'
+                    : 'Изменения сохранены.');
+
                 return $this->redirectToRoute('app_cabinet_report_fill', ['id' => $id]);
             } catch (AppException $e) {
                 // ТОЛЬКО доменные ошибки (валидация/доступ) показываем inline, введённое сохраняем из
@@ -141,7 +145,7 @@ final class FillAction extends AbstractController
     }
 
     /**
-     * Чип ссылки из данных формы: id + title-компаньон (его кладёт reference-select).
+     * Чип ссылки из данных формы: id + title-компаньон (его кладёт typeahead).
      *
      * @return array{id: string, title: string}|null
      */

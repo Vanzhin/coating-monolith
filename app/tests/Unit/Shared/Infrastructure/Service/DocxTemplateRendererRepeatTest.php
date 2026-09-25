@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Shared\Infrastructure\Service;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TemplateFile;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\DocxTemplateRenderer;
 use PhpOffice\PhpWord\IOFactory as WordIO;
 use PhpOffice\PhpWord\PhpWord;
@@ -14,10 +15,14 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Повторяемая строка таблицы: {{c.a}}|{{c.b}} → клонируется по числу записей и заполняется; пустой
- * список → строка-шаблон удаляется, шапка таблицы остаётся.
+ * список → строка-шаблон удаляется, шапка таблицы остаётся (опциональна по природе — маркеров у строки
+ * нет, ставить `?` некуда). Повтор-блок {{group}}…{{/group}}: пустой список у строгого блока → missing
+ * (файл не собрать), у опционального ({{group?}}…{{/group?}}) → тихо skipped (см. блок тестов ниже).
  */
 final class DocxTemplateRendererRepeatTest extends TestCase
 {
+    use DocxFixtureTrait;
+
     private string $templatePath;
 
     protected function setUp(): void
@@ -192,14 +197,58 @@ final class DocxTemplateRendererRepeatTest extends TestCase
         }
     }
 
-    public function test_empty_list_block_deletes_region(): void
+    /**
+     * Регресс на изменение поведения: раньше пустой список у СТРОГОГО ({{recs}}…{{/recs}}, без `?`)
+     * блока-повтора молча удалял регион; теперь строгий пустой повтор — как строгий пустой регион у
+     * одиночного плейсхолдера — уходит в missing и блокирует сборку файла (см.
+     * DocxTemplateRendererOptionalityTest::test_required_empty_region_is_missing — тот же контракт).
+     */
+    public function test_empty_list_strict_block_is_missing_and_blocks_render(): void
     {
         $path = $this->blockTemplate();
         try {
-            $text = $this->renderTpl($path, new RenderData(['recs' => new RepeatValue([])]));
+            $result = (new DocxTemplateRenderer())->validate(new TemplateFile($path), new RenderData(['recs' => new RepeatValue([])]));
+            self::assertContains('recs', $result->missing);
+            self::assertFalse($result->isValid());
 
-            self::assertStringContainsString('Заголовок раздела', $text); // текст вне блока цел
-            self::assertStringNotContainsString('{{recs', $text);
+            $this->expectException(AppException::class);
+            (new DocxTemplateRenderer())->render(new TemplateFile($path), new RenderData(['recs' => new RepeatValue([])]));
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function test_missing_data_key_for_strict_block_repeat_is_missing(): void
+    {
+        $path = $this->blockTemplate();
+
+        try {
+            $result = (new DocxTemplateRenderer())->validate(new TemplateFile($path), new RenderData([])); // ключа 'recs' вовсе нет
+            self::assertContains('recs', $result->missing);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * Опциональный ({{recs?}}…{{/recs?}}) блок-повтор с пустым списком — validate() уходит в skipped, не
+     * missing (файл собрать МОЖНО), и render() реально собирает файл: регион уходит целиком, контент после
+     * него цел (cloneBlock/deleteBlock матчат литерал маркера `recs?`, не логическое имя `recs`).
+     */
+    public function test_empty_optional_block_repeat_is_skipped_not_missing(): void
+    {
+        $path = $this->docxWithParagraphs(['Заголовок раздела', '{{recs?}}', '{{recs.text}}', '{{/recs?}}', 'После.']);
+
+        try {
+            $result = (new DocxTemplateRenderer())->validate(new TemplateFile($path), new RenderData(['recs' => new RepeatValue([])]));
+            self::assertNotContains('recs', $result->missing);
+            self::assertContains('recs', $result->skipped);
+            self::assertTrue($result->isValid());
+
+            $text = $this->renderTpl($path, new RenderData(['recs' => new RepeatValue([])]));
+            self::assertStringContainsString('Заголовок раздела', $text);
+            self::assertStringContainsString('После.', $text); // контент после региона не обрублен
+            self::assertStringNotContainsString('{{', $text);
         } finally {
             @unlink($path);
         }
@@ -207,17 +256,7 @@ final class DocxTemplateRendererRepeatTest extends TestCase
 
     private function blockTemplate(): string
     {
-        $phpWord = new PhpWord();
-        $section = $phpWord->addSection();
-        $section->addText('Заголовок раздела');
-        $section->addText('{{recs}}');
-        $section->addText('{{recs.text}}');
-        $section->addText('{{/recs}}');
-
-        $path = sys_get_temp_dir().'/repeat_block_'.uniqid().'.docx';
-        WordIO::createWriter($phpWord, 'Word2007')->save($path);
-
-        return $path;
+        return $this->docxWithParagraphs(['Заголовок раздела', '{{recs}}', '{{recs.text}}', '{{/recs}}']);
     }
 
     private function render(RenderData $data): string

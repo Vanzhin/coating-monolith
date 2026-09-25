@@ -46,15 +46,46 @@ final class DocxMacroProcessor extends TemplateProcessor
     /**
      * Готовит шаблон к обработке: (1) схлопывает макросы, разбитые Word'ом по run'ам (`{{name}}` →
      * `{{name</w:t>…<w:t>}}`) — иначе cloneRow/cloneBlock/setValue не находят плейсхолдер поиском по
-     * сырому XML; (2) убирает `?` у точечных токенов повторяемых групп (`{{group.sub?}}` → `{{group.sub}}`)
-     * — у repeat-групп `?` бессмысленен (они опциональны по природе), а иначе токен не распознаётся и
-     * остаётся сырым. Применяем к телу и колонтитулам сразу после загрузки шаблона.
+     * сырому XML; (2) убирает `?` у ОДИНОЧНЫХ точечных токенов повторяемых групп (`{{group.sub?}}` →
+     * `{{group.sub}}`) — у самих repeat-подполей `?` бессмысленен (они опциональны по природе), а иначе
+     * токен не распознаётся и остаётся сырым. НО если у точечного имени есть парный закрывающий
+     * `{{/group.sub?}}` — это маркеры инлайн-региона ВНУТРИ строки повтора (`{{g.sub?}}…{{/g.sub?}}`,
+     * прячет сопроводительный текст рядом с подполем): их `?` НЕ трогаем, иначе регион развалится.
+     * Применяем к телу и колонтитулам сразу после загрузки шаблона.
      */
+    /**
+     * Удаление блока `{{name}}…{{/name}}`. Родительский `deleteBlock` (через `replaceBlock`) строит ЖАДНЫЙ
+     * regex `(<w:p.*>{{name}}…)` — а `<w:p.*>` матчит и `<w:pPr>`/`<w:pStyle>` (теги свойств абзаца имеют
+     * тот же префикс `<w:p`!). У любого шаблона, авторенного в Word, открывающий маркер блока лежит в абзаце
+     * с `<w:pPr>`, поэтому удаление стартует ВНУТРИ абзаца и оставляет осиротевший `<w:p>` без пары →
+     * невалидный word/document.xml (Word молча чинит, LibreOffice/строгие парсеры отвергают «документ
+     * повреждён»). `cloneBlock` строит regex с `<w:p\b` (граница слова) и `<w:pPr>` не путает — поэтому
+     * «клонировать 0 раз» = корректно вырезать блок целыми абзацами. Делегируем туда.
+     */
+    public function deleteBlock($blockname): void
+    {
+        $this->cloneBlock($blockname, 0);
+    }
+
     public function normalizeMacros(): void
     {
-        $dotted = '/'.preg_quote(self::$macroOpeningChars, '/').'([a-z0-9_]+\.[a-z0-9_]+)\?'.preg_quote(self::$macroClosingChars, '/').'/';
-        $replacement = self::$macroOpeningChars.'$1'.self::$macroClosingChars;
-        $prepare = fn (string $part): string => (string) preg_replace($dotted, $replacement, $this->fixBrokenMacros($part));
+        $open = preg_quote(self::$macroOpeningChars, '/');
+        $close = preg_quote(self::$macroClosingChars, '/');
+        $dottedOpt = '/'.$open.'([a-z0-9_]+\.[a-z0-9_]+)\?'.$close.'/';
+        $closeMarker = '/'.$open.'\/([a-z0-9_]+\.[a-z0-9_]+)\?'.$close.'/';
+
+        $prepare = function (string $part) use ($dottedOpt, $closeMarker): string {
+            $part = $this->fixBrokenMacros($part);
+            $regions = 0 === preg_match_all($closeMarker, $part, $mm) ? [] : array_flip($mm[1]);
+
+            return (string) preg_replace_callback(
+                $dottedOpt,
+                static fn (array $m): string => isset($regions[$m[1]])
+                    ? $m[0]                                                        // маркер региона — сохраняем «?»
+                    : self::$macroOpeningChars.$m[1].self::$macroClosingChars,     // одиночное подполе — срезаем «?»
+                $part,
+            );
+        };
 
         $this->tempDocumentMainPart = $prepare($this->tempDocumentMainPart);
         foreach ($this->tempDocumentHeaders as $index => $part) {
@@ -83,20 +114,41 @@ final class DocxMacroProcessor extends TemplateProcessor
     }
 
     /**
-     * Инлайновые опциональные сегменты верхнего уровня: `{{?name}}…{{/?name}}`. Вырезают литеральный
-     * текст вокруг плейсхолдера, когда данных нет (чего `{{name?}}` и абзацный блок `{{opt}}` не умеют).
-     * `$present[name] === true` → маркеры снимаются, внутренний текст остаётся (и дозаполняется обычным
-     * setValue); иначе регион вырезается целиком. Индексированные `{{?name#i}}` НЕ трогаем (это сегменты
-     * повторяемых групп — их снимает resolveRowSegments), поэтому имя ограничено `[a-z0-9_]+` без `#`.
-     * Вызывать ПОСЛЕ обработки повторов.
-     *
-     * @param array<string, bool> $present
+     * Инлайн ли опциональный регион `{{name?}}…{{/name?}}` — открывающий и закрывающий маркер лежат в
+     * ОДНОМ `<w:p>` (не пересекают границу абзаца). Практика: если между литеральным open- и close-маркером
+     * в сыром `tempDocumentMainPart` НЕТ `</w:p>`, значит оба маркера — в одном абзаце. Используется
+     * `parse()` драйвера, чтобы решить: обрабатывать регион как PhpWord-блок (`deleteBlock`/`cloneBlock`,
+     * абзацного уровня — что рвёт документ, если маркеры на самом деле в одной строке) или как инлайн-регион
+     * (`resolveInlineOptionalRegions`, вырез регэкспом). Нет совпадения (кривой шаблон — незакрытый маркер)
+     * → false, чтобы регион по умолчанию ушёл в прежнюю блочную ветку.
      */
-    public function resolveTopLevelSegments(array $present): void
+    public function isInlineRegion(string $logical): bool
     {
         $open = preg_quote(self::$macroOpeningChars, '/');
         $close = preg_quote(self::$macroClosingChars, '/');
-        $pattern = '/'.$open.'\?([a-z0-9_]+)'.$close.'(.*?)'.$open.'\/\?\1'.$close.'/su';
+        $name = preg_quote($logical, '/');
+        $pattern = '/'.$open.$name.'\?'.$close.'(.*?)'.$open.'\/'.$name.'\?'.$close.'/su';
+
+        if (1 !== preg_match($pattern, $this->fixBrokenMacros($this->tempDocumentMainPart), $m)) {
+            return false;
+        }
+
+        return !str_contains($m[1], '</w:p>');
+    }
+
+    /**
+     * Инлайновые опциональные регионы верхнего уровня на `?`-суффикс синтаксисе: `{{name?}}…{{/name?}}`,
+     * маркеры в ОДНОМ абзаце (см. isInlineRegion()) — вырезание регэкспом. Присутствие → маркеры снимаются,
+     * внутренний текст остаётся (плейсхолдер `{{name}}` в нём уже заполнен обычным fill()-проходом
+     * драйвера); иначе — регион вырезается целиком вместе с литералом. Вызывать ПОСЛЕ fill().
+     *
+     * @param array<string, bool> $present
+     */
+    public function resolveInlineOptionalRegions(array $present): void
+    {
+        $open = preg_quote(self::$macroOpeningChars, '/');
+        $close = preg_quote(self::$macroClosingChars, '/');
+        $pattern = '/'.$open.'([a-z0-9_]+)\?'.$close.'(.*?)'.$open.'\/\1\?'.$close.'/su';
 
         $this->tempDocumentMainPart = (string) preg_replace_callback(
             $pattern,
@@ -106,28 +158,24 @@ final class DocxMacroProcessor extends TemplateProcessor
     }
 
     /**
-     * Инлайновые опциональные сегменты ВНУТРИ клонированной повторяемой группы: `{{?sub#i}}…{{/?sub#i}}`.
-     * PhpWord при cloneRow/cloneBlock проиндексировал маркеры `#i` вместе с плейсхолдерами, поэтому номер
-     * строки берём прямо из маркера: непустое `rows[i-1][sub]` → маркеры снять (внутренний текст, уже
-     * заполненный, остаётся), пусто → регион вырезать. Вызывать сразу после клонирования группы.
+     * Инлайн-регионы ВНУТРИ строки/блока повтора на точечном имени: `{{group.sub?}}…{{/group.sub?}}`. После
+     * клонирования (cloneRow/cloneBlock) PhpWord индексирует все макросы клона суффиксом `#i`, поэтому в
+     * документе маркеры выглядят как `{{group.sub?#1}}…{{/group.sub?#1}}`. Присутствие даётся по-строчно
+     * (ключ `group.sub#i`): значение подполя строки непусто → маркеры снимаются, внутренний текст (с уже
+     * заполненным `{{group.sub#i}}`) остаётся; пусто → регион вырезается целиком вместе с сопроводительным
+     * литералом. Вызывать ПОСЛЕ разворачивания повторов (когда `#i` уже проставлены) и до guard'а.
      *
-     * @param list<array<string, string>> $rows
+     * @param array<string, bool> $present ключ — `group.sub#i` (1-based номер строки)
      */
-    public function resolveRowSegments(array $rows): void
+    public function resolveIndexedInlineOptionalRegions(array $present): void
     {
         $open = preg_quote(self::$macroOpeningChars, '/');
         $close = preg_quote(self::$macroClosingChars, '/');
-        $pattern = '/'.$open.'\?([a-z0-9_]+)#(\d+)'.$close.'(.*?)'.$open.'\/\?\1#\2'.$close.'/su';
+        $pattern = '/'.$open.'([a-z0-9_]+\.[a-z0-9_]+)\?#(\d+)'.$close.'(.*?)'.$open.'\/\1\?#\2'.$close.'/su';
 
         $this->tempDocumentMainPart = (string) preg_replace_callback(
             $pattern,
-            static function (array $m) use ($rows): string {
-                $sub = $m[1];
-                $rowIndex = (int) $m[2] - 1;
-                $value = $rows[$rowIndex][$sub] ?? '';
-
-                return '' === trim((string) $value) ? '' : $m[3];
-            },
+            static fn (array $m): string => ($present[$m[1].'#'.$m[2]] ?? false) ? $m[3] : '',
             $this->tempDocumentMainPart,
         );
     }

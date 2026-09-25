@@ -18,19 +18,16 @@ use App\Shared\Infrastructure\Exception\AppException;
 use PhpOffice\PhpWord\Exception\Exception as PhpWordException;
 
 /**
- * Драйвер docx-шаблонов на PhpWord. Возможности: text + image + optional block + inline optional segment.
+ * Драйвер docx-шаблонов на PhpWord. Возможности: text + image + optional block + inline optional region.
  *
  * Опциональность:
  *  - плейсхолдер {{name?}} — опциональный «на месте» (нет данных → чистим ТОЛЬКО плейсхолдер, литерал
  *    вокруг остаётся);
- *  - блок {{opt_x}} … {{/opt_x}} — регион (абзацного уровня) удаляется целиком, если данных внутри нет
- *    (presence-driven, all-or-none). Маркеры блока стоят каждый в своём абзаце;
- *  - инлайн-сегмент {{?name}} … {{/?name}} — вырезает литерал ВМЕСТЕ с плейсхолдером, когда данных нет
- *    (то, что {{name?}} и абзацный блок не умеют). Работает в одну строку/ячейку. Критерий по name:
- *    верхний уровень → has(name) (для повторяемой группы = есть строки, годится обернуть заголовок над
- *    списком); внутри повторяемой строки/блока → непустое подполе строки (по #i).
- *    НЕ разворачивает повтор — для «регион повторяется по строкам» это блок {{group}}…{{/group}}.
- *    Внутри повтора имя сегмента = ключ подполя, НЕ имя группы.
+ *  - регион {{name?}} … {{/name?}} — вырезается целиком, если данных нет (presence-driven, all-or-none).
+ *    Форма зависит от того, в ОДНОМ ли `<w:p>` лежат оба маркера (parse() детектит автоматически):
+ *    маркеры в РАЗНЫХ абзацах → блок абзацного уровня (PhpWord cloneBlock/deleteBlock); маркеры в ОДНОМ
+ *    абзаце/ячейке → инлайн-регион (вырез регэкспом, DocxMacroProcessor::resolveInlineOptionalRegions) —
+ *    то, что абзацный cloneBlock/deleteBlock физически не умеет (маркеры не стоят каждый в своём `<w:p>`);
  */
 final class DocxTemplateRenderer implements TemplateRenderer
 {
@@ -74,8 +71,13 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $seen = [];
 
         foreach ($states as $name => $state) {
+            if (isset($parsed['repeats'][$name])) {
+                continue; // повторяемые группы (блок или строка) — отдельная проверка ниже, по факту строк
+            }
             if ('partial' === $state) {
                 $invalidBlocks[] = $name;
+            } elseif ('missing' === $state) {
+                $missing[] = $name;
             }
         }
 
@@ -123,10 +125,30 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
         }
 
-        // Повторяемые группы: шаблон их «знает» (строка таблицы). Пустой список допустим (строка удалится),
-        // поэтому в missing не попадают; но из «unused» их исключаем.
+        // Повторяемые группы: шаблон их «знает» (строка таблицы или {{group}}…{{/group}} блок). Строка
+        // таблицы маркеров не имеет — опциональна по природе, пустой список допустим (строка удалится),
+        // в missing/skipped не попадает (поведение не меняем). Блок-повтор без строк — единообразно с
+        // одиночным плейсхолдером/регионом: строгий ({{group}}…{{/group}}) → missing, опциональный
+        // ({{group?}}…{{/group?}}) → тихо skipped. Строки есть — не трогаем (рендерится как обычно).
         foreach (array_keys($parsed['repeats']) as $group) {
             $templateNames[$group] = true;
+
+            $block = $parsed['blocks'][$group] ?? null;
+            if (null === $block) {
+                continue; // строка таблицы — не блок, опциональна по природе
+            }
+
+            $value = $data->get($group);
+            $hasRows = $value instanceof RepeatValue && [] !== $value->rows;
+            if ($hasRows) {
+                continue;
+            }
+
+            if ($block['optional']) {
+                $skipped[] = $group;
+            } else {
+                $missing[] = $group;
+            }
         }
 
         $unused = array_values(array_diff($data->variableNames(), array_keys($templateNames)));
@@ -155,10 +177,11 @@ final class DocxTemplateRenderer implements TemplateRenderer
             if (isset($parsed['repeats'][$name])) {
                 continue; // повторяемый блок — обрабатывается ниже (cloneBlock по количеству)
             }
+            $marker = $this->phpWordBlockMarker($name, $parsed['blocks'][$name]['optional']);
             if ('keep' === $state) {
-                $processor->cloneBlock($name, 1);
+                $processor->cloneBlock($marker, 1);
             } else {
-                $processor->deleteBlock($name);
+                $processor->deleteBlock($marker);
             }
         }
 
@@ -179,7 +202,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 $value = $data->get($group);
                 $rows = $value instanceof RepeatValue ? $value->rows : [];
                 if (isset($parsed['blocks'][$group])) {
-                    $this->repeatBlock($processor, $group, $info['subs'], $rows);
+                    $this->repeatBlock($processor, $group, $parsed['blocks'][$group]['optional'], $info['subs'], $rows);
                 } else {
                     $this->repeatRow($processor, $info['anchor'], $group, $info['subs'], $rows);
                 }
@@ -188,16 +211,35 @@ final class DocxTemplateRenderer implements TemplateRenderer
             throw new AppException('Шаблон: не удалось обработать повторяемую группу. Плейсхолдеры {{группа.поле}} должны быть в одной строке таблицы, либо в блоке {{группа}}…{{/группа}} (маркеры — каждый в своём абзаце).', log: ['error' => $e->getMessage()], previous: $e);
         }
 
-        // Инлайновые сегменты верхнего уровня {{?name}}…{{/?name}}: строго ПОСЛЕ повторов — внутри повтора
-        // сегменты уже сняты по #i (resolveRowSegments), а top-level regex индексированные не трогает. Есть
-        // поле/группа (has) → раскрыть регион, нет → вырезать целиком (заголовок над пустым списком и т.п.).
-        $segmentPresence = [];
-        foreach ($parsed['segments'] as $segmentName) {
-            $value = $data->get($segmentName);
-            // группа «присутствует», только если в ней есть строки (пустой RepeatValue → сегмент вырезать)
-            $segmentPresence[$segmentName] = $value instanceof RepeatValue ? [] !== $value->rows : $data->has($segmentName);
+        // Инлайн-регионы ВНУТРИ строк/блоков повтора: точечное имя {{group.sub?}}…{{/group.sub?}}. Повтор
+        // уже развёрнут выше (cloneRow/cloneBlock проставили #i на все макросы клона), поэтому резолвим
+        // по-строчно: присутствие = подполе `sub` строки i непусто. Есть значение → «, датчик X» остаётся,
+        // пусто → регион с сопроводительным литералом вырезается. До плоских регионов и до guard'а.
+        $rowRegionPresence = [];
+        foreach ($parsed['inlineRegions'] as $regionName) {
+            if (1 !== preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $regionName, $m)) {
+                continue; // плоский регион верхнего уровня — ниже
+            }
+            $groupValue = $data->get($m[1]);
+            $rows = $groupValue instanceof RepeatValue ? $groupValue->rows : [];
+            foreach ($rows as $i => $row) {
+                $rowRegionPresence[$regionName.'#'.($i + 1)] = '' !== (string) ($row[$m[2]] ?? '');
+            }
         }
-        $processor->resolveTopLevelSegments($segmentPresence);
+        $processor->resolveIndexedInlineOptionalRegions($rowRegionPresence);
+
+        // Инлайн-регионы верхнего уровня {{name?}}…{{/name?}} (оба маркера в одном абзаце — см. parse()/
+        // isInlineRegion): значение внутри уже заполнено циклом fill() выше, здесь только снимаем/вырезаем
+        // маркеры региона по presence. Не разворачивает повтор (только плоское поле верхнего уровня — область
+        // задачи), поэтому порядок относительно блоков/повторов не важен, важно лишь ПОСЛЕ fill().
+        $inlineRegionPresence = [];
+        foreach ($parsed['inlineRegions'] as $inlineRegionName) {
+            if (str_contains($inlineRegionName, '.')) {
+                continue; // точечный регион строки повтора — уже разрешён resolveIndexedInlineOptionalRegions()
+            }
+            $inlineRegionPresence[$inlineRegionName] = $data->has($inlineRegionName);
+        }
+        $processor->resolveInlineOptionalRegions($inlineRegionPresence);
 
         // Guard: в ТЕЛЕ не должно остаться сырых плейсхолдеров. Остаток = кривой шаблон (группы делят
         // строку, subs в разных строках, маркеры не оформлены) — тихая порча документа. Колонтитулы не
@@ -262,29 +304,32 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 $processor->cloneRowAndSetValues($anchor, $mapped);
             }
         }
-
-        // Инлайновые сегменты подполей ({{?sub#i}}…{{/?sub#i}}) — вырезать по пустоте подполя строки.
-        $processor->resolveRowSegments($rows);
     }
 
     /**
-     * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} по количеству
-     * (список Word — нумерацию проставит сам), заполняет `{{group.sub#i}}`. Пусто → удаляет регион.
-     * Группа может встречаться в НЕСКОЛЬКИХ местах — крутим, пока маркер {{group}} ещё есть.
+     * Повтор блоком-абзацем (cloneBlock): клонирует регион {{group}}…{{/group}} (либо {{group?}}…{{/group?}}
+     * для опционального повтора) по количеству (список Word — нумерацию проставит сам), заполняет
+     * `{{group.sub#i}}`. Пусто → удаляет регион. Группа может встречаться в НЕСКОЛЬКИХ местах — крутим,
+     * пока маркер группы ещё есть.
      *
      * @param list<string>                $subs
      * @param list<array<string, string>> $rows
      */
-    private function repeatBlock(DocxMacroProcessor $processor, string $group, array $subs, array $rows): void
+    private function repeatBlock(DocxMacroProcessor $processor, string $group, bool $optional, array $subs, array $rows): void
     {
+        // literalMarker — как токен реально выглядит в тексте документа (сверка с orderedMacros());
+        // regexMarker — что передать в PhpWord cloneBlock()/deleteBlock() (см. phpWordBlockMarker()).
+        $literalMarker = $optional ? $group.'?' : $group;
+        $regexMarker = $this->phpWordBlockMarker($group, $optional);
+
         $guard = 0;
-        while (in_array($group, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+        while (in_array($literalMarker, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
             if ([] === $rows) {
-                $processor->deleteBlock($group);
+                $processor->deleteBlock($regexMarker);
 
                 continue;
             }
-            $processor->cloneBlock($group, count($rows), true, true); // indexVariables → {{group.sub#i}}
+            $processor->cloneBlock($regexMarker, count($rows), true, true); // indexVariables → {{group.sub#i}}
             foreach ($rows as $i => $row) {
                 $rowNumber = $i + 1;
                 foreach ($subs as $sub) {
@@ -292,9 +337,20 @@ final class DocxTemplateRenderer implements TemplateRenderer
                 }
             }
         }
+    }
 
-        // Инлайновые сегменты подполей ({{?sub#i}}…{{/?sub#i}}) — вырезать по пустоте подполя строки.
-        $processor->resolveRowSegments($rows);
+    /**
+     * Литерал маркера блока для PhpWord cloneBlock()/deleteBlock(). PhpWord вставляет $blockname
+     * НАПРЯМУЮ в свой internal-regex (без preg_quote) — для строгого блока логическое имя 'name' совпадает
+     * с литералом маркера {{name}}, поэтому ничего экранировать не нужно. Для опционального региона
+     * литерал в документе — {{name?}}: если передать 'name?' как есть, PhpWord трактует '?' как квантификатор
+     * regex (0-или-1 предыдущего символа), а не литеральный вопрос, и НЕ находит маркер — блок не удаляется
+     * и не клонируется, документ рвётся на }}-хвосте (это и был баг обрыва). Экранируем '?' backslash'ем,
+     * чтобы PhpWord искал его буквально.
+     */
+    private function phpWordBlockMarker(string $logical, bool $optional): string
+    {
+        return $optional ? $logical.'\?' : $logical;
     }
 
     /**
@@ -326,9 +382,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
      *
      * @return array{
      *     values: list<array{logical: string, token: string, optional: bool, block: string|null}>,
-     *     blocks: array<string, list<string>>,
+     *     blocks: array<string, array{optional: bool, values: list<string>}>,
      *     repeats: array<string, array{subs: list<string>, anchor: string}>,
-     *     segments: list<string>
+     *     inlineRegions: list<string>
      * }
      */
     private function parse(DocxMacroProcessor $processor): array
@@ -336,16 +392,46 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $mainContents = $processor->orderedMacros();     // тело, по порядку — для структуры блоков
         $allTokens = $processor->getVariables();          // тело + колонтитулы — полный набор переменных
 
-        // маркеры блоков распознаём по паре {{name}} / {{/name}}; {{/?name}} — закрытие инлайн-сегмента,
-        // не блок (иначе substr дал бы фантомный блок "?name")
+        // маркеры блоков распознаём по паре {{name}} / {{/name}} ИЛИ {{name?}} / {{/name?}} (опц. регион).
+        // Значение в $closeSet = optional-флаг региона (снят с `/name?` через $closeSet[rtrim($n,'?')]).
         $closeSet = [];
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/?')) {
+            if (str_starts_with($token, '/')) {
+                $name = substr($token, 1);
+                $optional = str_ends_with($name, '?');
+                $closeSet[$optional ? substr($name, 0, -1) : $name] = $optional;
+            }
+        }
+
+        // Опциональный регион, у которого оба маркера лежат в ОДНОМ абзаце — инлайн, а не PhpWord-блок
+        // (cloneBlock/deleteBlock требуют маркеры каждый в своём <w:p>, иначе рвут документ). Строгие блоки
+        // (без '?') инлайн не бывают — их всегда разворачивает cloneBlock для {{group.sub}}-повтора.
+        $inlineLogicals = [];
+        foreach ($closeSet as $logical => $optional) {
+            if ($optional && $processor->isInlineRegion($logical)) {
+                $inlineLogicals[$logical] = true;
+            }
+        }
+
+        // Точная литеральная форма открывающего маркера каждого блока: 'name' для строгого, 'name?' для
+        // опционального. Матчим ТОЧНО (не rtrim-ом), иначе плейсхолдер {{note}} внутри блока {{note?}} с
+        // тем же логическим именем ложно распознаётся как повторное открытие региона. Инлайн-регионы в
+        // $blockOpens не попадают — их снимает resolveInlineOptionalRegions(), не deleteBlock/cloneBlock.
+        $blockOpens = [];
+        foreach ($closeSet as $logical => $optional) {
+            if (isset($inlineLogicals[$logical])) {
                 continue;
             }
-            if (str_starts_with($token, '/')) {
-                $closeSet[substr($token, 1)] = true;
-            }
+            $blockOpens[$optional ? $logical.'?' : $logical] = $logical;
+        }
+
+        // Литералы открывающего/закрывающего маркера инлайн-региона — исключаем из flat-значений и из
+        // membership реальных блоков (это структурная разметка региона, не содержимое).
+        $inlineOpens = [];
+        $inlineCloses = [];
+        foreach (array_keys($inlineLogicals) as $logical) {
+            $inlineOpens[$logical.'?'] = $logical;
+            $inlineCloses['/'.$logical.'?'] = $logical;
         }
 
         // повторяемые группы: точечные токены {{group.sub}} (строка таблицы). Все токены группы — в одной
@@ -366,31 +452,61 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
         }
 
+        // Рассинхрон `?` между открывающим и закрывающим маркером региона — испорченный шаблон:
+        // {{note?}}…{{/note}} (или наоборот) не даёт понять, строгий это блок или опциональный регион,
+        // а без проверки один из маркеров молча становится плоским значением/фантомным блоком (см. баг-репорт
+        // задачи). Открывающий маркер региона ищем как ПЕРВЫЙ токен тела с тем же логическим именем — по
+        // конвенции это и есть open (значения с тем же именем ВНУТРИ региона стоят дальше и не мешают);
+        // инлайн-регион пропускаем — isInlineRegion() уже требует буквально {{name?}}…{{/name?}}, там
+        // рассинхрон в принципе не матчится и остаётся неоткрытым регионом, не ложным совпадением.
+        foreach ($closeSet as $logical => $closeOptional) {
+            if (isset($inlineLogicals[$logical])) {
+                continue;
+            }
+
+            foreach ($mainContents as $token) {
+                if (str_starts_with($token, '/') || isset($repeatMembers[$token])) {
+                    continue;
+                }
+
+                $openOptional = str_ends_with($token, '?');
+                $tokenLogical = $openOptional ? substr($token, 0, -1) : $token;
+                if ($tokenLogical !== $logical) {
+                    continue;
+                }
+
+                if ($openOptional !== $closeOptional) {
+                    throw new AppException(sprintf('Шаблон: маркеры региона «%s» рассинхронизированы по «?» — {{%1$s}}…{{/%1$s}} или {{%1$s?}}…{{/%1$s?}}.', $logical));
+                }
+
+                break; // открывающий нашёлся и совпал — по телу дальше искать нечего
+            }
+        }
+
         $values = [];
         $blocks = [];
         $stack = [];
-        $segmentStack = [];
-        $segmentNames = [];
+        $inlineStack = [];
         $seenLogical = [];
 
         // 1) тело: значения + membership блоков в порядке появления
         foreach ($mainContents as $content) {
-            if (str_starts_with($content, '/?')) {
-                array_pop($segmentStack); // закрытие инлайн-сегмента {{/?name}}
+            if (isset($inlineCloses[$content])) {
+                array_pop($inlineStack); // закрытие инлайн-региона {{/name?}}
                 continue;
             }
-            if (1 === preg_match('/^\?([a-z0-9_]+)$/', $content, $seg)) {
-                $segmentStack[] = $seg[1]; // открытие инлайн-сегмента {{?name}}
-                $segmentNames[$seg[1]] = true;
+            if (isset($inlineOpens[$content])) {
+                $inlineStack[] = $inlineOpens[$content]; // открытие инлайн-региона {{name?}}
                 continue;
             }
             if (str_starts_with($content, '/')) {
                 array_pop($stack);
                 continue;
             }
-            if (isset($closeSet[$content])) {
-                $stack[] = $content;
-                $blocks[$content] ??= [];
+            if (isset($blockOpens[$content])) {
+                $logical = $blockOpens[$content];
+                $stack[] = $logical;
+                $blocks[$logical] ??= ['optional' => $closeSet[$logical], 'values' => []];
                 continue;
             }
             if (isset($repeatMembers[$content])) {
@@ -404,23 +520,25 @@ final class DocxTemplateRenderer implements TemplateRenderer
             $values[] = [
                 'logical' => $logical,
                 'token' => $content,
-                // внутри инлайн-сегмента значение опционально (нет данных → сегмент вырежется, а не missing)
-                'optional' => $optionalMark || null !== $block || [] !== $segmentStack,
+                // внутри инлайн-региона значение опционально (нет данных → регион вырежется целиком,
+                // а не missing). Внутри любого блока — тоже опционально (миссинг для строгих блоков — след. задача).
+                'optional' => $optionalMark || null !== $block || [] !== $inlineStack,
                 'block' => $block,
             ];
             $seenLogical[$logical] = true;
 
             foreach ($stack as $enclosing) {
-                $blocks[$enclosing][] = $logical;
+                $blocks[$enclosing]['values'][] = $logical;
             }
         }
 
         // 2) колонтитулы/сноски: плейсхолдеры вне тела — как обычные top-level значения
-        //    (опциональные блоки поддерживаются только в теле документа)
+        //    (опциональные блоки/регионы поддерживаются только в теле документа)
         foreach ($allTokens as $token) {
-            if (str_starts_with($token, '/') || str_starts_with($token, '?') || isset($closeSet[$token])
-                || isset($repeatMembers[$token]) || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
-                continue; // маркер блока/сегмента / член повторяемой группы / точечный синтаксис — не flat-значение
+            if (str_starts_with($token, '/') || isset($blockOpens[$token])
+                || isset($repeatMembers[$token]) || isset($inlineOpens[$token])
+                || 1 === preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $token)) {
+                continue; // маркер блока/региона / член повторяемой группы / точечный синтаксис — не flat-значение
             }
 
             $optionalMark = str_ends_with($token, '?');
@@ -438,19 +556,24 @@ final class DocxTemplateRenderer implements TemplateRenderer
             ];
         }
 
-        return ['values' => $values, 'blocks' => $blocks, 'repeats' => $repeats, 'segments' => array_keys($segmentNames)];
+        return [
+            'values' => $values,
+            'blocks' => $blocks,
+            'repeats' => $repeats,
+            'inlineRegions' => array_keys($inlineLogicals),
+        ];
     }
 
     /**
-     * @param array<string, list<string>> $blocks
+     * @param array<string, array{optional: bool, values: list<string>}> $blocks
      *
-     * @return array<string, 'keep'|'delete'|'partial'>
+     * @return array<string, 'keep'|'delete'|'missing'|'partial'>
      */
     private function blockStates(array $blocks, RenderData $data): array
     {
         $states = [];
-        foreach ($blocks as $name => $members) {
-            $unique = array_values(array_unique($members));
+        foreach ($blocks as $name => $info) {
+            $unique = array_values(array_unique($info['values']));
             $present = 0;
             foreach ($unique as $member) {
                 if ($data->has($member)) {
@@ -459,7 +582,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
             }
 
             if (0 === $present) {
-                $states[$name] = 'delete';
+                // Пусто: опциональный регион тихо выпадает, строгий блокирует сборку файла — единообразно
+                // с одиночным плейсхолдером ({{x}} без данных → missing, {{x?}} → skipped).
+                $states[$name] = $info['optional'] ? 'delete' : 'missing';
             } elseif ($present === count($unique)) {
                 $states[$name] = 'keep';
             } else {

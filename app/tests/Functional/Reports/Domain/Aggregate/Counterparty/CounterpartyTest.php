@@ -47,7 +47,7 @@ final class CounterpartyTest extends KernelTestCase
     public function test_create_persist_and_find(): void
     {
         $id = UuidService::generate();
-        $counterparty = new Counterparty($id, 'ЕвроХим-УКК '.uniqid('', true), $this->specification, 'Заказчик');
+        $counterparty = new Counterparty($id, 'ЕвроХим-УКК '.uniqid('', true), $this->specification, '1000000010', 'Заказчик');
         $this->repository->add($counterparty);
         $this->createdIds[] = $id;
 
@@ -61,7 +61,7 @@ final class CounterpartyTest extends KernelTestCase
     public function test_description_is_nullable(): void
     {
         $id = UuidService::generate();
-        $counterparty = new Counterparty($id, 'БезОписания '.uniqid('', true), $this->specification);
+        $counterparty = new Counterparty($id, 'БезОписания '.uniqid('', true), $this->specification, '1001111185');
         $this->repository->add($counterparty);
         $this->createdIds[] = $id;
 
@@ -71,17 +71,17 @@ final class CounterpartyTest extends KernelTestCase
     public function test_duplicate_title_is_rejected(): void
     {
         $title = 'Дубль '.uniqid('', true);
-        $first = new Counterparty(UuidService::generate(), $title, $this->specification);
+        $first = new Counterparty(UuidService::generate(), $title, $this->specification, '1002222353');
         $this->repository->add($first);
         $this->createdIds[] = $first->getId();
 
         $this->expectException(AppException::class);
-        new Counterparty(UuidService::generate(), $title, $this->specification);
+        new Counterparty(UuidService::generate(), $title, $this->specification, '1003333521');
     }
 
     public function test_too_long_title_is_rejected(): void
     {
         $this->expectException(AppException::class);
-        new Counterparty(UuidService::generate(), str_repeat('я', 101), $this->specification);
+        new Counterparty(UuidService::generate(), str_repeat('я', 101), $this->specification, '1004444697');
     }
 }
