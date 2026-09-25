@@ -8,7 +8,9 @@ use App\Shared\Domain\Specification\SpecificationInterface;
 
 readonly class CounterpartySpecification implements SpecificationInterface
 {
-    public function __construct(public UniqueTitleCounterpartySpecification $uniqueTitle)
-    {
+    public function __construct(
+        public UniqueTitleCounterpartySpecification $uniqueTitle,
+        public UniqueTinCounterpartySpecification $uniqueTin,
+    ) {
     }
 }
