@@ -6,6 +6,7 @@ namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Assessment;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\AssessmentTemperature;
 use App\Shared\Infrastructure\Exception\AppException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class AssessmentTemperatureTest extends TestCase
@@ -22,7 +23,7 @@ final class AssessmentTemperatureTest extends TestCase
         self::assertSame(500, AssessmentTemperature::fromInt(500)->celsius);
     }
 
-    /** @dataProvider outOfRange */
+    #[DataProvider('outOfRange')]
     public function test_from_int_out_of_range(int $v): void
     {
         $this->expectException(AppException::class);

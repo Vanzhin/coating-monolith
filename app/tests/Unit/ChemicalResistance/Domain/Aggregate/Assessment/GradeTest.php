@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Assessment;
 
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class GradeTest extends TestCase
 {
-    /** @dataProvider suitableCases */
+    #[DataProvider('suitableCases')]
     public function test_is_suitable(Grade $g, bool $expected): void
     {
         self::assertSame($expected, $g->isSuitable());

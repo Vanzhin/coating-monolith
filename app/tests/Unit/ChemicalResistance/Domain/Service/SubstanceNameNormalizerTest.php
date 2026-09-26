@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Unit\ChemicalResistance\Domain\Service;
 
 use App\ChemicalResistance\Domain\Service\SubstanceNameNormalizer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class SubstanceNameNormalizerTest extends TestCase
 {
     /**
-     * @dataProvider sameGroup
-     *
      * @param list<string> $variants
      */
+    #[DataProvider('sameGroup')]
     public function test_all_in_group_normalize_same(array $variants): void
     {
         $first = SubstanceNameNormalizer::normalize($variants[0]);
@@ -49,7 +49,7 @@ final class SubstanceNameNormalizerTest extends TestCase
         ];
     }
 
-    /** @dataProvider distinctGroup */
+    #[DataProvider('distinctGroup')]
     public function test_different_substances_normalize_differently(string $a, string $b): void
     {
         self::assertNotSame(

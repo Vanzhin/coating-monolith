@@ -135,14 +135,12 @@ final class ByIdsActionTest extends WebTestCase
     private function activate(User $user): void
     {
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, true);
     }
 
     private function grantAdmin(User $user): void
     {
         $ref = new \ReflectionProperty($user, 'roles');
-        $ref->setAccessible(true);
         $ref->setValue($user, ['ROLE_ADMIN']);
     }
 

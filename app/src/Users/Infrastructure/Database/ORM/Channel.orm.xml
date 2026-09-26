@@ -12,7 +12,9 @@
         />
         <field name="value" type="text"/>
         <many-to-one field="owner" target-entity="App\Users\Domain\Entity\User" inversed-by="channels">
-            <join-column referenced-column-name="ulid" nullable="false"/>
+            <!-- on-delete CASCADE: канал принадлежит юзеру — удаление юзера сносит его каналы на уровне БД
+                 (иначе FK-violation, в т.ч. шум в tearDown функциональных тестов). -->
+            <join-column referenced-column-name="ulid" nullable="false" on-delete="CASCADE"/>
         </many-to-one>
         <field name="isVerified" column="is_verified" type="boolean"/>
         <field name="verifiedAt" column="verified_at" type="datetime_immutable" nullable="true"/>

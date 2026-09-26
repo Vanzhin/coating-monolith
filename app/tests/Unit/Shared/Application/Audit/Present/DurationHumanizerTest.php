@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Application\Audit\Present;
 
 use App\Shared\Application\Audit\Present\DurationHumanizer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class DurationHumanizerTest extends TestCase
@@ -35,9 +36,7 @@ final class DurationHumanizerTest extends TestCase
         yield 'three nonzero units, real truncation not just zero-filtering' => [1525, '1 сут 1 ч'];
     }
 
-    /**
-     * @dataProvider positiveCases
-     */
+    #[DataProvider('positiveCases')]
     public function test_decomposes_into_top_two_units(int $minutes, string $expected): void
     {
         self::assertSame($expected, (new DurationHumanizer())->format($minutes));

@@ -60,7 +60,6 @@ final class UpdateActionRecoatingTreeTest extends WebTestCase
         // makeActiveInternally() requires at least one verified channel.
         // For tests we bypass that check via reflection to force isActive = true.
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, true);
 
         // Мутация покрытий — только ROLE_ADMIN.

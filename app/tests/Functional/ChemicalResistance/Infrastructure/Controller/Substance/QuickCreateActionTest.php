@@ -60,10 +60,8 @@ final class QuickCreateActionTest extends WebTestCase
         $user = new User(new Email($email));
         $user->setPassword('test_password', $hasher);
         $a = new \ReflectionProperty($user, 'isActive');
-        $a->setAccessible(true);
         $a->setValue($user, true);
         $r = new \ReflectionProperty($user, 'roles');
-        $r->setAccessible(true);
         $r->setValue($user, $roles);
         $this->em->persist($user);
 

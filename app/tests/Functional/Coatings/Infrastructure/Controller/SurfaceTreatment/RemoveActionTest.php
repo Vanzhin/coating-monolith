@@ -43,11 +43,9 @@ final class RemoveActionTest extends WebTestCase
         $admin->setPassword('test_password', $hasher);
 
         $ref = new \ReflectionProperty($admin, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($admin, true);
 
         $roleRef = new \ReflectionProperty($admin, 'roles');
-        $roleRef->setAccessible(true);
         $roleRef->setValue($admin, ['ROLE_ADMIN']);
 
         $this->em->persist($admin);
@@ -56,7 +54,6 @@ final class RemoveActionTest extends WebTestCase
         $regularUser->setPassword('test_password', $hasher);
 
         $ref2 = new \ReflectionProperty($regularUser, 'isActive');
-        $ref2->setAccessible(true);
         $ref2->setValue($regularUser, true);
 
         $this->em->persist($regularUser);

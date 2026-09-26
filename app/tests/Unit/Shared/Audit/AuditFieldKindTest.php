@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Audit;
 
 use App\Shared\Domain\Audit\AuditFieldKind;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class AuditFieldKindTest extends TestCase
@@ -22,9 +23,7 @@ final class AuditFieldKindTest extends TestCase
         yield 'recoating_tree' => ['recoating_tree', AuditFieldKind::RecoatingTree];
     }
 
-    /**
-     * @dataProvider knownValues
-     */
+    #[DataProvider('knownValues')]
     public function test_from_string_resolves_known_value(string $value, AuditFieldKind $expected): void
     {
         self::assertSame($expected, AuditFieldKind::fromString($value));

@@ -16,6 +16,7 @@ use App\Shared\Application\Audit\Present\ValueHumanizer;
 use App\Shared\Domain\Audit\AuditFieldKind;
 use App\Shared\Domain\Audit\ChangeOp;
 use App\Shared\Domain\Audit\FieldChange;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class AuditChangePresenterTest extends TestCase
@@ -235,9 +236,7 @@ final class AuditChangePresenterTest extends TestCase
         yield 'type' => ['type', 'единица'];
     }
 
-    /**
-     * @dataProvider dftSubkeys
-     */
+    #[DataProvider('dftSubkeys')]
     public function test_dft_subkey(string $subkey, string $rusLabel): void
     {
         $c = FieldChange::set('dftRange.'.$subkey, 80, 90);

@@ -232,7 +232,6 @@ final class CoatingMapperTest extends TestCase
         $unknown->time_in_minutes = null;
 
         $decomposeMethod = new \ReflectionMethod($mapper, 'decomposeSeriesForForm');
-        $decomposeMethod->setAccessible(true);
         $form = $decomposeMethod->invoke($mapper, [$duration, $unlimited, $unknown]);
 
         $this->assertSame('duration', $form[0]['kind']);

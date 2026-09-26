@@ -136,11 +136,9 @@ final class BySubstanceAssessmentActionsTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
 
         $activeRef = new \ReflectionProperty($user, 'isActive');
-        $activeRef->setAccessible(true);
         $activeRef->setValue($user, true);
 
         $rolesRef = new \ReflectionProperty($user, 'roles');
-        $rolesRef->setAccessible(true);
         $rolesRef->setValue($user, $roles);
 
         $this->em->persist($user);

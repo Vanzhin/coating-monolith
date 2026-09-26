@@ -37,11 +37,9 @@ final class SuggestActionTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
 
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, true);
 
         $rolesRef = new \ReflectionProperty($user, 'roles');
-        $rolesRef->setAccessible(true);
         $rolesRef->setValue($user, ['ROLE_ADMIN']);
 
         $this->em->persist($user);
