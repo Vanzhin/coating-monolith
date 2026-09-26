@@ -186,7 +186,6 @@ final class FlysystemFileStorageTest extends KernelTestCase
         ob_start();
         imagepng($image);
         $bytes = (string) ob_get_clean();
-        imagedestroy($image);
 
         return $bytes;
     }

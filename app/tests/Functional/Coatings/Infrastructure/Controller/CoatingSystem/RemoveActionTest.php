@@ -42,7 +42,6 @@ final class RemoveActionTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
 
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, true);
 
         // Мутация систем покрытий — только ROLE_ADMIN.

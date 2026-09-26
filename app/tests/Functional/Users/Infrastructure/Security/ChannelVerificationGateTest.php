@@ -101,7 +101,6 @@ final class ChannelVerificationGateTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
         if ($active) {
             $ref = new \ReflectionProperty($user, 'isActive');
-            $ref->setAccessible(true);
             $ref->setValue($user, true);
         }
         $this->em->persist($user);

@@ -114,7 +114,6 @@ final class UploadStagedActionTest extends WebTestCase
         ob_start();
         imagepng($image);
         $bytes = (string) ob_get_clean();
-        imagedestroy($image);
 
         return $bytes;
     }
@@ -122,7 +121,6 @@ final class UploadStagedActionTest extends WebTestCase
     private function setPrivate(object $obj, string $prop, mixed $value): void
     {
         $ref = new \ReflectionProperty($obj, $prop);
-        $ref->setAccessible(true);
         $ref->setValue($obj, $value);
     }
 }

@@ -6,15 +6,15 @@ namespace App\Tests\Unit\ChemicalResistance\Infrastructure\Docx;
 
 use App\ChemicalResistance\Infrastructure\Docx\GradeCellParser;
 use App\Shared\Infrastructure\Exception\AppException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class GradeCellParserTest extends TestCase
 {
     /**
-     * @dataProvider cases
-     *
      * @param list<string> $noteLabels
      */
+    #[DataProvider('cases')]
     public function test_parse(string $input, string $grade, ?int $maxT, array $noteLabels): void
     {
         $out = (new GradeCellParser())->parse($input);

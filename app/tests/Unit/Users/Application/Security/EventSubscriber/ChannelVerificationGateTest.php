@@ -145,7 +145,6 @@ final class ChannelVerificationGateTest extends TestCase
     private function forceIsActive(User $user, bool $value): void
     {
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, $value);
     }
 }

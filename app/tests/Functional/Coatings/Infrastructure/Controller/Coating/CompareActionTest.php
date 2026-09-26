@@ -50,7 +50,6 @@ final class CompareActionTest extends WebTestCase
         $user->setPassword('test_password', $hasher);
 
         $ref = new \ReflectionProperty($user, 'isActive');
-        $ref->setAccessible(true);
         $ref->setValue($user, true);
 
         $this->em->persist($user);

@@ -6,11 +6,12 @@ namespace App\Tests\Unit\ChemicalResistance\Domain\Aggregate\Substance;
 
 use App\ChemicalResistance\Domain\Aggregate\Substance\CasNumber;
 use App\Shared\Infrastructure\Exception\AppException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class CasNumberTest extends TestCase
 {
-    /** @dataProvider validCases */
+    #[DataProvider('validCases')]
     public function test_from_string_valid(string $input): void
     {
         $cas = CasNumber::fromString($input);
@@ -36,7 +37,7 @@ final class CasNumberTest extends TestCase
         ];
     }
 
-    /** @dataProvider invalidCases */
+    #[DataProvider('invalidCases')]
     public function test_from_string_invalid(string $input): void
     {
         $this->expectException(AppException::class);

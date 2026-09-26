@@ -317,7 +317,6 @@ final class ReportPagesTest extends WebTestCase
     private function setPrivate(object $obj, string $prop, mixed $value): void
     {
         $ref = new \ReflectionProperty($obj, $prop);
-        $ref->setAccessible(true);
         $ref->setValue($obj, $value);
     }
 }

@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Users\Domain\Entity\ValueObject;
 
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Users\Domain\Entity\ValueObject\PushSubscription;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class PushSubscriptionTest extends TestCase
@@ -31,9 +32,7 @@ final class PushSubscriptionTest extends TestCase
         self::assertSame(self::VALID, PushSubscription::fromJson($subscription->toJson())->jsonSerialize());
     }
 
-    /**
-     * @dataProvider malformedPayloads
-     */
+    #[DataProvider('malformedPayloads')]
     public function test_rejects_malformed_payload(mixed $payload): void
     {
         $this->expectException(AppException::class);
@@ -53,9 +52,7 @@ final class PushSubscriptionTest extends TestCase
         yield 'keys не массив' => [['endpoint' => 'e', 'keys' => 'x']];
     }
 
-    /**
-     * @dataProvider disallowedEndpoints
-     */
+    #[DataProvider('disallowedEndpoints')]
     public function test_rejects_disallowed_endpoint(string $endpoint): void
     {
         $this->expectException(AppException::class);
@@ -77,9 +74,7 @@ final class PushSubscriptionTest extends TestCase
         yield 'near-miss apple' => ['https://notpush.apple.com/x'];
     }
 
-    /**
-     * @dataProvider allowedEndpoints
-     */
+    #[DataProvider('allowedEndpoints')]
     public function test_accepts_allowlisted_endpoint(string $endpoint): void
     {
         $sub = PushSubscription::fromBrowserPayload([

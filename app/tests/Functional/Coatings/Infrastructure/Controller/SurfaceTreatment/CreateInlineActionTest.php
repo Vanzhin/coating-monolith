@@ -45,11 +45,9 @@ final class CreateInlineActionTest extends WebTestCase
         $admin->setPassword('test_password', $hasher);
 
         $refActive = new \ReflectionProperty($admin, 'isActive');
-        $refActive->setAccessible(true);
         $refActive->setValue($admin, true);
 
         $refRoles = new \ReflectionProperty($admin, 'roles');
-        $refRoles->setAccessible(true);
         $refRoles->setValue($admin, ['ROLE_ADMIN']);
 
         $this->em->persist($admin);
@@ -58,7 +56,6 @@ final class CreateInlineActionTest extends WebTestCase
         $regularUser->setPassword('test_password', $hasher);
 
         $refActive2 = new \ReflectionProperty($regularUser, 'isActive');
-        $refActive2->setAccessible(true);
         $refActive2->setValue($regularUser, true);
 
         $this->em->persist($regularUser);

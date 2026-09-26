@@ -6,13 +6,12 @@ namespace App\Tests\Unit\Shared\Domain\Aggregate\ValueObject;
 
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use App\Shared\Infrastructure\Exception\AppException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class PercentTest extends TestCase
 {
-    /**
-     * @dataProvider validValues
-     */
+    #[DataProvider('validValues')]
     public function test_accepts_values_in_range(int|float $value): void
     {
         self::assertSame($value, (new Percent($value))->value());
@@ -28,9 +27,7 @@ final class PercentTest extends TestCase
         yield 'hundred' => [100];
     }
 
-    /**
-     * @dataProvider outOfRange
-     */
+    #[DataProvider('outOfRange')]
     public function test_rejects_values_out_of_range(int|float $value): void
     {
         $this->expectException(AppException::class);
