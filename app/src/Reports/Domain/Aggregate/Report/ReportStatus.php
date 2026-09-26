@@ -27,12 +27,6 @@ enum ReportStatus: string
         };
     }
 
-    /** Утверждённый отчёт заморожен — редактировать нельзя. */
-    public function isFrozen(): bool
-    {
-        return self::Approved === $this;
-    }
-
     /**
      * Допустимые следующие статусы (логическая цепочка жизненного цикла).
      *

@@ -20,6 +20,7 @@ class ReportDTOTransformer
         $dto->typeLabel = $type?->label();
         $dto->status = $report->getStatus()->value;
         $dto->statusLabel = $report->getStatus()->label();
+        $dto->editable = $report->isEditable();
         $dto->rejectionReason = $report->getRejectionReason();
         $dto->reportDate = $report->getReportDate()?->format('Y-m-d');
         $dto->actNumber = $report->getActNumber();
