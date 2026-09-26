@@ -20,6 +20,7 @@ use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
 use App\Reports\Domain\Block\Definition\SystemBlock;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Domain\Templating\TemplateFormat;
@@ -73,7 +74,7 @@ final class ReportDocxRenderSmokeTest extends TestCase
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
             new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
         ]);
-        $projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry));
+        $projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry), $this->createStub(FileStorage::class));
         $doc = (new DocxTemplateRenderer())->render(new TemplateFile($this->templatePath), $projector->project($report));
 
         self::assertSame(TemplateFormat::Docx, $doc->format);
