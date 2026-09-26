@@ -5,6 +5,7 @@
             <div class="ecard-head">
                 <a class="ecard-title" href="{{ path('app_cabinet_report_fill', {id: r.id}) }}">{{ r.actNumber ? '№ ' ~ r.actNumber : 'Без номера' }}</a>
                 {% include 'cabinet/report/_status_pill.html.twig' with {status: r.status, label: r.statusLabel} only %}
+                {% if not r.editable %}<i class="bi bi-lock text-body-secondary" title="Редактирование закрыто"></i>{% endif %}
                 <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
                     <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
@@ -16,7 +17,7 @@
                                 <i class="bi bi-download me-2"></i>Скачать .docx
                             </a>
                         </li>
-                        {% if r.status != 'approved' %}
+                        {% if r.editable %}
                             <li class="mt-1">
                                 <a class="dropdown-item text-danger"
                                    href="{{ path('app_cabinet_report_delete', {id: r.id}) }}"
