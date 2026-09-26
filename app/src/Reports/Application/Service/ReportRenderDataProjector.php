@@ -28,9 +28,6 @@ use App\Shared\Domain\ValueObject\DateTimeInterval;
  */
 final readonly class ReportRenderDataProjector
 {
-    /** Ширина фото в документе, px (стабильный размер вместо натурального). Меняется одной цифрой. */
-    private const PHOTO_WIDTH_PX = 450;
-
     public function __construct(
         private BlockRegistry $registry,
         private ReportTemplateMap $map,
@@ -401,9 +398,9 @@ final readonly class ReportRenderDataProjector
                 continue;
             }
             $rows[] = [
-                // Явная ширина: иначе движок берёт натуральный размер (мелкие фото → мелкие в доке).
-                // px в .docx-метке не задать — PhpWord ломает инлайн-размер при индексации повтора (#i).
-                'image' => new ImageValue($this->fileStorage->localPath($fileUuid), self::PHOTO_WIDTH_PX),
+                // Размер картинки задаёт шаблон: инлайн-аргумент метки {{photos.image:450}} (ширина в px,
+                // высота — по пропорции). Ширину из кода не навязываем, чтобы её мог менять автор .docx.
+                'image' => new ImageValue($this->fileStorage->localPath($fileUuid)),
                 'caption' => is_string($row['caption'] ?? null) ? $row['caption'] : '',
             ];
         }

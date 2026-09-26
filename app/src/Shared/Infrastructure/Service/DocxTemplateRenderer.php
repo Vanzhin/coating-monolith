@@ -31,8 +31,6 @@ use PhpOffice\PhpWord\Exception\Exception as PhpWordException;
  */
 final class DocxTemplateRenderer implements TemplateRenderer
 {
-    private const DEFAULT_MAX_IMAGE_WIDTH_PX = 600;
-
     /** Предохранитель от бесконечного цикла при обработке повторяемой группы в нескольких местах. */
     private const MAX_REPEAT_OCCURRENCES = 100;
 
@@ -405,35 +403,26 @@ final class DocxTemplateRenderer implements TemplateRenderer
     }
 
     /**
-     * @return array{path: string, ratio: bool, width: int|string, height: int|string}
+     * PhpWord-опции вставки картинки. Ключевой нюанс prepareImageAttrs: незаданному измерению PhpWord
+     * подставляет СВОЙ дефолт (высота 70px), после чего fixImageWidthHeightRatio трактует картинку как
+     * бокс width×70 и ужимает заданную сторону под эти 70px — картинка выходит крошечной. Лечим тем, что
+     * высоту ВСЕГДА шлём пустой строкой: PhpWord посчитает её по пропорции (ветка `height === ''`), а не
+     * из дефолта. Ширину задаёт: (а) явный ImageValue->width (программный вызов), либо (б) инлайн-аргумент
+     * плейсхолдера в шаблоне ({{photos.image:450}}). Для (б) ширину в опциях НЕ передаём — иначе наш
+     * baseValue перебил бы inline (chooseImageDimension отдаёт приоритет baseValue). Без аргумента в
+     * шаблоне сработает дефолтная ширина PhpWord (~115px).
+     *
+     * @return array{path: string, ratio: bool, width?: int, height: int|string}
      */
     private function imageOptions(ImageValue $image): array
     {
-        // PhpWord (prepareImageAttrs): незаданному измерению оно подставляет СВОЙ дефолт (70px по
-        // высоте), после чего fixImageWidthHeightRatio трактует картинку как бокс width×70 и ужимает
-        // заданную сторону под этот 70px — картинка выходит крошечной, ширина де-факто игнорируется.
-        // Поэтому масштабируем по ОДНОЙ стороне, а вторую шлём пустой строкой: PhpWord вычислит её из
-        // пропорций (ветка `height === ''` в fixImageWidthHeightRatio), а не из дефолта.
-        if (null !== $image->width || null !== $image->height) {
-            return [
-                'path' => $image->path,
-                'ratio' => true,
-                'width' => $image->width ?? '',
-                'height' => $image->height ?? '',
-            ];
+        $options = ['path' => $image->path, 'ratio' => true, 'height' => $image->height ?? ''];
+
+        if (null !== $image->width) {
+            $options['width'] = $image->width;
         }
 
-        $size = @getimagesize($image->path);
-        $natural = is_array($size) ? (int) $size[0] : 0;
-
-        return [
-            'path' => $image->path,
-            'ratio' => true,
-            'width' => ($natural > 0 && $natural <= self::DEFAULT_MAX_IMAGE_WIDTH_PX)
-                ? $natural
-                : self::DEFAULT_MAX_IMAGE_WIDTH_PX,
-            'height' => '',
-        ];
+        return $options;
     }
 
     /**
@@ -500,7 +489,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $repeats = [];
         $repeatMembers = [];
         foreach ($mainContents as $token) {
-            if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $token, $m)) {
+            // Точечное подполе {{group.sub}}; допускаем PhpWord-инлайн-аргумент размера картинки
+            // ({{photos.image:450}} → :450), он не часть имени подполя — отбрасываем при опознании.
+            if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)(?::.*)?$/', $token, $m)) {
                 $group = $m[1];
                 $sub = $m[2];
                 $repeatMembers[$token] = true;

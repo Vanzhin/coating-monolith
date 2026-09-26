@@ -76,6 +76,27 @@ final class DocxTemplateRendererRepeatImageTest extends TestCase
         self::assertStringNotContainsString('height:70px', $xml); // дефолтный бокс НЕ применился
     }
 
+    public function test_template_inline_size_arg_drives_width_in_repeat(): void
+    {
+        // Автор .docx задаёт размер прямо в метке: {{photos.image:450}}. ImageValue ширины НЕ несёт
+        // (как шлёт проектор) — рулит шаблон. cloneBlock индексирует в {{photos.image#1:450}}, PhpWord
+        // читает :450 как ширину, высоту движок оставляет по пропорции.
+        $tpl = $this->docxWithParagraphs(['{{photos?}}', '{{photos.image:450}}', '{{/photos?}}']);
+        $wide = sys_get_temp_dir().'/wide_'.uniqid().'.png';
+        $im = imagecreatetruecolor(800, 600);
+        imagefilledrectangle($im, 0, 0, 799, 599, imagecolorallocate($im, 10, 120, 200));
+        imagepng($im, $wide);
+        $this->pngs[] = $wide;
+
+        $data = new RenderData(['photos' => new RepeatValue([['image' => new ImageValue($wide)]])]);
+        [$xml, $mediaCount] = $this->renderAndInspect($tpl, $data);
+        @unlink($tpl);
+
+        self::assertSame(1, $mediaCount);
+        self::assertMatchesRegularExpression('/style="[^"]*width:450px;height:337\.5px/', $xml);
+        self::assertStringNotContainsString('{{', $xml); // токен с аргументом не осиротел
+    }
+
     public function test_empty_photos_removes_region_no_leftover(): void
     {
         $tpl = $this->docxWithParagraphs([
