@@ -57,6 +57,25 @@ final class DocxTemplateRendererRepeatImageTest extends TestCase
         self::assertStringNotContainsString('{{', $text);
     }
 
+    public function test_explicit_width_is_honored_and_height_scales_by_ratio(): void
+    {
+        // Регресс на баг «фото крошечные, высота у всех ~1.4 см»: PhpWord незаданной высоте ставит
+        // дефолт 70px и ужимает под него ширину. Движок обязан слать высоту пустой → 450px + авто-высота.
+        $tpl = $this->docxWithParagraphs(['{{photos?}}', '{{photos.image}}', '{{/photos?}}']);
+        $wide = sys_get_temp_dir().'/wide_'.uniqid().'.png';
+        $im = imagecreatetruecolor(800, 600); // пропорция 4:3
+        imagefilledrectangle($im, 0, 0, 799, 599, imagecolorallocate($im, 10, 120, 200));
+        imagepng($im, $wide);
+        $this->pngs[] = $wide;
+
+        $data = new RenderData(['photos' => new RepeatValue([['image' => new ImageValue($wide, 450)]])]);
+        [$xml] = $this->renderAndInspect($tpl, $data);
+        @unlink($tpl);
+
+        self::assertMatchesRegularExpression('/style="[^"]*width:450px;height:337\.5px/', $xml);
+        self::assertStringNotContainsString('height:70px', $xml); // дефолтный бокс НЕ применился
+    }
+
     public function test_empty_photos_removes_region_no_leftover(): void
     {
         $tpl = $this->docxWithParagraphs([

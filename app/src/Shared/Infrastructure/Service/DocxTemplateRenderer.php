@@ -405,27 +405,35 @@ final class DocxTemplateRenderer implements TemplateRenderer
     }
 
     /**
-     * @return array{path: string, ratio: bool, width?: int, height?: int}
+     * @return array{path: string, ratio: bool, width: int|string, height: int|string}
      */
     private function imageOptions(ImageValue $image): array
     {
-        $options = ['path' => $image->path, 'ratio' => true];
+        // PhpWord (prepareImageAttrs): незаданному измерению оно подставляет СВОЙ дефолт (70px по
+        // высоте), после чего fixImageWidthHeightRatio трактует картинку как бокс width×70 и ужимает
+        // заданную сторону под этот 70px — картинка выходит крошечной, ширина де-факто игнорируется.
+        // Поэтому масштабируем по ОДНОЙ стороне, а вторую шлём пустой строкой: PhpWord вычислит её из
+        // пропорций (ветка `height === ''` в fixImageWidthHeightRatio), а не из дефолта.
+        if (null !== $image->width || null !== $image->height) {
+            return [
+                'path' => $image->path,
+                'ratio' => true,
+                'width' => $image->width ?? '',
+                'height' => $image->height ?? '',
+            ];
+        }
 
-        if (null !== $image->width) {
-            $options['width'] = $image->width;
-        }
-        if (null !== $image->height) {
-            $options['height'] = $image->height;
-        }
-        if (null === $image->width && null === $image->height) {
-            $size = @getimagesize($image->path);
-            $natural = is_array($size) ? (int) $size[0] : 0;
-            $options['width'] = ($natural > 0 && $natural <= self::DEFAULT_MAX_IMAGE_WIDTH_PX)
+        $size = @getimagesize($image->path);
+        $natural = is_array($size) ? (int) $size[0] : 0;
+
+        return [
+            'path' => $image->path,
+            'ratio' => true,
+            'width' => ($natural > 0 && $natural <= self::DEFAULT_MAX_IMAGE_WIDTH_PX)
                 ? $natural
-                : self::DEFAULT_MAX_IMAGE_WIDTH_PX;
-        }
-
-        return $options;
+                : self::DEFAULT_MAX_IMAGE_WIDTH_PX,
+            'height' => '',
+        ];
     }
 
     /**
