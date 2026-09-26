@@ -282,28 +282,79 @@ final class DocxTemplateRenderer implements TemplateRenderer
      * Одна группа может встречаться в НЕСКОЛЬКИХ таблицах — обрабатываем ВСЕ вхождения (cloneRow берёт
      * первое сырое, поэтому крутим, пока anchor ещё есть в документе).
      *
-     * @param list<string>                $subs
-     * @param list<array<string, string>> $rows
+     * @param list<string>                           $subs
+     * @param list<array<string, string|ImageValue>> $rows
      */
     private function repeatRow(DocxMacroProcessor $processor, string $anchor, string $group, array $subs, array $rows): void
     {
-        $mapped = [];
+        // Есть ли в строках картиночные ячейки? Картинку нельзя залить через cloneRowAndSetValues
+        // (он ставит только строки) — для таких строк идём через cloneRow + поячеечную заливку.
+        $hasImage = false;
         foreach ($rows as $row) {
-            $entry = [];
             foreach ($subs as $sub) {
-                $entry[$group.'.'.$sub] = $row[$sub] ?? '';
+                if (($row[$sub] ?? null) instanceof ImageValue) {
+                    $hasImage = true;
+                    break 2;
+                }
             }
-            $mapped[] = $entry;
         }
 
         $guard = 0;
+        if (!$hasImage) {
+            // Только текст — прежний быстрый путь (без изменений).
+            $mapped = [];
+            foreach ($rows as $row) {
+                $entry = [];
+                foreach ($subs as $sub) {
+                    $entry[$group.'.'.$sub] = (string) ($row[$sub] ?? '');
+                }
+                $mapped[] = $entry;
+            }
+            while (in_array($anchor, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+                if ([] === $mapped) {
+                    $processor->deleteRow($anchor);
+                } else {
+                    $processor->cloneRowAndSetValues($anchor, $mapped);
+                }
+            }
+
+            return;
+        }
+
+        // Со строками, несущими картинки: cloneRow клонирует строку (индексирует макросы #i),
+        // затем заливаем каждую ячейку по типу (текст — setValue, картинка — setImageValue).
         while (in_array($anchor, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
-            if ([] === $mapped) {
+            if ([] === $rows) {
                 $processor->deleteRow($anchor);
-            } else {
-                $processor->cloneRowAndSetValues($anchor, $mapped);
+
+                continue;
+            }
+            $processor->cloneRow($anchor, count($rows));
+            foreach ($rows as $i => $row) {
+                foreach ($subs as $sub) {
+                    $this->fillRepeatCell($processor, $group.'.'.$sub.'#'.($i + 1), $row[$sub] ?? '');
+                }
             }
         }
+    }
+
+    /**
+     * Заливка одной ячейки повтора по индексированному токену `{{group.sub#i}}`: строка → setValue,
+     * ImageValue → setImageValue (битый/отсутствующий файл → чистим ячейку, как у одиночной картинки).
+     */
+    private function fillRepeatCell(DocxMacroProcessor $processor, string $token, string|ImageValue $cell): void
+    {
+        if ($cell instanceof ImageValue) {
+            if (is_readable($cell->path)) {
+                $processor->setImageValue($token, $this->imageOptions($cell));
+            } else {
+                $processor->setValue($token, '');
+            }
+
+            return;
+        }
+
+        $processor->setValue($token, $cell);
     }
 
     /**
@@ -312,8 +363,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
      * `{{group.sub#i}}`. Пусто → удаляет регион. Группа может встречаться в НЕСКОЛЬКИХ местах — крутим,
      * пока маркер группы ещё есть.
      *
-     * @param list<string>                $subs
-     * @param list<array<string, string>> $rows
+     * @param list<string>                           $subs
+     * @param list<array<string, string|ImageValue>> $rows
      */
     private function repeatBlock(DocxMacroProcessor $processor, string $group, bool $optional, array $subs, array $rows): void
     {
@@ -333,7 +384,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
             foreach ($rows as $i => $row) {
                 $rowNumber = $i + 1;
                 foreach ($subs as $sub) {
-                    $processor->setValue($group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
+                    $this->fillRepeatCell($processor, $group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
                 }
             }
         }

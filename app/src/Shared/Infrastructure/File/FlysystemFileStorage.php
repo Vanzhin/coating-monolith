@@ -22,6 +22,7 @@ final readonly class FlysystemFileStorage implements FileStorage
     public function __construct(
         private FilesystemOperator $filesystem,
         private StoredFileRepositoryInterface $repository,
+        private string $fileStorageBaseDir,
     ) {
     }
 
@@ -94,6 +95,12 @@ final readonly class FlysystemFileStorage implements FileStorage
     public function readStream(string $uuid)
     {
         return $this->filesystem->readStream($this->require($uuid)->storageKey());
+    }
+
+    public function localPath(string $uuid): string
+    {
+        // local-адаптер: реальный путь = базовый каталог хранилища + относительный storageKey.
+        return rtrim($this->fileStorageBaseDir, '/').'/'.$this->require($uuid)->storageKey();
     }
 
     public function toLocalTempFile(string $uuid): string

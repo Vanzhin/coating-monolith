@@ -137,6 +137,7 @@ services:
   App\Shared\Infrastructure\File\FlysystemFileStorage:
     arguments:
       $filesystem: '@oneup_flysystem.file_storage_filesystem'
+      $fileStorageBaseDir: '%file_storage_upload_dir%'
 
   App\Shared\Domain\File\FileStorage: '@App\Shared\Infrastructure\File\FlysystemFileStorage'
 
