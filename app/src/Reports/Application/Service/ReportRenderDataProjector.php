@@ -12,6 +12,8 @@ use App\Reports\Domain\Block\BlockRegistry;
 use App\Reports\Domain\Block\Field;
 use App\Reports\Domain\Block\FieldType;
 use App\Shared\Domain\Aggregate\Enum\DocumentTextEnum;
+use App\Shared\Domain\File\FileStorage;
+use App\Shared\Domain\Templating\ImageValue;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
@@ -29,6 +31,7 @@ final readonly class ReportRenderDataProjector
     public function __construct(
         private BlockRegistry $registry,
         private ReportTemplateMap $map,
+        private FileStorage $fileStorage,
     ) {
     }
 
@@ -63,8 +66,10 @@ final readonly class ReportRenderDataProjector
                 $this->projectStringListRepeat($values, (string) $entry->blockKey, $raw);
             } elseif ($field->type->isScalar()) {
                 $this->put($values, $entry->variable, $this->formatScalar($field, $raw));
+            } elseif (FieldType::PhotoSlot === $field->type) {
+                $this->projectPhotos($values, (string) $entry->blockKey, $raw);
             }
-            // ссылки/медиа (CoatingRef/PhotoSlot) в документ пока не проецируются
+            // ссылки (CoatingRef/ColorRef) в документ пока не проецируются
         }
 
         return new RenderData($values);
@@ -365,6 +370,39 @@ final readonly class ReportRenderDataProjector
                 $mapped[$sub->key] = null !== $formatted ? $formatted : '';
             }
             $rows[] = $mapped;
+        }
+        if ([] !== $rows) {
+            $values[$groupKey] = new RepeatValue($rows);
+        }
+    }
+
+    /**
+     * Фото отчёта → повторяемая группа с КАРТИНКАМИ: строка {image: ImageValue, caption: текст}. Каждое
+     * фото — uuid хранёного файла (FileStorage); путь к байтам для вставки в docx — localPath. Нет файла
+     * в реестре — фото пропускаем; пустой список — группу не кладём (опц. регион шаблона удалится).
+     *
+     * @param array<string, \App\Shared\Domain\Templating\TemplateValue> $values
+     */
+    private function projectPhotos(array &$values, string $groupKey, mixed $value): void
+    {
+        if (!is_array($value) || [] === $value) {
+            return;
+        }
+        $rows = [];
+        foreach ($value as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $fileUuid = is_string($row['file'] ?? null) ? $row['file'] : '';
+            if ('' === $fileUuid || null === $this->fileStorage->get($fileUuid)) {
+                continue;
+            }
+            $rows[] = [
+                // Размер картинки задаёт шаблон: инлайн-аргумент метки {{photos.image:450}} (ширина в px,
+                // высота — по пропорции). Ширину из кода не навязываем, чтобы её мог менять автор .docx.
+                'image' => new ImageValue($this->fileStorage->localPath($fileUuid)),
+                'caption' => is_string($row['caption'] ?? null) ? $row['caption'] : '',
+            ];
         }
         if ([] !== $rows) {
             $values[$groupKey] = new RepeatValue($rows);

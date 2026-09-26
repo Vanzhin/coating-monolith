@@ -24,6 +24,11 @@ interface FileStorage
     /** @return resource */
     public function readStream(string $uuid);
 
+    /** Абсолютный локальный путь файла — для либ, читающих по пути (вставка картинки в docx).
+     * Для local-адаптера это САМ файл в хранилище (не копия, удалять не нужно). Для удалённого
+     * (S3) локального пути нет — там материализуй через toLocalTempFile(). */
+    public function localPath(string $uuid): string;
+
     /** Материализует временную локальную копию (для либ, требующих путь); вызывающий сам удаляет. */
     public function toLocalTempFile(string $uuid): string;
 

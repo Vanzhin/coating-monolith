@@ -11,11 +11,14 @@ namespace App\Shared\Domain\Templating;
  */
 final readonly class RepeatValue implements TemplateValue
 {
-    /** @var list<array<string, string>> */
+    /** @var list<array<string, string|ImageValue>> */
     public array $rows;
 
     /**
-     * @param list<array<string, string>> $rows
+     * Ячейка строки — строка (обычный текст) ИЛИ ImageValue (картинка, напр. фото отчёта): драйвер
+     * заливает текст через setValue, картинку — через setImageValue в клон строки/блока.
+     *
+     * @param list<array<string, string|ImageValue>> $rows
      */
     public function __construct(array $rows)
     {

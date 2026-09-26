@@ -21,6 +21,7 @@ use App\Reports\Domain\Block\Definition\ProcessBlock;
 use App\Reports\Domain\Block\Definition\RecommendationsBlock;
 use App\Reports\Domain\Block\Definition\SurfacePrepBlock;
 use App\Reports\Domain\Block\Definition\SystemBlock;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
@@ -39,7 +40,7 @@ final class ReportRenderDataProjectorTest extends TestCase
             new InstrumentsBlock(), new ProcessBlock(), new RecommendationsBlock(), new CommissionBlock(),
             new ApplicationBlock(), new PhotosBlock(), new ControlAreaBlock(), new SystemBlock(),
         ]);
-        $this->projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry));
+        $this->projector = new ReportRenderDataProjector($registry, new ReportTemplateMap($registry), $this->createStub(FileStorage::class));
     }
 
     public function test_projects_header_and_scalar_blocks(): void

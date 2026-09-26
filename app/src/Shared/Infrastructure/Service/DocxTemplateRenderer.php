@@ -31,8 +31,6 @@ use PhpOffice\PhpWord\Exception\Exception as PhpWordException;
  */
 final class DocxTemplateRenderer implements TemplateRenderer
 {
-    private const DEFAULT_MAX_IMAGE_WIDTH_PX = 600;
-
     /** Предохранитель от бесконечного цикла при обработке повторяемой группы в нескольких местах. */
     private const MAX_REPEAT_OCCURRENCES = 100;
 
@@ -282,28 +280,79 @@ final class DocxTemplateRenderer implements TemplateRenderer
      * Одна группа может встречаться в НЕСКОЛЬКИХ таблицах — обрабатываем ВСЕ вхождения (cloneRow берёт
      * первое сырое, поэтому крутим, пока anchor ещё есть в документе).
      *
-     * @param list<string>                $subs
-     * @param list<array<string, string>> $rows
+     * @param list<string>                           $subs
+     * @param list<array<string, string|ImageValue>> $rows
      */
     private function repeatRow(DocxMacroProcessor $processor, string $anchor, string $group, array $subs, array $rows): void
     {
-        $mapped = [];
+        // Есть ли в строках картиночные ячейки? Картинку нельзя залить через cloneRowAndSetValues
+        // (он ставит только строки) — для таких строк идём через cloneRow + поячеечную заливку.
+        $hasImage = false;
         foreach ($rows as $row) {
-            $entry = [];
             foreach ($subs as $sub) {
-                $entry[$group.'.'.$sub] = $row[$sub] ?? '';
+                if (($row[$sub] ?? null) instanceof ImageValue) {
+                    $hasImage = true;
+                    break 2;
+                }
             }
-            $mapped[] = $entry;
         }
 
         $guard = 0;
+        if (!$hasImage) {
+            // Только текст — прежний быстрый путь (без изменений).
+            $mapped = [];
+            foreach ($rows as $row) {
+                $entry = [];
+                foreach ($subs as $sub) {
+                    $entry[$group.'.'.$sub] = (string) ($row[$sub] ?? '');
+                }
+                $mapped[] = $entry;
+            }
+            while (in_array($anchor, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
+                if ([] === $mapped) {
+                    $processor->deleteRow($anchor);
+                } else {
+                    $processor->cloneRowAndSetValues($anchor, $mapped);
+                }
+            }
+
+            return;
+        }
+
+        // Со строками, несущими картинки: cloneRow клонирует строку (индексирует макросы #i),
+        // затем заливаем каждую ячейку по типу (текст — setValue, картинка — setImageValue).
         while (in_array($anchor, $processor->orderedMacros(), true) && ++$guard <= self::MAX_REPEAT_OCCURRENCES) {
-            if ([] === $mapped) {
+            if ([] === $rows) {
                 $processor->deleteRow($anchor);
-            } else {
-                $processor->cloneRowAndSetValues($anchor, $mapped);
+
+                continue;
+            }
+            $processor->cloneRow($anchor, count($rows));
+            foreach ($rows as $i => $row) {
+                foreach ($subs as $sub) {
+                    $this->fillRepeatCell($processor, $group.'.'.$sub.'#'.($i + 1), $row[$sub] ?? '');
+                }
             }
         }
+    }
+
+    /**
+     * Заливка одной ячейки повтора по индексированному токену `{{group.sub#i}}`: строка → setValue,
+     * ImageValue → setImageValue (битый/отсутствующий файл → чистим ячейку, как у одиночной картинки).
+     */
+    private function fillRepeatCell(DocxMacroProcessor $processor, string $token, string|ImageValue $cell): void
+    {
+        if ($cell instanceof ImageValue) {
+            if (is_readable($cell->path)) {
+                $processor->setImageValue($token, $this->imageOptions($cell));
+            } else {
+                $processor->setValue($token, '');
+            }
+
+            return;
+        }
+
+        $processor->setValue($token, $cell);
     }
 
     /**
@@ -312,8 +361,8 @@ final class DocxTemplateRenderer implements TemplateRenderer
      * `{{group.sub#i}}`. Пусто → удаляет регион. Группа может встречаться в НЕСКОЛЬКИХ местах — крутим,
      * пока маркер группы ещё есть.
      *
-     * @param list<string>                $subs
-     * @param list<array<string, string>> $rows
+     * @param list<string>                           $subs
+     * @param list<array<string, string|ImageValue>> $rows
      */
     private function repeatBlock(DocxMacroProcessor $processor, string $group, bool $optional, array $subs, array $rows): void
     {
@@ -333,7 +382,7 @@ final class DocxTemplateRenderer implements TemplateRenderer
             foreach ($rows as $i => $row) {
                 $rowNumber = $i + 1;
                 foreach ($subs as $sub) {
-                    $processor->setValue($group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
+                    $this->fillRepeatCell($processor, $group.'.'.$sub.'#'.$rowNumber, $row[$sub] ?? '');
                 }
             }
         }
@@ -354,24 +403,23 @@ final class DocxTemplateRenderer implements TemplateRenderer
     }
 
     /**
-     * @return array{path: string, ratio: bool, width?: int, height?: int}
+     * PhpWord-опции вставки картинки. Ключевой нюанс prepareImageAttrs: незаданному измерению PhpWord
+     * подставляет СВОЙ дефолт (высота 70px), после чего fixImageWidthHeightRatio трактует картинку как
+     * бокс width×70 и ужимает заданную сторону под эти 70px — картинка выходит крошечной. Лечим тем, что
+     * высоту ВСЕГДА шлём пустой строкой: PhpWord посчитает её по пропорции (ветка `height === ''`), а не
+     * из дефолта. Ширину задаёт: (а) явный ImageValue->width (программный вызов), либо (б) инлайн-аргумент
+     * плейсхолдера в шаблоне ({{photos.image:450}}). Для (б) ширину в опциях НЕ передаём — иначе наш
+     * baseValue перебил бы inline (chooseImageDimension отдаёт приоритет baseValue). Без аргумента в
+     * шаблоне сработает дефолтная ширина PhpWord (~115px).
+     *
+     * @return array{path: string, ratio: bool, width?: int, height: int|string}
      */
     private function imageOptions(ImageValue $image): array
     {
-        $options = ['path' => $image->path, 'ratio' => true];
+        $options = ['path' => $image->path, 'ratio' => true, 'height' => $image->height ?? ''];
 
         if (null !== $image->width) {
             $options['width'] = $image->width;
-        }
-        if (null !== $image->height) {
-            $options['height'] = $image->height;
-        }
-        if (null === $image->width && null === $image->height) {
-            $size = @getimagesize($image->path);
-            $natural = is_array($size) ? (int) $size[0] : 0;
-            $options['width'] = ($natural > 0 && $natural <= self::DEFAULT_MAX_IMAGE_WIDTH_PX)
-                ? $natural
-                : self::DEFAULT_MAX_IMAGE_WIDTH_PX;
         }
 
         return $options;
@@ -441,7 +489,9 @@ final class DocxTemplateRenderer implements TemplateRenderer
         $repeats = [];
         $repeatMembers = [];
         foreach ($mainContents as $token) {
-            if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)$/', $token, $m)) {
+            // Точечное подполе {{group.sub}}; допускаем PhpWord-инлайн-аргумент размера картинки
+            // ({{photos.image:450}} → :450), он не часть имени подполя — отбрасываем при опознании.
+            if (1 === preg_match('/^([a-z0-9_]+)\.([a-z0-9_]+)(?::.*)?$/', $token, $m)) {
                 $group = $m[1];
                 $sub = $m[2];
                 $repeatMembers[$token] = true;
