@@ -66,6 +66,7 @@ security:
 
   access_control:
     - { path: ^/api/auth/token, roles: PUBLIC_ACCESS }
+    - { path: ^/api/tools, roles: PUBLIC_ACCESS } # публичные данные калькуляторов (сортамент ПТМ)
     - { path: ^/api,     roles: IS_AUTHENTICATED }
     - { path: ^/cabinet, roles: IS_AUTHENTICATED }
     - { path: ^/user,    roles: IS_AUTHENTICATED }

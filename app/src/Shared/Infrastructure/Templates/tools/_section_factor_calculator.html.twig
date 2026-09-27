@@ -1,0 +1,243 @@
+{# Ядро калькулятора приведённой толщины металла — страница /tools/section-factor и модалка-шит.
+   Логика: section_factor_calculator_controller (зеркалит доменные SectionFactor\* ради офлайна).
+   Сортамент тянется с /api/tools/section-factor/sortament и кэшируется у клиента. #}
+<div data-controller="section-factor-calculator" class="sf-calc">
+    <div class="p-3 rounded-3 bg-body-tertiary">
+
+        <p class="sf-lbl">Тип профиля</p>
+        <div class="sf-types">
+            <button type="button" class="sf-type is-active" data-type="i_beam" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v3H14v10h6v3H4v-3h6V7H4z"/></svg>Двутавр</button>
+            <button type="button" class="sf-type" data-type="channel" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 4h15v3H8v10h12v3H5z"/></svg>Швеллер</button>
+            <button type="button" class="sf-type" data-type="angle" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 4h4v11h11v4H5z"/></svg>Уголок</button>
+            <button type="button" class="sf-type" data-type="pipe" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 110 10 5 5 0 010-10z"/></svg>Труба</button>
+            <button type="button" class="sf-type" data-type="round_bar" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>Круг</button>
+            <button type="button" class="sf-type" data-type="rect_hollow" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="3"/></svg>Профиль</button>
+            <button type="button" class="sf-type" data-type="sheet" data-action="click->section-factor-calculator#selectType">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="10" width="18" height="4" fill="currentColor"/></svg>Лист</button>
+        </div>
+
+        <div class="sf-body">
+            {# ---- схемы профилей (SVG); кликом по стороне включается/выключается обогрев ---- #}
+            <div class="sf-visual">
+                <div class="sf-stage" data-type="i_beam">
+                    <svg viewBox="0 0 260 250" role="img" aria-label="Сечение двутавра">
+                        <line class="sf-diag-dim" x1="28" y1="46" x2="28" y2="204"/><text class="sf-diag-label" x="12" y="129">H</text>
+                        <line class="sf-diag-dim" x1="46" y1="30" x2="214" y2="30"/><text class="sf-diag-label" x="124" y="22">b</text>
+                        <text class="sf-diag-label" x="220" y="60">t</text><text class="sf-diag-label" x="120" y="128">s</text>
+                        <polygon class="sf-steel" points="46,44 214,44 214,64 146,64 146,186 214,186 214,206 46,206 46,186 114,186 114,64 46,64"/>
+                        <path class="sf-face" data-face="top" d="M46,44 L214,44"/>
+                        <path class="sf-face" data-face="right" d="M214,44 L214,64 L146,64 L146,186 L214,186 L214,206"/>
+                        <path class="sf-face" data-face="bottom" d="M214,206 L46,206"/>
+                        <path class="sf-face" data-face="left" d="M46,206 L46,186 L114,186 L114,64 L46,64 L46,44"/>
+                        <rect class="sf-hit" data-face="top" x="0" y="0" width="260" height="83" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="bottom" x="0" y="167" width="260" height="83" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="left" x="0" y="83" width="87" height="84" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="right" x="173" y="83" width="87" height="84" data-action="click->section-factor-calculator#faceClick"/>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">4 стороны</b> · кликните по стороне</p>
+                </div>
+
+                <div class="sf-stage" data-type="channel" hidden>
+                    <svg viewBox="0 0 230 230" role="img" aria-label="Сечение швеллера">
+                        <text class="sf-diag-label" x="30" y="120">H</text><text class="sf-diag-label" x="112" y="30">b</text>
+                        <polygon class="sf-steel" points="60,40 170,40 170,60 80,60 80,170 170,170 170,190 60,190"/>
+                        <path class="sf-face" data-face="top" d="M60,40 L170,40"/>
+                        <path class="sf-face" data-face="bottom" d="M60,190 L170,190"/>
+                        <path class="sf-face" data-face="left" d="M60,40 L60,190"/>
+                        <path class="sf-face" data-face="right" d="M170,40 L170,60 L80,60 L80,170 L170,170 L170,190"/>
+                        <rect class="sf-hit" data-face="top" x="0" y="0" width="230" height="77" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="bottom" x="0" y="153" width="230" height="77" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="left" x="0" y="77" width="77" height="76" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="right" x="153" y="77" width="77" height="76" data-action="click->section-factor-calculator#faceClick"/>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">4 стороны</b> · кликните по стороне</p>
+                </div>
+
+                <div class="sf-stage" data-type="angle" hidden>
+                    <svg viewBox="0 0 230 210" role="img" aria-label="Сечение уголка">
+                        <text class="sf-diag-label" x="40" y="105">b₁</text><text class="sf-diag-label" x="125" y="195">b₂</text>
+                        <polygon class="sf-steel" points="60,40 80,40 80,150 180,150 180,170 60,170"/>
+                        <path class="sf-face" data-face="top" d="M80,40 L80,150"/>
+                        <path class="sf-face" data-face="left" d="M80,150 L180,150"/>
+                        <rect class="sf-hit" data-face="top" x="0" y="0" width="120" height="150" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="left" x="0" y="150" width="230" height="60" data-action="click->section-factor-calculator#faceClick"/>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">полки</b> · кликните по грани</p>
+                </div>
+
+                <div class="sf-stage" data-type="pipe" hidden>
+                    <svg viewBox="0 0 230 230" role="img" aria-label="Сечение трубы">
+                        <circle class="sf-steel" cx="115" cy="115" r="75"/>
+                        <circle cx="115" cy="115" r="58" fill="var(--bs-tertiary-bg)" stroke="var(--bs-secondary-color)" stroke-width="1.5"/>
+                        <circle class="sf-ring-hot" cx="115" cy="115" r="75"/>
+                        <text class="sf-diag-label" x="103" y="119">D</text>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">по контуру</b></p>
+                </div>
+
+                <div class="sf-stage" data-type="round_bar" hidden>
+                    <svg viewBox="0 0 230 230" role="img" aria-label="Сечение круга">
+                        <circle class="sf-steel" cx="115" cy="115" r="75"/>
+                        <circle class="sf-ring-hot" cx="115" cy="115" r="75"/>
+                        <text class="sf-diag-label" x="103" y="119">D</text>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">по контуру</b></p>
+                </div>
+
+                <div class="sf-stage" data-type="rect_hollow" hidden>
+                    <svg viewBox="0 0 230 210" role="img" aria-label="Сечение профиля">
+                        <text class="sf-diag-label" x="30" y="108">H</text><text class="sf-diag-label" x="110" y="34">W</text><text class="sf-diag-label" x="180" y="60">t</text>
+                        <rect class="sf-steel" x="55" y="45" width="120" height="120"/>
+                        <rect x="67" y="57" width="96" height="96" fill="var(--bs-tertiary-bg)" stroke="var(--bs-secondary-color)" stroke-width="1.5"/>
+                        <path class="sf-face" data-face="top" d="M55,45 L175,45"/>
+                        <path class="sf-face" data-face="bottom" d="M55,165 L175,165"/>
+                        <path class="sf-face" data-face="left" d="M55,45 L55,165"/>
+                        <path class="sf-face" data-face="right" d="M175,45 L175,165"/>
+                        <rect class="sf-hit" data-face="top" x="0" y="0" width="230" height="70" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="bottom" x="0" y="140" width="230" height="70" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="left" x="0" y="70" width="77" height="70" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="right" x="153" y="70" width="77" height="70" data-action="click->section-factor-calculator#faceClick"/>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">4 стороны</b> · кликните по стороне</p>
+                </div>
+
+                <div class="sf-stage" data-type="sheet" hidden>
+                    <svg viewBox="0 0 230 150" role="img" aria-label="Сечение листа">
+                        <text class="sf-diag-label" x="205" y="86">δ</text>
+                        <rect class="sf-steel" x="30" y="66" width="170" height="24"/>
+                        <path class="sf-face" data-face="top" d="M30,66 L200,66"/>
+                        <path class="sf-face" data-face="bottom" d="M30,90 L200,90"/>
+                        <rect class="sf-hit" data-face="top" x="0" y="0" width="230" height="75" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="bottom" x="0" y="75" width="230" height="75" data-action="click->section-factor-calculator#faceClick"/>
+                    </svg>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">2 стороны</b> · кликните по стороне</p>
+                </div>
+            </div>
+
+            {# ---- ввод: режим + сортамент/размеры + схема обогрева ---- #}
+            <div class="sf-controls">
+                <div class="sf-seg" role="group" aria-label="Способ ввода">
+                    <button type="button" data-sf-mode="sortament" aria-pressed="true" data-action="click->section-factor-calculator#setMode">Из сортамента</button>
+                    <button type="button" data-sf-mode="dims" data-action="click->section-factor-calculator#setMode">По размерам</button>
+                </div>
+
+                <div class="sf-sortament mt-3">
+                    <p class="sf-lbl">Сортамент — каждый шаг открывает следующий</p>
+                    <div class="sf-cascade">
+                        <div class="sf-step">
+                            <div class="sf-step-head"><span class="sf-step-num">1</span><span class="sf-step-name">Стандарт</span></div>
+                            <select class="form-select form-select-sm" data-sf-role="standard" data-action="change->section-factor-calculator#onStandardChange" aria-label="Стандарт"></select>
+                        </div>
+                        <div class="sf-step">
+                            <div class="sf-step-head"><span class="sf-step-num">2</span><span class="sf-step-name"></span></div>
+                            <select class="form-select form-select-sm" data-sf-role="level" data-level="0" data-action="change->section-factor-calculator#onLevelChange" aria-label="Уровень 1"></select>
+                        </div>
+                        <div class="sf-step">
+                            <div class="sf-step-head"><span class="sf-step-num">3</span><span class="sf-step-name"></span></div>
+                            <select class="form-select form-select-sm" data-sf-role="level" data-level="1" data-action="change->section-factor-calculator#onLevelChange" aria-label="Уровень 2"></select>
+                        </div>
+                        <div class="sf-step">
+                            <div class="sf-step-head"><span class="sf-step-num">4</span><span class="sf-step-name"></span></div>
+                            <select class="form-select form-select-sm" data-sf-role="level" data-level="2" data-action="change->section-factor-calculator#onLevelChange" aria-label="Уровень 3"></select>
+                        </div>
+                    </div>
+                    <span class="sf-chosen" hidden></span>
+                </div>
+
+                <div class="sf-manual mt-3" hidden>
+                    <p class="sf-lbl">Размеры профиля</p>
+                    <div class="sf-dims" data-type="i_beam">
+                        <div class="sf-dim-row"><label>Высота H</label><input class="form-control" inputmode="decimal" data-dim="height" value="200" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Ширина полки b</label><input class="form-control" inputmode="decimal" data-dim="flangeWidth" value="100" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина стенки s</label><input class="form-control" inputmode="decimal" data-dim="webThickness" value="5.6" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина полки t</label><input class="form-control" inputmode="decimal" data-dim="flangeThickness" value="8.5" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="channel" hidden>
+                        <div class="sf-dim-row"><label>Высота H</label><input class="form-control" inputmode="decimal" data-dim="height" value="200" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Ширина полки b</label><input class="form-control" inputmode="decimal" data-dim="flangeWidth" value="76" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина стенки s</label><input class="form-control" inputmode="decimal" data-dim="webThickness" value="5" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина полки t</label><input class="form-control" inputmode="decimal" data-dim="flangeThickness" value="9" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="angle" hidden>
+                        <div class="sf-dim-row"><label>Полка b₁</label><input class="form-control" inputmode="decimal" data-dim="legA" value="100" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Полка b₂</label><input class="form-control" inputmode="decimal" data-dim="legB" value="100" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина t</label><input class="form-control" inputmode="decimal" data-dim="thickness" value="8" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="pipe" hidden>
+                        <div class="sf-dim-row"><label>Наружный диаметр D</label><input class="form-control" inputmode="decimal" data-dim="outerDiameter" value="108" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина стенки t</label><input class="form-control" inputmode="decimal" data-dim="wallThickness" value="4" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="round_bar" hidden>
+                        <div class="sf-dim-row"><label>Диаметр D</label><input class="form-control" inputmode="decimal" data-dim="diameter" value="40" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="rect_hollow" hidden>
+                        <div class="sf-dim-row"><label>Высота H</label><input class="form-control" inputmode="decimal" data-dim="height" value="100" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Ширина W</label><input class="form-control" inputmode="decimal" data-dim="width" value="100" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                        <div class="sf-dim-row"><label>Толщина стенки t</label><input class="form-control" inputmode="decimal" data-dim="wallThickness" value="5" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <div class="sf-dims" data-type="sheet" hidden>
+                        <div class="sf-dim-row"><label>Толщина δ</label><input class="form-control" inputmode="decimal" data-dim="thickness" value="10" data-action="input->section-factor-calculator#onDimInput"><span class="film-unit">мм</span></div>
+                    </div>
+                    <p class="sf-manual-note">Ручной ввод — без учёта закруглений. Точные значения (с R) — из сортамента.</p>
+                </div>
+
+                <p class="sf-lbl mt-3">Схема обогрева</p>
+                <div class="sf-presets sf-seg" role="group" aria-label="Схема обогрева">
+                    <button type="button" data-sf-preset="4" aria-pressed="true" data-action="click->section-factor-calculator#preset">4 стороны</button>
+                    <button type="button" data-sf-preset="3" data-action="click->section-factor-calculator#preset">3 стороны</button>
+                </div>
+                <div class="sf-faces">
+                    <label class="sf-facechk" data-face="top"><input type="checkbox" data-face="top" checked data-action="change->section-factor-calculator#toggleFace"><span class="sf-facechk-lbl">Сверху</span></label>
+                    <label class="sf-facechk" data-face="bottom"><input type="checkbox" data-face="bottom" checked data-action="change->section-factor-calculator#toggleFace"><span class="sf-facechk-lbl">Снизу</span></label>
+                    <label class="sf-facechk" data-face="left"><input type="checkbox" data-face="left" checked data-action="change->section-factor-calculator#toggleFace"><span class="sf-facechk-lbl">Слева</span></label>
+                    <label class="sf-facechk" data-face="right"><input type="checkbox" data-face="right" checked data-action="change->section-factor-calculator#toggleFace"><span class="sf-facechk-lbl">Справа</span></label>
+                </div>
+                <p class="sf-heat-note mix-hint" hidden></p>
+            </div>
+
+            {# ---- результат ---- #}
+            <div class="sf-results">
+                <div class="sf-hero" data-controller="copy-value">
+                    <div>
+                        <div class="sf-hero-k">Приведённая толщина металла</div>
+                        <div><span class="sf-hero-v" data-sf-out="ptm" data-copy-value-target="source" aria-live="polite">—</span><span class="sf-hero-u">мм</span></div>
+                    </div>
+                    <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
+                </div>
+
+                <div class="film-row" data-controller="copy-value">
+                    <span class="film-label">Обогреваемый периметр</span>
+                    <span class="film-fld film-eff-val" data-sf-out="perimeter" data-copy-value-target="source" aria-live="polite">—</span>
+                    <span class="film-unit">мм</span>
+                    <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
+                </div>
+                <div class="film-row" data-controller="copy-value">
+                    <span class="film-label">Масса / 1 м</span>
+                    <span class="film-fld film-eff-val" data-sf-out="mass" data-copy-value-target="source" aria-live="polite">—</span>
+                    <span class="film-unit">кг</span>
+                    <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
+                </div>
+                <div class="film-row" data-controller="copy-value">
+                    <span class="film-label">Площадь поверхности / 1 м</span>
+                    <span class="film-fld film-eff-val" data-sf-out="spm" data-copy-value-target="source" aria-live="polite">—</span>
+                    <span class="film-unit">м²</span>
+                    <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
+                </div>
+                <div class="film-row" data-controller="copy-value">
+                    <span class="film-label">Площадь поверхности / 1 т</span>
+                    <span class="film-fld film-eff-val" data-sf-out="spt" data-copy-value-target="source" aria-live="polite">—</span>
+                    <span class="film-unit">м²</span>
+                    <button type="button" class="calc-copy" data-action="copy-value#copy" aria-label="Скопировать" title="Скопировать"><i class="bi bi-copy" data-copy-value-target="icon"></i></button>
+                </div>
+
+                <p class="mix-hint">ПТМ = площадь сечения / обогреваемый периметр (НПБ 236-97). Чем меньше ПТМ, тем толще нужен слой огнезащиты.</p>
+            </div>
+        </div>
+    </div>
+</div>

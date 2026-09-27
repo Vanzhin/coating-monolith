@@ -65,4 +65,17 @@ final class ToolsPagesTest extends WebTestCase
         self::assertSelectorExists('[data-controller="dew-point-calculator"]');
         self::assertSelectorExists('details');
     }
+
+    public function test_section_factor_calculator_is_public_and_renders(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/tools/section-factor');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'толщина металла');
+        self::assertSelectorExists('[data-controller="section-factor-calculator"]');
+        // все 7 типов профиля присутствуют в серверной разметке
+        self::assertCount(7, $client->getCrawler()->filter('.sf-type'));
+        self::assertSelectorExists('details');
+    }
 }

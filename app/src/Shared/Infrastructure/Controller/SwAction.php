@@ -44,6 +44,8 @@ final class SwAction extends AbstractController
             $this->generateUrl('app_tools_film'),
             $this->generateUrl('app_tools_consumption'),
             $this->generateUrl('app_tools_dew'),
+            $this->generateUrl('app_tools_section_factor'),
+            $this->generateUrl('app_api_tools_section_factor_sortament'),
         ];
 
         // Версия кэша = хеш СОДЕРЖИМОГО ассетов. В проде имена хешированы (меняются на деплое); в dev

@@ -1,0 +1,89 @@
+/* Калькулятор приведённой толщины металла (/tools/section-factor).
+   Только токены дизайн-системы; обогреваемая грань — семантический --danger-strong. */
+
+/* Раскладка: узкая одноколоночная на мобиле, шире и в 2 колонки на десктопе (без вертикального скролла) */
+.tools-page.sf-wide { max-width: 880px; }
+.sf-body { display: grid; gap: 1rem 1.5rem; grid-template-columns: 1fr; grid-template-areas: "stage" "inputs" "results"; }
+.sf-visual { grid-area: stage; }
+.sf-controls { grid-area: inputs; }
+.sf-results { grid-area: results; }
+@media (min-width: 720px) {
+    .sf-body { grid-template-columns: 1fr 1fr; grid-template-areas: "stage inputs" "results inputs"; align-items: start; }
+}
+
+/* Табы типа профиля — горизонтальный скролл */
+.sf-types { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .35rem; margin-bottom: .85rem; scrollbar-width: thin; }
+.sf-type {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .3rem;
+    min-width: 3.4rem; padding: .5rem .55rem; border: 1px solid transparent; border-radius: var(--bs-border-radius-sm);
+    background: var(--bs-tertiary-bg); color: var(--bs-secondary-color); font-size: .68rem; font-weight: 600;
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.sf-type svg { width: 1.5rem; height: 1.5rem; }
+.sf-type:hover { color: var(--bs-body-color); }
+.sf-type.is-active { background: var(--accent-subtle); color: var(--bs-primary); border-color: color-mix(in srgb, var(--bs-primary) 30%, transparent); }
+
+/* Схема профиля (SVG) */
+.sf-stage { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius); padding: .85rem; margin-bottom: .85rem; text-align: center; }
+.sf-stage svg { width: 100%; max-width: 190px; height: auto; }
+.sf-diag-label { fill: var(--bs-secondary-color); font-family: var(--bs-font-monospace, monospace); font-size: 12px; }
+.sf-diag-dim { stroke: var(--bs-secondary-color); stroke-width: 1; opacity: .65; fill: none; }
+.sf-steel { fill: var(--bs-secondary-bg); stroke: var(--bs-secondary-color); stroke-width: 1.5; }
+.sf-face { fill: none; stroke: var(--bs-secondary-color); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: stroke .18s, stroke-width .18s; pointer-events: none; }
+.sf-face.is-hot { stroke: var(--danger-strong); stroke-width: 6; } /* красный — только в рисунке конструкции */
+.sf-hit { fill: transparent; stroke: none; pointer-events: all; cursor: pointer; } /* крупная зона клика в районе стороны (удобно на тач) */
+.sf-ring-hot { fill: none; stroke: var(--danger-strong); stroke-width: 6; } /* труба/круг — обогрев по всему контуру */
+.sf-stage[hidden] { display: none; }
+.sf-stage-cap { font-size: .75rem; color: var(--bs-secondary-color); margin: .5rem 0 0; }
+.sf-stage-cap b { color: var(--bs-body-color); font-weight: 700; }
+
+/* Сегмент-контрол (режим ввода, пресеты обогрева) */
+.sf-seg { display: inline-flex; background: var(--bs-tertiary-bg); border-radius: 999px; padding: .25rem; gap: .15rem; flex-wrap: wrap; }
+.sf-seg[hidden] { display: none; }
+.sf-seg button { border: 0; background: none; color: var(--bs-secondary-color); font: inherit; font-size: .8rem; font-weight: 600; padding: .4rem .85rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.sf-seg button[aria-pressed="true"] { background: var(--surface); color: var(--bs-body-color); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+
+/* Каскад сортамента — нумерованные зависимые шаги */
+.sf-lbl { font-size: .625rem; text-transform: uppercase; letter-spacing: .04em; color: var(--bs-secondary-color); font-weight: 700; margin: 0 0 .5rem; }
+.sf-cascade { display: flex; flex-direction: column; gap: .55rem; }
+.sf-step { display: flex; flex-direction: column; gap: .3rem; }
+.sf-step[hidden] { display: none; }
+.sf-step-head { display: flex; align-items: center; gap: .45rem; }
+.sf-step-num {
+    flex: 0 0 auto; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: var(--bs-primary); color: #fff;
+    font-size: .7rem; font-weight: 700; display: grid; place-items: center; line-height: 1;
+}
+.sf-step.is-locked .sf-step-num { background: var(--bs-secondary-color); }
+.sf-step.is-locked .form-select { background: var(--sunken); color: var(--bs-secondary-color); }
+.sf-step-name { font-size: .78rem; color: var(--bs-secondary-color); font-weight: 600; }
+.sf-chosen { margin: .55rem 0 0; display: inline-flex; align-items: center; gap: .4rem; align-self: flex-start;
+    background: var(--accent-subtle); border-radius: 999px; padding: .3rem .7rem; font-size: .8rem; font-weight: 700; color: var(--bs-primary); }
+
+/* Ручной ввод размеров */
+.sf-manual[hidden], .sf-sortament[hidden] { display: none; }
+.sf-dims[hidden] { display: none; }
+.sf-dim-row { display: grid; grid-template-columns: 1fr 5.5rem 2rem; gap: .5rem; align-items: center; padding: .3rem 0; }
+.sf-dim-row label { font-size: .85rem; font-weight: 600; }
+.sf-dim-row .form-control { text-align: center; font-weight: 600; height: auto; min-height: 40px; border-radius: var(--bs-border-radius-sm); }
+.sf-dim-row .film-unit { color: var(--bs-secondary-color); font-size: .85rem; }
+.sf-manual-note { font-size: .75rem; color: var(--bs-secondary-color); margin: .5rem 0 0; }
+
+/* Схема обогрева */
+.sf-faces { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .6rem; }
+.sf-faces[hidden] { display: none; }
+.sf-facechk {
+    display: flex; align-items: center; gap: .55rem; padding: .5rem .6rem; font-size: .82rem; cursor: pointer; user-select: none;
+    background: var(--surface); border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius-sm); transition: background .15s, border-color .15s;
+}
+.sf-facechk input { accent-color: var(--bs-secondary-color); width: 1rem; height: 1rem; flex: 0 0 auto; }
+.sf-facechk.is-hot { border-color: color-mix(in srgb, var(--bs-secondary-color) 45%, transparent); background: var(--bs-secondary-bg); } /* активная грань — серым, не красным */
+
+/* Итог — ПТМ крупно */
+.sf-hero {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: .75rem;
+    background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--bs-primary) 22%, transparent);
+    border-radius: var(--bs-border-radius); padding: .8rem .95rem; margin: .85rem 0 .5rem;
+}
+.sf-hero-k { font-size: .625rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-primary); font-weight: 700; }
+.sf-hero-v { font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.sf-hero-u { font-size: .9rem; color: var(--bs-secondary-color); margin-left: .2rem; }
