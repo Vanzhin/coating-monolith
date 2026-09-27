@@ -242,6 +242,37 @@ final class ReportPagesTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Утверждён');
     }
 
+    public function test_under_review_locks_fill_form(): void
+    {
+        $id = $this->createReport();
+
+        // Отправляем на проверку (полная шапка + обязательные поля) → статус «На проверке».
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', array_merge($this->fullRequisites(), [
+            'action' => 'submit',
+            'content' => [
+                'control_area' => ['description' => 'Балка Б-1'],
+                'surface_prep' => ['rustGrade' => 'B', 'prepDegree' => 'Sa 2½'],
+                'conclusion' => ['text' => ['соответствует']],
+            ],
+        ]));
+        self::assertResponseRedirects('/cabinet/report/'.$id.'/fill');
+
+        // GET: поля заблокированы (fieldset disabled), баннер, кнопки «На проверку» нет.
+        $this->client->request('GET', '/cabinet/report/'.$id.'/fill');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('fieldset[disabled]');
+        self::assertSelectorTextContains('body', 'на проверке');
+        self::assertSelectorNotExists('button[name="action"][value="submit"]');
+
+        // POST правки на проверке → доменный замок: ре-рендер с ошибкой, не редирект.
+        $this->client->request('POST', '/cabinet/report/'.$id.'/fill', [
+            'action' => 'save',
+            'content' => ['conclusion' => ['text' => ['правка на проверке']]],
+        ]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'на проверке');
+    }
+
     public function test_quick_create_counterparty_then_project(): void
     {
         $this->client->request('POST', '/cabinet/reports/counterparty/quick', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['title' => 'QuickCP-'.uniqid('', true), 'tin' => '3000000013']));

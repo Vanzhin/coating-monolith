@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Утверждение отчёта ревьюером/админом (На проверке → Утверждён, заморозка). Дальнейшие правки
- * запрещены доменом (isFrozen). Файл не храним — акт воспроизводится из замороженных данных (Вариант A).
+ * запрещены доменом (Report::isEditable). Файл не храним — акт воспроизводится из замороженных данных (Вариант A).
  */
 final readonly class ApproveReportCommandHandler implements CommandHandlerInterface
 {

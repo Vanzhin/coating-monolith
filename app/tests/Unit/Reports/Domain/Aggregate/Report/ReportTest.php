@@ -139,6 +139,48 @@ final class ReportTest extends TestCase
         $report->assertDeletable();
     }
 
+    public function test_is_editable_only_in_working_statuses(): void
+    {
+        $report = $this->report();
+        self::assertTrue($report->isEditable()); // Создан
+        $report->startWork($this->now);
+        self::assertTrue($report->isEditable()); // В работе
+        $report->submitForReview($this->now);
+        self::assertFalse($report->isEditable()); // На проверке — закрыт
+        $report->reject('доработать', $this->now);
+        self::assertTrue($report->isEditable()); // Отклонён — снова правится
+    }
+
+    public function test_under_review_blocks_content_edit(): void
+    {
+        $report = $this->report();
+        $report->startWork($this->now);
+        $report->submitForReview($this->now);
+
+        $this->expectException(AppException::class);
+        $report->replaceContent(['notes' => ['text' => 'правка на проверке']], $this->now);
+    }
+
+    public function test_under_review_blocks_header_edit(): void
+    {
+        $report = $this->report();
+        $report->startWork($this->now);
+        $report->submitForReview($this->now);
+
+        $this->expectException(AppException::class);
+        $report->updateHeader(null, 'АКТ-1', null, null, $this->now);
+    }
+
+    public function test_under_review_cannot_be_deleted(): void
+    {
+        $report = $this->report();
+        $report->startWork($this->now);
+        $report->submitForReview($this->now);
+
+        $this->expectException(AppException::class);
+        $report->assertDeletable();
+    }
+
     public function test_repeated_action_is_noop(): void
     {
         $report = $this->report();

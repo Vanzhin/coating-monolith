@@ -18,6 +18,7 @@ class ReportListItemDTOTransformer
         $dto->typeLabel = $type?->label();
         $dto->status = $report->getStatus()->value;
         $dto->statusLabel = $report->getStatus()->label();
+        $dto->editable = $report->isEditable();
         $dto->actNumber = $report->getActNumber();
         $dto->reportDate = $report->getReportDate()?->format('d.m.Y');
         $dto->projectTitle = $report->getProject()?->title;

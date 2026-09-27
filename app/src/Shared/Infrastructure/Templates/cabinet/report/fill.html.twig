@@ -80,14 +80,14 @@
     {% set anchors = [{id: 'sec-req', label: 'Общие сведения'}] %}
     {% for section in sections %}{% set anchors = anchors|merge([{id: 'blk-' ~ section.key, label: section.title}]) %}{% endfor %}
 
-    {% set frozen = report.status == 'approved' %}
+    {% set editable = report.editable %}
 
     {% embed 'components/form_page.html.twig' with {
         title: report.typeLabel|default('Отчёт'),
         back_url: path('app_cabinet_report_list'),
         save_form_id: 'fill-form',
         save_label: 'Сохранить',
-        save_enabled: not frozen,
+        save_enabled: editable,
         anchors: anchors,
     } %}
         {% block appbar_extra %}
@@ -95,7 +95,7 @@
             <a href="{{ path('app_cabinet_report_download', {id: report.id}) }}" class="btn btn-soft-secondary btn-sm" title="Скачать .docx">
                 <i class="bi bi-download"></i><span class="d-none d-md-inline ms-1">.docx</span>
             </a>
-            {% if report.status not in ['approved', 'under_review'] %}
+            {% if editable %}
                 <button type="submit" form="fill-form" name="action" value="submit" class="btn btn-soft-success btn-sm">
                     <i class="bi bi-send d-md-none"></i><span class="d-none d-md-inline">На проверку</span>
                 </button>
@@ -105,7 +105,9 @@
         {% block sections %}
             {% if report.status == 'rejected' and report.rejectionReason %}
                 <div class="msg msg-danger mb-3"><i class="bi bi-exclamation-triangle me-1"></i> <strong>Отклонён.</strong> {{ report.rejectionReason }}</div>
-            {% elseif frozen %}
+            {% elseif report.status == 'under_review' %}
+                <div class="msg msg-info mb-3"><i class="bi bi-lock me-1"></i> Отчёт на проверке — редактирование закрыто до решения ревьюера.</div>
+            {% elseif report.status == 'approved' %}
                 <div class="msg msg-success mb-3"><i class="bi bi-lock me-1"></i> Отчёт утверждён и заморожен — правки закрыты.</div>
             {% endif %}
 
@@ -137,7 +139,7 @@
                     </div>
                 {% endif %}
 
-                <fieldset class="border-0 p-0 m-0"{{ frozen ? ' disabled' : '' }}>
+                <fieldset class="border-0 p-0 m-0"{{ editable ? '' : ' disabled' }}>
 
                 <div id="sec-req" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2 report-block-toggle" role="button"

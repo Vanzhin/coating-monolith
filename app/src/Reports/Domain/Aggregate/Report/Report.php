@@ -161,20 +161,30 @@ class Report extends Aggregate
         return $this->ownerId === $userId;
     }
 
-    /** Утверждённый отчёт менять нельзя. */
-    public function assertMutable(): void
+    /**
+     * Отчёт правится и удаляется только в рабочих статусах: создан, в работе, отклонён. На проверке —
+     * ждёт решения ревьюера (правки вернутся при отклонении); утверждён — заморожен терминально.
+     * В обоих случаях мутации закрыты для ВСЕХ (ревьюер лишь утверждает/отклоняет, не редактирует).
+     */
+    public function isEditable(): bool
     {
-        if ($this->status->isFrozen()) {
-            throw new AppException('Утверждённый отчёт нельзя изменять.');
-        }
+        return in_array($this->status, [ReportStatus::Created, ReportStatus::InWork, ReportStatus::Rejected], true);
     }
 
-    /** Утверждённый отчёт иммутабелен — удалять нельзя. */
+    public function assertMutable(): void
+    {
+        if ($this->isEditable()) {
+            return;
+        }
+        throw new AppException(ReportStatus::UnderReview === $this->status ? 'Отчёт на проверке — правки закрыты до решения ревьюера.' : 'Утверждённый отчёт нельзя изменять.');
+    }
+
     public function assertDeletable(): void
     {
-        if ($this->status->isFrozen()) {
-            throw new AppException('Утверждённый отчёт нельзя удалить.');
+        if ($this->isEditable()) {
+            return;
         }
+        throw new AppException(ReportStatus::UnderReview === $this->status ? 'Отчёт на проверке нельзя удалить до решения ревьюера.' : 'Утверждённый отчёт нельзя удалить.');
     }
 
     /**
