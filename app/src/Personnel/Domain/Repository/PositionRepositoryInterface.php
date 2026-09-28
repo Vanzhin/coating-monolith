@@ -6,6 +6,7 @@ namespace App\Personnel\Domain\Repository;
 
 use App\Personnel\Domain\Aggregate\Position\Position;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 
 interface PositionRepositoryInterface
 {
@@ -16,6 +17,8 @@ interface PositionRepositoryInterface
     public function findOneById(string $id): ?Position;
 
     public function findOneByTitle(string $title): ?Position;
+
+    public function findByFilter(PositionsFilter $filter): PaginationResult;
 
     /**
      * @return list<Position>

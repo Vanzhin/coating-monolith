@@ -6,8 +6,11 @@ namespace App\Personnel\Infrastructure\Repository;
 
 use App\Personnel\Domain\Aggregate\Position\Position;
 use App\Personnel\Domain\Repository\PositionRepositoryInterface;
+use App\Personnel\Domain\Repository\PositionsFilter;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -49,6 +52,22 @@ class PositionRepository extends ServiceEntityRepository implements PositionRepo
         }
 
         return array_values($this->findBy(['id' => $ids->getList()]));
+    }
+
+    public function findByFilter(PositionsFilter $filter): PaginationResult
+    {
+        $qb = $this->createQueryBuilder('p')->orderBy('p.title', 'ASC');
+        if (null !== $filter->title && '' !== trim($filter->title)) {
+            $qb->andWhere('LOWER(p.title) LIKE LOWER(:title)')
+                ->setParameter('title', '%'.$this->escapeLike(trim($filter->title)).'%');
+        }
+        if (null !== $filter->pager) {
+            $qb->setMaxResults($filter->pager->getLimit());
+            $qb->setFirstResult($filter->pager->getOffset());
+        }
+        $paginator = new Paginator($qb->getQuery());
+
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
     public function suggest(string $query, int $limit = 10): array
