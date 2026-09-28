@@ -201,6 +201,9 @@ services:
   App\Reports\Domain\Repository\ReportRepositoryInterface:
     alias: App\Reports\Infrastructure\Repository\ReportRepository
 
+  App\Personnel\Domain\Repository\PositionRepositoryInterface:
+    alias: App\Personnel\Infrastructure\Repository\PositionRepository
+
   App\Reports\Infrastructure\Service\ReportTemplateLocator:
     arguments:
       $templatesDir: '%kernel.project_dir%/src/Reports/Infrastructure/Resources/templates'
