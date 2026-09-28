@@ -1,0 +1,21 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Personnel\Domain\Aggregate\Department\Department" table="personnel_department">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="title" type="string" length="150"/>
+        <field name="companyId" type="string" length="36" column="company_id"/>
+        <field name="parentId" type="string" length="36" column="parent_id" nullable="true"/>
+        <field name="headUserUlid" type="string" length="26" column="head_user_ulid" nullable="true"/>
+
+        <indexes>
+            <index name="idx_personnel_department_company" columns="company_id"/>
+            <index name="idx_personnel_department_parent" columns="parent_id"/>
+        </indexes>
+    </entity>
+
+</doctrine-mapping>

@@ -204,6 +204,15 @@ services:
   App\Personnel\Domain\Repository\PositionRepositoryInterface:
     alias: App\Personnel\Infrastructure\Repository\PositionRepository
 
+  App\Personnel\Domain\Repository\DepartmentRepositoryInterface:
+    alias: App\Personnel\Infrastructure\Repository\DepartmentRepository
+
+  # До Т6 (командные хендлеры) у DepartmentTreePolicy нет других потребителей в графе DI —
+  # приватный сервис без ссылок компилятор вычищает как неиспользуемый. Тесты фетчат его
+  # напрямую из контейнера (как PositionSpecification), поэтому делаем публичным явно.
+  App\Personnel\Domain\Service\DepartmentTreePolicy:
+    public: true
+
   App\Reports\Infrastructure\Service\ReportTemplateLocator:
     arguments:
       $templatesDir: '%kernel.project_dir%/src/Reports/Infrastructure/Resources/templates'
