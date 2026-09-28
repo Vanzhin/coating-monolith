@@ -20,6 +20,9 @@ doctrine:
             audit_change_set: App\Shared\Infrastructure\Database\DBAL\ChangeSetType
             reports_reference: App\Reports\Infrastructure\Database\DBAL\ReferenceType
             datetime_interval: App\Shared\Infrastructure\Database\DBAL\DateTimeIntervalType
+            personnel_reference: App\Personnel\Infrastructure\Database\DBAL\ReferenceType
+            personnel_full_name: App\Personnel\Infrastructure\Database\DBAL\FullNameType
+            personnel_sizes: App\Personnel\Infrastructure\Database\DBAL\SizesType
         mapping_types:
             jsonb: json
     orm:
