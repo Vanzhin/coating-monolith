@@ -1,0 +1,46 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set inputData = inputData|default({}) %}
+{% set isUpdate = inputData.id is defined and inputData.id %}
+{% set pageTitle = isUpdate ? 'Обновление должности' : 'Добавление должности' %}
+{% set submitLabel = isUpdate ? 'Сохранить' : 'Добавить' %}
+{% set listUrl = path('app_cabinet_personnel_position_list') %}
+{% set formId = 'position-form' %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_personnel_position_update', {id: inputData.id})
+    : path('app_cabinet_personnel_position_create') %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle, back_url: listUrl, save_form_id: formId, save_label: submitLabel,
+    } %}
+        {% block sections %}
+            <form id="{{ formId }}" method="post" action="{{ actionUrl }}" class="w-100">
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div>
+                            <div class="form-alert-title">Не удалось сохранить</div>
+                            <div>{{ error }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div id="sec-main" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputTitle" class="form-label">Название</label>
+                            <input type="text" value="{{ inputData.title|default('') }}" name="title" id="inputTitle"
+                                   class="form-control" required autofocus maxlength="150"
+                                   placeholder="Например, Маляр">
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
