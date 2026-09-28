@@ -100,6 +100,19 @@ final class DepartmentTreePolicyTest extends KernelTestCase
         $root->moveTo($child->getId(), $this->policy);
     }
 
+    public function test_cycle_via_multi_hop_descendant_is_rejected_on_move(): void
+    {
+        $companyId = UuidService::generate();
+        $root = $this->create('Дирекция '.uniqid('', true), $companyId);
+        $mid = $this->create('Цех '.uniqid('', true), $companyId, $root->getId());
+        $leaf = $this->create('Участок '.uniqid('', true), $companyId, $mid->getId());
+
+        // Цикл в два хопа: root подчиняем внуку через mid — тот же цикл, что и одноуровневый,
+        // но требует подъёма минимум на два уровня выше, чтобы встретить root.
+        $this->expectException(AppException::class);
+        $root->moveTo($leaf->getId(), $this->policy);
+    }
+
     public function test_move_to_valid_new_parent_updates_parent_id(): void
     {
         $companyId = UuidService::generate();

@@ -34,14 +34,15 @@ final readonly class DepartmentTreePolicy
         }
 
         // Поднимаемся от кандидата в родители вверх по дереву: если встретим сам узел —
-        // значит кандидат лежит в поддереве узла, и назначение создаст цикл.
-        $ancestorId = $parent->getParentId();
-        while (null !== $ancestorId) {
-            if ($ancestorId === $node->getId()) {
-                throw new AppException('Нельзя сделать отдел подчинённым своему потомку (цикл).');
-            }
-            $ancestor = $this->repository->findOneById($ancestorId);
-            $ancestorId = $ancestor?->getParentId();
+        // значит кандидат лежит в поддереве узла, и назначение создаст цикл. Подъём делегирован
+        // репозиторию (findAncestors уже защищён от зацикливания на испорченных данных —
+        // напр. цикле A→B→C→A, не проходящем через сам $node, — своим visited-набором).
+        $parentAncestorIds = array_map(
+            static fn (Department $ancestor): string => $ancestor->getId(),
+            $this->repository->findAncestors($parent->getId()),
+        );
+        if (\in_array($node->getId(), $parentAncestorIds, true)) {
+            throw new AppException('Нельзя сделать отдел подчинённым своему потомку (цикл).');
         }
     }
 }
