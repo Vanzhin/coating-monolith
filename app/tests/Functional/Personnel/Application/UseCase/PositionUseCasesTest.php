@@ -14,12 +14,19 @@ use App\Personnel\Application\UseCase\Query\GetPositionsByIds\GetPositionsByIdsQ
 use App\Personnel\Application\UseCase\Query\GetPositionsByIds\GetPositionsByIdsQueryResult;
 use App\Personnel\Application\UseCase\Query\SuggestPositions\SuggestPositionsQuery;
 use App\Personnel\Application\UseCase\Query\SuggestPositions\SuggestPositionsQueryResult;
+use App\Personnel\Domain\Aggregate\Profile\FullName;
+use App\Personnel\Domain\Aggregate\Profile\Profile;
+use App\Personnel\Domain\Aggregate\Profile\Sizes;
+use App\Personnel\Domain\Aggregate\Profile\Specification\ProfileSpecification;
 use App\Personnel\Domain\Repository\PositionRepositoryInterface;
 use App\Personnel\Domain\Repository\PositionsFilter;
+use App\Personnel\Domain\Repository\ProfileRepositoryInterface;
+use App\Personnel\Domain\ValueObject\Reference;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
+use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -123,6 +130,35 @@ final class PositionUseCasesTest extends KernelTestCase
         $this->commandBus->execute(new DeletePositionCommand($created->id));
 
         self::assertNull($this->repo->findOneById($created->id));
+    }
+
+    public function test_delete_throws_when_position_used_by_profile(): void
+    {
+        $created = $this->create('Занятая '.uniqid('', true));
+
+        $profileRepo = static::getContainer()->get(ProfileRepositoryInterface::class);
+        $profileSpec = static::getContainer()->get(ProfileSpecification::class);
+        $profile = new Profile(
+            UuidService::generate(),
+            UuidService::generateUlid(),
+            new FullName('Иванов', 'Иван'),
+            new Reference($created->id, $created->title),
+            new Reference(UuidService::generate(), 'Организация'),
+            new Reference(UuidService::generate(), 'Отдел'),
+            Sizes::empty(),
+            null,
+            null,
+            $profileSpec,
+            new \DateTimeImmutable(),
+        );
+        $profileRepo->add($profile);
+
+        try {
+            $this->expectException(AppException::class);
+            $this->commandBus->execute(new DeletePositionCommand($created->id));
+        } finally {
+            $profileRepo->remove($profile);
+        }
     }
 
     public function test_regular_user_cannot_create(): void

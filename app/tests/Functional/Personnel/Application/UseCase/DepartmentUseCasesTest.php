@@ -16,7 +16,13 @@ use App\Personnel\Application\UseCase\Query\GetDepartmentsByIds\GetDepartmentsBy
 use App\Personnel\Application\UseCase\Query\GetDepartmentsByIds\GetDepartmentsByIdsQueryResult;
 use App\Personnel\Application\UseCase\Query\SuggestDepartments\SuggestDepartmentsQuery;
 use App\Personnel\Application\UseCase\Query\SuggestDepartments\SuggestDepartmentsQueryResult;
+use App\Personnel\Domain\Aggregate\Profile\FullName;
+use App\Personnel\Domain\Aggregate\Profile\Profile;
+use App\Personnel\Domain\Aggregate\Profile\Sizes;
+use App\Personnel\Domain\Aggregate\Profile\Specification\ProfileSpecification;
 use App\Personnel\Domain\Repository\DepartmentRepositoryInterface;
+use App\Personnel\Domain\Repository\ProfileRepositoryInterface;
+use App\Personnel\Domain\ValueObject\Reference;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -169,6 +175,36 @@ final class DepartmentUseCasesTest extends KernelTestCase
         $this->commandBus->execute(new DeleteDepartmentCommand($node->id));
 
         self::assertNull($this->repo->findOneById($node->id));
+    }
+
+    public function test_delete_throws_when_department_used_by_profile(): void
+    {
+        $companyId = UuidService::generate();
+        $node = $this->create('Занятая '.uniqid('', true), $companyId);
+
+        $profileRepo = static::getContainer()->get(ProfileRepositoryInterface::class);
+        $profileSpec = static::getContainer()->get(ProfileSpecification::class);
+        $profile = new Profile(
+            UuidService::generate(),
+            UuidService::generateUlid(),
+            new FullName('Иванов', 'Иван'),
+            new Reference(UuidService::generate(), 'Маляр'),
+            new Reference(UuidService::generate(), 'Организация'),
+            new Reference($node->id, $node->title),
+            Sizes::empty(),
+            null,
+            null,
+            $profileSpec,
+            new \DateTimeImmutable(),
+        );
+        $profileRepo->add($profile);
+
+        try {
+            $this->expectException(AppException::class);
+            $this->commandBus->execute(new DeleteDepartmentCommand($node->id));
+        } finally {
+            $profileRepo->remove($profile);
+        }
     }
 
     public function test_delete_node_with_children_throws(): void

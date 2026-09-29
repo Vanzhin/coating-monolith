@@ -1,0 +1,23 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Personnel\Domain\Aggregate\Profile\Profile" table="personnel_profile">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="userUlid" type="string" length="26" column="user_ulid" unique="true"/>
+        <field name="fullName" type="personnel_full_name" column="full_name"/>
+        <field name="position" type="personnel_reference" column="position"/>
+        <field name="organization" type="personnel_reference" column="organization"/>
+        <field name="department" type="personnel_reference" column="department"/>
+        <field name="personnelNumber" type="string" length="50" column="personnel_number" nullable="true"/>
+        <field name="hiredAt" type="datetime_immutable" column="hired_at" nullable="true"/>
+        <field name="sizes" type="personnel_sizes" column="sizes"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
+        <field name="version" type="integer" column="version" version="true"/>
+    </entity>
+
+</doctrine-mapping>
