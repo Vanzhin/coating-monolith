@@ -77,7 +77,7 @@ final class ProfileRepositoryTest extends KernelTestCase
         $organization = new Reference(UuidService::generate(), 'Организация');
         $department = new Reference(UuidService::generate(), 'Отдел');
 
-        $this->create(new FullName('Иванов', 'Иван'), $positionX, $organization, $department);
+        $this->create(FullName::of('Иванов', 'Иван'), $positionX, $organization, $department);
 
         self::assertSame(1, $this->repository->countByPositionId($positionX->id));
         self::assertSame(0, $this->repository->countByPositionId($positionY->id));
@@ -90,7 +90,7 @@ final class ProfileRepositoryTest extends KernelTestCase
         $departmentX = new Reference(UuidService::generate(), 'Цех №1');
         $departmentY = new Reference(UuidService::generate(), 'Цех №2');
 
-        $this->create(new FullName('Иванов', 'Иван'), $position, $organization, $departmentX);
+        $this->create(FullName::of('Иванов', 'Иван'), $position, $organization, $departmentX);
 
         self::assertSame(1, $this->repository->countByDepartmentId($departmentX->id));
         self::assertSame(0, $this->repository->countByDepartmentId($departmentY->id));
@@ -98,13 +98,13 @@ final class ProfileRepositoryTest extends KernelTestCase
 
     public function test_find_by_filter_searches_by_full_name_and_paginates(): void
     {
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
         $position = new Reference(UuidService::generate(), 'Маляр');
         $organization = new Reference(UuidService::generate(), 'Организация');
         $department = new Reference(UuidService::generate(), 'Отдел');
 
-        $created = $this->create(new FullName('Уникальнов-'.$suffix, 'Иван'), $position, $organization, $department);
-        $this->create(new FullName('Другой', 'Пётр'), $position, $organization, $department);
+        $created = $this->create(FullName::of('Уникальнов-'.$suffix, 'Иван'), $position, $organization, $department);
+        $this->create(FullName::of('Другой', 'Пётр'), $position, $organization, $department);
 
         $result = $this->repository->findByFilter(new ProfilesFilter(
             pager: Pager::fromPage(1, 50),
@@ -123,8 +123,8 @@ final class ProfileRepositoryTest extends KernelTestCase
         $organization = new Reference(UuidService::generate(), 'Организация');
         $department = new Reference(UuidService::generate(), 'Отдел');
 
-        $inFacet = $this->create(new FullName('Первый', 'Иван'), $positionX, $organization, $department);
-        $this->create(new FullName('Второй', 'Пётр'), $positionY, $organization, $department);
+        $inFacet = $this->create(FullName::of('Первый', 'Иван'), $positionX, $organization, $department);
+        $this->create(FullName::of('Второй', 'Пётр'), $positionY, $organization, $department);
 
         $result = $this->repository->findByFilter(new ProfilesFilter(
             pager: Pager::fromPage(1, 50),
