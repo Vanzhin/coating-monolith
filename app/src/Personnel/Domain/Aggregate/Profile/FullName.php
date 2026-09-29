@@ -31,7 +31,10 @@ final readonly class FullName implements \JsonSerializable
     /** «Фамилия Имя Отчество» (без отчества — «Фамилия Имя»). */
     public function fullString(): string
     {
-        return implode(' ', array_filter([$this->lastName, $this->firstName, $this->middleName]));
+        return implode(' ', array_filter(
+            [$this->lastName, $this->firstName, $this->middleName],
+            static fn (?string $v): bool => null !== $v,
+        ));
     }
 
     /** «Фамилия И. О.» (без отчества — «Фамилия И.»). */

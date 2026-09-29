@@ -82,6 +82,14 @@ final class FullNameTest extends TestCase
         $this->assertNull($restored->middleName);
     }
 
+    public function test_full_string_and_short_keep_literal_zero_middle_name(): void
+    {
+        $fullName = new FullName('Иванов', 'Иван', '0');
+
+        $this->assertSame('Иванов Иван 0', $fullName->fullString());
+        $this->assertSame('Иванов И. 0.', $fullName->short());
+    }
+
     public function test_json_serialize_shape(): void
     {
         $fullName = new FullName('Иванов', 'Иван', 'Иванович');
