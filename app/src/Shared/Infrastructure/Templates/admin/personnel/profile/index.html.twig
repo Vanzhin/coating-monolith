@@ -22,31 +22,44 @@
         {% endblock %}
 
         {% block list_content %}
-            <div class="d-flex flex-column gap-2">
-                {% for profile in result.profiles %}
-                    <div class="d-flex align-items-center gap-2 gap-md-3 p-3 rounded-3 bg-body">
-                        <div class="flex-grow-1 overflow-hidden">
-                            <h6 class="mb-0 fw-semibold" style="word-break: break-word;">
-                                {{ profile.lastName }} {{ profile.firstName }} {{ profile.middleName }}
-                            </h6>
-                            <div class="small text-body-secondary text-truncate">
-                                {{ profile.positionTitle }} · {{ profile.organizationTitle }} · {{ profile.departmentTitle }}
-                            </div>
+            {% for profile in result.profiles %}
+                <div class="ecard">
+                    <div class="ecard-media"><i class="bi bi-person-badge"></i></div>
+                    <div class="ecard-body">
+                        <div class="ecard-head">
+                            <div class="ecard-title">{{ profile.lastName }} {{ profile.firstName }} {{ profile.middleName }}</div>
+                            {% if canEdit %}
+                                <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                                    <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ path('app_cabinet_personnel_profile_update', {id: profile.id}) }}">
+                                                <i class="bi bi-pencil me-2"></i>Редактировать
+                                            </a>
+                                        </li>
+                                        <li class="mt-1">
+                                            <a class="dropdown-item text-danger"
+                                               href="{{ path('app_cabinet_personnel_profile_delete', {id: profile.id}) }}"
+                                               data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                               data-bs-title="{{ profile.lastName }} {{ profile.firstName }}" data-bs-id="{{ profile.id }}">
+                                                <i class="bi bi-trash3 me-2"></i>Удалить
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
                         </div>
-                        {% if canEdit %}
-                            <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
-                                {% include '/components/edit_delete.html.twig' with {
-                                    'edit': 'app_cabinet_personnel_profile_update',
-                                    'delete': 'app_cabinet_personnel_profile_delete',
-                                    'id': profile.id,
-                                    'title': profile.lastName ~ ' ' ~ profile.firstName,
-                                    'name': 'профиль'
-                                } %}
-                            </div>
-                        {% endif %}
+                        <div class="ecard-desc">{{ profile.positionTitle }}</div>
+                        <div class="ecard-meta">
+                            {% if profile.organizationTitle %}<span>{{ profile.organizationTitle }}</span>{% endif %}
+                            {% if profile.departmentTitle %}<span>{{ profile.departmentTitle }}</span>{% endif %}
+                        </div>
                     </div>
-                {% endfor %}
-            </div>
+                </div>
+            {% endfor %}
 
             {% if canEdit %}
                 {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_personnel_profile_delete'} %}

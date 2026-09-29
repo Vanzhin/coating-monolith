@@ -29,6 +29,11 @@ export default class extends Controller {
         existing: { type: Object, default: {} },
         pageSize: { type: Number, default: 10 },
         minLength: { type: Number, default: 3 },
+        // Водопад: имя поля-родителя (напр. 'organizationId'), ключ параметра для поиска И создания
+        // (напр. 'companyId'), плейсхолдер пока родитель не выбран. Пусто → обычный независимый typeahead.
+        parentField: { type: String, default: '' },
+        parentParam: { type: String, default: '' },
+        parentEmptyPlaceholder: { type: String, default: '' },
     };
 
     connect() {
@@ -76,6 +81,17 @@ export default class extends Controller {
             this._hiddenTitle.value = this.existingValue.title || '';
         }
 
+        // Базовый плейсхолдер — чтобы вернуть его, когда родитель водопада выбран.
+        this._basePlaceholder = this.element.getAttribute('placeholder') || '';
+
+        // Водопад: зависимый пикер (parentField задан) слушает смену родителя (change всплывает
+        // до document) и на старте — после connect соседей — синхронизирует доступность.
+        if (this.parentFieldValue) {
+            this._onParentChange = this._onParentChange.bind(this);
+            document.addEventListener('change', this._onParentChange);
+            setTimeout(() => this._syncParentState(), 0);
+        }
+
         this._onInput = this._onInput.bind(this);
         this._onKeydown = this._onKeydown.bind(this);
         this._onBlur = this._onBlur.bind(this);
@@ -92,6 +108,7 @@ export default class extends Controller {
     disconnect() {
         if (this._debounce) clearTimeout(this._debounce);
         document.removeEventListener('pointerdown', this._onDocPointer);
+        if (this.parentFieldValue) document.removeEventListener('change', this._onParentChange);
         this._detachReposition();
         if (this._menu) this._menu.remove();
     }
@@ -100,6 +117,7 @@ export default class extends Controller {
         this._hidden.value = ''; // правка инвалидирует выбор, пока не выбрана новая строка
         this._hiddenTitle.value = '';
         this._clearHint();
+        this._emitChange(); // выбор сброшен — зависимые пикеры пересчитают доступность
 
         const q = this.element.value.trim();
         if (this._debounce) clearTimeout(this._debounce);
@@ -123,6 +141,9 @@ export default class extends Controller {
             const url = new URL(this.endpointValue, window.location.origin);
             url.searchParams.set('q', q);
             url.searchParams.set('page', String(page));
+            if (this.parentFieldValue) {
+                url.searchParams.set(this.parentParamValue || 'parentId', this._parentValue());
+            }
             const resp = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (resp.ok) {
                 const json = await resp.json();
@@ -209,6 +230,7 @@ export default class extends Controller {
         this._hiddenTitle.value = item[this.mainFieldValue] ?? '';
         this._clearHint();
         this._hide();
+        this._emitChange();
     }
 
     _create(title) {
@@ -227,6 +249,11 @@ export default class extends Controller {
 
     async _quickCreate(title) {
         const body = { title };
+        if (this.parentFieldValue) {
+            const pv = this._parentValue();
+            if ('' === pv) { alert('Сначала выберите вышестоящее поле.'); return; }
+            body[this.parentParamValue || 'parentId'] = pv;
+        }
         if ('' !== this.counterpartyNameValue) {
             const cp = document.querySelector(`input[name="${this.counterpartyNameValue}"]`);
             if (!cp || '' === cp.value) {
@@ -268,6 +295,41 @@ export default class extends Controller {
     // Колбэк из модалки создания: подставить созданную сущность ({id, title, …}).
     addCreated(created) {
         this._choose(created);
+    }
+
+    _emitChange() {
+        this._hidden.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    _parentValue() {
+        const p = this.parentFieldValue ? document.querySelector(`input[name="${this.parentFieldValue}"]`) : null;
+        return p ? p.value.trim() : '';
+    }
+
+    // Родитель водопада сменился (change всплыл до document) — сбрасываем свой выбор и пересчитываем доступность.
+    _onParentChange(e) {
+        if (!e.target || e.target.name !== this.parentFieldValue) return;
+        this._clearSelection();
+        this._syncParentState();
+    }
+
+    // Доступность зависимого поля: есть значение родителя → включено; нет → выключено с подсказкой.
+    _syncParentState() {
+        if (!this.parentFieldValue) return;
+        const has = '' !== this._parentValue();
+        this.element.disabled = !has;
+        this.element.placeholder = has
+            ? this._basePlaceholder
+            : (this.parentEmptyPlaceholderValue || 'Сначала выберите вышестоящее поле');
+    }
+
+    _clearSelection() {
+        this.element.value = '';
+        this._hidden.value = '';
+        this._hiddenTitle.value = '';
+        this._clearHint();
+        this._hide();
+        this._emitChange();
     }
 
     _onKeydown(e) {

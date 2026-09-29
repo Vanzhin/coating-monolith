@@ -37,35 +37,39 @@
                     <h6 class="fw-semibold mb-3">Сотрудник</h6>
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label for="inputLastName" class="form-label">Фамилия</label>
+                            <label for="inputLastName" class="form-label">Фамилия <span class="text-danger">*</span></label>
                             <input type="text" value="{{ inputData.lastName|default('') }}" name="lastName" id="inputLastName"
-                                   class="form-control" required autofocus maxlength="100" placeholder="Например, Иванов">
+                                   class="form-control" required autofocus maxlength="100" placeholder="Например, Иванов"
+                                   pattern="[A-Za-zА-Яа-яЁё '\-]+" title="Только буквы, дефис, пробел и апостроф">
                         </div>
                         <div class="col-md-4">
-                            <label for="inputFirstName" class="form-label">Имя</label>
+                            <label for="inputFirstName" class="form-label">Имя <span class="text-danger">*</span></label>
                             <input type="text" value="{{ inputData.firstName|default('') }}" name="firstName" id="inputFirstName"
-                                   class="form-control" required maxlength="100" placeholder="Например, Иван">
+                                   class="form-control" required maxlength="100" placeholder="Например, Иван"
+                                   pattern="[A-Za-zА-Яа-яЁё '\-]+" title="Только буквы, дефис, пробел и апостроф">
                         </div>
                         <div class="col-md-4">
                             <label for="inputMiddleName" class="form-label">Отчество</label>
                             <input type="text" value="{{ inputData.middleName|default('') }}" name="middleName" id="inputMiddleName"
-                                   class="form-control" maxlength="100" placeholder="Необязательно">
+                                   class="form-control" maxlength="100" placeholder="Необязательно"
+                                   pattern="[A-Za-zА-Яа-яЁё '\-]+" title="Только буквы, дефис, пробел и апостроф">
                         </div>
 
                         {% if not isUpdate %}
-                            <div class="col-md-6"
-                                 data-controller="async-typeahead"
-                                 data-async-typeahead-endpoint-value="{{ path('app_cabinet_users_suggest') }}"
-                                 data-async-typeahead-placeholder-value="Начните вводить email…"
-                                 data-async-typeahead-min-length-value="1">
-                                <label for="userSelect" class="form-label">Пользователь платформы</label>
-                                <select id="userSelect" name="userUlid" data-async-typeahead-target="select" required>
-                                    <option value="">Выберите...</option>
-                                    {% if inputData.userUlid is defined and inputData.userUlid %}
-                                        <option value="{{ inputData.userUlid }}" selected>{{ inputData.userUlidTitle|default('') }}</option>
-                                    {% endif %}
-                                </select>
-                                <div class="form-text">Привязка к учётной записи задаётся один раз — сменить её позже нельзя.</div>
+                            <div class="col-md-6">
+                                <label for="inputUser" class="form-label">Пользователь платформы <span class="text-danger">*</span></label>
+                                <input type="text" id="inputUser" class="form-control"
+                                       data-controller="typeahead"
+                                       data-typeahead-endpoint-value="{{ path('app_cabinet_users_suggest', {hasProfile: 0}) }}"
+                                       data-typeahead-create-url-value="{{ path('app_cabinet_users_quick') }}"
+                                       data-typeahead-create-modal-value="user-create-modal"
+                                       data-typeahead-hidden-name-value="userUlid"
+                                       data-typeahead-min-length-value="1"
+                                       {% if inputData.userUlid is defined and inputData.userUlid %}
+                                           data-typeahead-existing-value="{{ {id: inputData.userUlid, title: inputData.userUlidTitle|default('')}|json_encode|e('html_attr') }}"
+                                       {% endif %}
+                                       placeholder="Поиск по email или создать…">
+                                <div class="form-text">Не нашли — создайте: привязка к учётной записи задаётся один раз, сменить позже нельзя.</div>
                             </div>
                         {% else %}
                             <div class="col-md-6">
@@ -81,7 +85,7 @@
                     <h6 class="fw-semibold mb-3">Работа</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="inputPosition" class="form-label">Должность</label>
+                            <label for="inputPosition" class="form-label">Должность <span class="text-danger">*</span></label>
                             <input type="text" id="inputPosition" class="form-control"
                                    data-controller="typeahead"
                                    data-typeahead-endpoint-value="{{ path('app_cabinet_personnel_position_suggest') }}"
@@ -93,32 +97,36 @@
                                    {% endif %}
                                    placeholder="Поиск или создать…">
                         </div>
-                        <div class="col-md-6"
-                             data-controller="async-typeahead"
-                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
-                             data-async-typeahead-placeholder-value="Найти организацию…"
-                             data-async-typeahead-min-length-value="1">
-                            <label for="organizationSelect" class="form-label">Организация</label>
-                            <select id="organizationSelect" name="organizationId" data-async-typeahead-target="select" required>
-                                <option value="">Выберите...</option>
-                                {% if inputData.organizationId is defined and inputData.organizationId %}
-                                    <option value="{{ inputData.organizationId }}" selected>{{ inputData.organizationTitle|default('') }}</option>
-                                {% endif %}
-                            </select>
+                        <div class="col-md-6">
+                            <label for="inputOrganization" class="form-label">Организация <span class="text-danger">*</span></label>
+                            <input type="text" id="inputOrganization" class="form-control"
+                                   data-controller="typeahead"
+                                   data-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                                   data-typeahead-create-url-value="{{ path('app_cabinet_reports_counterparty_quick') }}"
+                                   data-typeahead-create-modal-value="counterparty-create-modal"
+                                   data-typeahead-hidden-name-value="organizationId"
+                                   data-typeahead-min-length-value="1"
+                                   {% if inputData.organizationId is defined and inputData.organizationId %}
+                                       data-typeahead-existing-value="{{ {id: inputData.organizationId, title: inputData.organizationTitle|default('')}|json_encode|e('html_attr') }}"
+                                   {% endif %}
+                                   placeholder="Найти или создать организацию…">
                         </div>
-                        <div class="col-md-6"
-                             data-controller="async-typeahead"
-                             data-async-typeahead-endpoint-value="{{ path('app_cabinet_personnel_department_suggest') }}"
-                             data-async-typeahead-placeholder-value="Найти отдел…"
-                             data-async-typeahead-min-length-value="1">
-                            <label for="departmentSelect" class="form-label">Отдел</label>
-                            <select id="departmentSelect" name="departmentId" data-async-typeahead-target="select" required>
-                                <option value="">Выберите...</option>
-                                {% if inputData.departmentId is defined and inputData.departmentId %}
-                                    <option value="{{ inputData.departmentId }}" selected>{{ inputData.departmentTitle|default('') }}</option>
-                                {% endif %}
-                            </select>
-                            <div class="form-text">Отдел должен принадлежать выбранной организации — иначе сервер вернёт ошибку.</div>
+                        <div class="col-md-6">
+                            <label for="inputDepartment" class="form-label">Отдел <span class="text-danger">*</span></label>
+                            <input type="text" id="inputDepartment" class="form-control"
+                                   data-controller="typeahead"
+                                   data-typeahead-endpoint-value="{{ path('app_cabinet_personnel_department_suggest') }}"
+                                   data-typeahead-create-url-value="{{ path('app_cabinet_personnel_department_quick') }}"
+                                   data-typeahead-hidden-name-value="departmentId"
+                                   data-typeahead-parent-field-value="organizationId"
+                                   data-typeahead-parent-param-value="companyId"
+                                   data-typeahead-parent-empty-placeholder-value="Сначала выберите организацию"
+                                   data-typeahead-min-length-value="1"
+                                   {% if inputData.departmentId is defined and inputData.departmentId %}
+                                       data-typeahead-existing-value="{{ {id: inputData.departmentId, title: inputData.departmentTitle|default('')}|json_encode|e('html_attr') }}"
+                                   {% endif %}
+                                   placeholder="Найти или создать отдел…">
+                            <div class="form-text">Отдел ищется и создаётся в выбранной организации.</div>
                         </div>
                         <div class="col-md-3">
                             <label for="inputPersonnelNumber" class="form-label">Табельный номер</label>
@@ -136,40 +144,36 @@
                 <div id="sec-sizes" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h6 class="fw-semibold mb-3">Размеры СИЗ</h6>
                     <div class="row g-3">
+                        {% set sizeAttrs = 'inputmode="decimal" pattern="\\d+([.,]\\d+)?" title="Число, можно дробное — 44 или 4,5" maxlength="10"' %}
                         <div class="col-md-3">
                             <label for="inputClothing" class="form-label">Размер одежды</label>
                             <input type="text" value="{{ inputData.clothing|default('') }}" name="clothing" id="inputClothing"
-                                   class="form-control" maxlength="20" placeholder="Например, 52-54">
+                                   class="form-control" {{ sizeAttrs|raw }} placeholder="Например, 52">
                         </div>
                         <div class="col-md-3">
                             <label for="inputShoes" class="form-label">Размер обуви</label>
                             <input type="text" value="{{ inputData.shoes|default('') }}" name="shoes" id="inputShoes"
-                                   class="form-control" maxlength="20" placeholder="Например, 42">
+                                   class="form-control" {{ sizeAttrs|raw }} placeholder="Например, 42">
                         </div>
                         <div class="col-md-3">
                             <label for="inputHeadgear" class="form-label">Размер головного убора</label>
                             <input type="text" value="{{ inputData.headgear|default('') }}" name="headgear" id="inputHeadgear"
-                                   class="form-control" maxlength="20" placeholder="Например, 56">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="inputGasMask" class="form-label">Размер противогаза</label>
-                            <input type="text" value="{{ inputData.gasMask|default('') }}" name="gasMask" id="inputGasMask"
-                                   class="form-control" maxlength="20" placeholder="Например, 2">
+                                   class="form-control" {{ sizeAttrs|raw }} placeholder="Например, 56">
                         </div>
                         <div class="col-md-3">
                             <label for="inputRespirator" class="form-label">Размер респиратора</label>
                             <input type="text" value="{{ inputData.respirator|default('') }}" name="respirator" id="inputRespirator"
-                                   class="form-control" maxlength="20">
+                                   class="form-control" {{ sizeAttrs|raw }}>
                         </div>
                         <div class="col-md-3">
                             <label for="inputGloves" class="form-label">Размер перчаток</label>
                             <input type="text" value="{{ inputData.gloves|default('') }}" name="gloves" id="inputGloves"
-                                   class="form-control" maxlength="20" placeholder="Например, 9">
+                                   class="form-control" {{ sizeAttrs|raw }} placeholder="Например, 9">
                         </div>
                         <div class="col-md-3">
                             <label for="inputHeight" class="form-label">Рост</label>
                             <input type="text" value="{{ inputData.height|default('') }}" name="height" id="inputHeight"
-                                   class="form-control" maxlength="20" placeholder="Например, 176">
+                                   class="form-control" {{ sizeAttrs|raw }} placeholder="Например, 176">
                         </div>
                         <div class="col-md-3">
                             <label for="inputGender" class="form-label">Пол</label>
@@ -185,6 +189,10 @@
 
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             </form>
+
+            {# Модалки quick-create (вне формы: свои инпуты не должны уходить в сабмит профиля) #}
+            {% include 'components/user_create_modal.html.twig' %}
+            {% include 'components/counterparty_create_modal.html.twig' %}
         {% endblock %}
     {% endembed %}
 {% endblock %}
