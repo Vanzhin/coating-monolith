@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Users\Infrastructure\Audit;
 
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Domain\Security\SystemUser;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Repository\UserRepositoryInterface;
+use App\Users\Domain\Repository\UsersFilter;
 use App\Users\Infrastructure\Audit\UserActorResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -61,9 +63,9 @@ final class UserActorResolverTest extends TestCase
                 return null;
             }
 
-            public function searchByEmail(string $query, int $limit): array
+            public function findByFilter(UsersFilter $filter): PaginationResult
             {
-                return [];
+                return new PaginationResult([], 0);
             }
 
             public function findByIds(StringCollection $ids): array

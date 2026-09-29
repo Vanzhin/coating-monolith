@@ -2,9 +2,11 @@
 
 namespace App\Tests\Functional\Users\Infrastructure\Repository;
 
+use App\Shared\Domain\Repository\Pager;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Factory\UserFactory;
+use App\Users\Domain\Repository\UsersFilter;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use App\Users\Infrastructure\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -53,5 +55,22 @@ class UserRepositoryTest extends WebTestCase
 
         $existedUser = $this->repository->getByUlid($user->getUlid());
         $this->assertEquals($user->getUlid(), $existedUser->getUlid());
+    }
+
+    public function test_find_by_filter_searches_by_email(): void
+    {
+        $token = 'srch'.bin2hex(random_bytes(3));
+        $user = $this->userFactory->create($token.'@example.com', 'pass');
+        $this->repository->add($user);
+
+        $result = $this->repository->findByFilter(new UsersFilter(
+            pager: Pager::fromPage(1, 10),
+            email: $token,
+        ));
+
+        /** @var list<User> $found */
+        $found = $result->items;
+        $ulids = array_map(static fn (User $u): string => $u->getUlid(), $found);
+        self::assertContains($user->getUlid(), $ulids);
     }
 }

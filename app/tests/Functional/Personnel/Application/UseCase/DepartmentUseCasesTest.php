@@ -21,11 +21,13 @@ use App\Personnel\Domain\Aggregate\Profile\Profile;
 use App\Personnel\Domain\Aggregate\Profile\Sizes;
 use App\Personnel\Domain\Aggregate\Profile\Specification\ProfileSpecification;
 use App\Personnel\Domain\Repository\DepartmentRepositoryInterface;
+use App\Personnel\Domain\Repository\DepartmentsFilter;
 use App\Personnel\Domain\Repository\ProfileRepositoryInterface;
 use App\Personnel\Domain\ValueObject\Reference;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
@@ -187,7 +189,7 @@ final class DepartmentUseCasesTest extends KernelTestCase
         $profile = new Profile(
             UuidService::generate(),
             UuidService::generateUlid(),
-            new FullName('Иванов', 'Иван'),
+            FullName::of('Иванов', 'Иван'),
             new Reference(UuidService::generate(), 'Маляр'),
             new Reference(UuidService::generate(), 'Организация'),
             new Reference($node->id, $node->title),
@@ -278,11 +280,31 @@ final class DepartmentUseCasesTest extends KernelTestCase
         $suffix = bin2hex(random_bytes(3));
         $created = $this->create('Саджест-'.$suffix, $companyId);
 
-        $result = $this->queryBus->execute(new SuggestDepartmentsQuery('Саджест-'.$suffix, 10));
+        $result = $this->queryBus->execute(new SuggestDepartmentsQuery(
+            new DepartmentsFilter(pager: Pager::fromPage(1, 10), title: 'Саджест-'.$suffix),
+        ));
         \assert($result instanceof SuggestDepartmentsQueryResult);
 
         $ids = array_map(static fn ($dto) => $dto->id, $result->departments);
         self::assertContains($created->id, $ids);
+    }
+
+    public function test_suggest_scoped_by_company(): void
+    {
+        $companyA = UuidService::generate();
+        $companyB = UuidService::generate();
+        $suffix = bin2hex(random_bytes(3));
+        $inA = $this->create('Скоуп-'.$suffix, $companyA);
+        $inB = $this->create('Скоуп-'.$suffix, $companyB);
+
+        $result = $this->queryBus->execute(new SuggestDepartmentsQuery(
+            new DepartmentsFilter(pager: Pager::fromPage(1, 10), title: 'Скоуп-'.$suffix, companyId: $companyA),
+        ));
+        \assert($result instanceof SuggestDepartmentsQueryResult);
+
+        $ids = array_map(static fn ($dto) => $dto->id, $result->departments);
+        self::assertContains($inA->id, $ids);
+        self::assertNotContains($inB->id, $ids); // отдел другой организации не участвует
     }
 
     public function test_by_ids_returns_requested_departments(): void

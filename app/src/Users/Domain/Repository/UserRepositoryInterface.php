@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Users\Domain\Repository;
 
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use App\Users\Domain\Entity\User;
 
 interface UserRepositoryInterface
@@ -16,12 +17,10 @@ interface UserRepositoryInterface
     public function getByEmail(string $email): ?User;
 
     /**
-     * Постраничный typeahead по email: регистронезависимая частичная подстрока,
-     * упорядочено по email. Кормит suggest-эндпоинт админ-журнала.
-     *
-     * @return User[]
+     * Единый постраничный поиск/список пользователей через фильтр (typeahead админ-журнала и формы).
+     * Расширяется полями UsersFilter (email), а не новыми методами.
      */
-    public function searchByEmail(string $query, int $limit): array;
+    public function findByFilter(UsersFilter $filter): PaginationResult;
 
     /**
      * Гидрация чипов фасета «Актор» по списку ulid (shareable-ссылка в URL несёт

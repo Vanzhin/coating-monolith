@@ -6,6 +6,7 @@ namespace App\Personnel\Domain\Repository;
 
 use App\Personnel\Domain\Aggregate\Department\Department;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 
 interface DepartmentRepositoryInterface
 {
@@ -40,10 +41,8 @@ interface DepartmentRepositoryInterface
     public function findByIds(StringCollection $ids): array;
 
     /**
-     * Typeahead по названию (для гидрации/выбора отдела, напр. в будущей форме профиля
-     * сотрудника). Без company-скоупа — зеркалит PositionRepositoryInterface::suggest.
-     *
-     * @return list<Department>
+     * Единый поиск/список отделов через фильтр с пагинацией (typeahead и постраничный список).
+     * Расширяется полями DepartmentsFilter (title, companyId-скоуп), а не новыми методами.
      */
-    public function suggest(string $query, int $limit = 10): array;
+    public function findByFilter(DepartmentsFilter $filter): PaginationResult;
 }

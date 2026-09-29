@@ -6,6 +6,7 @@ namespace App\Users\Application\UseCase\Query\SearchUsers;
 
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Application\Service\AccessControl\AuditAccessControl;
+use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Users\Application\DTO\UserSuggestDTO;
 use App\Users\Domain\Entity\User;
@@ -29,9 +30,16 @@ readonly class SearchUsersQueryHandler implements QueryHandlerInterface
             throw new ForbiddenException();
         }
 
-        $users = $this->userRepository->searchByEmail($query->q, $query->limit);
+        $paginator = $this->userRepository->findByFilter($query->filter);
 
-        return new SearchUsersQueryResult(array_map($this->toSuggestDto(...), $users));
+        /** @var list<User> $users */
+        $users = array_values($paginator->items);
+        $pager = $query->filter->pager ?? Pager::fromPage();
+
+        return new SearchUsersQueryResult(
+            array_map($this->toSuggestDto(...), $users),
+            new Pager($pager->page, $pager->perPage, $paginator->total),
+        );
     }
 
     private function toSuggestDto(User $user): UserSuggestDTO

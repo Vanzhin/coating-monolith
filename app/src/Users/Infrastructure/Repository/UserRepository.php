@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Users\Infrastructure\Repository;
 
+use App\Personnel\Domain\Aggregate\Profile\Profile;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Repository\UserRepositoryInterface;
+use App\Users\Domain\Repository\UsersFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 class UserRepository extends ServiceEntityRepository implements UserRepositoryInterface
@@ -33,20 +37,29 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
         return $this->findOneBy(['email.value' => strtolower($email)]);
     }
 
-    public function searchByEmail(string $query, int $limit): array
+    public function findByFilter(UsersFilter $filter): PaginationResult
     {
-        $needle = trim($query);
-        if ('' === $needle) {
-            return [];
+        $qb = $this->createQueryBuilder('u')->orderBy('u.email.value', 'ASC');
+        if (null !== $filter->email && '' !== trim($filter->email)) {
+            $qb->andWhere('LOWER(u.email.value) LIKE LOWER(:email)')
+                ->setParameter('email', '%'.$this->escapeLike(trim($filter->email)).'%');
         }
+        if (null !== $filter->hasProfile) {
+            // Кросс-контекстный подзапрос к Personnel\Profile: осознанное упрощение (не по DDD, но дёшево) —
+            // «есть ли у юзера профиль сотрудника». false → только без профиля (пикер привязки).
+            $sub = $this->getEntityManager()->createQueryBuilder()
+                ->select('1')
+                ->from(Profile::class, 'pp')
+                ->where('pp.userUlid = u.ulid');
+            $qb->andWhere(($filter->hasProfile ? '' : 'NOT ').'EXISTS ('.$sub->getDQL().')');
+        }
+        if (null !== $filter->pager) {
+            $qb->setMaxResults($filter->pager->getLimit());
+            $qb->setFirstResult($filter->pager->getOffset());
+        }
+        $paginator = new Paginator($qb->getQuery());
 
-        return $this->createQueryBuilder('u')
-            ->where('LOWER(u.email.value) LIKE LOWER(:q)')
-            ->setParameter('q', '%'.$this->escapeLike($needle).'%')
-            ->orderBy('u.email.value', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
     public function findByIds(StringCollection $ids): array

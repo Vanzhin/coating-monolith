@@ -6,8 +6,11 @@ namespace App\Personnel\Infrastructure\Repository;
 
 use App\Personnel\Domain\Aggregate\Department\Department;
 use App\Personnel\Domain\Repository\DepartmentRepositoryInterface;
+use App\Personnel\Domain\Repository\DepartmentsFilter;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -89,23 +92,23 @@ class DepartmentRepository extends ServiceEntityRepository implements Department
         return array_values($this->findBy(['id' => $ids->getList()]));
     }
 
-    public function suggest(string $query, int $limit = 10): array
+    public function findByFilter(DepartmentsFilter $filter): PaginationResult
     {
-        $needle = trim($query);
-        if ('' === $needle) {
-            return [];
+        $qb = $this->createQueryBuilder('d')->orderBy('d.title', 'ASC');
+        if (null !== $filter->title && '' !== trim($filter->title)) {
+            $qb->andWhere('LOWER(d.title) LIKE LOWER(:title)')
+                ->setParameter('title', '%'.$this->escapeLike(trim($filter->title)).'%');
         }
+        if (null !== $filter->companyId && '' !== $filter->companyId) {
+            $qb->andWhere('d.companyId = :company')->setParameter('company', $filter->companyId);
+        }
+        if (null !== $filter->pager) {
+            $qb->setMaxResults($filter->pager->getLimit());
+            $qb->setFirstResult($filter->pager->getOffset());
+        }
+        $paginator = new Paginator($qb->getQuery());
 
-        /** @var list<Department> $result */
-        $result = $this->createQueryBuilder('d')
-            ->where('LOWER(d.title) LIKE LOWER(:q)')
-            ->setParameter('q', '%'.$this->escapeLike($needle).'%')
-            ->orderBy('d.title', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
-
-        return $result;
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
     private function escapeLike(string $value): string
