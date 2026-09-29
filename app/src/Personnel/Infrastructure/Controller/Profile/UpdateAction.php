@@ -110,7 +110,14 @@ final class UpdateAction extends AbstractController
     private function nullableDate(string $value): ?\DateTimeImmutable
     {
         $value = trim($value);
+        if ('' === $value) {
+            return null;
+        }
 
-        return '' !== $value ? new \DateTimeImmutable($value) : null;
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new AppException('Некорректная дата приёма.');
+        }
     }
 }

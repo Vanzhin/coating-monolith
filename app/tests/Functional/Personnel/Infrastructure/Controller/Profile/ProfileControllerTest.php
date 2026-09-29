@@ -261,6 +261,24 @@ final class ProfileControllerTest extends WebTestCase
         self::assertStringContainsString('Фамилия и имя обязательны.', (string) $this->client->getResponse()->getContent());
     }
 
+    public function test_create_with_malformed_hired_at_rerenders_with_error(): void
+    {
+        $fixtures = $this->makeFixtures();
+
+        $this->client->request('POST', '/cabinet/personnel/profile/create', [
+            'userUlid' => UuidService::generateUlid(),
+            'lastName' => 'Иванов',
+            'firstName' => 'Иван',
+            'positionId' => $fixtures['position'],
+            'organizationId' => $fixtures['organization'],
+            'departmentId' => $fixtures['department'],
+            'hiredAt' => 'не дата',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Некорректная дата приёма.', (string) $this->client->getResponse()->getContent());
+    }
+
     public function test_create_with_department_of_other_organization_rerenders_with_error(): void
     {
         $suffix = bin2hex(random_bytes(3));
