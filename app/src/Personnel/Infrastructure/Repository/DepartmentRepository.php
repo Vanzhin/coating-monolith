@@ -88,4 +88,28 @@ class DepartmentRepository extends ServiceEntityRepository implements Department
 
         return array_values($this->findBy(['id' => $ids->getList()]));
     }
+
+    public function suggest(string $query, int $limit = 10): array
+    {
+        $needle = trim($query);
+        if ('' === $needle) {
+            return [];
+        }
+
+        /** @var list<Department> $result */
+        $result = $this->createQueryBuilder('d')
+            ->where('LOWER(d.title) LIKE LOWER(:q)')
+            ->setParameter('q', '%'.$this->escapeLike($needle).'%')
+            ->orderBy('d.title', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return addcslashes($value, '%_\\');
+    }
 }

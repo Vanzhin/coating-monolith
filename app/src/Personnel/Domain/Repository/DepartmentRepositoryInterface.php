@@ -38,4 +38,12 @@ interface DepartmentRepositoryInterface
      * @return list<Department>
      */
     public function findByIds(StringCollection $ids): array;
+
+    /**
+     * Typeahead по названию (для гидрации/выбора отдела, напр. в будущей форме профиля
+     * сотрудника). Без company-скоупа — зеркалит PositionRepositoryInterface::suggest.
+     *
+     * @return list<Department>
+     */
+    public function suggest(string $query, int $limit = 10): array;
 }
