@@ -39,16 +39,15 @@ final readonly class UpdateProfileCommandHandler implements CommandHandlerInterf
 
         // Снапшоты должности/организации/отдела пересобираются через тот же Maker, что и при
         // создании — связка «отдел↔организация» проверяется заново (могли сменить и то, и другое).
-        $profile->changeFullName(new FullName($command->lastName, $command->firstName, $command->middleName), $now);
+        $profile->changeFullName(FullName::of($command->lastName, $command->firstName, $command->middleName), $now);
         $profile->changePosition($this->maker->resolvePosition($command->positionId), $now);
         $profile->changeDepartment($this->maker->resolveDepartment($command->departmentId, $command->organizationId), $now);
         $profile->changeOrganization($this->maker->resolveOrganization($command->organizationId), $now);
         $profile->changeSizes(
-            new Sizes(
+            Sizes::fromInput(
                 $command->clothing,
                 $command->shoes,
                 $command->headgear,
-                $command->gasMask,
                 $command->respirator,
                 $command->gloves,
                 $command->height,

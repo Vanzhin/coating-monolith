@@ -77,6 +77,9 @@ final readonly class ProfileMaker
 
     public function resolvePosition(string $positionId): Reference
     {
+        if ('' === trim($positionId)) {
+            throw new AppException('Должность обязательна.');
+        }
         $position = $this->positionRepository->findOneById($positionId);
         if (null === $position) {
             throw new AppException('Должность не найдена.', Response::HTTP_NOT_FOUND);

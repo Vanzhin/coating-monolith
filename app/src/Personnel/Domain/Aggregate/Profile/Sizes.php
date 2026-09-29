@@ -4,39 +4,25 @@ declare(strict_types=1);
 
 namespace App\Personnel\Domain\Aggregate\Profile;
 
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
+use App\Shared\Infrastructure\Exception\AppException;
+
 /**
- * Размеры сотрудника для подбора СИЗ. Значения свободной формы (строка: «52-54», «10.5») —
- * без бизнес-инвариантов, только нормализация пустых строк в null.
+ * Размеры сотрудника для подбора СИЗ — положительные числа (целые или дробные, «44», «4,5»).
+ * Инвариант положительности — в PositiveNumber; здесь только парсинг ввода (запятая/точка → число)
+ * и терпимое чтение из БД (легаси-мусор → null, чтобы не ронять загрузку профиля).
  */
 final readonly class Sizes implements \JsonSerializable
 {
-    public ?string $clothing;
-    public ?string $shoes;
-    public ?string $headgear;
-    public ?string $gasMask;
-    public ?string $respirator;
-    public ?string $gloves;
-    public ?string $height;
-    public ?Gender $gender;
-
     public function __construct(
-        ?string $clothing = null,
-        ?string $shoes = null,
-        ?string $headgear = null,
-        ?string $gasMask = null,
-        ?string $respirator = null,
-        ?string $gloves = null,
-        ?string $height = null,
-        ?Gender $gender = null,
+        public ?PositiveNumber $clothing = null,
+        public ?PositiveNumber $shoes = null,
+        public ?PositiveNumber $headgear = null,
+        public ?PositiveNumber $respirator = null,
+        public ?PositiveNumber $gloves = null,
+        public ?PositiveNumber $height = null,
+        public ?Gender $gender = null,
     ) {
-        $this->clothing = self::normalize($clothing);
-        $this->shoes = self::normalize($shoes);
-        $this->headgear = self::normalize($headgear);
-        $this->gasMask = self::normalize($gasMask);
-        $this->respirator = self::normalize($respirator);
-        $this->gloves = self::normalize($gloves);
-        $this->height = self::normalize($height);
-        $this->gender = $gender;
     }
 
     public static function empty(): self
@@ -44,55 +30,80 @@ final readonly class Sizes implements \JsonSerializable
         return new self();
     }
 
+    /** Из сырых строк формы: «44» / «4,5» / пусто. Пусто → null; не число или ≤ 0 → AppException. */
+    public static function fromInput(
+        ?string $clothing = null,
+        ?string $shoes = null,
+        ?string $headgear = null,
+        ?string $respirator = null,
+        ?string $gloves = null,
+        ?string $height = null,
+        ?Gender $gender = null,
+    ): self {
+        return new self(
+            self::parse($clothing, 'Размер одежды'),
+            self::parse($shoes, 'Размер обуви'),
+            self::parse($headgear, 'Размер головного убора'),
+            self::parse($respirator, 'Размер респиратора'),
+            self::parse($gloves, 'Размер перчаток'),
+            self::parse($height, 'Рост'),
+            $gender,
+        );
+    }
+
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
-            isset($data['clothing']) ? (string) $data['clothing'] : null,
-            isset($data['shoes']) ? (string) $data['shoes'] : null,
-            isset($data['headgear']) ? (string) $data['headgear'] : null,
-            isset($data['gasMask']) ? (string) $data['gasMask'] : null,
-            isset($data['respirator']) ? (string) $data['respirator'] : null,
-            isset($data['gloves']) ? (string) $data['gloves'] : null,
-            isset($data['height']) ? (string) $data['height'] : null,
-            isset($data['gender']) ? Gender::from((string) $data['gender']) : null,
+            self::stored($data['clothing'] ?? null),
+            self::stored($data['shoes'] ?? null),
+            self::stored($data['headgear'] ?? null),
+            self::stored($data['respirator'] ?? null),
+            self::stored($data['gloves'] ?? null),
+            self::stored($data['height'] ?? null),
+            isset($data['gender']) ? Gender::tryFrom((string) $data['gender']) : null,
         );
     }
 
-    /**
-     * @return array{
-     *     clothing: string|null,
-     *     shoes: string|null,
-     *     headgear: string|null,
-     *     gasMask: string|null,
-     *     respirator: string|null,
-     *     gloves: string|null,
-     *     height: string|null,
-     *     gender: string|null,
-     * }
-     */
+    /** @return array<string, int|float|string|null> */
     public function jsonSerialize(): array
     {
         return [
-            'clothing' => $this->clothing,
-            'shoes' => $this->shoes,
-            'headgear' => $this->headgear,
-            'gasMask' => $this->gasMask,
-            'respirator' => $this->respirator,
-            'gloves' => $this->gloves,
-            'height' => $this->height,
+            'clothing' => $this->clothing?->value(),
+            'shoes' => $this->shoes?->value(),
+            'headgear' => $this->headgear?->value(),
+            'respirator' => $this->respirator?->value(),
+            'gloves' => $this->gloves?->value(),
+            'height' => $this->height?->value(),
             'gender' => $this->gender?->value,
         ];
     }
 
-    private static function normalize(?string $value): ?string
+    /** Ввод из формы: строгий — не число (кроме пустого) → человекочитаемая ошибка. */
+    private static function parse(?string $value, string $label): ?PositiveNumber
     {
         if (null === $value) {
             return null;
         }
+        $normalized = str_replace(',', '.', trim($value));
+        if ('' === $normalized) {
+            return null;
+        }
+        if (!is_numeric($normalized)) {
+            throw new AppException(sprintf('%s: введите число (например, 44 или 4,5).', $label));
+        }
 
-        $trimmed = trim($value);
+        return new PositiveNumber(str_contains($normalized, '.') ? (float) $normalized : (int) $normalized);
+    }
 
-        return '' !== $trimmed ? $trimmed : null;
+    /** Чтение из БД: терпимое — нечисловое/≤ 0 (легаси) → null, без падения на загрузке. */
+    private static function stored(mixed $value): ?PositiveNumber
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+        $number = 0 + $value;
+
+        return $number > 0 ? new PositiveNumber($number) : null;
     }
 }

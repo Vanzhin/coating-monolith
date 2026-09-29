@@ -29,12 +29,11 @@ final readonly class CreateProfileCommandHandler implements CommandHandlerInterf
             throw new ForbiddenException();
         }
 
-        $fullName = new FullName($command->lastName, $command->firstName, $command->middleName);
-        $sizes = new Sizes(
+        $fullName = FullName::of($command->lastName, $command->firstName, $command->middleName);
+        $sizes = Sizes::fromInput(
             $command->clothing,
             $command->shoes,
             $command->headgear,
-            $command->gasMask,
             $command->respirator,
             $command->gloves,
             $command->height,

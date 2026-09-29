@@ -58,11 +58,11 @@ final class ProfileTest extends KernelTestCase
         $profile = new Profile(
             UuidService::generate(),
             $userUlid ?? UuidService::generateUlid(),
-            new FullName('Иванов', 'Иван', 'Иванович'),
+            FullName::of('Иванов', 'Иван', 'Иванович'),
             new Reference(UuidService::generate(), 'Маляр'),
             new Reference(UuidService::generate(), 'ООО Ромашка'),
             new Reference(UuidService::generate(), 'Цех №1'),
-            new Sizes('52', '42', '58', null, null, '9', '180', Gender::Male),
+            Sizes::fromInput('52', '42', '58', null, '9', '180', Gender::Male),
             $personnelNumber,
             $hiredAt,
             $this->specification,
@@ -83,9 +83,9 @@ final class ProfileTest extends KernelTestCase
         self::assertNotNull($byId);
         self::assertSame($created->getId(), $byId->getId());
         self::assertSame($userUlid, $byId->getUserUlid());
-        self::assertSame('Иванов', $byId->getFullName()->lastName);
+        self::assertSame('Иванов', $byId->getFullName()->lastName->value);
         self::assertSame('PN-001', $byId->getPersonnelNumber());
-        self::assertSame('52', $byId->getSizes()->clothing);
+        self::assertSame(52, $byId->getSizes()->clothing->value());
 
         $byUlid = $this->repository->findOneByUserUlid($userUlid);
         self::assertNotNull($byUlid);
@@ -107,7 +107,7 @@ final class ProfileTest extends KernelTestCase
         new Profile(
             UuidService::generate(),
             '   ',
-            new FullName('Иванов', 'Иван'),
+            FullName::of('Иванов', 'Иван'),
             new Reference(UuidService::generate(), 'Маляр'),
             new Reference(UuidService::generate(), 'Организация'),
             new Reference(UuidService::generate(), 'Отдел'),
@@ -125,7 +125,7 @@ final class ProfileTest extends KernelTestCase
         new Profile(
             UuidService::generate(),
             'not-a-valid-ulid',
-            new FullName('Иванов', 'Иван'),
+            FullName::of('Иванов', 'Иван'),
             new Reference(UuidService::generate(), 'Маляр'),
             new Reference(UuidService::generate(), 'Организация'),
             new Reference(UuidService::generate(), 'Отдел'),
@@ -175,8 +175,8 @@ final class ProfileTest extends KernelTestCase
     public function test_change_full_name_and_sizes(): void
     {
         $profile = $this->create();
-        $newName = new FullName('Петров', 'Пётр');
-        $newSizes = new Sizes('48', shoes: '40');
+        $newName = FullName::of('Петров', 'Пётр');
+        $newSizes = Sizes::fromInput('48', shoes: '40');
         $now = new \DateTimeImmutable();
 
         $profile->changeFullName($newName, $now);
@@ -185,9 +185,9 @@ final class ProfileTest extends KernelTestCase
 
         $reloaded = $this->repository->findOneById($profile->getId());
         self::assertNotNull($reloaded);
-        self::assertSame('Петров', $reloaded->getFullName()->lastName);
-        self::assertSame('48', $reloaded->getSizes()->clothing);
-        self::assertSame('40', $reloaded->getSizes()->shoes);
+        self::assertSame('Петров', $reloaded->getFullName()->lastName->value);
+        self::assertSame(48, $reloaded->getSizes()->clothing->value());
+        self::assertSame(40, $reloaded->getSizes()->shoes->value());
     }
 
     public function test_change_hired_at_accepts_null(): void

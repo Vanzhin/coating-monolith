@@ -163,7 +163,7 @@ final class ProfileControllerTest extends WebTestCase
     /** @return array{position: string, organization: string, department: string} */
     private function makeFixtures(): array
     {
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
         $organizationId = $this->createOrganization('Контроллер-Орг-'.$suffix);
         $positionId = $this->createPosition('Контроллер-Должность-'.$suffix);
         $departmentId = $this->createDepartment('Контроллер-Отдел-'.$suffix, $organizationId);
@@ -187,7 +187,6 @@ final class ProfileControllerTest extends WebTestCase
             clothing: null,
             shoes: null,
             headgear: null,
-            gasMask: null,
             respirator: null,
             gloves: null,
             height: null,
@@ -218,7 +217,7 @@ final class ProfileControllerTest extends WebTestCase
     public function test_create_persists_and_redirects_to_list(): void
     {
         $fixtures = $this->makeFixtures();
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
         $userUlid = UuidService::generateUlid();
 
         $this->client->request('POST', '/cabinet/personnel/profile/create', [
@@ -231,7 +230,7 @@ final class ProfileControllerTest extends WebTestCase
             'departmentId' => $fixtures['department'],
             'personnelNumber' => 'PN-'.$suffix,
             'hiredAt' => '2024-05-01',
-            'clothing' => '52-54',
+            'clothing' => '52',
             'gender' => 'male',
         ]);
 
@@ -240,7 +239,7 @@ final class ProfileControllerTest extends WebTestCase
         $this->em->clear();
         $created = $this->repo->findOneByUserUlid($userUlid);
         self::assertNotNull($created);
-        self::assertSame('Контроллер-Фамилия-'.$suffix, $created->getFullName()->lastName);
+        self::assertSame('Контроллер-Фамилия-'.$suffix, $created->getFullName()->lastName->value);
         $this->createdProfileIds[] = $created->getId();
     }
 
@@ -281,7 +280,7 @@ final class ProfileControllerTest extends WebTestCase
 
     public function test_create_with_department_of_other_organization_rerenders_with_error(): void
     {
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
         $organizationAId = $this->createOrganization('Контроллер-Орг-А-'.$suffix);
         $organizationBId = $this->createOrganization('Контроллер-Орг-Б-'.$suffix);
         $positionId = $this->createPosition('Контроллер-Должность-'.$suffix);
@@ -303,7 +302,7 @@ final class ProfileControllerTest extends WebTestCase
     public function test_update_form_prefilled_and_renames(): void
     {
         $fixtures = $this->makeFixtures();
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
         $id = $this->createProfile($fixtures, 'Пере-имя-'.$suffix);
 
         $this->client->request('GET', '/cabinet/personnel/profile/'.$id.'/edit');
@@ -322,7 +321,7 @@ final class ProfileControllerTest extends WebTestCase
         $this->em->clear();
         $loaded = $this->repo->findOneById($id);
         self::assertNotNull($loaded);
-        self::assertSame('Новое-имя-'.$suffix, $loaded->getFullName()->lastName);
+        self::assertSame('Новое-имя-'.$suffix, $loaded->getFullName()->lastName->value);
     }
 
     public function test_delete_removes_and_redirects(): void

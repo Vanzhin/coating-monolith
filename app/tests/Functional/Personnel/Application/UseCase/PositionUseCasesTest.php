@@ -141,7 +141,7 @@ final class PositionUseCasesTest extends KernelTestCase
         $profile = new Profile(
             UuidService::generate(),
             UuidService::generateUlid(),
-            new FullName('Иванов', 'Иван'),
+            FullName::of('Иванов', 'Иван'),
             new Reference($created->id, $created->title),
             new Reference(UuidService::generate(), 'Организация'),
             new Reference(UuidService::generate(), 'Отдел'),

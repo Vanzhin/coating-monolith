@@ -6,33 +6,43 @@ namespace App\Personnel\Domain\Aggregate\Profile;
 
 use App\Shared\Infrastructure\Exception\AppException;
 
-/** ФИО сотрудника. Фамилия и имя обязательны, отчество опционально (не у всех есть). */
+/**
+ * ФИО сотрудника — композиция из частей-VO NamePart. Фамилия и имя обязательны (не-nullable),
+ * отчество опционально (не у всех есть). Правило «как выглядит часть имени» (непусто + только буквы) —
+ * в NamePart; здесь — только правило композиции (какие части обязательны).
+ */
 final readonly class FullName implements \JsonSerializable
 {
-    public string $lastName;
-    public string $firstName;
-    public ?string $middleName;
+    public function __construct(
+        public NamePart $lastName,
+        public NamePart $firstName,
+        public ?NamePart $middleName = null,
+    ) {
+    }
 
-    public function __construct(string $lastName, string $firstName, ?string $middleName = null)
+    /** Собрать из сырых строк (граница формы/команды): пустое/пробельное отчество → нет отчества. */
+    public static function of(string $lastName, string $firstName, ?string $middleName = null): self
     {
-        $lastName = trim($lastName);
-        $firstName = trim($firstName);
-        $middleName = null !== $middleName ? trim($middleName) : null;
-
-        if ('' === $lastName || '' === $firstName) {
+        // Обязательность фамилии/имени — правило композиции ФИО: даём единое понятное сообщение
+        // раньше, чем пофакторная проверка NamePart («… не может быть пустым»).
+        if ('' === trim($lastName) || '' === trim($firstName)) {
             throw new AppException('Фамилия и имя обязательны.');
         }
 
-        $this->lastName = $lastName;
-        $this->firstName = $firstName;
-        $this->middleName = '' !== $middleName ? $middleName : null;
+        $middleName = null !== $middleName ? trim($middleName) : null;
+
+        return new self(
+            new NamePart($lastName, 'Фамилия'),
+            new NamePart($firstName, 'Имя'),
+            null !== $middleName && '' !== $middleName ? new NamePart($middleName, 'Отчество') : null,
+        );
     }
 
     /** «Фамилия Имя Отчество» (без отчества — «Фамилия Имя»). */
     public function fullString(): string
     {
         return implode(' ', array_filter(
-            [$this->lastName, $this->firstName, $this->middleName],
+            [(string) $this->lastName, (string) $this->firstName, $this->middleName?->value],
             static fn (?string $v): bool => null !== $v,
         ));
     }
@@ -40,18 +50,18 @@ final readonly class FullName implements \JsonSerializable
     /** «Фамилия И. О.» (без отчества — «Фамилия И.»). */
     public function short(): string
     {
-        $initials = mb_substr($this->firstName, 0, 1).'.';
+        $initials = mb_substr($this->firstName->value, 0, 1).'.';
         if (null !== $this->middleName) {
-            $initials .= ' '.mb_substr($this->middleName, 0, 1).'.';
+            $initials .= ' '.mb_substr($this->middleName->value, 0, 1).'.';
         }
 
-        return $this->lastName.' '.$initials;
+        return $this->lastName->value.' '.$initials;
     }
 
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        return new self(
+        return self::of(
             (string) ($data['lastName'] ?? ''),
             (string) ($data['firstName'] ?? ''),
             isset($data['middleName']) ? (string) $data['middleName'] : null,
@@ -62,9 +72,9 @@ final readonly class FullName implements \JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'lastName' => $this->lastName,
-            'firstName' => $this->firstName,
-            'middleName' => $this->middleName,
+            'lastName' => $this->lastName->value,
+            'firstName' => $this->firstName->value,
+            'middleName' => $this->middleName?->value,
         ];
     }
 }

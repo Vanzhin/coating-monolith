@@ -22,7 +22,6 @@ class ProfileDTO
     public ?string $clothing = null;
     public ?string $shoes = null;
     public ?string $headgear = null;
-    public ?string $gasMask = null;
     public ?string $respirator = null;
     public ?string $gloves = null;
     public ?string $height = null;

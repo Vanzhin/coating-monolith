@@ -21,7 +21,6 @@ final readonly class CreateProfileCommand extends Command
         public ?string $clothing,
         public ?string $shoes,
         public ?string $headgear,
-        public ?string $gasMask,
         public ?string $respirator,
         public ?string $gloves,
         public ?string $height,

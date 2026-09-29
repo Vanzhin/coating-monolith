@@ -49,7 +49,6 @@ final class AddAction extends AbstractController
                     clothing: (string) ($inputData['clothing'] ?? ''),
                     shoes: (string) ($inputData['shoes'] ?? ''),
                     headgear: (string) ($inputData['headgear'] ?? ''),
-                    gasMask: (string) ($inputData['gasMask'] ?? ''),
                     respirator: (string) ($inputData['respirator'] ?? ''),
                     gloves: (string) ($inputData['gloves'] ?? ''),
                     height: (string) ($inputData['height'] ?? ''),

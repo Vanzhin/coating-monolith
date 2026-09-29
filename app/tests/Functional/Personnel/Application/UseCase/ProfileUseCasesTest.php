@@ -177,10 +177,9 @@ final class ProfileUseCasesTest extends KernelTestCase
             departmentId: $departmentId,
             personnelNumber: 'PN-'.uniqid('', true),
             hiredAt: new \DateTimeImmutable('2024-01-15'),
-            clothing: '52-54',
+            clothing: '52',
             shoes: '42',
             headgear: '56',
-            gasMask: '2',
             respirator: null,
             gloves: '9',
             height: '176',
@@ -264,7 +263,6 @@ final class ProfileUseCasesTest extends KernelTestCase
             clothing: null,
             shoes: null,
             headgear: null,
-            gasMask: null,
             respirator: null,
             gloves: null,
             height: null,
@@ -275,7 +273,7 @@ final class ProfileUseCasesTest extends KernelTestCase
         self::assertNotNull($loaded);
         self::assertSame($positionNewId, $loaded->getPosition()->id);
         self::assertSame($departmentNewId, $loaded->getDepartment()->id);
-        self::assertSame('Петров', $loaded->getFullName()->lastName);
+        self::assertSame('Петров', $loaded->getFullName()->lastName->value);
     }
 
     public function test_update_to_department_of_other_organization_throws(): void
@@ -304,7 +302,6 @@ final class ProfileUseCasesTest extends KernelTestCase
             clothing: null,
             shoes: null,
             headgear: null,
-            gasMask: null,
             respirator: null,
             gloves: null,
             height: null,
@@ -332,7 +329,6 @@ final class ProfileUseCasesTest extends KernelTestCase
             clothing: null,
             shoes: null,
             headgear: null,
-            gasMask: null,
             respirator: null,
             gloves: null,
             height: null,
@@ -408,7 +404,7 @@ final class ProfileUseCasesTest extends KernelTestCase
         $organizationId = $this->createOrganization('Орг '.uniqid('', true));
         $positionId = $this->createPosition('Маляр '.uniqid('', true));
         $departmentId = $this->createDepartment('Отдел '.uniqid('', true), $organizationId);
-        $suffix = bin2hex(random_bytes(3));
+        $suffix = strtr(bin2hex(random_bytes(3)), '0123456789', 'abcdefghij');
 
         $matching = $this->createProfile(new CreateProfileCommand(
             userUlid: UuidService::generateUlid(),
@@ -423,7 +419,6 @@ final class ProfileUseCasesTest extends KernelTestCase
             clothing: null,
             shoes: null,
             headgear: null,
-            gasMask: null,
             respirator: null,
             gloves: null,
             height: null,
