@@ -213,6 +213,9 @@ services:
   App\Compliance\Domain\Repository\RequirementRepositoryInterface:
     alias: App\Compliance\Infrastructure\Repository\RequirementRepository
 
+  App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface:
+    alias: App\Compliance\Infrastructure\Repository\ProfileComplianceRepository
+
   # До Т6 (командные хендлеры) у DepartmentTreePolicy нет других потребителей в графе DI —
   # приватный сервис без ссылок компилятор вычищает как неиспользуемый. Тесты фетчат его
   # напрямую из контейнера (как PositionSpecification), поэтому делаем публичным явно.

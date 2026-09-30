@@ -1,0 +1,30 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation" table="compliance_tracked_obligation">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="requirementId" type="string" length="64" column="requirement_id"/>
+        <field name="requirementName" type="string" length="255" column="requirement_name"/>
+        <field name="label" type="string" length="255" column="label"/>
+        <field name="type" type="string" length="32" column="type"
+               enum-type="App\Compliance\Domain\Type\ComplianceType"/>
+        <field name="cadence" type="compliance_cadence" column="cadence"/>
+        <field name="quantity" type="compliance_quantity" column="quantity" nullable="true"/>
+        <field name="departmentId" type="string" length="64" column="department_id"/>
+        <field name="lastFulfilledAt" type="datetime_immutable" column="last_fulfilled_at" nullable="true"/>
+        <field name="nextDueAt" type="datetime_immutable" column="next_due_at" nullable="true"/>
+        <field name="active" type="boolean" column="active"/>
+        <field name="origin" type="string" length="16" column="origin"/>
+
+        <many-to-one field="profileCompliance"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"
+                     inversed-by="obligations" fetch="LAZY">
+            <join-column name="profile_compliance_id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+    </entity>
+
+</doctrine-mapping>

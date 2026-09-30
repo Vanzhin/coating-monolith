@@ -24,6 +24,8 @@ doctrine:
             personnel_full_name: App\Personnel\Infrastructure\Database\DBAL\FullNameType
             personnel_sizes: App\Personnel\Infrastructure\Database\DBAL\SizesType
             compliance_requirement_items: App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType
+            compliance_cadence: App\Compliance\Infrastructure\Database\DBAL\CadenceType
+            compliance_quantity: App\Compliance\Infrastructure\Database\DBAL\QuantityType
         mapping_types:
             jsonb: json
     orm:
