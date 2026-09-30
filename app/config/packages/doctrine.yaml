@@ -23,6 +23,7 @@ doctrine:
             personnel_reference: App\Personnel\Infrastructure\Database\DBAL\ReferenceType
             personnel_full_name: App\Personnel\Infrastructure\Database\DBAL\FullNameType
             personnel_sizes: App\Personnel\Infrastructure\Database\DBAL\SizesType
+            compliance_requirement_items: App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType
         mapping_types:
             jsonb: json
     orm:
@@ -111,6 +112,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Personnel/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Personnel\Domain\Aggregate'
                 alias: Personnel
+            Compliance:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Compliance\Domain\Aggregate'
+                alias: Compliance
 
 
 #            App:
