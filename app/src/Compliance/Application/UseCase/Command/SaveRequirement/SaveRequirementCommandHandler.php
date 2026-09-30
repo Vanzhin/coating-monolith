@@ -7,9 +7,11 @@ namespace App\Compliance\Application\UseCase\Command\SaveRequirement;
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
 use App\Compliance\Application\Service\RequirementItemBuilder;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\Event\RequirementChanged;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
@@ -27,6 +29,7 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
         private RequirementRepositoryInterface $repository,
         private RequirementItemBuilder $itemBuilder,
         private ComplianceAccessControl $access,
+        private EventBusInterface $eventBus,
     ) {
     }
 
@@ -63,6 +66,7 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
         }
 
         $this->repository->add($requirement);
+        $this->eventBus->execute(new RequirementChanged($requirement->getId()));
 
         return new SaveRequirementCommandResult($requirement->getId());
     }

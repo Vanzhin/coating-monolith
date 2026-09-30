@@ -45,6 +45,9 @@ framework:
             'App\Notifications\Domain\Event\NotificationCreatedEvent': async
             # Активация пользователя → уведомление админу: тоже async (в воркере).
             'App\Users\Domain\Event\UserActivatedEvent': async
+            # Норма изменилась → пересборка проекций учёта покрытых людей: фан-аут по людям в воркере,
+            # чтобы сохранение требования не блокировалось (Compliance Д3).
+            'App\Compliance\Domain\Event\RequirementChanged': async
 
 # when@test:
 #    framework:

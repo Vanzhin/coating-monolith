@@ -15,6 +15,14 @@ interface RequirementRepositoryInterface
 
     public function findOneById(string $id): ?Requirement;
 
+    /**
+     * Требования, покрывающие должность (jsonb-containment по position_ids). Для событийной пересборки
+     * проекции учёта человека (Д3): union позиций всех требований его должности.
+     *
+     * @return Requirement[]
+     */
+    public function findByPositionId(string $positionId): array;
+
     /** Единый поиск/список требований через фильтр с пагинацией. */
     public function findByFilter(RequirementsFilter $filter): PaginationResult;
 }

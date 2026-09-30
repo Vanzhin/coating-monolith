@@ -39,6 +39,22 @@ class RequirementRepository extends ServiceEntityRepository implements Requireme
         return $this->find($id);
     }
 
+    public function findByPositionId(string $positionId): array
+    {
+        // jsonb-containment: требования, у которых position_ids содержит эту должность (GIN-индекс).
+        $ids = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            'SELECT id FROM compliance_requirement WHERE position_ids @> :needle::jsonb',
+            ['needle' => json_encode([$positionId], JSON_THROW_ON_ERROR)],
+        );
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('r')
+            ->where('r.id IN (:ids)')->setParameter('ids', $ids)
+            ->getQuery()->getResult();
+    }
+
     public function findByFilter(RequirementsFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('r')->orderBy('r.name', 'ASC');
