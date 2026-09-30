@@ -57,11 +57,17 @@ export default class extends Controller {
         this.element.insertAdjacentElement('afterend', this._hidden);
 
         // title-компаньон (<name>Title): бэк восстанавливает чип из формы при ошибке валидации.
+        // Для массивных полей (name="x[]") ставим Title ПЕРЕД скобками (x[] → xTitle[]) — иначе
+        // "x[]Title" PHP сворачивает в тот же массив x[] и туда попадает название вместо id.
         this._hiddenTitle = document.createElement('input');
         this._hiddenTitle.type = 'hidden';
-        this._hiddenTitle.name = /Id$/.test(this.hiddenNameValue)
-            ? this.hiddenNameValue.replace(/Id$/, 'Title')
-            : this.hiddenNameValue + 'Title';
+        if (/Id$/.test(this.hiddenNameValue)) {
+            this._hiddenTitle.name = this.hiddenNameValue.replace(/Id$/, 'Title');
+        } else if (/\[\]$/.test(this.hiddenNameValue)) {
+            this._hiddenTitle.name = this.hiddenNameValue.replace(/\[\]$/, 'Title[]');
+        } else {
+            this._hiddenTitle.name = this.hiddenNameValue + 'Title';
+        }
         this._hidden.insertAdjacentElement('afterend', this._hiddenTitle);
 
         // подсказка о незавершённом вводе — под инпутом

@@ -22,6 +22,7 @@
         {% endblock %}
 
         {% block list_content %}
+            <div class="ecard-grid ecard-grid--uniform">
             {% for profile in result.profiles %}
                 <div class="ecard">
                     <div class="ecard-media"><i class="bi bi-person-badge"></i></div>
@@ -60,6 +61,7 @@
                     </div>
                 </div>
             {% endfor %}
+            </div>
 
             {% if canEdit %}
                 {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_personnel_profile_delete'} %}

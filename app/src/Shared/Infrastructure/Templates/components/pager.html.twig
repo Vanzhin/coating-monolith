@@ -1,10 +1,11 @@
-<div class="mt-3">
-    {% set queryParams = app.request.query.all %}
-    {% set currentPage = pager.page %}
-    {% set itemsPerPage = pager.perPage %}
-    {% set totalItems = pager.total_items %}
-    {% set totalPages = (totalItems / itemsPerPage)|round(0, 'ceil') %}
+{% set queryParams = app.request.query.all %}
+{% set currentPage = pager.page %}
+{% set itemsPerPage = pager.perPage %}
+{% set totalItems = pager.total_items %}
+{% set totalPages = (totalItems / itemsPerPage)|round(0, 'ceil') %}
 
+{% if totalPages > 1 %}
+<div class="mt-3">
     {% set nearbyPagesLimit = 2 %}
 
     <nav>
@@ -45,3 +46,4 @@
         </ul>
     </nav>
 </div>
+{% endif %}
