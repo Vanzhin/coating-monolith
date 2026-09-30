@@ -4,7 +4,42 @@
 >
 > Соседи: `compliance-siz-1-personnel.md` (нужен: `Position`), `-3-tracking-card.md`, `-4-dashboard-alerts.md`. Спека: `docs/plans/compliance-siz-design.md`. Самодостаточен.
 
-**Цель:** новый bounded-context `Compliance` (generic-ядро) и его первый слой — **требования по должности**: тип обязанности (`ComplianceType`), cadence (включая однократно), количество/ед.изм, агрегат `PositionRequirements` со строками `RequirementLine`, редактор требований должности. Учёта по человеку и дашборда ещё нет (Д3/Д4).
+**Цель:** новый bounded-context `Compliance` (generic-ядро) и его первый слой — **справочник норм**: тип обязанности (`ComplianceType`), cadence (включая однократно), количество/ед.изм, агрегат норм со строками `RequirementLine`, редактор. Учёта по человеку/выдачи и дашборда ещё нет (Д3/Д4).
+
+## ФИНАЛЬНАЯ МОДЕЛЬ (пересмотр 2026-09-29, РЕАЛИЗОВАНО — приоритет над T1–T5 ниже, они УСТАРЕЛИ)
+
+Модель переработана в диалоге с заказчиком. Ключевая идея: **тип — на требовании, не на позиции**; позиции однотипны; тип задаётся при создании и неизменяем.
+
+**Агрегат `Requirement`** (`Domain/Aggregate/Requirement/Requirement.php`, extends `Aggregate`):
+`{ readonly Uuid $id, string $name, readonly ComplianceType $type, StringCollection $positionIds, RequirementItemInterface[] $items, int $version }`.
+- `name` — свободный текст, обязательное (заголовок документа-вьюхи, напр. «Личная карточка учёта выдачи СИЗ»).
+- `type` — задан при создании, **не меняется** (нет `changeType`; смена типа на правке → `AppException` в хендлере: «создайте новое требование»).
+- `positionIds` — много должностей, **без уникальности** (одна должность входит в сколько угодно требований любого типа; спека уникальности снята).
+- `supports(item): bool` = `item->type() === $this->type`. Единственная точка входа позиций `accepted()` (из конструктора и `replaceItems`) держит однотипность через `supports` + запрет дублей по наименованию.
+
+**`ComplianceType`** (`Domain/Type/`): `Material` | `NonMaterial` — два глобальных вида-поведения. `title()` — «Выдача»/«Процедура»; `requiresQuantity()` (Material→true); `makeItem(array): RequirementItemInterface` (единственная точка «тип → класс позиции»). Новый вид = новый case + ветка в `makeItem` + класс позиции; ядро (`Requirement`) не трогаем.
+
+**Периодичность** (`Cadence` VO + `CadenceKind` + `PeriodUnit`, 4 вида — схлопнуто с 6 в диалоге): `Once` (однократно), `Periodic` (каждые N — число + единица `PeriodUnit` месяцы/годы, покрывает «раз в год»=1 год), `ByFact` (по факту/износ, авто-срок не считается), `ByManufacturerDoc` (конкретная дата задаётся при ВЫДАЧЕ — Д3, не в норме). `nextDueFrom` считает только `Periodic`. Форма: поля «Число»+«Единица периода» показываются только для `Periodic` (Stimulus `req-cadence-fields`, по строке). Подписи: «ежегодно», «каждые 2 года», «каждые 3 месяца», «по факту» и т.д. (`PeriodUnit::pluralFor`).
+
+**Позиция — интерфейс + два класса** (`Domain/ValueObject/Item/`):
+- `RequirementItemInterface extends \JsonSerializable`: `type(): ComplianceType`, `label()`, `cadence()`, `basis()`. **Тип позиция не хранит полем — заявляет через `type()` из класса.**
+- `AbstractRequirementItem` — общие поля (`label`, `cadence`, `basis`) + валидация (непустые label/basis).
+- `MaterialItem` — обязателен `Quantity` (без количества не собрать), `type()=Material`.
+- `NonMaterialItem` — поля количества нет вообще, `type()=NonMaterial`.
+
+**Хранение** (`Infrastructure/Database/DBAL/RequirementItemsType.php`, jsonb-тип `compliance_requirement_items`): агрегат держит **типизированные** `RequirementItemInterface[]`. Дискриминатор `type` — забота хранения, а не домена: `jsonSerialize()` позиции чистый (label/cadence/basis/quantity, без type), а DBAL-тип на записи добавляет `type` (из `$item->type()`), на чтении по нему собирает класс (`ComplianceType::from(...)->makeItem($row)`). Так полиморфный список round-trip-ится, домен не тащит персист-специфику. **Открытый вопрос (потом подумаем): можно ли убрать дискриминатор из json** (тип уже есть в колонке `type` требования) — упиралось в то, что слепой DBAL-тип не видит соседнюю колонку; варианты (postLoad+shadow / ленивый геттер) сочли переусложнением, оставили дискриминатор.
+
+**Таблица** `compliance_requirement` (миграция `Version20260929150000`, переписана): `id UUID, name, type, position_ids JSONB (+GIN), items JSONB, version`. Прежняя `compliance_requirement_set` снесена в той же миграции.
+
+**Файлы:** Command/Handler/Result `SaveRequirement`; билдер `RequirementItemBuilder` (flat-форма → shape → `type->makeItem`); Query `GetRequirement`/`ListRequirements` + DTO (`RequirementDTO`/`RequirementItemDTO`/`PositionRefDTO`) + `RequirementDTOTransformer`; репозиторий `RequirementRepositoryInterface`/`RequirementRepository` + `RequirementsFilter`; контроллеры `Requirements/{ListAction,EditAction}` (create+{id}/edit, тип залочен на правке); шаблоны `admin/compliance/requirements/{index,form,_macros}.html.twig`; Stimulus `req_type_fields_controller.js` (прячет поля количества по выбранному типу, включая `<template>`); `ComplianceAccessControl`/`PositionTitleResolver` без изменений.
+
+**Гейты:** `./run check` зелёный (style/phpstan L6/unit 1166/functional 604). Round-trip гидрации полиморфных позиций из БД доказан `RequirementUseCasesTest::test_persists_and_hydrates_typed_polymorphic_items`.
+
+**Статус:** написано, `./run check` зелёный, dev+test БД мигрированы. НЕ закоммичено (ждёт апрув). Открытые вопросы к заказчику: (а) дискриминатор в json (см. выше); (б) какие ещё поля у позиции понадобятся Д3 (износ/возврат — там).
+
+---
+
+### УСТАРЕВШЕЕ (модель до пересмотра — оставлено для истории, НЕ реализовывать)
 
 **Архитектура:** обязанность — generic. От типа зависят спец-поля + флаг «полный/лёгкий» + применимые виды cadence + (позже) шаблон документа. Тип — code-enum `ComplianceType` (v1: `Ppe` полный; `SafetyBriefing`, `WorkplaceBriefing`, `Journal` — лёгкие; добавлять кейсы просто). `PositionRequirements` — агрегат на должность, строки — VO `RequirementLine` в jsonb (не запрашиваются построчно). Правила — в VO/агрегате, `AppException`.
 

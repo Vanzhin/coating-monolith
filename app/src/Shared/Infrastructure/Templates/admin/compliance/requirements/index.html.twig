@@ -1,0 +1,59 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Требования{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Требования',
+        create_route: 'app_cabinet_compliance_requirements_create',
+        can_edit: canEdit,
+        is_empty: result.requirements is empty,
+    } %}
+        {% block list_content %}
+            <div class="ecard-grid ecard-grid--uniform">
+            {% for requirement in result.requirements %}
+                <div class="ecard">
+                    <div class="ecard-media"><i class="bi {{ requirement.type == 'material' ? 'bi-box-seam' : 'bi-card-checklist' }}"></i></div>
+                    <div class="ecard-body">
+                        <div class="ecard-head">
+                            <div class="ecard-title">{{ requirement.name }}</div>
+                            {% if canEdit %}
+                                <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                                    <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ path('app_cabinet_compliance_requirements_edit', {id: requirement.id}) }}">
+                                                <i class="bi bi-pencil me-2"></i>Редактировать
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="ecard-desc">
+                            {{ requirement.typeLabel }}
+                            {% if requirement.positions is not empty %}
+                                · {{ requirement.positions|map(p => p.title)|join(', ') }}
+                            {% else %}
+                                · без должностей
+                            {% endif %}
+                        </div>
+                        <div class="ecard-meta">
+                            <span>Позиций: {{ requirement.items|length }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

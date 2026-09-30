@@ -53,3 +53,7 @@ notifications:
 personnel:
   resource: ../src/Personnel/Infrastructure/Controller
   type: attribute
+
+compliance:
+  resource: ../src/Compliance/Infrastructure/Controller
+  type: attribute
