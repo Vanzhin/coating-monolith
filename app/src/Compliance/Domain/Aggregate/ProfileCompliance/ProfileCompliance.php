@@ -324,7 +324,8 @@ class ProfileCompliance extends Aggregate
         return null;
     }
 
-    private function recordById(string $recordId): ?FulfillmentRecord
+    /** Факт выдачи по id (нужен проектору акта списания — наименование/единица/дата тянутся с факта порции). */
+    public function recordById(string $recordId): ?FulfillmentRecord
     {
         foreach ($this->records as $record) {
             if ($record->getId() === $recordId) {

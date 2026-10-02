@@ -27,7 +27,7 @@ final readonly class CancelWriteOffItemCommandHandler implements CommandHandlerI
         $profileCompliance = $this->repository->findByProfile($command->profileId)
             ?? throw new AppException('Учёт по сотруднику не создан.');
 
-        $profileCompliance->cancelWriteOffItem($command->writeOffActId, $command->recordId, new \DateTimeImmutable());
+        $profileCompliance->cancelWriteOffItem($command->writeOffActId, $command->portionId, new \DateTimeImmutable());
         $this->repository->add($profileCompliance);
     }
 }

@@ -12,7 +12,7 @@ readonly class CancelWriteOffItemCommand extends Command
     public function __construct(
         public string $profileId,
         public string $writeOffActId,
-        public string $recordId,
+        public string $portionId,
     ) {
     }
 }

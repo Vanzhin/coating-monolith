@@ -6,14 +6,14 @@ namespace App\Compliance\Application\UseCase\Command\WriteOffPositions;
 
 use App\Shared\Application\Command\Command;
 
-/** Положить материальные позиции требования в корзину акта списания (черновик). Эффекта нет — он на оформлении акта. */
+/** Положить порции фактов в корзину акта списания (черновик). Эффекта нет — он на оформлении акта. */
 readonly class WriteOffPositionsCommand extends Command
 {
-    /** @param list<string> $obligationKeys */
+    /** @param list<array{recordId: string, quantity: float}> $portions */
     public function __construct(
         public string $profileId,
         public string $requirementId,
-        public array $obligationKeys,
+        public array $portions,
     ) {
     }
 }

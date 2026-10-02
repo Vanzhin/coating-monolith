@@ -29,10 +29,10 @@ final readonly class SetWriteOffReasonsCommandHandler implements CommandHandlerI
             ?? throw new AppException('Учёт по сотруднику не создан.');
 
         $map = [];
-        foreach ($command->reasons as $recordId => $value) {
+        foreach ($command->reasons as $portionId => $value) {
             $reason = WriteOffReason::tryFrom(trim((string) $value));
             if (null !== $reason) {
-                $map[(string) $recordId] = $reason;
+                $map[(string) $portionId] = $reason;
             }
         }
 

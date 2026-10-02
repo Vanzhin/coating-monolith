@@ -12,7 +12,7 @@ use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * «Списать» на странице акта получения: кладёт материальные позиции в корзину (черновик акта списания). Без
+ * «Списать» на странице акта получения: кладёт порции фактов в корзину (черновик акта списания). Без
  * эффекта — факты не гасятся, пересчёта нет; эффект наступает при оформлении акта ({@see \App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommandHandler}).
  */
 final readonly class WriteOffPositionsCommandHandler implements CommandHandlerInterface
@@ -31,15 +31,32 @@ final readonly class WriteOffPositionsCommandHandler implements CommandHandlerIn
         $profileCompliance = $this->repository->findByProfile($command->profileId)
             ?? throw new AppException('Учёт по сотруднику не создан.');
 
-        $keys = array_values(array_filter(
-            array_map(static fn ($k): string => trim((string) $k), $command->obligationKeys),
-            static fn (string $k): bool => '' !== $k,
-        ));
-        if ([] === $keys) {
-            throw new AppException('Выберите хотя бы одну позицию для списания.');
+        $portions = $this->normalizePortions($command->portions);
+        if ([] === $portions) {
+            throw new AppException('Выберите, что списать.');
         }
 
-        $profileCompliance->writeOff(Uuid::v7(), $command->requirementId, $keys, new \DateTimeImmutable());
+        $profileCompliance->writeOff(Uuid::v7(), $command->requirementId, $portions, new \DateTimeImmutable());
         $this->repository->add($profileCompliance);
+    }
+
+    /**
+     * @param list<array{recordId: string, quantity: float}> $portions
+     *
+     * @return list<array{recordId: string, quantity: float}>
+     */
+    private function normalizePortions(array $portions): array
+    {
+        $normalized = [];
+        foreach ($portions as $portion) {
+            $recordId = trim((string) ($portion['recordId'] ?? ''));
+            $quantity = (float) ($portion['quantity'] ?? 0.0);
+            if ('' === $recordId || $quantity <= 0.0) {
+                continue;
+            }
+            $normalized[] = ['recordId' => $recordId, 'quantity' => $quantity];
+        }
+
+        return $normalized;
     }
 }
