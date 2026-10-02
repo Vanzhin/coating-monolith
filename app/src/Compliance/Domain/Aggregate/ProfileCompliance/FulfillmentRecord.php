@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
-use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Факт выдачи/прохождения — ИСТОЧНИК ИСТИНЫ (проекция производна от фактов+нормы) и «item», который гуляет из
- * акта в акт: `documentId` — акт получения (откуда выдан), `writeOffActId` — акт списания (куда переехал, null
- * пока не списан) + причина `writeOffReason`. Привязан к обязанности по `obligationKey` (requirementId|label),
- * который переживает пересборку проекции. Материальная часть (кол-во/износ/возврат) — nullable: у процедуры её
- * нет. `manualDueDate` — конкретная дата для «по документам изготовителя». `%износа` — число [0;100] ({@see Percent}).
+ * Факт выдачи — ИСТОЧНИК ИСТИНЫ и количественный item: `quantity` выдано, `returnedQuantity` списано суммарно
+ * (аккумулятор), «на руках по факту» = разница. `documentId` — акт выдачи (провенанс «откуда»). Привязан к
+ * обязанности по `obligationKey` (requirementId|label). Материальная часть (кол-во/износ) nullable: у процедуры
+ * её нет — такой факт в held не участвует и не «истощается». `manualDueDate` — дата для «по документам изготовителя».
  */
 class FulfillmentRecord
 {
@@ -26,13 +24,8 @@ class FulfillmentRecord
     private ?float $wearPercent;
     private ?string $note;
     private ?\DateTimeImmutable $manualDueDate;
-    private ?\DateTimeImmutable $returnedAt;
-    private ?Quantity $returnedQuantity;
-    /** Акт получения ({@see RequirementDocument}), которым выдана эта позиция — провенанс «откуда». */
+    private float $returnedQuantity;
     private ?string $documentId;
-    /** Акт списания ({@see WriteOffAct}), в корзину которого позиция положена — «куда». Null, пока не списывается. */
-    private ?string $writeOffActId;
-    private ?WriteOffReason $writeOffReason;
 
     public function __construct(
         Uuid $id,
@@ -43,11 +36,8 @@ class FulfillmentRecord
         ?Percent $wearPercent = null,
         ?string $note = null,
         ?\DateTimeImmutable $manualDueDate = null,
-        ?\DateTimeImmutable $returnedAt = null,
-        ?Quantity $returnedQuantity = null,
+        float $returnedQuantity = 0.0,
         ?string $documentId = null,
-        ?string $writeOffActId = null,
-        ?WriteOffReason $writeOffReason = null,
     ) {
         $this->id = $id;
         $this->profileCompliance = $profileCompliance;
@@ -57,49 +47,31 @@ class FulfillmentRecord
         $this->wearPercent = null === $wearPercent?->value() ? null : (float) $wearPercent->value();
         $this->note = $note;
         $this->manualDueDate = $manualDueDate;
-        $this->returnedAt = $returnedAt;
         $this->returnedQuantity = $returnedQuantity;
         $this->documentId = $documentId;
-        $this->writeOffActId = $writeOffActId;
-        $this->writeOffReason = $writeOffReason;
     }
 
-    /** Положить в корзину акта списания (черновик): item «переезжает» в акт, но эффекта пока нет. */
-    public function placeInWriteOffAct(string $writeOffActId): void
+    /** Списать количество (возврат): накапливается, не превышая выданного. */
+    public function addReturnedQuantity(float $amount): void
     {
-        $this->writeOffActId = $writeOffActId;
+        $max = $this->quantity?->amount ?? 0.0;
+        $this->returnedQuantity = min($max, $this->returnedQuantity + max(0.0, $amount));
     }
 
-    /** Откат: вынуть из акта списания (снимаем и причину). */
-    public function removeFromWriteOffAct(): void
+    /** На руках по факту = выдано − списано (у нематериального — 0, held к нему неприменим). */
+    public function heldAmount(): float
     {
-        $this->writeOffActId = null;
-        $this->writeOffReason = null;
-    }
-
-    public function setWriteOffReason(?WriteOffReason $reason): void
-    {
-        $this->writeOffReason = $reason;
-    }
-
-    public function isInWriteOffAct(string $writeOffActId): bool
-    {
-        return $this->writeOffActId === $writeOffActId;
-    }
-
-    /** Списать (возврат): факт перестаёт считаться «текущей выдачей» в пересчёте обязанности. */
-    public function markReturned(\DateTimeImmutable $returnedAt, ?Quantity $returnedQuantity, ?string $note): void
-    {
-        $this->returnedAt = $returnedAt;
-        $this->returnedQuantity = $returnedQuantity ?? $this->quantity; // по умолчанию — всё выданное
-        if (null !== $note) {
-            $this->note = $note;
+        if (null === $this->quantity) {
+            return 0.0;
         }
+
+        return max(0.0, $this->quantity->amount - $this->returnedQuantity);
     }
 
-    public function isReturned(): bool
+    /** Материальный факт списан полностью (на руках 0). Нематериальный не истощается. */
+    public function isDepleted(): bool
     {
-        return null !== $this->returnedAt;
+        return null !== $this->quantity && $this->returnedQuantity >= $this->quantity->amount;
     }
 
     public function getId(): string
@@ -142,12 +114,7 @@ class FulfillmentRecord
         return $this->manualDueDate;
     }
 
-    public function returnedAt(): ?\DateTimeImmutable
-    {
-        return $this->returnedAt;
-    }
-
-    public function returnedQuantity(): ?Quantity
+    public function returnedQuantity(): float
     {
         return $this->returnedQuantity;
     }
@@ -155,15 +122,5 @@ class FulfillmentRecord
     public function documentId(): ?string
     {
         return $this->documentId;
-    }
-
-    public function writeOffActId(): ?string
-    {
-        return $this->writeOffActId;
-    }
-
-    public function writeOffReason(): ?WriteOffReason
-    {
-        return $this->writeOffReason;
     }
 }
