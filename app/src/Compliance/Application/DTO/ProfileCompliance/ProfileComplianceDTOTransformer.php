@@ -50,7 +50,14 @@ class ProfileComplianceDTOTransformer
         $row->lastFulfilledAt = $obligation->lastFulfilledAt()?->format('Y-m-d');
         $row->nextDueAt = $obligation->nextDueAt()?->format('Y-m-d');
         $row->active = $obligation->isActive();
-        $row->status = $this->resolver->statusFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now)->value;
+        $row->status = $this->resolver->statusFor(
+            $obligation->isActive(),
+            $obligation->lastFulfilledAt(),
+            $obligation->nextDueAt(),
+            $now,
+            $obligation->quantity()?->amount,
+            $obligation->heldQuantity(),
+        )->value;
 
         return $row;
     }

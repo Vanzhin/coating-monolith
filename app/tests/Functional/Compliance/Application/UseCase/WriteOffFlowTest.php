@@ -8,7 +8,10 @@ use App\Compliance\Application\Service\WriteOffActProjector;
 use App\Compliance\Application\UseCase\Command\SetWriteOffReasons\SetWriteOffReasonsCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\WriteOffPositions\WriteOffPositionsCommand;
+use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
+use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -82,6 +85,48 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertNotNull($pc);
         self::assertTrue($pc->getWriteOffActs()[0]->isSigned());
         self::assertNotNull($pc->openDraftFor($r), 'дефицит (на руках 9 < норма 10) → черновик новой выдачи');
+    }
+
+    /**
+     * Регрессия: после частичного списания, оставляющего «на руках» меньше нормы, read-model (тот же
+     * путь, что использует {@see \App\Compliance\Infrastructure\Controller\Fulfillment\IssueAction} для
+     * фильтрации позиций к выдаче) НЕ должен показывать Green — иначе дефицитная позиция выпадает из
+     * формы повторной выдачи.
+     */
+    public function test_partial_write_off_then_read_model_status_is_not_green_for_deficit(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance(); // норма 10 (материальная)
+        $this->issueCard($p, $r, $k); // выдано 10 ≥ нормы
+        $pc = $this->repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => 1.0]]));
+        $this->reload();
+        $pc = $this->repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $actId = $pc->getWriteOffActs()[0]->getId();
+        $portionId = $pc->itemsOfWriteOffAct($actId)[0]->getId();
+        $this->commandBus->execute(new SetWriteOffReasonsCommand($p, $actId, [$portionId => 'physical_wear']));
+        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, $p, [$p], '39', '2026-08-10', $this->stageComplianceScan()));
+
+        $this->reload();
+        /** @var GetProfileComplianceQueryResult $result */
+        $result = $this->queryBus->execute(new GetProfileComplianceQuery($p));
+        self::assertNotNull($result->compliance);
+        $row = null;
+        foreach ($result->compliance->obligations as $obligation) {
+            if ($obligation->key === $k) {
+                $row = $obligation;
+                break;
+            }
+        }
+        self::assertNotNull($row, 'обязанность должна остаться в проекции');
+        self::assertNotSame(
+            ComplianceStatus::Green->value,
+            $row->status,
+            'на руках 9 < норма 10 — read-model не должен светить Green, иначе IssueAction отфильтрует дефицитную позицию',
+        );
     }
 
     public function test_sign_write_off_act_frees_position_and_creates_new_draft(): void
