@@ -150,7 +150,7 @@ class ProfileCompliance extends Aggregate
             if (ComplianceType::Material !== $obligation->type() || null === $norm) {
                 continue;
             }
-            $issued = $line->quantity?->amount ?? 0.0;
+            $issued = $line->quantity->amount ?? 0.0;
             if ($this->heldOf($line->obligationKey) + $issued < $norm->amount) {
                 throw new AppException(sprintf('По позиции «%s» на руках с учётом выдачи меньше нормы (%s).', $obligation->label(), $norm->label()));
             }

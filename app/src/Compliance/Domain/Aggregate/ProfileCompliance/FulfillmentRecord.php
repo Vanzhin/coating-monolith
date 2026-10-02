@@ -54,7 +54,7 @@ class FulfillmentRecord
     /** Списать количество (возврат): накапливается, не превышая выданного. */
     public function addReturnedQuantity(float $amount): void
     {
-        $max = $this->quantity?->amount ?? 0.0;
+        $max = $this->quantity->amount ?? 0.0;
         $this->returnedQuantity = min($max, $this->returnedQuantity + max(0.0, $amount));
     }
 
