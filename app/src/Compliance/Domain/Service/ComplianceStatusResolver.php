@@ -12,7 +12,8 @@ use App\Compliance\Domain\Type\ComplianceStatus;
  * (карточка, дашборд, алерт).
  *
  * Правило: документ требования (человек×требование) не подписан ⇒ требование НЕ ИСПОЛНЕНО (Red), независимо
- * от сроков. Только у подписанного (`$active`) считаем срок-светофор по датам выдачи.
+ * от сроков. Для материальных позиций «на руках меньше нормы» — тоже Red, независимо от срока (недовыдано).
+ * Только у подписанного и невыданного-ниже-нормы считаем срок-светофор по датам выдачи.
  */
 final class ComplianceStatusResolver
 {
@@ -23,9 +24,14 @@ final class ComplianceStatusResolver
         ?\DateTimeImmutable $lastFulfilledAt,
         ?\DateTimeImmutable $nextDueAt,
         \DateTimeImmutable $now,
+        ?float $norm = null,
+        float $held = 0.0,
     ): ComplianceStatus {
         if (!$active) {
             return ComplianceStatus::Red; // документ не подписан — требование не исполнено
+        }
+        if (null !== $norm && $held < $norm) {
+            return ComplianceStatus::Red; // недовыдано по количеству
         }
         if (null === $lastFulfilledAt) {
             return ComplianceStatus::Red; // требуется, ни разу не выполнено

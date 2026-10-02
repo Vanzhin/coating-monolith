@@ -447,7 +447,14 @@ class ProfileCompliance extends Aggregate
             }
             $worst = ComplianceStatus::worseOf(
                 $worst,
-                $resolver->statusFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now),
+                $resolver->statusFor(
+                    $obligation->isActive(),
+                    $obligation->lastFulfilledAt(),
+                    $obligation->nextDueAt(),
+                    $now,
+                    $obligation->quantity()?->amount,
+                    $obligation->heldQuantity(),
+                ),
             );
         }
 

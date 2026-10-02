@@ -55,4 +55,19 @@ final class ComplianceStatusResolverTest extends TestCase
     {
         self::assertSame(ComplianceStatus::Green, $this->r->statusFor(true, new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-08-01'), $this->now));
     }
+
+    public function test_under_issued_is_red_even_if_in_date(): void
+    {
+        $now = new \DateTimeImmutable('2026-06-01');
+        // активно, выдано вчера, срок далеко, НО на руках 1 из нормы 2
+        $status = $this->r->statusFor(true, new \DateTimeImmutable('2026-05-31'), new \DateTimeImmutable('2027-05-31'), $now, 2.0, 1.0);
+        self::assertSame(ComplianceStatus::Red, $status);
+    }
+
+    public function test_held_meets_norm_in_date_is_green(): void
+    {
+        $now = new \DateTimeImmutable('2026-06-01');
+        $status = $this->r->statusFor(true, new \DateTimeImmutable('2026-05-31'), new \DateTimeImmutable('2027-05-31'), $now, 2.0, 2.0);
+        self::assertSame(ComplianceStatus::Green, $status);
+    }
 }

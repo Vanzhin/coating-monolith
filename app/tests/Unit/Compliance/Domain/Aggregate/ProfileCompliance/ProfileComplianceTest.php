@@ -77,7 +77,7 @@ final class ProfileComplianceTest extends TestCase
     public function test_signed_and_fulfilled_far_is_green(): void
     {
         $pc = $this->pcWithGloves();
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc);
+        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
         $pc->setActiveForRequirement($this->reqId, true);
 
         self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, null, $this->now));
@@ -101,7 +101,7 @@ final class ProfileComplianceTest extends TestCase
     {
         $pc = $this->pcWithGloves();
         $pc->setActiveForRequirement($this->reqId, true);
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc);
+        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
 
         self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, ComplianceType::Material, $this->now));
         self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, ComplianceType::NonMaterial, $this->now)); // нет нематериальных — худший остаётся Green
