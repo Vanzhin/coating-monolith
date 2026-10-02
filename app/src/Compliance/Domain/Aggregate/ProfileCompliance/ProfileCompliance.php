@@ -115,7 +115,8 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * Проверка «выдано не меньше нормы» по материальным позициям — без мутаций (можно звать до промоута скана).
+     * Инвариант выдачи: по материальным позициям «на руках + выдаётся» не меньше нормы (нельзя оставить ниже
+     * нормы). Без мутаций — можно звать до промоута скана.
      *
      * @param IssuanceLine[] $lines
      */
@@ -127,9 +128,12 @@ class ProfileCompliance extends Aggregate
                 continue;
             }
             $norm = $obligation->quantity();
-            if (ComplianceType::Material === $obligation->type() && null !== $norm
-                && (null === $line->quantity || $line->quantity->amount < $norm->amount)) {
-                throw new AppException(sprintf('По позиции «%s» выдано меньше нормы (%s).', $obligation->label(), $norm->label()));
+            if (ComplianceType::Material !== $obligation->type() || null === $norm) {
+                continue;
+            }
+            $issued = $line->quantity?->amount ?? 0.0;
+            if ($this->heldOf($line->obligationKey) + $issued < $norm->amount) {
+                throw new AppException(sprintf('По позиции «%s» на руках с учётом выдачи меньше нормы (%s).', $obligation->label(), $norm->label()));
             }
         }
     }

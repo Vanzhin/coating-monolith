@@ -329,4 +329,27 @@ final class ProfileComplianceTest extends TestCase
     {
         return new IssuanceLine(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable($issueDate), new Quantity($amount, Unit::Pair));
     }
+
+    public function test_issue_below_norm_minus_held_throws(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        // ничего на руках (held 0), норма 2 → выдать 1 нельзя
+        $this->expectException(AppException::class);
+        $pc->assertIssuable([$this->glovesLine(1.0)]);
+    }
+
+    public function test_issue_covers_deficit_ok(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'), 2.0); // held 2
+        $recordId = $pc->getRecords()[0]->getId();
+        $w = Uuid::v4();
+        $pc->writeOff($w, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+        $pid = $pc->itemsOfWriteOffAct((string) $w)[0]->getId();
+        $pc->applyWriteOffReasons((string) $w, [$pid => WriteOffReason::PhysicalWear], $this->now);
+        $pc->signWriteOffAct((string) $w, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan', $this->now, $this->calc);
+        // held 1, норма 2 → до-выдать 1 достаточно
+        $pc->assertIssuable([$this->glovesLine(1.0)]); // не бросает
+        self::assertSame(1.0, $pc->heldOf($this->glovesKey()));
+    }
 }
