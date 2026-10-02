@@ -68,7 +68,6 @@ final class Version20260930120000 extends AbstractMigration
                 quantity JSONB DEFAULT NULL,
                 wear_percent DOUBLE PRECISION DEFAULT NULL,
                 note TEXT DEFAULT NULL,
-                file_id VARCHAR(36) DEFAULT NULL,
                 manual_due_date TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
                 returned_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
                 returned_quantity JSONB DEFAULT NULL,

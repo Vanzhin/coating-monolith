@@ -227,6 +227,14 @@ services:
       $templatesDir: '%kernel.project_dir%/src/Reports/Infrastructure/Resources/templates'
     public: true
 
+  App\Compliance\Infrastructure\Controller\Document\DownloadCardAction:
+    arguments:
+      $cardTemplatePath: '%kernel.project_dir%/src/Compliance/Infrastructure/Resources/templates/requirement_card_material.xlsx'
+
+  App\Compliance\Infrastructure\Controller\WriteOffAct\DownloadAction:
+    arguments:
+      $writeOffTemplatePath: '%kernel.project_dir%/src/Compliance/Infrastructure/Resources/templates/writeoff_act.docx'
+
   # Движок заполнения шаблонов: фасад-диспетчер получает все драйверы (docx/xlsx) через тег
   App\Shared\Infrastructure\Service\TemplateRendering:
     arguments:

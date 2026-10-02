@@ -65,13 +65,33 @@ final class CadenceTest extends TestCase
         self::assertSame('каждые 5 лет', (new Cadence(CadenceKind::Periodic, 5, PeriodUnit::Year))->label());
         self::assertSame('ежемесячно', (new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Month))->label());
         self::assertSame('каждые 3 месяца', (new Cadence(CadenceKind::Periodic, 3, PeriodUnit::Month))->label());
-        self::assertSame('по факту', (new Cadence(CadenceKind::ByFact))->label());
+        self::assertSame('до износа', (new Cadence(CadenceKind::ByFact))->label());
+        self::assertSame('до износа (не более 30 месяцев)', (new Cadence(CadenceKind::ByFact, 30, PeriodUnit::Month))->label());
         self::assertSame('по документам изготовителя', (new Cadence(CadenceKind::ByManufacturerDoc))->label());
+    }
+
+    public function test_by_fact_with_limit_has_due(): void
+    {
+        $due = (new Cadence(CadenceKind::ByFact, 30, PeriodUnit::Month))->nextDueFrom(new \DateTimeImmutable('2024-01-01'));
+        self::assertSame('2026-07-01', $due?->format('Y-m-d'));
+    }
+
+    public function test_by_fact_partial_limit_throws(): void
+    {
+        $this->expectException(AppException::class);
+        new Cadence(CadenceKind::ByFact, 30); // число без единицы — неполный предел
     }
 
     public function test_round_trip(): void
     {
         $cadence = new Cadence(CadenceKind::Periodic, 3, PeriodUnit::Year);
         self::assertSame($cadence->jsonSerialize(), Cadence::fromArray($cadence->jsonSerialize())->jsonSerialize());
+    }
+
+    public function test_round_trip_by_fact_with_limit(): void
+    {
+        $cadence = new Cadence(CadenceKind::ByFact, 30, PeriodUnit::Month);
+        self::assertSame($cadence->jsonSerialize(), Cadence::fromArray($cadence->jsonSerialize())->jsonSerialize());
+        self::assertSame(30, Cadence::fromArray($cadence->jsonSerialize())->number);
     }
 }

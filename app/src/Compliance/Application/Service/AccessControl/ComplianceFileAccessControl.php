@@ -20,6 +20,7 @@ final class ComplianceFileAccessControl implements FileAccessControl
         return \in_array($purposeKey, [
             RequirementScanPurpose::FulfillmentScan->key(),
             RequirementScanPurpose::SignedCard->key(),
+            RequirementScanPurpose::WriteOffActScan->key(),
         ], true);
     }
 

@@ -48,7 +48,31 @@ class ProfileRepository extends ServiceEntityRepository implements ProfileReposi
     public function findByFilter(ProfilesFilter $filter): PaginationResult
     {
         $qb = $this->createQueryBuilder('p')->orderBy('p.createdAt', 'DESC');
+        $this->applyFacets($qb, $filter);
 
+        if (null !== $filter->pager) {
+            $qb->setMaxResults($filter->pager->getLimit());
+            $qb->setFirstResult($filter->pager->getOffset());
+        }
+
+        $paginator = new Paginator($qb->getQuery());
+
+        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
+    }
+
+    public function findIdsByFilter(ProfilesFilter $filter): StringCollection
+    {
+        $qb = $this->createQueryBuilder('p')->select('p.id');
+        $this->applyFacets($qb, $filter);
+
+        /** @var list<array{id: string}> $rows */
+        $rows = $qb->getQuery()->getArrayResult();
+
+        return new StringCollection(...array_map(static fn (array $r): string => (string) $r['id'], $rows));
+    }
+
+    private function applyFacets(\Doctrine\ORM\QueryBuilder $qb, ProfilesFilter $filter): void
+    {
         // Фасеты — id внутри jsonb-снимков (OR внутри фасета, AND между собой).
         if ($filter->positionIds->count() > 0) {
             $qb->andWhere("JSONB_GET_TEXT(p.position, 'id') IN (:positionIds)")
@@ -70,15 +94,6 @@ class ProfileRepository extends ServiceEntityRepository implements ProfileReposi
                 ." OR LOWER(JSONB_GET_TEXT(p.fullName, 'middleName')) LIKE LOWER(:q)",
             )->setParameter('q', $needle);
         }
-
-        if (null !== $filter->pager) {
-            $qb->setMaxResults($filter->pager->getLimit());
-            $qb->setFirstResult($filter->pager->getOffset());
-        }
-
-        $paginator = new Paginator($qb->getQuery());
-
-        return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
     public function countByPositionId(string $positionId): int

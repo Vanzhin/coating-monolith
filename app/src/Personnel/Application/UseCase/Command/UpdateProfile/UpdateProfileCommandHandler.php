@@ -9,8 +9,10 @@ use App\Personnel\Application\Service\ProfileMaker;
 use App\Personnel\Domain\Aggregate\Profile\FullName;
 use App\Personnel\Domain\Aggregate\Profile\Gender;
 use App\Personnel\Domain\Aggregate\Profile\Sizes;
+use App\Personnel\Domain\Event\ProfileSaved;
 use App\Personnel\Domain\Repository\ProfileRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +23,7 @@ final readonly class UpdateProfileCommandHandler implements CommandHandlerInterf
         private ProfileRepositoryInterface $repository,
         private ProfileMaker $maker,
         private PersonnelAccessControl $access,
+        private EventBusInterface $eventBus,
     ) {
     }
 
@@ -59,6 +62,7 @@ final readonly class UpdateProfileCommandHandler implements CommandHandlerInterf
         $profile->changeHiredAt($command->hiredAt, $now);
 
         $this->repository->add($profile);
+        $this->eventBus->execute(new ProfileSaved($profile->getId()));
 
         return new UpdateProfileCommandResult($profile->getId());
     }

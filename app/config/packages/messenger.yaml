@@ -48,6 +48,8 @@ framework:
             # Норма изменилась → пересборка проекций учёта покрытых людей: фан-аут по людям в воркере,
             # чтобы сохранение требования не блокировалось (Compliance Д3).
             'App\Compliance\Domain\Event\RequirementChanged': async
+            # Профиль создан/сменил должность → пересборка учёта + черновики карточек (в воркере).
+            'App\Personnel\Domain\Event\ProfileSaved': async
 
 # when@test:
 #    framework:

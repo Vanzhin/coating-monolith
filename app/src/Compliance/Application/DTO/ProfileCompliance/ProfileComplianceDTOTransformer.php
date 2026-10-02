@@ -34,12 +34,19 @@ class ProfileComplianceDTOTransformer
     private function rowDto(TrackedObligation $obligation, \DateTimeImmutable $now): ObligationRowDTO
     {
         $row = new ObligationRowDTO();
+        $row->key = $obligation->key();
         $row->requirementId = $obligation->requirementId();
         $row->requirementName = $obligation->requirementName();
         $row->label = $obligation->label();
         $row->type = $obligation->type()->value;
+        $row->cadenceKind = $obligation->cadence()->kind->value;
+        $row->cadenceNumber = $obligation->cadence()->number;
+        $row->cadenceUnit = $obligation->cadence()->unit?->value;
         $row->cadenceLabel = $obligation->cadence()->label();
-        $row->quantityLabel = $obligation->quantity()?->label() ?? '';
+        $quantity = $obligation->quantity();
+        $row->quantityLabel = $quantity?->label() ?? '';
+        $row->quantityValue = null === $quantity ? null : (0.0 === fmod($quantity->amount, 1.0) ? (string) (int) $quantity->amount : (string) $quantity->amount);
+        $row->quantityUnit = $quantity?->unit->value;
         $row->lastFulfilledAt = $obligation->lastFulfilledAt()?->format('Y-m-d');
         $row->nextDueAt = $obligation->nextDueAt()?->format('Y-m-d');
         $row->active = $obligation->isActive();

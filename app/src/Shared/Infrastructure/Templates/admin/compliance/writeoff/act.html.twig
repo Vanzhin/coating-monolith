@@ -1,0 +1,146 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
+{% set backUrl = path('app_cabinet_compliance_issue', {profileId: profileId, requirementId: requirementId}) %}
+{% set suggestUrl = path('app_cabinet_personnel_profile_suggest', {organizationId: organizationId}) %}
+
+{% block title %}{{ parent() }} | Акт списания — {{ fio }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: 'Акт списания — ' ~ fio,
+        back_url: backUrl,
+        save_enabled: draft,
+        save_form_id: 'wo-act-form',
+        save_label: 'Оформить',
+        anchors: draft ? [{id: 'sec-items', label: 'Позиции'}, {id: 'sec-commission', label: 'Комиссия'}, {id: 'sec-scan', label: 'Скан'}] : [{id: 'sec-items', label: 'Позиции'}],
+    } %}
+        {% block sections %}
+            {% if error is defined and error %}
+                <div class="form-alert mb-3" role="alert">
+                    <i class="bi bi-exclamation-octagon"></i>
+                    <div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div>
+                </div>
+            {% endif %}
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <span class="badge {{ draft ? 'text-bg-secondary' : 'text-bg-success' }}">
+                    <i class="bi {{ draft ? 'bi-file-earmark-text' : 'bi-lock-fill' }} me-1"></i>{{ draft ? 'Черновик' : 'Оформлен' }}{% if actNumber %} · № {{ actNumber }}{% endif %}
+                </span>
+                <a class="btn btn-outline-secondary btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                    <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
+                </a>
+                {% if not draft %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: actId}) }}">
+                        <i class="bi bi-download me-1"></i>Скан
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if draft %}
+                <form id="wo-act-form" method="post" action="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: actId}) }}"
+                      data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
+                    <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <h2 class="h6 mb-0">Списываемые позиции</h2>
+                            <button type="submit" name="op" value="save" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-save me-1"></i>Сохранить черновик
+                            </button>
+                        </div>
+                        {% if items is empty %}
+                            <div class="p-4 rounded-3 bg-body text-center text-body-secondary">В акте нет позиций.</div>
+                        {% endif %}
+                        {% for it in items %}
+                            <div class="p-3 mb-2 rounded-3 bg-body">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ it.label }}</div>
+                                        <div class="text-body-secondary small">{% if it.quantityLabel %}{{ it.quantityLabel }} · {% endif %}выдано {{ it.issueDate }}</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-auto" name="recordId" value="{{ it.recordId }}"
+                                            formaction="{{ path('app_cabinet_compliance_writeoff_remove_item', {profileId: profileId, actId: actId}) }}">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Убрать
+                                    </button>
+                                </div>
+                                <label class="form-label small mb-1">Причина списания</label>
+                                <select name="reasons[{{ it.recordId }}]" class="form-select">
+                                    <option value="">— выберите —</option>
+                                    {% for r in reasons %}<option value="{{ r.value }}"{{ it.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="sec-commission" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h2 class="h6 mb-3">Комиссия и реквизиты</h2>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Представитель отдела ОТ и ПБ</label>
+                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
+                                       data-controller="typeahead"
+                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
+                                       data-typeahead-hidden-name-value="representativeProfileId"
+                                       data-typeahead-min-length-value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">№ акта</label>
+                                <input type="text" name="actNumber" class="form-control" value="{{ actNumber|default('') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Дата акта</label>
+                                <input type="date" name="actDate" class="form-control" value="{{ actDate }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Член комиссии 1</label>
+                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
+                                       data-controller="typeahead"
+                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
+                                       data-typeahead-hidden-name-value="memberProfileIds[]"
+                                       data-typeahead-min-length-value="1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Член комиссии 2</label>
+                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
+                                       data-controller="typeahead"
+                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
+                                       data-typeahead-hidden-name-value="memberProfileIds[]"
+                                       data-typeahead-min-length-value="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sec-scan" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h2 class="h6 mb-2">Скан подписанного акта</h2>
+                        <input type="file" class="form-control" data-action="change->staged-file#upload" accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="form-text">Скачайте акт, подпишите комиссией, приложите скан — тогда списание вступит в силу.</div>
+                        <input type="hidden" name="stagedFileId" data-staged-file-target="hidden" value="">
+                        <div class="text-body-secondary small mt-1" data-staged-file-target="name"></div>
+                    </div>
+
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                </form>
+            {% else %}
+                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h2 class="h6 mb-3">Списанные позиции</h2>
+                    {% for it in items %}
+                        <div class="p-3 mb-2 rounded-3 bg-body">
+                            <div class="fw-semibold">{{ it.label }}</div>
+                            <div class="text-body-secondary small">
+                                {% if it.quantityLabel %}{{ it.quantityLabel }} · {% endif %}выдано {{ it.issueDate }}
+                                {% for r in reasons %}{% if r.value == it.reason %} · {{ r.title }}{% endif %}{% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if commission %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                        <h2 class="h6 mb-2">Комиссия</h2>
+                        <div class="small">{{ commission.representative }}</div>
+                        {% for m in commission.members %}<div class="small">{{ m }}</div>{% endfor %}
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

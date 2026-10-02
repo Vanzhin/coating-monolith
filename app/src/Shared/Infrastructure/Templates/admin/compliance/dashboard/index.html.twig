@@ -1,0 +1,130 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Соответствие{% endblock %}
+
+{% set kpiDefs = [
+    {k: 'ok',      c: 'is-ok',      l: 'в норме',       n: overview.kpi.ok},
+    {k: 'soon',    c: 'is-soon',    l: 'подходит срок', n: overview.kpi.soon},
+    {k: 'overdue', c: 'is-overdue', l: 'просрочено',    n: overview.kpi.overdue},
+    {k: 'missing', c: 'is-missing', l: 'не выдано',     n: overview.kpi.missing},
+] %}
+{% set baseQuery = app.request.query.all %}
+{% set preservedParams = baseQuery|filter((v, k) => k not in ['q', 'page']) %}
+{% set activeFacets = (type ? 1 : 0) + (onlyProblems ? 1 : 0) + profileIds|length %}
+{% set lensLabels = {people: 'По людям', dept: 'По отделам', req: 'По требованиям'} %}
+
+{% block content %}
+    <div class="cmp-wrap" data-controller="entity-preview"
+         data-entity-preview-endpoint-value="{{ path('app_cabinet_compliance_person_preview', {profileId: '00000000-0000-0000-0000-000000000000'}) }}">
+        <div class="p-2 p-md-3">
+            {# Заголовок + KPI-картина #}
+            <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
+                <div class="mb-3">
+                    <h2 class="text-body-emphasis mb-0">Соответствие</h2>
+                    <div class="text-body-secondary small">Обеспеченность сотрудников по требованиям должностей</div>
+                </div>
+                <div class="cmp-kpi">
+                    {% for d in kpiDefs %}
+                        {% set toStatus = status == d.k ? null : d.k %}
+                        <a class="cmp-kchip {{ d.c }}{{ status == d.k ? ' active' : '' }}"
+                           href="{{ path('app_cabinet_compliance_dashboard', baseQuery|merge({status: toStatus, lens: 'people', page: null})|filter(v => v is not null)) }}">
+                            <div class="n tnum">{{ d.n }}</div><div class="l">{{ d.l }}</div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Поиск/фильтры (включая разрез) — стандартный компонент кабинета (как в Покрытиях) #}
+            <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
+                {% embed 'components/entity_search.html.twig' with {
+                    list_route: 'app_cabinet_compliance_dashboard',
+                    form_id: 'cmpDashForm',
+                    search_name: 'q',
+                    search_value: q,
+                    search_placeholder: 'Поиск по ФИО…',
+                    active_count: activeFacets,
+                    drawer_id: 'cmpFiltersOffcanvas',
+                    drawer_form_id: 'cmpFiltersForm',
+                } %}
+                    {% block chips %}
+                        {% for name, value in preservedParams %}
+                            {% if value is iterable %}
+                                {% for v in value %}<input type="hidden" name="{{ name }}[]" value="{{ v }}">{% endfor %}
+                            {% else %}
+                                <input type="hidden" name="{{ name }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+
+                        {# Группировка — пилюли-переключатель прямо в chip-row (дефолт «По людям») #}
+                        {% for k, lbl in lensLabels %}
+                            {% set lensUrl = path('app_cabinet_compliance_dashboard', baseQuery|merge({lens: (k == 'people' ? null : k), page: null})|filter(v => v is not null)) %}
+                            <a href="{{ lensUrl }}" class="btn btn-sm {{ lens == k ? 'btn-primary' : 'btn-outline-secondary' }}">{{ lbl }}</a>
+                        {% endfor %}
+
+                        {% if type %}
+                            {% set removeUrl = path('app_cabinet_compliance_dashboard', baseQuery|merge({type: null, page: null})|filter(v => v is not null)) %}
+                            <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр">
+                                {{ type == 'material' ? 'Выдача' : 'Процедура' }} <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endif %}
+                        {% if onlyProblems %}
+                            {% set removeUrl = path('app_cabinet_compliance_dashboard', baseQuery|merge({only: null, page: null})|filter(v => v is not null)) %}
+                            <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр">
+                                Только проблемы <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endif %}
+
+                        {# Чипы выбранных людей (фильтр по человеку, поддерживает несколько) #}
+                        {% for pid in profileIds %}
+                            {% set idsAfterRemove = profileIds|filter(id => id != pid) %}
+                            {% set removeUrl = path('app_cabinet_compliance_dashboard', baseQuery|merge({profile: idsAfterRemove, page: null})|filter(v => v is not null)) %}
+                            <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать человека из фильтра">
+                                <i class="bi bi-person"></i> {{ profileNames[pid]|default(pid) }} <i class="bi bi-x-lg"></i>
+                            </a>
+                        {% endfor %}
+                    {% endblock %}
+
+                    {% block drawer %}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            {% from 'admin/compliance/dashboard/_macros.html.twig' import profile_row %}
+                            <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="req-rows">
+                                <div class="fw-semibold small mb-2">Сотрудники</div>
+                                <div data-req-rows-target="rows">
+                                    {% for pid in profileIds %}{{ profile_row({id: pid, title: profileNames[pid]|default(pid)}) }}{% endfor %}
+                                </div>
+                                <template data-req-rows-target="template">{{ profile_row(null) }}</template>
+                                <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
+                            </div>
+                        {% endif %}
+                        <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                            <div class="fw-semibold small mb-2">Тип требования</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <label class="facet-pill"><input type="radio" name="type" value=""{{ not type ? ' checked' : '' }}>Любой</label>
+                                <label class="facet-pill"><input type="radio" name="type" value="material"{{ type == 'material' ? ' checked' : '' }}>Выдача</label>
+                                <label class="facet-pill"><input type="radio" name="type" value="non_material"{{ type == 'non_material' ? ' checked' : '' }}>Процедура</label>
+                            </div>
+                        </div>
+                        <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                            <div class="fw-semibold small mb-2">Проблемы</div>
+                            <label class="facet-pill"><input type="checkbox" name="only" value="1"{{ onlyProblems ? ' checked' : '' }}>только проблемы</label>
+                        </div>
+                    {% endblock %}
+
+                    {% block drawer_hidden %}
+                        <input type="hidden" name="lens" value="{{ lens }}">
+                        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                    {% endblock %}
+                {% endembed %}
+            </div>
+
+            {# Контент разреза #}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                {% if lens == 'people' %}
+                    {% include 'admin/compliance/dashboard/_people.html.twig' %}
+                {% else %}
+                    {% include 'admin/compliance/dashboard/_aggregate.html.twig' %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

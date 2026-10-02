@@ -33,6 +33,19 @@ final class ObligationDueCalculatorTest extends TestCase
         self::assertNull($this->c->nextDue(new Cadence(CadenceKind::ByFact), $this->issued, null));
     }
 
+    public function test_by_fact_with_limit_adds_period(): void
+    {
+        $due = $this->c->nextDue(new Cadence(CadenceKind::ByFact, 30, PeriodUnit::Month), $this->issued, null);
+        self::assertSame('2028-07-10', $due?->format('Y-m-d'));
+    }
+
+    public function test_by_fact_manual_date_overrides_limit(): void
+    {
+        $manual = new \DateTimeImmutable('2027-03-01');
+        $due = $this->c->nextDue(new Cadence(CadenceKind::ByFact, 30, PeriodUnit::Month), $this->issued, $manual);
+        self::assertEquals($manual, $due);
+    }
+
     public function test_manufacturer_doc_uses_manual_date(): void
     {
         $manual = new \DateTimeImmutable('2027-03-01');

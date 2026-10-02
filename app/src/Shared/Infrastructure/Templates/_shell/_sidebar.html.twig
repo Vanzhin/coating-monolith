@@ -18,6 +18,10 @@
            {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
             <i class="bi bi-calculator"></i><span>Инструменты</span>
         </a>
+        <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="app-nav-item{{ current_route == 'app_cabinet_compliance_dashboard' ? ' active' : '' }}"
+           {% if current_route == 'app_cabinet_compliance_dashboard' %}aria-current="page"{% endif %}>
+            <i class="bi bi-shield-check"></i><span>Соответствие</span>
+        </a>
         {% if is_granted('ROLE_ADMIN') %}
             <div class="app-nav-sep">Администрирование</div>
             <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item"><i class="bi bi-chevron-bar-contract"></i><span>Подготовка поверхности</span></a>

@@ -20,6 +20,9 @@ interface ProfileRepositoryInterface
 
     public function findByFilter(ProfilesFilter $filter): PaginationResult;
 
+    /** id профилей, подходящих под фильтр (без пагинации) — для пред-сужения в других контекстах. */
+    public function findIdsByFilter(ProfilesFilter $filter): StringCollection;
+
     /** Профилей, где должность = $positionId — используется guard'ом удаления должности. */
     public function countByPositionId(string $positionId): int;
 

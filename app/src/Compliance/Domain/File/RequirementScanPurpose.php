@@ -16,6 +16,7 @@ enum RequirementScanPurpose: string implements FilePurpose
 {
     case FulfillmentScan = 'fulfillment_scan';
     case SignedCard = 'signed_card';
+    case WriteOffActScan = 'write_off_act_scan';
 
     public function storagePrefix(): string
     {

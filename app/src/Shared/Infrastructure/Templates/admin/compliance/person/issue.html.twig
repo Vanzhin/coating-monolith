@@ -1,0 +1,191 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
+{% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
+{% set writeoff = mode == 'writeoff' %}
+
+{% block title %}{{ parent() }} | {{ writeoff ? 'Списание' : 'Оформить' }} — {{ requirementName }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: (writeoff ? 'Списание — ' : 'Оформить — ') ~ requirementName,
+        back_url: backUrl,
+        save_enabled: not writeoff,
+        save_form_id: 'issue-form',
+        save_label: 'Оформить',
+        anchors: writeoff ? [{id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}],
+    } %}
+        {% block sections %}
+            {% if error is defined and error %}
+                <div class="form-alert mb-3" role="alert">
+                    <i class="bi bi-exclamation-octagon"></i>
+                    <div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div>
+                </div>
+            {% endif %}
+
+            {% if writeoff %}
+                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                        <h2 class="h6 mb-0">Действующие позиции</h2>
+                        {% if openBasketId %}
+                            <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: openBasketId}) }}">
+                                <i class="bi bi-box-seam me-1"></i>Перейти к акту списания
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — отметьте «Списать», оформите акт списания</div>
+
+                    {% if rows is empty %}
+                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих материальных позиций.</div>
+                    {% endif %}
+                    {% for o in rows %}
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2 p-3 rounded-3 bg-body">
+                            <div>
+                                <div class="fw-semibold">{{ o.label }}</div>
+                                <div class="text-body-secondary small">{% if o.quantityLabel %}{{ o.quantityLabel }} · {% endif %}выдано {{ o.lastFulfilledAt }}</div>
+                            </div>
+                            <div class="ms-auto">
+                                {% if o.inBasket %}
+                                    <span class="badge text-bg-warning"><i class="bi bi-box-seam me-1"></i>В акте списания (черновик)</span>
+                                {% else %}
+                                    <form method="post" action="{{ path('app_cabinet_compliance_write_off', {profileId: profileId, requirementId: requirementId}) }}">
+                                        <input type="hidden" name="obligationKeys[]" value="{{ o.key }}">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if writeOffActs is not empty %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                        <h2 class="h6 mb-2">Акты списания</h2>
+                        {% for a in writeOffActs %}
+                            <div class="p-3 mb-2 rounded-3 bg-body">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="badge {{ a.signed ? 'text-bg-success' : 'text-bg-secondary' }}">
+                                        <i class="bi {{ a.signed ? 'bi-lock-fill' : 'bi-file-earmark-text' }} me-1"></i>{{ a.signed ? 'Оформлен' : 'Черновик' }}{% if a.actNumber %} · № {{ a.actNumber }}{% endif %}
+                                    </span>
+                                    <div class="ms-auto d-flex flex-wrap gap-2">
+                                        <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-pencil-square me-1"></i>Открыть акт</a>
+                                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-file-earmark-word me-1"></i>Скачать</a>
+                                        {% if a.signed %}
+                                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-download me-1"></i>Скан</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% for it in a.items %}
+                                    <div class="text-body-secondary small">{{ it.label }}{% if it.reason %} — {{ it.reason }}{% endif %}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if signedActs is not empty %}
+                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                        <h2 class="h6 mb-2">Подписанные карточки</h2>
+                        {% for act in signedActs %}
+                            <a class="btn btn-outline-secondary btn-sm me-2 mb-2" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: act.documentId}) }}">
+                                <i class="bi bi-download me-1"></i>Скан{% if act.signedAt %} · {{ act.signedAt }}{% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <form id="issue-form" method="post" novalidate
+                      data-controller="norm-fill" data-norm-fill-next-due-url-value="{{ path('app_cabinet_compliance_next_due') }}">
+                    <input type="hidden" name="draftId" value="{{ draftId }}">
+
+                    <div id="sec-doc" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section"
+                         data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                            <h2 class="h6 mb-0">Документ</h2>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
+                                <i class="bi bi-file-earmark-excel me-1"></i>Скачать бланк (Excel)
+                            </a>
+                        </div>
+                        <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1">Дата документа</label>
+                                <input type="date" name="documentDate" value="{{ documentDate }}" class="form-control">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small mb-1">Прикрепить скан</label>
+                                <input type="file" class="form-control" data-action="change->staged-file#upload" accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Подписанная карточка — нужна, чтобы оформить</div>
+                                <input type="hidden" name="stagedFileId" data-staged-file-target="hidden" value="{{ inputData.stagedFileId|default('') }}">
+                                <div class="text-body-secondary small mt-1" data-staged-file-target="name">{% if inputData.stagedFileId|default('') %}Скан приложен{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <h2 class="h6 mb-0">Позиции</h2>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-action="norm-fill#fill">
+                                <i class="bi bi-magic me-1"></i>Заполнить по норме
+                            </button>
+                        </div>
+
+                        {% if rows is empty %}
+                            <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет подошедших позиций.</div>
+                        {% endif %}
+
+                        {% for o in rows %}
+                            {% set s = inputData.items[loop.index0]|default({}) %}
+                            <div class="p-3 mb-2 rounded-3 bg-body" data-row>
+                                <input type="hidden" name="items[{{ loop.index0 }}][obligationKey]" value="{{ o.key }}">
+                                <div class="fw-semibold mb-2">{{ o.label }} <span class="text-body-secondary small">· {{ o.cadenceLabel }}{% if o.quantityLabel %} · норма {{ o.quantityLabel }}{% endif %}</span></div>
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small mb-1">Дата выдачи</label>
+                                        <input type="date" name="items[{{ loop.index0 }}][date]" value="{{ s.date|default(documentDate) }}" class="form-control"
+                                               data-issue-date data-action="change->norm-fill#nextDue"
+                                               data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
+                                        <div class="form-text">След. выдача: <span data-next-due>—</span></div>
+                                    </div>
+                                    {% if o.type == 'material' %}
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">Кол-во</label>
+                                            <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ loop.index0 }}][amount]" class="form-control"
+                                                   value="{{ s.amount|default('') }}" placeholder="{{ o.quantityValue ?? '10' }}"
+                                                   data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">Ед.</label>
+                                            {% set unitValue = s.unit|default(o.quantityUnit) %}
+                                            <select name="items[{{ loop.index0 }}][unit]" class="form-select" data-norm-unit="{{ o.quantityUnit }}">
+                                                {% for u in units %}<option value="{{ u.value }}"{{ unitValue == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">% износа</label>
+                                            <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ loop.index0 }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default('') }}" placeholder="0">
+                                        </div>
+                                    {% endif %}
+                                    {% if o.cadenceKind == 'by_manufacturer_doc' %}
+                                        <div class="col-md-3">
+                                            <label class="form-label small mb-1">Срок годности (по документам)</label>
+                                            <input type="date" name="items[{{ loop.index0 }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default('') }}">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                </form>
+
+                <form method="post" action="{{ path('app_cabinet_compliance_draft_delete', {profileId: profileId, documentId: draftId}) }}" class="mb-3">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Удалить черновик</button>
+                </form>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

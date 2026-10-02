@@ -102,18 +102,59 @@
 - [ ] `yarn dev` + браузер: зафиксировать выдачу требования человеку (дефолт-дата, одну позицию переопределить), со сканом; удалить — файл исчез, статус пересчитан.
 - [ ] Коммит.
 
-## T6. Документ — личная карточка на (профиль × требование)
+## T6. Документ — жизненный цикл (профиль × требование). БЕЗ генерации файла
+
+Решение (согласовано 2026-09-30): «сделаем цикл в приложении, обкатаем, потом займёмся шаблоном».
+Генерация xlsx-бланка (шаблон/`RequirementCardProjector`/readiness/скачивание бланка) вынесена в
+отдельный шаг **T7 (отложен)**. Здесь — только цикл `нет → сформирован → подписан`, делающий статусы
+рабочими: подписан ⇒ `active=true` ⇒ открывается трекинг сроков; не подписан ⇒ Red («не исполнено»).
+
+**Модель:** `RequirementDocument` — **дочерняя сущность `ProfileCompliance`** (как `TrackedObligation`),
+не отдельный агрегат. Подпись и `setActiveForRequirement(true)` — атомарно в одном агрегате, один репозиторий.
 
 **Файлы (новые):**
-- Шаблон `app/src/Compliance/Infrastructure/Resources/templates/requirement_card_material.xlsx` — по образцу пользователя («Личная карточка учёта выдачи СИЗ»): идентичность + таблица позиций требования + журнал. Плейсхолдеры `{{key}}`, повторяющиеся строки — cloneRow (`RepeatValue`). (Шаблон для NonMaterial — позже, отдельно.)
-- `app/src/Compliance/Application/Service/RequirementCardProjector.php` — `project(ProfileCompliance, Profile, Requirement): RenderData`: идентичность из `Profile` (ФИО/должность/организация/отдел/таб.№/размеры), позиции ЭТОГО требования (`RepeatValue` {наименование, основание, периодичность(label), кол-во}), журнал по ним (`RepeatValue` {дата, кол-во, %износа, возврат}). Presence-driven `put`.
-- `app/src/Compliance/Infrastructure/Service/RequirementCardReadinessChecker.php` — `missing(...)` через `TemplateRendering::validate()` + humanize.
-- Контроллер `Infrastructure/Controller/Document/GenerateRequirementDocumentAction.php` — `GenerateRequirementDocumentAction(profileId, requirementId)`: тип требования выбирает шаблон (Material → карточка; NonMaterial → flash «шаблон не задан» пока); readiness-гейт (flash+redirect если неполно) → `TemplateRendering::render()` → стрим `.xlsx` («Карточка-{ФИО}-{требование}»).
-- Query `GetRequirementCardRenderData(profileId, requirementId)`.
+- `app/src/Compliance/Domain/Aggregate/ProfileCompliance/DocumentStatus.php` — `enum DocumentStatus: string { Formed; Signed; }` + `title()`.
+- `app/src/Compliance/Domain/Aggregate/ProfileCompliance/RequirementDocument.php` — дочерняя сущность: `Uuid $id`, ссылка на root, `string $requirementId`, `DocumentStatus $status`, `?string $scanFileId`, `?\DateTimeImmutable $signedAt`, `createdAt/updatedAt`. `isEditable(): bool = status !== Signed`. `markSigned(string $fileId)` → бросает `AppException`, если уже `Signed`; иначе `Signed`+`scanFileId`+`signedAt`. Статуса-строки в БД — enum-type XML.
+- ORM `app/src/Compliance/Infrastructure/Database/ORM/Aggregate/ProfileCompliance.RequirementDocument.orm.xml` + one-to-many в `ProfileCompliance.ProfileCompliance.orm.xml` (`documents`, mapped-by, orphan-removal, cascade persist+remove; many-to-one back-ref, join on-delete CASCADE).
+- Миграция `compliance_requirement_document` (`id`, `profile_compliance_id` FK CASCADE, `requirement_id`, `status`, `scan_file_id` NULL, `signed_at` NULL, `created_at`, `updated_at`; уник. индекс `(profile_compliance_id, requirement_id)` — один документ на требование у человека; индекс `requirement_id`). Идемпотентно.
 
-- [ ] Функц. тест: render data = идентичность + позиции требования + журнал; readiness сообщает пропуски, не падает; NonMaterial → понятный отказ (нет шаблона).
-- [ ] `yarn dev` + браузер: сгенерировать карточку заполненного человека по материальному требованию, открыть — данные на местах.
-- [ ] Коммит.
+**Методы `ProfileCompliance` (новые):**
+- `documentFor(string $requirementId): ?RequirementDocument`.
+- `formDocument(string $requirementId, Uuid $id, now)`: если документа нет — создаёт `Formed`; если есть `Formed` — no-op; если `Signed` — `AppException` («карточка подписана, переоформление позже»).
+- `signDocument(string $requirementId, string $fileId, now)`: грузит/создаёт документ, `markSigned(fileId)`, затем `setActiveForRequirement(requirementId, true)` (внутри агрегата). Идемпотентность подписи — через `markSigned`.
+
+**Application:**
+- Command `FormRequirementDocumentCommand(profileId, requirementId)` + Handler (`canManage`): `findByProfile`, `formDocument`, save.
+- Command `FormMissingDocumentsCommand(profileId)` + Handler: по всем `requirementId` из obligations, где документа ещё нет — `formDocument` каждому (пакетно, «сформировать всё недостающее»).
+- Command `AttachSignedScanCommand(profileId, requirementId, stagedFileId)` + Handler (`canManage`): промоут staged→fileId (`RequirementScanPurpose::SignedCard`), `signDocument`, save. При замене — снять старый скан из хранилища.
+- `GetProfileCompliance` дополняется: в `ProfileComplianceDTO` — `documents: array<requirementId, {status:string, scanDownloadUrl:?string}>`; трансформер читает `pc.documents`.
+
+**Infrastructure (тонкие per-action контроллеры):**
+- `Infrastructure/Controller/Document/FormAction.php` (POST) → `FormRequirementDocumentCommand`, flash+redirect на карточку.
+- `Infrastructure/Controller/Document/FormMissingAction.php` (POST) → `FormMissingDocumentsCommand`.
+- `Infrastructure/Controller/Document/AttachScanAction.php` (POST, staged uuid) → `AttachSignedScanCommand`.
+- `Infrastructure/Controller/Document/DownloadScanAction.php` (GET) → стрим подписанного скана через `FileStorage` (гейт `ComplianceFileAccessControl`).
+
+**UI (карточка `show.html.twig`, идиом списка покрытий — уже переделан):** в шапке секции требования — статус документа (`нет` / `сформирован` / `подписан`, пилюлей-вердиктом/тегом) и действия под `canEdit`:
+- нет документа → кнопка «Сформировать документ» (POST FormAction);
+- `Formed` → «Приложить подписанную карточку» (staged-file upload → AttachScanAction);
+- `Signed` → «Скачать скан» + иконка-замок.
+- В шапке страницы — «Сформировать всё недостающее» (FormMissingAction).
+
+- [x] Юнит (агрегат): `formDocument` (нет→Formed, Formed→no-op, Signed→AppException); `signDocument` → Signed+active=true, повторная подпись → AppException; заморозка журнала (`recordFulfillment`) и рядов (`removeObligationByKey`) подписанного → AppException; `requirementIdsWithoutDocument`.
+- [x] Функц. (реальная БД): `FormRequirementDocument` персистит Formed (active=false); `AttachSignedScan` промоутит скан → Signed+scanFileId+active=true; `FormMissingDocuments` заводит недостающие. Rebuilder пропускает подписанное (строки заморожены).
+- [x] `./run check` зелёный (613 тестов); обе БД мигрированы (Version20260930160000).
+- [ ] Браузер: сформировать документ по требованию → приложить скан → статус строк стал зелёным/жёлтым (трекинг открылся); повторно приложить нельзя.
+- [ ] Коммит (по апруву).
+
+**Инвариант заморозки (ответ на «у нас так?»):** подписанная карточка не меняется — новых/удалённых рядов быть не может. Правило живёт в `RequirementDocument::assertMutable()` (класс документа); агрегат спрашивает документ на КАЖДОЙ мутации ряда: журнал (`recordFulfillment`/`removeRecord`) И проекция (`putObligation`/`removeObligationByKey`). Rebuilder подписанные требования пропускает целиком.
+
+## T7 (отложен). Генерация xlsx-бланка карточки
+
+По готовности цикла: шаблон `requirement_card_material.xlsx` (образец пользователя), `RequirementCardProjector`
+(идентичность+позиции+журнал через `RepeatValue`), `RequirementCardReadinessChecker` (`TemplateRendering::validate()`),
+`GenerateRequirementDocumentAction(profileId, requirementId)` (стрим бланка), кнопка «Скачать бланк» на `Formed`.
+NonMaterial-шаблон — ещё позже. Отдельный план при старте.
 
 ## Финал Д3
 

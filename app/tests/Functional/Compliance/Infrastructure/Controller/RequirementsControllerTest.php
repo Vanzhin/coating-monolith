@@ -42,6 +42,15 @@ final class RequirementsControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function test_next_due_endpoint_calculates_on_backend(): void
+    {
+        $this->client->request('GET', '/cabinet/compliance/next-due?date=2026-10-01&kind=periodic&number=1&unit=year');
+        self::assertResponseIsSuccessful();
+        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
+        // глобальный ResponseListener заворачивает ответ в конверт {result,status,data,message}
+        self::assertSame('2027-10-01', $body['data']['nextDue']);
+    }
+
     public function test_create_editor_renders(): void
     {
         $this->client->request('GET', '/cabinet/compliance/requirements/create');

@@ -28,6 +28,24 @@
                 <cascade-remove/>
             </cascade>
         </one-to-many>
+
+        <one-to-many field="documents"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+
+        <one-to-many field="writeOffActs"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
     </entity>
 
 </doctrine-mapping>

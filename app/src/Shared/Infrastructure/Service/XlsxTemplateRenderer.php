@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\Service;
 use App\Shared\Domain\Templating\ImageValue;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RenderedDocument;
+use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Domain\Templating\TemplateFormat;
 use App\Shared\Domain\Templating\TemplateRenderer;
@@ -15,18 +16,22 @@ use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Domain\Templating\ValidationResult;
 use App\Shared\Infrastructure\Exception\AppException;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 
 /**
- * Драйвер xlsx-шаблонов на PhpSpreadsheet. Плейсхолдеры {{key}} / {{key?}} прямо в ячейках.
- * Возможности v1: только текст. Блоки/картинки в xlsx не поддерживаются.
+ * Драйвер xlsx-шаблонов на PhpSpreadsheet. Плейсхолдеры {{key}} / {{key?}} прямо в ячейках + повтор строки:
+ * строка с токенами {{group.sub}} клонируется по числу строк группы (RepeatValue), подполя подставляются.
+ * Повтор-строка опциональна по природе (пустой список → строка удаляется). Картинки/мерджи в xlsx не поддержаны.
  */
 final class XlsxTemplateRenderer implements TemplateRenderer
 {
     private const TOKEN = '/\{\{([a-zA-Z0-9_]+)(\?)?\}\}/';
+    private const REPEAT_TOKEN = '/\{\{([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\}\}/';
 
     public function supports(TemplateFile $template): bool
     {
@@ -36,22 +41,11 @@ final class XlsxTemplateRenderer implements TemplateRenderer
     public function variables(TemplateFile $template): array
     {
         $spreadsheet = $this->load($template);
-
-        $optionalByName = [];
-        $this->eachCellText($spreadsheet, function (string $text) use (&$optionalByName): void {
-            if (0 === preg_match_all(self::TOKEN, $text, $matches, PREG_SET_ORDER)) {
-                return;
-            }
-            foreach ($matches as $match) {
-                $name = $match[1];
-                $optional = '?' === ($match[2] ?? '');
-                $optionalByName[$name] = ($optionalByName[$name] ?? false) || $optional;
-            }
-        });
+        $scan = $this->scan($spreadsheet);
         $spreadsheet->disconnectWorksheets();
 
         $variables = [];
-        foreach ($optionalByName as $name => $optional) {
+        foreach ($scan['flat'] as $name => $optional) {
             $variables[] = new TemplateVariable((string) $name, $optional);
         }
 
@@ -60,20 +54,29 @@ final class XlsxTemplateRenderer implements TemplateRenderer
 
     public function validate(TemplateFile $template, RenderData $data): ValidationResult
     {
-        $templateNames = [];
+        $spreadsheet = $this->load($template);
+        $scan = $this->scan($spreadsheet);
+        $spreadsheet->disconnectWorksheets();
+
         $missing = [];
         $skipped = [];
+        $templateNames = [];
 
-        foreach ($this->variables($template) as $variable) {
-            $templateNames[] = $variable->name;
-            if ($data->has($variable->name)) {
+        foreach ($scan['flat'] as $name => $optional) {
+            $name = (string) $name;
+            $templateNames[] = $name;
+            if ($data->has($name)) {
                 continue;
             }
-            if ($variable->optional) {
-                $skipped[] = $variable->name;
+            if ($optional) {
+                $skipped[] = $name;
             } else {
-                $missing[] = $variable->name;
+                $missing[] = $name;
             }
+        }
+        // Повтор-строки опциональны по природе — пустой список допустим (строка удалится), в missing не идут.
+        foreach ($scan['repeats'] as $group) {
+            $templateNames[] = $group;
         }
 
         $unused = array_values(array_diff($data->variableNames(), $templateNames));
@@ -89,6 +92,8 @@ final class XlsxTemplateRenderer implements TemplateRenderer
         }
 
         $spreadsheet = $this->load($template);
+        $this->expandRepeats($spreadsheet, $data);
+
         $this->eachCell($spreadsheet, function (Cell $cell) use ($data): void {
             $value = $cell->getValue();
             if (!is_string($value) || !str_contains($value, '{{')) {
@@ -103,6 +108,102 @@ final class XlsxTemplateRenderer implements TemplateRenderer
         $spreadsheet->disconnectWorksheets();
 
         return new RenderedDocument($bytes, TemplateFormat::Xlsx);
+    }
+
+    /**
+     * Разворачивает повтор-строки: для каждой группы находит строку-шаблон с {{group.sub}} и клонирует её по
+     * числу строк RepeatValue (пусто → удаляет). Группы обрабатываются по очереди, строка ищется заново —
+     * вставка/удаление сдвигает индексы, повторный поиск их учитывает.
+     */
+    private function expandRepeats(Spreadsheet $spreadsheet, RenderData $data): void
+    {
+        $groups = $this->scan($spreadsheet)['repeats'];
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            foreach ($groups as $group) {
+                $value = $data->get($group);
+                $rows = $value instanceof RepeatValue ? $value->rows : [];
+                $this->expandGroup($sheet, $group, $rows);
+            }
+        }
+    }
+
+    /**
+     * @param list<array<string, string|ImageValue>> $rows
+     */
+    private function expandGroup(Worksheet $sheet, string $group, array $rows): void
+    {
+        $templateRow = $this->findGroupRow($sheet, $group);
+        if (null === $templateRow) {
+            return; // группы нет в этом листе
+        }
+        if ([] === $rows) {
+            $sheet->removeRow($templateRow, 1);
+
+            return;
+        }
+
+        $highestCol = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        $templateValues = [];
+        for ($col = 1; $col <= $highestCol; ++$col) {
+            $templateValues[$col] = $sheet->getCell([$col, $templateRow])->getValue();
+        }
+        $height = $sheet->getRowDimension($templateRow)->getRowHeight();
+
+        if (count($rows) > 1) {
+            $sheet->insertNewRowBefore($templateRow + 1, count($rows) - 1);
+        }
+
+        foreach ($rows as $i => $rowData) {
+            $target = $templateRow + $i;
+            for ($col = 1; $col <= $highestCol; ++$col) {
+                $letter = Coordinate::stringFromColumnIndex($col);
+                if ($i > 0) {
+                    $sheet->duplicateStyle($sheet->getStyle($letter.$templateRow), $letter.$target);
+                }
+                $tpl = $templateValues[$col];
+                if (!is_string($tpl)) {
+                    continue;
+                }
+                $sheet->getCell([$col, $target])->setValueExplicit($this->fillRepeatCell($tpl, $group, $rowData), DataType::TYPE_STRING);
+            }
+            if ($i > 0) {
+                $sheet->getRowDimension($target)->setRowHeight($height);
+            }
+        }
+    }
+
+    private function findGroupRow(Worksheet $sheet, string $group): ?int
+    {
+        $pattern = '/\{\{'.preg_quote($group, '/').'\.[a-zA-Z0-9_]+\}\}/';
+        foreach ($sheet->getRowIterator() as $row) {
+            $cells = $row->getCellIterator();
+            $cells->setIterateOnlyExistingCells(true);
+            foreach ($cells as $cell) {
+                $value = $cell->getValue();
+                if (is_string($value) && 1 === preg_match($pattern, $value)) {
+                    return $row->getRowIndex();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, string|ImageValue> $rowData
+     */
+    private function fillRepeatCell(string $text, string $group, array $rowData): string
+    {
+        $filled = preg_replace_callback(self::REPEAT_TOKEN, static function (array $match) use ($group, $rowData): string {
+            if ($match[1] !== $group) {
+                return $match[0]; // чужая группа — не трогаем (развернётся своим проходом)
+            }
+            $value = $rowData[$match[2]] ?? '';
+
+            return $value instanceof ImageValue ? '' : (string) $value; // картинки xlsx не поддерживает
+        }, $text);
+
+        return $filled ?? $text;
     }
 
     /**
@@ -124,6 +225,32 @@ final class XlsxTemplateRenderer implements TemplateRenderer
         }
 
         return '';
+    }
+
+    /**
+     * Единый проход по тексту ячеек: плоские переменные (имя → опциональность) + имена повтор-групп.
+     *
+     * @return array{flat: array<string, bool>, repeats: list<string>}
+     */
+    private function scan(Spreadsheet $spreadsheet): array
+    {
+        $flat = [];
+        $repeats = [];
+        $this->eachCellText($spreadsheet, function (string $text) use (&$flat, &$repeats): void {
+            if (preg_match_all(self::REPEAT_TOKEN, $text, $rm, PREG_SET_ORDER)) {
+                foreach ($rm as $match) {
+                    $repeats[$match[1]] = true;
+                }
+            }
+            if (preg_match_all(self::TOKEN, $text, $fm, PREG_SET_ORDER)) {
+                foreach ($fm as $match) {
+                    $name = $match[1];
+                    $flat[$name] = ($flat[$name] ?? false) || '?' === ($match[2] ?? '');
+                }
+            }
+        });
+
+        return ['flat' => $flat, 'repeats' => array_keys($repeats)];
     }
 
     private function load(TemplateFile $template): Spreadsheet

@@ -1,0 +1,35 @@
+{# Список людей — ecard-карточки как в разделе «Персонал»; статус — пилюля verdict; клик — превью (как в Покрытиях). #}
+{% set pill = {
+    ok:      {v: 'is-ok',     i: 'bi-check-circle',         l: 'в норме'},
+    soon:    {v: 'is-warn',   i: 'bi-clock',                l: 'подходит срок'},
+    overdue: {v: 'is-danger', i: 'bi-exclamation-triangle', l: 'просрочено'},
+    missing: {v: 'is-danger', i: 'bi-x-circle',             l: 'не выдано'},
+} %}
+
+{% if people.people is empty %}
+    <div class="cmp-empty">Никто не подходит под фильтр.</div>
+{% else %}
+    <div class="text-body-secondary small mb-2">Найдено: {{ people.pager.total_items }}</div>
+    <div class="ecard-grid ecard-grid--uniform">
+        {% for p in people.people %}
+            {% set w = pill[p.worstBucket] %}
+            <div class="ecard">
+                <div class="ecard-media" role="button" data-action="click->entity-preview#open" data-entity-id="{{ p.profileId }}">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <div class="ecard-body">
+                    <div class="ecard-head">
+                        <div class="ecard-title" role="button" data-action="click->entity-preview#open" data-entity-id="{{ p.profileId }}">{{ p.fullName }}</div>
+                    </div>
+                    <div class="ecard-desc">{{ p.positionTitle }}</div>
+                    {% if p.departmentTitle %}<div class="ecard-meta"><span>{{ p.departmentTitle }}</span></div>{% endif %}
+                    <div class="ecard-tags">
+                        <span class="verdict {{ w.v }}"><i class="bi {{ w.i }}"></i>{{ w.l }}</span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% include 'components/pager.html.twig' with {'pager': people.pager} %}
+{% endif %}

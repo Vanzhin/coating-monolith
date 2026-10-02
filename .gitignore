@@ -13,3 +13,7 @@ tools/pubchem-cache.json
 
 # Визуальный компаньон brainstorming (макеты, не в репо)
 .superpowers/
+
+# PHP CS Fixer configuration
+/.php-cs-fixer.cache
+/.php-cs-fixer.php
