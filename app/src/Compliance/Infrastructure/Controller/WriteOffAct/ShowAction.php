@@ -94,13 +94,14 @@ final class ShowAction extends AbstractController
         }
 
         $items = [];
-        foreach ($profileCompliance->itemsOfWriteOffAct($actId) as $fact) {
+        foreach ($profileCompliance->itemsOfWriteOffAct($actId) as $portion) {
+            $fact = $profileCompliance->recordById($portion->recordId());
             $items[] = [
-                'recordId' => $fact->getId(),
-                'label' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
-                'quantityLabel' => $fact->quantity()?->label() ?? '',
-                'issueDate' => $fact->fulfilledAt()->format('Y-m-d'),
-                'reason' => $fact->writeOffReason()?->value,
+                'portionId' => $portion->getId(),
+                'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
+                'quantityLabel' => $this->formatQuantity($portion->quantity(), $fact?->quantity()?->unit->title() ?? ''),
+                'issueDate' => $fact?->fulfilledAt()->format('Y-m-d') ?? '',
+                'reason' => $portion->reason()?->value,
             ];
         }
 
@@ -131,5 +132,13 @@ final class ShowAction extends AbstractController
             'hasScan' => null !== $act->scanFileId(),
             'error' => $error,
         ]);
+    }
+
+    /** Количество порции + единица — без хвостового «.0» (как {@see \App\Compliance\Domain\ValueObject\Quantity::label()}, но для «голого» float порции). */
+    private function formatQuantity(float $amount, string $unit): string
+    {
+        $value = 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
+
+        return '' === $unit ? $value : $value.' '.$unit;
     }
 }

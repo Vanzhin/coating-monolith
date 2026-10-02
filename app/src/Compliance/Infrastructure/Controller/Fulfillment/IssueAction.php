@@ -9,7 +9,6 @@ use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComp
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceStatus;
-use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -78,18 +77,32 @@ final class IssueAction extends AbstractController
         $obligations = null !== $complianceResult->compliance ? $complianceResult->compliance->obligations : [];
 
         $requirementName = 'Требование';
+        $normByKey = [];
         $issueRows = [];
-        $writeOffRows = [];
         foreach ($obligations as $row) {
             if ($row->requirementId !== $requirementId) {
                 continue;
             }
             $requirementName = $row->requirementName;
-            if (ComplianceStatus::Green->value !== $row->status) {
-                $issueRows[] = $row; // подошедшие — для оформления
+            if (null !== $row->quantityValue) {
+                $normByKey[$row->key] = (float) $row->quantityValue;
             }
-            if (null !== $row->lastFulfilledAt) {
-                $writeOffRows[] = $row; // выданные — для списания
+            if (ComplianceStatus::Green->value !== $row->status) {
+                $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
+                $issueRows[] = [
+                    'key' => $row->key,
+                    'label' => $row->label,
+                    'type' => $row->type,
+                    'cadenceKind' => $row->cadenceKind,
+                    'cadenceNumber' => $row->cadenceNumber,
+                    'cadenceUnit' => $row->cadenceUnit,
+                    'cadenceLabel' => $row->cadenceLabel,
+                    'quantityLabel' => $row->quantityLabel,
+                    'quantityValue' => $row->quantityValue,
+                    'quantityUnit' => $row->quantityUnit,
+                    // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
+                    'deficitValue' => null !== $row->quantityValue ? $this->formatAmount(max(0.0, (float) $row->quantityValue - $held)) : null,
+                ];
             }
         }
 
@@ -110,28 +123,29 @@ final class IssueAction extends AbstractController
             ]);
         }
 
-        // Корзина (открытый черновик акта списания) — её позиции помечаем бейджем, саму — кнопкой «Перейти».
+        // Корзина (открытый черновик акта списания) — саму помечаем кнопкой «Перейти».
         $openBasketId = $profileCompliance?->openWriteOffDraftFor($requirementId)?->getId();
-        $basketKeys = [];
-        if (null !== $profileCompliance && null !== $openBasketId) {
-            foreach ($profileCompliance->itemsOfWriteOffAct($openBasketId) as $fact) {
-                $basketKeys[$fact->obligationKey()] = true;
-            }
-        }
 
-        // «Списать» — только у материальных выданных позиций; остальным даём бейдж «в акте списания».
+        // «Списать» — построчно по действующим фактам материальных позиций требования (held > 0).
         $rows = [];
-        foreach ($writeOffRows as $o) {
-            if (ComplianceType::Material->value !== $o->type) {
-                continue;
+        if (null !== $profileCompliance) {
+            foreach ($profileCompliance->getRecords() as $record) {
+                $key = $record->obligationKey();
+                if (!str_starts_with($key, $requirementId.'|') || null === $record->quantity() || $record->heldAmount() <= 0.0) {
+                    continue; // не этого требования, нематериальный факт или уже полностью списан
+                }
+                $available = $profileCompliance->availableToWriteOff($record->getId());
+                $norm = $normByKey[$key] ?? 0.0;
+                $rows[] = [
+                    'recordId' => $record->getId(),
+                    'label' => $profileCompliance->obligationLabelOf($key),
+                    'held' => $this->formatAmount($record->heldAmount()),
+                    'unit' => $record->quantity()->unit->title(),
+                    'available' => $this->formatAmount($available),
+                    'inDraftQty' => $this->formatAmount($record->heldAmount() - $available),
+                    'deficit' => $this->formatAmount(max(0.0, $norm - $profileCompliance->heldOf($key))),
+                ];
             }
-            $rows[] = [
-                'key' => $o->key,
-                'label' => $o->label,
-                'quantityLabel' => $o->quantityLabel,
-                'lastFulfilledAt' => $o->lastFulfilledAt,
-                'inBasket' => isset($basketKeys[$o->key]),
-            ];
         }
 
         $signedActs = [];
@@ -145,10 +159,11 @@ final class IssueAction extends AbstractController
                     continue;
                 }
                 $items = [];
-                foreach ($profileCompliance->itemsOfWriteOffAct($act->getId()) as $fact) {
+                foreach ($profileCompliance->itemsOfWriteOffAct($act->getId()) as $portion) {
+                    $fact = $profileCompliance->recordById($portion->recordId());
                     $items[] = [
-                        'label' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
-                        'reason' => $fact->writeOffReason()?->title(),
+                        'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
+                        'reason' => $portion->reason()?->title(),
                     ];
                 }
                 $writeOffActs[] = ['id' => $act->getId(), 'signed' => $act->isSigned(), 'actNumber' => $act->actNumber(), 'items' => $items];
@@ -172,5 +187,11 @@ final class IssueAction extends AbstractController
             'signedActs' => $signedActs,
             'writeOffActs' => $writeOffActs,
         ]);
+    }
+
+    /** Число без хвостового «.0» — для отображения в карточке (как в {@see ProfileComplianceDTOTransformer}). */
+    private function formatAmount(float $amount): string
+    {
+        return 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
     }
 }

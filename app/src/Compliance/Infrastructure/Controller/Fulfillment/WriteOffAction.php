@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** Списать выбранные позиции требования (материальные → акт списания; все → под новый черновик). */
+/** Положить порции фактов (recordId+количество) в корзину акта списания требования (черновик, без эффекта). */
 #[Route(
     path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/write-off',
     name: 'app_cabinet_compliance_write_off',
@@ -28,11 +28,18 @@ final class WriteOffAction extends AbstractController
     {
         /** @var array<string, mixed> $payload */
         $payload = $request->getPayload()->all();
-        /** @var list<string> $keys */
-        $keys = array_values((array) ($payload['obligationKeys'] ?? []));
+        /** @var list<array{recordId?: mixed, quantity?: mixed}> $rawPortions */
+        $rawPortions = array_values((array) ($payload['portions'] ?? []));
+        $portions = array_map(
+            static fn (array $portion): array => [
+                'recordId' => (string) ($portion['recordId'] ?? ''),
+                'quantity' => (float) ($portion['quantity'] ?? 0),
+            ],
+            $rawPortions,
+        );
 
         try {
-            $this->commandBus->execute(new WriteOffPositionsCommand($profileId, $requirementId, $keys));
+            $this->commandBus->execute(new WriteOffPositionsCommand($profileId, $requirementId, $portions));
             $this->addFlash('success', 'Позиции положены в акт списания (черновик). Оформите акт, чтобы списание вступило в силу.');
         } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());

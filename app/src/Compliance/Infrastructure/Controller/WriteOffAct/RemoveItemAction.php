@@ -29,9 +29,9 @@ final class RemoveItemAction extends AbstractController
 
     public function __invoke(Request $request, string $profileId, string $actId): Response
     {
-        $recordId = (string) $request->getPayload()->get('recordId', '');
+        $portionId = (string) $request->getPayload()->get('portionId', '');
         try {
-            $this->commandBus->execute(new CancelWriteOffItemCommand($profileId, $actId, $recordId));
+            $this->commandBus->execute(new CancelWriteOffItemCommand($profileId, $actId, $portionId));
             $this->addFlash('success', 'Позиция возвращена в действующие.');
         } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());

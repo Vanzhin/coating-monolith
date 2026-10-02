@@ -57,13 +57,13 @@
                                         <div class="fw-semibold">{{ it.label }}</div>
                                         <div class="text-body-secondary small">{% if it.quantityLabel %}{{ it.quantityLabel }} · {% endif %}выдано {{ it.issueDate }}</div>
                                     </div>
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-auto" name="recordId" value="{{ it.recordId }}"
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-auto" name="portionId" value="{{ it.portionId }}"
                                             formaction="{{ path('app_cabinet_compliance_writeoff_remove_item', {profileId: profileId, actId: actId}) }}">
                                         <i class="bi bi-arrow-counterclockwise me-1"></i>Убрать
                                     </button>
                                 </div>
                                 <label class="form-label small mb-1">Причина списания</label>
-                                <select name="reasons[{{ it.recordId }}]" class="form-select">
+                                <select name="reasons[{{ it.portionId }}]" class="form-select">
                                     <option value="">— выберите —</option>
                                     {% for r in reasons %}<option value="{{ r.value }}"{{ it.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
                                 </select>
