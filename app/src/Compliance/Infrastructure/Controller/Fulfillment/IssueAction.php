@@ -10,6 +10,7 @@ use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComp
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\ValueObject\Unit;
+use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -101,7 +102,7 @@ final class IssueAction extends AbstractController
                     'quantityValue' => $row->quantityValue,
                     'quantityUnit' => $row->quantityUnit,
                     // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
-                    'deficitValue' => null !== $row->quantityValue ? $this->formatAmount(max(0.0, (float) $row->quantityValue - $held)) : null,
+                    'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
                 ];
             }
         }
@@ -126,24 +127,25 @@ final class IssueAction extends AbstractController
         // Корзина (открытый черновик акта списания) — саму помечаем кнопкой «Перейти».
         $openBasketId = $profileCompliance?->openWriteOffDraftFor($requirementId)?->getId();
 
-        // «Списать» — построчно по действующим фактам материальных позиций требования (held > 0).
+        // «Списать» — построчно по действующим материальным фактам требования (held > 0). Принадлежность
+        // факта требованию — доменное знание, резолвим его агрегатом, а не парсингом ключа тут.
         $rows = [];
         if (null !== $profileCompliance) {
-            foreach ($profileCompliance->getRecords() as $record) {
+            foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
                 $key = $record->obligationKey();
-                if (!str_starts_with($key, $requirementId.'|') || null === $record->quantity() || $record->heldAmount() <= 0.0) {
-                    continue; // не этого требования, нематериальный факт или уже полностью списан
+                if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
+                    continue; // нематериальный факт или уже полностью списан
                 }
                 $available = $profileCompliance->availableToWriteOff($record->getId());
                 $norm = $normByKey[$key] ?? 0.0;
                 $rows[] = [
                     'recordId' => $record->getId(),
                     'label' => $profileCompliance->obligationLabelOf($key),
-                    'held' => $this->formatAmount($record->heldAmount()),
+                    'held' => AmountFormatter::trimmed($record->heldAmount()),
                     'unit' => $record->quantity()->unit->title(),
-                    'available' => $this->formatAmount($available),
-                    'inDraftQty' => $this->formatAmount($record->heldAmount() - $available),
-                    'deficit' => $this->formatAmount(max(0.0, $norm - $profileCompliance->heldOf($key))),
+                    'available' => AmountFormatter::trimmed($available),
+                    'inDraftQty' => AmountFormatter::trimmed($record->heldAmount() - $available),
+                    'deficit' => AmountFormatter::trimmed(max(0.0, $norm - $profileCompliance->heldOf($key))),
                 ];
             }
         }
@@ -187,11 +189,5 @@ final class IssueAction extends AbstractController
             'signedActs' => $signedActs,
             'writeOffActs' => $writeOffActs,
         ]);
-    }
-
-    /** Число без хвостового «.0» — для отображения в карточке (как в {@see ProfileComplianceDTOTransformer}). */
-    private function formatAmount(float $amount): string
-    {
-        return 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
     }
 }

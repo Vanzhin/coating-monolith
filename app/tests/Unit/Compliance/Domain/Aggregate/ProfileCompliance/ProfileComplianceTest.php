@@ -338,6 +338,24 @@ final class ProfileComplianceTest extends TestCase
         $pc->assertIssuable([$this->glovesLine(1.0)]);
     }
 
+    public function test_records_for_requirement_filters_by_key(): void
+    {
+        $pc = $this->pcWithGloves();
+        $otherReqId = 'req-2';
+        $pc->putObligation(new TrackedObligation(
+            Uuid::v4(), $pc, $otherReqId, 'Другое требование', 'Каска',
+            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
+            new Quantity(1.0, Unit::Piece), 'dept-1',
+        ));
+        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
+        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, 'Каска'), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(1.0, Unit::Piece));
+
+        $records = $pc->recordsForRequirement($this->reqId);
+
+        self::assertCount(1, $records);
+        self::assertSame($this->glovesKey(), $records[0]->obligationKey());
+    }
+
     public function test_issue_covers_deficit_ok(): void
     {
         $pc = $this->pcWithGloves(2.0);

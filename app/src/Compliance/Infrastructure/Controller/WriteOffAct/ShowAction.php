@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCo
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\WriteOffCommissionMember;
+use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -134,10 +135,10 @@ final class ShowAction extends AbstractController
         ]);
     }
 
-    /** Количество порции + единица — без хвостового «.0» (как {@see \App\Compliance\Domain\ValueObject\Quantity::label()}, но для «голого» float порции). */
+    /** Количество порции + единица (единый формат числа — {@see AmountFormatter}). */
     private function formatQuantity(float $amount, string $unit): string
     {
-        $value = 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
+        $value = AmountFormatter::trimmed($amount);
 
         return '' === $unit ? $value : $value.' '.$unit;
     }

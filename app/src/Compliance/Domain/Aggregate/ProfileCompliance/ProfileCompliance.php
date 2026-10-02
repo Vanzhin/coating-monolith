@@ -73,6 +73,25 @@ class ProfileCompliance extends Aggregate
         return $this->records->toArray();
     }
 
+    /**
+     * Факты выдачи, относящиеся к требованию (принадлежность по ключу обязанности определяет домен —
+     * {@see TrackedObligation::keyBelongsToRequirement}). Нужен представлению (карточка «Списать»), чтобы
+     * не лезть в формат ключа снаружи.
+     *
+     * @return list<FulfillmentRecord>
+     */
+    public function recordsForRequirement(string $requirementId): array
+    {
+        $result = [];
+        foreach ($this->records as $record) {
+            if (TrackedObligation::keyBelongsToRequirement($record->obligationKey(), $requirementId)) {
+                $result[] = $record;
+            }
+        }
+
+        return $result;
+    }
+
     /** @return RequirementDocument[] */
     public function getDocuments(): array
     {

@@ -64,6 +64,12 @@ class TrackedObligation
         return $requirementId.'|'.mb_strtolower(trim($label));
     }
 
+    /** Принадлежность ключа обязанности требованию (формат ключа — знание домена, наружу не отдаём). */
+    public static function keyBelongsToRequirement(string $key, string $requirementId): bool
+    {
+        return str_starts_with($key, $requirementId.'|');
+    }
+
     public function key(): string
     {
         return self::keyOf($this->requirementId, $this->label);
