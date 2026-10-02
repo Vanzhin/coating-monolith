@@ -55,6 +55,19 @@ final class ComplianceBucketResolverTest extends TestCase
         self::assertSame(ComplianceBucket::Ok, $this->resolver->bucketFor(true, new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-12-01'), $this->now));
     }
 
+    public function test_deficit_bucket_is_missing(): void
+    {
+        // active, в срок, но на руках 1 из 2 → дефицит → Missing
+        $bucket = $this->resolver->bucketFor(true, new \DateTimeImmutable('2026-05-31'), new \DateTimeImmutable('2027-05-31'), $this->now, 2.0, 1.0);
+        self::assertSame(ComplianceBucket::Missing, $bucket);
+    }
+
+    public function test_held_meets_norm_in_date_is_ok(): void
+    {
+        $bucket = $this->resolver->bucketFor(true, new \DateTimeImmutable('2026-05-31'), new \DateTimeImmutable('2027-05-31'), $this->now, 2.0, 2.0);
+        self::assertSame(ComplianceBucket::Ok, $bucket);
+    }
+
     public function test_worst_of_missing_dominates(): void
     {
         self::assertSame(ComplianceBucket::Missing, ComplianceBucket::worseOf(ComplianceBucket::Overdue, ComplianceBucket::Missing));
