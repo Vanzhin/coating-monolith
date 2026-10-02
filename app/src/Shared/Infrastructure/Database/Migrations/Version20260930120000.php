@@ -45,6 +45,7 @@ final class Version20260930120000 extends AbstractMigration
                 department_id VARCHAR(64) NOT NULL,
                 last_fulfilled_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
                 next_due_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
+                held_quantity DOUBLE PRECISION NOT NULL DEFAULT 0,
                 active BOOLEAN NOT NULL DEFAULT FALSE,
                 origin VARCHAR(16) NOT NULL,
                 PRIMARY KEY(id),
@@ -69,8 +70,7 @@ final class Version20260930120000 extends AbstractMigration
                 wear_percent DOUBLE PRECISION DEFAULT NULL,
                 note TEXT DEFAULT NULL,
                 manual_due_date TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
-                returned_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
-                returned_quantity JSONB DEFAULT NULL,
+                returned_quantity DOUBLE PRECISION NOT NULL DEFAULT 0,
                 PRIMARY KEY(id),
                 CONSTRAINT fk_fulfillment_record_profile FOREIGN KEY (profile_compliance_id)
                     REFERENCES compliance_profile_compliance (id) ON DELETE CASCADE

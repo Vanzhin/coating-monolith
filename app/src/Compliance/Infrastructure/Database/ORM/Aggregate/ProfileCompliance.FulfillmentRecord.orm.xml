@@ -13,12 +13,8 @@
         <field name="wearPercent" type="float" column="wear_percent" nullable="true"/>
         <field name="note" type="text" column="note" nullable="true"/>
         <field name="manualDueDate" type="datetime_immutable" column="manual_due_date" nullable="true"/>
-        <field name="returnedAt" type="datetime_immutable" column="returned_at" nullable="true"/>
-        <field name="returnedQuantity" type="compliance_quantity" column="returned_quantity" nullable="true"/>
+        <field name="returnedQuantity" type="float" column="returned_quantity"/>
         <field name="documentId" type="string" length="36" column="document_id" nullable="true"/>
-        <field name="writeOffActId" type="string" length="36" column="write_off_act_id" nullable="true"/>
-        <field name="writeOffReason" type="string" length="32" column="write_off_reason" nullable="true"
-               enum-type="App\Compliance\Domain\Type\WriteOffReason"/>
 
         <many-to-one field="profileCompliance"
                      target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"

@@ -8,24 +8,20 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Compliance Д5: акт списания СИЗ — таблица `compliance_write_off_act` (на требование, черновик→оформлен,
- * строки-корзина в jsonb со ссылкой на факт/акт получения + причина на строку, комиссия, скан). Факту выдачи
- * возвращаем `document_id` (акт получения — провенанс для трассировки «из какого в какой акт»). Идемпотентно.
+ * Compliance Д5: акт списания СИЗ порциями — `compliance_write_off_act` (заголовок-документ, на требование,
+ * черновик→оформлен) + `compliance_write_off_item` (порции: сколько конкретного факта-выдачи списано и
+ * почему). Факту выдачи возвращаем `document_id` (акт получения — провенанс «откуда выдано»). Идемпотентно.
  */
 final class Version20261002120000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Compliance Д5: compliance_write_off_act + fulfillment_record.document_id (провенанс списания).';
+        return 'Compliance Д5: compliance_write_off_act + compliance_write_off_item (порции) + fulfillment_record.document_id.';
     }
 
     public function up(Schema $schema): void
     {
-        // Факт выдачи = «item», гуляющий из акта в акт: document_id (откуда выдан) + write_off_act_id (куда списан) + причина.
         $this->addSql('ALTER TABLE compliance_fulfillment_record ADD COLUMN IF NOT EXISTS document_id VARCHAR(36) DEFAULT NULL');
-        $this->addSql('ALTER TABLE compliance_fulfillment_record ADD COLUMN IF NOT EXISTS write_off_act_id VARCHAR(36) DEFAULT NULL');
-        $this->addSql('ALTER TABLE compliance_fulfillment_record ADD COLUMN IF NOT EXISTS write_off_reason VARCHAR(32) DEFAULT NULL');
-
         $this->addSql(<<<'SQL'
             CREATE TABLE IF NOT EXISTS compliance_write_off_act (
                 id UUID NOT NULL,
@@ -45,13 +41,26 @@ final class Version20261002120000 extends AbstractMigration
             )
             SQL);
         $this->addSql('CREATE INDEX IF NOT EXISTS idx_write_off_act_requirement ON compliance_write_off_act (requirement_id)');
+        $this->addSql(<<<'SQL'
+            CREATE TABLE IF NOT EXISTS compliance_write_off_item (
+                id UUID NOT NULL,
+                write_off_act_id UUID NOT NULL,
+                record_id VARCHAR(36) NOT NULL,
+                quantity DOUBLE PRECISION NOT NULL,
+                reason VARCHAR(32) DEFAULT NULL,
+                PRIMARY KEY(id),
+                CONSTRAINT fk_write_off_item_act FOREIGN KEY (write_off_act_id)
+                    REFERENCES compliance_write_off_act (id) ON DELETE CASCADE
+            )
+            SQL);
+        $this->addSql('CREATE INDEX IF NOT EXISTS idx_write_off_item_act ON compliance_write_off_item (write_off_act_id)');
+        $this->addSql('CREATE INDEX IF NOT EXISTS idx_write_off_item_record ON compliance_write_off_item (record_id)');
     }
 
     public function down(Schema $schema): void
     {
+        $this->addSql('DROP TABLE IF EXISTS compliance_write_off_item');
         $this->addSql('DROP TABLE IF EXISTS compliance_write_off_act');
         $this->addSql('ALTER TABLE compliance_fulfillment_record DROP COLUMN IF EXISTS document_id');
-        $this->addSql('ALTER TABLE compliance_fulfillment_record DROP COLUMN IF EXISTS write_off_act_id');
-        $this->addSql('ALTER TABLE compliance_fulfillment_record DROP COLUMN IF EXISTS write_off_reason');
     }
 }

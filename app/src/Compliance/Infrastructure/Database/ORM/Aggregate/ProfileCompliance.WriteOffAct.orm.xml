@@ -23,6 +23,15 @@
                      inversed-by="writeOffActs" fetch="LAZY">
             <join-column name="profile_compliance_id" nullable="false" on-delete="CASCADE"/>
         </many-to-one>
+
+        <one-to-many field="items"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffItem"
+                     mapped-by="writeOffAct" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
     </entity>
 
 </doctrine-mapping>

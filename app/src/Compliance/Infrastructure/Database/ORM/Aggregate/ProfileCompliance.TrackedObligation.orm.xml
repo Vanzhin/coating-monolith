@@ -17,6 +17,7 @@
         <field name="departmentId" type="string" length="64" column="department_id"/>
         <field name="lastFulfilledAt" type="datetime_immutable" column="last_fulfilled_at" nullable="true"/>
         <field name="nextDueAt" type="datetime_immutable" column="next_due_at" nullable="true"/>
+        <field name="heldQuantity" type="float" column="held_quantity"/>
         <field name="active" type="boolean" column="active"/>
         <field name="origin" type="string" length="16" column="origin"/>
 
