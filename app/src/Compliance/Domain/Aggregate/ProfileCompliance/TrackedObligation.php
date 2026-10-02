@@ -31,6 +31,7 @@ class TrackedObligation
     private string $departmentId;
     private ?\DateTimeImmutable $lastFulfilledAt = null;
     private ?\DateTimeImmutable $nextDueAt = null;
+    private float $heldQuantity = 0.0;
     private bool $active = false;
     private string $origin;
 
@@ -77,6 +78,16 @@ class TrackedObligation
     public function setActive(bool $active): void
     {
         $this->active = $active;
+    }
+
+    public function heldQuantity(): float
+    {
+        return $this->heldQuantity;
+    }
+
+    public function setHeldQuantity(float $heldQuantity): void
+    {
+        $this->heldQuantity = $heldQuantity;
     }
 
     public function getId(): string

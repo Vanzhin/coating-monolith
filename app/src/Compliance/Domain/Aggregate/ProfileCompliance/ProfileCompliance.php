@@ -178,15 +178,47 @@ class ProfileCompliance extends Aggregate
         return null;
     }
 
+    /** На руках по позиции = Σ heldAmount по её фактам. */
+    public function heldOf(string $obligationKey): float
+    {
+        $sum = 0.0;
+        foreach ($this->records as $record) {
+            if ($record->obligationKey() === $obligationKey) {
+                $sum += $record->heldAmount();
+            }
+        }
+
+        return $sum;
+    }
+
+    /** Доступно к списанию по факту = на руках по факту минус уже лежащее в черновиках-порциях этого факта. */
+    public function availableToWriteOff(string $recordId): float
+    {
+        $fact = $this->recordById($recordId);
+        if (null === $fact) {
+            return 0.0;
+        }
+        $inDrafts = 0.0;
+        foreach ($this->writeOffActs as $act) {
+            if (!$act->isDraft()) {
+                continue;
+            }
+            $portion = $act->portionFor($recordId);
+            if (null !== $portion) {
+                $inDrafts += $portion->quantity();
+            }
+        }
+
+        return max(0.0, $fact->heldAmount() - $inDrafts);
+    }
+
     /**
-     * Положить материальные позиции в корзину (черновик акта списания): есть открытый черновик — туда, нет
-     * или оформлен — создаём новый. Позиция (item = факт выдачи) «переезжает» в акт через {@see FulfillmentRecord::placeInWriteOffAct()}.
-     * ЭФФЕКТА НЕТ: факты не гасим, пересчёта нет — он наступает при оформлении акта ({@see signWriteOffAct}).
+     * Положить порции в корзину (черновик акта списания). Эффекта нет — он на оформлении акта.
      * Списывать можно только из действующей карточки.
      *
-     * @param list<string> $obligationKeys
+     * @param list<array{recordId: string, quantity: float}> $portions
      */
-    public function writeOff(Uuid $candidateActId, string $requirementId, array $obligationKeys, \DateTimeImmutable $now): void
+    public function writeOff(Uuid $candidateActId, string $requirementId, array $portions, \DateTimeImmutable $now): void
     {
         if ([] === $this->signedDocumentsFor($requirementId)) {
             throw new AppException('Списать можно только из действующей карточки — черновик не списывается.');
@@ -198,98 +230,58 @@ class ProfileCompliance extends Aggregate
             $this->writeOffActs->add($act);
         }
         $added = 0;
-        foreach ($obligationKeys as $key) {
-            $obligation = $this->obligationByKey($key);
-            if (null === $obligation || ComplianceType::Material !== $obligation->type()) {
-                continue; // в корзину кладём только материальные позиции
+        foreach ($portions as $portion) {
+            $recordId = (string) $portion['recordId'];
+            $quantity = (float) $portion['quantity'];
+            if ($quantity <= 0.0) {
+                continue;
             }
-            $fact = $this->currentFactOfKey($key);
-            if (null === $fact || null !== $fact->writeOffActId()) {
-                continue; // нет текущей выдачи или позиция уже в корзине
+            if ($quantity > $this->availableToWriteOff($recordId)) {
+                throw new AppException('Нельзя списать больше, чем на руках.');
             }
-            $act->assertMutable();
-            $fact->placeInWriteOffAct($act->getId());
+            $act->addPortion($recordId, $quantity, Uuid::v7(), $now);
             ++$added;
         }
-        if ($added > 0) {
-            $act->touch($now);
-        } elseif ($isNew) {
-            $this->writeOffActs->removeElement($act); // ничего не легло — пустой акт не держим
+        if (0 === $added && $isNew) {
+            $this->writeOffActs->removeElement($act);
         }
     }
 
-    /**
-     * Позиции (item-факты) корзины акта списания.
-     *
-     * @return list<FulfillmentRecord>
-     */
+    public function cancelWriteOffItem(string $actId, string $portionId, \DateTimeImmutable $now): void
+    {
+        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
+        $act->removePortion($portionId, $now);
+        if ($act->isEmpty()) {
+            $this->writeOffActs->removeElement($act);
+        }
+    }
+
+    /** @param array<string, WriteOffReason> $reasonByPortionId */
+    public function applyWriteOffReasons(string $actId, array $reasonByPortionId, \DateTimeImmutable $now): void
+    {
+        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
+        $act->applyReasons($reasonByPortionId, $now);
+    }
+
+    /** @return list<WriteOffItem> */
     public function itemsOfWriteOffAct(string $actId): array
     {
-        $items = [];
-        foreach ($this->records as $record) {
-            if ($record->isInWriteOffAct($actId)) {
-                $items[] = $record;
-            }
-        }
+        $act = $this->writeOffActById($actId);
 
-        return $items;
+        return null === $act ? [] : $act->items();
     }
 
-    /** Убрать позицию из корзины (откат, пока акт — черновик); опустевший акт удаляем. */
-    public function cancelWriteOffItem(string $actId, string $recordId, \DateTimeImmutable $now): void
-    {
-        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-        $act->assertMutable();
-        $fact = $this->recordById($recordId);
-        if (null !== $fact && $fact->isInWriteOffAct($actId)) {
-            $fact->removeFromWriteOffAct();
-        }
-        if ([] === $this->itemsOfWriteOffAct($actId)) {
-            $this->writeOffActs->removeElement($act);
-
-            return;
-        }
-        $act->touch($now);
-    }
-
-    /**
-     * Проставить причины позициям корзины (на странице акта списания).
-     *
-     * @param array<string, WriteOffReason> $reasonByRecordId
-     */
-    public function applyWriteOffReasons(string $actId, array $reasonByRecordId, \DateTimeImmutable $now): void
-    {
-        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-        $act->assertMutable();
-        foreach ($this->itemsOfWriteOffAct($actId) as $fact) {
-            if (isset($reasonByRecordId[$fact->getId()])) {
-                $fact->setWriteOffReason($reasonByRecordId[$fact->getId()]);
-            }
-        }
-        $act->touch($now);
-    }
-
-    /**
-     * Оформить акт списания: причины заданы на все позиции + комиссия + №/дата + скан → заморожен. ТОЛЬКО ТУТ
-     * наступает эффект — гасим списанные факты (на дату акта) и пересчитываем позиции (освобождаются → новый
-     * черновик выдачи заведёт сервис формирования в Application).
-     */
+    /** Оформить акт списания (комиссия+№/дата+скан): замораживает и гасит количество на фактах + пересчёт. */
     public function signWriteOffAct(string $actId, WriteOffCommission $commission, string $actNumber, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now, ObligationDueCalculator $calculator): void
     {
         $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-        $items = $this->itemsOfWriteOffAct($actId);
-        foreach ($items as $fact) {
-            if (null === $fact->writeOffReason()) {
-                $label = $this->obligationByKey($fact->obligationKey())?->label() ?? $fact->obligationKey();
-                throw new AppException(sprintf('Укажите причину списания для позиции «%s».', $label));
-            }
-        }
         $act->sign($commission, $actNumber, $actDate, $scanFileId, $now);
-        foreach ($items as $fact) {
-            if ($fact->isReturned()) {
+        foreach ($act->items() as $portion) {
+            $fact = $this->recordById($portion->recordId());
+            if (null === $fact) {
                 continue;
             }
-            $fact->markReturned($actDate, null, $fact->writeOffReason()?->title());
+            $fact->addReturnedQuantity($portion->quantity());
             $this->recomputeObligation($fact->obligationKey(), $calculator);
         }
     }
@@ -326,22 +318,6 @@ class ProfileCompliance extends Aggregate
         }
 
         return null;
-    }
-
-    /** Текущая (последняя не-списанная) выдача позиции — её и списываем. */
-    private function currentFactOfKey(string $obligationKey): ?FulfillmentRecord
-    {
-        $latest = null;
-        foreach ($this->records as $record) {
-            if ($record->obligationKey() !== $obligationKey || $record->isReturned()) {
-                continue;
-            }
-            if (null === $latest || $record->fulfilledAt() > $latest->fulfilledAt()) {
-                $latest = $record;
-            }
-        }
-
-        return $latest;
     }
 
     private function recordById(string $recordId): ?FulfillmentRecord
@@ -429,13 +405,11 @@ class ProfileCompliance extends Aggregate
         ?Percent $wearPercent = null,
         ?string $note = null,
         ?\DateTimeImmutable $manualDueDate = null,
-        ?\DateTimeImmutable $returnedAt = null,
-        ?Quantity $returnedQuantity = null,
         ?string $documentId = null,
     ): void {
         $this->records->add(new FulfillmentRecord(
             $recordId, $this, $obligationKey, $fulfilledAt,
-            $quantity, $wearPercent, $note, $manualDueDate, $returnedAt, $returnedQuantity, $documentId,
+            $quantity, $wearPercent, $note, $manualDueDate, documentId: $documentId,
         ));
         $this->recomputeObligation($obligationKey, $calculator);
     }
@@ -507,11 +481,14 @@ class ProfileCompliance extends Aggregate
         }
 
         $latest = null;
+        $held = 0.0;
         foreach ($this->records as $record) {
-            if ($record->obligationKey() !== $key || $record->isReturned()) {
-                continue; // списанная выдача не считается «текущей» → позиция освобождается
+            if ($record->obligationKey() !== $key) {
+                continue;
             }
-            if (null === $latest || $record->fulfilledAt() > $latest->fulfilledAt()) {
+            $held += $record->heldAmount();
+            $current = !$record->isDepleted(); // материальный истощён → не текущий; нематериальный всегда текущий
+            if ($current && (null === $latest || $record->fulfilledAt() > $latest->fulfilledAt())) {
                 $latest = $record;
             }
         }
@@ -519,5 +496,6 @@ class ProfileCompliance extends Aggregate
         $lastFulfilledAt = $latest?->fulfilledAt();
         $nextDueAt = $calculator->nextDue($obligation->cadence(), $lastFulfilledAt, $latest?->manualDueDate());
         $obligation->setDates($lastFulfilledAt, $nextDueAt);
+        $obligation->setHeldQuantity($held);
     }
 }

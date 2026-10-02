@@ -38,13 +38,13 @@ final class ProfileComplianceTest extends TestCase
         $this->now = new \DateTimeImmutable('2026-06-01');
     }
 
-    private function pcWithGloves(): ProfileCompliance
+    private function pcWithGloves(float $norm = 10.0): ProfileCompliance
     {
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
         $pc->putObligation(new TrackedObligation(
             Uuid::v4(), $pc, $this->reqId, 'СИЗ основные', 'Перчатки',
             ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            new Quantity(10.0, Unit::Pair), 'dept-1',
+            new Quantity($norm, Unit::Pair), 'dept-1',
         ));
 
         return $pc;
@@ -207,100 +207,114 @@ final class ProfileComplianceTest extends TestCase
         $pc->deleteDraft((string) $id);
     }
 
-    public function test_write_off_puts_position_in_basket_without_effect(): void
-    {
-        $pc = $this->pcWithGloves();
-        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'));
-
-        $writeOffId = Uuid::v4();
-        $pc->writeOff($writeOffId, $this->reqId, [$this->glovesKey()], new \DateTimeImmutable('2026-08-01'));
-
-        // эффекта нет — позиция всё ещё действующая (выдача на месте)
-        self::assertSame('2026-06-01', $pc->getObligations()[0]->lastFulfilledAt()?->format('Y-m-d'));
-        self::assertNull($pc->openDraftFor($this->reqId)); // нового черновика выдачи пока нет
-        // позиция лежит в корзине черновика акта списания
-        self::assertCount(1, $pc->getWriteOffActs());
-        $act = $pc->getWriteOffActs()[0];
-        self::assertTrue($act->isDraft());
-        $items = $pc->itemsOfWriteOffAct((string) $writeOffId);
-        self::assertCount(1, $items);
-        self::assertSame($this->glovesKey(), $items[0]->obligationKey());
-    }
-
-    public function test_second_write_off_appends_to_same_draft_basket(): void
-    {
-        $pc = $this->pcWithGloves();
-        $this->signedGlovesCard($pc, $this->now);
-
-        $pc->writeOff(Uuid::v4(), $this->reqId, [$this->glovesKey()], $this->now);
-        $pc->writeOff(Uuid::v4(), $this->reqId, [$this->glovesKey()], $this->now); // дубль по факту не кладём
-
-        self::assertCount(1, $pc->getWriteOffActs()); // один открытый черновик-корзина
-        self::assertCount(1, $pc->itemsOfWriteOffAct($pc->getWriteOffActs()[0]->getId()));
-    }
-
-    public function test_cancel_write_off_item_returns_position_and_drops_empty_act(): void
-    {
-        $pc = $this->pcWithGloves();
-        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'));
-        $writeOffId = Uuid::v4();
-        $pc->writeOff($writeOffId, $this->reqId, [$this->glovesKey()], $this->now);
-        $recordId = $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->getId();
-
-        $pc->cancelWriteOffItem((string) $writeOffId, $recordId, $this->now);
-
-        self::assertCount(0, $pc->getWriteOffActs()); // корзина опустела → акт удалён
-        self::assertSame('2026-06-01', $pc->getObligations()[0]->lastFulfilledAt()?->format('Y-m-d')); // позиция снова действующая
-    }
-
-    public function test_sign_write_off_act_without_reason_throws(): void
-    {
-        $pc = $this->pcWithGloves();
-        $this->signedGlovesCard($pc, $this->now);
-        $writeOffId = Uuid::v4();
-        $pc->writeOff($writeOffId, $this->reqId, [$this->glovesKey()], $this->now);
-
-        $this->expectException(AppException::class); // причина не задана
-        $pc->signWriteOffAct((string) $writeOffId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo-1', $this->now, $this->calc);
-    }
-
-    public function test_sign_write_off_act_frees_position_and_freezes(): void
-    {
-        $pc = $this->pcWithGloves();
-        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'));
-        $writeOffId = Uuid::v4();
-        $pc->writeOff($writeOffId, $this->reqId, [$this->glovesKey()], $this->now);
-        $recordId = $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->getId();
-        $pc->applyWriteOffReasons((string) $writeOffId, [$recordId => WriteOffReason::PhysicalWear], $this->now);
-
-        $pc->signWriteOffAct((string) $writeOffId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo-1', $this->now, $this->calc);
-
-        $act = $pc->getWriteOffActs()[0];
-        self::assertTrue($act->isSigned());
-        self::assertSame('39', $act->actNumber());
-        self::assertNotNull($act->commission());
-        // эффект наступил ТОЛЬКО сейчас — позиция освобождена
-        self::assertNull($pc->getObligations()[0]->lastFulfilledAt());
-        self::assertNull($pc->getObligations()[0]->nextDueAt());
-
-        $this->expectException(AppException::class); // подписанный — заморожен
-        $pc->signWriteOffAct((string) $writeOffId, $this->commission(), '40', new \DateTimeImmutable('2026-09-01'), 'scan-wo-2', $this->now, $this->calc);
-    }
-
-    public function test_write_off_without_signed_document_throws(): void
-    {
-        $pc = $this->pcWithGloves();
-        $pc->formDraft(Uuid::v4(), $this->reqId, $this->now); // только черновик, не подписан
-
-        $this->expectException(AppException::class); // списать можно лишь из действующей карточки
-        $pc->writeOff(Uuid::v4(), $this->reqId, [$this->glovesKey()], $this->now);
-    }
-
-    private function signedGlovesCard(ProfileCompliance $pc, \DateTimeImmutable $at): void
+    private function signedGlovesCard(ProfileCompliance $pc, \DateTimeImmutable $at, float $amount = 10.0): void
     {
         $docId = Uuid::v4();
         $pc->formDraft($docId, $this->reqId, $at);
-        $pc->signDraft((string) $docId, 'scan-1', [$this->glovesLine(10.0, $at->format('Y-m-d'))], $this->calc, $at);
+        $pc->signDraft((string) $docId, 'scan-1', [$this->glovesLine($amount, $at->format('Y-m-d'))], $this->calc, $at);
+    }
+
+    public function test_write_off_portion_without_effect(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+        $writeOffId = Uuid::v4();
+
+        $pc->writeOff($writeOffId, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+
+        // эффекта нет — на руках всё ещё 2, нового черновика нет
+        self::assertSame(2.0, $pc->heldOf($this->glovesKey()));
+        self::assertNull($pc->openDraftFor($this->reqId));
+        self::assertCount(1, $pc->getWriteOffActs());
+        self::assertCount(1, $pc->itemsOfWriteOffAct((string) $writeOffId));
+        self::assertSame(1.0, $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->quantity());
+        // доступно к списанию уменьшилось на лежащее в черновике
+        self::assertSame(1.0, $pc->availableToWriteOff($recordId));
+    }
+
+    public function test_write_off_more_than_available_throws(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, $this->now, 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $this->expectException(AppException::class);
+        $pc->writeOff(Uuid::v4(), $this->reqId, [['recordId' => $recordId, 'quantity' => 3.0]], $this->now);
+    }
+
+    public function test_repeated_write_off_same_fact_increases_portion(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, $this->now, 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+        $writeOffId = Uuid::v4();
+
+        $pc->writeOff($writeOffId, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+        $pc->writeOff(Uuid::v4(), $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now); // тот же факт, тот же черновик
+
+        self::assertCount(1, $pc->getWriteOffActs());
+        self::assertCount(1, $pc->itemsOfWriteOffAct((string) $writeOffId));
+        self::assertSame(2.0, $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->quantity());
+    }
+
+    public function test_cancel_portion_restores_and_drops_empty_act(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, $this->now, 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+        $writeOffId = Uuid::v4();
+        $pc->writeOff($writeOffId, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+        $portionId = $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->getId();
+
+        $pc->cancelWriteOffItem((string) $writeOffId, $portionId, $this->now);
+
+        self::assertCount(0, $pc->getWriteOffActs());
+        self::assertSame(2.0, $pc->availableToWriteOff($recordId));
+    }
+
+    public function test_write_off_requires_active_card(): void
+    {
+        $pc = $this->pcWithGloves();
+        $pc->formDraft(Uuid::v4(), $this->reqId, $this->now); // только черновик выдачи
+
+        $this->expectException(AppException::class);
+        $pc->writeOff(Uuid::v4(), $this->reqId, [['recordId' => (string) Uuid::v4(), 'quantity' => 1.0]], $this->now);
+    }
+
+    public function test_sign_act_applies_partial_write_off(): void
+    {
+        $pc = $this->pcWithGloves(2.0); // норма 2
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+        $writeOffId = Uuid::v4();
+        $pc->writeOff($writeOffId, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+        $portionId = $pc->itemsOfWriteOffAct((string) $writeOffId)[0]->getId();
+        $pc->applyWriteOffReasons((string) $writeOffId, [$portionId => WriteOffReason::PhysicalWear], $this->now);
+
+        $pc->signWriteOffAct((string) $writeOffId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now, $this->calc);
+
+        self::assertTrue($pc->getWriteOffActs()[0]->isSigned());
+        self::assertSame(1.0, $pc->heldOf($this->glovesKey())); // на руках 1 из 2
+        self::assertNotNull($pc->getObligations()[0]->lastFulfilledAt());
+
+        // списываем второй
+        $w2 = Uuid::v4();
+        $pc->writeOff($w2, $this->reqId, [['recordId' => $recordId, 'quantity' => 1.0]], $this->now);
+        $p2 = $pc->itemsOfWriteOffAct((string) $w2)[0]->getId();
+        $pc->applyWriteOffReasons((string) $w2, [$p2 => WriteOffReason::PhysicalWear], $this->now);
+        $pc->signWriteOffAct((string) $w2, $this->commission(), '40', new \DateTimeImmutable('2026-09-01'), 'scan-wo2', $this->now, $this->calc);
+
+        self::assertSame(0.0, $pc->heldOf($this->glovesKey())); // всё списано
+        self::assertNull($pc->getObligations()[0]->lastFulfilledAt()); // позиция освобождена
+    }
+
+    public function test_projection_holds_quantity(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
+
+        self::assertSame(2.0, $pc->getObligations()[0]->heldQuantity());
     }
 
     private function commission(): WriteOffCommission
