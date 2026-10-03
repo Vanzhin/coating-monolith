@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
+use App\Compliance\Application\Event\RecomputeOnWriteOffActSignedHandler;
 use App\Compliance\Application\Service\WriteOffActProjector;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
+use App\Compliance\Domain\Event\WriteOffActSigned;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
@@ -73,7 +75,7 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->signWriteOff($p, $r, $actId);
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
@@ -95,7 +97,7 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->signWriteOff($p, $r, $actId);
 
         $this->reload();
         /** @var GetProfileComplianceQueryResult $result */
@@ -125,7 +127,7 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => $held, 'reason' => 'physical_wear']]));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->signWriteOff($p, $r, $actId);
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
@@ -135,6 +137,31 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertSame('39', $act->actNumber());
         self::assertNotNull($act->commission());
         self::assertNotNull($pc->openDraftFor($r), 'позиция освободилась полностью → заведён черновик новой выдачи');
+    }
+
+    public function test_sign_recompute_and_draft_are_idempotent(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $recordId = $this->firstRecordId($p);
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->signWriteOff($p, $r, $actId); // подпись + первая обработка события
+
+        // Повторная обработка события (воркер мог переобработать) не должна задваивать эффект.
+        (static::getContainer()->get(RecomputeOnWriteOffActSignedHandler::class))(new WriteOffActSigned($p, $r));
+        $this->reload();
+
+        $pc = $this->repo->findByProfile($p);
+        self::assertNotNull($pc);
+        self::assertEqualsWithDelta(9.0, $pc->heldOf($k), 1e-9, 'количество погашено ровно один раз в синхронной подписи — повтор события его не трогает');
+        $openDrafts = 0;
+        foreach ($pc->getDocuments() as $doc) {
+            if ($doc->requirementId() === $r && $doc->isDraft()) {
+                ++$openDrafts;
+            }
+        }
+        self::assertSame(1, $openDrafts, 'повторная обработка события не плодит черновики выдачи');
     }
 
     public function test_write_off_act_docx_renders_positions_and_reason(): void
@@ -175,6 +202,15 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertNotNull($act);
 
         return $act->getId();
+    }
+
+    /** Оформить акт + прогнать async-обработку вручную: в тестах воркер не крутит, поэтому эмулируем его. */
+    private function signWriteOff(string $profileId, string $requirementId, string $actId): void
+    {
+        $this->commandBus->execute(new SignWriteOffActCommand($profileId, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->reload();
+        (static::getContainer()->get(RecomputeOnWriteOffActSignedHandler::class))(new WriteOffActSigned($profileId, $requirementId));
+        $this->reload();
     }
 
     private function firstRecordId(string $profileId): string

@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Compliance\Application\UseCase\Command\SignWriteOffAct;
 
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
-use App\Compliance\Application\Service\DraftFormationService;
+use App\Compliance\Domain\Event\WriteOffActSigned;
 use App\Compliance\Domain\File\RequirementScanPurpose;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Shared\Application\Command\CommandHandlerInterface;
+use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\ValueObject\Commission;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 
 /**
- * Оформление акта списания: причины проставляются по позициям, комиссия собирается из строк формы
- * (организация/должность/ФИО/дата), скан промоутится, домен замораживает акт И гасит списанные факты + пересчитывает
- * (эффект наступает ТОЛЬКО здесь). Освободившиеся позиции → новый черновик выдачи ({@see DraftFormationService}).
+ * Синхронная часть оформления акта списания: комиссия из строк формы, промоут скана, домен замораживает акт и
+ * гасит списанные количества на фактах (эффект-источник истины, один раз). Производное — пересчёт проекции и
+ * черновик выдачи на дефицит — уводим в воркер событием {@see WriteOffActSigned} (пользователь не ждёт пересчёт).
  * Отказ домена → снимаем осиротевший скан.
  */
 final readonly class SignWriteOffActCommandHandler implements CommandHandlerInterface
@@ -27,8 +27,7 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
         private ComplianceAccessControl $access,
         private ProfileComplianceRepositoryInterface $repository,
         private FileStorage $storage,
-        private ObligationDueCalculator $calculator,
-        private DraftFormationService $formation,
+        private EventBusInterface $eventBus,
     ) {
     }
 
@@ -64,13 +63,14 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
         $fileId = $this->storage->promote($staged, RequirementScanPurpose::WriteOffActScan, $profileCompliance->getId())->id();
 
         try {
-            $profileCompliance->signWriteOffAct($command->writeOffActId, $commission, $command->actNumber, $actDate, $fileId, $now, $this->calculator);
-            // позиции освободились → по норме заводим черновик новой выдачи
-            $this->formation->formForProfileRequirement($profileCompliance, $requirementId, $actDate);
+            $profileCompliance->signWriteOffAct($command->writeOffActId, $commission, $command->actNumber, $actDate, $fileId, $now);
             $this->repository->add($profileCompliance);
         } catch (\Throwable $e) {
             $this->storage->remove($fileId);
             throw $e;
         }
+
+        // Производное (пересчёт проекции + черновик выдачи на дефицит) — в воркере, пользователь не ждёт.
+        $this->eventBus->execute(new WriteOffActSigned($command->profileId, $requirementId));
     }
 }

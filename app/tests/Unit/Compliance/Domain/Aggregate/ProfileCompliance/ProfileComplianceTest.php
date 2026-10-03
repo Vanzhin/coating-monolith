@@ -299,7 +299,7 @@ final class ProfileComplianceTest extends TestCase
         $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => null]], $this->now);
 
         $this->expectException(AppException::class); // причина не указана
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now, $this->calc);
+        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
     }
 
     public function test_sign_act_applies_partial_write_off(): void
@@ -310,16 +310,18 @@ final class ProfileComplianceTest extends TestCase
         $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
         $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
 
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now, $this->calc);
+        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
+        $pc->recomputeRequirement($this->reqId, $this->calc); // пересчёт проекции — в проде async по событию
 
         self::assertTrue($pc->getWriteOffActs()[0]->isSigned());
-        self::assertSame(1.0, $pc->heldOf($this->glovesKey())); // на руках 1 из 2
+        self::assertSame(1.0, $pc->heldOf($this->glovesKey())); // на руках 1 из 2 (гашение — синхронно в подписи)
         self::assertNotNull($pc->getObligations()[0]->lastFulfilledAt());
 
         // списываем второй (новый акт по тому же требованию)
         $actId2 = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
         $pc->saveWriteOffAct($actId2, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->signWriteOffAct($actId2, $this->commission(), '40', new \DateTimeImmutable('2026-09-01'), 'scan-wo2', $this->now, $this->calc);
+        $pc->signWriteOffAct($actId2, $this->commission(), '40', new \DateTimeImmutable('2026-09-01'), 'scan-wo2', $this->now);
+        $pc->recomputeRequirement($this->reqId, $this->calc);
 
         self::assertSame(0.0, $pc->heldOf($this->glovesKey())); // всё списано
         self::assertNull($pc->getObligations()[0]->lastFulfilledAt()); // позиция освобождена
@@ -379,7 +381,7 @@ final class ProfileComplianceTest extends TestCase
         $recordId = $pc->getRecords()[0]->getId();
         $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
         $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan', $this->now, $this->calc);
+        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan', $this->now);
         // held 1, норма 2 → до-выдать 1 достаточно
         $pc->assertIssuable([$this->glovesLine(1.0)]); // не бросает
         self::assertSame(1.0, $pc->heldOf($this->glovesKey()));

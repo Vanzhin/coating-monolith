@@ -281,17 +281,17 @@ class ProfileCompliance extends Aggregate
     }
 
     /** Оформить акт списания (комиссия+№/дата+скан): замораживает и гасит количество на фактах + пересчёт. */
-    public function signWriteOffAct(string $actId, Commission $commission, string $actNumber, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now, ObligationDueCalculator $calculator): void
+    /**
+     * Синхронная часть оформления акта: заморозить акт и погасить количество на фактах (источник истины, ровно
+     * один раз — повтор невозможен, акт уже подписан). Производное — пересчёт проекции и черновик выдачи на
+     * дефицит — делаем в воркере по событию {@see \App\Compliance\Domain\Event\WriteOffActSigned} (идемпотентно).
+     */
+    public function signWriteOffAct(string $actId, Commission $commission, string $actNumber, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now): void
     {
         $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
         $act->sign($commission, $actNumber, $actDate, $scanFileId, $now);
         foreach ($act->items() as $portion) {
-            $fact = $this->recordById($portion->recordId());
-            if (null === $fact) {
-                continue;
-            }
-            $fact->addReturnedQuantity($portion->quantity());
-            $this->recomputeObligation($fact->obligationKey(), $calculator);
+            $this->recordById($portion->recordId())?->addReturnedQuantity($portion->quantity());
         }
     }
 
