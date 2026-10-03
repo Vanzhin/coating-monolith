@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Infrastructure\Console;
 
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,7 +21,6 @@ final class RebuildComplianceProjectionCommand extends Command
 {
     public function __construct(
         private readonly ComplianceProjectionRebuilder $rebuilder,
-        private readonly ProfileComplianceRepositoryInterface $repository,
     ) {
         parent::__construct();
     }
@@ -34,12 +33,13 @@ final class RebuildComplianceProjectionCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $one = $input->getArgument('profileId');
-        $ids = null !== $one ? [(string) $one] : $this->repository->findAllProfileIds();
-
-        foreach ($ids as $id) {
-            $this->rebuilder->rebuildForProfile($id);
+        if (null !== $one) {
+            $this->rebuilder->rebuild(profileIds: new StringCollection((string) $one));
+            $output->writeln('Пересобран профиль: '.$one);
+        } else {
+            $this->rebuilder->rebuild();
+            $output->writeln('Пересобраны все заведённые учёты.');
         }
-        $output->writeln(sprintf('Пересобрано профилей: %d', count($ids)));
 
         return Command::SUCCESS;
     }

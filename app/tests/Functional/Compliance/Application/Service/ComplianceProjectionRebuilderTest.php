@@ -10,6 +10,7 @@ use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCo
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -20,8 +21,10 @@ use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpart
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Service\UuidService;
 use App\Tests\Support\AuthenticatesActorTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ComplianceProjectionRebuilderTest extends KernelTestCase
@@ -79,6 +82,17 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         return $result->id;
     }
 
+    private function saveSecondRequirement(string $positionId): string
+    {
+        $result = $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'Журнал инструктажа', 'non_material', [$positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'basis' => 'п.6']],
+        ));
+        \assert($result instanceof SaveRequirementCommandResult);
+
+        return $result->id;
+    }
+
     private function randomTin(): string
     {
         $digits = '';
@@ -99,7 +113,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         ['profileId' => $profileId, 'positionId' => $positionId] = $this->createProfileWithPosition();
         $this->saveRequirement($positionId);
 
-        $this->rebuilder->rebuildForProfile($profileId);
+        $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));
 
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
@@ -113,7 +127,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         ['profileId' => $profileId, 'positionId' => $positionId] = $this->createProfileWithPosition();
         $reqId = $this->saveRequirement($positionId);
 
-        $this->rebuilder->rebuildForRequirement($reqId);
+        $this->rebuilder->rebuild(requirementIds: new StringCollection($reqId));
 
         $result = $this->queryBus->execute(new GetProfileComplianceQuery($profileId));
         \assert($result instanceof GetProfileComplianceQueryResult);
@@ -122,5 +136,50 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         // Не подписан → требование не исполнено → красный.
         self::assertSame('red', $result->compliance->obligations[0]->status);
         self::assertSame('red', $result->compliance->worstStatus);
+    }
+
+    public function test_rebuild_for_requirement_is_scoped_and_does_not_touch_other_requirements(): void
+    {
+        ['profileId' => $profileId, 'positionId' => $positionId] = $this->createProfileWithPosition();
+        $reqA = $this->saveRequirement($positionId);          // СИЗ: Перчатки
+        $reqB = $this->saveSecondRequirement($positionId);    // Журнал: Инструктаж
+
+        $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));      // материализуем обе обязанности
+        $pc = $this->repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        self::assertCount(2, $pc->getObligations());
+
+        // Расхождение: убираем требование B из нормы (его проекцию НЕ трогаем).
+        $requirements = static::getContainer()->get(RequirementRepositoryInterface::class);
+        $b = $requirements->findOneById($reqB);
+        self::assertNotNull($b);
+        $requirements->remove($b);
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        // Пересобираем ТОЛЬКО A. При старом (полном) поведении обязанность B без фактов была бы снесена.
+        $this->rebuilder->rebuild(requirementIds: new StringCollection($reqA));
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $pc = $this->repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $labels = array_map(static fn ($o): string => $o->label(), $pc->getObligations());
+        self::assertContains('Перчатки', $labels);
+        self::assertContains('Инструктаж', $labels, 'пересборка требования A не должна трогать обязанности требования B');
+    }
+
+    public function test_rebuild_requirement_without_existing_card_creates_only_that_slice(): void
+    {
+        ['profileId' => $profileId, 'positionId' => $positionId] = $this->createProfileWithPosition();
+        $reqA = $this->saveRequirement($positionId);          // СИЗ: Перчатки
+        $this->saveSecondRequirement($positionId);            // Журнал: Инструктаж (не правим)
+        // Карточки у человека ещё нет (событие профиля в тесте не потребляется воркером).
+
+        $this->rebuilder->rebuild(requirementIds: new StringCollection($reqA)); // правим только СИЗ
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $pc = $this->repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $labels = array_map(static fn ($o): string => $o->label(), $pc->getObligations());
+        self::assertSame(['Перчатки'], $labels, 'правка одной нормы без карточки создаёт только её срез — журнал не появляется');
     }
 }

@@ -9,6 +9,7 @@ use App\Compliance\Application\Service\DraftFormationService;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Personnel\Domain\Event\ProfileSaved;
 use App\Shared\Application\Event\EventHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 /**
  * Профиль сохранён (создан/сменил должность) → пересобрать его проекцию учёта и завести черновики карточек
@@ -25,7 +26,7 @@ final readonly class RecomputeOnProfileSavedHandler implements EventHandlerInter
 
     public function __invoke(ProfileSaved $event): void
     {
-        $this->rebuilder->rebuildForProfile($event->profileId);
+        $this->rebuilder->rebuild(profileIds: new StringCollection($event->profileId));
         $profileCompliance = $this->repository->findByProfile($event->profileId);
         if (null !== $profileCompliance && $this->formation->formForProfile($profileCompliance, new \DateTimeImmutable()) > 0) {
             $this->repository->add($profileCompliance);

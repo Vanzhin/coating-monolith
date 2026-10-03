@@ -35,7 +35,48 @@ final readonly class ComplianceProjectionRebuilder
     ) {
     }
 
-    public function rebuildForProfile(string $profileId): void
+    /**
+     * Единая точка пересборки проекции учёта. Фильтры комбинируются, все пусты → пересобираем всё:
+     *  - requirementIds — СРЕЗ: какие требования пересобирать у профиля (точечно). Пусто → все требования должности.
+     *  - positionIds    — профили этих должностей.
+     *  - profileIds     — конкретные сотрудники.
+     * Множество профилей = объединение: явные сотрудники + по должностям + (если заданы ТОЛЬКО требования)
+     * покрытые этими требованиями. Ничего не задано → все заведённые учёты.
+     */
+    public function rebuild(
+        ?StringCollection $requirementIds = null,
+        ?StringCollection $positionIds = null,
+        ?StringCollection $profileIds = null,
+    ): void {
+        $reqIds = $requirementIds?->getList() ?? [];
+        $posIds = $positionIds?->getList() ?? [];
+        $profIds = $profileIds?->getList() ?? [];
+
+        $targets = $profIds;
+        if ([] !== $posIds) {
+            $targets = array_merge($targets, $this->profileIdsOnPositions($posIds));
+        }
+        if ([] !== $reqIds && [] === $profIds && [] === $posIds) {
+            $targets = array_merge($targets, $this->profileIdsCoveredByRequirements($reqIds));
+        }
+        if ([] === $reqIds && [] === $posIds && [] === $profIds) {
+            $targets = $this->repository->findAllProfileIds(); // без фильтров — всё
+        }
+
+        $scope = [] !== $reqIds ? $reqIds : null; // список требований-срезов или null = все требования должности
+        foreach (array_values(array_unique($targets)) as $profileId) {
+            $this->rebuildProfile($profileId, $scope);
+        }
+    }
+
+    /**
+     * Пересборка одного профиля. $onlyRequirementIds = null → полная (все требования должности, для события
+     * профиля). Список → точечная: трогаем и пересчитываем только срезы этих требований, чужие (напр. журнал)
+     * НЕ задеваем — даже заводя новую карточку (полный набор появляется на событии профиля, не при правке нормы).
+     *
+     * @param list<string>|null $onlyRequirementIds
+     */
+    private function rebuildProfile(string $profileId, ?array $onlyRequirementIds): void
     {
         $profileCompliance = $this->repository->findByProfile($profileId) ?? new ProfileCompliance(Uuid::v7(), $profileId);
 
@@ -46,8 +87,12 @@ final readonly class ComplianceProjectionRebuilder
 
             return;
         }
-        $positionId = $result->profile->positionId;
         $departmentId = $result->profile->departmentId;
+
+        // Пересобираемый срез нормы: заданные требования (точечно) или все требования должности (полностью).
+        $requirements = null === $onlyRequirementIds
+            ? $this->requirements->findByPositionId($result->profile->positionId)
+            : array_values(array_filter(array_map(fn (string $id) => $this->requirements->findOneById($id), $onlyRequirementIds)));
 
         $keysWithFacts = [];
         foreach ($profileCompliance->getRecords() as $record) {
@@ -56,7 +101,7 @@ final readonly class ComplianceProjectionRebuilder
         $excluded = $profileCompliance->getExcludedKeys()->getList();
 
         $desired = [];
-        foreach ($this->requirements->findByPositionId($positionId) as $requirement) {
+        foreach ($requirements as $requirement) {
             $active = [] !== $profileCompliance->signedDocumentsFor($requirement->getId()); // был подписанный акт ⇒ трекинг включён
             foreach ($requirement->getItems() as $item) {
                 $key = TrackedObligation::keyOf($requirement->getId(), $item->label());
@@ -75,8 +120,13 @@ final readonly class ComplianceProjectionRebuilder
             }
         }
 
+        // Осиротевшие ORIGIN_NORM-обязанности без фактов убираем, но только в пределах пересобираемого среза:
+        // при точечной пересборке чужие требования не трогаем.
         foreach ($profileCompliance->getObligations() as $obligation) {
             if (TrackedObligation::ORIGIN_NORM !== $obligation->origin()) {
+                continue;
+            }
+            if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($obligation->key(), $onlyRequirementIds)) {
                 continue;
             }
             if (isset($desired[$obligation->key()]) || isset($keysWithFacts[$obligation->key()])) {
@@ -85,23 +135,56 @@ final readonly class ComplianceProjectionRebuilder
             $profileCompliance->removeObligationByKey($obligation->key());
         }
 
-        $profileCompliance->recomputeAll($this->calculator);
+        if (null === $onlyRequirementIds) {
+            $profileCompliance->recomputeAll($this->calculator);
+        } else {
+            foreach ($onlyRequirementIds as $requirementId) {
+                $profileCompliance->recomputeRequirement($requirementId, $this->calculator);
+            }
+        }
         $this->repository->add($profileCompliance);
     }
 
-    public function rebuildForRequirement(string $requirementId): void
+    /**
+     * @param list<string> $positionIds
+     *
+     * @return list<string>
+     */
+    private function profileIdsOnPositions(array $positionIds): array
     {
-        $requirement = $this->requirements->findOneById($requirementId);
-        if (null === $requirement) {
-            return; // требование удалено — пересборка по положениям недоступна (обработка удаления — позже)
+        /** @var GetProfileIdsByPositionsQueryResult $result */
+        $result = $this->queryBus->execute(new GetProfileIdsByPositionsQuery(new StringCollection(...$positionIds)));
+
+        return $result->profileIds;
+    }
+
+    /**
+     * @param list<string> $requirementIds
+     *
+     * @return list<string>
+     */
+    private function profileIdsCoveredByRequirements(array $requirementIds): array
+    {
+        $positionIds = [];
+        foreach ($requirementIds as $requirementId) {
+            $requirement = $this->requirements->findOneById($requirementId);
+            if (null !== $requirement) {
+                $positionIds = array_merge($positionIds, $requirement->getPositionIds()->getList());
+            }
         }
 
-        /** @var GetProfileIdsByPositionsQueryResult $result */
-        $result = $this->queryBus->execute(new GetProfileIdsByPositionsQuery(
-            new StringCollection(...$requirement->getPositionIds()->getList()),
-        ));
-        foreach ($result->profileIds as $profileId) {
-            $this->rebuildForProfile($profileId);
+        return [] === $positionIds ? [] : $this->profileIdsOnPositions(array_values(array_unique($positionIds)));
+    }
+
+    /** @param list<string> $requirementIds */
+    private function keyInAnyRequirement(string $key, array $requirementIds): bool
+    {
+        foreach ($requirementIds as $requirementId) {
+            if (TrackedObligation::keyBelongsToRequirement($key, $requirementId)) {
+                return true;
+            }
         }
+
+        return false;
     }
 }

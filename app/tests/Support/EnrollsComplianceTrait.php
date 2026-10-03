@@ -20,6 +20,7 @@ use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommand
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Service\UuidService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,7 +58,7 @@ trait EnrollsComplianceTrait
         ));
         \assert($req instanceof SaveRequirementCommandResult);
 
-        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuildForProfile($profile->id);
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
 
         return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => TrackedObligation::keyOf($req->id, $itemLabel)];
     }

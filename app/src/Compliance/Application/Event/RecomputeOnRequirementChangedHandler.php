@@ -8,6 +8,7 @@ use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\Service\DraftFormationService;
 use App\Compliance\Domain\Event\RequirementChanged;
 use App\Shared\Application\Event\EventHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 /**
  * Норма изменилась → пересобрать проекции учёта людей на покрытых должностях, затем завести им черновики
@@ -23,7 +24,7 @@ final readonly class RecomputeOnRequirementChangedHandler implements EventHandle
 
     public function __invoke(RequirementChanged $event): void
     {
-        $this->rebuilder->rebuildForRequirement($event->requirementId);
+        $this->rebuilder->rebuild(requirementIds: new StringCollection($event->requirementId));
         $this->formation->formForRequirement($event->requirementId, new \DateTimeImmutable());
     }
 }
