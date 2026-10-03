@@ -57,4 +57,13 @@ final class WriteOffActTest extends TestCase
         $act->sign($this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
         self::assertTrue($act->isSigned());
     }
+
+    public function test_sign_requires_non_empty_commission(): void
+    {
+        $act = $this->act();
+        $act->replacePortions([['recordId' => (string) Uuid::v4(), 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], new \DateTimeImmutable('2026-08-01'));
+
+        $this->expectException(AppException::class); // комиссия пуста — акт нельзя оформить
+        $act->sign(new Commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+    }
 }

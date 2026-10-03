@@ -88,11 +88,21 @@ final readonly class ComplianceProjectionRebuilder
             return;
         }
         $departmentId = $result->profile->departmentId;
+        $positionId = $result->profile->positionId;
 
-        // Пересобираемый срез нормы: заданные требования (точечно) или все требования должности (полностью).
-        $requirements = null === $onlyRequirementIds
-            ? $this->requirements->findByPositionId($result->profile->positionId)
-            : array_values(array_filter(array_map(fn (string $id) => $this->requirements->findOneById($id), $onlyRequirementIds)));
+        // Пересобираемый срез нормы: все требования должности (полностью) или заданные (точечно) — но только те
+        // из заданных, что реально покрывают должность профиля, иначе чужому профилю завелись бы лишние позиции.
+        $requirements = [];
+        if (null === $onlyRequirementIds) {
+            $requirements = $this->requirements->findByPositionId($positionId);
+        } else {
+            foreach ($onlyRequirementIds as $id) {
+                $requirement = $this->requirements->findOneById($id);
+                if (null !== $requirement && in_array($positionId, $requirement->getPositionIds()->getList(), true)) {
+                    $requirements[] = $requirement;
+                }
+            }
+        }
 
         $keysWithFacts = [];
         foreach ($profileCompliance->getRecords() as $record) {

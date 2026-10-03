@@ -75,6 +75,9 @@ class WriteOffAct
     {
         $this->assertMutable();
         $this->assertReasonsComplete();
+        if ($commission->isEmpty()) {
+            throw new AppException('Укажите хотя бы одного члена комиссии.');
+        }
         if ('' === trim($scanFileId)) {
             throw new AppException('Приложите скан подписанного акта списания.');
         }
