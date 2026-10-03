@@ -2,7 +2,6 @@
 
 {% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
 {% set backUrl = path('app_cabinet_compliance_issue', {profileId: profileId, requirementId: requirementId}) %}
-{% set suggestUrl = path('app_cabinet_personnel_profile_suggest', {organizationId: organizationId}) %}
 
 {% block title %}{{ parent() }} | Акт списания — {{ fio }}{% endblock %}
 
@@ -27,14 +26,16 @@
                 <span class="badge {{ draft ? 'text-bg-secondary' : 'text-bg-success' }}">
                     <i class="bi {{ draft ? 'bi-file-earmark-text' : 'bi-lock-fill' }} me-1"></i>{{ draft ? 'Черновик' : 'Оформлен' }}{% if actNumber %} · № {{ actNumber }}{% endif %}
                 </span>
-                <a class="btn btn-outline-secondary btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
-                    <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
-                </a>
-                {% if not draft %}
-                    <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: actId}) }}">
-                        <i class="bi bi-download me-1"></i>Скан
+                <div class="ms-auto d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                        <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
                     </a>
-                {% endif %}
+                    {% if not draft %}
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: actId}) }}">
+                            <i class="bi bi-download me-1"></i>Скан
+                        </a>
+                    {% endif %}
+                </div>
             </div>
 
             {% if draft %}
@@ -42,71 +43,54 @@
                       data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
                     <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                            <h2 class="h6 mb-0">Списываемые позиции</h2>
+                            <h2 class="h6 mb-0">Позиции к списанию</h2>
                             <button type="submit" name="op" value="save" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-save me-1"></i>Сохранить черновик
                             </button>
                         </div>
-                        {% if items is empty %}
-                            <div class="p-4 rounded-3 bg-body text-center text-body-secondary">В акте нет позиций.</div>
+                        {% if positions is empty %}
+                            <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих позиций для списания.</div>
                         {% endif %}
-                        {% for it in items %}
-                            <div class="p-3 mb-2 rounded-3 bg-body">
-                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <div>
-                                        <div class="fw-semibold">{{ it.label }}</div>
-                                        <div class="text-body-secondary small">{% if it.quantityLabel %}{{ it.quantityLabel }} · {% endif %}выдано {{ it.issueDate }}</div>
+                        {% for p in positions %}
+                            {% embed 'admin/compliance/_item_card.html.twig' with {name: p.label, meta: p.meta, p: p, i: loop.index0, reasons: reasons} %}
+                                {% block control %}
+                                    <div class="text-end" style="width: 8rem;">
+                                        <label class="form-label small mb-1">Списать</label>
+                                        <div class="d-flex align-items-baseline gap-1 justify-content-end">
+                                            <input type="number" min="0" max="{{ p.held }}" step="any" inputmode="decimal" class="form-control form-control-sm"
+                                                   name="portions[{{ i }}][quantity]" value="{{ p.quantity }}" placeholder="0">
+                                            <span class="text-body-secondary small">{{ p.unit }}</span>
+                                        </div>
                                     </div>
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-auto" name="portionId" value="{{ it.portionId }}"
-                                            formaction="{{ path('app_cabinet_compliance_writeoff_remove_item', {profileId: profileId, actId: actId}) }}">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Убрать
-                                    </button>
-                                </div>
-                                <label class="form-label small mb-1">Причина списания</label>
-                                <select name="reasons[{{ it.portionId }}]" class="form-select">
-                                    <option value="">— выберите —</option>
-                                    {% for r in reasons %}<option value="{{ r.value }}"{{ it.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
-                                </select>
-                            </div>
+                                {% endblock %}
+                                {% block footer %}
+                                    <input type="hidden" name="portions[{{ i }}][recordId]" value="{{ p.recordId }}">
+                                    <div class="w-100">
+                                        <label class="form-label small mb-1">Причина</label>
+                                        <select name="portions[{{ i }}][reason]" class="form-select form-select-sm">
+                                            <option value="">— выберите —</option>
+                                            {% for r in reasons %}<option value="{{ r.value }}"{{ p.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                {% endblock %}
+                            {% endembed %}
                         {% endfor %}
                     </div>
 
                     <div id="sec-commission" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                         <h2 class="h6 mb-3">Комиссия и реквизиты</h2>
-                        <div class="row g-3">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label small mb-1">Представитель отдела ОТ и ПБ</label>
-                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
-                                       data-controller="typeahead"
-                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
-                                       data-typeahead-hidden-name-value="representativeProfileId"
-                                       data-typeahead-min-length-value="1">
-                            </div>
-                            <div class="col-md-3">
                                 <label class="form-label small mb-1">№ акта</label>
                                 <input type="text" name="actNumber" class="form-control" value="{{ actNumber|default('') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label class="form-label small mb-1">Дата акта</label>
                                 <input type="date" name="actDate" class="form-control" value="{{ actDate }}">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small mb-1">Член комиссии 1</label>
-                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
-                                       data-controller="typeahead"
-                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
-                                       data-typeahead-hidden-name-value="memberProfileIds[]"
-                                       data-typeahead-min-length-value="1">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small mb-1">Член комиссии 2</label>
-                                <input type="text" class="form-control" autocomplete="off" placeholder="Фамилия…"
-                                       data-controller="typeahead"
-                                       data-typeahead-endpoint-value="{{ suggestUrl }}"
-                                       data-typeahead-hidden-name-value="memberProfileIds[]"
-                                       data-typeahead-min-length-value="1">
-                            </div>
                         </div>
+                        <label class="form-label fw-semibold">Члены комиссии</label>
+                        {% include 'components/commission_editor.html.twig' with {prefix: 'commission', rows: commissionRows|default([])} %}
                     </div>
 
                     <div id="sec-scan" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
@@ -119,25 +103,35 @@
 
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
                 </form>
+
+                <form method="post" action="{{ path('app_cabinet_compliance_writeoff_delete', {profileId: profileId, actId: actId}) }}" class="mb-3">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Удалить акт</button>
+                </form>
             {% else %}
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <h2 class="h6 mb-3">Списанные позиции</h2>
-                    {% for it in items %}
-                        <div class="p-3 mb-2 rounded-3 bg-body">
-                            <div class="fw-semibold">{{ it.label }}</div>
-                            <div class="text-body-secondary small">
-                                {% if it.quantityLabel %}{{ it.quantityLabel }} · {% endif %}выдано {{ it.issueDate }}
-                                {% for r in reasons %}{% if r.value == it.reason %} · {{ r.title }}{% endif %}{% endfor %}
-                            </div>
-                        </div>
+                    <h2 class="h6 mb-3">Списано{% if actDate %} · {{ actDate }}{% endif %}</h2>
+                    {% for it in signedItems %}
+                        {% embed 'admin/compliance/_item_card.html.twig' with {name: it.label, meta: it.meta, it: it} %}
+                            {% block control %}
+                                <div class="text-end">
+                                    <div class="small text-body-secondary mb-1">Списано</div>
+                                    <span class="badge text-bg-danger fw-normal">{{ it.quantityLabel }}</span>
+                                </div>
+                            {% endblock %}
+                            {% block footer %}
+                                {% if it.reason %}<div class="w-100 text-body-secondary small">Причина: {{ it.reason }}</div>{% endif %}
+                            {% endblock %}
+                        {% endembed %}
                     {% endfor %}
                 </div>
 
-                {% if commission %}
+                {% if commissionMembers is not empty %}
                     <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
                         <h2 class="h6 mb-2">Комиссия</h2>
-                        <div class="small">{{ commission.representative }}</div>
-                        {% for m in commission.members %}<div class="small">{{ m }}</div>{% endfor %}
+                        {% for m in commissionMembers %}
+                            <div class="small">{{ m.position }}{% if m.position and m.fio %} — {% endif %}{{ m.fio }}{% if m.organization %} · {{ m.organization }}{% endif %}{% if m.date %} · {{ m.date }}{% endif %}</div>
+                        {% endfor %}
                     </div>
                 {% endif %}
             {% endif %}

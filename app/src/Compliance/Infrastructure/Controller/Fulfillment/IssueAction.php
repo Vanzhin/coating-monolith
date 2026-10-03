@@ -60,6 +60,22 @@ final class IssueAction extends AbstractController
         return $this->renderForm($profileId, $requirementId, null, []);
     }
 
+    /** Цвет чипа «на руках» относительно нормы (как подсветка кол-ва в оформлении): меньше — danger, ровно — success, больше — info. */
+    private function heldTone(float $held, ?float $norm): string
+    {
+        if (null === $norm) {
+            return 'secondary';
+        }
+        if ($held < $norm - 1e-9) {
+            return 'danger';
+        }
+        if ($held > $norm + 1e-9) {
+            return 'info';
+        }
+
+        return 'success';
+    }
+
     /**
      * @param array<string, mixed> $inputData
      */
@@ -78,16 +94,12 @@ final class IssueAction extends AbstractController
         $obligations = null !== $complianceResult->compliance ? $complianceResult->compliance->obligations : [];
 
         $requirementName = 'Требование';
-        $normByKey = [];
         $issueRows = [];
         foreach ($obligations as $row) {
             if ($row->requirementId !== $requirementId) {
                 continue;
             }
             $requirementName = $row->requirementName;
-            if (null !== $row->quantityValue) {
-                $normByKey[$row->key] = (float) $row->quantityValue;
-            }
             if (ComplianceStatus::Green->value !== $row->status) {
                 $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
                 $issueRows[] = [
@@ -127,27 +139,31 @@ final class IssueAction extends AbstractController
         // Корзина (открытый черновик акта списания) — саму помечаем кнопкой «Перейти».
         $openBasketId = $profileCompliance?->openWriteOffDraftFor($requirementId)?->getId();
 
-        // «Списать» — построчно по действующим материальным фактам требования (held > 0). Принадлежность
-        // факта требованию — доменное знание, резолвим его агрегатом, а не парсингом ключа тут.
+        // Сформированный акт: та же форма, что при оформлении, но поля заблокированы и показывают ВЫДАННОЕ
+        // (по фактам). «на руках N» — текущий остаток (жёлтым, если часть уже списана). Списание — кнопкой.
+        $cadenceByKey = [];
+        $normByKey = [];
+        foreach ($obligations as $o) {
+            $cadenceByKey[$o->key] = $o->cadenceLabel;
+            $normByKey[$o->key] = null !== $o->quantityValue ? (float) $o->quantityValue : null;
+        }
         $rows = [];
-        if (null !== $profileCompliance) {
-            foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
-                $key = $record->obligationKey();
-                if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
-                    continue; // нематериальный факт или уже полностью списан
-                }
-                $available = $profileCompliance->availableToWriteOff($record->getId());
-                $norm = $normByKey[$key] ?? 0.0;
-                $rows[] = [
-                    'recordId' => $record->getId(),
-                    'label' => $profileCompliance->obligationLabelOf($key),
-                    'held' => AmountFormatter::trimmed($record->heldAmount()),
-                    'unit' => $record->quantity()->unit->title(),
-                    'available' => AmountFormatter::trimmed($available),
-                    'inDraftQty' => AmountFormatter::trimmed($record->heldAmount() - $available),
-                    'deficit' => AmountFormatter::trimmed(max(0.0, $norm - $profileCompliance->heldOf($key))),
-                ];
+        foreach ($profileCompliance?->recordsForRequirement($requirementId) ?? [] as $record) {
+            if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
+                continue; // нематериальный факт или полностью списан
             }
+            $held = $record->heldAmount();
+            $rows[] = [
+                'label' => $profileCompliance?->obligationLabelOf($record->obligationKey()),
+                'meta' => $cadenceByKey[$record->obligationKey()] ?? '',
+                'date' => $record->fulfilledAt()->format('Y-m-d'),
+                'amount' => AmountFormatter::trimmed($record->quantity()->amount),
+                'unit' => $record->quantity()->unit->title(),
+                'wear' => null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : '',
+                'held' => AmountFormatter::trimmed($held),
+                // цвет «на руках» как у поля кол-ва в оформлении: < нормы красный, ровно зелёный, больше голубой
+                'tone' => $this->heldTone($held, $normByKey[$record->obligationKey()] ?? null),
+            ];
         }
 
         $signedActs = [];

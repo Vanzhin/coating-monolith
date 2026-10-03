@@ -1,0 +1,37 @@
+{# Переиспользуемый редактор комиссии: динамический список строк (организация/должность/ФИО/дата).
+   Параметры:
+     prefix — префикс имён полей; строки получают prefix[i][key]
+              (например, 'commission' или 'content[commission][items]');
+     rows   — существующие значения (list<{organization,position,fio|name,date}>).
+   Переиспользует Stimulus-контроллер report-list-rows (перенумерация — по первой числовой скобке имени). #}
+{% macro commission_row(prefix, row) %}
+    <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
+        <div class="p-2 mb-2 rounded-3 bg-body-tertiary"><div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Организация</label>
+                <input type="text" name="{{ prefix }}[organization]" value="{{ row.organization|default('') }}" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Должность</label>
+                <input type="text" name="{{ prefix }}[position]" value="{{ row.position|default('') }}" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small mb-1">ФИО <span class="text-danger">*</span></label>
+                <input type="text" name="{{ prefix }}[name]" value="{{ row.name|default(row.fio|default('')) }}" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Дата</label>
+                <input type="date" name="{{ prefix }}[date]" value="{{ row.date|default('') }}" class="form-control">
+            </div>
+        </div></div>
+        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+    </div>
+{% endmacro %}
+
+<div class="mb-2" data-controller="report-list-rows">
+    <div data-report-list-rows-target="rows">
+        {% for row in rows|default([]) %}{{ _self.commission_row(prefix ~ '[' ~ loop.index0 ~ ']', row) }}{% endfor %}
+    </div>
+    <template data-report-list-rows-target="template">{{ _self.commission_row(prefix ~ '[__i__]', {}) }}</template>
+    <button type="button" class="btn btn-soft-success btn-sm" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
+</div>

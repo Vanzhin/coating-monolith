@@ -28,16 +28,6 @@ class WriteOffItem
         $this->reason = $reason;
     }
 
-    public function addQuantity(float $amount): void
-    {
-        $this->quantity += $amount;
-    }
-
-    public function setReason(?WriteOffReason $reason): void
-    {
-        $this->reason = $reason;
-    }
-
     public function getId(): string
     {
         return (string) $this->id;

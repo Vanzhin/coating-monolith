@@ -27,42 +27,48 @@
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
                         <h2 class="h6 mb-0">Действующие позиции</h2>
-                        {% if openBasketId %}
-                            <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: openBasketId}) }}">
-                                <i class="bi bi-box-seam me-1"></i>Перейти к акту списания
-                            </a>
-                        {% endif %}
+                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                        </form>
                     </div>
-                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — укажите количество к списанию, оформите акт списания</div>
+                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — списание оформляется в акте списания</div>
 
                     {% if rows is empty %}
                         <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих материальных позиций.</div>
-                    {% else %}
-                        <form method="post" action="{{ path('app_cabinet_compliance_write_off', {profileId: profileId, requirementId: requirementId}) }}">
-                            {% for row in rows %}
-                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2 p-3 rounded-3 bg-body">
-                                    <input type="hidden" name="portions[{{ loop.index0 }}][recordId]" value="{{ row.recordId }}">
-                                    <div>
-                                        <div class="fw-semibold">
-                                            {{ row.label }}
-                                            {% if row.deficit > 0 %}<span class="badge text-bg-warning ms-1">дефицит {{ row.deficit }} {{ row.unit }}</span>{% endif %}
-                                        </div>
-                                        <div class="text-body-secondary small">
-                                            на руках {{ row.held }} {{ row.unit }}{% if row.inDraftQty > 0 %} · в черновике {{ row.inDraftQty }} {{ row.unit }}{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="ms-auto" style="width: 10rem;">
-                                        <label class="form-label small mb-1">Списать</label>
-                                        <input type="number" min="0" max="{{ row.available }}" step="any" inputmode="decimal" class="form-control form-control-sm"
-                                               name="portions[{{ loop.index0 }}][quantity]" placeholder="{{ row.available }}"
-                                               {% if row.available <= 0 %}disabled{% endif %}>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать выбранное</button>
-                        </form>
                     {% endif %}
+                    {% for row in rows %}
+                        {% embed 'admin/compliance/_item_card.html.twig' with {name: row.label, meta: row.meta, row: row} %}
+                            {% block control %}
+                                <div class="text-end">
+                                    <div class="small text-body-secondary mb-1">На руках</div>
+                                    <span class="badge text-bg-{{ row.tone }} fw-normal">{{ row.held }} {{ row.unit }}</span>
+                                </div>
+                            {% endblock %}
+                            {% block footer %}
+                                <div class="row g-2 w-100">
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small mb-1">Дата выдачи</label>
+                                        <input type="date" class="form-control" value="{{ row.date }}" disabled>
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small mb-1">Кол-во</label>
+                                        <input type="text" class="form-control" value="{{ row.amount }}" disabled>
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small mb-1">Ед.</label>
+                                        <input type="text" class="form-control" value="{{ row.unit }}" disabled>
+                                    </div>
+                                    {% if row.wear != '' %}
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label small mb-1">% износа</label>
+                                            <input type="text" class="form-control" value="{{ row.wear }}" disabled>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
                 </div>
 
                 {% if writeOffActs is not empty %}
@@ -142,45 +148,51 @@
                         {% endif %}
 
                         {% for o in rows %}
-                            {% set s = inputData.items[loop.index0]|default({}) %}
-                            <div class="p-3 mb-2 rounded-3 bg-body" data-row>
-                                <input type="hidden" name="items[{{ loop.index0 }}][obligationKey]" value="{{ o.key }}">
-                                <div class="fw-semibold mb-2">{{ o.label }} <span class="text-body-secondary small">· {{ o.cadenceLabel }}{% if o.quantityLabel %} · норма {{ o.quantityLabel }}{% endif %}</span></div>
-                                <div class="row g-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label small mb-1">Дата выдачи</label>
-                                        <input type="date" name="items[{{ loop.index0 }}][date]" value="{{ s.date|default(documentDate) }}" class="form-control"
-                                               data-issue-date data-action="change->norm-fill#nextDue"
-                                               data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
-                                        <div class="form-text">След. выдача: <span data-next-due>—</span></div>
+                            {% embed 'admin/compliance/_item_card.html.twig' with {
+                                name: o.label,
+                                meta: o.cadenceLabel ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : ''),
+                                attrs: 'data-row',
+                                o: o, i: loop.index0, units: units, documentDate: documentDate,
+                                s: inputData.items[loop.index0]|default({}),
+                            } %}
+                                {% block footer %}
+                                    <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
+                                    <div class="row g-2 w-100">
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small mb-1">Дата выдачи</label>
+                                            <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(documentDate) }}" class="form-control"
+                                                   data-issue-date data-action="change->norm-fill#nextDue"
+                                                   data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
+                                            <div class="form-text">След. выдача: <span data-next-due>—</span></div>
+                                        </div>
+                                        {% if o.type == 'material' %}
+                                            <div class="col-6 col-md-2">
+                                                <label class="form-label small mb-1">Кол-во</label>
+                                                <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
+                                                       value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
+                                                       data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
+                                            </div>
+                                            <div class="col-6 col-md-2">
+                                                <label class="form-label small mb-1">Ед.</label>
+                                                {% set unitValue = s.unit|default(o.quantityUnit) %}
+                                                <select name="items[{{ i }}][unit]" class="form-select" data-norm-unit="{{ o.quantityUnit }}">
+                                                    {% for u in units %}<option value="{{ u.value }}"{{ unitValue == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-6 col-md-2">
+                                                <label class="form-label small mb-1">% износа</label>
+                                                <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default('') }}" placeholder="0">
+                                            </div>
+                                        {% endif %}
+                                        {% if o.cadenceKind == 'by_manufacturer_doc' %}
+                                            <div class="col-6 col-md-3">
+                                                <label class="form-label small mb-1">Срок годности (по документам)</label>
+                                                <input type="date" name="items[{{ i }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default('') }}">
+                                            </div>
+                                        {% endif %}
                                     </div>
-                                    {% if o.type == 'material' %}
-                                        <div class="col-md-2">
-                                            <label class="form-label small mb-1">Кол-во</label>
-                                            <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ loop.index0 }}][amount]" class="form-control"
-                                                   value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
-                                                   data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label small mb-1">Ед.</label>
-                                            {% set unitValue = s.unit|default(o.quantityUnit) %}
-                                            <select name="items[{{ loop.index0 }}][unit]" class="form-select" data-norm-unit="{{ o.quantityUnit }}">
-                                                {% for u in units %}<option value="{{ u.value }}"{{ unitValue == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label small mb-1">% износа</label>
-                                            <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ loop.index0 }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default('') }}" placeholder="0">
-                                        </div>
-                                    {% endif %}
-                                    {% if o.cadenceKind == 'by_manufacturer_doc' %}
-                                        <div class="col-md-3">
-                                            <label class="form-label small mb-1">Срок годности (по документам)</label>
-                                            <input type="date" name="items[{{ loop.index0 }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default('') }}">
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                                {% endblock %}
+                            {% endembed %}
                         {% endfor %}
                     </div>
 

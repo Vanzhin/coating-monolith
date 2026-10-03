@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\Service\WriteOffActProjector;
-use App\Compliance\Application\UseCase\Command\SetWriteOffReasons\SetWriteOffReasonsCommand;
+use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
-use App\Compliance\Application\UseCase\Command\WriteOffPositions\WriteOffPositionsCommand;
+use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -24,9 +24,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Флоу списания (корзина): «Списать» кладёт позицию в черновик акта списания БЕЗ эффекта (карточка не
- * пересчитывается); причины ставятся отдельно; оформление акта (комиссия+№+скан) замораживает И гасит факты →
- * позиция освобождается → заводится черновик новой выдачи. docx-акт рендерит позиции и причины.
+ * Флоу списания: с действующей карточки «Перейти к акту списания» (StartWriteOffAct) создаёт/открывает черновик
+ * акта; на его странице указывают количество+причину (SaveWriteOffAct) БЕЗ эффекта; оформление (комиссия+№+скан)
+ * замораживает И гасит факты на количество → позиция освобождается/становится дефицитной → черновик новой выдачи.
  */
 final class WriteOffFlowTest extends KernelTestCase
 {
@@ -47,19 +47,21 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->authenticateAsSystem();
     }
 
-    public function test_write_off_puts_position_in_draft_basket_without_effect(): void
+    public function test_save_portion_without_effect(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k); // действующая карточка
 
         $recordId = $this->firstRecordId($p);
-        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => 1.0]]));
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
         self::assertNotNull($pc);
         self::assertCount(1, $pc->getWriteOffActs());
         self::assertTrue($pc->getWriteOffActs()[0]->isDraft());
+        self::assertCount(1, $pc->itemsOfWriteOffAct($actId));
         self::assertNull($pc->openDraftFor($r), 'эффекта нет — новый черновик выдачи не заводится до оформления акта');
     }
 
@@ -67,18 +69,11 @@ final class WriteOffFlowTest extends KernelTestCase
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance(); // норма 10 (материальная)
         $this->issueCard($p, $r, $k); // выдано 10 ≥ нормы
-        $pc = $this->repo->findByProfile($p);
-        self::assertNotNull($pc);
-        $recordId = $pc->getRecords()[0]->getId();
+        $recordId = $this->firstRecordId($p);
 
-        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => 1.0]]));
-        $this->reload();
-        $pc = $this->repo->findByProfile($p);
-        self::assertNotNull($pc);
-        $actId = $pc->getWriteOffActs()[0]->getId();
-        $portionId = $pc->itemsOfWriteOffAct($actId)[0]->getId();
-        $this->commandBus->execute(new SetWriteOffReasonsCommand($p, $actId, [$portionId => 'physical_wear']));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, $p, [$p], '39', '2026-08-10', $this->stageComplianceScan()));
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
@@ -88,27 +83,19 @@ final class WriteOffFlowTest extends KernelTestCase
     }
 
     /**
-     * Регрессия: после частичного списания, оставляющего «на руках» меньше нормы, read-model (тот же
-     * путь, что использует {@see \App\Compliance\Infrastructure\Controller\Fulfillment\IssueAction} для
-     * фильтрации позиций к выдаче) НЕ должен показывать Green — иначе дефицитная позиция выпадает из
-     * формы повторной выдачи.
+     * Регрессия: после частичного списания, оставляющего «на руках» меньше нормы, read-model (тот же путь, что
+     * {@see \App\Compliance\Infrastructure\Controller\Fulfillment\IssueAction} использует для фильтрации позиций
+     * к выдаче) НЕ должен показывать Green — иначе дефицитная позиция выпадает из формы повторной выдачи.
      */
     public function test_partial_write_off_then_read_model_status_is_not_green_for_deficit(): void
     {
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance(); // норма 10 (материальная)
-        $this->issueCard($p, $r, $k); // выдано 10 ≥ нормы
-        $pc = $this->repo->findByProfile($p);
-        self::assertNotNull($pc);
-        $recordId = $pc->getRecords()[0]->getId();
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $recordId = $this->firstRecordId($p);
 
-        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => 1.0]]));
-        $this->reload();
-        $pc = $this->repo->findByProfile($p);
-        self::assertNotNull($pc);
-        $actId = $pc->getWriteOffActs()[0]->getId();
-        $portionId = $pc->itemsOfWriteOffAct($actId)[0]->getId();
-        $this->commandBus->execute(new SetWriteOffReasonsCommand($p, $actId, [$portionId => 'physical_wear']));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, $p, [$p], '39', '2026-08-10', $this->stageComplianceScan()));
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
 
         $this->reload();
         /** @var GetProfileComplianceQueryResult $result */
@@ -135,11 +122,10 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->issueCard($p, $r, $k);
         $recordId = $this->firstRecordId($p);
         $held = $this->repo->findByProfile($p)?->heldOf($k) ?? 0.0;
-        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => $held]]));
 
-        [$actId, $portionId] = $this->basketItem($p);
-        $this->commandBus->execute(new SetWriteOffReasonsCommand($p, $actId, [$portionId => 'physical_wear']));
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, $p, [$p], '39', '2026-08-10', $this->stageComplianceScan()));
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => $held, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
@@ -156,9 +142,8 @@ final class WriteOffFlowTest extends KernelTestCase
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k);
         $recordId = $this->firstRecordId($p);
-        $this->commandBus->execute(new WriteOffPositionsCommand($p, $r, [['recordId' => $recordId, 'quantity' => 1.0]]));
-        [$actId, $portionId] = $this->basketItem($p);
-        $this->commandBus->execute(new SetWriteOffReasonsCommand($p, $actId, [$portionId => 'physical_wear']));
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);
@@ -180,16 +165,16 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertStringContainsString('Иванов', $xml);
     }
 
-    /** @return array{0: string, 1: string} actId, portionId первой порции корзины */
-    private function basketItem(string $profileId): array
+    private function startWriteOff(string $profileId, string $requirementId): string
     {
+        $this->commandBus->execute(new StartWriteOffActCommand($profileId, $requirementId));
         $this->reload();
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        $actId = $pc->getWriteOffActs()[0]->getId();
-        $portionId = $pc->itemsOfWriteOffAct($actId)[0]->getId();
+        $act = $pc->openWriteOffDraftFor($requirementId);
+        self::assertNotNull($act);
 
-        return [$actId, $portionId];
+        return $act->getId();
     }
 
     private function firstRecordId(string $profileId): string

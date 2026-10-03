@@ -7,11 +7,11 @@ namespace App\Compliance\Application\Service;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffItem;
-use App\Compliance\Domain\ValueObject\WriteOffCommissionMember;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
+use App\Shared\Domain\ValueObject\CommissionMember;
 
 /**
  * RenderData для docx-акта списания: идентичность сотрудника + таблица списанных позиций (повтор строк) +
@@ -43,10 +43,17 @@ final readonly class WriteOffActProjector
 
         $commission = $act->commission();
         if (null !== $commission) {
-            $values['rep_position'] = new TextValue($commission->representative->position);
-            $values['rep_fio'] = new TextValue($commission->representative->fio);
+            $values['commission'] = new RepeatValue(array_map(
+                static fn (CommissionMember $m): array => [
+                    'organization' => $m->organization,
+                    'position' => $m->position,
+                    'fio' => $m->fio,
+                    'date' => $m->date,
+                ],
+                $commission->members,
+            ));
             $values['members_text'] = new TextValue(implode('; ', array_map(
-                static fn (WriteOffCommissionMember $m): string => trim($m->position.' '.$m->fio),
+                static fn (CommissionMember $m): string => trim($m->position.' '.$m->fio),
                 $commission->members,
             )));
         }

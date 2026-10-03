@@ -19,15 +19,12 @@ final class WriteOffItemTest extends TestCase
         $act = new WriteOffAct(Uuid::v4(), $pc, 'req-1', new \DateTimeImmutable('2026-08-01'));
         $recordId = (string) Uuid::v4();
 
-        $item = new WriteOffItem(Uuid::v4(), $act, $recordId, 1.0);
+        $item = new WriteOffItem(Uuid::v4(), $act, $recordId, 2.0, WriteOffReason::PhysicalWear);
         self::assertSame($recordId, $item->recordId());
-        self::assertSame(1.0, $item->quantity());
-        self::assertNull($item->reason());
-
-        $item->addQuantity(1.0);
         self::assertSame(2.0, $item->quantity());
-
-        $item->setReason(WriteOffReason::PhysicalWear);
         self::assertSame(WriteOffReason::PhysicalWear, $item->reason());
+
+        $without = new WriteOffItem(Uuid::v4(), $act, $recordId, 1.0);
+        self::assertNull($without->reason());
     }
 }

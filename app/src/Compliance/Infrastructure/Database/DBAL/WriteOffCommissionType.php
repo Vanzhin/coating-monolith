@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Database\DBAL;
 
-use App\Compliance\Domain\ValueObject\WriteOffCommission;
+use App\Shared\Domain\ValueObject\Commission;
 use App\Shared\Infrastructure\Database\DBAL\AbstractJsonObjectType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 
-/** DBAL-тип комиссии акта списания ({@see WriteOffCommission}) — jsonb; nullable (до подписания акта нет). */
+/** DBAL-тип комиссии акта списания ({@see Commission}) — jsonb; nullable (до подписания акта нет). */
 final class WriteOffCommissionType extends AbstractJsonObjectType
 {
     public const NAME = 'compliance_writeoff_commission';
@@ -20,14 +20,14 @@ final class WriteOffCommissionType extends AbstractJsonObjectType
 
     protected function valueClass(): string
     {
-        return WriteOffCommission::class;
+        return Commission::class;
     }
 
     /**
      * @param array<string, mixed> $raw
      */
-    protected function hydrate(array $raw): WriteOffCommission
+    protected function hydrate(array $raw): Commission
     {
-        return WriteOffCommission::fromArray($raw);
+        return Commission::fromArray($raw);
     }
 }

@@ -78,37 +78,36 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSelectorExists('form#issue-form');
     }
 
-    public function test_write_off_basket_flow_pages_render(): void
+    public function test_write_off_act_pages_render(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
         $this->issueCard($profileId, $requirementId, $key); // действующая карточка → режим списания
 
+        // Акт выдачи (режим списания) — только кнопка «Перейти к акту списания».
         $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();
-        $form = $crawler->filter('form[action$="/write-off"]');
-        self::assertGreaterThan(0, $form->count(), 'на действующей позиции есть форма списания');
-        $recordIdInput = $form->filter('input[name="portions[0][recordId]"]');
-        self::assertGreaterThan(0, $recordIdInput->count(), 'строка списания несёт recordId действующего факта');
-        $recordId = $recordIdInput->attr('value');
-        self::assertGreaterThan(0, $form->filter('input[name="portions[0][quantity]"]')->count(), 'есть поле количества к списанию');
-        $token = $form->filter('input[name="_csrf_token"]')->attr('value');
+        $openForm = $crawler->filter('form[action$="/write-off/open"]');
+        self::assertGreaterThan(0, $openForm->count(), 'на действующей карточке есть кнопка «Перейти к акту списания»');
+        $token = $openForm->filter('input[name="_csrf_token"]')->attr('value');
 
-        $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/write-off', $profileId, $requirementId), [
-            'portions' => [['recordId' => $recordId, 'quantity' => '1']], '_csrf_token' => $token,
+        $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/write-off/open', $profileId, $requirementId), [
+            '_csrf_token' => $token,
         ]);
         self::assertResponseRedirects();
+
+        // Проваливаемся на страницу акта списания — там позиции с количеством и причиной.
+        $actCrawler = $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form#wo-act-form');
+        self::assertGreaterThan(0, $actCrawler->filter('input[name="portions[0][recordId]"]')->count(), 'позиция несёт recordId факта');
+        self::assertGreaterThan(0, $actCrawler->filter('input[name="portions[0][quantity]"]')->count(), 'есть поле количества к списанию');
+        self::assertGreaterThan(0, $actCrawler->filter('select[name="portions[0][reason]"]')->count(), 'есть выбор причины');
 
         $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
         self::assertNotNull($pc);
         self::assertCount(1, $pc->getWriteOffActs());
         self::assertTrue($pc->getWriteOffActs()[0]->isDraft());
         $actId = $pc->getWriteOffActs()[0]->getId();
-        $portionId = $pc->itemsOfWriteOffAct($actId)[0]->getId();
-
-        $actCrawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/writeoff/%s', $profileId, $actId));
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('form#wo-act-form');
-        self::assertGreaterThan(0, $actCrawler->filter('select[name="reasons['.$portionId.']"]')->count(), 'причина указывается по id порции');
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/writeoff/%s/download', $profileId, $actId));
         self::assertResponseIsSuccessful();
