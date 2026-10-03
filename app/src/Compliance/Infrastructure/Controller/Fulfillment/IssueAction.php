@@ -48,6 +48,7 @@ final class IssueAction extends AbstractController
                     (string) ($inputData['documentDate'] ?? ''),
                     array_values((array) ($inputData['items'] ?? [])),
                     ((string) ($inputData['stagedFileId'] ?? '')) ?: null,
+                    array_values((array) ($inputData['personalItems'] ?? [])),
                 ));
                 $this->addFlash('success', 'Карточка оформлена и стала действующей.');
 
@@ -121,6 +122,8 @@ final class IssueAction extends AbstractController
 
         // Режим: открытый черновик → оформление; иначе есть подписанный акт → списание.
         if (null !== $openDraft) {
+            $actType = $profileCompliance->typeOfRequirement($requirementId); // тип акта (мономорфен) для полей персональной строки
+
             return $this->render('admin/compliance/person/issue.html.twig', [
                 'mode' => 'issue',
                 'profileId' => $profileId,
@@ -129,6 +132,7 @@ final class IssueAction extends AbstractController
                 'profile' => $profileResult->profile,
                 'draftId' => $openDraft->getId(),
                 'rows' => $issueRows,
+                'requirementType' => null !== $actType ? $actType->value : 'material',
                 'inputData' => $inputData,
                 'documentDate' => (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d'),
                 'error' => $error,

@@ -34,13 +34,25 @@ final class IssuanceLineMapper
                 Uuid::v7(),
                 $key,
                 $this->date((string) ($row['date'] ?? '')) ?? $fallbackDate,
-                $this->quantity($row),
+                $this->quantityOf($row),
                 $this->wear($row),
                 $this->date((string) ($row['manualDueDate'] ?? '')),
             );
         }
 
         return $lines;
+    }
+
+    /** @param array<string, mixed> $row Разбор количества строки (amount+unit) — переиспользуется для персональных позиций. */
+    public function quantityOf(array $row): ?Quantity
+    {
+        $amount = trim((string) ($row['amount'] ?? ''));
+        if ('' === $amount) {
+            return null;
+        }
+        $unit = Unit::tryFrom((string) ($row['unit'] ?? '')) ?? throw new AppException('Выберите единицу измерения количества.');
+
+        return new Quantity((float) str_replace(',', '.', $amount), $unit);
     }
 
     private function date(string $value): ?\DateTimeImmutable
@@ -52,18 +64,6 @@ final class IssuanceLineMapper
 
         return \DateTimeImmutable::createFromFormat('!Y-m-d', $value)
             ?: throw new AppException(sprintf('Неверный формат даты: «%s».', $value));
-    }
-
-    /** @param array<string, mixed> $row */
-    private function quantity(array $row): ?Quantity
-    {
-        $amount = trim((string) ($row['amount'] ?? ''));
-        if ('' === $amount) {
-            return null;
-        }
-        $unit = Unit::tryFrom((string) ($row['unit'] ?? '')) ?? throw new AppException('Выберите единицу измерения количества.');
-
-        return new Quantity((float) str_replace(',', '.', $amount), $unit);
     }
 
     /** @param array<string, mixed> $row */

@@ -6,9 +6,11 @@ namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
 use App\Compliance\Domain\Service\ComplianceStatusResolver;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
+use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\WriteOffReason;
+use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -145,6 +147,10 @@ class ProfileCompliance extends Aggregate
             $obligation = $this->obligationByKey($line->obligationKey);
             if (null === $obligation) {
                 continue;
+            }
+            // Срок «по документам изготовителя» вводится при выдаче — без него позиция была бы вечно без срока.
+            if (CadenceKind::ByManufacturerDoc === $obligation->cadence()->kind && null === $line->manualDueDate) {
+                throw new AppException(sprintf('Укажите срок окончания для позиции «%s».', $obligation->label()));
             }
             $norm = $obligation->quantity();
             if (ComplianceType::Material !== $obligation->type() || null === $norm) {
@@ -403,6 +409,48 @@ class ProfileCompliance extends Aggregate
             $this->excludedKeys = new StringCollection(...[...$this->excludedKeys->getList(), $key]);
         }
         $this->removeObligationByKey($key);
+    }
+
+    /** Тип обязанностей требования в карточке (мономорфен) — нужен, чтобы персональная позиция приняла тип акта. */
+    public function typeOfRequirement(string $requirementId): ?ComplianceType
+    {
+        foreach ($this->obligations as $obligation) {
+            if (TrackedObligation::keyBelongsToRequirement($obligation->key(), $requirementId)) {
+                return $obligation->type();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Персональная позиция (origin=Personal) в акте требования: не из нормы, но трекается наравне. Тип (= тип
+     * акта, мономорфен), имя требования и отдел берём с существующей обязанности акта — клиент тип не задаёт.
+     * Нет обязанностей требования → нельзя добавить (карточка без нормы). Возвращает ключ созданной обязанности.
+     */
+    public function addPersonalObligation(Uuid $id, string $requirementId, string $label, Cadence $cadence, ?Quantity $quantity): string
+    {
+        $key = TrackedObligation::keyOf($requirementId, $label);
+        $reference = null;
+        foreach ($this->obligations as $obligation) {
+            if ($obligation->key() === $key) {
+                throw new AppException(sprintf('Позиция «%s» уже есть в карточке.', trim($label)));
+            }
+            if (null === $reference && TrackedObligation::keyBelongsToRequirement($obligation->key(), $requirementId)) {
+                $reference = $obligation;
+            }
+        }
+        if (null === $reference) {
+            throw new AppException('Нельзя добавить позицию в карточку без нормы по требованию.');
+        }
+
+        $this->putObligation(new TrackedObligation(
+            $id, $this, $requirementId, $reference->requirementName(),
+            trim($label), $reference->type(), $cadence, $quantity, $reference->departmentId(),
+            TrackedObligation::ORIGIN_PERSONAL,
+        ));
+
+        return $key;
     }
 
     /** Зафиксировать выдачу/прохождение и пересчитать даты затронутой обязанности. */

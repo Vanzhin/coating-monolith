@@ -11,10 +11,12 @@ use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Application\UseCase\Command\FormDraftsForRequirement\FormDraftsForRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Event\RequirementChanged;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Personnel\Domain\Event\ProfileSaved;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -109,6 +111,48 @@ final class DraftFlowTest extends KernelTestCase
         self::assertTrue($threw, 'выдача меньше нормы должна падать');
         $this->em()->clear();
         self::assertTrue($this->reload($p)->openDraftFor($r)?->isDraft(), 'черновик не оформлен');
+    }
+
+    public function test_personal_item_added_in_act_is_tracked_with_due_date(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r);
+
+        $this->commandBus->execute(new SignDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']], // норма перчаток
+            $this->stageComplianceScan(),
+            [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '2027-02-01']],
+        ));
+
+        $this->em()->clear();
+        $pc = $this->reload($p);
+        $key = TrackedObligation::keyOf($r, 'Очки');
+        $personal = null;
+        foreach ($pc->getObligations() as $o) {
+            if ($o->key() === $key) {
+                $personal = $o;
+                break;
+            }
+        }
+        self::assertNotNull($personal, 'персональная позиция материализована из строки акта');
+        self::assertSame(TrackedObligation::ORIGIN_PERSONAL, $personal->origin());
+        self::assertSame('2027-02-01', $personal->nextDueAt()?->format('Y-m-d'), 'срок = manualDueDate');
+        self::assertSame(1.0, $pc->heldOf($key));
+    }
+
+    public function test_personal_item_without_due_date_is_rejected(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r);
+
+        $this->expectException(AppException::class); // срок окончания обязателен
+        $this->commandBus->execute(new SignDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            $this->stageComplianceScan(),
+            [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '']],
+        ));
     }
 
     public function test_delete_draft(): void

@@ -335,6 +335,29 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame(2.0, $pc->getObligations()[0]->heldQuantity());
     }
 
+    public function test_type_of_requirement_returns_mono_type(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+
+        self::assertSame(ComplianceType::Material, $pc->typeOfRequirement($this->reqId));
+        self::assertNull($pc->typeOfRequirement('нет-такого'));
+    }
+
+    public function test_add_personal_obligation_is_tracked_and_rejects_duplicate(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $key = $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+
+        self::assertSame(TrackedObligation::keyOf($this->reqId, 'Очки'), $key);
+        $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $key));
+        self::assertCount(1, $added);
+        self::assertSame(TrackedObligation::ORIGIN_PERSONAL, $added[0]->origin());
+        self::assertSame(ComplianceType::Material, $added[0]->type()); // тип выведен от нормы акта (перчатки — материальные)
+
+        $this->expectException(AppException::class); // дубль по тому же ключу (keyOf лоуэркейсит label)
+        $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+    }
+
     private function commission(): Commission
     {
         return new Commission(

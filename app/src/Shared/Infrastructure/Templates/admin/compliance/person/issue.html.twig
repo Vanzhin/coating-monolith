@@ -4,6 +4,36 @@
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
 {% set writeoff = mode == 'writeoff' %}
 
+{# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
+   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
+{% macro personal_row(prefix, row, requirementType, units) %}
+    <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
+        <div class="row g-2">
+            <div class="col-12 col-md-5">
+                <label class="form-label small mb-1">Наименование</label>
+                <input type="text" name="{{ prefix }}[label]" value="{{ row.label|default('') }}" class="form-control">
+            </div>
+            {% if requirementType == 'material' %}
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Кол-во</label>
+                    <input type="number" min="0" step="any" inputmode="decimal" name="{{ prefix }}[amount]" value="{{ row.amount|default('') }}" class="form-control">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Ед.</label>
+                    <select name="{{ prefix }}[unit]" class="form-select">
+                        {% for u in units %}<option value="{{ u.value }}"{{ row.unit|default('') == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1">Срок окончания</label>
+                <input type="date" name="{{ prefix }}[manualDueDate]" value="{{ row.manualDueDate|default('') }}" class="form-control">
+            </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
+    </div>
+{% endmacro %}
+
 {% block title %}{{ parent() }} | {{ writeoff ? 'Списание' : 'Оформить' }} — {{ requirementName }}{% endblock %}
 
 {% block content %}
@@ -194,6 +224,17 @@
                                 {% endblock %}
                             {% endembed %}
                         {% endfor %}
+
+                        {% import 'admin/compliance/person/issue.html.twig' as personal %}
+                        <div class="mt-3 pt-3 border-top" data-controller="report-list-rows">
+                            <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
+                            <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
+                            <div data-report-list-rows-target="rows">
+                                {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units) }}{% endfor %}
+                            </div>
+                            <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units) }}</template>
+                            <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
+                        </div>
                     </div>
 
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
