@@ -37,7 +37,7 @@
 #}
 {% set anchors = anchors|default([]) %}
 {% set save_label = save_label|default('Сохранить') %}
-{% set save_enabled = save_enabled|default(true) %}
+{% set save_enabled = save_enabled is defined ? save_enabled : true %}{# не default(): Twig считает false «пустым» и вернул бы true #}
 
 <div class="form-page" data-controller="form-scrollspy">
     <div class="form-appbar">
