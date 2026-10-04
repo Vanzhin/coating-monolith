@@ -14,8 +14,8 @@ use App\Shared\Domain\Templating\TextValue;
 
 /**
  * {@see RenderData} для вьюхи личной карточки СИЗ (docx/xlsx): идентичность сотрудника (ФИО по частям, пол,
- * рост, размеры, табельный, даты) + вся норма требования (не дефицит — карточка показывает что положено) +
- * № карточки и ответственное лицо с последнего подписанного акта выдачи. Форматирование — здесь.
+ * рост, размеры, табельный, даты) + позиции ИЗ АКТА (строки открытого черновика — что выдаём, с введёнными
+ * кол-вами; иначе последний подписанный акт) + № карточки и ответственное лицо того же акта. Форматирование — здесь.
  */
 final readonly class RequirementCardProjector
 {
@@ -25,25 +25,42 @@ final readonly class RequirementCardProjector
         foreach ($requirement->getItems() as $item) {
             $basisByLabel[mb_strtolower(trim($item->label()))] = $item->basis();
         }
+        $obligationByKey = [];
+        foreach ($profileCompliance->getObligations() as $obligation) {
+            if ($obligation->requirementId() === $requirement->getId()) {
+                $obligationByKey[$obligation->key()] = $obligation;
+            }
+        }
+
+        // Позиции и реквизиты бланка — из ЭТОГО акта: открытый черновик (что выдаём, с введёнными кол-вами),
+        // иначе последний подписанный. Не вся норма — ровно то, что в акте (совпадает со страницей оформления).
+        $source = $profileCompliance->openDraftFor($requirement->getId())
+            ?? $this->latestSigned($profileCompliance, $requirement->getId());
 
         $rows = [];
-        foreach ($profileCompliance->getObligations() as $obligation) {
-            if ($obligation->requirementId() !== $requirement->getId()) {
-                continue;
+        if (null !== $source) {
+            foreach ($profileCompliance->recordsForRequirement($requirement->getId()) as $record) {
+                if ($record->documentId() !== $source->getId()) {
+                    continue; // строка другого акта
+                }
+                $obligation = $obligationByKey[$record->obligationKey()] ?? null;
+                $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($record->obligationKey());
+                $quantity = $record->quantity();
+                $unit = $quantity?->unit->title() ?? '';
+                $cadence = null !== $obligation ? $obligation->cadence()->label() : '';
+                $issue = $record->fulfilledAt();
+                $limit = $record->manualDueDate() ?? $obligation?->cadence()->nextDueFrom($issue);
+                $rows[] = [
+                    'label' => $label,
+                    'basis' => $basisByLabel[mb_strtolower(trim($label))] ?? '',
+                    'unit' => $unit,
+                    'cadence' => $cadence,
+                    'unit_cadence' => trim($unit.('' !== $unit && '' !== $cadence ? ', ' : '').$cadence),
+                    'quantity' => null !== $quantity ? $this->number($quantity->amount) : '',
+                    'issue_date' => $issue->format('d.m.Y'),
+                    'limit_date' => $limit?->format('d.m.Y') ?? '',
+                ];
             }
-            $quantity = $obligation->quantity();
-            $unit = $quantity?->unit->title() ?? '';
-            $cadence = $obligation->cadence()->label();
-            $rows[] = [
-                'label' => $obligation->label(),
-                'basis' => $basisByLabel[mb_strtolower(trim($obligation->label()))] ?? '',
-                'unit' => $unit,
-                'cadence' => $cadence,
-                'unit_cadence' => trim($unit.('' !== $unit && '' !== $cadence ? ', ' : '').$cadence),
-                'quantity' => null !== $quantity ? $this->number($quantity->amount) : '',
-                'issue_date' => $now->format('d.m.Y'),
-                'limit_date' => $obligation->cadence()->nextDueFrom($now)?->format('d.m.Y') ?? '',
-            ];
         }
 
         $values = [
@@ -58,7 +75,7 @@ final readonly class RequirementCardProjector
         ];
 
         $this->optional($values, 'employee_middle_name', $profile->middleName);
-        $this->optional($values, 'gender', $profile->gender);
+        $this->optional($values, 'gender', $profile->gender?->label);
         $this->optional($values, 'height', $profile->height);
         $this->optional($values, 'size_clothing', $profile->clothing);
         $this->optional($values, 'size_shoes', $profile->shoes);
@@ -72,11 +89,10 @@ final readonly class RequirementCardProjector
             $values['position_change_date'] = new TextValue($hired); // дубль даты приёма (пока так)
         }
 
-        // № карточки и ответственное лицо — с последнего подписанного акта выдачи; всегда отдаём ключ (пусто,
-        // если выдач ещё не было), чтобы строгий плейсхолдер {{card_number}} не падал на нераспечатанной карточке.
-        $latest = $this->latestSigned($profileCompliance, $requirement->getId());
-        $values['card_number'] = new TextValue($latest?->actNumber() ?? '');
-        $values['responsible_fio'] = new TextValue($latest?->responsibleFio() ?? '');
+        // № карточки и ответственное лицо — из того же акта ($source). Всегда отдаём ключ (пусто, если ещё
+        // не заполнено), чтобы строгий плейсхолдер {{card_number}} не падал на нераспечатанной карточке.
+        $values['card_number'] = new TextValue($source?->actNumber() ?? '');
+        $values['responsible_fio'] = new TextValue($source?->responsibleFio() ?? '');
 
         return new RenderData($values);
     }

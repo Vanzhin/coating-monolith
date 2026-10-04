@@ -30,13 +30,24 @@ final readonly class DraftFormationService
     ) {
     }
 
-    /** Черновик по (человек × требование), если есть что выдавать и открытого ещё нет. Не сохраняет — зовущий сохраняет. */
+    /**
+     * Черновик-корзина по (человек × требование): если есть что выдавать — создаёт черновик (если открытого нет)
+     * и наполняет корзину дефицитом; существующий черновик дополняет недостающим (идемпотентно). Не сохраняет —
+     * зовущий сохраняет. Возвращает true, если корзина тронута (создана или дополнена).
+     */
     public function formForProfileRequirement(ProfileCompliance $profileCompliance, string $requirementId, \DateTimeImmutable $now): bool
     {
-        if (null !== $profileCompliance->openDraftFor($requirementId) || !$this->hasDue($profileCompliance, $requirementId, $now)) {
+        if (!$this->hasDue($profileCompliance, $requirementId, $now)) {
+            return false; // нечего класть в корзину
+        }
+        if (null === $profileCompliance->openDraftFor($requirementId)) {
+            $profileCompliance->formDraft(Uuid::v7(), $requirementId, $now);
+        }
+        $draft = $profileCompliance->openDraftFor($requirementId);
+        if (null === $draft) {
             return false;
         }
-        $profileCompliance->formDraft(Uuid::v7(), $requirementId, $now);
+        $profileCompliance->topUpDraftFromNorm($draft->getId(), $requirementId, $now);
 
         return true;
     }

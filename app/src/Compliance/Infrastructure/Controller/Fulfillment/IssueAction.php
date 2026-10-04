@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\Fulfillment;
 
-use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -23,7 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Карточка требования у человека — одна форма, два режима по стадии документа:
- *  - открытый черновик → ОФОРМЛЕНИЕ (заполнить подошедшие позиции + скан → «Оформить», SignDraft);
+ *  - открытый черновик → ОФОРМЛЕНИЕ (заполнить позиции; «Сохранить черновик» или «Оформить» + скан → SaveDraft);
  *  - подписан (финал) → СПИСАНИЕ (поля позиций заблокированы, чекбокс + причина → «Списать выбранное»).
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
@@ -41,20 +41,25 @@ final class IssueAction extends AbstractController
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $inputData */
             $inputData = $request->getPayload()->all();
+            // «Оформить» (скан + подпись) либо «Сохранить черновик» (без скана). Сам скан решает в домене, но
+            // кнопкой фиксируем намерение: при сохранении скан игнорируем, даже если был прикреплён.
+            $isSign = 'sign' === ($inputData['action'] ?? 'sign');
             try {
-                $this->commandBus->execute(new SignDraftCommand(
+                $this->commandBus->execute(new SaveDraftCommand(
                     $profileId,
                     (string) ($inputData['draftId'] ?? ''),
                     (string) ($inputData['documentDate'] ?? ''),
                     array_values((array) ($inputData['items'] ?? [])),
                     (string) ($inputData['cardNumber'] ?? ''),
                     (string) ($inputData['responsibleFio'] ?? ''),
-                    ((string) ($inputData['stagedFileId'] ?? '')) ?: null,
+                    $isSign ? (((string) ($inputData['stagedFileId'] ?? '')) ?: null) : null,
                     array_values((array) ($inputData['personalItems'] ?? [])),
                 ));
-                $this->addFlash('success', 'Карточка оформлена и стала действующей.');
+                $this->addFlash('success', $isSign ? 'Карточка оформлена и стала действующей.' : 'Черновик сохранён.');
 
-                return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
+                return $isSign
+                    ? $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId])
+                    : $this->redirectToRoute('app_cabinet_compliance_issue', ['profileId' => $profileId, 'requirementId' => $requirementId]);
             } catch (AppException $e) {
                 return $this->renderForm($profileId, $requirementId, $e->getMessage(), $inputData);
             }
@@ -126,6 +131,28 @@ final class IssueAction extends AbstractController
         if (null !== $openDraft) {
             $actType = $profileCompliance->typeOfRequirement($requirementId); // тип акта (мономорфен) для полей персональной строки
 
+            // Гидрация из сохранённого черновика при GET (на reload inputData из POST пуст): реквизиты акта +
+            // количества строк берём из корзины, чтобы перезагрузка показывала сохранённое, а не только дефицит.
+            $inputData['cardNumber'] ??= $openDraft->actNumber() ?? '';
+            $inputData['responsibleFio'] ??= $openDraft->responsibleFio() ?? '';
+            $cartQtyByKey = [];
+            $savedDate = null; // дата документа из сохранённой корзины — иначе «Оформить» после reload запишет сегодня
+            foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
+                if ($record->documentId() !== $openDraft->getId()) {
+                    continue;
+                }
+                $savedDate ??= $record->fulfilledAt();
+                if (null !== $record->quantity()) {
+                    $cartQtyByKey[$record->obligationKey()] = ($cartQtyByKey[$record->obligationKey()] ?? 0.0) + $record->quantity()->amount;
+                }
+            }
+            foreach ($issueRows as $i => $issueRow) {
+                if (isset($cartQtyByKey[$issueRow['key']])) {
+                    $issueRows[$i]['deficitValue'] = AmountFormatter::trimmed($cartQtyByKey[$issueRow['key']]);
+                }
+            }
+            $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
+
             return $this->render('admin/compliance/person/issue.html.twig', [
                 'mode' => 'issue',
                 'profileId' => $profileId,
@@ -136,7 +163,7 @@ final class IssueAction extends AbstractController
                 'rows' => $issueRows,
                 'requirementType' => null !== $actType ? $actType->value : 'material',
                 'inputData' => $inputData,
-                'documentDate' => (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d'),
+                'documentDate' => $documentDate,
                 'error' => $error,
                 'units' => array_map(static fn (Unit $u): array => ['value' => $u->value, 'title' => $u->title()], Unit::cases()),
             ]);

@@ -60,6 +60,15 @@ class RequirementDocument
         $this->updatedAt = $now;
     }
 
+    /** Сохранить реквизиты черновика (№/ответственный), пока не подписан. Пустые допустимы — это черновик, не финал. */
+    public function saveDraftDetails(string $actNumber, string $responsibleFio, \DateTimeImmutable $now): void
+    {
+        $this->assertMutable();
+        $this->actNumber = '' === trim($actNumber) ? null : trim($actNumber);
+        $this->responsibleFio = '' === trim($responsibleFio) ? null : trim($responsibleFio);
+        $this->updatedAt = $now;
+    }
+
     public function actNumber(): ?string
     {
         return $this->actNumber;

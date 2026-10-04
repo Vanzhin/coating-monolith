@@ -83,6 +83,126 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, null, $this->now));
     }
 
+    public function test_cart_record_on_draft_does_not_count_until_signed(): void
+    {
+        $pc = $this->pcWithGloves(); // норма 10
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+        // строка кладётся в корзину черновика (документ Formed) — ещё не выдано
+        $pc->recordFulfillment(
+            Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'),
+            $this->calc, new Quantity(10.0, Unit::Pair), documentId: (string) $draftId,
+        );
+        $pc->setActiveForRequirement($this->reqId, true);
+
+        self::assertSame(0.0, $pc->heldOf($this->glovesKey()), 'корзина (Formed) в held не входит');
+        self::assertNull($pc->getObligations()[0]->lastFulfilledAt(), 'даты от корзины не считаются');
+        self::assertSame(ComplianceStatus::Red, $pc->worstStatus($this->resolver, null, $this->now), 'недовыдано, пока не подписано');
+    }
+
+    public function test_save_draft_fills_cart_without_held_and_sets_details(): void
+    {
+        $pc = $this->pcWithGloves(); // норма 10
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+
+        $pc->saveDraft((string) $draftId, 'К-1', 'Петров П. П.', [$this->glovesLine(10.0)], $this->now);
+
+        self::assertSame(0.0, $pc->heldOf($this->glovesKey()), 'корзина сохранена, но не выдана');
+        self::assertSame(10.0, $this->cartSum($pc, (string) $draftId, $this->glovesKey()));
+        $draft = $pc->openDraftFor($this->reqId);
+        self::assertNotNull($draft);
+        self::assertSame('К-1', $draft->actNumber());
+        self::assertSame('Петров П. П.', $draft->responsibleFio());
+    }
+
+    public function test_save_draft_replaces_lines_not_appends(): void
+    {
+        $pc = $this->pcWithGloves();
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+
+        $pc->saveDraft((string) $draftId, 'К-1', 'Петров П. П.', [$this->glovesLine(4.0)], $this->now);
+        $pc->saveDraft((string) $draftId, 'К-1', 'Петров П. П.', [$this->glovesLine(7.0)], $this->now);
+
+        self::assertSame(7.0, $this->cartSum($pc, (string) $draftId, $this->glovesKey()), 'вторая правка заменила строки, не доплюсовала');
+    }
+
+    public function test_save_draft_details_forbidden_after_sign(): void
+    {
+        $pc = $this->pcWithGloves();
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'));
+        $signedId = $pc->signedDocumentsFor($this->reqId)[0]->getId();
+
+        $this->expectException(AppException::class); // подписанный акт неизменяем
+        $pc->saveDraft($signedId, 'К-2', 'Иванов И. И.', [$this->glovesLine(10.0)], $this->now);
+    }
+
+    public function test_delete_draft_removes_its_cart_lines(): void
+    {
+        $pc = $this->pcWithGloves();
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+        $pc->saveDraft((string) $draftId, '', '', [$this->glovesLine(5.0)], $this->now);
+        self::assertCount(1, $pc->getRecords());
+
+        $pc->deleteDraft((string) $draftId);
+        self::assertCount(0, $pc->getRecords(), 'строки корзины удалились вместе с черновиком');
+    }
+
+    public function test_delete_draft_prunes_orphan_personal_obligation(): void
+    {
+        $pc = $this->pcWithGloves();
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+        $key = $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->saveDraft((string) $draftId, '', '', [new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece))], $this->now);
+        self::assertNotNull($this->obligationOf($pc, $key), 'персональная позиция материализована');
+
+        $pc->deleteDraft((string) $draftId);
+
+        self::assertNull($this->obligationOf($pc, $key), 'персональная обязанность без факта удалена с черновиком');
+        self::assertNotNull($this->obligationOf($pc, $this->glovesKey()), 'норма (origin=Norm) не тронута');
+    }
+
+    public function test_resave_without_personal_line_prunes_it(): void
+    {
+        $pc = $this->pcWithGloves();
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+        $key = $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->saveDraft((string) $draftId, '', '', [new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece))], $this->now);
+
+        $pc->saveDraft((string) $draftId, '', '', [$this->glovesLine(10.0)], $this->now); // пере-сохранили без «Очки»
+
+        self::assertNull($this->obligationOf($pc, $key), 'снятая персональная позиция убрана при пере-сохранении');
+    }
+
+    public function test_topup_adds_only_missing_to_reach_norm(): void
+    {
+        $pc = $this->pcWithGloves(); // норма 10, на руках 0
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+
+        $pc->topUpDraftFromNorm((string) $draftId, $this->reqId, $this->now);
+        self::assertSame(10.0, $this->cartSum($pc, (string) $draftId, $this->glovesKey()));
+
+        $pc->topUpDraftFromNorm((string) $draftId, $this->reqId, $this->now); // идемпотентно
+        self::assertSame(10.0, $this->cartSum($pc, (string) $draftId, $this->glovesKey()), 'повтор без смены нормы не плодит');
+    }
+
+    public function test_topup_supplements_after_norm_increase(): void
+    {
+        $pc = $this->pcWithGloves(); // норма 10
+        $draftId = Uuid::v4();
+        $pc->formDraft($draftId, $this->reqId, $this->now);
+        $pc->topUpDraftFromNorm((string) $draftId, $this->reqId, $this->now); // корзина 10
+
+        $this->raiseGlovesNormTo($pc, 20.0); // норма 10 → 20
+        $pc->topUpDraftFromNorm((string) $draftId, $this->reqId, $this->now);
+        self::assertSame(20.0, $this->cartSum($pc, (string) $draftId, $this->glovesKey()), 'дополнил недостающие 10 → 20');
+    }
+
     public function test_removing_last_record_rolls_back_dates_and_status(): void
     {
         $pc = $this->pcWithGloves();
@@ -379,6 +499,38 @@ final class ProfileComplianceTest extends TestCase
     private function glovesLine(float $amount, string $issueDate = '2026-06-01'): IssuanceLine
     {
         return new IssuanceLine(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable($issueDate), new Quantity($amount, Unit::Pair));
+    }
+
+    private function raiseGlovesNormTo(ProfileCompliance $pc, float $norm): void
+    {
+        $pc->putObligation(new TrackedObligation(
+            Uuid::v4(), $pc, $this->reqId, 'СИЗ основные', 'Перчатки',
+            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
+            new Quantity($norm, Unit::Pair), 'dept-1',
+        ));
+    }
+
+    private function obligationOf(ProfileCompliance $pc, string $key): ?TrackedObligation
+    {
+        foreach ($pc->getObligations() as $obligation) {
+            if ($obligation->key() === $key) {
+                return $obligation;
+            }
+        }
+
+        return null;
+    }
+
+    private function cartSum(ProfileCompliance $pc, string $documentId, string $key): float
+    {
+        $sum = 0.0;
+        foreach ($pc->getRecords() as $record) {
+            if ($record->documentId() === $documentId && $record->obligationKey() === $key) {
+                $sum += $record->quantity()->amount ?? 0.0;
+            }
+        }
+
+        return $sum;
     }
 
     public function test_issue_below_norm_minus_held_throws(): void

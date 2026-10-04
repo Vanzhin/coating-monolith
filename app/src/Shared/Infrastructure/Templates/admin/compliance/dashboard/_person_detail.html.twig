@@ -22,9 +22,6 @@
                         <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
                             <i class="bi bi-pencil-square me-1"></i>Оформить
                         </a>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: person.profileId, requirementId: g.requirementId}) }}">
-                            <i class="bi bi-file-earmark-excel me-1"></i>Бланк
-                        </a>
                     {% elseif g.signedActs is not empty %}
                         <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
                             <i class="bi bi-journal-text me-1"></i>Открыть / списать

@@ -8,9 +8,9 @@ use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
 use App\Compliance\Application\ReadModel\ComplianceBucket;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
-use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
 use App\Compliance\Application\UseCase\Query\Dashboard\ComplianceDashboardFilter;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQueryResult;
@@ -93,7 +93,7 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         $this->commandBus->execute(new FormDraftCommand($profileId, $reqId));
         $draft = $this->repo->findByProfile($profileId)?->openDraftFor($reqId);
         self::assertNotNull($draft);
-        $this->commandBus->execute(new SignDraftCommand(
+        $this->commandBus->execute(new SaveDraftCommand(
             $profileId, $draft->getId(), '2026-05-20',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
             'К-1', 'Петров П. П.',

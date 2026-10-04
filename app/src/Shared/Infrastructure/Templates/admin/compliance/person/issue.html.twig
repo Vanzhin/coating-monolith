@@ -51,7 +51,7 @@
     {% embed 'components/form_page.html.twig' with {
         title: (writeoff ? 'Списание — ' : 'Оформить — ') ~ requirementName,
         back_url: backUrl,
-        save_enabled: not writeoff,
+        save_enabled: false,
         save_form_id: 'issue-form',
         save_label: 'Оформить',
         anchors: writeoff ? [{id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}],
@@ -145,14 +145,29 @@
                          data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
                             <h2 class="h6 mb-0">Документ</h2>
-                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
-                                <i class="bi bi-file-earmark-excel me-1"></i>Скачать бланк (Excel)
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" name="action" value="save" class="btn btn-soft-success btn-sm">
+                                    <i class="bi bi-save me-1"></i>Сохранить черновик
+                                </button>
+                                <button type="submit" name="action" value="sign" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-check-lg me-1"></i>Оформить
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-bs-title="черновик карточки"
+                                        data-bs-url="{{ path('app_cabinet_compliance_draft_delete', {profileId: profileId, documentId: draftId}) }}">
+                                    <i class="bi bi-trash3 me-1"></i>Удалить
+                                </button>
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
+                                    <i class="bi bi-file-earmark-word me-1"></i>Скачать бланк
+                                </a>
+                            </div>
                         </div>
+                        <div class="form-text mb-2">Сохраните черновик — тогда в бланк попадут № и ответственное лицо. Для оформления приложите скан и нажмите «Оформить».</div>
                         <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
-                                <label class="form-label small mb-1">Карточка № <span class="text-danger">*</span></label>
+                                <label class="form-label small mb-1">Акт № <span class="text-danger">*</span></label>
                                 <input type="text" name="cardNumber" value="{{ inputData.cardNumber|default('') }}" class="form-control">
                             </div>
                             <div class="col-md-8">
@@ -250,10 +265,7 @@
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
                 </form>
 
-                <form method="post" action="{{ path('app_cabinet_compliance_draft_delete', {profileId: profileId, documentId: draftId}) }}" class="mb-3">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Удалить черновик</button>
-                </form>
+                {% include 'components/delete_modal.html.twig' %}
             {% endif %}
         {% endblock %}
     {% endembed %}

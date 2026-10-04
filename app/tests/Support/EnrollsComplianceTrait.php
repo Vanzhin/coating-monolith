@@ -6,9 +6,9 @@ namespace App\Tests\Support;
 
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
-use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
@@ -75,7 +75,7 @@ trait EnrollsComplianceTrait
         $draft = $repo->findByProfile($profileId)?->openDraftFor($requirementId);
         \assert(null !== $draft);
 
-        $bus->execute(new SignDraftCommand(
+        $bus->execute(new SaveDraftCommand(
             $profileId, $draft->getId(), '2026-06-01',
             [['obligationKey' => $key, 'amount' => $amount, 'unit' => 'pair']],
             'К-1', 'Петров П. П.',

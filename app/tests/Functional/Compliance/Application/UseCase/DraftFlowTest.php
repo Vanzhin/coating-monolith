@@ -9,7 +9,7 @@ use App\Compliance\Application\Event\RecomputeOnRequirementChangedHandler;
 use App\Compliance\Application\UseCase\Command\DeleteDraft\DeleteDraftCommand;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Application\UseCase\Command\FormDraftsForRequirement\FormDraftsForRequirementCommand;
-use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Event\RequirementChanged;
@@ -56,12 +56,47 @@ final class DraftFlowTest extends KernelTestCase
         self::assertTrue($pc->openDraftFor($r)?->isDraft());
     }
 
-    public function test_batch_forms_for_all_and_is_idempotent(): void
+    public function test_form_drafts_button_defers_to_worker_and_is_idempotent(): void
     {
-        ['requirementId' => $r] = $this->enrollCompliance();
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
 
-        self::assertSame(1, $this->commandBus->execute(new FormDraftsForRequirementCommand($r)));
-        self::assertSame(0, $this->commandBus->execute(new FormDraftsForRequirementCommand($r))); // открытый уже есть
+        // Кнопка только диспатчит событие в воркер — синхронно черновик НЕ формируется (людей может быть много).
+        $this->commandBus->execute(new FormDraftsForRequirementCommand($r));
+        $this->em()->clear();
+        self::assertNull($this->reload($p)->openDraftFor($r), 'работа ушла в воркер — синхронно черновика нет');
+
+        // Прогон воркера (обработчик события) формирует черновик; повтор не плодит.
+        $handler = static::getContainer()->get(RecomputeOnRequirementChangedHandler::class);
+        ($handler)(new RequirementChanged($r));
+        $this->em()->clear();
+        self::assertNotNull($this->reload($p)->openDraftFor($r));
+
+        ($handler)(new RequirementChanged($r));
+        $this->em()->clear();
+        $open = 0;
+        foreach ($this->reload($p)->getDocuments() as $d) {
+            if ($d->requirementId() === $r && $d->isDraft()) {
+                ++$open;
+            }
+        }
+        self::assertSame(1, $open, 'повторная обработка не плодит черновики');
+    }
+
+    public function test_worker_rebuilds_card_for_covered_person_without_projection(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
+        // Убираем проекцию (как после сброса данных): человек покрыт требованием, но карточки нет.
+        $pc = $this->repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $this->em()->remove($pc); // карточки у покрытого человека больше нет
+        $this->em()->flush();
+        $this->em()->clear();
+
+        (static::getContainer()->get(RecomputeOnRequirementChangedHandler::class))(new RequirementChanged($r));
+        $this->em()->clear();
+
+        $rebuilt = $this->reload($p); // reload сам гарантирует, что карточка снова есть
+        self::assertNotNull($rebuilt->openDraftFor($r), 'воркер пересобрал карточку покрытого человека и завёл черновик');
     }
 
     public function test_no_draft_when_all_ok(): void
@@ -70,7 +105,29 @@ final class DraftFlowTest extends KernelTestCase
         $this->formAndSign($p, $r, $k);
         $this->em()->clear();
 
-        self::assertSame(0, $this->commandBus->execute(new FormDraftsForRequirementCommand($r)), 'всё ок → черновик не нужен');
+        (static::getContainer()->get(RecomputeOnRequirementChangedHandler::class))(new RequirementChanged($r));
+        $this->em()->clear();
+        self::assertNull($this->reload($p)->openDraftFor($r), 'всё выдано → черновик не нужен');
+    }
+
+    public function test_save_without_scan_keeps_cart_unissued(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r);
+
+        $this->commandBus->execute(new SaveDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.', // без stagedFileId → сохранение черновика, не оформление
+        ));
+
+        $this->em()->clear();
+        $pc = $this->reload($p);
+        self::assertSame(0.0, $pc->heldOf($k), 'сохранено, но не выдано (скан не приложен)');
+        $draft = $pc->openDraftFor($r);
+        self::assertNotNull($draft, 'черновик остался черновиком');
+        self::assertSame('К-1', $draft->actNumber());
+        self::assertSame(10.0, $this->cartSum($pc, $draft->getId(), $k), 'строки в корзине');
     }
 
     public function test_sign_draft_records_and_signs(): void
@@ -78,7 +135,7 @@ final class DraftFlowTest extends KernelTestCase
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $docId = $this->formDraftAndGetId($p, $r);
 
-        $this->commandBus->execute(new SignDraftCommand(
+        $this->commandBus->execute(new SaveDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
             'К-1', 'Петров П. П.',
@@ -100,7 +157,7 @@ final class DraftFlowTest extends KernelTestCase
 
         $threw = false;
         try {
-            $this->commandBus->execute(new SignDraftCommand(
+            $this->commandBus->execute(new SaveDraftCommand(
                 $p, $docId, '2026-03-01',
                 [['obligationKey' => $k, 'amount' => '5', 'unit' => 'pair']], // меньше нормы (10)
                 'К-1', 'Петров П. П.',
@@ -120,7 +177,7 @@ final class DraftFlowTest extends KernelTestCase
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $docId = $this->formDraftAndGetId($p, $r);
 
-        $this->commandBus->execute(new SignDraftCommand(
+        $this->commandBus->execute(new SaveDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']], // норма перчаток
             'К-1', 'Петров П. П.',
@@ -150,7 +207,7 @@ final class DraftFlowTest extends KernelTestCase
         $docId = $this->formDraftAndGetId($p, $r);
 
         $this->expectException(AppException::class); // срок окончания обязателен
-        $this->commandBus->execute(new SignDraftCommand(
+        $this->commandBus->execute(new SaveDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
             'К-1', 'Петров П. П.',
@@ -181,6 +238,35 @@ final class DraftFlowTest extends KernelTestCase
         $draft = $this->reload($p)->openDraftFor($r);
         self::assertNotNull($draft, 'событие нормы завело черновик');
         self::assertTrue($draft->isDraft());
+    }
+
+    public function test_event_populates_cart_with_deficit_and_supplements_idempotently(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+
+        $handler = static::getContainer()->get(RecomputeOnRequirementChangedHandler::class);
+        ($handler)(new RequirementChanged($r));
+        $this->em()->clear();
+
+        $pc = $this->reload($p);
+        $draft = $pc->openDraftFor($r);
+        self::assertNotNull($draft, 'событие завело черновик-корзину');
+        self::assertSame(10.0, $this->cartSum($pc, $draft->getId(), $k), 'корзина наполнена дефицитом нормы (10 пар)');
+
+        // Повтор события не плодит ни черновик, ни строки корзины.
+        ($handler)(new RequirementChanged($r));
+        $this->em()->clear();
+        $pc = $this->reload($p);
+        $draft = $pc->openDraftFor($r);
+        self::assertNotNull($draft);
+        self::assertSame(10.0, $this->cartSum($pc, $draft->getId(), $k), 'повтор идемпотентен');
+        $drafts = 0;
+        foreach ($pc->getDocuments() as $d) {
+            if ($d->requirementId() === $r && $d->isDraft()) {
+                ++$drafts;
+            }
+        }
+        self::assertSame(1, $drafts, 'черновик по-прежнему один');
     }
 
     public function test_profile_saved_handler_forms_draft(): void
@@ -217,12 +303,24 @@ final class DraftFlowTest extends KernelTestCase
     private function formAndSign(string $profileId, string $requirementId, string $key): void
     {
         $docId = $this->formDraftAndGetId($profileId, $requirementId);
-        $this->commandBus->execute(new SignDraftCommand(
+        $this->commandBus->execute(new SaveDraftCommand(
             $profileId, $docId, '2026-03-01',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
             'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
         ));
+    }
+
+    private function cartSum(ProfileCompliance $pc, string $documentId, string $key): float
+    {
+        $sum = 0.0;
+        foreach ($pc->getRecords() as $record) {
+            if ($record->documentId() === $documentId && $record->obligationKey() === $key) {
+                $sum += $record->quantity()->amount ?? 0.0;
+            }
+        }
+
+        return $sum;
     }
 
     private function em(): EntityManagerInterface

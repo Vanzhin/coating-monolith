@@ -27,8 +27,8 @@ final class FormDraftsAction extends AbstractController
     public function __invoke(string $requirementId): Response
     {
         try {
-            $created = $this->commandBus->execute(new FormDraftsForRequirementCommand($requirementId));
-            $this->addFlash('success', sprintf('Сформировано черновиков: %d.', is_int($created) ? $created : 0));
+            $this->commandBus->execute(new FormDraftsForRequirementCommand($requirementId));
+            $this->addFlash('success', 'Запущено — карточки формируются в фоне. Обновите страницу через минуту.');
         } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());
         }

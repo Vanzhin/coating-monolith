@@ -184,6 +184,83 @@ class ProfileCompliance extends Aggregate
         $this->recordAndSign($document, $lines, $scanFileId, $calculator, $now, $actNumber, $responsibleFio);
     }
 
+    /**
+     * Сохранить черновик целиком: строки корзины (замена) + реквизиты. Акт остаётся Formed — в held не входит.
+     * Калькулятор не нужен: черновые записи гейт «выдано» не пускает, held/даты не меняются.
+     *
+     * @param IssuanceLine[] $lines
+     */
+    public function saveDraft(string $documentId, string $actNumber, string $responsibleFio, array $lines, \DateTimeImmutable $now): void
+    {
+        $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
+        $document->assertMutable();
+        foreach ($this->records as $record) {
+            if ($record->documentId() === $documentId) {
+                $this->records->removeElement($record); // orphan-removal удалит строку корзины
+            }
+        }
+        foreach ($lines as $line) {
+            $this->records->add(new FulfillmentRecord(
+                $line->recordId, $this, $line->obligationKey, $line->fulfilledAt,
+                $line->quantity, $line->wearPercent, null, $line->manualDueDate, documentId: $documentId,
+            ));
+        }
+        $document->saveDraftDetails($actNumber, $responsibleFio, $now);
+        $this->pruneOrphanPersonalObligations($document->requirementId()); // убрали персональную строку → убрать её обязанность
+    }
+
+    /**
+     * Наполнить корзину черновика дефицитом по норме требования (идемпотентно, аддитивно). По материальной
+     * позиции добавляет недостающее `max(0, норма − на руках − уже в корзине)`; по нематериальной — строку
+     * присутствия, если её в корзине ещё нет. Существующие строки не трогает, ничего не удаляет; №/ответственного
+     * не пишет (это ввод пользователя). Повторный прогон без смены нормы ничего не добавляет.
+     */
+    public function topUpDraftFromNorm(string $documentId, string $requirementId, \DateTimeImmutable $now): void
+    {
+        $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
+        $document->assertMutable();
+        foreach ($this->obligations as $obligation) {
+            if ($obligation->requirementId() !== $requirementId) {
+                continue;
+            }
+            $key = $obligation->key();
+            $norm = $obligation->quantity();
+            if (null === $norm) { // нематериальная — строка присутствия, если ещё нет
+                if (!$this->cartHasKey($documentId, $key)) {
+                    $this->records->add(new FulfillmentRecord(Uuid::v7(), $this, $key, $now, null, null, null, null, documentId: $documentId));
+                }
+                continue;
+            }
+            $missing = $norm->amount - $this->heldOf($key) - $this->cartSumFor($documentId, $key);
+            if ($missing > 1e-9) {
+                $this->records->add(new FulfillmentRecord(Uuid::v7(), $this, $key, $now, new Quantity($missing, $norm->unit), null, null, null, documentId: $documentId));
+            }
+        }
+    }
+
+    private function cartSumFor(string $documentId, string $obligationKey): float
+    {
+        $sum = 0.0;
+        foreach ($this->records as $record) {
+            if ($record->documentId() === $documentId && $record->obligationKey() === $obligationKey) {
+                $sum += $record->quantity()->amount ?? 0.0;
+            }
+        }
+
+        return $sum;
+    }
+
+    private function cartHasKey(string $documentId, string $obligationKey): bool
+    {
+        foreach ($this->records as $record) {
+            if ($record->documentId() === $documentId && $record->obligationKey() === $obligationKey) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Удалить черновик (подписанный акт не удаляется). */
     public function deleteDraft(string $documentId): void
     {
@@ -192,7 +269,46 @@ class ProfileCompliance extends Aggregate
             return;
         }
         $document->assertMutable();
+        foreach ($this->records as $record) {
+            if ($record->documentId() === $documentId) {
+                $this->records->removeElement($record); // корзина уходит вместе с черновиком
+            }
+        }
         $this->documents->removeElement($document);
+        $this->pruneOrphanPersonalObligations($document->requirementId()); // персональные позиции без факта не висят фантомом
+    }
+
+    /**
+     * Убрать персональные (origin=Personal) обязанности требования, под которыми не осталось НИ ОДНОГО факта
+     * (ни в корзине, ни подписанного). Нужно после удаления/пере-сохранения черновика: позиция вне нормы,
+     * которую завели и затем сняли, иначе осталась бы фантомом (пересборка проекции её не трогает).
+     */
+    private function pruneOrphanPersonalObligations(string $requirementId): void
+    {
+        $toRemove = [];
+        foreach ($this->obligations as $obligation) {
+            if (TrackedObligation::ORIGIN_PERSONAL !== $obligation->origin()
+                || !TrackedObligation::keyBelongsToRequirement($obligation->key(), $requirementId)) {
+                continue;
+            }
+            if (!$this->hasRecordForKey($obligation->key())) {
+                $toRemove[] = $obligation->key();
+            }
+        }
+        foreach ($toRemove as $key) {
+            $this->removeObligationByKey($key);
+        }
+    }
+
+    private function hasRecordForKey(string $obligationKey): bool
+    {
+        foreach ($this->records as $record) {
+            if ($record->obligationKey() === $obligationKey) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Открытый черновик акта списания по требованию (корзина; инвариант: не более одного). */
@@ -207,17 +323,32 @@ class ProfileCompliance extends Aggregate
         return null;
     }
 
-    /** На руках по позиции = Σ heldAmount по её фактам. */
+    /** На руках по позиции = Σ heldAmount по её ВЫДАННЫМ фактам (корзина черновика в held не входит). */
     public function heldOf(string $obligationKey): float
     {
         $sum = 0.0;
         foreach ($this->records as $record) {
-            if ($record->obligationKey() === $obligationKey) {
+            if ($record->obligationKey() === $obligationKey && $this->isIssued($record)) {
                 $sum += $record->heldAmount();
             }
         }
 
         return $sum;
+    }
+
+    /**
+     * Факт считается выданным (входит в held/сроки), только если его акт подписан. Запись без документа —
+     * прямой/исторический факт — считается выданной. Запись на черновике (Formed) — корзина, НЕ выдано.
+     */
+    private function isIssued(FulfillmentRecord $record): bool
+    {
+        $documentId = $record->documentId();
+        if (null === $documentId || '' === $documentId) {
+            return true;
+        }
+        $document = $this->documentById($documentId);
+
+        return null === $document || $document->isSigned();
     }
 
     /**
@@ -245,8 +376,18 @@ class ProfileCompliance extends Aggregate
      *
      * @param list<array{recordId: string, quantity: float, reason: ?WriteOffReason}> $lines
      */
-    public function saveWriteOffAct(string $actId, array $lines, \DateTimeImmutable $now): void
-    {
+    public function saveWriteOffAct(
+        string $actId,
+        array $lines,
+        \DateTimeImmutable $now,
+        string $actNumber = '',
+        ?\DateTimeImmutable $actDate = null,
+        ?Commission $commission = null,
+        string $orderNumber = '',
+        ?\DateTimeImmutable $orderDate = null,
+        string $representativePosition = '',
+        string $representativeFio = '',
+    ): void {
         $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
         $portions = [];
         foreach ($lines as $line) {
@@ -265,6 +406,8 @@ class ProfileCompliance extends Aggregate
             $portions[] = ['recordId' => $fact->getId(), 'quantity' => $quantity, 'reason' => $line['reason'] ?? null];
         }
         $act->replacePortions($portions, $now);
+        // № / дата акта + приказ + представитель + комиссия на черновике (без подписи)
+        $act->saveDraftDetails($actNumber, $actDate, $commission ?? new Commission(), $orderNumber, $orderDate, $representativePosition, $representativeFio, $now);
     }
 
     /** @return list<WriteOffItem> */
@@ -313,15 +456,10 @@ class ProfileCompliance extends Aggregate
             throw new AppException('Приложите скан подписанной карточки — без него нельзя оформить.');
         }
         $this->assertIssuable($lines);
-        foreach ($lines as $line) {
-            $this->recordFulfillment(
-                $line->recordId, $line->obligationKey, $line->fulfilledAt, $calculator,
-                $line->quantity, $line->wearPercent, null, $line->manualDueDate,
-                documentId: $document->getId(),
-            );
-        }
-        $document->markSigned($scanFileId, $actNumber, $responsibleFio, $now);
+        $this->saveDraft($document->getId(), $actNumber, $responsibleFio, $lines, $now); // корзина = строки формы (ещё Formed)
+        $document->markSigned($scanFileId, $actNumber, $responsibleFio, $now); // сначала подпись
         $this->setActiveForRequirement($document->requirementId(), true);
+        $this->recomputeRequirement($document->requirementId(), $calculator); // потом пересчёт — записи прошли гейт
     }
 
     private function documentById(string $documentId): ?RequirementDocument
@@ -558,8 +696,8 @@ class ProfileCompliance extends Aggregate
         $latest = null;
         $held = 0.0;
         foreach ($this->records as $record) {
-            if ($record->obligationKey() !== $key) {
-                continue;
+            if ($record->obligationKey() !== $key || !$this->isIssued($record)) {
+                continue; // чужая позиция или строка корзины (не выдано) — в held/даты не идёт
             }
             $held += $record->heldAmount();
             $current = !$record->isDepleted(); // материальный истощён → не текущий; нематериальный всегда текущий
