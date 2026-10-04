@@ -29,34 +29,34 @@ final readonly class WriteOffActProjector
             $items[] = $this->rowOf($portion, $compliance);
         }
 
+        $members = $act->commission()->members ?? [];
+
+        // Все ключи отдаём ВСЕГДА (пустыми, если не заполнено) — так и строгий {{x}}, и {{x?}} не падают
+        // на незаполненном черновике. Повторяемые группы (items/commission) — списком (пустой → строка удалится).
         $values = [
             'employee_fio' => new TextValue($this->fio($employee)),
+            'org_title' => new TextValue($employee->organizationTitle),
+            'act_number' => new TextValue($act->actNumber() ?? ''),
+            'act_date' => new TextValue($act->actDate()?->format('d.m.Y') ?? ''),
+            'order_number' => new TextValue($act->orderNumber() ?? ''),
+            'order_date' => new TextValue($act->orderDate()?->format('d.m.Y') ?? ''),
+            'representative_position' => new TextValue($act->representativePosition() ?? ''),
+            'representative_fio' => new TextValue($act->representativeFio() ?? ''),
             'items' => new RepeatValue($items),
-        ];
-
-        if (null !== $act->actNumber()) {
-            $values['act_number'] = new TextValue($act->actNumber());
-        }
-        if (null !== $act->actDate()) {
-            $values['act_date'] = new TextValue($act->actDate()->format('d.m.Y'));
-        }
-
-        $commission = $act->commission();
-        if (null !== $commission) {
-            $values['commission'] = new RepeatValue(array_map(
+            'commission' => new RepeatValue(array_map(
                 static fn (CommissionMember $m): array => [
                     'organization' => $m->organization,
                     'position' => $m->position,
                     'fio' => $m->fio,
                     'date' => $m->date,
                 ],
-                $commission->members,
-            ));
-            $values['members_text'] = new TextValue(implode('; ', array_map(
+                $members,
+            )),
+            'members_text' => new TextValue(implode('; ', array_map(
                 static fn (CommissionMember $m): string => trim($m->position.' '.$m->fio),
-                $commission->members,
-            )));
-        }
+                $members,
+            ))),
+        ];
 
         return new RenderData($values);
     }

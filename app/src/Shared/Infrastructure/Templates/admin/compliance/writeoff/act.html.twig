@@ -9,10 +9,10 @@
     {% embed 'components/form_page.html.twig' with {
         title: 'Акт списания — ' ~ fio,
         back_url: backUrl,
-        save_enabled: draft,
+        save_enabled: false,
         save_form_id: 'wo-act-form',
         save_label: 'Оформить',
-        anchors: draft ? [{id: 'sec-items', label: 'Позиции'}, {id: 'sec-commission', label: 'Комиссия'}, {id: 'sec-scan', label: 'Скан'}] : [{id: 'sec-items', label: 'Позиции'}],
+        anchors: draft ? [{id: 'sec-commission', label: 'Комиссия'}, {id: 'sec-scan', label: 'Скан'}, {id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-items', label: 'Позиции'}],
     } %}
         {% block sections %}
             {% if error is defined and error %}
@@ -26,27 +26,91 @@
                 <span class="badge {{ draft ? 'text-bg-secondary' : 'text-bg-success' }}">
                     <i class="bi {{ draft ? 'bi-file-earmark-text' : 'bi-lock-fill' }} me-1"></i>{{ draft ? 'Черновик' : 'Оформлен' }}{% if actNumber %} · № {{ actNumber }}{% endif %}
                 </span>
-                <div class="ms-auto d-flex flex-wrap gap-2">
-                    <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
-                        <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
-                    </a>
-                    {% if not draft %}
+                {% if not draft %}
+                    <div class="ms-auto d-flex flex-wrap gap-2">
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                            <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
+                        </a>
                         <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: actId}) }}">
                             <i class="bi bi-download me-1"></i>Скан
                         </a>
-                    {% endif %}
-                </div>
+                    </div>
+                {% endif %}
             </div>
 
             {% if draft %}
                 <form id="wo-act-form" method="post" action="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: actId}) }}"
                       data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                        <h2 class="h6 mb-0">Акт списания</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" name="op" value="save" class="btn btn-soft-success btn-sm">
+                                <i class="bi bi-save me-1"></i>Сохранить черновик
+                            </button>
+                            <button type="submit" name="op" value="sign" class="btn btn-primary btn-sm">
+                                <i class="bi bi-check-lg me-1"></i>Оформить
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-bs-title="акт списания"
+                                    data-bs-url="{{ path('app_cabinet_compliance_writeoff_delete', {profileId: profileId, actId: actId}) }}">
+                                <i class="bi bi-trash3 me-1"></i>Удалить
+                            </button>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                                <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
+                            </a>
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">Сохраните черновик — тогда в акт попадут № и комиссия. Для оформления приложите скан и нажмите «Оформить».</div>
+
+                    <div id="sec-commission" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h2 class="h6 mb-3">Комиссия и реквизиты</h2>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">№ акта</label>
+                                <input type="text" name="actNumber" class="form-control" value="{{ actNumber|default('') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Дата акта</label>
+                                <input type="date" name="actDate" class="form-control" value="{{ actDate }}">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">№ приказа</label>
+                                <input type="text" name="orderNumber" class="form-control" value="{{ orderNumber|default('') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Дата приказа</label>
+                                <input type="date" name="orderDate" class="form-control" value="{{ orderDate|default('') }}">
+                            </div>
+                        </div>
+                        <label class="form-label fw-semibold">Представитель отдела ОТ и ПБ</label>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Должность</label>
+                                <input type="text" name="representativePosition" class="form-control" value="{{ representativePosition|default('') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Фамилия И. О.</label>
+                                <input type="text" name="representativeFio" class="form-control" value="{{ representativeFio|default('') }}">
+                            </div>
+                        </div>
+                        <label class="form-label fw-semibold">Члены комиссии</label>
+                        {% include 'components/commission_editor.html.twig' with {prefix: 'commission', rows: commissionRows|default([])} %}
+                    </div>
+
+                    <div id="sec-scan" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h2 class="h6 mb-2">Скан подписанного акта</h2>
+                        <input type="file" class="form-control" data-action="change->staged-file#upload" accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="form-text">Скачайте акт, подпишите комиссией, приложите скан — тогда списание вступит в силу.</div>
+                        <input type="hidden" name="stagedFileId" data-staged-file-target="hidden" value="">
+                        <div class="text-body-secondary small mt-1" data-staged-file-target="name"></div>
+                    </div>
+
                     <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <h2 class="h6 mb-0">Позиции к списанию</h2>
-                            <button type="submit" name="op" value="save" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-save me-1"></i>Сохранить черновик
-                            </button>
                         </div>
                         {% if positions is empty %}
                             <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих позиций для списания.</div>
@@ -77,37 +141,10 @@
                         {% endfor %}
                     </div>
 
-                    <div id="sec-commission" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                        <h2 class="h6 mb-3">Комиссия и реквизиты</h2>
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small mb-1">№ акта</label>
-                                <input type="text" name="actNumber" class="form-control" value="{{ actNumber|default('') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small mb-1">Дата акта</label>
-                                <input type="date" name="actDate" class="form-control" value="{{ actDate }}">
-                            </div>
-                        </div>
-                        <label class="form-label fw-semibold">Члены комиссии</label>
-                        {% include 'components/commission_editor.html.twig' with {prefix: 'commission', rows: commissionRows|default([])} %}
-                    </div>
-
-                    <div id="sec-scan" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                        <h2 class="h6 mb-2">Скан подписанного акта</h2>
-                        <input type="file" class="form-control" data-action="change->staged-file#upload" accept=".pdf,.jpg,.jpeg,.png">
-                        <div class="form-text">Скачайте акт, подпишите комиссией, приложите скан — тогда списание вступит в силу.</div>
-                        <input type="hidden" name="stagedFileId" data-staged-file-target="hidden" value="">
-                        <div class="text-body-secondary small mt-1" data-staged-file-target="name"></div>
-                    </div>
-
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
                 </form>
 
-                <form method="post" action="{{ path('app_cabinet_compliance_writeoff_delete', {profileId: profileId, actId: actId}) }}" class="mb-3">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Удалить акт</button>
-                </form>
+                {% include 'components/delete_modal.html.twig' %}
             {% else %}
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h2 class="h6 mb-3">Списано{% if actDate %} · {{ actDate }}{% endif %}</h2>

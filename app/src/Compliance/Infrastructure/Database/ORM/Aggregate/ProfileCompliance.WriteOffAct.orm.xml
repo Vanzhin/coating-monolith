@@ -13,6 +13,10 @@
         <field name="commission" type="compliance_writeoff_commission" column="commission" nullable="true"/>
         <field name="actNumber" type="string" length="64" column="act_number" nullable="true"/>
         <field name="actDate" type="datetime_immutable" column="act_date" nullable="true"/>
+        <field name="orderNumber" type="string" length="64" column="order_number" nullable="true"/>
+        <field name="orderDate" type="datetime_immutable" column="order_date" nullable="true"/>
+        <field name="representativePosition" type="string" length="255" column="representative_position" nullable="true"/>
+        <field name="representativeFio" type="string" length="255" column="representative_fio" nullable="true"/>
         <field name="scanFileId" type="string" length="64" column="scan_file_id" nullable="true"/>
         <field name="signedAt" type="datetime_immutable" column="signed_at" nullable="true"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>

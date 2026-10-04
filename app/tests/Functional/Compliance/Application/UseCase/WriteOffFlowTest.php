@@ -170,7 +170,13 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->issueCard($p, $r, $k);
         $recordId = $this->firstRecordId($p);
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        // Комиссия обязательна для рендера (в шаблоне строгий блок {{commission}}…{{/commission}}).
+        $this->commandBus->execute(new SaveWriteOffActCommand(
+            $p, $actId,
+            [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']],
+            'А-1', '2026-03-01',
+            [['fio' => 'Петров П. П.', 'position' => 'Инженер', 'organization' => 'ООО Тест', 'date' => '2026-03-01']],
+        ));
 
         $this->reload();
         $pc = $this->repo->findByProfile($p);

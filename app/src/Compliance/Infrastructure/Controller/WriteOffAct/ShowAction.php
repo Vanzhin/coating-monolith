@@ -48,26 +48,37 @@ final class ShowAction extends AbstractController
             $input = $request->getPayload()->all();
             /** @var list<array{recordId: string, quantity: float, reason: string}> $lines */
             $lines = array_values((array) ($input['portions'] ?? []));
+            $commissionRows = array_values((array) ($input['commission'] ?? []));
+            $actNumber = (string) ($input['actNumber'] ?? '');
+            $actDate = (string) ($input['actDate'] ?? '');
+            $orderNumber = (string) ($input['orderNumber'] ?? '');
+            $orderDate = (string) ($input['orderDate'] ?? '');
+            $representativePosition = (string) ($input['representativePosition'] ?? '');
+            $representativeFio = (string) ($input['representativeFio'] ?? '');
             try {
-                $this->commandBus->execute(new SaveWriteOffActCommand($profileId, $actId, $lines));
+                // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (№/дата/приказ/представитель/комиссия) на черновик.
+                $this->commandBus->execute(new SaveWriteOffActCommand(
+                    $profileId, $actId, $lines, $actNumber, $actDate, $commissionRows,
+                    $orderNumber, $orderDate, $representativePosition, $representativeFio,
+                ));
                 if ('save' === ($input['op'] ?? 'sign')) {
-                    $this->addFlash('success', 'Состав акта списания сохранён.');
+                    $this->addFlash('success', 'Черновик акта списания сохранён.');
 
                     return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['profileId' => $profileId, 'actId' => $actId]);
                 }
                 $this->commandBus->execute(new SignWriteOffActCommand(
                     $profileId,
                     $actId,
-                    array_values((array) ($input['commission'] ?? [])),
-                    (string) ($input['actNumber'] ?? ''),
-                    (string) ($input['actDate'] ?? ''),
+                    $commissionRows,
+                    $actNumber,
+                    $actDate,
                     ((string) ($input['stagedFileId'] ?? '')) ?: null,
                 ));
                 $this->addFlash('success', 'Акт списания оформлен. Позиции списаны.');
 
                 return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['profileId' => $profileId, 'actId' => $actId]);
             } catch (AppException $e) {
-                return $this->renderPage($profileId, $actId, $e->getMessage(), array_values((array) ($input['commission'] ?? [])));
+                return $this->renderPage($profileId, $actId, $e->getMessage(), $commissionRows);
             }
         }
 
@@ -132,6 +143,13 @@ final class ShowAction extends AbstractController
                 ];
             }
 
+            // Комиссия на reload — из сохранённого черновика (при ошибке — из POST, чтобы не терять ввод).
+            $savedCommission = $act->commission();
+            $commissionRows = $postedCommission ?? (null !== $savedCommission ? array_map(
+                static fn (CommissionMember $m): array => ['organization' => $m->organization, 'position' => $m->position, 'fio' => $m->fio, 'date' => $m->date],
+                $savedCommission->members,
+            ) : []);
+
             return $this->render('admin/compliance/writeoff/act.html.twig', [
                 'profileId' => $profileId,
                 'actId' => $actId,
@@ -141,8 +159,12 @@ final class ShowAction extends AbstractController
                 'positions' => $positions,
                 'actNumber' => $act->actNumber(),
                 'actDate' => $act->actDate()?->format('Y-m-d') ?: date('Y-m-d'),
+                'orderNumber' => $act->orderNumber(),
+                'orderDate' => $act->orderDate()?->format('Y-m-d'),
+                'representativePosition' => $act->representativePosition(),
+                'representativeFio' => $act->representativeFio(),
                 'reasons' => array_map(static fn (WriteOffReason $r): array => ['value' => $r->value, 'title' => $r->title()], WriteOffReason::cases()),
-                'commissionRows' => $postedCommission ?? [],
+                'commissionRows' => $commissionRows,
                 'error' => $error,
             ]);
         }

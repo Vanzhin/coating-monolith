@@ -28,6 +28,10 @@ class WriteOffAct
     private ?Commission $commission = null;
     private ?string $actNumber = null;
     private ?\DateTimeImmutable $actDate = null;
+    private ?string $orderNumber = null;
+    private ?\DateTimeImmutable $orderDate = null;
+    private ?string $representativePosition = null;
+    private ?string $representativeFio = null;
     private ?string $scanFileId = null;
     private ?\DateTimeImmutable $signedAt = null;
     private \DateTimeImmutable $createdAt;
@@ -57,6 +61,31 @@ class WriteOffAct
         foreach ($lines as $line) {
             $this->items->add(new WriteOffItem(Uuid::v7(), $this, $line['recordId'], $line['quantity'], $line['reason'] ?? null));
         }
+        $this->updatedAt = $now;
+    }
+
+    /**
+     * Сохранить реквизиты черновика (№/дата акта, приказ, представитель, комиссия), пока не подписан. Пустые
+     * допустимы — это черновик, не финал.
+     */
+    public function saveDraftDetails(
+        string $actNumber,
+        ?\DateTimeImmutable $actDate,
+        Commission $commission,
+        string $orderNumber,
+        ?\DateTimeImmutable $orderDate,
+        string $representativePosition,
+        string $representativeFio,
+        \DateTimeImmutable $now,
+    ): void {
+        $this->assertMutable();
+        $this->actNumber = '' === trim($actNumber) ? null : trim($actNumber);
+        $this->actDate = $actDate;
+        $this->commission = $commission->isEmpty() ? null : $commission;
+        $this->orderNumber = '' === trim($orderNumber) ? null : trim($orderNumber);
+        $this->orderDate = $orderDate;
+        $this->representativePosition = '' === trim($representativePosition) ? null : trim($representativePosition);
+        $this->representativeFio = '' === trim($representativeFio) ? null : trim($representativeFio);
         $this->updatedAt = $now;
     }
 
@@ -144,6 +173,26 @@ class WriteOffAct
     public function actDate(): ?\DateTimeImmutable
     {
         return $this->actDate;
+    }
+
+    public function orderNumber(): ?string
+    {
+        return $this->orderNumber;
+    }
+
+    public function orderDate(): ?\DateTimeImmutable
+    {
+        return $this->orderDate;
+    }
+
+    public function representativePosition(): ?string
+    {
+        return $this->representativePosition;
+    }
+
+    public function representativeFio(): ?string
+    {
+        return $this->representativeFio;
     }
 
     public function scanFileId(): ?string

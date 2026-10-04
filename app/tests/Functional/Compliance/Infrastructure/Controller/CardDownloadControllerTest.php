@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
+use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\ValueObject\Quantity;
@@ -48,9 +51,11 @@ final class CardDownloadControllerTest extends WebTestCase
         $this->authenticateAsSystem(); // прямые commandBus-вызовы enroll — через системный принципал
     }
 
-    public function test_download_card_streams_docx_with_identity_and_norm(): void
+    public function test_download_card_streams_docx_with_identity_and_act_items(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
+        // Бланк берёт позиции из АКТА (черновика) — формируем его (корзина наполнится дефицитом нормы).
+        $this->client->getContainer()->get(CommandBusInterface::class)->execute(new FormDraftCommand($profileId, $requirementId));
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
 
@@ -59,9 +64,33 @@ final class CardDownloadControllerTest extends WebTestCase
 
         $text = $this->docxText((string) $this->client->getResponse()->getContent());
         self::assertStringContainsString('Иван', $text, 'имя сотрудника подставлено');
-        self::assertStringContainsString('Перчатки', $text, 'наименование позиции нормы (items.label) подставлено');
+        self::assertStringContainsString('Перчатки', $text, 'наименование позиции акта (items.label) подставлено');
         self::assertStringContainsString('ежегодно', $text, 'периодичность (items.unit_cadence) подставлена');
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены');
+    }
+
+    public function test_blank_uses_saved_draft_details(): void
+    {
+        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        $bus->execute(new FormDraftCommand($profileId, $requirementId));
+        $em->clear();
+        $draft = $repo->findByProfile($profileId)?->openDraftFor($requirementId);
+        self::assertNotNull($draft);
+        $bus->execute(new SaveDraftCommand(
+            $profileId, $draft->getId(), '2026-03-01',
+            [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
+            'К-777', 'Сидоров С. С.', // без скана — просто сохранение черновика
+        ));
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
+        self::assertResponseIsSuccessful();
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('К-777', $text, '№ карточки из черновика подставлен в бланк');
+        self::assertStringContainsString('Сидоров', $text, 'ответственный из черновика подставлен в бланк');
     }
 
     private function docxText(string $bytes): string
@@ -122,10 +151,7 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($pc);
         self::assertCount(1, $pc->getWriteOffActs());
         self::assertTrue($pc->getWriteOffActs()[0]->isDraft());
-        $actId = $pc->getWriteOffActs()[0]->getId();
-
-        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/writeoff/%s/download', $profileId, $actId));
-        self::assertResponseIsSuccessful();
+        // Скачивание заполненного акта (с комиссией) проверяется в test_write_off_draft_save_persists_number_and_commission.
     }
 
     public function test_consolidates_position_across_acts_colors_by_sum(): void
@@ -150,6 +176,53 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringNotContainsString('text-bg-danger', $html, 'ни один факт не красит позицию по своему куску');
         self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот (единообразно для всех)');
         self::assertSame(2, substr_count($html, 'Выдан:'), 'в развороте — обе выдачи (2 акта)');
+    }
+
+    public function test_write_off_draft_save_persists_number_and_commission(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // действующая карточка (на руках 10)
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        $bus->execute(new StartWriteOffActCommand($p, $r));
+        $em->clear();
+        $pc = $repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $actId = $pc->openWriteOffDraftFor($r)?->getId();
+        self::assertNotNull($actId);
+        $recordId = $pc->recordsForRequirement($r)[0]->getId();
+
+        // Сохранить черновик акта списания (op=save): состав + № + комиссия, без скана/подписи.
+        $bus->execute(new SaveWriteOffActCommand(
+            $p, $actId,
+            [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
+            'А-5', '2026-03-01',
+            [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-03-01']],
+        ));
+
+        $em->clear();
+        $saved = null;
+        foreach ($repo->findByProfile($p)?->getWriteOffActs() ?? [] as $a) {
+            if ($a->getId() === $actId) {
+                $saved = $a;
+            }
+        }
+        self::assertNotNull($saved);
+        self::assertTrue($saved->isDraft(), 'осталось черновиком (без подписи)');
+        self::assertSame('А-5', $saved->actNumber(), '№ акта сохранён на черновике');
+        self::assertNotNull($saved->commission());
+        self::assertCount(1, $saved->commission()->members);
+        self::assertSame('Сидоров С. С.', $saved->commission()->members[0]->fio);
+
+        // Шаблон рендерится из сохранённого черновика (комиссия заполнена): нет битых {{, данные на месте.
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/writeoff/%s/download', $p, $actId));
+        self::assertResponseIsSuccessful();
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены (нет битых скобок)');
+        self::assertStringContainsString('А-5', $text, '№ акта в документе');
+        self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
     }
 
     private function setPrivate(object $object, string $property, mixed $value): void
