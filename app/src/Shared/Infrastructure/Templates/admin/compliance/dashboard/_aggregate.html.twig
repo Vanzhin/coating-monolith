@@ -1,10 +1,10 @@
 {# Разрезы отдел/требование: карточка с полосой охвата (норма/скоро/проблемы) + легенда. #}
-{% macro coverage_card(title, counts, typeLabel) %}
+{% macro coverage_card(title, counts, people, typeLabel) %}
     {% set total = counts.total %}
     {% set bad = counts.problems %}
     <div class="cmp-acard">
         <h3>{{ title }}</h3>
-        <div class="meta">{% if typeLabel %}{{ typeLabel }} · {% endif %}{{ total }} чел. · проблем: {{ bad }}</div>
+        <div class="meta">{% if typeLabel %}{{ typeLabel }} · {% endif %}{{ people }} чел. · требований: {{ total }} · проблем: {{ bad }}</div>
         <div class="cmp-bar">
             {% if counts.ok %}<i class="b-ok" style="width: {{ (counts.ok / total * 100) }}%"></i>{% endif %}
             {% if counts.soon %}<i class="b-soon" style="width: {{ (counts.soon / total * 100) }}%"></i>{% endif %}
@@ -13,7 +13,7 @@
         <div class="cmp-legend">
             <span><span class="dot d-ok"></span>норма {{ counts.ok }}</span>
             <span><span class="dot d-soon"></span>скоро {{ counts.soon }}</span>
-            <span><span class="dot d-bad"></span>просрочено/не выдано {{ bad }}</span>
+            <span><span class="dot d-bad"></span>просрочено/не исполнено {{ bad }}</span>
         </div>
     </div>
 {% endmacro %}
@@ -27,7 +27,7 @@
     <div class="text-body-secondary small mb-2">{{ lens == 'dept' ? items|length ~ ' отделов' : items|length ~ ' требований' }}</div>
     <div class="cmp-agg">
         {% for it in items %}
-            {{ agg.coverage_card(lens == 'dept' ? it.title : it.name, it.counts, lens == 'req' ? it.typeLabel : null) }}
+            {{ agg.coverage_card(lens == 'dept' ? it.title : it.name, it.counts, it.peopleCount, lens == 'req' ? it.typeLabel : null) }}
         {% endfor %}
     </div>
 {% endif %}

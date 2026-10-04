@@ -6,7 +6,7 @@
     {k: 'ok',      c: 'is-ok',      l: 'в норме',       n: overview.kpi.ok},
     {k: 'soon',    c: 'is-soon',    l: 'подходит срок', n: overview.kpi.soon},
     {k: 'overdue', c: 'is-overdue', l: 'просрочено',    n: overview.kpi.overdue},
-    {k: 'missing', c: 'is-missing', l: 'не выдано',     n: overview.kpi.missing},
+    {k: 'missing', c: 'is-missing', l: 'не исполнено',  n: overview.kpi.missing},
 ] %}
 {% set baseQuery = app.request.query.all %}
 {% set preservedParams = baseQuery|filter((v, k) => k not in ['q', 'page']) %}

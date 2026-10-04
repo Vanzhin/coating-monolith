@@ -15,7 +15,8 @@ use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**
- * Картина: KPI (люди по худшему бакету) + разрезы отдел/требование. Считает по популяции фильтра БЕЗ
+ * Картина: KPI + разрезы отдел/требование — всё по (человек × требование), т.е. единица счёта — требование
+ * человека в своём бакете (у одного человека несколько требований). Считает по популяции фильтра БЕЗ
  * statusBucket/onlyProblems (те — drill-down списка), чтобы KPI показывал полную раскладку. PHP над набором.
  */
 final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerInterface
@@ -53,12 +54,19 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
             if ([] === $row->groups) {
                 continue;
             }
-            $worst = ComplianceBucket::from($row->worstBucket);
 
-            $kpi->add($worst);
-            $this->department($depts, $profile->departmentTitle)->counts->add($worst);
+            // Считаем по (человек × требование): каждое требование человека — отдельная единица в своём бакете,
+            // поэтому «не исполнено» = число требований-экземпляров, а не людей (у одного может быть несколько).
+            // Отдельно `peopleCount` — число людей (отдел: +1 на человека; требование: +1 на человека-носителя).
+            $dept = $this->department($depts, $profile->departmentTitle);
+            ++$dept->peopleCount;
             foreach ($row->groups as $group) {
-                $this->requirement($reqs, $group)->counts->add($this->worstOfGroup($group));
+                $groupWorst = $this->worstOfGroup($group);
+                $kpi->add($groupWorst);
+                $dept->counts->add($groupWorst);
+                $req = $this->requirement($reqs, $group);
+                $req->counts->add($groupWorst);
+                ++$req->peopleCount;
             }
         }
 

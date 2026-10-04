@@ -2,7 +2,7 @@
    (как превью системы покрытий). Переменная: person (PersonRowDTO). #}
 {% set badge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
 {% set icon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
-{% set label = {ok: 'в норме', soon: 'подходит срок', overdue: 'просрочено', missing: 'не выдано'} %}
+{% set label = {ok: 'в норме', soon: 'подходит срок', overdue: 'просрочено', missing: 'не исполнено'} %}
 
 <div class="modal fade" id="personPreview-{{ person.profileId }}" tabindex="-1"
      aria-labelledby="personPreviewLabel-{{ person.profileId }}" aria-hidden="true">

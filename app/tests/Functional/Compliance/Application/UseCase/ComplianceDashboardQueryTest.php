@@ -6,7 +6,10 @@ namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
 use App\Compliance\Application\ReadModel\ComplianceBucket;
+use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Command\SignDraft\SignDraftCommand;
 use App\Compliance\Application\UseCase\Query\Dashboard\ComplianceDashboardFilter;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQuery;
@@ -15,8 +18,11 @@ use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -54,6 +60,29 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertGreaterThanOrEqual(1, $overview->kpi->missing);
         self::assertNotEmpty($overview->departments);
         self::assertNotEmpty($overview->requirements);
+    }
+
+    public function test_kpi_counts_each_requirement_per_person_and_dept_keeps_headcount(): void
+    {
+        ['profileId' => $profileId] = $this->enrollCompliance(); // 1-е требование (материальное) на должности человека
+
+        /** @var GetProfileQueryResult $pr */
+        $pr = $this->queryBus->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($pr->profile);
+
+        // 2-е требование на ту же должность → у человека ДВА требования, оба не исполнены (не подписаны).
+        $req2 = $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'Журнал инструктажа', 'non_material', [$pr->profile->positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'basis' => 'п.6']],
+        ));
+        \assert($req2 instanceof SaveRequirementCommandResult);
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        $overview = $this->overview(new ComplianceDashboardFilter());
+        self::assertSame(2, $overview->kpi->missing, 'два требования одного человека = 2 в «не исполнено» (счёт по человек×требование)');
+        self::assertNotEmpty($overview->departments);
+        self::assertSame(1, $overview->departments[0]->peopleCount, 'в отделе один человек');
+        self::assertSame(2, $overview->departments[0]->counts->total(), 'но два требования-экземпляра');
     }
 
     public function test_signed_and_fulfilled_becomes_ok(): void

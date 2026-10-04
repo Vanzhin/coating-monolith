@@ -13,4 +13,5 @@ final class RequirementBreakdownDTO
     public string $type;
     public string $typeLabel;
     public BucketCountsDTO $counts;
+    public int $peopleCount = 0;
 }
