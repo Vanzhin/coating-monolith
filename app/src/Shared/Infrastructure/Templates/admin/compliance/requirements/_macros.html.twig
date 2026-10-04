@@ -1,0 +1,63 @@
+{% macro position_row(p) %}
+    <div class="d-flex gap-2 mb-2 align-items-start" data-req-rows-target="row">
+        <input type="text" class="form-control"
+               data-controller="typeahead"
+               data-typeahead-endpoint-value="{{ path('app_cabinet_personnel_position_suggest') }}"
+               data-typeahead-create-url-value="{{ path('app_cabinet_personnel_position_quick') }}"
+               data-typeahead-hidden-name-value="positionIds[]"
+               data-typeahead-min-length-value="1"
+               {% if p is not null %}data-typeahead-existing-value="{{ {id: p.id, title: p.title}|json_encode|e('html_attr') }}"{% endif %}
+               placeholder="Должность — поиск или создать…">
+        <button type="button" class="btn btn-outline-danger flex-shrink-0" data-action="req-rows#remove" aria-label="Убрать"><i class="bi bi-trash"></i></button>
+    </div>
+{% endmacro %}
+
+{% macro item_row(i, item, cadenceKinds, periodUnits, units) %}
+    {% set isPeriodic = item.cadenceKind|default('') == 'periodic' %}
+    <div class="p-3 mb-2 rounded-3 bg-body" data-req-rows-target="row">
+        {# Строка 1 — наименование + количество: количество всегда на своём месте, не зависит от периодичности. #}
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Наименование <span class="text-danger">*</span></label>
+                <input type="text" name="items[{{ i }}][label]" value="{{ item.label|default('') }}" class="form-control" placeholder="Перчатки">
+            </div>
+            <div class="col-md-4" data-item-quantity>
+                <label class="form-label small mb-1">Кол-во <span class="text-danger">*</span></label>
+                <input type="text" inputmode="decimal" name="items[{{ i }}][amount]" value="{{ item.amount|default('') }}" class="form-control" placeholder="10">
+            </div>
+            <div class="col-md-2" data-item-quantity>
+                <label class="form-label small mb-1">Ед. <span class="text-danger">*</span></label>
+                <select name="items[{{ i }}][unit]" class="form-select">
+                    {% for u in units %}<option value="{{ u.value }}" {{ item.unit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        {# Строка 2 — периодичность: «Число»/«Единица периода» прячутся тут же, не двигая количество. #}
+        <div class="row g-2 mt-1">
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Периодичность <span class="text-danger">*</span></label>
+                <select name="items[{{ i }}][cadenceKind]" class="form-select" data-cadence-kind>
+                    {% for k in cadenceKinds %}<option value="{{ k.value }}" {{ item.cadenceKind|default('') == k.value ? 'selected' : '' }}>{{ k.title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3" data-cadence-period {{ isPeriodic ? '' : 'hidden' }}>
+                <label class="form-label small mb-1">Число <span class="text-danger">*</span></label>
+                <input type="number" min="1" step="1" name="items[{{ i }}][cadenceNumber]" value="{{ item.cadenceNumber|default('') }}" class="form-control" placeholder="2">
+            </div>
+            <div class="col-md-5" data-cadence-period {{ isPeriodic ? '' : 'hidden' }}>
+                <label class="form-label small mb-1">Единица периода <span class="text-danger">*</span></label>
+                <select name="items[{{ i }}][cadenceUnit]" class="form-select">
+                    {% for u in periodUnits %}<option value="{{ u.value }}" {{ item.cadenceUnit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        {# Строка 3 — основание. #}
+        <div class="row g-2 mt-1">
+            <div class="col-12">
+                <label class="form-label small mb-1">Основание <span class="text-danger">*</span></label>
+                <input type="text" name="items[{{ i }}][basis]" value="{{ item.basis|default('') }}" class="form-control" placeholder="п.5 Типовых норм / по результатам СОУТ">
+            </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#remove" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
+    </div>
+{% endmacro %}

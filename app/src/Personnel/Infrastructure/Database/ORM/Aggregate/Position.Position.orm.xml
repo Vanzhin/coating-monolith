@@ -1,0 +1,13 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Personnel\Domain\Aggregate\Position\Position" table="personnel_position">
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="title" type="string" length="150" unique="true"/>
+    </entity>
+
+</doctrine-mapping>

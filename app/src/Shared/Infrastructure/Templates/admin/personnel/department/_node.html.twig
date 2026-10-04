@@ -1,0 +1,62 @@
+{# Параметры: node (DepartmentNodeDTO {id,title,headUserUlid,children}), companyId, canEdit.
+   Рекурсивный partial — узел рендерит себя и инклюдит этот же шаблон для children.
+   Все мутации — через общие модалки, объявленные один раз на index.html.twig; кнопки здесь
+   только триггеры (data-bs-*), сама форма не дублируется. #}
+<div class="d-flex align-items-center gap-2 gap-md-3 p-3 rounded-3 bg-body">
+    <div class="flex-grow-1 overflow-hidden">
+        <h6 class="mb-0 fw-semibold" style="word-break: break-word;">{{ node.title }}</h6>
+        {% if node.headUserUlid %}
+            <span class="badge text-bg-light fw-normal text-body-secondary mt-1"
+                  data-department-head-chip-target="chip" data-head-ulid="{{ node.headUserUlid }}">
+                <i class="bi bi-person-badge"></i> …
+            </span>
+        {% endif %}
+    </div>
+    {% if canEdit %}
+        <div class="d-flex gap-1 gap-md-2 flex-shrink-0 flex-column flex-md-row">
+            <button type="button" class="btn btn-sm btn-soft-success" title="Добавить подотдел"
+                    data-bs-toggle="modal" data-bs-target="#departmentAddModal"
+                    data-bs-url="{{ path('app_cabinet_personnel_department_create') }}"
+                    data-bs-heading="Новый подотдел «{{ node.title }}»"
+                    data-bs-parent-id="{{ node.id }}">
+                <i class="bi bi-plus-lg"></i><span class="d-none d-md-inline ms-1">Подотдел</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-soft-info" title="Назначить начальника"
+                    data-bs-toggle="modal" data-bs-target="#departmentAssignHeadModal"
+                    data-bs-url="{{ path('app_cabinet_personnel_department_assign_head', {id: node.id}) }}"
+                    data-bs-heading="Начальник отдела «{{ node.title }}»">
+                <i class="bi bi-person-badge"></i><span class="d-none d-md-inline ms-1">Начальник</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-soft-secondary" title="Перенести"
+                    data-bs-toggle="modal" data-bs-target="#departmentMoveModal"
+                    data-bs-url="{{ path('app_cabinet_personnel_department_move', {id: node.id}) }}"
+                    data-bs-heading="Перенос отдела «{{ node.title }}»"
+                    data-bs-current-id="{{ node.id }}">
+                <i class="bi bi-arrow-left-right"></i><span class="d-none d-md-inline ms-1">Перенести</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-soft-primary" title="Переименовать"
+                    data-bs-toggle="modal" data-bs-target="#departmentRenameModal"
+                    data-bs-url="{{ path('app_cabinet_personnel_department_update', {id: node.id}) }}"
+                    data-bs-heading="Переименовать «{{ node.title }}»"
+                    data-bs-title-input="{{ node.title }}">
+                <i class="bi bi-pencil"></i><span class="d-none d-md-inline ms-1">Редактировать</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-soft-danger" title="Удалить"
+                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                    data-bs-title="{{ node.title }}"
+                    data-bs-url="{{ path('app_cabinet_personnel_department_delete', {id: node.id, companyId: companyId}) }}">
+                <i class="bi bi-trash3"></i><span class="d-none d-md-inline ms-1">Удалить</span>
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+{% if node.children is not empty %}
+    <div class="d-flex flex-column gap-2 ms-4 mt-2">
+        {% for child in node.children %}
+            {% include 'admin/personnel/department/_node.html.twig' with {
+                node: child, companyId: companyId, canEdit: canEdit,
+            } only %}
+        {% endfor %}
+    </div>
+{% endif %}

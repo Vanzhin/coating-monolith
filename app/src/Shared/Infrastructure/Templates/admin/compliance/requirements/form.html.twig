@@ -1,0 +1,94 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% set isUpdate = id is not null %}
+{% set pageTitle = isUpdate ? 'Правка требования' : 'Новое требование' %}
+{% set listUrl = path('app_cabinet_compliance_requirements_list') %}
+{% set actionUrl = isUpdate
+    ? path('app_cabinet_compliance_requirements_edit', {id: id})
+    : path('app_cabinet_compliance_requirements_create') %}
+{% set currentType = inputData.type|default('') %}
+{% set requiresQuantityMap = {} %}
+{% for t in complianceTypes %}{% set requiresQuantityMap = requiresQuantityMap|merge({(t.value): t.requiresQuantity}) %}{% endfor %}
+
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: pageTitle,
+        back_url: listUrl,
+        save_form_id: 'req-form',
+        save_label: 'Сохранить',
+        anchors: [{id: 'sec-main', label: 'Основное'}, {id: 'sec-pos', label: 'Должности'}, {id: 'sec-items', label: 'Позиции'}],
+    } %}
+        {% block sections %}
+            {% import 'admin/compliance/requirements/_macros.html.twig' as m %}
+            <form id="req-form" method="post" action="{{ actionUrl }}" class="w-100" novalidate
+                  data-controller="req-type-fields"
+                  data-req-type-fields-requires-quantity-value="{{ requiresQuantityMap|json_encode|e('html_attr') }}">
+                {% if error is defined and error %}
+                    <div class="form-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div>
+                    </div>
+                {% endif %}
+
+                <div id="sec-main" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                    <h6 class="fw-semibold mb-3">Основное</h6>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Название <span class="text-danger">*</span></label>
+                        <input type="text" name="name" value="{{ inputData.name|default('') }}" class="form-control" placeholder="Личная карточка учёта выдачи СИЗ">
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1">Тип</label>
+                        {% if isUpdate %}
+                            {# Тип залочен: сегмент только для показа (disabled), значение шлём скрытым полем. #}
+                            <input type="hidden" name="type" value="{{ currentType }}">
+                            <div class="duration-seg" aria-label="Тип требования" title="Тип нельзя изменить">
+                                {% for t in complianceTypes %}
+                                    <input type="radio" class="btn-check" id="type-{{ t.value }}" value="{{ t.value }}" {{ currentType == t.value ? 'checked' : '' }} disabled>
+                                    <label class="duration-seg-btn" for="type-{{ t.value }}">{{ t.title }}</label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Тип нельзя изменить — создайте новое требование другого типа.</div>
+                        {% else %}
+                            <div class="duration-seg" aria-label="Тип требования">
+                                {% for t in complianceTypes %}
+                                    <input type="radio" class="btn-check" name="type" id="type-{{ t.value }}"
+                                           value="{{ t.value }}" {{ (currentType ?: complianceTypes|first.value) == t.value ? 'checked' : '' }}>
+                                    <label class="duration-seg-btn" for="type-{{ t.value }}">{{ t.title }}</label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Выдача — выдаётся в количестве (СИЗ, спецодежда). Процедура — проходится по сроку, без количества (инструктаж, медосмотр).</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div id="sec-pos" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                    <h6 class="fw-semibold mb-3">Должности</h6>
+                    <div data-controller="req-rows">
+                        <div data-req-rows-target="rows">
+                            {% for p in inputData.positions|default([]) %}{{ m.position_row(p) }}{% endfor %}
+                        </div>
+                        <template data-req-rows-target="template">{{ m.position_row(null) }}</template>
+                        <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add" aria-label="Добавить должность"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                    <div class="form-text">Требование действует на все выбранные должности. Одна должность может входить в несколько требований.</div>
+                </div>
+
+                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                    <h6 class="fw-semibold mb-3">Позиции</h6>
+                    <div data-controller="req-rows req-cadence-fields">
+                        <div data-req-rows-target="rows">
+                            {% for item in inputData.items|default([]) %}{{ m.item_row(loop.index0, item, cadenceKinds, periodUnits, units) }}{% endfor %}
+                        </div>
+                        <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units) }}</template>
+                        <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add" aria-label="Добавить позицию"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                    <div class="form-text">«Число» и «Единица периода» — только для «каждые N». Количество — у требования типа «Выдача»; основание обязательно.</div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

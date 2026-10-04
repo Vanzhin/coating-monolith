@@ -1,0 +1,27 @@
+{# Фрагмент быстрого просмотра человека. Рендерится app_cabinet_compliance_person_preview, всплывает модалкой
+   (как превью системы покрытий). Переменная: person (PersonRowDTO). #}
+{% set badge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
+{% set icon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
+{% set label = {ok: 'в норме', soon: 'подходит срок', overdue: 'просрочено', missing: 'не исполнено'} %}
+
+<div class="modal fade" id="personPreview-{{ person.profileId }}" tabindex="-1"
+     aria-labelledby="personPreviewLabel-{{ person.profileId }}" aria-hidden="true">
+    <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-person-badge"></i></div>
+                    <div>
+                        <div class="fw-semibold" id="personPreviewLabel-{{ person.profileId }}">{{ person.fullName }}</div>
+                        <div class="text-body-secondary small">{{ person.positionTitle }}{% if person.departmentTitle %} · {{ person.departmentTitle }}{% endif %}</div>
+                    </div>
+                    <span class="badge {{ badge[person.worstBucket] }} ms-2"><i class="bi {{ icon[person.worstBucket] }} me-1"></i>{{ label[person.worstBucket] }}</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                {% include 'admin/compliance/dashboard/_person_detail.html.twig' with {person: person} %}
+            </div>
+        </div>
+    </div>
+</div>

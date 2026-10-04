@@ -250,7 +250,11 @@
                             <div class="form-text mt-1">Заполнено из выбранной системы, здесь не редактируется.</div>
                         {% else %}
                             {% for field in section.fields %}
-                                {% if field.type in ['list', 'layers'] %}
+                                {% if section.key == 'commission' and field.type == 'list' %}
+                                    {# Комиссия — общий компонент редактора (тот же, что в акте списания). #}
+                                    {% if field.label != section.title %}<label class="form-label fw-semibold">{{ field.label }}</label>{% endif %}
+                                    {% include 'components/commission_editor.html.twig' with {prefix: 'content[' ~ section.key ~ '][' ~ field.key ~ ']', rows: field.value|default([])} %}
+                                {% elseif field.type in ['list', 'layers'] %}
                                     <div class="mb-2" data-controller="report-list-rows">
                                         {# Не дублируем заголовок секции: если единственное list-поле названо как блок. #}
                                         {% if field.label != section.title %}<label class="form-label fw-semibold">{{ field.label }}</label>{% endif %}

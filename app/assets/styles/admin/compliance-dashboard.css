@@ -1,0 +1,51 @@
+/* Дашборд «Соответствие». Список людей и деталь — стандартные компоненты (ecard/verdict/preview,
+   Bootstrap badge/table). Здесь — только то, чего в проекте нет: KPI-полоска и карточки разрезов
+   с полосой охвата. Цвета — ТОЛЬКО токены tokens.css (--ok/--warn/--danger-strong/--surface/--sunken/--bs-*). */
+
+.cmp-wrap { --cmp-shadow: 0 1px 2px rgba(20, 28, 45, .06), 0 6px 18px rgba(20, 28, 45, .06); }
+[data-bs-theme="dark"] .cmp-wrap { --cmp-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px rgba(0, 0, 0, .34); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ── KPI-полоска ─────────────────────────────────────────────── */
+.cmp-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cmp-kchip {
+  position: relative; display: block; text-decoration: none; background: var(--surface);
+  color: var(--bs-body-color); border-radius: var(--bs-border-radius); padding: 13px 15px;
+  box-shadow: var(--cmp-shadow); transition: transform .08s ease;
+}
+.cmp-kchip:hover { transform: translateY(-1px); color: var(--bs-body-color); }
+.cmp-kchip::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 4px; background: var(--sunken); }
+.cmp-kchip .n { font-size: 25px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
+.cmp-kchip .l { font-size: 12px; color: var(--bs-secondary-color); margin-top: 6px; }
+.cmp-kchip.is-ok::before { background: var(--ok); } .cmp-kchip.is-ok .n { color: var(--ok); }
+.cmp-kchip.is-soon::before { background: var(--warn); } .cmp-kchip.is-soon .n { color: var(--warn); }
+.cmp-kchip.is-overdue::before,
+.cmp-kchip.is-missing::before { background: var(--danger-strong); }
+.cmp-kchip.is-overdue .n,
+.cmp-kchip.is-missing .n { color: var(--danger-strong); }
+.cmp-kchip.active { outline: 2px solid var(--bs-primary); outline-offset: 0; }
+
+/* ── Разрезы (отдел/требование): карточка + полоса охвата ─────── */
+.cmp-agg { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 10px; }
+.cmp-acard { background: var(--surface); border-radius: var(--bs-border-radius); box-shadow: var(--cmp-shadow); padding: 15px; }
+.cmp-acard h3 { margin: 0 0 3px; font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.cmp-acard .meta { color: var(--bs-secondary-color); font-size: 12.5px; margin-bottom: 12px; }
+.cmp-bar { display: flex; height: 9px; border-radius: 6px; overflow: hidden; background: var(--sunken); margin-bottom: 10px; }
+.cmp-bar > i { display: block; }
+.cmp-bar .b-ok { background: var(--ok); }
+.cmp-bar .b-soon { background: var(--warn); }
+.cmp-bar .b-bad { background: var(--danger-strong); }
+.cmp-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; color: var(--bs-secondary-color); }
+.cmp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cmp-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+.cmp-legend .dot.d-ok { background: var(--ok); }
+.cmp-legend .dot.d-soon { background: var(--warn); }
+.cmp-legend .dot.d-bad { background: var(--danger-strong); }
+
+.cmp-empty { text-align: center; color: var(--bs-secondary-color); padding: 38px 0; font-size: 13px; background: var(--surface); border-radius: var(--bs-border-radius); box-shadow: var(--cmp-shadow); }
+
+/* Подсветка кол-ва в форме оформления: «больше нормы» — голубое (меньше=is-invalid, ровно=is-valid). */
+.form-control.is-over { border-color: var(--bs-info); }
+.form-control.is-over:focus { border-color: var(--bs-info); box-shadow: 0 0 0 .25rem rgba(var(--bs-info-rgb), .25); }
+
+@media (max-width: 640px) { .cmp-kpi { grid-template-columns: repeat(2, 1fr); } }

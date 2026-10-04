@@ -20,6 +20,13 @@ doctrine:
             audit_change_set: App\Shared\Infrastructure\Database\DBAL\ChangeSetType
             reports_reference: App\Reports\Infrastructure\Database\DBAL\ReferenceType
             datetime_interval: App\Shared\Infrastructure\Database\DBAL\DateTimeIntervalType
+            personnel_reference: App\Personnel\Infrastructure\Database\DBAL\ReferenceType
+            personnel_full_name: App\Personnel\Infrastructure\Database\DBAL\FullNameType
+            personnel_sizes: App\Personnel\Infrastructure\Database\DBAL\SizesType
+            compliance_requirement_items: App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType
+            compliance_cadence: App\Compliance\Infrastructure\Database\DBAL\CadenceType
+            compliance_quantity: App\Compliance\Infrastructure\Database\DBAL\QuantityType
+            compliance_writeoff_commission: App\Compliance\Infrastructure\Database\DBAL\WriteOffCommissionType
         mapping_types:
             jsonb: json
     orm:
@@ -102,6 +109,18 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Shared/Infrastructure/Database/ORM/File'
                 prefix: 'App\Shared\Domain\File'
                 alias: SharedFile
+            Personnel:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Personnel/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Personnel\Domain\Aggregate'
+                alias: Personnel
+            Compliance:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Compliance\Domain\Aggregate'
+                alias: Compliance
 
 
 #            App:

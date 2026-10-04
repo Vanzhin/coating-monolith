@@ -1,0 +1,75 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Персонал{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Персонал',
+        create_route: 'app_cabinet_personnel_profile_create',
+        can_edit: canEdit,
+        is_empty: result.profiles is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_personnel_profile_list') }}" class="d-flex gap-2">
+                <input type="search" name="search" value="{{ search }}" class="form-control"
+                       placeholder="Поиск по ФИО...">
+                <button class="btn btn-outline-secondary" type="submit" title="Искать">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="ecard-grid ecard-grid--uniform">
+            {% for profile in result.profiles %}
+                <div class="ecard">
+                    <div class="ecard-media"><i class="bi bi-person-badge"></i></div>
+                    <div class="ecard-body">
+                        <div class="ecard-head">
+                            <div class="ecard-title">{{ profile.lastName }} {{ profile.firstName }} {{ profile.middleName }}</div>
+                            {% if canEdit %}
+                                <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                                    <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ path('app_cabinet_personnel_profile_update', {id: profile.id}) }}">
+                                                <i class="bi bi-pencil me-2"></i>Редактировать
+                                            </a>
+                                        </li>
+                                        <li class="mt-1">
+                                            <a class="dropdown-item text-danger"
+                                               href="{{ path('app_cabinet_personnel_profile_delete', {id: profile.id}) }}"
+                                               data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                               data-bs-title="{{ profile.lastName }} {{ profile.firstName }}" data-bs-id="{{ profile.id }}">
+                                                <i class="bi bi-trash3 me-2"></i>Удалить
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="ecard-desc">{{ profile.positionTitle }}</div>
+                        <div class="ecard-meta">
+                            {% if profile.organizationTitle %}<span>{{ profile.organizationTitle }}</span>{% endif %}
+                            {% if profile.departmentTitle %}<span>{{ profile.departmentTitle }}</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+
+            {% if canEdit %}
+                {% include 'components/delete_modal.html.twig' with {'delete':'app_cabinet_personnel_profile_delete'} %}
+            {% endif %}
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

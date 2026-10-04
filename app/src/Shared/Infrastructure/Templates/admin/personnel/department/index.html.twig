@@ -1,0 +1,182 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Структура компании{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+
+    <div class="p-2 p-md-3">
+        <div class="d-flex flex-md-row align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
+            <h2 class="text-body-emphasis mb-0">Структура компании</h2>
+            {% if canEdit and companyId %}
+                <button type="button" class="btn btn-soft-success" title="Добавить отдел"
+                        data-bs-toggle="modal" data-bs-target="#departmentAddModal"
+                        data-bs-url="{{ path('app_cabinet_personnel_department_create') }}"
+                        data-bs-heading="Новый отдел" data-bs-parent-id="">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
+            <form method="get" action="{{ path('app_cabinet_personnel_department_list') }}"
+                  class="d-flex gap-2 align-items-end flex-wrap">
+                <div class="flex-grow-1" style="min-width: 260px;" data-coating-tags-group>
+                    <label class="form-label">Компания</label>
+                    <input type="text"
+                           data-controller="coating-tags"
+                           data-coating-tags-existing-value="[]"
+                           data-coating-tags-suggest-url-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                           data-coating-tags-hidden-input-name-value="companyId"
+                           data-coating-tags-allow-create-value="false"
+                           data-coating-tags-max-tags-value="1"
+                           data-coating-tags-preselected-ids-value="{{ companyId ? [companyId]|json_encode : '[]' }}"
+                           data-coating-tags-resolve-url-value="{{ path('app_cabinet_reports_counterparty_by_ids') }}"
+                           class="form-control"
+                           placeholder="Начните вводить название компании...">
+                </div>
+                <button class="btn btn-outline-secondary" type="submit" title="Показать">
+                    <i class="bi bi-search"></i> Показать
+                </button>
+            </form>
+        </div>
+
+        <div class="p-3 rounded-3 bg-body-tertiary">
+            {% if not companyId %}
+                <p class="text-body-secondary mb-0">Выберите компанию, чтобы увидеть структуру отделов.</p>
+            {% elseif roots is empty %}
+                {% include 'components/empty.html.twig' %}
+            {% else %}
+                <div class="d-flex flex-column gap-2"
+                     data-controller="department-head-chip"
+                     data-department-head-chip-by-ids-url-value="{{ path('app_cabinet_users_by_ids') }}">
+                    {% for node in roots %}
+                        {% include 'admin/personnel/department/_node.html.twig' with {
+                            node: node, companyId: companyId, canEdit: canEdit,
+                        } only %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if canEdit and companyId %}
+            {% include 'components/delete_modal.html.twig' with {'delete': 'app_cabinet_personnel_department_delete'} %}
+
+            {# === Добавить (корень/подотдел) === #}
+            <div class="modal fade" id="departmentAddModal" tabindex="-1" aria-hidden="true" data-controller="department-action-modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" data-role="heading">Новый отдел</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <form data-role="action-form" method="post" action="{{ path('app_cabinet_personnel_department_create') }}">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Название</label>
+                                    <input type="text" name="title" class="form-control" data-role="title-input"
+                                           required maxlength="150" placeholder="Например, Отдел контроля качества">
+                                </div>
+                                <input type="hidden" name="companyId" value="{{ companyId }}">
+                                <input type="hidden" name="parentId" data-role="parent-id" value="">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {# === Переименовать === #}
+            <div class="modal fade" id="departmentRenameModal" tabindex="-1" aria-hidden="true" data-controller="department-action-modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" data-role="heading">Переименовать</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <form data-role="action-form" method="post" action="#">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Название</label>
+                                    <input type="text" name="title" class="form-control" data-role="title-input"
+                                           required maxlength="150">
+                                </div>
+                                <input type="hidden" name="companyId" value="{{ companyId }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {# === Перенести === #}
+            <div class="modal fade" id="departmentMoveModal" tabindex="-1" aria-hidden="true" data-controller="department-action-modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" data-role="heading">Перенос отдела</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <form data-role="action-form" method="post" action="#">
+                            <div class="modal-body">
+                                <label class="form-label">Новый родительский отдел</label>
+                                <select name="parentId" class="form-select" data-role="parent-select">
+                                    <option value="">— (сделать корневым)</option>
+                                    {% for option in parentOptions %}
+                                        <option value="{{ option.id }}">{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="companyId" value="{{ companyId }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Перенести</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {# === Назначить начальника === #}
+            <div class="modal fade" id="departmentAssignHeadModal" tabindex="-1" aria-hidden="true" data-controller="department-action-modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" data-role="heading">Начальник отдела</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                        </div>
+                        <form data-role="action-form" method="post" action="#">
+                            <div class="modal-body">
+                                <label class="form-label">Начальник</label>
+                                <div data-controller="async-typeahead"
+                                     data-async-typeahead-endpoint-value="{{ path('app_cabinet_users_suggest') }}"
+                                     data-async-typeahead-placeholder-value="Начните вводить email…"
+                                     data-async-typeahead-min-length-value="1">
+                                    <select name="headUserUlid" data-async-typeahead-target="select">
+                                        <option value="">Без начальника</option>
+                                    </select>
+                                </div>
+                                <div class="form-text">Оставьте пустым, чтобы снять начальника.</div>
+                                <input type="hidden" name="companyId" value="{{ companyId }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

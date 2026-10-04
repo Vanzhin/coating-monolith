@@ -1,0 +1,14 @@
+{#
+  Единая карточка позиции СИЗ — один вид во всех актах (выдача/списание).
+  Переменные: name (строка), meta (строка, опц.), attrs (строка атрибутов обёртки, опц. — напр. data-row).
+  Блоки: control (правый контрол — поле/бейдж), footer (на всю ширину — причина/поля; опц.).
+  Мобильно: d-flex flex-wrap — контрол переносится под наименование, footer всегда с новой строки (w-100).
+#}
+<div class="d-flex flex-wrap align-items-center gap-2 p-3 mb-2 rounded-3 bg-body"{% if attrs is defined and attrs %} {{ attrs|raw }}{% endif %}>
+    <div class="me-auto">
+        <div class="fw-semibold">{{ name }}</div>
+        {% if meta is defined and meta %}<div class="text-body-secondary small">{{ meta }}</div>{% endif %}
+    </div>
+    {% block control %}{% endblock %}
+    {% block footer %}{% endblock %}
+</div>

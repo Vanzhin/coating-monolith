@@ -50,3 +50,10 @@ notifications:
   resource: ../src/Notifications/Infrastructure/Controller
   type: attribute
 
+personnel:
+  resource: ../src/Personnel/Infrastructure/Controller
+  type: attribute
+
+compliance:
+  resource: ../src/Compliance/Infrastructure/Controller
+  type: attribute

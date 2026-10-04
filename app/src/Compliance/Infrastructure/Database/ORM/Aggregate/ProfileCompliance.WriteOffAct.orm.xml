@@ -1,0 +1,41 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct" table="compliance_write_off_act">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="requirementId" type="string" length="64" column="requirement_id"/>
+        <field name="status" type="string" length="16" column="status"
+               enum-type="App\Compliance\Domain\Aggregate\ProfileCompliance\DocumentStatus"/>
+        <field name="commission" type="compliance_writeoff_commission" column="commission" nullable="true"/>
+        <field name="actNumber" type="string" length="64" column="act_number" nullable="true"/>
+        <field name="actDate" type="datetime_immutable" column="act_date" nullable="true"/>
+        <field name="orderNumber" type="string" length="64" column="order_number" nullable="true"/>
+        <field name="orderDate" type="datetime_immutable" column="order_date" nullable="true"/>
+        <field name="representativePosition" type="string" length="255" column="representative_position" nullable="true"/>
+        <field name="representativeFio" type="string" length="255" column="representative_fio" nullable="true"/>
+        <field name="scanFileId" type="string" length="64" column="scan_file_id" nullable="true"/>
+        <field name="signedAt" type="datetime_immutable" column="signed_at" nullable="true"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
+
+        <many-to-one field="profileCompliance"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"
+                     inversed-by="writeOffActs" fetch="LAZY">
+            <join-column name="profile_compliance_id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+        <one-to-many field="items"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffItem"
+                     mapped-by="writeOffAct" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+    </entity>
+
+</doctrine-mapping>

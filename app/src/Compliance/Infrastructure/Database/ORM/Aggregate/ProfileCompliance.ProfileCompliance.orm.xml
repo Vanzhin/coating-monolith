@@ -1,0 +1,51 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance" table="compliance_profile_compliance">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="profileId" type="string" length="64" column="profile_id"/>
+        <field name="excludedKeys" type="string_collection" column="excluded_keys"/>
+        <field name="version" type="integer" column="version" version="true"/>
+
+        <one-to-many field="obligations"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+
+        <one-to-many field="records"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+
+        <one-to-many field="documents"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+
+        <one-to-many field="writeOffActs"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct"
+                     mapped-by="profileCompliance" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+                <cascade-remove/>
+            </cascade>
+        </one-to-many>
+    </entity>
+
+</doctrine-mapping>

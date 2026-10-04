@@ -25,9 +25,11 @@ export default class extends Controller {
         const rows = this.rowsTarget.querySelectorAll('[data-report-list-rows-target="row"]');
         rows.forEach((row, index) => {
             row.querySelectorAll('[name]').forEach((el) => {
-                // Заменяем ТОЛЬКО индекс строки — скобку сразу после content[block][field].
-                // Хвост (в т.ч. вложенные подполя [applied][from], [thinner][name]) не трогаем.
-                el.name = el.name.replace(/^(content\[[^\]]*\]\[[^\]]*\])\[(?:\d+|__i__)\]/, `$1[${index}]`);
+                // Индекс строки — ПЕРВАЯ числовая (или __i__) скобка в имени: ключи блоков/полей —
+                // слова, поэтому первая цифровая скобка всегда и есть индекс строки. Префикс-слова и
+                // вложенные подполя ([applied][from], [thinner][name]) не трогаем. Работает для любого
+                // префикса: content[block][field][i][sub] и commission[i][field].
+                el.name = el.name.replace(/\[(?:\d+|__i__)\]/, `[${index}]`);
             });
         });
     }

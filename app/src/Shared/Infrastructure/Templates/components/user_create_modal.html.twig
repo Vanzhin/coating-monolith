@@ -1,0 +1,30 @@
+{# Переиспользуемая модалка создания пользователя платформы (форма профиля сотрудника).
+   Открывается из typeahead по «+ Создать»: только email (пароль не задаём — сотрудник получит вход
+   через сброс пароля). POST уходит на createUrl виджета-инициатора, созданный юзер возвращается в него. #}
+<div data-controller="user-create-modal">
+    <div class="modal fade" id="userCreateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новый пользователь</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" data-user-create-modal-target="errorBox"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" data-user-create-modal-target="emailInput"
+                               placeholder="name@example.com">
+                        <div class="form-text">Пароль сотрудник задаст сам через «Забыли пароль».</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary"
+                            data-action="click->user-create-modal#submit">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

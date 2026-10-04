@@ -1,0 +1,14 @@
+{# Строка мультивыбора сотрудника (фильтр дашборда): typeahead по ФИО + кнопка убрать.
+   hidden-name profile[] — каждая строка добавляет один profileId в фильтр (несколько строк = несколько людей). #}
+{% macro profile_row(p) %}
+    <div class="d-flex gap-2 mb-2 align-items-start" data-req-rows-target="row">
+        <input type="text" class="form-control"
+               data-controller="typeahead"
+               data-typeahead-endpoint-value="{{ path('app_cabinet_personnel_profile_suggest') }}"
+               data-typeahead-hidden-name-value="profile[]"
+               data-typeahead-min-length-value="1"
+               {% if p is not null %}data-typeahead-existing-value="{{ {id: p.id, title: p.title}|json_encode|e('html_attr') }}"{% endif %}
+               placeholder="Найти по ФИО…">
+        <button type="button" class="btn btn-outline-danger flex-shrink-0" data-action="req-rows#remove" aria-label="Убрать"><i class="bi bi-trash"></i></button>
+    </div>
+{% endmacro %}

@@ -1,0 +1,60 @@
+{# Деталь человека: группы требований + таблица позиций + действия цикла документа (Д3). Только Bootstrap. #}
+{% set canEdit = is_granted('ROLE_ADMIN') %}
+{% set badge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
+{% set icon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
+
+{% for g in person.groups %}
+    <div class="p-3 mb-3 rounded-3 bg-body">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="fw-semibold">{{ g.name }}</span>
+            <span class="badge text-bg-light">{{ g.typeLabel }}</span>
+            {% if g.openDraftId %}
+                <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик</span>
+            {% elseif g.signedActs is not empty %}
+                <span class="badge text-bg-success"><i class="bi bi-lock-fill me-1"></i>Подписан</span>
+            {% else %}
+                <span class="badge text-bg-light"><i class="bi bi-file-earmark-dash me-1"></i>Нет карточки</span>
+            {% endif %}
+
+            {% if canEdit %}
+                <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                    {% if g.openDraftId %}
+                        <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                            <i class="bi bi-pencil-square me-1"></i>Оформить
+                        </a>
+                    {% elseif g.signedActs is not empty %}
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                            <i class="bi bi-journal-text me-1"></i>Открыть / списать
+                        </a>
+                    {% else %}
+                        <form method="post" action="{{ path('app_cabinet_compliance_form_draft', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <button type="submit" class="btn btn-soft-success btn-sm"><i class="bi bi-plus-circle me-1"></i>Сформировать черновик</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr class="text-body-secondary small">
+                        <th>Позиция</th><th>Норма</th><th>Посл. выдача</th><th>След. срок</th><th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in g.rows %}
+                        <tr>
+                            <td>{{ r.label }}</td>
+                            <td class="text-body-secondary">{{ r.spec }}</td>
+                            <td class="tnum">{{ r.lastFulfilledAt ?? '—' }}</td>
+                            <td class="tnum">{{ r.nextDueAt ?? '—' }}</td>
+                            <td><span class="badge {{ badge[r.bucket] }}"><i class="bi {{ icon[r.bucket] }} me-1"></i>{{ r.bucketLabel }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endfor %}

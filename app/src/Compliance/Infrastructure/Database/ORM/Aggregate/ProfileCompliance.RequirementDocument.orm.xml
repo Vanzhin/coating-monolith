@@ -1,0 +1,27 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument" table="compliance_requirement_document">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="requirementId" type="string" length="64" column="requirement_id"/>
+        <field name="status" type="string" length="16" column="status"
+               enum-type="App\Compliance\Domain\Aggregate\ProfileCompliance\DocumentStatus"/>
+        <field name="scanFileId" type="string" length="64" column="scan_file_id" nullable="true"/>
+        <field name="actNumber" type="string" length="64" column="act_number" nullable="true"/>
+        <field name="responsibleFio" type="string" length="255" column="responsible_fio" nullable="true"/>
+        <field name="signedAt" type="datetime_immutable" column="signed_at" nullable="true"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
+
+        <many-to-one field="profileCompliance"
+                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"
+                     inversed-by="documents" fetch="LAZY">
+            <join-column name="profile_compliance_id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+    </entity>
+
+</doctrine-mapping>
