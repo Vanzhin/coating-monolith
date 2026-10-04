@@ -151,27 +151,11 @@ final class IssueAction extends AbstractController
             $cadenceByKey[$o->key] = $o->cadenceLabel;
             $normByKey[$o->key] = null !== $o->quantityValue ? (float) $o->quantityValue : null;
         }
-        $rows = [];
-        foreach ($profileCompliance?->recordsForRequirement($requirementId) ?? [] as $record) {
-            if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
-                continue; // нематериальный факт или полностью списан
-            }
-            $held = $record->heldAmount();
-            $rows[] = [
-                'label' => $profileCompliance?->obligationLabelOf($record->obligationKey()),
-                'meta' => $cadenceByKey[$record->obligationKey()] ?? '',
-                'date' => $record->fulfilledAt()->format('Y-m-d'),
-                'amount' => AmountFormatter::trimmed($record->quantity()->amount),
-                'unit' => $record->quantity()->unit->title(),
-                'wear' => null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : '',
-                'held' => AmountFormatter::trimmed($held),
-                // цвет «на руках» как у поля кол-ва в оформлении: < нормы красный, ровно зелёный, больше голубой
-                'tone' => $this->heldTone($held, $normByKey[$record->obligationKey()] ?? null),
-            ];
-        }
 
+        // Акты: подписанные карточки выдачи + акты списания; попутно карта списаний по факту recordId → [{№, кол-во}].
         $signedActs = [];
         $writeOffActs = [];
+        $writeOffsByRecord = [];
         if (null !== $profileCompliance) {
             foreach ($profileCompliance->signedDocumentsFor($requirementId) as $doc) {
                 $signedActs[] = ['documentId' => $doc->getId(), 'signedAt' => $doc->signedAt()?->format('d.m.Y')];
@@ -187,9 +171,56 @@ final class IssueAction extends AbstractController
                         'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
                         'reason' => $portion->reason()?->title(),
                     ];
+                    if ($act->isSigned()) {
+                        $writeOffsByRecord[$portion->recordId()][] = ['actNumber' => $act->actNumber(), 'qty' => $portion->quantity()];
+                    }
                 }
                 $writeOffActs[] = ['id' => $act->getId(), 'signed' => $act->isSigned(), 'actNumber' => $act->actNumber(), 'items' => $items];
             }
+        }
+
+        // Действующие позиции — ПО ПОЗИЦИИ (obligationKey): «на руках» = Σ held фактов, светофор по сумме против
+        // нормы (а не по отдельному факту), разбивка по актам выдачи — в развороте.
+        $positions = [];
+        foreach ($profileCompliance?->recordsForRequirement($requirementId) ?? [] as $record) {
+            if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
+                continue; // нематериальный факт или полностью списан
+            }
+            $key = $record->obligationKey();
+            $positions[$key] ??= [
+                'label' => $profileCompliance?->obligationLabelOf($key),
+                'meta' => $cadenceByKey[$key] ?? '',
+                'unit' => $record->quantity()->unit->title(),
+                'norm' => $normByKey[$key] ?? null,
+                'held' => 0.0,
+                'facts' => [],
+            ];
+            $held = $record->heldAmount();
+            $positions[$key]['held'] += $held;
+            $notes = [];
+            foreach ($writeOffsByRecord[$record->getId()] ?? [] as $w) {
+                $notes[] = 'списано '.AmountFormatter::trimmed($w['qty']).(null !== $w['actNumber'] && '' !== $w['actNumber'] ? ' (акт № '.$w['actNumber'].')' : '');
+            }
+            $positions[$key]['facts'][] = [
+                'date' => $record->fulfilledAt()->format('d.m.Y'),
+                'held' => AmountFormatter::trimmed($held),
+                'documentId' => $record->documentId(),
+                'writeOffNote' => implode('; ', $notes),
+            ];
+        }
+
+        $rows = [];
+        foreach ($positions as $p) {
+            $norm = $p['norm'];
+            $rows[] = [
+                'label' => $p['label'],
+                'meta' => trim($p['meta'].(null !== $norm ? ' · норма '.AmountFormatter::trimmed($norm).' '.$p['unit'] : '')),
+                'unit' => $p['unit'],
+                'held' => AmountFormatter::trimmed($p['held']),
+                'norm' => null !== $norm ? AmountFormatter::trimmed($norm) : null,
+                'tone' => $this->heldTone($p['held'], $norm),
+                'facts' => $p['facts'],
+            ];
         }
 
         if ([] === $signedActs && [] === $rows && [] === $writeOffActs) {

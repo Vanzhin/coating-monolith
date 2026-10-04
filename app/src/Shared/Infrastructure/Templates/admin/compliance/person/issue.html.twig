@@ -34,6 +34,17 @@
     </div>
 {% endmacro %}
 
+{# Под-строка разбивки «Действующих позиций» по актам выдачи: дата (ссылка на скан акта) + на руках + пометка списания. #}
+{% macro wo_fact(f, unit, profileId) %}
+    <div class="p-2 mb-1 rounded-3 bg-body-tertiary d-flex flex-wrap align-items-center gap-2">
+        <div class="small">
+            Выдан: {% if f.documentId %}<a href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: f.documentId}) }}">{{ f.date }}</a>{% else %}{{ f.date }}{% endif %}
+            {% if f.writeOffNote %}<span class="text-danger"> · {{ f.writeOffNote }}</span>{% endif %}
+        </div>
+        <div class="ms-auto small text-body-secondary">на руках <span class="fw-semibold text-body">{{ f.held }} {{ unit }}</span></div>
+    </div>
+{% endmacro %}
+
 {% block title %}{{ parent() }} | {{ writeoff ? 'Списание' : 'Оформить' }} — {{ requirementName }}{% endblock %}
 
 {% block content %}
@@ -67,37 +78,26 @@
                     {% if rows is empty %}
                         <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих материальных позиций.</div>
                     {% endif %}
+                    {% import 'admin/compliance/person/issue.html.twig' as wo %}
                     {% for row in rows %}
-                        {% embed 'admin/compliance/_item_card.html.twig' with {name: row.label, meta: row.meta, row: row} %}
-                            {% block control %}
+                        {% set rid = 'wo-pos-' ~ loop.index0 %}
+                        <div class="p-3 mb-2 rounded-3 bg-body">
+                            <div class="d-flex flex-wrap align-items-center gap-2 report-block-toggle" role="button"
+                                 data-bs-toggle="collapse" data-bs-target="#{{ rid }}" aria-expanded="false">
+                                <div class="me-auto">
+                                    <div class="fw-semibold">{{ row.label }}</div>
+                                    {% if row.meta %}<div class="text-body-secondary small">{{ row.meta }}</div>{% endif %}
+                                </div>
                                 <div class="text-end">
                                     <div class="small text-body-secondary mb-1">На руках</div>
-                                    <span class="badge text-bg-{{ row.tone }} fw-normal">{{ row.held }} {{ row.unit }}</span>
+                                    <span class="badge text-bg-{{ row.tone }} fw-normal">{{ row.held }}{% if row.norm %} / {{ row.norm }}{% endif %} {{ row.unit }}</span>
                                 </div>
-                            {% endblock %}
-                            {% block footer %}
-                                <div class="row g-2 w-100">
-                                    <div class="col-6 col-md-3">
-                                        <label class="form-label small mb-1">Дата выдачи</label>
-                                        <input type="date" class="form-control" value="{{ row.date }}" disabled>
-                                    </div>
-                                    <div class="col-6 col-md-2">
-                                        <label class="form-label small mb-1">Кол-во</label>
-                                        <input type="text" class="form-control" value="{{ row.amount }}" disabled>
-                                    </div>
-                                    <div class="col-6 col-md-2">
-                                        <label class="form-label small mb-1">Ед.</label>
-                                        <input type="text" class="form-control" value="{{ row.unit }}" disabled>
-                                    </div>
-                                    {% if row.wear != '' %}
-                                        <div class="col-6 col-md-2">
-                                            <label class="form-label small mb-1">% износа</label>
-                                            <input type="text" class="form-control" value="{{ row.wear }}" disabled>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% endblock %}
-                        {% endembed %}
+                                <i class="bi bi-chevron-down ms-1 text-body-secondary report-block-chevron"></i>
+                            </div>
+                            <div class="collapse mt-2" id="{{ rid }}">
+                                {% for f in row.facts %}{{ wo.wo_fact(f, row.unit, profileId) }}{% endfor %}
+                            </div>
+                        </div>
                     {% endfor %}
                 </div>
 

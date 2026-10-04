@@ -6,6 +6,9 @@ namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Service\ObligationDueCalculator;
+use App\Compliance\Domain\ValueObject\Quantity;
+use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
@@ -16,6 +19,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Сквозной тест генерации карточки: норма+профиль → GET бланка → отдаётся валидный xlsx с подставленными
@@ -111,6 +115,30 @@ final class CardDownloadControllerTest extends WebTestCase
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/writeoff/%s/download', $profileId, $actId));
         self::assertResponseIsSuccessful();
+    }
+
+    public function test_consolidates_position_across_acts_colors_by_sum(): void
+    {
+        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $calc = $this->client->getContainer()->get(ObligationDueCalculator::class);
+        $pc = $repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        // Два факта одной позиции разными актами: 6 + 4 пары. Каждый < нормы (10), но сумма = норме → зелёный.
+        $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-06-01'), $calc, new Quantity(6.0, Unit::Pair));
+        $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-07-01'), $calc, new Quantity(4.0, Unit::Pair));
+        $pc->setActiveForRequirement($requirementId, true);
+        $repo->add($pc);
+
+        $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('10 / 10 пара', $html, 'консолидировано: бейдж «на руках / норма» по сумме');
+        self::assertStringContainsString('text-bg-success', $html, 'сумма 6+4 = норме 10 → зелёный (а не два красных по-фактно)');
+        self::assertStringNotContainsString('text-bg-danger', $html, 'ни один факт не красит позицию по своему куску');
+        self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот (единообразно для всех)');
+        self::assertSame(2, substr_count($html, 'Выдан:'), 'в развороте — обе выдачи (2 акта)');
     }
 
     private function sheetText(string $xlsxBytes): string
