@@ -229,7 +229,7 @@ services:
 
   App\Compliance\Infrastructure\Controller\Document\DownloadCardAction:
     arguments:
-      $cardTemplatePath: '%kernel.project_dir%/src/Compliance/Infrastructure/Resources/templates/requirement_card_material.xlsx'
+      $cardTemplatePath: '%kernel.project_dir%/src/Compliance/Infrastructure/Resources/templates/requirement_card.docx'
 
   App\Compliance\Infrastructure\Controller\WriteOffAct\DownloadAction:
     arguments:

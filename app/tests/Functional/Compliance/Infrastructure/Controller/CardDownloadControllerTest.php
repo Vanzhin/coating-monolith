@@ -16,14 +16,13 @@ use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Сквозной тест генерации карточки: норма+профиль → GET бланка → отдаётся валидный xlsx с подставленными
- * идентичностью и позициями (повтор строк движка + шаблон + проектор + DI).
+ * Сквозной тест генерации карточки: норма+профиль → GET → отдаётся валидный docx с подставленными
+ * идентичностью и нормой (повтор строк движка + шаблон + проектор + DI).
  */
 final class CardDownloadControllerTest extends WebTestCase
 {
@@ -49,7 +48,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $this->authenticateAsSystem(); // прямые commandBus-вызовы enroll — через системный принципал
     }
 
-    public function test_download_card_streams_xlsx_with_identity_and_positions(): void
+    public function test_download_card_streams_docx_with_identity_and_norm(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
 
@@ -58,11 +57,23 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('attachment', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
 
-        $joined = $this->sheetText((string) $this->client->getResponse()->getContent());
-        self::assertStringContainsString('Иванов Иван Иванович', $joined);
-        self::assertStringContainsString('Перчатки', $joined);
-        self::assertStringContainsString('ежегодно', $joined);
-        self::assertStringNotContainsString('{{', $joined, 'плейсхолдеры подставлены');
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('Иван', $text, 'имя сотрудника подставлено');
+        self::assertStringContainsString('Перчатки', $text, 'наименование позиции нормы (items.label) подставлено');
+        self::assertStringContainsString('ежегодно', $text, 'периодичность (items.unit_cadence) подставлена');
+        self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены');
+    }
+
+    private function docxText(string $bytes): string
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'card_').'.docx';
+        file_put_contents($tmp, $bytes);
+        $zip = new \ZipArchive();
+        $zip->open($tmp);
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        return preg_replace('/<[^>]*>/', ' ', $xml) ?? '';
     }
 
     public function test_dashboard_person_and_issue_pages_render(): void
@@ -139,27 +150,6 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringNotContainsString('text-bg-danger', $html, 'ни один факт не красит позицию по своему куску');
         self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот (единообразно для всех)');
         self::assertSame(2, substr_count($html, 'Выдан:'), 'в развороте — обе выдачи (2 акта)');
-    }
-
-    private function sheetText(string $xlsxBytes): string
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'card_res_').'.xlsx';
-        file_put_contents($tmp, $xlsxBytes);
-        $sheet = IOFactory::load($tmp)->getActiveSheet();
-
-        $texts = [];
-        foreach ($sheet->getRowIterator() as $row) {
-            $cells = $row->getCellIterator();
-            $cells->setIterateOnlyExistingCells(true);
-            foreach ($cells as $cell) {
-                $value = $cell->getValue();
-                if (is_string($value)) {
-                    $texts[] = $value;
-                }
-            }
-        }
-
-        return implode("\n", $texts);
     }
 
     private function setPrivate(object $object, string $property, mixed $value): void
