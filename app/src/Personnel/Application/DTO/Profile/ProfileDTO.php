@@ -25,5 +25,5 @@ class ProfileDTO
     public ?string $respirator = null;
     public ?string $gloves = null;
     public ?string $height = null;
-    public ?string $gender = null;
+    public ?GenderDTO $gender = null;
 }

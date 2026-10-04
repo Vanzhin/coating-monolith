@@ -37,7 +37,7 @@ class ProfileDTOTransformer
         $dto->respirator = self::sizeText($sizes->respirator);
         $dto->gloves = self::sizeText($sizes->gloves);
         $dto->height = self::sizeText($sizes->height);
-        $dto->gender = $sizes->gender?->value;
+        $dto->gender = null !== $sizes->gender ? new GenderDTO($sizes->gender->value, $sizes->gender->title()) : null;
 
         return $dto;
     }

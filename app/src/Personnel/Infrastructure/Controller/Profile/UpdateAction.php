@@ -94,7 +94,7 @@ final class UpdateAction extends AbstractController
                 'respirator' => $profile->respirator,
                 'gloves' => $profile->gloves,
                 'height' => $profile->height,
-                'gender' => $profile->gender,
+                'gender' => $profile->gender?->value,
             ];
         }
 
