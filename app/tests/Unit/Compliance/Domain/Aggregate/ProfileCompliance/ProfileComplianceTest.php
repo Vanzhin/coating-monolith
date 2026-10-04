@@ -142,7 +142,7 @@ final class ProfileComplianceTest extends TestCase
         $pc->formDraft($id, $this->reqId, $this->now);
 
         $this->expectException(AppException::class);
-        $pc->signDraft((string) $id, null, [$this->glovesLine(10.0)], $this->calc, $this->now);
+        $pc->signDraft((string) $id, null, [$this->glovesLine(10.0)], $this->calc, $this->now, 'К-1', 'Петров П. П.');
     }
 
     public function test_sign_draft_below_norm_errors(): void
@@ -152,7 +152,7 @@ final class ProfileComplianceTest extends TestCase
         $pc->formDraft($id, $this->reqId, $this->now);
 
         $this->expectException(AppException::class);
-        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(5.0)], $this->calc, $this->now);
+        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(5.0)], $this->calc, $this->now, 'К-1', 'Петров П. П.');
     }
 
     public function test_sign_draft_records_signs_and_activates(): void
@@ -160,7 +160,7 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves();
         $id = Uuid::v4();
         $pc->formDraft($id, $this->reqId, $this->now);
-        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, new \DateTimeImmutable('2026-06-01'));
+        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, new \DateTimeImmutable('2026-06-01'), 'К-1', 'Петров П. П.');
 
         self::assertSame(DocumentStatus::Signed, $pc->signedDocumentsFor($this->reqId)[0]->status());
         self::assertNull($pc->openDraftFor($this->reqId)); // черновик стал подписанным актом
@@ -174,12 +174,12 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves();
         $first = Uuid::v4();
         $pc->formDraft($first, $this->reqId, $this->now);
-        $pc->signDraft((string) $first, 'scan-1', [$this->glovesLine(10.0)], $this->calc, new \DateTimeImmutable('2026-06-01'));
+        $pc->signDraft((string) $first, 'scan-1', [$this->glovesLine(10.0)], $this->calc, new \DateTimeImmutable('2026-06-01'), 'К-1', 'Петров П. П.');
 
         // Продление: первый акт подписан → можно завести второй черновик по тому же требованию.
         $second = Uuid::v4();
         $pc->formDraft($second, $this->reqId, $this->now);
-        $pc->signDraft((string) $second, 'scan-2', [$this->glovesLine(10.0, '2027-06-01')], $this->calc, new \DateTimeImmutable('2027-06-01'));
+        $pc->signDraft((string) $second, 'scan-2', [$this->glovesLine(10.0, '2027-06-01')], $this->calc, new \DateTimeImmutable('2027-06-01'), 'К-1', 'Петров П. П.');
 
         self::assertCount(2, $pc->signedDocumentsFor($this->reqId));
         self::assertSame('2027-06-01', $pc->getObligations()[0]->lastFulfilledAt()?->format('Y-m-d'));
@@ -201,7 +201,7 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves();
         $id = Uuid::v4();
         $pc->formDraft($id, $this->reqId, $this->now);
-        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, $this->now);
+        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, $this->now, 'К-1', 'Петров П. П.');
 
         $this->expectException(AppException::class);
         $pc->deleteDraft((string) $id);
@@ -211,7 +211,7 @@ final class ProfileComplianceTest extends TestCase
     {
         $docId = Uuid::v4();
         $pc->formDraft($docId, $this->reqId, $at);
-        $pc->signDraft((string) $docId, 'scan-1', [$this->glovesLine($amount, $at->format('Y-m-d'))], $this->calc, $at);
+        $pc->signDraft((string) $docId, 'scan-1', [$this->glovesLine($amount, $at->format('Y-m-d'))], $this->calc, $at, 'К-1', 'Петров П. П.');
     }
 
     public function test_start_returns_same_open_draft_and_requires_active_card(): void
@@ -356,6 +356,16 @@ final class ProfileComplianceTest extends TestCase
 
         $this->expectException(AppException::class); // дубль по тому же ключу (keyOf лоуэркейсит label)
         $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+    }
+
+    public function test_sign_draft_requires_card_number(): void
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $id = Uuid::v4();
+        $pc->formDraft($id, $this->reqId, $this->now);
+
+        $this->expectException(AppException::class); // № карточки обязателен при оформлении
+        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, $this->now, '', 'Петров П. П.');
     }
 
     private function commission(): Commission

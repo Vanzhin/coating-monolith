@@ -26,6 +26,8 @@ readonly class SignDraftCommand extends Command
         public string $documentId,
         public string $documentDate,
         public array $items,
+        public string $actNumber,
+        public string $responsibleFio,
         public ?string $stagedFileId = null,
         public array $personalItems = [],
     ) {

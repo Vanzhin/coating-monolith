@@ -81,6 +81,7 @@ final class DraftFlowTest extends KernelTestCase
         $this->commandBus->execute(new SignDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
         ));
 
@@ -102,6 +103,7 @@ final class DraftFlowTest extends KernelTestCase
             $this->commandBus->execute(new SignDraftCommand(
                 $p, $docId, '2026-03-01',
                 [['obligationKey' => $k, 'amount' => '5', 'unit' => 'pair']], // меньше нормы (10)
+                'К-1', 'Петров П. П.',
                 $this->stageComplianceScan(),
             ));
         } catch (\Throwable) {
@@ -121,6 +123,7 @@ final class DraftFlowTest extends KernelTestCase
         $this->commandBus->execute(new SignDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']], // норма перчаток
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
             [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '2027-02-01']],
         ));
@@ -150,6 +153,7 @@ final class DraftFlowTest extends KernelTestCase
         $this->commandBus->execute(new SignDraftCommand(
             $p, $docId, '2026-03-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
             [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '']],
         ));
@@ -216,6 +220,7 @@ final class DraftFlowTest extends KernelTestCase
         $this->commandBus->execute(new SignDraftCommand(
             $profileId, $docId, '2026-03-01',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
         ));
     }

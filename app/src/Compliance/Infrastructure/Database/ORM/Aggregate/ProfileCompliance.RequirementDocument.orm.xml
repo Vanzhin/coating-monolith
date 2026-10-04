@@ -11,6 +11,8 @@
         <field name="status" type="string" length="16" column="status"
                enum-type="App\Compliance\Domain\Aggregate\ProfileCompliance\DocumentStatus"/>
         <field name="scanFileId" type="string" length="64" column="scan_file_id" nullable="true"/>
+        <field name="actNumber" type="string" length="64" column="act_number" nullable="true"/>
+        <field name="responsibleFio" type="string" length="255" column="responsible_fio" nullable="true"/>
         <field name="signedAt" type="datetime_immutable" column="signed_at" nullable="true"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at"/>

@@ -21,6 +21,8 @@ class RequirementDocument
     private string $requirementId;
     private DocumentStatus $status;
     private ?string $scanFileId = null;
+    private ?string $actNumber = null;
+    private ?string $responsibleFio = null;
     private ?\DateTimeImmutable $signedAt = null;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
@@ -40,14 +42,32 @@ class RequirementDocument
         return DocumentStatus::Formed === $this->status;
     }
 
-    /** Приложить подписанный скан → Signed (замок). Повторно/поверх подписанной — запрещено. */
-    public function markSigned(string $scanFileId, \DateTimeImmutable $now): void
+    /** Приложить подписанный скан → Signed (замок). № карточки и ответственное лицо обязательны. Повторно/поверх — запрещено. */
+    public function markSigned(string $scanFileId, string $actNumber, string $responsibleFio, \DateTimeImmutable $now): void
     {
         $this->assertMutable();
+        if ('' === trim($actNumber)) {
+            throw new AppException('Укажите № карточки.');
+        }
+        if ('' === trim($responsibleFio)) {
+            throw new AppException('Укажите ответственное лицо за ведение карточки.');
+        }
         $this->status = DocumentStatus::Signed;
         $this->scanFileId = $scanFileId;
+        $this->actNumber = trim($actNumber);
+        $this->responsibleFio = trim($responsibleFio);
         $this->signedAt = $now;
         $this->updatedAt = $now;
+    }
+
+    public function actNumber(): ?string
+    {
+        return $this->actNumber;
+    }
+
+    public function responsibleFio(): ?string
+    {
+        return $this->responsibleFio;
     }
 
     public function isEditable(): bool

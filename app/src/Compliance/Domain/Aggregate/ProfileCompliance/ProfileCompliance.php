@@ -178,10 +178,10 @@ class ProfileCompliance extends Aggregate
      *
      * @param IssuanceLine[] $lines
      */
-    public function signDraft(string $documentId, ?string $scanFileId, array $lines, ObligationDueCalculator $calculator, \DateTimeImmutable $now): void
+    public function signDraft(string $documentId, ?string $scanFileId, array $lines, ObligationDueCalculator $calculator, \DateTimeImmutable $now, string $actNumber, string $responsibleFio): void
     {
         $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
-        $this->recordAndSign($document, $lines, $scanFileId, $calculator, $now);
+        $this->recordAndSign($document, $lines, $scanFileId, $calculator, $now, $actNumber, $responsibleFio);
     }
 
     /** Удалить черновик (подписанный акт не удаляется). */
@@ -307,7 +307,7 @@ class ProfileCompliance extends Aggregate
      *
      * @param IssuanceLine[] $lines
      */
-    private function recordAndSign(RequirementDocument $document, array $lines, ?string $scanFileId, ObligationDueCalculator $calculator, \DateTimeImmutable $now): void
+    private function recordAndSign(RequirementDocument $document, array $lines, ?string $scanFileId, ObligationDueCalculator $calculator, \DateTimeImmutable $now, string $actNumber, string $responsibleFio): void
     {
         if (null === $scanFileId || '' === trim($scanFileId)) {
             throw new AppException('Приложите скан подписанной карточки — без него нельзя оформить.');
@@ -320,7 +320,7 @@ class ProfileCompliance extends Aggregate
                 documentId: $document->getId(),
             );
         }
-        $document->markSigned($scanFileId, $now);
+        $document->markSigned($scanFileId, $actNumber, $responsibleFio, $now);
         $this->setActiveForRequirement($document->requirementId(), true);
     }
 

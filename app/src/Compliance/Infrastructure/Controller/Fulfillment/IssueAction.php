@@ -47,6 +47,8 @@ final class IssueAction extends AbstractController
                     (string) ($inputData['draftId'] ?? ''),
                     (string) ($inputData['documentDate'] ?? ''),
                     array_values((array) ($inputData['items'] ?? [])),
+                    (string) ($inputData['cardNumber'] ?? ''),
+                    (string) ($inputData['responsibleFio'] ?? ''),
                     ((string) ($inputData['stagedFileId'] ?? '')) ?: null,
                     array_values((array) ($inputData['personalItems'] ?? [])),
                 ));

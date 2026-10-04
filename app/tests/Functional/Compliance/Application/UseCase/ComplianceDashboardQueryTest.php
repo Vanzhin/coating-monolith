@@ -96,6 +96,7 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         $this->commandBus->execute(new SignDraftCommand(
             $profileId, $draft->getId(), '2026-05-20',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
         ));
 

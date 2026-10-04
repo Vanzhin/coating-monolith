@@ -78,6 +78,7 @@ trait EnrollsComplianceTrait
         $bus->execute(new SignDraftCommand(
             $profileId, $draft->getId(), '2026-06-01',
             [['obligationKey' => $key, 'amount' => $amount, 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),
         ));
         $em->clear();

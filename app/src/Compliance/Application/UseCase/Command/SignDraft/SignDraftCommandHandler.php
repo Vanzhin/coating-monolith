@@ -70,7 +70,7 @@ final readonly class SignDraftCommandHandler implements CommandHandlerInterface
         $fileId = '' === $staged ? null : $this->storage->promote($staged, RequirementScanPurpose::SignedCard, $profileCompliance->getId())->id();
 
         try {
-            $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, new \DateTimeImmutable());
+            $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, new \DateTimeImmutable(), $command->actNumber, $command->responsibleFio);
             $this->repository->add($profileCompliance);
         } catch (\Throwable $e) {
             if (null !== $fileId) {

@@ -150,6 +150,16 @@
                             </a>
                         </div>
                         <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1">Карточка № <span class="text-danger">*</span></label>
+                                <input type="text" name="cardNumber" value="{{ inputData.cardNumber|default('') }}" class="form-control">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small mb-1">Ответственное лицо <span class="text-danger">*</span></label>
+                                <input type="text" name="responsibleFio" value="{{ inputData.responsibleFio|default('') }}" class="form-control" placeholder="Фамилия И. О.">
+                            </div>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label small mb-1">Дата документа</label>
