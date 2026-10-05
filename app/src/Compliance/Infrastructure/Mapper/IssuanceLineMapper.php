@@ -37,6 +37,7 @@ final class IssuanceLineMapper
                 $this->quantityOf($row),
                 $this->wear($row),
                 $this->date((string) ($row['manualDueDate'] ?? '')),
+                $this->note($row),
             );
         }
 
@@ -53,6 +54,14 @@ final class IssuanceLineMapper
         $unit = Unit::tryFrom((string) ($row['unit'] ?? '')) ?? throw new AppException('Выберите единицу измерения количества.');
 
         return new Quantity((float) str_replace(',', '.', $amount), $unit);
+    }
+
+    /** @param array<string, mixed> $row Модель/марка/артикул выдаваемого (в факт-таблицу карточки) — переиспользуется для персональных позиций. */
+    public function note(array $row): ?string
+    {
+        $note = trim((string) ($row['note'] ?? ''));
+
+        return '' === $note ? null : $note;
     }
 
     private function date(string $value): ?\DateTimeImmutable

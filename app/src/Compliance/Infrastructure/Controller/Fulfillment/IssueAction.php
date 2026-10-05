@@ -125,7 +125,7 @@ final class IssueAction extends AbstractController
                     'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
                     // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
                     'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
-                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, // из корзины ниже
+                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, // из корзины ниже
                 ];
             }
         }
@@ -148,10 +148,11 @@ final class IssueAction extends AbstractController
                 }
                 $savedDate ??= $record->fulfilledAt();
                 $key = $record->obligationKey();
-                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null];
+                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null, 'note' => null];
                 $cart[$key]['date'] ??= $record->fulfilledAt()->format('Y-m-d');
                 $cart[$key]['due'] ??= $record->manualDueDate()?->format('Y-m-d');
                 $cart[$key]['wear'] ??= null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : null;
+                $cart[$key]['note'] ??= $record->note();
                 if (null !== $record->quantity()) {
                     $cart[$key]['qty'] += $record->quantity()->amount;
                     $cart[$key]['hasQty'] = true;
@@ -170,6 +171,7 @@ final class IssueAction extends AbstractController
                 $issueRows[$i]['savedWear'] = $saved['wear'];
                 $issueRows[$i]['savedDueDate'] = $saved['due'];
                 $issueRows[$i]['savedUnit'] = $saved['unit'];
+                $issueRows[$i]['savedNote'] = $saved['note'];
             }
             $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
 

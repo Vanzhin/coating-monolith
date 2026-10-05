@@ -13,6 +13,10 @@
                 <label class="form-label small mb-1">Наименование</label>
                 <input type="text" name="{{ prefix }}[label]" value="{{ row.label|default('') }}" class="form-control">
             </div>
+            <div class="col-12">
+                <label class="form-label small mb-1">Модель / марка / артикул</label>
+                <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
+            </div>
             {% if requirementType == 'material' %}
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Кол-во</label>
@@ -219,6 +223,10 @@
                                         </button>
                                     {% endif %}
                                     <div class="row g-2 w-100">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Модель / марка / артикул</label>
+                                            <input type="text" name="items[{{ i }}][note]" value="{{ s.note|default(o.savedNote) }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
+                                        </div>
                                         <div class="col-6 col-md-3">
                                             <label class="form-label small mb-1">Дата выдачи</label>
                                             <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(o.savedDate ?: documentDate) }}" class="form-control"

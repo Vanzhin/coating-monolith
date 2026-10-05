@@ -111,7 +111,7 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
             if (!$this->hasObligation($profileCompliance, $key)) {
                 $profileCompliance->addPersonalObligation(Uuid::v7(), $requirementId, $label, new Cadence(CadenceKind::ByManufacturerDoc), $quantity);
             }
-            $lines[] = new IssuanceLine(Uuid::v7(), $key, $documentDate, $quantity, null, $due);
+            $lines[] = new IssuanceLine(Uuid::v7(), $key, $documentDate, $quantity, null, $due, $this->mapper->note($row));
         }
 
         return $lines;
