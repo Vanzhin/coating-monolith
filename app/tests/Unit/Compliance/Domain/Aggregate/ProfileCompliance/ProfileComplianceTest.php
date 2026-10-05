@@ -541,6 +541,13 @@ final class ProfileComplianceTest extends TestCase
         $pc->assertIssuable([$this->glovesLine(1.0)]);
     }
 
+    public function test_issue_with_unit_other_than_norm_throws(): void
+    {
+        $pc = $this->pcWithGloves(10.0); // норма 10 пар
+        $this->expectException(AppException::class); // «шт.» вместо «пар» — единица обязана совпадать с нормой
+        $pc->assertIssuable([new IssuanceLine(Uuid::v4(), $this->glovesKey(), $this->now, new Quantity(10.0, Unit::Piece))]);
+    }
+
     public function test_records_for_requirement_filters_by_key(): void
     {
         $pc = $this->pcWithGloves();

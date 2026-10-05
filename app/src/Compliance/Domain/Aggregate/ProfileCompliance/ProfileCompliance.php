@@ -156,6 +156,12 @@ class ProfileCompliance extends Aggregate
             if (ComplianceType::Material !== $obligation->type() || null === $norm) {
                 continue;
             }
+            // Единица выдачи обязана совпадать с единицей обязанности (норма из требования / персональная позиция) —
+            // нельзя выдать «10 шт.» против нормы «10 пар». Единицу норм-позиции на форме не меняют (это UX),
+            // но источник истины — здесь: прямой POST/API с чужой единицей упрётся в этот инвариант.
+            if (null !== $line->quantity && $line->quantity->unit !== $norm->unit) {
+                throw new AppException(sprintf('Единица измерения по позиции «%s» должна быть «%s».', $obligation->label(), $norm->unit->title()));
+            }
             $issued = $line->quantity->amount ?? 0.0;
             if ($this->heldOf($line->obligationKey) + $issued < $norm->amount) {
                 throw new AppException(sprintf('По позиции «%s» на руках с учётом выдачи меньше нормы (%s).', $obligation->label(), $norm->label()));

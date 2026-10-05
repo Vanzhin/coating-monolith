@@ -229,10 +229,18 @@
                                             </div>
                                             <div class="col-6 col-md-2">
                                                 <label class="form-label small mb-1">Ед.</label>
-                                                {% set unitValue = s.unit|default(o.quantityUnit) %}
-                                                <select name="items[{{ i }}][unit]" class="form-select" data-norm-unit="{{ o.quantityUnit }}">
-                                                    {% for u in units %}<option value="{{ u.value }}"{{ unitValue == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
-                                                </select>
+                                                {% if o.quantityUnit %}
+                                                    {# Единица задана обязанностью (норма из требования / персональная с кол-вом) — не меняется (UX), домен это проверяет. #}
+                                                    <select class="form-select" disabled aria-label="Единица измерения">
+                                                        {% for u in units %}<option value="{{ u.value }}"{{ o.quantityUnit == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                    </select>
+                                                    <input type="hidden" name="items[{{ i }}][unit]" value="{{ o.quantityUnit }}">
+                                                {% else %}
+                                                    {# Персональная позиция без заданной единицы — выбираем. #}
+                                                    <select name="items[{{ i }}][unit]" class="form-select">
+                                                        {% for u in units %}<option value="{{ u.value }}"{{ s.unit|default('') == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                    </select>
+                                                {% endif %}
                                             </div>
                                             <div class="col-6 col-md-2">
                                                 <label class="form-label small mb-1">% износа</label>
