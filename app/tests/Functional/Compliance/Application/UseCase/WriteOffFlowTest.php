@@ -19,6 +19,7 @@ use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Templating\TemplateFile;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\TemplateRendering;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
@@ -162,6 +163,19 @@ final class WriteOffFlowTest extends KernelTestCase
             }
         }
         self::assertSame(1, $openDrafts, 'повторная обработка события не плодит черновики выдачи');
+    }
+
+    public function test_sign_write_off_without_scan_throws(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $recordId = $this->firstRecordId($p);
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->reload();
+
+        $this->expectException(AppException::class); // оформление акта списания без скана — инвариант домена, не тихое сохранение
+        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], 'А-1', '2026-03-01', null));
     }
 
     public function test_write_off_act_docx_renders_positions_and_reason(): void

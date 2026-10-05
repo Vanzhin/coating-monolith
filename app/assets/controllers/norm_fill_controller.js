@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus';
 
 /**
  * Помощник формы оформления выдачи:
- *  - fill()    — «Заполнить по норме»: кол-во (data-norm-amount) + единица (data-norm-unit).
+ *  - fill()    — «Заполнить по норме»: кол-во (data-norm-amount); единица зафиксирована нормой в шаблоне.
  *  - check()   — подсветка введённого кол-ва: меньше нормы → красное (is-invalid), ровно/больше → зелёное.
  *  - nextDue() — при смене даты шлёт запрос; СЧИТАЕТ БЭК (домен), фронт только показывает (data-next-due).
  */
@@ -19,11 +19,6 @@ export default class extends Controller {
             if (el.dataset.normAmount) {
                 el.value = el.dataset.normAmount;
                 this._mark(el);
-            }
-        });
-        this.element.querySelectorAll('[data-norm-unit]').forEach((el) => {
-            if (el.dataset.normUnit) {
-                el.value = el.dataset.normUnit;
             }
         });
         // заполнение — тоже изменение: пересчитываем след. выдачу по всем строкам

@@ -130,6 +130,22 @@ final class DraftFlowTest extends KernelTestCase
         self::assertSame(10.0, $this->cartSum($pc, $draft->getId(), $k), 'строки в корзине');
     }
 
+    public function test_sign_without_scan_throws_not_silently_saves(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r);
+
+        $this->expectException(AppException::class); // «Оформить» без скана → инвариант домена, а не молчаливое сохранение
+        $this->commandBus->execute(new SaveDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
+            null, // скан НЕ приложен
+            [],
+            sign: true, // нажата «Оформить»
+        ));
+    }
+
     public function test_sign_draft_records_and_signs(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();

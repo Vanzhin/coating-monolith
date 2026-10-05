@@ -6,7 +6,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 export default class extends Controller {
     static values = { stageUrl: String };
-    static targets = ['hidden', 'name'];
+    static targets = ['hidden', 'name', 'nameHidden'];
 
     async upload(event) {
         const file = event.target.files[0];
@@ -21,6 +21,9 @@ export default class extends Controller {
             const payload = json.data ?? json; // глобальный ResponseListener оборачивает успех в {data}
             if (payload.files && payload.files[0]) {
                 this.hiddenTarget.value = payload.files[0].uuid;
+                if (this.hasNameHiddenTarget) {
+                    this.nameHiddenTarget.value = payload.files[0].name; // имя едет в форму — переживает перерисовку
+                }
                 if (this.hasNameTarget) {
                     this.nameTarget.textContent = payload.files[0].name;
                 }
