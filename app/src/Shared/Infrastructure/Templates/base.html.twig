@@ -217,6 +217,11 @@
                        data-action="click->offcanvas-autoclose#close">
                         <i class="bi bi-bucket me-2"></i>Расход
                     </a>
+                    <a href="{{ path('app_tools_section_factor') }}"
+                       class="list-group-item list-group-item-action ps-5{{ current_route == 'app_tools_section_factor' ? ' active' : '' }}"
+                       data-action="click->offcanvas-autoclose#close">
+                        <i class="bi bi-rulers me-2"></i>Приведённая толщина
+                    </a>
                 </div>
             </div>
 
@@ -237,9 +242,23 @@
                            data-action="click->offcanvas-autoclose#close">
                             <i class="bi bi-eyedropper me-2"></i>Вещества
                         </a>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-body-tertiary">
+                    <div class="px-2 py-1 text-body-secondary fw-semibold small text-uppercase">Персонал</div>
+                    <div class="list-group list-group-flush">
                         <a href="{{ path('app_cabinet_personnel_profile_list') }}" class="list-group-item list-group-item-action"
                            data-action="click->offcanvas-autoclose#close">
                             <i class="bi bi-people me-2"></i>Персонал
+                        </a>
+                        <a href="{{ path('app_cabinet_compliance_requirements_list') }}" class="list-group-item list-group-item-action"
+                           data-action="click->offcanvas-autoclose#close">
+                            <i class="bi bi-card-checklist me-2"></i>Нормы
+                        </a>
+                        <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="list-group-item list-group-item-action"
+                           data-action="click->offcanvas-autoclose#close">
+                            <i class="bi bi-shield-check me-2"></i>Соответствие
                         </a>
                     </div>
                 </div>

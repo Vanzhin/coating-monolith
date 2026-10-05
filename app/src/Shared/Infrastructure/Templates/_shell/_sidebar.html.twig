@@ -18,17 +18,15 @@
            {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
             <i class="bi bi-calculator"></i><span>Инструменты</span>
         </a>
-        <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="app-nav-item{{ current_route == 'app_cabinet_compliance_dashboard' ? ' active' : '' }}"
-           {% if current_route == 'app_cabinet_compliance_dashboard' %}aria-current="page"{% endif %}>
-            <i class="bi bi-shield-check"></i><span>Соответствие</span>
-        </a>
         {% if is_granted('ROLE_ADMIN') %}
             <div class="app-nav-sep">Администрирование</div>
             <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item"><i class="bi bi-chevron-bar-contract"></i><span>Подготовка поверхности</span></a>
             <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="app-nav-item"><i class="bi bi-building"></i><span>Производители</span></a>
             <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="app-nav-item"><i class="bi bi-eyedropper"></i><span>Вещества</span></a>
+            <div class="app-nav-sep">Персонал</div>
             <a href="{{ path('app_cabinet_personnel_profile_list') }}" class="app-nav-item"><i class="bi bi-people"></i><span>Персонал</span></a>
             <a href="{{ path('app_cabinet_compliance_requirements_list') }}" class="app-nav-item"><i class="bi bi-card-checklist"></i><span>Нормы</span></a>
+            <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="app-nav-item"><i class="bi bi-shield-check"></i><span>Соответствие</span></a>
         {% endif %}
     </nav>
     <div class="app-sidebar-foot">
