@@ -30,6 +30,12 @@ export default class extends Controller {
         this._scheduleRowDue(event.target); // ввод количества — тоже пересчитывает дату строки (дебаунс)
     }
 
+    // убрать строку-позицию из черновика (только персональная, вне нормы): удаляем из DOM, при сабмите её нет
+    // в items[] → saveDraft не пересоздаёт её cart-строку → доменный prune сносит осиротевшую обязанность
+    removeRow(event) {
+        event.target.closest('[data-row]')?.remove();
+    }
+
     nextDue(event) {
         this._nextDue(event.target);
     }

@@ -225,6 +225,29 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
     }
 
+    public function test_saved_draft_item_date_survives_reload(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        $bus->execute(new FormDraftCommand($p, $r));
+        $em->clear();
+        $docId = $repo->findByProfile($p)?->openDraftFor($r)?->getId();
+        self::assertNotNull($docId);
+        $bus->execute(new SaveDraftCommand(
+            $p, $docId, '2026-03-15',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair', 'date' => '2026-03-15']],
+            'К-1', 'Петров П. П.',
+        ));
+
+        // GET-перезагрузка: дата строки должна прийти из корзины (2026-03-15), а не из сегодняшней даты документа.
+        $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $p, $r));
+        self::assertResponseIsSuccessful();
+        self::assertSame('2026-03-15', $crawler->filter('input[name="items[0][date]"]')->attr('value'), 'дата строки восстановлена из корзины');
+    }
+
     private function setPrivate(object $object, string $property, mixed $value): void
     {
         $reflection = new \ReflectionProperty($object, $property);

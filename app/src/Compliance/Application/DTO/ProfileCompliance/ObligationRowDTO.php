@@ -24,4 +24,5 @@ final class ObligationRowDTO
     public ?string $nextDueAt = null;
     public bool $active;
     public string $status;
+    public string $origin = 'norm'; // norm | personal — персональную (вне нормы) можно убрать из черновика
 }
