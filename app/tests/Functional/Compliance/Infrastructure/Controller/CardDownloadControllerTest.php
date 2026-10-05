@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\Service\RequirementCardProjector;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
+use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Templating\RepeatValue;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -51,10 +58,10 @@ final class CardDownloadControllerTest extends WebTestCase
         $this->authenticateAsSystem(); // прямые commandBus-вызовы enroll — через системный принципал
     }
 
-    public function test_download_card_streams_docx_with_identity_and_act_items(): void
+    public function test_download_card_streams_docx_with_identity_and_norm(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
-        // Бланк берёт позиции из АКТА (черновика) — формируем его (корзина наполнится дефицитом нормы).
+        // Стр. 1 бланка — НОРМА требования (не зависит от выдач). Черновик нужен лишь для № карточки/ответственного.
         $this->client->getContainer()->get(CommandBusInterface::class)->execute(new FormDraftCommand($profileId, $requirementId));
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
@@ -64,9 +71,78 @@ final class CardDownloadControllerTest extends WebTestCase
 
         $text = $this->docxText((string) $this->client->getResponse()->getContent());
         self::assertStringContainsString('Иван', $text, 'имя сотрудника подставлено');
-        self::assertStringContainsString('Перчатки', $text, 'наименование позиции акта (items.label) подставлено');
-        self::assertStringContainsString('ежегодно', $text, 'периодичность (items.unit_cadence) подставлена');
+        self::assertStringContainsString('Перчатки', $text, 'наименование нормы (items.label) подставлено');
+        self::assertStringContainsString('ежегодно', $text, 'периодичность нормы (items.unit_cadence) подставлена');
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены');
+    }
+
+    public function test_projector_page1_norm_page2_facts_with_writeoff(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        // Выдать карточку: модель/марка (note) + кол-во 12 при норме 10 — значения разойдутся, чтобы доказать,
+        // что стр. 1 берёт норму (10), а стр. 2 — факт (12).
+        $bus->execute(new FormDraftCommand($p, $r));
+        $em->clear();
+        $draftId = $repo->findByProfile($p)?->openDraftFor($r)?->getId();
+        self::assertNotNull($draftId);
+        $bus->execute(new SaveDraftCommand(
+            $p, $draftId, '2026-06-01',
+            [['obligationKey' => $k, 'amount' => '12', 'unit' => 'pair', 'note' => 'Jeta Safety JP711, кл.II']],
+            'К-1', 'Петров П. П.',
+            $this->stageComplianceScan(),
+        ));
+        $em->clear();
+
+        // Частично списать 3 — ПОДПИСАННЫЙ акт списания (должен заполнить колонки возврата факт-таблицы).
+        $pc = $repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $records = $pc->recordsForRequirement($r);
+        self::assertNotEmpty($records);
+        $recordId = $records[0]->getId();
+        $bus->execute(new StartWriteOffActCommand($p, $r));
+        $em->clear();
+        $actId = $repo->findByProfile($p)?->openWriteOffDraftFor($r)?->getId();
+        self::assertNotNull($actId);
+        $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
+        $bus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($p, $actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
+        $em->clear();
+
+        // Проектор напрямую (независимо от шаблона): стр. 1 = норма, стр. 2 = факт этого акта + возврат.
+        $container = $this->client->getContainer();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        $requirement = $container->get(RequirementRepositoryInterface::class)->findOneById($r);
+        $pc = $repo->findByProfile($p);
+        self::assertNotNull($profileResult->profile);
+        self::assertNotNull($requirement);
+        self::assertNotNull($pc);
+        $data = $container->get(RequirementCardProjector::class)->project($pc, $profileResult->profile, $requirement, new \DateTimeImmutable('2026-07-02'));
+
+        // Стр. 1 — норма требования (норм-количество, весь перечень).
+        $items = $data->get('items');
+        self::assertInstanceOf(RepeatValue::class, $items);
+        self::assertCount(1, $items->rows);
+        self::assertSame('Перчатки', $items->rows[0]['label']);
+        self::assertSame('10', $items->rows[0]['quantity'], 'стр. 1 количество = норма (10), а не выданное (12)');
+        self::assertStringContainsString('ежегодно', (string) $items->rows[0]['unit_cadence']);
+
+        // Стр. 2 — факт этого акта: модель(note)/дата/выдано + возврат/акт списания.
+        $log = $data->get('log');
+        self::assertInstanceOf(RepeatValue::class, $log);
+        self::assertCount(1, $log->rows);
+        $row = $log->rows[0];
+        self::assertSame('Перчатки', $row['name']);
+        self::assertSame('Jeta Safety JP711, кл.II', $row['model'], 'колонка модель/марка = note записи');
+        self::assertSame('01.06.2026', $row['issue_date']);
+        self::assertSame('12', $row['issue_qty'], 'стр. 2 количество = выданное (12), а не норма');
+        self::assertSame('3', $row['return_qty'], 'возвращено = сумма подписанного списания');
+        self::assertSame('01.07.2026', $row['return_date']);
+        self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
     }
 
     public function test_blank_uses_saved_draft_details(): void
