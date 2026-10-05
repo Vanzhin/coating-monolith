@@ -183,9 +183,10 @@
                             <div class="col-md-8">
                                 <label class="form-label small mb-1">Прикрепить скан</label>
                                 <input type="file" class="form-control" data-action="change->staged-file#upload" accept=".pdf,.jpg,.jpeg,.png">
-                                <div class="form-text">Подписанная карточка — нужна, чтобы оформить</div>
+                                <div class="form-text">Подписанная карточка — нужна, чтобы оформить. Если скан уже приложен, повторно выбирать файл не нужно.</div>
                                 <input type="hidden" name="stagedFileId" data-staged-file-target="hidden" value="{{ inputData.stagedFileId|default('') }}">
-                                <div class="text-body-secondary small mt-1" data-staged-file-target="name">{% if inputData.stagedFileId|default('') %}Скан приложен{% endif %}</div>
+                                <input type="hidden" name="stagedFileName" data-staged-file-target="nameHidden" value="{{ inputData.stagedFileName|default('') }}">
+                                <div class="small mt-1 text-success" data-staged-file-target="name">{{ inputData.stagedFileName|default('') }}</div>
                             </div>
                         </div>
                     </div>

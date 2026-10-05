@@ -22,9 +22,10 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Сохранение/оформление черновика единой командой. Строки формы (+ персональные позиции) собираем всегда.
- * Нет скана → `saveDraft` (корзина + реквизиты, без подписи, held не трогаем). Есть скан → проверка кол-ва ДО
- * промоута (staged не сгорает при ошибке) → промоут → `signDraft` (инвариант + факты + подпись + трекинг);
- * отказ домена → снимаем осиротевший скан.
+ * Кнопка «Сохранить» (sign=false) и нет скана → `saveDraft` (корзина + реквизиты, без подписи, held не трогаем).
+ * Иначе оформление: `assertIssuable` + `signDraft` (инвариант + факты + подпись + трекинг) и ТОЛЬКО если домен
+ * принял — промоут скана в хранилище. Порядок подпись→промоут важен: отказ домена не двигает staged-файл, повтор
+ * оформления работает (id StoredFile при промоуте не меняется, поэтому подпись пишет его заранее).
  */
 final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
 {
@@ -64,18 +65,25 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
         // «Оформить»: подпись. Решает КНОПКА (sign) ИЛИ приложенный скан — иначе «Оформить» без скана молча
         // сохранял бы черновик вместо ошибки. Инвариант «нужен скан» проверяет домен ({@see signDraft}):
         // скан не приложен → AppException, контроллер перерисует форму с ошибкой.
-        $profileCompliance->assertIssuable($lines); // кол-во проверяем ДО промоута — staged-скан не сгорает при ошибке
-        $fileId = '' === $staged ? null : $this->storage->promote($staged, RequirementScanPurpose::SignedCard, $profileCompliance->getId())->id();
-
-        try {
-            $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, $now, $command->actNumber, $command->responsibleFio);
-            $this->repository->add($profileCompliance);
-        } catch (\Throwable $e) {
-            if (null !== $fileId) {
-                $this->storage->remove($fileId); // домен отказал после промоута — не оставляем осиротевший скан
+        //
+        // ПОРЯДОК: подпись ДО промоута. id StoredFile при промоуте не меняется, поэтому подпись пишет его заранее,
+        // а файл переносим в хранилище ТОЛЬКО когда домен принял (assertIssuable + signDraft не кинули). Иначе
+        // отказ домена двигал бы файл, а откат транзакции вернул бы строку StoredFile на tmp-ключ → staged-скан
+        // терялся и повтор оформления падал на пропавшем источнике.
+        $profileCompliance->assertIssuable($lines);
+        $fileId = '' === $staged ? null : $staged; // domain требует непустой скан; реальный перенос — ниже
+        $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, $now, $command->actNumber, $command->responsibleFio);
+        if (null !== $fileId) {
+            try {
+                $this->storage->promote($staged, RequirementScanPurpose::SignedCard, $profileCompliance->getId());
+            } catch (AppException $e) {
+                throw $e; // валидация скана (mime/размер/габариты) — сообщение уже человекочитаемое
+            } catch (\Throwable $e) {
+                // напр. staged-файл истёк/потерян — не сырой 500, а понятная просьба приложить заново
+                throw new AppException('Не удалось приложить скан — загрузите файл заново.', log: ['error' => $e->getMessage()], previous: $e);
             }
-            throw $e;
         }
+        $this->repository->add($profileCompliance);
     }
 
     /**
