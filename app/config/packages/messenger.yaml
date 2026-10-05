@@ -52,6 +52,8 @@ framework:
             'App\Personnel\Domain\Event\ProfileSaved': async
             # Акт списания оформлен → пересчёт проекции человека по требованию + черновик на дефицит (в воркере).
             'App\Compliance\Domain\Event\WriteOffActSigned': async
+            # Черновик карточки удалён → пересчёт проекции человека по требованию + черновик на дефицит (в воркере).
+            'App\Compliance\Domain\Event\DraftDeleted': async
 
 # when@test:
 #    framework:

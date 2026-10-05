@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
+use App\Compliance\Application\Event\RecomputeOnDraftDeletedHandler;
 use App\Compliance\Application\Event\RecomputeOnProfileSavedHandler;
 use App\Compliance\Application\Event\RecomputeOnRequirementChangedHandler;
 use App\Compliance\Application\UseCase\Command\DeleteDraft\DeleteDraftCommand;
@@ -12,6 +13,7 @@ use App\Compliance\Application\UseCase\Command\FormDraftsForRequirement\FormDraf
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
+use App\Compliance\Domain\Event\DraftDeleted;
 use App\Compliance\Domain\Event\RequirementChanged;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Personnel\Domain\Event\ProfileSaved;
@@ -230,6 +232,58 @@ final class DraftFlowTest extends KernelTestCase
             $this->stageComplianceScan(),
             [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '']],
         ));
+    }
+
+    public function test_delete_draft_recomputes_and_reforms_on_deficit(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r); // дефицит → черновик
+
+        $this->commandBus->execute(new DeleteDraftCommand($p, $docId));
+        $this->em()->clear();
+        self::assertNull($this->reload($p)->openDraftFor($r), 'черновик удалён (пересчёт ушёл в воркер)');
+
+        // Воркер обрабатывает событие удаления → пересчёт проекции + черновик на оставшийся дефицит.
+        (static::getContainer()->get(RecomputeOnDraftDeletedHandler::class))(new DraftDeleted($p, $r));
+        $this->em()->clear();
+        self::assertNotNull($this->reload($p)->openDraftFor($r), 'пересчёт завёл новый черновик на дефицит');
+    }
+
+    public function test_personal_item_removed_on_resave_is_pruned(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $docId = $this->formDraftAndGetId($p, $r);
+        $personalKey = TrackedObligation::keyOf($r, 'Очки');
+
+        // сохранили с персональной позицией (вне нормы)
+        $this->commandBus->execute(new SaveDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.', null,
+            [['label' => 'Очки', 'amount' => '1', 'unit' => 'pcs', 'manualDueDate' => '2027-02-01']],
+        ));
+        $this->em()->clear();
+        self::assertTrue($this->hasObligation($this->reload($p), $personalKey), 'персональная позиция материализована');
+
+        // пере-сохранили БЕЗ неё (пользователь убрал строку) → prune сносит осиротевшую обязанность
+        $this->commandBus->execute(new SaveDraftCommand(
+            $p, $docId, '2026-03-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
+            'К-1', 'Петров П. П.',
+        ));
+        $this->em()->clear();
+        self::assertFalse($this->hasObligation($this->reload($p), $personalKey), 'убранная персональная позиция удалена из черновика');
+    }
+
+    private function hasObligation(ProfileCompliance $pc, string $key): bool
+    {
+        foreach ($pc->getObligations() as $obligation) {
+            if ($obligation->key() === $key) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function test_delete_draft(): void
