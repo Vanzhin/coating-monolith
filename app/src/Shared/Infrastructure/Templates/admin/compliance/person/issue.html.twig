@@ -213,10 +213,15 @@
                             } %}
                                 {% block footer %}
                                     <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
+                                    {% if o.origin == 'personal' %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger mb-2" data-action="norm-fill#removeRow" title="Убрать позицию вне нормы из черновика">
+                                            <i class="bi bi-trash me-1"></i>Убрать позицию
+                                        </button>
+                                    {% endif %}
                                     <div class="row g-2 w-100">
                                         <div class="col-6 col-md-3">
                                             <label class="form-label small mb-1">Дата выдачи</label>
-                                            <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(documentDate) }}" class="form-control"
+                                            <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(o.savedDate ?: documentDate) }}" class="form-control"
                                                    data-issue-date data-action="change->norm-fill#nextDue"
                                                    data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
                                             <div class="form-text">След. выдача: <span data-next-due>—</span></div>
@@ -239,19 +244,19 @@
                                                 {% else %}
                                                     {# Персональная позиция без заданной единицы — выбираем. #}
                                                     <select name="items[{{ i }}][unit]" class="form-select">
-                                                        {% for u in units %}<option value="{{ u.value }}"{{ s.unit|default('') == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                        {% for u in units %}<option value="{{ u.value }}"{{ s.unit|default(o.savedUnit) == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
                                                     </select>
                                                 {% endif %}
                                             </div>
                                             <div class="col-6 col-md-2">
                                                 <label class="form-label small mb-1">% износа</label>
-                                                <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default('') }}" placeholder="0">
+                                                <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default(o.savedWear) }}" placeholder="0">
                                             </div>
                                         {% endif %}
                                         {% if o.cadenceKind == 'by_manufacturer_doc' %}
                                             <div class="col-6 col-md-3">
                                                 <label class="form-label small mb-1">Срок годности (по документам)</label>
-                                                <input type="date" name="items[{{ i }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default('') }}">
+                                                <input type="date" name="items[{{ i }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default(o.savedDueDate) }}">
                                             </div>
                                         {% endif %}
                                     </div>

@@ -267,21 +267,24 @@ class ProfileCompliance extends Aggregate
         return false;
     }
 
-    /** Удалить черновик (подписанный акт не удаляется). */
-    public function deleteDraft(string $documentId): void
+    /** Удалить черновик (подписанный акт не удаляется); возвращает requirementId удалённого (для пересчёта по событию) или null, если не найден. */
+    public function deleteDraft(string $documentId): ?string
     {
         $document = $this->documentById($documentId);
         if (null === $document) {
-            return;
+            return null;
         }
         $document->assertMutable();
+        $requirementId = $document->requirementId();
         foreach ($this->records as $record) {
             if ($record->documentId() === $documentId) {
                 $this->records->removeElement($record); // корзина уходит вместе с черновиком
             }
         }
         $this->documents->removeElement($document);
-        $this->pruneOrphanPersonalObligations($document->requirementId()); // персональные позиции без факта не висят фантомом
+        $this->pruneOrphanPersonalObligations($requirementId); // персональные позиции без факта не висят фантомом
+
+        return $requirementId;
     }
 
     /**

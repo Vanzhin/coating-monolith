@@ -122,8 +122,10 @@ final class IssueAction extends AbstractController
                     'quantityLabel' => $row->quantityLabel,
                     'quantityValue' => $row->quantityValue,
                     'quantityUnit' => $row->quantityUnit,
+                    'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
                     // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
                     'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
+                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, // из корзины ниже
                 ];
             }
         }
@@ -136,21 +138,38 @@ final class IssueAction extends AbstractController
             // количества строк берём из корзины, чтобы перезагрузка показывала сохранённое, а не только дефицит.
             $inputData['cardNumber'] ??= $openDraft->actNumber() ?? '';
             $inputData['responsibleFio'] ??= $openDraft->responsibleFio() ?? '';
-            $cartQtyByKey = [];
+            // Состояние строки из корзины по ключу (кол-во/дата/износ/срок/единица) — чтобы GET-перезагрузка
+            // показывала сохранённое построчно, а не только документную дату и дефицит.
+            $cart = [];
             $savedDate = null; // дата документа из сохранённой корзины — иначе «Оформить» после reload запишет сегодня
             foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
                 if ($record->documentId() !== $openDraft->getId()) {
                     continue;
                 }
                 $savedDate ??= $record->fulfilledAt();
+                $key = $record->obligationKey();
+                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null];
+                $cart[$key]['date'] ??= $record->fulfilledAt()->format('Y-m-d');
+                $cart[$key]['due'] ??= $record->manualDueDate()?->format('Y-m-d');
+                $cart[$key]['wear'] ??= null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : null;
                 if (null !== $record->quantity()) {
-                    $cartQtyByKey[$record->obligationKey()] = ($cartQtyByKey[$record->obligationKey()] ?? 0.0) + $record->quantity()->amount;
+                    $cart[$key]['qty'] += $record->quantity()->amount;
+                    $cart[$key]['hasQty'] = true;
+                    $cart[$key]['unit'] ??= $record->quantity()->unit->value;
                 }
             }
             foreach ($issueRows as $i => $issueRow) {
-                if (isset($cartQtyByKey[$issueRow['key']])) {
-                    $issueRows[$i]['deficitValue'] = AmountFormatter::trimmed($cartQtyByKey[$issueRow['key']]);
+                $saved = $cart[$issueRow['key']] ?? null;
+                if (null === $saved) {
+                    continue;
                 }
+                if ($saved['hasQty']) {
+                    $issueRows[$i]['deficitValue'] = AmountFormatter::trimmed($saved['qty']);
+                }
+                $issueRows[$i]['savedDate'] = $saved['date'];
+                $issueRows[$i]['savedWear'] = $saved['wear'];
+                $issueRows[$i]['savedDueDate'] = $saved['due'];
+                $issueRows[$i]['savedUnit'] = $saved['unit'];
             }
             $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
 
