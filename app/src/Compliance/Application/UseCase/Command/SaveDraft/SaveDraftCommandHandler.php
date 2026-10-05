@@ -53,23 +53,27 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
         $now = new \DateTimeImmutable();
         $staged = trim((string) $command->stagedFileId);
 
-        if ('' === $staged) {
-            // Сохранение черновика: без скана, без инварианта кол-ва — корзину можно сохранить недозаполненной.
+        if (!$command->sign && '' === $staged) {
+            // «Сохранить черновик»: без скана, без инварианта кол-ва — корзину можно сохранить недозаполненной.
             $profileCompliance->saveDraft($command->documentId, $command->actNumber, $command->responsibleFio, $lines, $now);
             $this->repository->add($profileCompliance);
 
             return;
         }
 
-        // Оформление: кол-во проверяем ДО промоута — staged-скан не сгорает при ошибке (переиспользуется при повторе).
-        $profileCompliance->assertIssuable($lines);
-        $fileId = $this->storage->promote($staged, RequirementScanPurpose::SignedCard, $profileCompliance->getId())->id();
+        // «Оформить»: подпись. Решает КНОПКА (sign) ИЛИ приложенный скан — иначе «Оформить» без скана молча
+        // сохранял бы черновик вместо ошибки. Инвариант «нужен скан» проверяет домен ({@see signDraft}):
+        // скан не приложен → AppException, контроллер перерисует форму с ошибкой.
+        $profileCompliance->assertIssuable($lines); // кол-во проверяем ДО промоута — staged-скан не сгорает при ошибке
+        $fileId = '' === $staged ? null : $this->storage->promote($staged, RequirementScanPurpose::SignedCard, $profileCompliance->getId())->id();
 
         try {
             $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, $now, $command->actNumber, $command->responsibleFio);
             $this->repository->add($profileCompliance);
         } catch (\Throwable $e) {
-            $this->storage->remove($fileId); // домен отказал — не оставляем осиротевший скан
+            if (null !== $fileId) {
+                $this->storage->remove($fileId); // домен отказал после промоута — не оставляем осиротевший скан
+            }
             throw $e;
         }
     }

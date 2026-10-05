@@ -52,8 +52,9 @@ final class IssueAction extends AbstractController
                     array_values((array) ($inputData['items'] ?? [])),
                     (string) ($inputData['cardNumber'] ?? ''),
                     (string) ($inputData['responsibleFio'] ?? ''),
-                    $isSign ? (((string) ($inputData['stagedFileId'] ?? '')) ?: null) : null,
+                    $isSign ? (((string) ($inputData['stagedFileId'] ?? '')) ?: null) : null, // скан прикладываем только при «Оформить»
                     array_values((array) ($inputData['personalItems'] ?? [])),
+                    sign: $isSign, // «Оформить» → подпись (скан обязателен, инвариант в домене); «Сохранить» → только корзина
                 ));
                 $this->addFlash('success', $isSign ? 'Карточка оформлена и стала действующей.' : 'Черновик сохранён.');
 

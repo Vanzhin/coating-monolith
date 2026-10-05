@@ -31,6 +31,7 @@ readonly class SaveDraftCommand extends Command
         public string $responsibleFio,
         public ?string $stagedFileId = null,
         public array $personalItems = [],
+        public bool $sign = false,
     ) {
     }
 }
