@@ -1,0 +1,127 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Акты выдачи{% endblock %}
+
+{% set baseQuery = app.request.query.all %}
+{% set preservedParams = baseQuery|filter((v, k) => k not in ['q', 'page']) %}
+{% set filterQuery = baseQuery|filter((v, k) => k not in ['page', 'partial']) %}
+{% set activeFacets = (requirementId ? 1 : 0) + (status ? 1 : 0) + (from ? 1 : 0) + (to ? 1 : 0) + profileIds|length %}
+{% set totalPages = (result.pager.total_items / result.pager.perPage)|round(0, 'ceil') %}
+
+{# Кликабельная колонка-сортировка: ссылка на ?sort=<toggle> + стрелка направления, если активна. #}
+{% macro sort_col(label, baseQuery, current, asc, desc) %}
+    {% set active = current in [asc, desc] %}
+    {% set next = (current == desc) ? asc : desc %}
+    <a href="{{ path('app_cabinet_compliance_acts', baseQuery|merge({sort: next, page: null})|filter(v => v is not null)) }}"
+       class="btn btn-sm {{ active ? 'btn-primary' : 'btn-outline-secondary' }} d-inline-flex align-items-center gap-1">
+        {{ label }}{% if active %}<i class="bi {{ current == asc ? 'bi-arrow-up' : 'bi-arrow-down' }}"></i>{% endif %}
+    </a>
+{% endmacro %}
+
+{% block content %}
+    {% import _self as cols %}
+    <div class="p-2 p-md-3">
+        {# ── Шапка ── #}
+        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
+            <div>
+                <h2 class="text-body-emphasis mb-0">Акты</h2>
+                <div class="text-body-secondary small">Личные карточки учёта выдачи СИЗ по сотрудникам</div>
+            </div>
+        </div>
+
+        {# ── Поиск/фильтры — общий компонент кабинета ── #}
+        <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
+            {% embed 'components/entity_search.html.twig' with {
+                list_route: 'app_cabinet_compliance_acts',
+                form_id: 'actsForm',
+                search_name: 'q',
+                search_value: q,
+                search_placeholder: 'Поиск по ФИО…',
+                active_count: activeFacets,
+                drawer_id: 'actsFilters',
+                drawer_form_id: 'actsFiltersForm',
+            } %}
+                {% block chips %}
+                    {% for name, value in preservedParams %}
+                        {% if value is iterable %}
+                            {% for v in value %}<input type="hidden" name="{{ name }}[]" value="{{ v }}">{% endfor %}
+                        {% else %}
+                            <input type="hidden" name="{{ name }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if status %}
+                        {% set removeUrl = path('app_cabinet_compliance_acts', baseQuery|merge({status: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр">
+                            {{ status == 'signed' ? 'Подписан' : 'Черновик' }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+                    {% for pid in profileIds %}
+                        {% set idsAfterRemove = profileIds|filter(id => id != pid) %}
+                        {% set removeUrl = path('app_cabinet_compliance_acts', baseQuery|merge({profile: idsAfterRemove, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать человека из фильтра">
+                            <i class="bi bi-person"></i> {{ profileNames[pid]|default(pid) }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                {% endblock %}
+
+                {% block drawer %}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        {% from 'admin/compliance/dashboard/_macros.html.twig' import profile_row %}
+                        <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-controller="req-rows">
+                            <div class="fw-semibold small mb-2">Сотрудник</div>
+                            <div data-req-rows-target="rows">
+                                {% for pid in profileIds %}{{ profile_row({id: pid, title: profileNames[pid]|default(pid)}) }}{% endfor %}
+                            </div>
+                            <template data-req-rows-target="template">{{ profile_row(null) }}</template>
+                            <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить</button>
+                        </div>
+                    {% endif %}
+                    <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <div class="fw-semibold small mb-2">Статус</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <label class="facet-pill"><input type="radio" name="status" value=""{{ not status ? ' checked' : '' }}>Любой</label>
+                            <label class="facet-pill"><input type="radio" name="status" value="formed"{{ status == 'formed' ? ' checked' : '' }}>Черновик</label>
+                            <label class="facet-pill"><input type="radio" name="status" value="signed"{{ status == 'signed' ? ' checked' : '' }}>Подписан</label>
+                        </div>
+                    </div>
+                    <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <div class="fw-semibold small mb-2">Период выдачи</div>
+                        <div class="row g-2">
+                            <div class="col-6"><input type="date" name="from" value="{{ from }}" class="form-control" aria-label="С"></div>
+                            <div class="col-6"><input type="date" name="to" value="{{ to }}" class="form-control" aria-label="По"></div>
+                        </div>
+                    </div>
+                {% endblock %}
+
+                {% block drawer_hidden %}
+                    {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+                {% endblock %}
+            {% endembed %}
+        </div>
+
+        {# ── Список ── (entity-preview: клик по подписанной строке лениво фетчит модалку акта с позициями) #}
+        <div class="p-3 rounded-3 bg-body-tertiary" data-controller="entity-preview"
+             data-entity-preview-endpoint-value="{{ path('app_cabinet_compliance_act_preview', {documentId: '00000000-0000-0000-0000-000000000000'}) }}">
+            {% if result.acts is empty %}
+                {% include 'components/empty.html.twig' %}
+            {% else %}
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="text-body-secondary small me-1">Сортировка:</span>
+                    {{ cols.sort_col('Дата акта', baseQuery, sort, 'date_asc', 'default') }}
+                    {{ cols.sort_col('№ акта', baseQuery, sort, 'number_asc', 'number_desc') }}
+                    {{ cols.sort_col('Статус', baseQuery, sort, 'status_asc', 'status_desc') }}
+                </div>
+
+                {% include 'components/infinite_list.html.twig' with {
+                    items_template: 'admin/compliance/acts/_batch.html.twig',
+                    items_params: {acts: result.acts},
+                    total_pages: totalPages,
+                    base_url: path('app_cabinet_compliance_acts', filterQuery),
+                } %}
+            {% endif %}
+        </div>
+
+        {% include 'components/delete_modal.html.twig' %}
+    </div>
+{% endblock %}

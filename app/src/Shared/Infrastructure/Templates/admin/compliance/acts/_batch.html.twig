@@ -1,0 +1,46 @@
+{# Один батч строк списка актов выдачи — единая entity-карточка приложения (.ecard). Рендерится и на первой
+   странице, и при догрузке (?partial=1). Акцент на АКТ: заголовок — № акта; desc — требование·сотрудник·позиции;
+   meta — дата + статус. Подписанный акт: клик по медиа/заголовку → модалка с позициями (entity-preview). #}
+{% for a in acts %}
+    <div class="ecard">
+        <div class="ecard-media{{ a.signed ? ' is-ok' : '' }}"
+             {% if a.signed %}role="button" data-action="click->entity-preview#open" data-entity-id="{{ a.documentId }}"{% endif %}>
+            <i class="bi bi-journal-text"></i>
+        </div>
+        <div class="ecard-body">
+            <div class="ecard-head">
+                <div class="ecard-title d-flex flex-wrap align-items-center gap-2"
+                     {% if a.signed %}role="button" data-action="click->entity-preview#open" data-entity-id="{{ a.documentId }}"{% endif %}>
+                    <span>Акт{% if a.actNumber %} № {{ a.actNumber }}{% endif %}</span>
+                    <span class="small text-body-secondary tnum fw-normal">{{ a.date|date('d.m.Y') }}</span>
+                    {% if a.signed %}
+                        <span class="badge text-bg-success fw-normal"><i class="bi bi-lock-fill me-1"></i>Подписан</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary fw-normal"><i class="bi bi-file-earmark-text me-1"></i>Черновик</span>
+                    {% endif %}
+                </div>
+                <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                    <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if a.signed %}
+                            <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_act_show', {profileId: a.profileId, requirementId: a.requirementId, documentId: a.documentId}) }}"><i class="bi bi-journal-text me-2"></i>Открыть</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_document_card_download', {profileId: a.profileId, requirementId: a.requirementId, documentId: a.documentId}) }}"><i class="bi bi-file-earmark-word me-2"></i>Скачать карточку</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: a.profileId, documentId: a.documentId}) }}"><i class="bi bi-download me-2"></i>Скан</a></li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_issue', {profileId: a.profileId, requirementId: a.requirementId}) }}"><i class="bi bi-pencil-square me-2"></i>Продолжить</a></li>
+                            <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-bs-title="черновик акта"
+                                        data-bs-url="{{ path('app_cabinet_compliance_draft_delete', {profileId: a.profileId, documentId: a.documentId}) }}">
+                                <i class="bi bi-trash3 me-2"></i>Удалить
+                            </button></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            <div class="ecard-desc">{{ a.requirementName }} · {{ a.personFio }} · {{ a.positionsCount }} поз.</div>
+        </div>
+    </div>
+{% endfor %}

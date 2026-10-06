@@ -17,7 +17,10 @@
                     </div>
                     <span class="badge {{ badge[person.worstBucket] }} ms-2"><i class="bi {{ icon[person.worstBucket] }} me-1"></i>{{ label[person.worstBucket] }}</span>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                <a href="{{ path('app_cabinet_compliance_acts', {profile: person.profileId}) }}" class="btn btn-outline-primary btn-sm ms-auto">
+                    <i class="bi bi-journal-text me-1"></i>Акты
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
             <div class="modal-body">
                 {% include 'admin/compliance/dashboard/_person_detail.html.twig' with {person: person} %}

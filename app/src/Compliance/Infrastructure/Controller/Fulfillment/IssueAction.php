@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\Fulfillment;
 
+use App\Compliance\Application\Service\ComplianceActViewBuilder;
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
@@ -27,17 +28,22 @@ use Symfony\Component\Routing\Attribute\Route;
  *  - подписан (финал) → СПИСАНИЕ (поля позиций заблокированы, чекбокс + причина → «Списать выбранное»).
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
+#[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue/act/{documentId}', name: 'app_cabinet_compliance_act_show', methods: ['GET'])]
 final class IssueAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
         private readonly ProfileComplianceRepositoryInterface $repository,
+        private readonly ComplianceActViewBuilder $actViewBuilder,
     ) {
     }
 
-    public function __invoke(Request $request, string $profileId, string $requirementId): Response
+    public function __invoke(Request $request, string $profileId, string $requirementId, ?string $documentId = null): Response
     {
+        if (null !== $documentId) {
+            return $this->renderAct($profileId, $requirementId, $documentId);
+        }
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $inputData */
             $inputData = $request->getPayload()->all();
@@ -67,6 +73,31 @@ final class IssueAction extends AbstractController
         }
 
         return $this->renderForm($profileId, $requirementId, null, []);
+    }
+
+    /**
+     * Просмотр КОНКРЕТНОГО подписанного акта выдачи (слепок): реквизиты + позиции именно этого документа
+     * (что выдано: наименование/модель/кол-во/дата + на руках/списание по его записям). Read-only.
+     */
+    private function renderAct(string $profileId, string $requirementId, string $documentId): Response
+    {
+        $view = $this->actViewBuilder->build($profileId, $requirementId, $documentId);
+        if (null === $view) {
+            $this->addFlash('warning', 'Подписанный акт не найден.');
+
+            return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
+        }
+
+        return $this->render('admin/compliance/person/issue.html.twig', [
+            'mode' => 'act',
+            'profileId' => $profileId,
+            'requirementId' => $requirementId,
+            'documentId' => $documentId,
+            'requirementName' => $view['requirementName'],
+            'profile' => $view['profile'],
+            'rows' => $view['rows'],
+            'act' => $view['act'],
+        ]);
     }
 
     /** Цвет чипа «на руках» относительно нормы (как подсветка кол-ва в оформлении): меньше — danger, ровно — success, больше — info. */

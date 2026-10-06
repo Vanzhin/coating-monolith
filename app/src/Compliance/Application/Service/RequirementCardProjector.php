@@ -26,7 +26,7 @@ use App\Shared\Domain\Templating\TextValue;
  */
 final readonly class RequirementCardProjector
 {
-    public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now): RenderData
+    public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now, ?string $documentId = null): RenderData
     {
         $obligationByKey = [];
         foreach ($profileCompliance->getObligations() as $obligation) {
@@ -35,9 +35,11 @@ final readonly class RequirementCardProjector
             }
         }
 
-        // Источник факт-части и реквизитов бланка — ЭТОТ акт: открытый черновик, иначе последний подписанный.
-        $source = $profileCompliance->openDraftFor($requirement->getId())
-            ?? $this->latestSigned($profileCompliance, $requirement->getId());
+        // Источник факт-части и реквизитов бланка. Задан documentId — ровно этот акт (слепок из списка актов);
+        // иначе — открытый черновик, иначе последний подписанный (прямой вход по требованию).
+        $source = null !== $documentId
+            ? $this->documentOf($profileCompliance, $requirement->getId(), $documentId)
+            : ($profileCompliance->openDraftFor($requirement->getId()) ?? $this->latestSigned($profileCompliance, $requirement->getId()));
 
         $values = [
             'employee_fio' => new TextValue($this->fio($profile)),
@@ -185,6 +187,18 @@ final readonly class RequirementCardProjector
         }
 
         return implode(' ', $parts);
+    }
+
+    /** Документ ЭТОГО профиля И требования по id (чужой/из другого требования → null → карточка не распечатается). */
+    private function documentOf(ProfileCompliance $profileCompliance, string $requirementId, string $documentId): ?RequirementDocument
+    {
+        foreach ($profileCompliance->getDocuments() as $document) {
+            if ($document->getId() === $documentId && $document->requirementId() === $requirementId) {
+                return $document;
+            }
+        }
+
+        return null;
     }
 
     private function latestSigned(ProfileCompliance $profileCompliance, string $requirementId): ?RequirementDocument
