@@ -8,8 +8,8 @@
             <generator strategy="NONE"/>
         </id>
         <field name="requirementId" type="string" length="64" column="requirement_id"/>
-        <field name="requirementName" type="string" length="255" column="requirement_name"/>
-        <field name="label" type="string" length="255" column="label"/>
+        <field name="requirementName" type="string" length="1000" column="requirement_name"/>
+        <field name="label" type="string" length="1000" column="label"/>
         <field name="type" type="string" length="32" column="type"
                enum-type="App\Compliance\Domain\Type\ComplianceType"/>
         <field name="cadence" type="compliance_cadence" column="cadence"/>

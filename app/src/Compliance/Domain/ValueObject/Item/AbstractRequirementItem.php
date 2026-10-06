@@ -13,6 +13,9 @@ use App\Shared\Infrastructure\Exception\AppException;
  */
 abstract readonly class AbstractRequirementItem implements RequirementItemInterface
 {
+    /** Предел длины наименования — проекция (TrackedObligation.label) должна его вмещать, иначе пересборка откатится. */
+    public const MAX_LABEL_LENGTH = 1000;
+
     private string $label;
     private string $basis;
 
@@ -21,6 +24,9 @@ abstract readonly class AbstractRequirementItem implements RequirementItemInterf
         $label = trim($label);
         if ('' === $label) {
             throw new AppException('Укажите наименование позиции.');
+        }
+        if (mb_strlen($label) > self::MAX_LABEL_LENGTH) {
+            throw new AppException(sprintf('Наименование позиции слишком длинное (максимум %d символов).', self::MAX_LABEL_LENGTH));
         }
         $this->label = $label;
 
