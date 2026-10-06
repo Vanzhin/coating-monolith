@@ -13,8 +13,8 @@ use App\Shared\Application\Command\Command;
  * дата построчно). `personalItems` — добавленные прямо в акт позиции вне нормы (origin=Personal): наименование +
  * срок окончания (+ кол-во для материального акта); материализуются в обязанности.
  *
- * @phpstan-type IssuanceInput array{obligationKey?: string, date?: string, amount?: string, unit?: string, wearPercent?: string, manualDueDate?: string}
- * @phpstan-type PersonalInput array{label?: string, amount?: string, unit?: string, manualDueDate?: string}
+ * @phpstan-type IssuanceInput array{obligationKey?: string, date?: string, amount?: string, unit?: string, wearPercent?: string, manualDueDate?: string, note?: string}
+ * @phpstan-type PersonalInput array{label?: string, amount?: string, unit?: string, manualDueDate?: string, note?: string}
  */
 readonly class SaveDraftCommand extends Command
 {

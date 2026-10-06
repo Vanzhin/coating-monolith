@@ -3,6 +3,7 @@
 {% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
 {% set writeoff = mode == 'writeoff' %}
+{% set act_view = mode == 'act' %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
    <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
@@ -12,6 +13,10 @@
             <div class="col-12 col-md-5">
                 <label class="form-label small mb-1">Наименование</label>
                 <input type="text" name="{{ prefix }}[label]" value="{{ row.label|default('') }}" class="form-control">
+            </div>
+            <div class="col-12">
+                <label class="form-label small mb-1">Модель / марка / артикул</label>
+                <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
             </div>
             {% if requirementType == 'material' %}
                 <div class="col-6 col-md-2">
@@ -45,16 +50,17 @@
     </div>
 {% endmacro %}
 
-{% block title %}{{ parent() }} | {{ writeoff ? 'Списание' : 'Оформить' }} — {{ requirementName }}{% endblock %}
+{% set page_verb = act_view ? 'Акт' : (writeoff ? 'Списание' : 'Оформить') %}
+{% block title %}{{ parent() }} | {{ page_verb }} — {{ requirementName }}{% endblock %}
 
 {% block content %}
     {% embed 'components/form_page.html.twig' with {
-        title: (writeoff ? 'Списание — ' : 'Оформить — ') ~ requirementName,
+        title: page_verb ~ ' — ' ~ requirementName,
         back_url: backUrl,
         save_enabled: false,
         save_form_id: 'issue-form',
         save_label: 'Оформить',
-        anchors: writeoff ? [{id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}],
+        anchors: act_view ? [{id: 'sec-items', label: 'Позиции'}] : (writeoff ? [{id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}]),
     } %}
         {% block sections %}
             {% if error is defined and error %}
@@ -64,14 +70,63 @@
                 </div>
             {% endif %}
 
-            {% if writeoff %}
+            {% if act_view %}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <h2 class="h6 mb-0">Акт выдачи{% if act.number %} № {{ act.number }}{% endif %}</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}" class="m-0">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                            </form>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_document_card_download', {profileId: profileId, requirementId: requirementId, documentId: documentId}) }}"><i class="bi bi-file-earmark-word me-1"></i>Скачать карточку</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: documentId}) }}"><i class="bi bi-download me-1"></i>Скан</a>
+                        </div>
+                    </div>
+                    <div class="text-body-secondary small">{{ fio }} · {{ profile.positionTitle }}</div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4"><div class="small text-body-secondary">Дата выдачи</div><div class="fw-semibold">{{ act.date ?: '—' }}</div></div>
+                        <div class="col-md-8"><div class="small text-body-secondary">Ответственное лицо</div><div class="fw-semibold">{{ act.responsible ?: '—' }}</div></div>
+                    </div>
+                </div>
+
+                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h2 class="h6 mb-3">Позиции акта</h2>
+                    {% if rows is empty %}
+                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">В акте нет позиций.</div>
+                    {% endif %}
+                    {% for r in rows %}
+                        <div class="p-3 mb-2 rounded-3 bg-body">
+                            <div class="d-flex flex-wrap align-items-start gap-2">
+                                <div class="me-auto">
+                                    <div class="fw-semibold">{{ r.label }}</div>
+                                    {% if r.model %}<div class="text-body-secondary small">{{ r.model }}</div>{% endif %}
+                                    {% if r.meta %}<div class="text-body-secondary small">{{ r.meta }}</div>{% endif %}
+                                    {% for off in r.writeOffs %}
+                                        <a class="text-danger small d-block" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: off.actId}) }}">{{ off.label }}</a>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-center px-2"><div class="small text-body-secondary">Выдано</div><div class="fw-semibold tnum">{{ r.issued ?: '—' }}</div></div>
+                                <div class="text-center px-2"><div class="small text-body-secondary">Дата</div><div class="fw-semibold tnum">{{ r.date }}</div></div>
+                                {% if r.due %}<div class="text-center px-2"><div class="small text-body-secondary">Срок</div><div class="fw-semibold tnum">{{ r.due }}</div></div>{% endif %}
+                                {% if r.held %}<div class="text-center px-2"><div class="small text-body-secondary">На руках</div><div class="fw-semibold tnum">{{ r.held }}</div></div>{% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elseif writeoff %}
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
                         <h2 class="h6 mb-0">Действующие позиции</h2>
-                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
-                        </form>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
+                                <i class="bi bi-file-earmark-word me-1"></i>Скачать бланк
+                            </a>
+                            <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                            </form>
+                        </div>
                     </div>
                     <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — списание оформляется в акте списания</div>
 
@@ -128,7 +183,7 @@
 
                 {% if signedActs is not empty %}
                     <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
-                        <h2 class="h6 mb-2">Подписанные карточки</h2>
+                        <h2 class="h6 mb-2">Подписанные документы</h2>
                         {% for act in signedActs %}
                             <a class="btn btn-outline-secondary btn-sm me-2 mb-2" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: act.documentId}) }}">
                                 <i class="bi bi-download me-1"></i>Скан{% if act.signedAt %} · {{ act.signedAt }}{% endif %}
@@ -219,6 +274,10 @@
                                         </button>
                                     {% endif %}
                                     <div class="row g-2 w-100">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Модель / марка / артикул</label>
+                                            <input type="text" name="items[{{ i }}][note]" value="{{ s.note|default(o.savedNote) }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
+                                        </div>
                                         <div class="col-6 col-md-3">
                                             <label class="form-label small mb-1">Дата выдачи</label>
                                             <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(o.savedDate ?: documentDate) }}" class="form-control"

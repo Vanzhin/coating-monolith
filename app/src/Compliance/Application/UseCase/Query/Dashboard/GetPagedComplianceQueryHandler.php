@@ -32,7 +32,7 @@ final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInter
         $now = new \DateTimeImmutable();
 
         $projections = $this->repository->findForDashboard(
-            $this->scope->restrictProfileIds($filter),
+            $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q),
             $filter->departmentIds,
         );
         if ([] === $projections) {

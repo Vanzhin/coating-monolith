@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\Fulfillment;
 
+use App\Compliance\Application\Service\ComplianceActViewBuilder;
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
@@ -27,17 +28,22 @@ use Symfony\Component\Routing\Attribute\Route;
  *  - подписан (финал) → СПИСАНИЕ (поля позиций заблокированы, чекбокс + причина → «Списать выбранное»).
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
+#[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue/act/{documentId}', name: 'app_cabinet_compliance_act_show', methods: ['GET'])]
 final class IssueAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
         private readonly ProfileComplianceRepositoryInterface $repository,
+        private readonly ComplianceActViewBuilder $actViewBuilder,
     ) {
     }
 
-    public function __invoke(Request $request, string $profileId, string $requirementId): Response
+    public function __invoke(Request $request, string $profileId, string $requirementId, ?string $documentId = null): Response
     {
+        if (null !== $documentId) {
+            return $this->renderAct($profileId, $requirementId, $documentId);
+        }
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $inputData */
             $inputData = $request->getPayload()->all();
@@ -67,6 +73,31 @@ final class IssueAction extends AbstractController
         }
 
         return $this->renderForm($profileId, $requirementId, null, []);
+    }
+
+    /**
+     * Просмотр КОНКРЕТНОГО подписанного акта выдачи (слепок): реквизиты + позиции именно этого документа
+     * (что выдано: наименование/модель/кол-во/дата + на руках/списание по его записям). Read-only.
+     */
+    private function renderAct(string $profileId, string $requirementId, string $documentId): Response
+    {
+        $view = $this->actViewBuilder->build($profileId, $requirementId, $documentId);
+        if (null === $view) {
+            $this->addFlash('warning', 'Подписанный акт не найден.');
+
+            return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
+        }
+
+        return $this->render('admin/compliance/person/issue.html.twig', [
+            'mode' => 'act',
+            'profileId' => $profileId,
+            'requirementId' => $requirementId,
+            'documentId' => $documentId,
+            'requirementName' => $view['requirementName'],
+            'profile' => $view['profile'],
+            'rows' => $view['rows'],
+            'act' => $view['act'],
+        ]);
     }
 
     /** Цвет чипа «на руках» относительно нормы (как подсветка кол-ва в оформлении): меньше — danger, ровно — success, больше — info. */
@@ -125,7 +156,7 @@ final class IssueAction extends AbstractController
                     'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
                     // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
                     'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
-                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, // из корзины ниже
+                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, // из корзины ниже
                 ];
             }
         }
@@ -148,10 +179,11 @@ final class IssueAction extends AbstractController
                 }
                 $savedDate ??= $record->fulfilledAt();
                 $key = $record->obligationKey();
-                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null];
+                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null, 'note' => null];
                 $cart[$key]['date'] ??= $record->fulfilledAt()->format('Y-m-d');
                 $cart[$key]['due'] ??= $record->manualDueDate()?->format('Y-m-d');
                 $cart[$key]['wear'] ??= null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : null;
+                $cart[$key]['note'] ??= $record->note();
                 if (null !== $record->quantity()) {
                     $cart[$key]['qty'] += $record->quantity()->amount;
                     $cart[$key]['hasQty'] = true;
@@ -170,6 +202,7 @@ final class IssueAction extends AbstractController
                 $issueRows[$i]['savedWear'] = $saved['wear'];
                 $issueRows[$i]['savedDueDate'] = $saved['due'];
                 $issueRows[$i]['savedUnit'] = $saved['unit'];
+                $issueRows[$i]['savedNote'] = $saved['note'];
             }
             $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
 

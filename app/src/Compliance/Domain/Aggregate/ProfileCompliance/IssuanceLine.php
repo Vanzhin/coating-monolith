@@ -18,6 +18,7 @@ final readonly class IssuanceLine
         public ?Quantity $quantity = null,
         public ?Percent $wearPercent = null,
         public ?\DateTimeImmutable $manualDueDate = null,
+        public ?string $note = null,
     ) {
     }
 }

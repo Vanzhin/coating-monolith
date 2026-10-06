@@ -1,0 +1,53 @@
+{# Фрагмент быстрого просмотра акта выдачи (клик по строке списка → entity-preview фетчит и показывает модалкой).
+   Read-only: реквизиты акта + его позиции. Переменные: profileId, requirementId, documentId, requirementName, profile, act, rows. #}
+{% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
+
+<div class="modal fade" id="actPreview-{{ documentId }}" tabindex="-1" aria-labelledby="actPreviewLabel-{{ documentId }}" aria-hidden="true">
+    <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-journal-text"></i></div>
+                    <div>
+                        <div class="fw-semibold" id="actPreviewLabel-{{ documentId }}">Акт выдачи{% if act.number %} № {{ act.number }}{% endif %}</div>
+                        <div class="text-body-secondary small">{{ fio }} · {{ profile.positionTitle }} · {{ requirementName }}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <div><div class="small text-body-secondary">Дата выдачи</div><div class="fw-semibold">{{ act.date ?: '—' }}</div></div>
+                    <div><div class="small text-body-secondary">Ответственное лицо</div><div class="fw-semibold">{{ act.responsible ?: '—' }}</div></div>
+                </div>
+
+                {% if rows is empty %}
+                    <div class="p-4 rounded-3 bg-body text-center text-body-secondary">В акте нет позиций.</div>
+                {% endif %}
+                {% for r in rows %}
+                    <div class="p-3 mb-2 rounded-3 bg-body">
+                        <div class="d-flex flex-wrap align-items-start gap-2">
+                            <div class="me-auto">
+                                <div class="fw-semibold">{{ r.label }}</div>
+                                {% if r.model %}<div class="text-body-secondary small">{{ r.model }}</div>{% endif %}
+                                {% if r.meta %}<div class="text-body-secondary small">{{ r.meta }}</div>{% endif %}
+                                {% for off in r.writeOffs %}
+                                    <a class="text-danger small d-block" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: off.actId}) }}">{{ off.label }}</a>
+                                {% endfor %}
+                            </div>
+                            <div class="text-center px-2"><div class="small text-body-secondary">Выдано</div><div class="fw-semibold tnum">{{ r.issued ?: '—' }}</div></div>
+                            <div class="text-center px-2"><div class="small text-body-secondary">Дата</div><div class="fw-semibold tnum">{{ r.date }}</div></div>
+                            {% if r.due %}<div class="text-center px-2"><div class="small text-body-secondary">Срок</div><div class="fw-semibold tnum">{{ r.due }}</div></div>{% endif %}
+                            {% if r.held %}<div class="text-center px-2"><div class="small text-body-secondary">На руках</div><div class="fw-semibold tnum">{{ r.held }}</div></div>{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer border-0 d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: documentId}) }}"><i class="bi bi-download me-1"></i>Скан</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_document_card_download', {profileId: profileId, requirementId: requirementId, documentId: documentId}) }}"><i class="bi bi-file-earmark-word me-1"></i>Скачать карточку</a>
+                <a class="btn btn-primary btn-sm ms-auto" href="{{ path('app_cabinet_compliance_act_show', {profileId: profileId, requirementId: requirementId, documentId: documentId}) }}"><i class="bi bi-arrow-up-right-square me-1"></i>Открыть</a>
+            </div>
+        </div>
+    </div>
+</div>
