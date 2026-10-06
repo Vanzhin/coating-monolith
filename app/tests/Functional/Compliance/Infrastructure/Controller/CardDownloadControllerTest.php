@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\Service\RequirementCardProjector;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
@@ -19,6 +20,7 @@ use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
@@ -169,6 +171,75 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringContainsString('Сидоров', $text, 'ответственный из черновика подставлен в бланк');
     }
 
+    public function test_card_by_document_shows_that_act_not_latest(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance('Перчатки');
+        // Первый акт выдачи с моделью «AAA». Затем списываем всё (дефицит) и делаем ВТОРОЙ акт с моделью «BBB».
+        // Инвариант «на руках ≥ норма» не даёт частичную выдачу, поэтому два акта — только через списание между ними.
+        $firstDocId = $this->issueCardWithNote($p, $r, $k, 'AAA');
+        $this->writeOffAllSigned($p, $r);
+        $this->issueCardWithNote($p, $r, $k, 'BBB');
+
+        // Карточка ПО ПЕРВОМУ документу должна показывать его факт (AAA), а не последний (BBB).
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/document/%s/card', $p, $r, $firstDocId));
+        self::assertResponseIsSuccessful();
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('AAA', $text, 'карточка по документу показывает факт именно этого акта');
+        self::assertStringNotContainsString('BBB', $text, 'не подставляется факт последнего акта');
+    }
+
+    /** Списать всё на руках по требованию одним подписанным актом списания (чтобы образовался дефицит под новый акт). */
+    private function writeOffAllSigned(string $profileId, string $requirementId): void
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        $bus->execute(new StartWriteOffActCommand($profileId, $requirementId));
+        $em->clear();
+        $pc = $repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $actId = $pc->openWriteOffDraftFor($requirementId)?->getId();
+        self::assertNotNull($actId);
+        $portions = [];
+        foreach ($pc->recordsForRequirement($requirementId) as $record) {
+            if (null !== $record->quantity() && $record->heldAmount() > 0.0) {
+                $portions[] = ['recordId' => $record->getId(), 'quantity' => $record->heldAmount(), 'reason' => 'physical_wear'];
+            }
+        }
+        $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
+        $bus->execute(new SaveWriteOffActCommand($profileId, $actId, $portions, 'А-1', '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($profileId, $actId, $commission, 'А-1', '2026-07-01', $this->stageComplianceScan()));
+        $em->clear();
+
+        // Пересчёт проекции (held) после списания идёт async-событием WriteOffActSigned, в тестах не обрабатывается —
+        // пересобираем вручную, чтобы образовался дефицит и следующий FormDraft создал черновик.
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)
+            ->rebuild(profileIds: new StringCollection($profileId));
+    }
+
+    /** Выдать карточку с моделью (note) на позиции и вернуть id подписанного документа. */
+    private function issueCardWithNote(string $profileId, string $requirementId, string $key, string $note): string
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+
+        $bus->execute(new FormDraftCommand($profileId, $requirementId));
+        $em->clear();
+        $draftId = $repo->findByProfile($profileId)?->openDraftFor($requirementId)?->getId();
+        self::assertNotNull($draftId);
+        $bus->execute(new SaveDraftCommand(
+            $profileId, $draftId, '2026-06-01',
+            [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair', 'note' => $note]],
+            'К-1', 'Петров П. П.',
+            $this->stageComplianceScan(),
+        ));
+        $em->clear();
+
+        return $draftId;
+    }
+
     private function docxText(string $bytes): string
     {
         $tmp = tempnam(sys_get_temp_dir(), 'card_').'.docx';
@@ -191,7 +262,7 @@ final class CardDownloadControllerTest extends WebTestCase
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/preview', $profileId));
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.btn-soft-success'); // «Оформить» по открытому черновику
+        self::assertSelectorExists('a[href*="/compliance/acts"]'); // модалка — read-only + кнопка «Акты»
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();
