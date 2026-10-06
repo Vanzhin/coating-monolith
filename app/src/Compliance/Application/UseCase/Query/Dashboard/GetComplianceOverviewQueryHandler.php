@@ -34,7 +34,7 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
         $now = new \DateTimeImmutable();
 
         $projections = $this->repository->findForDashboard(
-            $this->scope->restrictProfileIds($filter),
+            $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q),
             $filter->departmentIds,
         );
         $profilesById = [] === $projections ? [] : $this->scope->profilesById($projections);
