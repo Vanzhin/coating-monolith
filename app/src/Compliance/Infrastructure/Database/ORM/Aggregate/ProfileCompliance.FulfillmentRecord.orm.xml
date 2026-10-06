@@ -7,7 +7,7 @@
         <id name="id" type="uuid" column="id">
             <generator strategy="NONE"/>
         </id>
-        <field name="obligationKey" type="string" length="320" column="obligation_key"/>
+        <field name="obligationKey" type="string" length="1100" column="obligation_key"/>
         <field name="fulfilledAt" type="datetime_immutable" column="fulfilled_at"/>
         <field name="quantity" type="compliance_quantity" column="quantity" nullable="true"/>
         <field name="wearPercent" type="float" column="wear_percent" nullable="true"/>

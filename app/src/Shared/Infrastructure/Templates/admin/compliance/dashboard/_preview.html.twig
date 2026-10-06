@@ -9,18 +9,18 @@
     <div class="modal-dialog modal-sheet modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="ecard-media" style="width: 44px; height: 44px;"><i class="bi bi-person-badge"></i></div>
-                    <div>
-                        <div class="fw-semibold" id="personPreviewLabel-{{ person.profileId }}">{{ person.fullName }}</div>
-                        <div class="text-body-secondary small">{{ person.positionTitle }}{% if person.departmentTitle %} · {{ person.departmentTitle }}{% endif %}</div>
+                <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width: 0">
+                    <div class="ecard-media flex-shrink-0" style="width: 44px; height: 44px;"><i class="bi bi-person-badge"></i></div>
+                    <div style="min-width: 0">
+                        <div class="fw-semibold text-truncate" id="personPreviewLabel-{{ person.profileId }}">{{ person.fullName }}</div>
+                        <div class="text-body-secondary small text-truncate">{{ person.positionTitle }}{% if person.departmentTitle %} · {{ person.departmentTitle }}{% endif %}</div>
                     </div>
-                    <span class="badge {{ badge[person.worstBucket] }} ms-2"><i class="bi {{ icon[person.worstBucket] }} me-1"></i>{{ label[person.worstBucket] }}</span>
+                    <span class="badge {{ badge[person.worstBucket] }} flex-shrink-0"><i class="bi {{ icon[person.worstBucket] }} me-1"></i>{{ label[person.worstBucket] }}</span>
                 </div>
-                <a href="{{ path('app_cabinet_compliance_acts', {profile: person.profileId}) }}" class="btn btn-outline-primary btn-sm ms-auto">
+                <a href="{{ path('app_cabinet_compliance_acts', {profile: person.profileId}) }}" class="btn btn-outline-primary btn-sm flex-shrink-0 ms-2">
                     <i class="bi bi-journal-text me-1"></i>Акты
                 </a>
-                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                <button type="button" class="btn-close flex-shrink-0 ms-2" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
             <div class="modal-body">
                 {% include 'admin/compliance/dashboard/_person_detail.html.twig' with {person: person} %}

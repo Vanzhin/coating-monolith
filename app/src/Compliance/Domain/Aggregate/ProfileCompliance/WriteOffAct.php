@@ -94,6 +94,25 @@ class WriteOffAct
         return $this->items->isEmpty();
     }
 
+    /**
+     * Удалить порции, списанные с указанных фактов (при каскадном удалении акта выдачи — его списания уходят вместе).
+     * orphan-removal снесёт строки при flush. Возвращает число удалённых порций.
+     *
+     * @param array<string, true> $recordIds
+     */
+    public function removeItemsByRecordIds(array $recordIds): int
+    {
+        $removed = 0;
+        foreach ($this->items->toArray() as $item) {
+            if (isset($recordIds[$item->recordId()])) {
+                $this->items->removeElement($item);
+                ++$removed;
+            }
+        }
+
+        return $removed;
+    }
+
     /** @return list<WriteOffItem> */
     public function items(): array
     {

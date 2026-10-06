@@ -267,6 +267,59 @@ class ProfileCompliance extends Aggregate
         return false;
     }
 
+    /**
+     * Админское удаление ЛЮБОГО документа выдачи (в т.ч. подписанного — слепка) с каскадом: его записи-факты +
+     * связанные списания (порции по этим фактам; опустевший акт списания уходит целиком, чужие порции сохраняются).
+     * Возвращает requirementId (для пересчёта по событию) и fileIds удалённых сканов (акта + опустевших актов
+     * списания) — их чистит хендлер. null — документ не найден. Пересчёт проекции — асинхронно, не тут.
+     *
+     * @return array{requirementId: string, fileIds: list<string>}|null
+     */
+    public function deleteSignedDocument(string $documentId): ?array
+    {
+        $document = $this->documentById($documentId);
+        if (null === $document) {
+            return null;
+        }
+        $requirementId = $document->requirementId();
+
+        $fileIds = [];
+        if (null !== $document->scanFileId()) {
+            $fileIds[] = $document->scanFileId();
+        }
+
+        // Факты этого документа.
+        $recordIds = [];
+        foreach ($this->records as $record) {
+            if ($record->documentId() === $documentId) {
+                $recordIds[$record->getId()] = true;
+            }
+        }
+
+        // Списания по этим фактам: убрать порции; если акт списания опустел из-за этого — удалить и его (+ скан).
+        foreach ($this->writeOffActs->toArray() as $act) {
+            $removed = $act->removeItemsByRecordIds($recordIds);
+            if ($removed > 0 && $act->isEmpty()) {
+                if (null !== $act->scanFileId()) {
+                    $fileIds[] = $act->scanFileId();
+                }
+                $this->writeOffActs->removeElement($act);
+            }
+        }
+
+        // Записи и сам документ.
+        foreach ($this->records->toArray() as $record) {
+            if ($record->documentId() === $documentId) {
+                $this->records->removeElement($record);
+            }
+        }
+        $this->documents->removeElement($document);
+
+        $this->pruneOrphanPersonalObligations($requirementId);
+
+        return ['requirementId' => $requirementId, 'fileIds' => $fileIds];
+    }
+
     /** Удалить черновик (подписанный акт не удаляется); возвращает requirementId удалённого (для пересчёта по событию) или null, если не найден. */
     public function deleteDraft(string $documentId): ?string
     {

@@ -29,6 +29,14 @@
                             <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_act_show', {profileId: a.profileId, requirementId: a.requirementId, documentId: a.documentId}) }}"><i class="bi bi-journal-text me-2"></i>Открыть</a></li>
                             <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_document_card_download', {profileId: a.profileId, requirementId: a.requirementId, documentId: a.documentId}) }}"><i class="bi bi-file-earmark-word me-2"></i>Скачать карточку</a></li>
                             <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: a.profileId, documentId: a.documentId}) }}"><i class="bi bi-download me-2"></i>Скан</a></li>
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            data-bs-title="этот акт выдачи и все связанные с ним списания"
+                                            data-bs-url="{{ path('app_cabinet_compliance_document_delete', {profileId: a.profileId, documentId: a.documentId}) }}">
+                                    <i class="bi bi-trash3 me-2"></i>Удалить акт
+                                </button></li>
+                            {% endif %}
                         {% else %}
                             <li><a class="dropdown-item" href="{{ path('app_cabinet_compliance_issue', {profileId: a.profileId, requirementId: a.requirementId}) }}"><i class="bi bi-pencil-square me-2"></i>Продолжить</a></li>
                             <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"

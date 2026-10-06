@@ -19,7 +19,7 @@
         <div class="row g-2">
             <div class="col-md-6">
                 <label class="form-label small mb-1">Наименование <span class="text-danger">*</span></label>
-                <input type="text" name="items[{{ i }}][label]" value="{{ item.label|default('') }}" class="form-control" placeholder="Перчатки">
+                <input type="text" name="items[{{ i }}][label]" value="{{ item.label|default('') }}" class="form-control" placeholder="Перчатки" maxlength="1000">
             </div>
             <div class="col-md-4" data-item-quantity>
                 <label class="form-label small mb-1">Кол-во <span class="text-danger">*</span></label>
