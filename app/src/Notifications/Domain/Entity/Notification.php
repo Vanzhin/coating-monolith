@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Notifications\Domain\Entity;
 
-use App\Notifications\Domain\Event\NotificationCreatedEvent;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
@@ -15,6 +14,9 @@ use Symfony\Component\Uid\Uuid;
  * ulid юзера как значение (без ORM-связи на Users\User, чтобы не сцеплять контексты; FK — на
  * уровне БД). Ссылку «вглубь» при необходимости кладём прямо в текст message — отдельного
  * url-поля нет, клик по уведомлению всегда ведёт в раздел уведомлений.
+ *
+ * Создание уведомления ничего НЕ рассылает: доставка (inbox/push/email) идёт только через
+ * NotificationDispatcher по подпискам. Запись здесь — это inbox-канал, не триггер пуша.
  */
 class Notification extends Aggregate
 {
@@ -30,10 +32,6 @@ class Notification extends Aggregate
         if ('' === $message) {
             throw new AppException('Пустое уведомление.');
         }
-        // Создание уведомления = намерение доставить: событие поднимается здесь и уедет на шину
-        // при сохранении (PublishDomainEventsOnFlushListener), где хендлер сделает рассылку по
-        // каналам владельца. Doctrine при гидрации из БД конструктор не зовёт — на загрузке не стрельнёт.
-        $this->raise(new NotificationCreatedEvent($id->jsonSerialize()));
     }
 
     public function markRead(): void
