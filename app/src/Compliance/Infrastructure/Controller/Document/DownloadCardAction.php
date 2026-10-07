@@ -11,6 +11,7 @@ use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Shared\Infrastructure\Service\TemplateRendering;
@@ -43,6 +44,7 @@ final class DownloadCardAction extends AbstractController
         private readonly RequirementCardProjector $projector,
         private readonly TemplateRendering $rendering,
         private readonly ComplianceAccessControl $access,
+        private readonly FileStorage $storage,
         private readonly string $cardTemplatePath,
     ) {
     }
@@ -63,7 +65,7 @@ final class DownloadCardAction extends AbstractController
         }
 
         $data = $this->projector->project($profileCompliance, $profileResult->profile, $requirement, new \DateTimeImmutable(), $documentId);
-        $doc = $this->rendering->render(new TemplateFile($this->cardTemplatePath), $data);
+        $doc = $this->rendering->render(new TemplateFile($this->resolveTemplatePath($requirement->getTemplateFileId())), $data);
 
         $name = 'Карточка-'.$requirement->getName().'.'.$doc->extension();
         $response = new Response($doc->content, Response::HTTP_OK, ['Content-Type' => $doc->mimeType()]);
@@ -74,5 +76,18 @@ final class DownloadCardAction extends AbstractController
         ));
 
         return $response;
+    }
+
+    /**
+     * Путь шаблона для рендера: свой шаблон требования (если задан и файл есть в реестре) либо дефолтная
+     * карточка. Битый/отсутствующий id → молча фолбэк на дефолт, без 500.
+     */
+    private function resolveTemplatePath(?string $templateFileId): string
+    {
+        if (null !== $templateFileId && null !== $this->storage->get($templateFileId)) {
+            return $this->storage->localPath($templateFileId);
+        }
+
+        return $this->cardTemplatePath;
     }
 }

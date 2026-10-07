@@ -11,6 +11,7 @@ use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
+use App\Compliance\Domain\File\RequirementTemplatePurpose;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
@@ -21,6 +22,7 @@ use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
@@ -30,6 +32,7 @@ use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -76,6 +79,53 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringContainsString('Перчатки', $text, 'наименование нормы (items.label) подставлено');
         self::assertStringContainsString('ежегодно', $text, 'периодичность нормы (items.unit_cadence) подставлена');
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены');
+    }
+
+    public function test_download_uses_requirement_template_when_set(): void
+    {
+        ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
+        $c = $this->client->getContainer();
+        $repo = $c->get(RequirementRepositoryInterface::class);
+        $storage = $c->get(FileStorage::class);
+
+        // Прикрутить к требованию СВОЙ шаблон в формате xlsx — отличим по расширению выгрузки от дефолтного docx.
+        $stored = $storage->store(RequirementTemplatePurpose::Template, $requirementId, $this->xlsxUpload($c->getParameter('kernel.project_dir')));
+        $requirement = $repo->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $requirement->setTemplateFileId($stored->id());
+        $repo->add($requirement);
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('.xlsx', (string) $this->client->getResponse()->headers->get('Content-Disposition'), 'печатается шаблон требования (xlsx), а не дефолтная docx-карточка');
+    }
+
+    public function test_download_falls_back_to_default_when_template_broken(): void
+    {
+        ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
+        $c = $this->client->getContainer();
+        $repo = $c->get(RequirementRepositoryInterface::class);
+
+        // id шаблона указывает на несуществующий файл — не 500, молча фолбэк на дефолтную карточку.
+        $requirement = $repo->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $requirement->setTemplateFileId((string) Uuid::v7());
+        $repo->add($requirement);
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('.docx', (string) $this->client->getResponse()->headers->get('Content-Disposition'), 'битый шаблон → дефолтная docx-карточка');
+    }
+
+    private function xlsxUpload(string $projectDir): UploadedFile
+    {
+        $src = $projectDir.'/src/Compliance/Infrastructure/Resources/templates/requirement_card_material.xlsx';
+        $tmp = tempnam(sys_get_temp_dir(), 'tpl').'.xlsx';
+        copy($src, $tmp);
+
+        return new UploadedFile($tmp, 'journal.xlsx', null, null, true);
     }
 
     public function test_projector_page1_norm_page2_facts_with_writeoff(): void
