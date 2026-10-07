@@ -12,7 +12,14 @@
                        class="text-body-secondary text-decoration-none small d-inline-block mb-1">
                         <i class="bi bi-chevron-left"></i> Профиль
                     </a>
-                    <h1 class="h3 mb-0">Уведомления</h1>
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <h1 class="h3 mb-0">Уведомления</h1>
+                        <a href="{{ path('app_notifications_settings') }}"
+                           class="btn btn-sm btn-link text-body-secondary text-decoration-none p-1 flex-shrink-0"
+                           aria-label="Настройки уведомлений">
+                            <i class="bi bi-gear fs-5"></i>
+                        </a>
+                    </div>
                 </div>
 
                 {# Список — единый infinite-list с кнопкой «Показать ещё» (по 10). Пустое состояние
