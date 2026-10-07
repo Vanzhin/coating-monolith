@@ -88,6 +88,9 @@ final class IssueAction extends AbstractController
             return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
         }
 
+        // Тип требования (мономорфен) — чтобы в акте процедуры не показывать списание (его у не материального нет).
+        $actType = $this->repository->findByProfile($profileId)?->typeOfRequirement($requirementId);
+
         return $this->render('admin/compliance/person/issue.html.twig', [
             'mode' => 'act',
             'profileId' => $profileId,
@@ -97,6 +100,7 @@ final class IssueAction extends AbstractController
             'profile' => $view['profile'],
             'rows' => $view['rows'],
             'act' => $view['act'],
+            'requirementType' => null !== $actType ? $actType->value : 'material',
         ]);
     }
 
