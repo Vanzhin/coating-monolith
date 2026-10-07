@@ -162,6 +162,12 @@ services:
 
   # Telegram Notification
   App\Notifications\Application\Service\Telegram\TelegramBotService:
+    # lazy: Telegram каналом доставки уведомлений не является (NotificationChannel знает только inbox/web_push/
+    # email), а конструктор сервиса сразу дёргает Longman-клиент (addCommandsPath/configureCommands). Без lazy
+    # пустой TELEGRAM_NOTIFICATION_BOT_TOKEN (в CI переменные .env.example пусты) роняет весь граф диспетчера
+    # уведомлений на «API KEY not defined» ещё при сборке контейнера. Ghost-proxy строит сервис лишь при
+    # реальном обращении (вебхук/верификация), которого в тестах и рассылке уведомлений нет.
+    lazy: true
     arguments:
       $webhookUrl: '%env(TELEGRAM_NOTIFICATION_BOT_WEBHOOK)%'
       $commandPath: /app/src/Notifications/Application/Service/Telegram/Command
