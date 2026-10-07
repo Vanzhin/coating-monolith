@@ -12,6 +12,7 @@
                enum-type="App\Compliance\Domain\Type\ComplianceType"/>
         <field name="positionIds" type="string_collection" column="position_ids"/>
         <field name="items" type="compliance_requirement_items" column="items"/>
+        <field name="templateFileId" type="string" length="36" column="template_file_id" nullable="true"/>
         <field name="version" type="integer" column="version" version="true"/>
     </entity>
 

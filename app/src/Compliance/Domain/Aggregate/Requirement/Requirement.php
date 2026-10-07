@@ -30,6 +30,8 @@ class Requirement extends Aggregate
     private StringCollection $positionIds;
     /** @var RequirementItemInterface[] */
     private array $items;
+    /** Файл-шаблон документа этого требования (uuid в едином файловом реестре); null → печатается дефолтная карточка. */
+    private ?string $templateFileId = null;
     private int $version = 1;
 
     public function __construct(
@@ -84,6 +86,17 @@ class Requirement extends Aggregate
     public function getType(): ComplianceType
     {
         return $this->type;
+    }
+
+    /** Файл-шаблон документа требования (uuid) или null — тогда печатается дефолтная карточка. */
+    public function getTemplateFileId(): ?string
+    {
+        return $this->templateFileId;
+    }
+
+    public function setTemplateFileId(?string $templateFileId): void
+    {
+        $this->templateFileId = ('' === $templateFileId) ? null : $templateFileId;
     }
 
     public function getPositionIds(): StringCollection

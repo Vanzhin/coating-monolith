@@ -114,4 +114,17 @@ final class RequirementTest extends TestCase
         self::assertTrue($req->coversPosition('pos-1'));
         self::assertFalse($req->coversPosition('pos-999'));
     }
+
+    public function test_template_file_id_defaults_null_and_sets(): void
+    {
+        $req = $this->material($this->gloves());
+
+        self::assertNull($req->getTemplateFileId(), 'без шаблона — null (печатается дефолтная карточка)');
+
+        $req->setTemplateFileId('file-uuid-1');
+        self::assertSame('file-uuid-1', $req->getTemplateFileId());
+
+        $req->setTemplateFileId('');
+        self::assertNull($req->getTemplateFileId(), 'пустая строка → null');
+    }
 }
