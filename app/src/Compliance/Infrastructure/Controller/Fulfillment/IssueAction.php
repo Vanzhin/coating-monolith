@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Compliance\Infrastructure\Controller\AmountFormatter;
@@ -36,6 +37,7 @@ final class IssueAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly ProfileComplianceRepositoryInterface $repository,
         private readonly ComplianceActViewBuilder $actViewBuilder,
+        private readonly RequirementRepositoryInterface $requirements,
     ) {
     }
 
@@ -160,7 +162,7 @@ final class IssueAction extends AbstractController
                     'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
                     // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
                     'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
-                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, // из корзины ниже
+                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, 'savedInstruction' => [], // из корзины ниже
                 ];
             }
         }
@@ -168,6 +170,20 @@ final class IssueAction extends AbstractController
         // Режим: открытый черновик → оформление; иначе есть подписанный акт → списание.
         if (null !== $openDraft) {
             $actType = $profileCompliance->typeOfRequirement($requirementId); // тип акта (мономорфен) для полей персональной строки
+
+            // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
+            // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
+            $journalKind = $this->requirements->findOneById($requirementId)?->getJournalKind();
+            $instructionGroups = [];
+            foreach (null !== $journalKind ? $journalKind->fields() : [] as $field) {
+                $fieldView = ['key' => $field->key, 'label' => $field->label, 'kind' => $field->kind->value, 'required' => $field->required, 'options' => $field->options];
+                $last = array_key_last($instructionGroups);
+                if (null !== $last && $instructionGroups[$last]['label'] === $field->group) {
+                    $instructionGroups[$last]['fields'][] = $fieldView;
+                } else {
+                    $instructionGroups[] = ['label' => $field->group, 'fields' => [$fieldView]];
+                }
+            }
 
             // Гидрация из сохранённого черновика при GET (на reload inputData из POST пуст): реквизиты акта +
             // количества строк берём из корзины, чтобы перезагрузка показывала сохранённое, а не только дефицит.
@@ -183,11 +199,14 @@ final class IssueAction extends AbstractController
                 }
                 $savedDate ??= $record->fulfilledAt();
                 $key = $record->obligationKey();
-                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null, 'note' => null];
+                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null, 'note' => null, 'instruction' => []];
                 $cart[$key]['date'] ??= $record->fulfilledAt()->format('Y-m-d');
                 $cart[$key]['due'] ??= $record->manualDueDate()?->format('Y-m-d');
                 $cart[$key]['wear'] ??= null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : null;
                 $cart[$key]['note'] ??= $record->note();
+                if ([] === $cart[$key]['instruction'] && null !== $record->instructionDetails()) {
+                    $cart[$key]['instruction'] = $record->instructionDetails()->values;
+                }
                 if (null !== $record->quantity()) {
                     $cart[$key]['qty'] += $record->quantity()->amount;
                     $cart[$key]['hasQty'] = true;
@@ -207,6 +226,7 @@ final class IssueAction extends AbstractController
                 $issueRows[$i]['savedDueDate'] = $saved['due'];
                 $issueRows[$i]['savedUnit'] = $saved['unit'];
                 $issueRows[$i]['savedNote'] = $saved['note'];
+                $issueRows[$i]['savedInstruction'] = $saved['instruction'] ?? [];
             }
             $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
 
@@ -219,6 +239,7 @@ final class IssueAction extends AbstractController
                 'draftId' => $openDraft->getId(),
                 'rows' => $issueRows,
                 'requirementType' => null !== $actType ? $actType->value : 'material',
+                'instructionGroups' => $instructionGroups,
                 'inputData' => $inputData,
                 'documentDate' => $documentDate,
                 'error' => $error,

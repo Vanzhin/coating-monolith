@@ -91,12 +91,6 @@ final class ActsListControllerTest extends WebTestCase
         self::assertStringContainsString('Петров', $html, 'ответственное лицо акта');
         self::assertStringContainsString('Перчатки', $html, 'позиция акта');
         self::assertStringContainsString('Jeta JP711', $html, 'модель/марка (note) позиции');
-
-        // Модалка-превью акта (ленивый фрагмент по documentId) — те же позиции.
-        $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/act/%s/preview', $docId));
-        self::assertResponseIsSuccessful();
-        self::assertGreaterThan(0, $crawler->filter('.modal')->count(), 'фрагмент — модалка');
-        self::assertStringContainsString('Перчатки', (string) $this->client->getResponse()->getContent(), 'позиция в модалке');
     }
 
     // Owner-скоуп (не-админ → только свои акты, чужой ?profile игнорируется) обеспечивает общий

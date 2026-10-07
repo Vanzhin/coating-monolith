@@ -107,9 +107,8 @@
             {% endembed %}
         </div>
 
-        {# ── Список ── (entity-preview: клик по подписанной строке лениво фетчит модалку акта с позициями) #}
-        <div class="p-3 rounded-3 bg-body-tertiary" data-controller="entity-preview"
-             data-entity-preview-endpoint-value="{{ path('app_cabinet_compliance_act_preview', {documentId: '00000000-0000-0000-0000-000000000000'}) }}">
+        {# ── Список ── клик по карточке акта ведёт внутрь (черновик → оформление, подписанный → просмотр). #}
+        <div class="p-3 rounded-3 bg-body-tertiary">
             {% if result.acts is empty %}
                 {% include 'components/empty.html.twig' %}
             {% else %}

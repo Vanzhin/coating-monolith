@@ -29,6 +29,8 @@ export default class extends Controller {
         const need = this.requiresQuantityValue[this._currentType()] ?? true;
 
         this.element.querySelectorAll('[data-item-quantity]').forEach((cell) => { cell.hidden = !need; });
+        // Поля только для нематериального (вид журнала) — показываем, когда количество НЕ требуется.
+        this.element.querySelectorAll('[data-non-material-only]').forEach((el) => { el.hidden = need; });
         this.element.querySelectorAll('template').forEach((tpl) => {
             tpl.content.querySelectorAll('[data-item-quantity]').forEach((cell) => { cell.hidden = !need; });
         });

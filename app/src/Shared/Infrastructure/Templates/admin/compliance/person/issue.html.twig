@@ -7,18 +7,18 @@
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
    <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
-{% macro personal_row(prefix, row, requirementType, units) %}
+{% macro personal_row(prefix, row, requirementType, units, instructionGroups) %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
         <div class="row g-2">
             <div class="col-12 col-md-5">
                 <label class="form-label small mb-1">Наименование</label>
                 <input type="text" name="{{ prefix }}[label]" value="{{ row.label|default('') }}" class="form-control">
             </div>
-            <div class="col-12">
-                <label class="form-label small mb-1">Модель / марка / артикул</label>
-                <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
-            </div>
             {% if requirementType == 'material' %}
+                <div class="col-12 col-md-7">
+                    <label class="form-label small mb-1">Модель / марка / артикул</label>
+                    <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
+                </div>
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Кол-во</label>
                     <input type="number" min="0" step="any" inputmode="decimal" name="{{ prefix }}[amount]" value="{{ row.amount|default('') }}" class="form-control">
@@ -35,6 +35,33 @@
                 <input type="date" name="{{ prefix }}[manualDueDate]" value="{{ row.manualDueDate|default('') }}" class="form-control">
             </div>
         </div>
+        {% if requirementType != 'material' and instructionGroups|default([]) is not empty %}
+            {% for grp in instructionGroups %}
+                <div class="mt-2 p-2 rounded-3 bg-body-tertiary">
+                    {% if grp.label %}<div class="small fw-semibold text-body-secondary mb-2">{{ grp.label }}</div>{% endif %}
+                    <div class="row g-2">
+                        {% for f in grp.fields %}
+                            {% set ival = row.instruction[f.key]|default('') %}
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small mb-1">{{ f.label }}{% if f.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                {% if f.kind == 'select' %}
+                                    <select name="{{ prefix }}[instruction][{{ f.key }}]" class="form-select">
+                                        <option value="">—</option>
+                                        {% for opt in f.options %}<option value="{{ opt }}"{{ ival == opt ? ' selected' : '' }}>{{ opt }}</option>{% endfor %}
+                                    </select>
+                                {% elseif f.kind == 'date' %}
+                                    <input type="date" name="{{ prefix }}[instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                {% elseif f.kind == 'text_list' %}
+                                    <textarea name="{{ prefix }}[instruction][{{ f.key }}]" rows="2" class="form-control" placeholder="По одному на строку">{{ ival }}</textarea>
+                                {% else %}
+                                    <input type="text" name="{{ prefix }}[instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
         <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
     </div>
 {% endmacro %}
@@ -234,7 +261,7 @@
                         <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
-                                <label class="form-label small mb-1">Акт № <span class="text-danger">*</span></label>
+                                <label class="form-label small mb-1">Документ № <span class="text-danger">*</span></label>
                                 <input type="text" name="cardNumber" value="{{ inputData.cardNumber|default('') }}" class="form-control">
                             </div>
                             <div class="col-md-8">
@@ -277,6 +304,8 @@
                                 attrs: 'data-row',
                                 o: o, i: loop.index0, units: units, documentDate: documentDate,
                                 s: inputData.items[loop.index0]|default({}),
+                                instructionGroups: instructionGroups|default([]),
+                                savedInstruction: o.savedInstruction|default({}),
                             } %}
                                 {% block footer %}
                                     <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
@@ -287,7 +316,7 @@
                                     {% endif %}
                                     <div class="row g-2 w-100">
                                         <div class="col-12">
-                                            <label class="form-label small mb-1">Модель / марка / артикул</label>
+                                            <label class="form-label small mb-1">Наименование</label>
                                             <input type="text" name="items[{{ i }}][note]" value="{{ s.note|default(o.savedNote) }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
                                         </div>
                                         <div class="col-6 col-md-3">
@@ -331,6 +360,34 @@
                                             </div>
                                         {% endif %}
                                     </div>
+                                    {% if o.type != 'material' and instructionGroups is not empty %}
+                                        {# Поля инструктажа по схеме журнала (config-first), сгруппированы блоками (теор./практ. часть). #}
+                                        {% for grp in instructionGroups %}
+                                            <div class="w-100 mt-2 p-2 rounded-3 bg-body">
+                                                {% if grp.label %}<div class="small fw-semibold text-body-secondary mb-2">{{ grp.label }}</div>{% endif %}
+                                                <div class="row g-2">
+                                                    {% for f in grp.fields %}
+                                                        {% set ival = savedInstruction[f.key]|default('') %}
+                                                        <div class="col-12 col-md-6">
+                                                            <label class="form-label small mb-1">{{ f.label }}{% if f.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                                            {% if f.kind == 'select' %}
+                                                                <select name="items[{{ i }}][instruction][{{ f.key }}]" class="form-select">
+                                                                    <option value="">—</option>
+                                                                    {% for opt in f.options %}<option value="{{ opt }}"{{ ival == opt ? ' selected' : '' }}>{{ opt }}</option>{% endfor %}
+                                                                </select>
+                                                            {% elseif f.kind == 'date' %}
+                                                                <input type="date" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                                            {% elseif f.kind == 'text_list' %}
+                                                                <textarea name="items[{{ i }}][instruction][{{ f.key }}]" rows="2" class="form-control" placeholder="По одному на строку">{{ ival }}</textarea>
+                                                            {% else %}
+                                                                <input type="text" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
                                 {% endblock %}
                             {% endembed %}
                         {% endfor %}
@@ -340,9 +397,9 @@
                             <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
                             <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
                             <div data-report-list-rows-target="rows">
-                                {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units) }}{% endfor %}
+                                {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([])) }}{% endfor %}
                             </div>
-                            <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units) }}</template>
+                            <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([])) }}</template>
                             <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
                         </div>
                     </div>

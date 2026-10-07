@@ -1,16 +1,18 @@
 {# Один батч строк списка актов выдачи — единая entity-карточка приложения (.ecard). Рендерится и на первой
    странице, и при догрузке (?partial=1). Акцент на АКТ: заголовок — № акта; desc — требование·сотрудник·позиции;
-   meta — дата + статус. Подписанный акт: клик по медиа/заголовку → модалка с позициями (entity-preview). #}
+   meta — дата + статус. Клик по медиа/заголовку ведёт ВНУТРЬ акта: черновик → продолжить оформление,
+   подписанный → страница просмотра. #}
 {% for a in acts %}
+    {% set openHref = a.signed
+        ? path('app_cabinet_compliance_act_show', {profileId: a.profileId, requirementId: a.requirementId, documentId: a.documentId})
+        : path('app_cabinet_compliance_issue', {profileId: a.profileId, requirementId: a.requirementId}) %}
     <div class="ecard">
-        <div class="ecard-media{{ a.signed ? ' is-ok' : '' }}"
-             {% if a.signed %}role="button" data-action="click->entity-preview#open" data-entity-id="{{ a.documentId }}"{% endif %}>
+        <a class="ecard-media{{ a.signed ? ' is-ok' : '' }} text-decoration-none" href="{{ openHref }}" aria-label="Открыть акт">
             <i class="bi bi-journal-text"></i>
-        </div>
+        </a>
         <div class="ecard-body">
             <div class="ecard-head">
-                <div class="ecard-title d-flex flex-wrap align-items-center gap-2"
-                     {% if a.signed %}role="button" data-action="click->entity-preview#open" data-entity-id="{{ a.documentId }}"{% endif %}>
+                <a class="ecard-title d-flex flex-wrap align-items-center gap-2 text-decoration-none text-body" href="{{ openHref }}">
                     <span>Акт{% if a.actNumber %} № {{ a.actNumber }}{% endif %}</span>
                     <span class="small text-body-secondary tnum fw-normal">{{ a.date|date('d.m.Y') }}</span>
                     {% if a.signed %}
@@ -18,7 +20,7 @@
                     {% else %}
                         <span class="badge text-bg-secondary fw-normal"><i class="bi bi-file-earmark-text me-1"></i>Черновик</span>
                     {% endif %}
-                </div>
+                </a>
                 <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
                     <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">

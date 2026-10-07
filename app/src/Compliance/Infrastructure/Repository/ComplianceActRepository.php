@@ -68,18 +68,6 @@ class ComplianceActRepository extends ServiceEntityRepository implements Complia
         return new PaginationResult(iterator_to_array($paginator->getIterator()), $paginator->count());
     }
 
-    public function profileAndRequirementOf(string $documentId): ?array
-    {
-        /** @var array{profileId: string, requirementId: string}|null $row */
-        $row = $this->getEntityManager()->createQuery(
-            'SELECT pc.profileId AS profileId, d.requirementId AS requirementId
-             FROM App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument d
-             JOIN d.profileCompliance pc WHERE d.id = :id'
-        )->setParameter('id', $documentId)->getOneOrNullResult();
-
-        return $row;
-    }
-
     /**
      * @param list<string> $documentIds
      *

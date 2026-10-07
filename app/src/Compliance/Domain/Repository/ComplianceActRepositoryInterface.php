@@ -16,13 +16,6 @@ interface ComplianceActRepositoryInterface
     public function findByFilter(ComplianceActsFilter $filter): PaginationResult;
 
     /**
-     * Профиль и требование документа по его id — для резолва превью акта (вход — только documentId).
-     *
-     * @return array{profileId: string, requirementId: string}|null
-     */
-    public function profileAndRequirementOf(string $documentId): ?array;
-
-    /**
      * Число позиций (записей выдачи) по каждому документу — для «N позиций» в списке.
      *
      * @param list<string> $documentIds
