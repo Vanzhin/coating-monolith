@@ -10,6 +10,7 @@ use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * HTTP-смоук страниц норм: список и редактор рендерятся под админом (ловит Twig-ошибки шаблонов),
@@ -57,6 +58,46 @@ final class RequirementsControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form#req-form');
         self::assertSelectorExists('[data-controller="req-rows"]');
+    }
+
+    public function test_create_editor_shows_template_upload(): void
+    {
+        $this->client->request('GET', '/cabinet/compliance/requirements/create');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form#req-form[enctype="multipart/form-data"]');
+        self::assertSelectorExists('input[type="file"][name="template"]');
+    }
+
+    public function test_create_with_template_upload_stores_it(): void
+    {
+        $name = 'Противопожарный инструктаж '.uniqid('', true);
+        $container = $this->client->getContainer();
+
+        $this->client->request(
+            'POST',
+            '/cabinet/compliance/requirements/create',
+            [
+                'name' => $name,
+                'type' => 'non_material',
+                'positionIds' => ['pos-1'],
+                'items' => [['label' => 'Повторный инструктаж', 'cadenceKind' => 'once', 'basis' => 'ГОСТ 12.0.004']],
+            ],
+            ['template' => $this->docxUpload($container->getParameter('kernel.project_dir'))],
+        );
+
+        self::assertResponseRedirects();
+        $templateFileId = $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT template_file_id FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertNotEmpty($templateFileId, 'у созданного требования проставлен шаблон');
+    }
+
+    private function docxUpload(string $projectDir): UploadedFile
+    {
+        $src = $projectDir.'/src/Compliance/Infrastructure/Resources/templates/requirement_card.docx';
+        $tmp = tempnam(sys_get_temp_dir(), 'tpl').'.docx';
+        copy($src, $tmp);
+
+        return new UploadedFile($tmp, 'journal.docx', null, null, true);
     }
 
     private function setPrivate(object $obj, string $prop, mixed $value): void
