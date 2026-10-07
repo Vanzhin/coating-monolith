@@ -54,6 +54,7 @@ final class ProfileTest extends KernelTestCase
         ?\DateTimeImmutable $now = null,
         ?string $personnelNumber = 'PN-001',
         ?\DateTimeImmutable $hiredAt = null,
+        ?\DateTimeImmutable $birthDate = null,
     ): Profile {
         $profile = new Profile(
             UuidService::generate(),
@@ -65,6 +66,7 @@ final class ProfileTest extends KernelTestCase
             Sizes::fromInput('52', '42', '58', null, '9', '180', Gender::Male),
             $personnelNumber,
             $hiredAt,
+            $birthDate,
             $this->specification,
             $now ?? new \DateTimeImmutable('2026-01-01T00:00:00+00:00'),
         );
@@ -114,6 +116,7 @@ final class ProfileTest extends KernelTestCase
             Sizes::empty(),
             null,
             null,
+            null,
             $this->specification,
             new \DateTimeImmutable(),
         );
@@ -130,6 +133,7 @@ final class ProfileTest extends KernelTestCase
             new Reference(UuidService::generate(), 'Организация'),
             new Reference(UuidService::generate(), 'Отдел'),
             Sizes::empty(),
+            null,
             null,
             null,
             $this->specification,
@@ -201,6 +205,22 @@ final class ProfileTest extends KernelTestCase
         $reloaded = $this->repository->findOneById($profile->getId());
         self::assertNotNull($reloaded);
         self::assertNull($reloaded->getHiredAt());
+    }
+
+    public function test_change_birth_date_round_trips(): void
+    {
+        $profile = $this->create(birthDate: new \DateTimeImmutable('1988-03-10'));
+        $now = new \DateTimeImmutable();
+
+        $reloaded = $this->repository->findOneById($profile->getId());
+        self::assertNotNull($reloaded);
+        self::assertSame('1988-03-10', $reloaded->getBirthDate()?->format('Y-m-d'));
+
+        $reloaded->changeBirthDate(null, $now);
+        $this->repository->add($reloaded);
+        $cleared = $this->repository->findOneById($profile->getId());
+        self::assertNotNull($cleared);
+        self::assertNull($cleared->getBirthDate());
     }
 
     public function test_personnel_number_blank_string_becomes_null(): void

@@ -14,6 +14,7 @@
         <field name="department" type="personnel_reference" column="department"/>
         <field name="personnelNumber" type="string" length="50" column="personnel_number" nullable="true"/>
         <field name="hiredAt" type="datetime_immutable" column="hired_at" nullable="true"/>
+        <field name="birthDate" type="datetime_immutable" column="birth_date" nullable="true"/>
         <field name="sizes" type="personnel_sizes" column="sizes"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at"/>

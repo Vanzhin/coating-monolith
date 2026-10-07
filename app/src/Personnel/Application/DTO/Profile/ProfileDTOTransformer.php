@@ -31,6 +31,7 @@ class ProfileDTOTransformer
         $dto->departmentTitle = $department->title;
         $dto->personnelNumber = $profile->getPersonnelNumber();
         $dto->hiredAt = $profile->getHiredAt();
+        $dto->birthDate = $profile->getBirthDate();
         $dto->clothing = self::sizeText($sizes->clothing);
         $dto->shoes = self::sizeText($sizes->shoes);
         $dto->headgear = self::sizeText($sizes->headgear);

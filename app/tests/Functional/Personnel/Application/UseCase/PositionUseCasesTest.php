@@ -148,6 +148,7 @@ final class PositionUseCasesTest extends KernelTestCase
             Sizes::empty(),
             null,
             null,
+            null,
             $profileSpec,
             new \DateTimeImmutable(),
         );

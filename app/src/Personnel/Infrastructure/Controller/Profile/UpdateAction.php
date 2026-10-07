@@ -57,7 +57,7 @@ final class UpdateAction extends AbstractController
                     organizationId: (string) ($inputData['organizationId'] ?? ''),
                     departmentId: (string) ($inputData['departmentId'] ?? ''),
                     personnelNumber: (string) ($inputData['personnelNumber'] ?? ''),
-                    hiredAt: $this->nullableDate((string) ($inputData['hiredAt'] ?? '')),
+                    hiredAt: $this->nullableDate((string) ($inputData['hiredAt'] ?? ''), 'приёма'),
                     clothing: (string) ($inputData['clothing'] ?? ''),
                     shoes: (string) ($inputData['shoes'] ?? ''),
                     headgear: (string) ($inputData['headgear'] ?? ''),
@@ -65,6 +65,7 @@ final class UpdateAction extends AbstractController
                     gloves: (string) ($inputData['gloves'] ?? ''),
                     height: (string) ($inputData['height'] ?? ''),
                     gender: (string) ($inputData['gender'] ?? ''),
+                    birthDate: $this->nullableDate((string) ($inputData['birthDate'] ?? ''), 'рождения'),
                 ));
                 $this->addFlash('profile_updated_success', 'Профиль обновлён.');
 
@@ -88,6 +89,7 @@ final class UpdateAction extends AbstractController
                 'departmentTitle' => $profile->departmentTitle,
                 'personnelNumber' => $profile->personnelNumber,
                 'hiredAt' => $profile->hiredAt?->format('Y-m-d'),
+                'birthDate' => $profile->birthDate?->format('Y-m-d'),
                 'clothing' => $profile->clothing,
                 'shoes' => $profile->shoes,
                 'headgear' => $profile->headgear,
@@ -105,7 +107,7 @@ final class UpdateAction extends AbstractController
         ]);
     }
 
-    private function nullableDate(string $value): ?\DateTimeImmutable
+    private function nullableDate(string $value, string $what): ?\DateTimeImmutable
     {
         $value = trim($value);
         if ('' === $value) {
@@ -115,7 +117,7 @@ final class UpdateAction extends AbstractController
         try {
             return new \DateTimeImmutable($value);
         } catch (\Exception) {
-            throw new AppException('Некорректная дата приёма.');
+            throw new AppException(sprintf('Некорректная дата %s.', $what));
         }
     }
 }

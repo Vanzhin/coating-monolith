@@ -25,6 +25,7 @@ final readonly class UpdateProfileCommand extends Command
         public ?string $gloves,
         public ?string $height,
         public ?string $gender,
+        public ?\DateTimeImmutable $birthDate = null,
     ) {
     }
 }

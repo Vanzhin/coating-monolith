@@ -19,6 +19,7 @@ class ProfileDTO
     public string $departmentTitle;
     public ?string $personnelNumber = null;
     public ?\DateTimeImmutable $hiredAt = null;
+    public ?\DateTimeImmutable $birthDate = null;
     public ?string $clothing = null;
     public ?string $shoes = null;
     public ?string $headgear = null;

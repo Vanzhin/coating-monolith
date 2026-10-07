@@ -60,6 +60,7 @@ final readonly class UpdateProfileCommandHandler implements CommandHandlerInterf
         );
         $profile->changePersonnelNumber($command->personnelNumber, $now);
         $profile->changeHiredAt($command->hiredAt, $now);
+        $profile->changeBirthDate($command->birthDate, $now);
 
         $this->repository->add($profile);
         $this->eventBus->execute(new ProfileSaved($profile->getId()));
