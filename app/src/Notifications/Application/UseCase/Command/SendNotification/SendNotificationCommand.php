@@ -7,8 +7,8 @@ namespace App\Notifications\Application\UseCase\Command\SendNotification;
 use App\Shared\Application\Command\Command;
 
 /**
- * Уведомить пользователя. Хендлер создаёт и сохраняет Notification; доставка (рассылка по каналам)
- * происходит асинхронно через доменное событие NotificationCreatedEvent (см. messenger.yaml).
+ * Создать inbox-уведомление пользователю (запись в раздел «Уведомления»). Рассылка по внешним каналам
+ * (push/email) идёт отдельно — через NotificationDispatcher по подпискам, не из этой команды.
  */
 readonly class SendNotificationCommand extends Command
 {

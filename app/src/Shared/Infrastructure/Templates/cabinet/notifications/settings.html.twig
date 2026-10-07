@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ parent() }} Настройки уведомлений{% endblock %}
+
+{% block body %}
+    <main class="container-fluid py-3">
+        {% block content %}
+            <div class="container-fluid">
+                {# Хедер + возврат в профиль. #}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <a href="{{ path('app_cabinet_profile') }}"
+                       class="text-body-secondary text-decoration-none small d-inline-block mb-1">
+                        <i class="bi bi-chevron-left"></i> Профиль
+                    </a>
+                    <h1 class="h3 mb-0">Настройки уведомлений</h1>
+                    <p class="text-body-secondary mb-0 mt-1">Выберите, о чём вас уведомлять и куда присылать.</p>
+                </div>
+
+                {% if types is empty %}
+                    <div class="p-3 rounded-3 bg-body-tertiary text-body-secondary d-flex align-items-center gap-3">
+                        <i class="bi bi-bell-slash fs-4 flex-shrink-0"></i>
+                        <span>Настраиваемых уведомлений для вас пока нет.</span>
+                    </div>
+                {% else %}
+                    {# У каждого события своя форма и своя кнопка «Сохранить» — подписки независимы. #}
+                    {% for ts in types %}
+                        {% set cat_icon = {
+                            'compliance': 'bi-shield-check',
+                            'security': 'bi-lock',
+                            'system': 'bi-gear',
+                        }[ts.type.category.value]|default('bi-bell') %}
+                        {# Сводка активных каналов — сервер рисует начальное состояние, JS держит живым. #}
+                        {% set active_channels = ts.channels|filter(cs => cs.enabled) %}
+                        {% set is_on = active_channels|length > 0 %}
+                        {% set summary = is_on
+                            ? active_channels|map(cs => cs.channel.label)|join(', ')
+                            : 'каналы не выбраны' %}
+
+                        <form method="post" action="{{ path('app_notifications_settings_save') }}"
+                              class="mb-3 rounded-3 bg-body-tertiary overflow-hidden"
+                              data-controller="notification-settings">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <input type="hidden" name="type" value="{{ ts.type.value }}">
+
+                            {# Шапка-аккордеон: клик раскрывает «Куда присылать». #}
+                            <div class="p-3 d-flex align-items-center gap-3" role="button" tabindex="0"
+                                 data-action="click->notification-settings#toggle keydown->notification-settings#toggleOnKey">
+                                <i class="bi {{ cat_icon }} fs-4 text-body-secondary flex-shrink-0"></i>
+                                <div class="flex-grow-1" style="min-width:0">
+                                    <div class="fw-medium">{{ ts.type.label }}</div>
+                                    <div class="text-body-secondary small text-truncate">
+                                        {{ ts.type.category.label }} ·
+                                        <span data-notification-settings-target="summary">{{ summary }}</span>
+                                    </div>
+                                </div>
+                                <i class="bi bi-power fs-5 flex-shrink-0 {{ is_on ? 'text-primary' : 'text-danger' }}"
+                                   data-notification-settings-target="status"
+                                   title="{{ is_on ? 'Подписка включена' : 'Подписка выключена' }}"></i>
+                                <i class="bi bi-chevron-down text-body-secondary flex-shrink-0 notif-chevron"
+                                   data-notification-settings-target="chevron"></i>
+                            </div>
+
+                            {# Плавный аккордеон: grid-обёртка (0fr→1fr). Без JS раскрыто (is-open в разметке). #}
+                            <div class="notif-acc is-open" data-notification-settings-target="body">
+                                <div class="notif-acc__inner">
+                                    <div class="px-3 pb-3">
+                                        <div class="text-body-secondary small text-uppercase mt-1 mb-2">Куда присылать</div>
+                                        {# Каналы — отдельными блоками (оттенком, без линий): bg-body на тертиарной карточке.
+                                           Плитки одной высоты (.notif-channels grid). #}
+                                        <div class="notif-channels">
+                                            {% for cs in ts.channels %}
+                                                {% set ch_icon = {
+                                                    'inbox': 'bi-app-indicator',
+                                                    'web_push': 'bi-bell',
+                                                    'email': 'bi-envelope',
+                                                }[cs.channel.value]|default('bi-dot') %}
+                                                <div class="bg-body rounded-3 px-3 py-2 d-flex justify-content-between align-items-center gap-3">
+                                                    <div>
+                                                        <label class="d-flex align-items-center gap-2 mb-0"
+                                                               for="sub_{{ ts.type.value }}_{{ cs.channel.value }}">
+                                                            <i class="bi {{ ch_icon }} text-body-secondary"></i>
+                                                            <span>{{ cs.channel.label }}</span>
+                                                        </label>
+                                                        {% if 'web_push' == cs.channel.value %}
+                                                            <div class="text-body-secondary small mt-1">
+                                                                <i class="bi bi-exclamation-square me-1"></i>Необходимо включить для каждого устройства
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="form-check form-switch form-switch-lg m-0">
+                                                        <input class="form-check-input" type="checkbox" role="switch"
+                                                               id="sub_{{ ts.type.value }}_{{ cs.channel.value }}"
+                                                               name="channels[{{ cs.channel.value }}]"
+                                                               value="1"{{ cs.enabled ? ' checked' : '' }}
+                                                               data-notification-settings-target="channel"
+                                                               data-label="{{ cs.channel.label }}"
+                                                               data-action="change->notification-settings#refresh">
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-check2 me-1"></i>Сохранить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endblock %}
+    </main>
+{% endblock %}

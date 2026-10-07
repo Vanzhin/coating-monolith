@@ -10,9 +10,8 @@ use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Domain\Service\UuidService;
 
 /**
- * Создаёт и сохраняет уведомление пользователя. Само сохранение (persist+flush) публикует
- * NotificationCreatedEvent, который асинхронно доставляется в каналы владельца
- * (NotificationCreatedEventHandler в воркере) — здесь только запись, без рассылки.
+ * Создаёт и сохраняет inbox-уведомление пользователя. Только запись в раздел «Уведомления» —
+ * рассылка по каналам (push/email) идёт отдельно, через NotificationDispatcher по подпискам.
  */
 readonly class SendNotificationCommandHandler implements CommandHandlerInterface
 {

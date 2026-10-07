@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Users\Infrastructure\EventHandler;
 
-use App\Notifications\Domain\Repository\NotificationFilter;
-use App\Notifications\Domain\Repository\NotificationRepositoryInterface;
-use App\Shared\Application\Command\CommandBusInterface;
+use App\Notifications\Domain\Event\UserActivatedNotification;
+use App\Shared\Application\Event\EventBusInterface;
+use App\Shared\Domain\Event\EventInterface;
 use App\Users\Domain\Entity\Channel;
 use App\Users\Domain\Entity\ChannelType;
 use App\Users\Domain\Entity\User;
@@ -19,15 +19,13 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * По активации пользователя админу (ADMIN_NOTIFY_EMAIL) создаётся уведомление с email нового юзера.
- * Хендлер конструируем вручную с тестовым admin-email, чтобы не завязываться на значение из окружения.
- * Доставка (async NotificationCreatedEvent) в тесте не потребляется — проверяем персист уведомления.
+ * По активации пользователя админу (ADMIN_NOTIFY_EMAIL) публикуется уведомляющее событие
+ * UserActivatedNotification (Owner=админ, email нового юзера). Доставку делает NotificationDispatcher —
+ * здесь ловим публикацию через подменённую шину событий (handler конструируем вручную).
  */
 final class UserActivatedEventHandlerTest extends KernelTestCase
 {
     private UserRepositoryInterface $users;
-    private NotificationRepositoryInterface $notifications;
-    private CommandBusInterface $commandBus;
     private EntityManagerInterface $em;
 
     protected function setUp(): void
@@ -35,25 +33,26 @@ final class UserActivatedEventHandlerTest extends KernelTestCase
         self::bootKernel();
         $container = static::getContainer();
         $this->users = $container->get(UserRepositoryInterface::class);
-        $this->notifications = $container->get(NotificationRepositoryInterface::class);
-        $this->commandBus = $container->get(CommandBusInterface::class);
         $this->em = $container->get(EntityManagerInterface::class);
     }
 
     // Чистку не пишем: DAMADoctrineTestBundle оборачивает каждый тест в транзакцию и откатывает.
 
-    public function test_activation_notifies_admin_with_new_user_email(): void
+    public function test_activation_publishes_notification_with_new_user_email(): void
     {
         $adminEmail = 'admin_'.bin2hex(random_bytes(4)).'@example.com';
         $admin = $this->persistUser($adminEmail);
         $newbieEmail = 'newbie_'.bin2hex(random_bytes(4)).'@example.com';
         $newbie = $this->persistActiveUser($newbieEmail);
 
-        ($this->handler($adminEmail))(new UserActivatedEvent($newbie->getUlid()));
+        $bus = $this->capturingBus();
+        (new UserActivatedEventHandler($this->users, $bus, $adminEmail))(new UserActivatedEvent($newbie->getUlid()));
 
-        self::assertSame(1, $this->notifications->countUnread($admin->getUlid()));
-        $items = $this->notifications->findByFilter(new NotificationFilter($admin->getUlid()))->items;
-        self::assertStringContainsString($newbieEmail, $items[0]->getMessage());
+        self::assertCount(1, $bus->published);
+        $event = $bus->published[0];
+        self::assertInstanceOf(UserActivatedNotification::class, $event);
+        self::assertSame($admin->getUlid(), $event->ownerUlid());
+        self::assertSame($newbieEmail, $event->newUserEmail());
     }
 
     public function test_admin_activation_does_not_self_notify(): void
@@ -61,10 +60,10 @@ final class UserActivatedEventHandlerTest extends KernelTestCase
         $adminEmail = 'admin_'.bin2hex(random_bytes(4)).'@example.com';
         $admin = $this->persistActiveUser($adminEmail);
 
-        // Активировался сам админ — уведомлять некого.
-        ($this->handler($adminEmail))(new UserActivatedEvent($admin->getUlid()));
+        $bus = $this->capturingBus();
+        (new UserActivatedEventHandler($this->users, $bus, $adminEmail))(new UserActivatedEvent($admin->getUlid()));
 
-        self::assertSame(0, $this->notifications->countUnread($admin->getUlid()));
+        self::assertSame([], $bus->published);
     }
 
     public function test_throws_when_activation_not_yet_visible(): void
@@ -73,23 +72,34 @@ final class UserActivatedEventHandlerTest extends KernelTestCase
         $newbie = $this->persistUser('inactive_'.bin2hex(random_bytes(4)).'@example.com');
 
         $this->expectException(\RuntimeException::class);
-        ($this->handler('whoever@example.com'))(new UserActivatedEvent($newbie->getUlid()));
+        (new UserActivatedEventHandler($this->users, $this->capturingBus(), 'whoever@example.com'))(new UserActivatedEvent($newbie->getUlid()));
     }
 
     public function test_no_notification_when_admin_not_found(): void
     {
-        $admin = $this->persistUser('admin_'.bin2hex(random_bytes(4)).'@example.com');
         $newbie = $this->persistActiveUser('newbie_'.bin2hex(random_bytes(4)).'@example.com');
 
-        // Хендлер настроен на несуществующий admin-email → тихий выход, без уведомления и исключения.
-        ($this->handler('nobody_'.bin2hex(random_bytes(4)).'@example.com'))(new UserActivatedEvent($newbie->getUlid()));
+        // Хендлер настроен на несуществующий admin-email → тихий выход, без публикации и исключения.
+        $bus = $this->capturingBus();
+        (new UserActivatedEventHandler($this->users, $bus, 'nobody_'.bin2hex(random_bytes(4)).'@example.com'))(new UserActivatedEvent($newbie->getUlid()));
 
-        self::assertSame(0, $this->notifications->countUnread($admin->getUlid()));
+        self::assertSame([], $bus->published);
     }
 
-    private function handler(string $adminEmail): UserActivatedEventHandler
+    /** @return EventBusInterface&object{published: list<EventInterface>} */
+    private function capturingBus(): EventBusInterface
     {
-        return new UserActivatedEventHandler($this->users, $this->commandBus, $adminEmail);
+        return new class implements EventBusInterface {
+            /** @var list<EventInterface> */
+            public array $published = [];
+
+            public function execute(EventInterface ...$event): void
+            {
+                foreach ($event as $e) {
+                    $this->published[] = $e;
+                }
+            }
+        };
     }
 
     private function persistUser(string $email): User

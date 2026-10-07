@@ -65,6 +65,12 @@ services:
     App\Shared\Application\File\FileAccessControl:
       tags: ['app.file_access_control']
 
+    App\Notifications\Domain\Service\RecipientResolverInterface:
+      tags: ['app.notification_resolver']
+
+    App\Notifications\Domain\Service\MessageRendererInterface:
+      tags: ['app.notification_renderer']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -248,6 +254,16 @@ services:
     arguments:
       - !tagged_iterator app.report_block
 
+  # Реестр резолверов адресатов уведомлений: все RecipientResolverInterface через тег
+  App\Notifications\Application\Service\Resolver\ResolverRegistry:
+    arguments:
+      - !tagged_iterator app.notification_resolver
+
+  # Реестр рендереров текста уведомлений: все MessageRendererInterface через тег
+  App\Notifications\Application\Service\Render\MessageRendererRegistry:
+    arguments:
+      - !tagged_iterator app.notification_renderer
+
   App\Coatings\Domain\Compliance\SystemComplianceEvaluator:
     arguments:
       - !tagged_iterator app.standard_evaluator
@@ -278,6 +294,15 @@ services:
 
   App\Notifications\Domain\Repository\NotificationRepositoryInterface:
     alias: App\Notifications\Infrastructure\Repository\NotificationRepository
+
+  App\Notifications\Domain\Repository\SubscriptionRepositoryInterface:
+    alias: App\Notifications\Infrastructure\Repository\SubscriptionRepository
+
+  App\Notifications\Domain\Service\NotificationAudienceProviderInterface:
+    alias: App\Users\Infrastructure\Service\UsersAudienceProvider
+
+  App\Notifications\Domain\Service\SubjectContextProviderInterface:
+    alias: App\Personnel\Infrastructure\Service\PersonnelSubjectContextProvider
 
   App\Shared\Domain\Audit\TrackedClassRepositoryInterface:
     alias: App\Shared\Infrastructure\Repository\TrackedClassRepository

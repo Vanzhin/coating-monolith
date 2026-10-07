@@ -1,0 +1,36 @@
+/* Плавный аккордеон экрана настроек уведомлений.
+   Высоту анимируем через grid-template-rows 0fr→1fr — не нужно мерить scrollHeight.
+   Без JS тело раскрыто (is-open в разметке); контроллер сворачивает и включает анимацию (is-anim). */
+.notif-acc {
+    display: grid;
+    grid-template-rows: 0fr;
+}
+
+.notif-acc.is-open {
+    grid-template-rows: 1fr;
+}
+
+.notif-acc.is-anim {
+    transition: grid-template-rows 0.22s ease;
+}
+
+.notif-acc > .notif-acc__inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.notif-chevron {
+    transition: transform 0.22s ease;
+}
+
+.notif-chevron--up {
+    transform: rotate(180deg);
+}
+
+/* Плитки каналов одной высоты: grid-auto-rows:1fr в auto-высотном гриде тянет все строки
+   под самую высокую (блок Push выше из-за пометки). Контент плитки центрируем по вертикали. */
+.notif-channels {
+    display: grid;
+    gap: 0.5rem;
+    grid-auto-rows: 1fr;
+}

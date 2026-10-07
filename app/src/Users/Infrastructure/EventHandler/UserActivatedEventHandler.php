@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace App\Users\Infrastructure\EventHandler;
 
-use App\Notifications\Application\UseCase\Command\SendNotification\SendNotificationCommand;
-use App\Shared\Application\Command\CommandBusInterface;
+use App\Notifications\Domain\Event\UserActivatedNotification;
+use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Application\Event\EventHandlerInterface;
 use App\Users\Domain\Event\UserActivatedEvent;
 use App\Users\Domain\Repository\UserRepositoryInterface;
 
 /**
  * Пользователь стал активным (подтвердил первый канал) → уведомляем администратора
- * (email из ADMIN_NOTIFY_EMAIL). Уведомление создаётся как обычный Notification для админа и
- * дальше само уезжает в push через NotificationCreatedEvent. Выполняется асинхронно (messenger.yaml).
+ * (email из ADMIN_NOTIFY_EMAIL). Публикуем уведомляющее событие UserActivatedNotification (системный
+ * тип, Owner=админ), дальше единый NotificationDispatcher доставит по каналам. Выполняется асинхронно.
  */
 readonly class UserActivatedEventHandler implements EventHandlerInterface
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
-        private CommandBusInterface $commandBus,
+        private EventBusInterface $eventBus,
         private string $adminNotifyEmail,
     ) {
     }
@@ -42,9 +42,6 @@ readonly class UserActivatedEventHandler implements EventHandlerInterface
             return;
         }
 
-        $this->commandBus->execute(new SendNotificationCommand(
-            $admin->getUlid(),
-            sprintf('Новый пользователь: %s', $user->getEmail()->getValue()),
-        ));
+        $this->eventBus->execute(new UserActivatedNotification($admin->getUlid(), $user->getEmail()->getValue()));
     }
 }
