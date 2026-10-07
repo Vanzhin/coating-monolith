@@ -29,6 +29,7 @@ readonly class SaveRequirementCommand extends Command
         public array $items,
         public ?UploadedFile $templateUpload = null,
         public bool $removeTemplate = false,
+        public ?string $journalKind = null,
     ) {
     }
 }

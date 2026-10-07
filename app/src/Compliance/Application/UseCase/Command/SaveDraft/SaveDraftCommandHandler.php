@@ -10,6 +10,7 @@ use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\File\RequirementScanPurpose;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\ValueObject\Cadence;
@@ -35,6 +36,7 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
         private ObligationDueCalculator $calculator,
         private FileStorage $storage,
         private IssuanceLineMapper $mapper,
+        private RequirementRepositoryInterface $requirements,
     ) {
     }
 
@@ -71,6 +73,7 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
         // отказ домена двигал бы файл, а откат транзакции вернул бы строку StoredFile на tmp-ключ → staged-скан
         // терялся и повтор оформления падал на пропавшем источнике.
         $profileCompliance->assertIssuable($lines);
+        $this->assertInstructionComplete($profileCompliance, $command->documentId, $lines);
         $fileId = '' === $staged ? null : $staged; // domain требует непустой скан; реальный перенос — ниже
         $profileCompliance->signDraft($command->documentId, $fileId, $lines, $this->calculator, $now, $command->actNumber, $command->responsibleFio);
         if (null !== $fileId) {
@@ -111,10 +114,29 @@ final readonly class SaveDraftCommandHandler implements CommandHandlerInterface
             if (!$this->hasObligation($profileCompliance, $key)) {
                 $profileCompliance->addPersonalObligation(Uuid::v7(), $requirementId, $label, new Cadence(CadenceKind::ByManufacturerDoc), $quantity);
             }
-            $lines[] = new IssuanceLine(Uuid::v7(), $key, $documentDate, $quantity, null, $due, $this->mapper->note($row));
+            $lines[] = new IssuanceLine(Uuid::v7(), $key, $documentDate, $quantity, null, $due, $this->mapper->note($row), $this->mapper->instructionDetails($row));
         }
 
         return $lines;
+    }
+
+    /**
+     * При подписи не материального требования с видом журнала — каждая строка обязана нести заполненные
+     * обязательные поля инструктажа (схема {@see \App\Compliance\Domain\Type\JournalKind}). Правило — в домене
+     * (JournalKind::assertDetailsComplete), хендлер только оркеструет: берёт вид журнала требования и зовёт.
+     *
+     * @param IssuanceLine[] $lines
+     */
+    private function assertInstructionComplete(ProfileCompliance $profileCompliance, string $documentId, array $lines): void
+    {
+        $requirementId = $this->requirementIdOfDocument($profileCompliance, $documentId);
+        $journalKind = $this->requirements->findOneById($requirementId)?->getJournalKind();
+        if (null === $journalKind) {
+            return;
+        }
+        foreach ($lines as $line) {
+            $journalKind->assertDetailsComplete($line->instructionDetails);
+        }
     }
 
     private function hasObligation(ProfileCompliance $profileCompliance, string $key): bool

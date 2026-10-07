@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQuery;
 use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQueryResult;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Personnel\Application\UseCase\Query\GetPositionsByIds\GetPositionsByIdsQuery;
@@ -47,8 +48,9 @@ final class EditAction extends AbstractController
             $items = array_values((array) $payload->all('items'));
             $templateUpload = $request->files->get('template');
             $removeTemplate = $payload->getBoolean('remove_template');
+            $journalKind = (string) $payload->get('journalKind', '');
             try {
-                $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items, $templateUpload, $removeTemplate));
+                $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items, $templateUpload, $removeTemplate, $journalKind));
                 $this->addFlash('success', 'Требование сохранено.');
 
                 return $this->redirectToRoute('app_cabinet_compliance_requirements_list');
@@ -57,6 +59,7 @@ final class EditAction extends AbstractController
                     'id' => $id,
                     'name' => $name,
                     'type' => $type,
+                    'journalKind' => $journalKind,
                     'hasTemplate' => $this->currentHasTemplate($id),
                     'positions' => $this->resolvePositionChips($positionIds),
                     'items' => $items,
@@ -65,7 +68,7 @@ final class EditAction extends AbstractController
         }
 
         return $this->renderForm($id, null, null === $id
-            ? ['name' => '', 'type' => '', 'hasTemplate' => false, 'positions' => [], 'items' => []]
+            ? ['name' => '', 'type' => '', 'journalKind' => '', 'hasTemplate' => false, 'positions' => [], 'items' => []]
             : $this->loadInput($id));
     }
 
@@ -81,6 +84,10 @@ final class EditAction extends AbstractController
             'complianceTypes' => array_map(
                 static fn (ComplianceType $t): array => ['value' => $t->value, 'title' => $t->title(), 'requiresQuantity' => $t->requiresQuantity()],
                 ComplianceType::cases(),
+            ),
+            'journalKinds' => array_map(
+                static fn (JournalKind $k): array => ['value' => $k->value, 'title' => $k->label()],
+                JournalKind::cases(),
             ),
             'cadenceKinds' => array_map(
                 static fn (CadenceKind $k): array => ['value' => $k->value, 'title' => $k->title(), 'requiresNumber' => $k->requiresNumber()],
@@ -113,6 +120,7 @@ final class EditAction extends AbstractController
             'id' => $requirement->id,
             'name' => $requirement->name,
             'type' => $requirement->type,
+            'journalKind' => $requirement->journalKind,
             'hasTemplate' => $requirement->hasTemplate,
             // Пустое название = id не резолвится в должность (мусор/удалённая должность) — не показываем.
             'positions' => array_values(array_filter(

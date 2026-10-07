@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
+use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use Symfony\Component\Uid\Uuid;
@@ -19,6 +20,7 @@ final readonly class IssuanceLine
         public ?Percent $wearPercent = null,
         public ?\DateTimeImmutable $manualDueDate = null,
         public ?string $note = null,
+        public ?InstructionDetails $instructionDetails = null,
     ) {
     }
 }

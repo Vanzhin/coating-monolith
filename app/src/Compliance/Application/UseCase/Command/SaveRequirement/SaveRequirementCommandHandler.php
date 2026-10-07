@@ -11,6 +11,7 @@ use App\Compliance\Domain\Event\RequirementChanged;
 use App\Compliance\Domain\File\RequirementTemplatePurpose;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -68,6 +69,7 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
             $requirement->replaceItems(...$items);
         }
 
+        $requirement->setJournalKind(null !== $command->journalKind ? JournalKind::tryFrom($command->journalKind) : null);
         $this->applyTemplate($command, $requirement);
 
         $this->repository->add($requirement);

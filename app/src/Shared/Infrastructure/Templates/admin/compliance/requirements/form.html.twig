@@ -62,6 +62,16 @@
                             <div class="form-text">Выдача — выдаётся в количестве (СИЗ, спецодежда). Процедура — проходится по сроку, без количества (инструктаж, медосмотр).</div>
                         {% endif %}
                     </div>
+                    <div class="mt-3" data-non-material-only{{ (requiresQuantityMap[currentType ?: complianceTypes|first.value]|default(true)) ? ' hidden' : '' }}>
+                        <label class="form-label small mb-1">Вид журнала</label>
+                        <select name="journalKind" class="form-select">
+                            <option value="">— не задан (печать по общему шаблону) —</option>
+                            {% for jk in journalKinds %}
+                                <option value="{{ jk.value }}"{{ inputData.journalKind|default('') == jk.value ? ' selected' : '' }}>{{ jk.title }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Задаёт набор полей инструктажа при оформлении (для процедур).</div>
+                    </div>
                     <div class="mt-3">
                         <label class="form-label small mb-1">Шаблон документа (Word/Excel)</label>
                         {% if inputData.hasTemplate|default(false) %}

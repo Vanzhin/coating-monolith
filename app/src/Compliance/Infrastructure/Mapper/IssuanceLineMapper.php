@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Infrastructure\Mapper;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
+use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
@@ -38,6 +39,7 @@ final class IssuanceLineMapper
                 $this->wear($row),
                 $this->date((string) ($row['manualDueDate'] ?? '')),
                 $this->note($row),
+                $this->instructionDetails($row),
             );
         }
 
@@ -62,6 +64,22 @@ final class IssuanceLineMapper
         $note = trim((string) ($row['note'] ?? ''));
 
         return '' === $note ? null : $note;
+    }
+
+    /**
+     * Поля инструктажа строки (sub-array `instruction[...]` формы) → VO. Shape-only: берём, что пришло по
+     * схеме журнала; обязательность проверяет домен при подписи. Пусто → null.
+     *
+     * @param array<string, mixed> $row
+     */
+    public function instructionDetails(array $row): ?InstructionDetails
+    {
+        $raw = $row['instruction'] ?? null;
+        if (!is_array($raw) || [] === $raw) {
+            return null;
+        }
+
+        return InstructionDetails::fromArray($raw);
     }
 
     private function date(string $value): ?\DateTimeImmutable
