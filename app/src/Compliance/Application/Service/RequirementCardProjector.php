@@ -50,7 +50,7 @@ final readonly class RequirementCardProjector
             'department_title' => new TextValue($profile->departmentTitle),
             'document_date' => new TextValue($now->format('d.m.Y')),
             'items' => new RepeatValue($this->normItems($requirement)),
-            'log' => new RepeatValue(null !== $source ? $this->factLog($profileCompliance, $source, $requirement->getId(), $obligationByKey) : []),
+            'log' => new RepeatValue($this->logRows($profileCompliance, $source, $requirement, $obligationByKey, $profile)),
         ];
 
         $this->optional($values, 'employee_middle_name', $profile->middleName);
@@ -103,6 +103,34 @@ final readonly class RequirementCardProjector
     }
 
     /**
+     * Строки факт-таблицы/журнала: записи акта (+ возвраты/списания по recordId) с добавленным контекстом
+     * сотрудника в каждую строку (колонка «инструктируемый» в журналах — построчно). Нет источника → пусто.
+     *
+     * @param array<string, TrackedObligation> $obligationByKey
+     *
+     * @return list<array<string, string>>
+     */
+    private function logRows(ProfileCompliance $profileCompliance, ?RequirementDocument $source, Requirement $requirement, array $obligationByKey, ProfileDTO $profile): array
+    {
+        if (null === $source) {
+            return [];
+        }
+        $basisByLabel = [];
+        foreach ($requirement->getItems() as $item) {
+            $basisByLabel[$item->label()] = $item->basis();
+        }
+        $rows = $this->factLog($profileCompliance, $source, $requirement->getId(), $obligationByKey);
+        foreach ($rows as $i => $row) {
+            $rows[$i]['employee_fio'] = $this->fio($profile);
+            $rows[$i]['employee_position'] = $profile->positionTitle;
+            $rows[$i]['basis'] = $basisByLabel[$row['name']] ?? ''; // основание требования (напр. перечень локальных актов)
+            $rows[$i]['birth_date'] = $profile->birthDate?->format('d.m.Y') ?? ''; // из карточки сотрудника, если заполнена
+        }
+
+        return $rows;
+    }
+
+    /**
      * Стр. 2 — записи ЭТОГО акта как строки факт-таблицы + возвраты/списания по recordId. Сортировка по наименованию.
      *
      * @param array<string, TrackedObligation> $obligationByKey
@@ -132,7 +160,7 @@ final readonly class RequirementCardProjector
                 $acts[] = $return['act'];
             }
 
-            $rows[] = [
+            $row = [
                 'name' => $label,
                 'model' => $record->note() ?? '',
                 'issue_date' => $record->fulfilledAt()->format('d.m.Y'),
@@ -141,6 +169,14 @@ final readonly class RequirementCardProjector
                 'return_qty' => [] !== $returns ? $this->number($returnedQty) : '',
                 'writeoff_act' => implode('; ', $acts),
             ];
+            // Поля инструктажа (не материальный журнал) — плоскими ключами в строку: {{log.instruction_kind}} и т.п.
+            $details = $record->instructionDetails();
+            if (null !== $details) {
+                foreach ($details->values as $fieldKey => $value) {
+                    $row[$fieldKey] = is_array($value) ? implode("\n", $value) : $value;
+                }
+            }
+            $rows[] = $row;
         }
 
         usort($rows, static fn (array $a, array $b): int => strnatcasecmp($a['name'], $b['name']));

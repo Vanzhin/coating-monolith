@@ -208,7 +208,8 @@ class ProfileCompliance extends Aggregate
         foreach ($lines as $line) {
             $this->records->add(new FulfillmentRecord(
                 $line->recordId, $this, $line->obligationKey, $line->fulfilledAt,
-                $line->quantity, $line->wearPercent, $line->note, $line->manualDueDate, documentId: $documentId,
+                $line->quantity, $line->wearPercent, $line->note, $line->manualDueDate,
+                documentId: $documentId, instructionDetails: $line->instructionDetails,
             ));
         }
         $document->saveDraftDetails($actNumber, $responsibleFio, $now);

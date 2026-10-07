@@ -55,6 +55,7 @@ final readonly class ProfileMaker
         Sizes $sizes,
         ?string $personnelNumber,
         ?\DateTimeImmutable $hiredAt,
+        ?\DateTimeImmutable $birthDate,
     ): Profile {
         $position = $this->resolvePosition($positionId);
         $department = $this->resolveDepartment($departmentId, $organizationId);
@@ -70,6 +71,7 @@ final readonly class ProfileMaker
             $sizes,
             $personnelNumber,
             $hiredAt,
+            $birthDate,
             $this->specification,
             new \DateTimeImmutable(),
         );

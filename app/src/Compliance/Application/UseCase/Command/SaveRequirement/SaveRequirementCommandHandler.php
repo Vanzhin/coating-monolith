@@ -8,11 +8,14 @@ use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
 use App\Compliance\Application\Service\RequirementItemBuilder;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Event\RequirementChanged;
+use App\Compliance\Domain\File\RequirementTemplatePurpose;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\File\FileStorage;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,6 +33,7 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
         private RequirementItemBuilder $itemBuilder,
         private ComplianceAccessControl $access,
         private EventBusInterface $eventBus,
+        private FileStorage $storage,
     ) {
     }
 
@@ -65,9 +69,33 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
             $requirement->replaceItems(...$items);
         }
 
+        $requirement->setJournalKind(null !== $command->journalKind ? JournalKind::tryFrom($command->journalKind) : null);
+        $this->applyTemplate($command, $requirement);
+
         $this->repository->add($requirement);
         $this->eventBus->execute(new RequirementChanged($requirement->getId()));
 
         return new SaveRequirementCommandResult($requirement->getId());
+    }
+
+    /**
+     * Шаблон документа требования: снять (removeTemplate), заменить/задать (templateUpload) или не трогать.
+     * owner файла = id требования (известен и для нового — Uuid::v7 в этом же вызове). Прежний шаблон
+     * сносим перед заменой, чтобы не копить осиротевшие файлы.
+     */
+    private function applyTemplate(SaveRequirementCommand $command, Requirement $requirement): void
+    {
+        if ($command->removeTemplate) {
+            $this->storage->removeByOwner(RequirementTemplatePurpose::Template, $requirement->getId());
+            $requirement->setTemplateFileId(null);
+
+            return;
+        }
+        if (null === $command->templateUpload) {
+            return;
+        }
+        $this->storage->removeByOwner(RequirementTemplatePurpose::Template, $requirement->getId());
+        $stored = $this->storage->store(RequirementTemplatePurpose::Template, $requirement->getId(), $command->templateUpload);
+        $requirement->setTemplateFileId($stored->id());
     }
 }

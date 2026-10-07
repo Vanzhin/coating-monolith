@@ -34,6 +34,7 @@ class Profile extends Aggregate
     private Sizes $sizes;
     private ?string $personnelNumber;
     private ?\DateTimeImmutable $hiredAt;
+    private ?\DateTimeImmutable $birthDate;
     private readonly \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
@@ -48,6 +49,7 @@ class Profile extends Aggregate
         Sizes $sizes,
         ?string $personnelNumber,
         ?\DateTimeImmutable $hiredAt,
+        ?\DateTimeImmutable $birthDate,
         ProfileSpecification $specification,
         \DateTimeImmutable $now,
     ) {
@@ -60,6 +62,7 @@ class Profile extends Aggregate
         $this->sizes = $sizes;
         $this->personnelNumber = $this->normalizePersonnelNumber($personnelNumber);
         $this->hiredAt = $hiredAt;
+        $this->birthDate = $birthDate;
         $this->createdAt = $now;
         $this->updatedAt = $now;
         $specification->uniqueUser->satisfy($this);
@@ -104,6 +107,12 @@ class Profile extends Aggregate
     public function changeHiredAt(?\DateTimeImmutable $hiredAt, \DateTimeImmutable $now): void
     {
         $this->hiredAt = $hiredAt;
+        $this->updatedAt = $now;
+    }
+
+    public function changeBirthDate(?\DateTimeImmutable $birthDate, \DateTimeImmutable $now): void
+    {
+        $this->birthDate = $birthDate;
         $this->updatedAt = $now;
     }
 
@@ -170,6 +179,11 @@ class Profile extends Aggregate
     public function getHiredAt(): ?\DateTimeImmutable
     {
         return $this->hiredAt;
+    }
+
+    public function getBirthDate(): ?\DateTimeImmutable
+    {
+        return $this->birthDate;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

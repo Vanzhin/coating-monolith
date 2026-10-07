@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Aggregate\Requirement;
 
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -30,6 +31,10 @@ class Requirement extends Aggregate
     private StringCollection $positionIds;
     /** @var RequirementItemInterface[] */
     private array $items;
+    /** Файл-шаблон документа этого требования (uuid в едином файловом реестре); null → печатается дефолтная карточка. */
+    private ?string $templateFileId = null;
+    /** Вид журнала (для не материального — задаёт схему полей инструктажа); null у материального/не выбран. */
+    private ?JournalKind $journalKind = null;
     private int $version = 1;
 
     public function __construct(
@@ -84,6 +89,30 @@ class Requirement extends Aggregate
     public function getType(): ComplianceType
     {
         return $this->type;
+    }
+
+    /** Файл-шаблон документа требования (uuid) или null — тогда печатается дефолтная карточка. */
+    public function getTemplateFileId(): ?string
+    {
+        return $this->templateFileId;
+    }
+
+    public function setTemplateFileId(?string $templateFileId): void
+    {
+        $this->templateFileId = ('' === $templateFileId) ? null : $templateFileId;
+    }
+
+    public function getJournalKind(): ?JournalKind
+    {
+        return $this->journalKind;
+    }
+
+    public function setJournalKind(?JournalKind $journalKind): void
+    {
+        // Вид журнала — атрибут нематериального требования (инструктажа). Материальное (выдача СИЗ) журнала
+        // не носит: даже если форма прислала значение из скрытого селекта при переключении типа, гасим —
+        // иначе подпись акта упрётся в проверку обязательных полей инструктажа по несуществующей схеме.
+        $this->journalKind = $this->type->requiresQuantity() ? null : $journalKind;
     }
 
     public function getPositionIds(): StringCollection

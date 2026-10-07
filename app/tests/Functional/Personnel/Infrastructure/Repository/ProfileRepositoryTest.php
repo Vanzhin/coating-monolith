@@ -61,6 +61,7 @@ final class ProfileRepositoryTest extends KernelTestCase
             Sizes::empty(),
             null,
             null,
+            null,
             $this->specification,
             new \DateTimeImmutable(),
         );

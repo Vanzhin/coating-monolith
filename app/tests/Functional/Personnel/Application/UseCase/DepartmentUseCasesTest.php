@@ -196,6 +196,7 @@ final class DepartmentUseCasesTest extends KernelTestCase
             Sizes::empty(),
             null,
             null,
+            null,
             $profileSpec,
             new \DateTimeImmutable(),
         );

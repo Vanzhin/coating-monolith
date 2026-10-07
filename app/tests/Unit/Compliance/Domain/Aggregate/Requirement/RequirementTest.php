@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Compliance\Domain\Aggregate\Requirement;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
@@ -41,6 +42,17 @@ final class RequirementTest extends TestCase
             Uuid::v4(),
             'Личная карточка учёта выдачи СИЗ',
             ComplianceType::Material,
+            new StringCollection('pos-1', 'pos-2'),
+            ...$items,
+        );
+    }
+
+    private function nonMaterial(NonMaterialItem ...$items): Requirement
+    {
+        return new Requirement(
+            Uuid::v4(),
+            'Журнал инструктажей',
+            ComplianceType::NonMaterial,
             new StringCollection('pos-1', 'pos-2'),
             ...$items,
         );
@@ -113,5 +125,38 @@ final class RequirementTest extends TestCase
 
         self::assertTrue($req->coversPosition('pos-1'));
         self::assertFalse($req->coversPosition('pos-999'));
+    }
+
+    public function test_template_file_id_defaults_null_and_sets(): void
+    {
+        $req = $this->material($this->gloves());
+
+        self::assertNull($req->getTemplateFileId(), 'без шаблона — null (печатается дефолтная карточка)');
+
+        $req->setTemplateFileId('file-uuid-1');
+        self::assertSame('file-uuid-1', $req->getTemplateFileId());
+
+        $req->setTemplateFileId('');
+        self::assertNull($req->getTemplateFileId(), 'пустая строка → null');
+    }
+
+    public function test_non_material_requirement_accepts_journal_kind(): void
+    {
+        $req = $this->nonMaterial($this->briefing());
+
+        self::assertNull($req->getJournalKind());
+
+        $req->setJournalKind(JournalKind::FireSafety);
+        self::assertSame(JournalKind::FireSafety, $req->getJournalKind());
+    }
+
+    public function test_material_requirement_never_carries_journal_kind(): void
+    {
+        $req = $this->material($this->gloves());
+
+        // Форма могла прислать вид журнала из скрытого селекта при переключении типа — материальное
+        // (выдача СИЗ) журнала не носит, иначе подпись акта упрётся в проверку полей инструктажа.
+        $req->setJournalKind(JournalKind::FireSafety);
+        self::assertNull($req->getJournalKind());
     }
 }

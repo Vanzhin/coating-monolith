@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
+use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
 use Symfony\Component\Uid\Uuid;
@@ -26,6 +27,8 @@ class FulfillmentRecord
     private ?\DateTimeImmutable $manualDueDate;
     private float $returnedQuantity;
     private ?string $documentId;
+    /** Поля инструктажа (для не материального факта по схеме журнала); null у материального. */
+    private ?InstructionDetails $instructionDetails;
 
     public function __construct(
         Uuid $id,
@@ -38,6 +41,7 @@ class FulfillmentRecord
         ?\DateTimeImmutable $manualDueDate = null,
         float $returnedQuantity = 0.0,
         ?string $documentId = null,
+        ?InstructionDetails $instructionDetails = null,
     ) {
         $this->id = $id;
         $this->profileCompliance = $profileCompliance;
@@ -49,6 +53,12 @@ class FulfillmentRecord
         $this->manualDueDate = $manualDueDate;
         $this->returnedQuantity = $returnedQuantity;
         $this->documentId = $documentId;
+        $this->instructionDetails = $instructionDetails;
+    }
+
+    public function instructionDetails(): ?InstructionDetails
+    {
+        return $this->instructionDetails;
     }
 
     /** Списать количество (возврат): накапливается, не превышая выданного. */

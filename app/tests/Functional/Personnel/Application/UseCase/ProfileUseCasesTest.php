@@ -184,6 +184,7 @@ final class ProfileUseCasesTest extends KernelTestCase
             gloves: '9',
             height: '176',
             gender: $gender,
+            birthDate: new \DateTimeImmutable('1990-05-20'),
         );
     }
 
@@ -211,6 +212,7 @@ final class ProfileUseCasesTest extends KernelTestCase
         self::assertSame($departmentId, $loaded->getDepartment()->id);
         self::assertSame($deptTitle, $loaded->getDepartment()->title);
         self::assertSame(Gender::Male, $loaded->getSizes()->gender);
+        self::assertSame('1990-05-20', $loaded->getBirthDate()?->format('Y-m-d'));
     }
 
     public function test_create_with_department_of_other_organization_throws(): void

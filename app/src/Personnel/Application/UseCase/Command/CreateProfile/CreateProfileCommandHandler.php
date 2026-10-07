@@ -52,6 +52,7 @@ final readonly class CreateProfileCommandHandler implements CommandHandlerInterf
             $sizes,
             $command->personnelNumber,
             $command->hiredAt,
+            $command->birthDate,
         );
         $this->repository->add($profile);
         $this->eventBus->execute(new ProfileSaved($profile->getId()));

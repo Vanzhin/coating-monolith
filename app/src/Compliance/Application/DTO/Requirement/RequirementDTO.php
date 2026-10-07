@@ -11,6 +11,10 @@ final class RequirementDTO
     public string $name;
     public string $type;
     public string $typeLabel;
+    /** Загружен ли свой шаблон документа (для формы: показать «заменить/удалить» вместо «загрузить»). */
+    public bool $hasTemplate = false;
+    /** Вид журнала (для не материального) или null. */
+    public ?string $journalKind = null;
     /** @var list<PositionRefDTO> */
     public array $positions = [];
     /** @var list<RequirementItemDTO> */

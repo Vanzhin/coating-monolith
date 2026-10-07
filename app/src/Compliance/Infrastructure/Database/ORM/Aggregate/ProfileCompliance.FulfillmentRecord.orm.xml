@@ -15,6 +15,7 @@
         <field name="manualDueDate" type="datetime_immutable" column="manual_due_date" nullable="true"/>
         <field name="returnedQuantity" type="float" column="returned_quantity"/>
         <field name="documentId" type="string" length="36" column="document_id" nullable="true"/>
+        <field name="instructionDetails" type="compliance_instruction_details" column="instruction_details" nullable="true"/>
 
         <many-to-one field="profileCompliance"
                      target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"

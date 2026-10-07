@@ -45,7 +45,7 @@ final class AddAction extends AbstractController
                     organizationId: (string) ($inputData['organizationId'] ?? ''),
                     departmentId: (string) ($inputData['departmentId'] ?? ''),
                     personnelNumber: (string) ($inputData['personnelNumber'] ?? ''),
-                    hiredAt: $this->nullableDate((string) ($inputData['hiredAt'] ?? '')),
+                    hiredAt: $this->nullableDate((string) ($inputData['hiredAt'] ?? ''), 'приёма'),
                     clothing: (string) ($inputData['clothing'] ?? ''),
                     shoes: (string) ($inputData['shoes'] ?? ''),
                     headgear: (string) ($inputData['headgear'] ?? ''),
@@ -53,6 +53,7 @@ final class AddAction extends AbstractController
                     gloves: (string) ($inputData['gloves'] ?? ''),
                     height: (string) ($inputData['height'] ?? ''),
                     gender: (string) ($inputData['gender'] ?? ''),
+                    birthDate: $this->nullableDate((string) ($inputData['birthDate'] ?? ''), 'рождения'),
                 ));
                 $this->addFlash('profile_created_success', sprintf(
                     'Профиль «%s %s» добавлен.',
@@ -73,7 +74,7 @@ final class AddAction extends AbstractController
         ]);
     }
 
-    private function nullableDate(string $value): ?\DateTimeImmutable
+    private function nullableDate(string $value, string $what): ?\DateTimeImmutable
     {
         $value = trim($value);
         if ('' === $value) {
@@ -83,7 +84,7 @@ final class AddAction extends AbstractController
         try {
             return new \DateTimeImmutable($value);
         } catch (\Exception) {
-            throw new AppException('Некорректная дата приёма.');
+            throw new AppException(sprintf('Некорректная дата %s.', $what));
         }
     }
 }

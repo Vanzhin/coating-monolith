@@ -20,6 +20,8 @@ class RequirementDTOTransformer
         $dto->name = $requirement->getName();
         $dto->type = $requirement->getType()->value;
         $dto->typeLabel = $requirement->getType()->title();
+        $dto->hasTemplate = null !== $requirement->getTemplateFileId();
+        $dto->journalKind = $requirement->getJournalKind()?->value;
         $dto->positions = array_map(
             static fn (string $id): PositionRefDTO => new PositionRefDTO($id, $positionTitles[$id] ?? ''),
             $requirement->getPositionIds()->getList(),

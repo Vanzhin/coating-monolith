@@ -27,6 +27,7 @@ doctrine:
             compliance_cadence: App\Compliance\Infrastructure\Database\DBAL\CadenceType
             compliance_quantity: App\Compliance\Infrastructure\Database\DBAL\QuantityType
             compliance_writeoff_commission: App\Compliance\Infrastructure\Database\DBAL\WriteOffCommissionType
+            compliance_instruction_details: App\Compliance\Infrastructure\Database\DBAL\InstructionDetailsType
         mapping_types:
             jsonb: json
     orm:
