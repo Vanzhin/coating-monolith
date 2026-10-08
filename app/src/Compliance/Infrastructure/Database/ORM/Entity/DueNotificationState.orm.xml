@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Compliance\Domain\Entity\DueNotificationState" table="compliance_due_notification_state">
+        <id name="id" type="uuid">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="profileId" column="profile_id" length="36"/>
+        <field name="obligationKey" column="obligation_key" length="255"/>
+        <field name="bucket" column="bucket" enum-type="App\Compliance\Domain\Type\ComplianceBucket" length="16"/>
+        <field name="lastNotifiedAt" column="last_notified_at" type="datetime_immutable" nullable="true"/>
+        <unique-constraints>
+            <unique-constraint fields="profileId,obligationKey" name="uniq_due_notify_state"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

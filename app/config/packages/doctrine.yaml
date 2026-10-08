@@ -122,6 +122,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Compliance\Domain\Aggregate'
                 alias: Compliance
+            ComplianceEntity:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/Entity'
+                prefix: 'App\Compliance\Domain\Entity'
+                alias: ComplianceEntity
 
 
 #            App:
