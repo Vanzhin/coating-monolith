@@ -12,6 +12,8 @@ final class RequirementGroupDTO
     /** material|non_material */
     public string $type;
     public string $typeLabel;
+    /** Счёт позиций группы по бакетам — для разреза «по требованиям» (единица = позиция, не группа). */
+    public BucketCountsDTO $counts;
     /** id открытого черновика (если есть) — для «Оформить»/«Удалить». */
     public ?string $openDraftId = null;
     /** @var list<IssuanceActDTO> подписанные акты (история выдач со сканами) */

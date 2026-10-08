@@ -11,7 +11,6 @@ use App\Compliance\Application\DTO\Dashboard\RequirementBreakdownDTO;
 use App\Compliance\Application\DTO\Dashboard\RequirementGroupDTO;
 use App\Compliance\Application\Service\ComplianceDashboardScope;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**
@@ -55,17 +54,18 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
                 continue;
             }
 
-            // Считаем по (человек × требование): каждое требование человека — отдельная единица в своём бакете,
-            // поэтому «не исполнено» = число требований-экземпляров, а не людей (у одного может быть несколько).
-            // Отдельно `peopleCount` — число людей (отдел: +1 на человека; требование: +1 на человека-носителя).
+            // Считаем по ПОЗИЦИЯМ: каждая обязанность — единица в своём бакете (просроченное за невыданным в
+            // одной карточке не прячется под worst группы). KPI и отдел — сумма позиций человека; разрез по
+            // требованию — позиции группы. `peopleCount` — число людей (отдел: +1 на человека; требование: +1 на носителя).
             $dept = $this->department($depts, $profile->departmentTitle);
             ++$dept->peopleCount;
+            $kpi->addAll($row->material);
+            $kpi->addAll($row->nonMaterial);
+            $dept->counts->addAll($row->material);
+            $dept->counts->addAll($row->nonMaterial);
             foreach ($row->groups as $group) {
-                $groupWorst = $this->worstOfGroup($group);
-                $kpi->add($groupWorst);
-                $dept->counts->add($groupWorst);
                 $req = $this->requirement($reqs, $group);
-                $req->counts->add($groupWorst);
+                $req->counts->addAll($group->counts);
                 ++$req->peopleCount;
             }
         }
@@ -105,16 +105,6 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
         }
 
         return $reqs[$group->requirementId];
-    }
-
-    private function worstOfGroup(RequirementGroupDTO $group): ComplianceBucket
-    {
-        $worst = ComplianceBucket::Ok;
-        foreach ($group->rows as $row) {
-            $worst = ComplianceBucket::worseOf($worst, ComplianceBucket::from($row->bucket));
-        }
-
-        return $worst;
     }
 
     /**

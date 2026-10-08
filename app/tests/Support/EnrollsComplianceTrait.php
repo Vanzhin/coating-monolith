@@ -63,8 +63,8 @@ trait EnrollsComplianceTrait
         return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => TrackedObligation::keyOf($req->id, $itemLabel)];
     }
 
-    /** Выдать карточку (черновик → подписать) и вернуть id подписанного акта выдачи. */
-    private function issueCard(string $profileId, string $requirementId, string $key, string $amount = '10'): string
+    /** Выдать карточку (черновик → подписать) и вернуть id подписанного акта выдачи. $date — дата выдачи (для срока). */
+    private function issueCard(string $profileId, string $requirementId, string $key, string $amount = '10', string $date = '2026-06-01'): string
     {
         $bus = static::getContainer()->get(CommandBusInterface::class);
         $repo = static::getContainer()->get(ProfileComplianceRepositoryInterface::class);
@@ -76,7 +76,7 @@ trait EnrollsComplianceTrait
         \assert(null !== $draft);
 
         $bus->execute(new SaveDraftCommand(
-            $profileId, $draft->getId(), '2026-06-01',
+            $profileId, $draft->getId(), $date,
             [['obligationKey' => $key, 'amount' => $amount, 'unit' => 'pair']],
             'К-1', 'Петров П. П.',
             $this->stageComplianceScan(),

@@ -24,6 +24,24 @@ final class BucketCountsDTO
         };
     }
 
+    public function addAll(self $other): void
+    {
+        $this->ok += $other->ok;
+        $this->soon += $other->soon;
+        $this->overdue += $other->overdue;
+        $this->missing += $other->missing;
+    }
+
+    public function count(ComplianceBucket $bucket): int
+    {
+        return match ($bucket) {
+            ComplianceBucket::Ok => $this->ok,
+            ComplianceBucket::Soon => $this->soon,
+            ComplianceBucket::Overdue => $this->overdue,
+            ComplianceBucket::Missing => $this->missing,
+        };
+    }
+
     public function total(): int
     {
         return $this->ok + $this->soon + $this->overdue + $this->missing;

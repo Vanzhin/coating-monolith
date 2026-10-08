@@ -46,7 +46,9 @@ final readonly class PersonRowDTOTransformer
             if (!isset($groups[$requirementId])) {
                 $groups[$requirementId] = $this->group($pc, $obligation);
             }
-            $groups[$requirementId]->rows[] = $this->rowOf($obligation, $bucket);
+            $group = $groups[$requirementId];
+            $group->rows[] = $this->rowOf($obligation, $bucket);
+            $group->counts->add($bucket);
         }
 
         $row->groups = array_values($groups);
@@ -63,6 +65,7 @@ final readonly class PersonRowDTOTransformer
         $group->name = $obligation->requirementName();
         $group->type = $obligation->type()->value;
         $group->typeLabel = $obligation->type()->title();
+        $group->counts = new BucketCountsDTO();
         $group->openDraftId = $pc->openDraftFor($requirementId)?->getId();
         foreach ($pc->signedDocumentsFor($requirementId) as $act) {
             $group->signedActs[] = new IssuanceActDTO($act->getId(), $act->signedAt()?->format('d.m.Y'));
