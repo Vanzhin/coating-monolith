@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\Dashboard;
 
-use App\Compliance\Application\ReadModel\ComplianceBucket;
 use App\Compliance\Application\UseCase\Query\Dashboard\ComplianceDashboardFilter;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQueryResult;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfilesByIds\GetProfilesByIdsQuery;

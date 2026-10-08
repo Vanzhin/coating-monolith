@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\UseCase\Query\Dashboard;
 
-use App\Compliance\Application\ReadModel\ComplianceBucket;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;

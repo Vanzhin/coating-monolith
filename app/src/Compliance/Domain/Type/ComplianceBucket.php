@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Compliance\Application\ReadModel;
-
-use App\Compliance\Domain\Type\ComplianceType;
+namespace App\Compliance\Domain\Type;
 
 /**
- * Read-side светофор дашборда — 4 состояния (в отличие от доменного {@see \App\Compliance\Domain\Type\ComplianceStatus}
- * Green/Yellow/Red): «не выдано» (нет подписанного документа/не выполнено) отделено от «просрочено». Домен-инвариант
- * не трогаем: Missing+Overdue вместе = его Red. Выводится на чтении {@see ComplianceBucketResolver}.
+ * Состояние обязанности — 4 бакета (Ok/Soon/Overdue/Missing). Канонический результат единого расчёта
+ * {@see \App\Compliance\Domain\Service\ComplianceStatusResolver::bucketFor()} из подписи документа + хранимых
+ * дат + нормы/наличия + текущего момента. НЕ хранится (меняется от хода времени) — выводится на чтении
+ * (дашборд, карточка, проход уведомлений) ОДНИМ резолвером.
+ *
+ * Трёхцветный {@see ComplianceStatus} (Green/Yellow/Red) — производное представление этого бакета
+ * ({@see ComplianceStatus::fromBucket()}): Overdue и Missing вместе = Red.
  */
 enum ComplianceBucket: string
 {

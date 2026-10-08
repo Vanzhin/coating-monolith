@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\Dashboard;
 
-use App\Compliance\Application\ReadModel\ComplianceBucket;
+use App\Compliance\Domain\Type\ComplianceBucket;
 
 /** Счётчики по бакетам — общий примитив: сводка-чипы человека (по обязанностям) и разрезы (по людям). */
 final class BucketCountsDTO

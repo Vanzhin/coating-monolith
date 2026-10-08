@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
-use App\Compliance\Application\ReadModel\ComplianceBucket;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
@@ -17,6 +16,7 @@ use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQuer
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;

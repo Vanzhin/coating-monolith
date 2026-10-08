@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Compliance\Domain\Type;
 
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use PHPUnit\Framework\TestCase;
 
@@ -28,5 +29,13 @@ final class ComplianceStatusTest extends TestCase
         foreach (ComplianceStatus::cases() as $s) {
             self::assertNotSame('', $s->title());
         }
+    }
+
+    public function test_from_bucket_maps_overdue_and_missing_to_red(): void
+    {
+        self::assertSame(ComplianceStatus::Green, ComplianceStatus::fromBucket(ComplianceBucket::Ok));
+        self::assertSame(ComplianceStatus::Yellow, ComplianceStatus::fromBucket(ComplianceBucket::Soon));
+        self::assertSame(ComplianceStatus::Red, ComplianceStatus::fromBucket(ComplianceBucket::Overdue));
+        self::assertSame(ComplianceStatus::Red, ComplianceStatus::fromBucket(ComplianceBucket::Missing));
     }
 }

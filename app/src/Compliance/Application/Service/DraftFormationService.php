@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\Service;
 
-use App\Compliance\Application\ReadModel\ComplianceBucket;
-use App\Compliance\Application\ReadModel\ComplianceBucketResolver;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
+use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Personnel\Application\UseCase\Query\GetProfileIdsByPositions\GetProfileIdsByPositionsQuery;
 use App\Personnel\Application\UseCase\Query\GetProfileIdsByPositions\GetProfileIdsByPositionsQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -26,7 +26,7 @@ final readonly class DraftFormationService
         private ProfileComplianceRepositoryInterface $repository,
         private RequirementRepositoryInterface $requirements,
         private QueryBusInterface $queryBus,
-        private ComplianceBucketResolver $buckets,
+        private ComplianceStatusResolver $buckets,
     ) {
     }
 

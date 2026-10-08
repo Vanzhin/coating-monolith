@@ -6,9 +6,9 @@ namespace App\Compliance\Application\UseCase\Query\Dashboard;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTOTransformer;
-use App\Compliance\Application\ReadModel\ComplianceBucket;
 use App\Compliance\Application\Service\ComplianceDashboardScope;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 

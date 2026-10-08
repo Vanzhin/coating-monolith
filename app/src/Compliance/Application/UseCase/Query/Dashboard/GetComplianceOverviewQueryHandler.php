@@ -9,9 +9,9 @@ use App\Compliance\Application\DTO\Dashboard\DeptBreakdownDTO;
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTOTransformer;
 use App\Compliance\Application\DTO\Dashboard\RequirementBreakdownDTO;
 use App\Compliance\Application\DTO\Dashboard\RequirementGroupDTO;
-use App\Compliance\Application\ReadModel\ComplianceBucket;
 use App\Compliance\Application\Service\ComplianceDashboardScope;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**

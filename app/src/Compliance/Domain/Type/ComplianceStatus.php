@@ -32,6 +32,16 @@ enum ComplianceStatus: string
         };
     }
 
+    /** Трёхцветный светофор — производное от канонического 4-бакета: Overdue и Missing вместе = Red. */
+    public static function fromBucket(ComplianceBucket $bucket): self
+    {
+        return match ($bucket) {
+            ComplianceBucket::Ok => self::Green,
+            ComplianceBucket::Soon => self::Yellow,
+            ComplianceBucket::Overdue, ComplianceBucket::Missing => self::Red,
+        };
+    }
+
     /** Худший из двух (для агрегата по человеку/отделу). */
     public static function worseOf(self $a, self $b): self
     {
