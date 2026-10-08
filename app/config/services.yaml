@@ -231,13 +231,6 @@ services:
   App\Compliance\Domain\Repository\ComplianceActRepositoryInterface:
     alias: App\Compliance\Infrastructure\Repository\ComplianceActRepository
 
-  App\Compliance\Domain\Repository\DueNotificationStateRepositoryInterface:
-    alias: App\Compliance\Infrastructure\Repository\DueNotificationStateRepository
-
-  # Политика антифлуда прохода сроков — единая точка решения «слать ли». Базовая = только на ухудшении.
-  App\Compliance\Application\Service\DueNotificationPolicy:
-    alias: App\Compliance\Application\Service\TransitionDueNotificationPolicy
-
   # До Т6 (командные хендлеры) у DepartmentTreePolicy нет других потребителей в графе DI —
   # приватный сервис без ссылок компилятор вычищает как неиспользуемый. Тесты фетчат его
   # напрямую из контейнера (как PositionSpecification), поэтому делаем публичным явно.
