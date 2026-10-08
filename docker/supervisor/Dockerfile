@@ -35,6 +35,7 @@ RUN mkdir -p /var/log/supervisor
 # Copy supervisor configuration
 COPY docker/supervisor/conf.d/php-worker.conf /etc/supervisor/conf.d/php-worker.conf
 COPY docker/supervisor/conf.d/messenger-worker.conf /etc/supervisor/conf.d/messenger-worker.conf
+COPY docker/supervisor/conf.d/scheduler-worker.conf /etc/supervisor/conf.d/scheduler-worker.conf
 
 # Set proper permissions
 RUN chown -R root:root /app
