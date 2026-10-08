@@ -52,10 +52,13 @@ final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInter
                 continue; // фильтр по типу отсёк все обязанности
             }
             $worst = ComplianceBucket::from($row->worstBucket);
-            if (null !== $filter->statusBucket && $worst !== $filter->statusBucket) {
+            // Фильтр по чипу согласован с его счётом — по ПОЗИЦИЯМ: человек в списке бакета, если у него есть
+            // хотя бы одна позиция в этом бакете (не по worst группы/человека — иначе просроченное прячется за
+            // невыданным в той же карточке).
+            if (null !== $filter->statusBucket && 0 === $this->bucketCount($row, $filter->statusBucket)) {
                 continue;
             }
-            if ($filter->onlyProblems && !$worst->isProblem()) {
+            if ($filter->onlyProblems && 0 === $row->material->problems() + $row->nonMaterial->problems()) {
                 continue;
             }
             $rows[] = $row;
@@ -71,5 +74,11 @@ final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInter
         $page = \array_slice($rows, $pager->getOffset(), $pager->getLimit());
 
         return new GetPagedComplianceQueryResult(array_values($page), new Pager($pager->page, $pager->perPage, $total));
+    }
+
+    /** Сколько у человека позиций в бакете (материальные + нематериальные) — единица фильтра/счёта. */
+    private function bucketCount(PersonRowDTO $row, ComplianceBucket $bucket): int
+    {
+        return $row->material->count($bucket) + $row->nonMaterial->count($bucket);
     }
 }

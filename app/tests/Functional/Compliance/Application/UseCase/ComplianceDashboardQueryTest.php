@@ -121,6 +121,47 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(type: ComplianceType::NonMaterial)), $profileId));
     }
 
+    public function test_overdue_counted_and_listed_even_when_hidden_behind_missing_in_same_requirement(): void
+    {
+        // Кейс «Захарова»: в ОДНОМ требовании Перчатки просрочены (выданы давно), Каска не выдана. worst и группы,
+        // и человека = Missing. Баг счёта по worst: просроченное пряталось за невыданным → чип overdue=0, список пуст.
+        // Ждём: счёт/фильтр по ПОЗИЦИЯМ — overdue > 0 и человек в списке overdue (и в списке missing тоже).
+        ['profileId' => $profileId, 'requirementId' => $reqId, 'key' => $glovesKey] = $this->enrollCompliance('Перчатки');
+
+        /** @var GetProfileQueryResult $pr */
+        $pr = $this->queryBus->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($pr->profile);
+        // То же требование → две позиции: Перчатки (как в enroll) + Каска.
+        $this->commandBus->execute(new SaveRequirementCommand(
+            $reqId, 'Личная карточка учёта выдачи СИЗ', 'material', [$pr->profile->positionId],
+            [
+                ['label' => 'Перчатки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ['label' => 'Каска', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.7'],
+            ],
+        ));
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        // Выдаём ТОЛЬКО Перчатки, задним числом (2020 → срок 2021 < now) → Overdue; Каска остаётся Missing.
+        $this->issueCard($profileId, $reqId, $glovesKey, '10', '2020-01-01');
+
+        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
+        self::assertNotNull($row);
+        self::assertSame(ComplianceBucket::Missing->value, $row->worstBucket, 'worst человека — Missing (Каска)');
+
+        $kpi = $this->overview(new ComplianceDashboardFilter())->kpi;
+        self::assertGreaterThanOrEqual(1, $kpi->overdue, 'просроченная позиция считается, несмотря на невыданную в той же карточке');
+        self::assertGreaterThanOrEqual(1, $kpi->missing);
+
+        self::assertNotNull(
+            $this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Overdue)), $profileId),
+            'человек с просроченной позицией должен попадать в список overdue',
+        );
+        self::assertNotNull(
+            $this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Missing)), $profileId),
+            'и в список missing (есть невыданная позиция)',
+        );
+    }
+
     private function paged(ComplianceDashboardFilter $filter): GetPagedComplianceQueryResult
     {
         /** @var GetPagedComplianceQueryResult $result */
