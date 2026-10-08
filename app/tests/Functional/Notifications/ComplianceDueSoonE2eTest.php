@@ -7,6 +7,8 @@ namespace App\Tests\Functional\Notifications;
 use App\Compliance\Domain\Event\ComplianceDueSoon;
 use App\Notifications\Application\EventHandler\NotificationDispatcher;
 use App\Notifications\Domain\Entity\Subscription;
+use App\Notifications\Domain\Event\ComplianceDueItem;
+use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Repository\NotificationFilter;
 use App\Notifications\Domain\Repository\NotificationRepositoryInterface;
 use App\Notifications\Domain\Repository\SubscriptionRepositoryInterface;
@@ -49,7 +51,7 @@ final class ComplianceDueSoonE2eTest extends KernelTestCase
         );
 
         ['profileId' => $profileId] = $this->enrollCompliance();
-        $event = new ComplianceDueSoon($profileId, 'Иванов И.И.', 'Перчатки', '05.12.2026');
+        $event = new ComplianceDueSoon($profileId, 'Иванов И.И.', new ComplianceDueItem('Перчатки', DueKind::Soon, '05.12.2026'));
         $c->get(NotificationDispatcher::class)->__invoke($event); // в тестах зовём диспетчер напрямую
 
         $rows = $c->get(NotificationRepositoryInterface::class)

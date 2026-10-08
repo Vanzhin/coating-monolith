@@ -129,14 +129,10 @@ final class NotificationDispatcherTest extends KernelTestCase
                 return 'Иванов И.И.';
             }
 
-            public function obligationLabel(): string
+            /** @return list<\App\Notifications\Domain\Event\ComplianceDueItem> */
+            public function items(): array
             {
-                return 'Перчатки';
-            }
-
-            public function dueDate(): string
-            {
-                return '05.12.2026';
+                return [new \App\Notifications\Domain\Event\ComplianceDueItem('Перчатки', \App\Notifications\Domain\Event\DueKind::Soon, '05.12.2026')];
             }
         };
         $dispatcher->__invoke($e);

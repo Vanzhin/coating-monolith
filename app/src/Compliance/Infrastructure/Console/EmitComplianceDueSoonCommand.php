@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Compliance\Infrastructure\Console;
 
 use App\Compliance\Domain\Event\ComplianceDueSoon;
+use App\Notifications\Domain\Event\ComplianceDueItem;
+use App\Notifications\Domain\Event\DueKind;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Event\EventBusInterface;
@@ -34,7 +36,8 @@ final class EmitComplianceDueSoonCommand extends Command
         $this
             ->addArgument('profileId', InputArgument::REQUIRED, 'profileId сотрудника')
             ->addArgument('obligationLabel', InputArgument::REQUIRED, 'Наименование позиции (СИЗ)')
-            ->addArgument('dueDate', InputArgument::REQUIRED, 'Срок (как показывать, напр. 05.12.2026)');
+            ->addArgument('dueDate', InputArgument::REQUIRED, 'Срок (как показывать, напр. 05.12.2026)')
+            ->addArgument('kind', InputArgument::OPTIONAL, 'soon|overdue (по умолчанию soon)', 'soon');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -50,11 +53,15 @@ final class EmitComplianceDueSoonCommand extends Command
         }
         $fio = trim(sprintf('%s %s %s', $result->profile->lastName, $result->profile->firstName, $result->profile->middleName ?? ''));
 
+        $kind = DueKind::tryFrom((string) $input->getArgument('kind')) ?? DueKind::Soon;
         $this->eventBus->execute(new ComplianceDueSoon(
             $profileId,
             $fio,
-            (string) $input->getArgument('obligationLabel'),
-            (string) $input->getArgument('dueDate'),
+            new ComplianceDueItem(
+                (string) $input->getArgument('obligationLabel'),
+                $kind,
+                (string) $input->getArgument('dueDate'),
+            ),
         ));
 
         $output->writeln('Событие опубликовано. Доставка — асинхронно (нужен запущенный messenger-воркер).');
