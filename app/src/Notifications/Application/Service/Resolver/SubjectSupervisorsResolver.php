@@ -12,7 +12,7 @@ use App\Notifications\Domain\Service\SubjectContextProviderInterface;
 use App\Notifications\Domain\Type\ResolverKey;
 use App\Shared\Infrastructure\Exception\AppException;
 
-/** Адресаты — сам сотрудник-субъект + его надзорные (начальник отдела, администраторы). */
+/** Адресаты — сам сотрудник-субъект + его надзорные (администраторы). Начальник отдела — отдельная задача. */
 final readonly class SubjectSupervisorsResolver implements RecipientResolverInterface
 {
     public function __construct(
@@ -35,9 +35,6 @@ final readonly class SubjectSupervisorsResolver implements RecipientResolverInte
         $recipients = [];
         if (null !== $self = $this->subject->userUlidOfProfile($profileId)) {
             $recipients[] = $self;
-        }
-        if (null !== $head = $this->subject->departmentHeadUlidOfProfile($profileId)) {
-            $recipients[] = $head;
         }
         foreach ($this->audience->adminUlids() as $admin) {
             $recipients[] = $admin;

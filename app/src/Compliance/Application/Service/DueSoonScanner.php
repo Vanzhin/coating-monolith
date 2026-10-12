@@ -10,6 +10,7 @@ use App\Compliance\Domain\Service\ComplianceStatusResolver;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Notifications\Domain\Event\ComplianceDueItem;
 use App\Notifications\Domain\Event\DueKind;
+use App\Notifications\Domain\Event\NotificationBatch;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Event\EventBusInterface;
@@ -17,9 +18,10 @@ use App\Shared\Application\Query\QueryBusInterface;
 
 /**
  * Проход сроков: по каждому сотруднику считает состояние его обязанностей ЕДИНЫМ резолвером
- * ({@see ComplianceStatusResolver::bucketFor()} — то же, что на дашборде) и публикует дайджест НА ЧЕЛОВЕКА
- * (одно событие со списком позиций в статусе «подходит срок»/«просрочено»). Доставку по каналам/подпискам делает
- * NotificationDispatcher.
+ * ({@see ComplianceStatusResolver::bucketFor()} — то же, что на дашборде) и копит дайджест НА ЧЕЛОВЕКА
+ * (одно событие со списком позиций «подходит срок»/«просрочено»). В конце прохода публикует всё ОДНОЙ пачкой
+ * NotificationBatch — слой уведомлений схлопывает её по получателям (админ получает одну сводку, не N).
+ * Нечего слать (все в норме) — пачка не публикуется.
  *
  * Антифлуд (не слать неизменное повторно) пока НЕ реализован — проход отдаёт текущее состояние на каждый прогон.
  */
@@ -33,10 +35,10 @@ final readonly class DueSoonScanner
     ) {
     }
 
-    /** @return int число отправленных дайджестов (сотрудников) */
+    /** @return int число дайджестов (сотрудников) в опубликованной пачке */
     public function scan(\DateTimeImmutable $now): int
     {
-        $sent = 0;
+        $digests = [];
         foreach ($this->profiles->findAllProfileIds() as $profileId) {
             $profileCompliance = $this->profiles->findByProfile($profileId);
             if (null === $profileCompliance) {
@@ -63,12 +65,17 @@ final readonly class DueSoonScanner
             }
 
             if ([] !== $items) {
-                $this->eventBus->execute(new ComplianceDueSoon($profileId, $this->fio($profileId), ...$items));
-                ++$sent;
+                $digests[] = new ComplianceDueSoon($profileId, $this->fio($profileId), ...$items);
             }
         }
 
-        return $sent;
+        if ([] === $digests) {
+            return 0;
+        }
+
+        $this->eventBus->execute(new NotificationBatch(...$digests));
+
+        return \count($digests);
     }
 
     private function fio(string $profileId): string

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Notifications\Infrastructure\Service;
 
-use App\Personnel\Domain\Repository\DepartmentRepositoryInterface;
 use App\Personnel\Infrastructure\Service\PersonnelSubjectContextProvider;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -41,10 +40,7 @@ final class AudienceAndSubjectProvidersTest extends KernelTestCase
         self::assertContains($admin->getUlid(), $audience->adminUlids());
 
         ['profileId' => $profileId] = $this->enrollCompliance();
-        $subject = new PersonnelSubjectContextProvider(
-            $c->get(QueryBusInterface::class),
-            $c->get(DepartmentRepositoryInterface::class),
-        );
+        $subject = new PersonnelSubjectContextProvider($c->get(QueryBusInterface::class));
         self::assertNotNull($subject->userUlidOfProfile($profileId), 'профиль→userUlid резолвится');
     }
 

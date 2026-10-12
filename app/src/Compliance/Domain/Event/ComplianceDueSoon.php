@@ -12,8 +12,8 @@ use App\Notifications\Domain\Type\NotificationType;
 
 /**
  * Сроки обязанностей сотрудника-субъекта — дайджест НА ЧЕЛОВЕКА (список позиций «подходит срок»/«просрочено»).
- * Настраиваемый тип (SubjectSupervisors): адресаты — сам сотрудник, начальник его отдела и администраторы,
- * по их подпискам. Доставку делает NotificationDispatcher. Проход уведомлений публикует это событие.
+ * Настраиваемый тип (SubjectSupervisors): адресаты — сам сотрудник и администраторы, по их подпискам.
+ * Доставку делает NotificationDispatcher. Проход уведомлений публикует это событие пачкой NotificationBatch.
  */
 final readonly class ComplianceDueSoon implements NotifiableEvent, SubjectNotification, ComplianceDueSoonData
 {

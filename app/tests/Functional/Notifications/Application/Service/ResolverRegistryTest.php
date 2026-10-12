@@ -12,7 +12,6 @@ use App\Notifications\Domain\Event\NotifiableEvent;
 use App\Notifications\Domain\Event\OwnedNotification;
 use App\Notifications\Domain\Event\SubjectNotification;
 use App\Notifications\Domain\Type\NotificationType;
-use App\Personnel\Domain\Repository\DepartmentRepositoryInterface;
 use App\Personnel\Infrastructure\Service\PersonnelSubjectContextProvider;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -78,10 +77,7 @@ final class ResolverRegistryTest extends KernelTestCase
     private function registry(ContainerInterface $c): ResolverRegistry
     {
         $audience = new UsersAudienceProvider($c->get(UserRepositoryInterface::class));
-        $subject = new PersonnelSubjectContextProvider(
-            $c->get(QueryBusInterface::class),
-            $c->get(DepartmentRepositoryInterface::class),
-        );
+        $subject = new PersonnelSubjectContextProvider($c->get(QueryBusInterface::class));
 
         return new ResolverRegistry([
             new OwnerResolver(),
