@@ -33,7 +33,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 trait EnrollsComplianceTrait
 {
     /** @return array{profileId: string, requirementId: string, key: string} */
-    private function enrollCompliance(string $itemLabel = 'Перчатки'): array
+    private function enrollCompliance(string $itemLabel = 'Перчатки', ?string $userUlid = null): array
     {
         $bus = static::getContainer()->get(CommandBusInterface::class);
 
@@ -44,7 +44,7 @@ trait EnrollsComplianceTrait
         $dept = $bus->execute(new CreateDepartmentCommand($org->id, 'Цех '.uniqid('', true)));
         \assert($dept instanceof CreateDepartmentCommandResult);
         $profile = $bus->execute(new CreateProfileCommand(
-            userUlid: UuidService::generateUlid(),
+            userUlid: $userUlid ?? UuidService::generateUlid(),
             lastName: 'Иванов', firstName: 'Иван', middleName: 'Иванович',
             positionId: $pos->id, organizationId: $org->id, departmentId: $dept->id,
             personnelNumber: 'PN-'.uniqid('', true), hiredAt: new \DateTimeImmutable('2024-01-15'),

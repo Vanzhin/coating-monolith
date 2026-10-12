@@ -40,9 +40,12 @@ enum NotificationType: string
     /** @return list<NotificationChannel> */
     public function channels(): array
     {
+        // Контент-каналы подписки: приложение + почта. Push НЕ канал подписки — пингуется автоматически на
+        // создание inbox-записи (см. NotificationDeliveryHandler). Enum-кейс WebPush оставлен для совместимости
+        // с существующими строками подписок, но сюда не входит.
         return match ($this) {
-            self::ComplianceDueSoon => [NotificationChannel::Inbox, NotificationChannel::WebPush, NotificationChannel::Email],
-            self::UserActivated => [NotificationChannel::Inbox, NotificationChannel::WebPush],
+            self::ComplianceDueSoon => [NotificationChannel::Inbox, NotificationChannel::Email],
+            self::UserActivated => [NotificationChannel::Inbox],
         };
     }
 

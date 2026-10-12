@@ -54,13 +54,17 @@ framework:
             'App\Compliance\Domain\Event\WriteOffActSigned': async
             # Черновик карточки удалён → пересчёт проекции человека по требованию + черновик на дефицит (в воркере).
             'App\Compliance\Domain\Event\DraftDeleted': async
-            # Подходит срок выдачи СИЗ → уведомляющее событие на единый диспетчер (inbox/push/email по подпискам).
+            # Подходит срок выдачи СИЗ → уведомляющее событие на единый диспетчер (inbox/email по подпискам).
             'App\Compliance\Domain\Event\ComplianceDueSoon': async
+            # Пачка уведомлений от прохода → раскладка по получателям (одно сводное на надзор), в воркере.
+            'App\Notifications\Domain\Event\NotificationBatch': async
+            # Одна отправка (получатель × канал) → доставка; независимый ретрай на канал.
+            'App\Notifications\Domain\Event\NotificationDeliveryRequested': async
 
-# when@test:
-#    framework:
-#        messenger:
-#            transports:
-#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
-#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
-#                async: 'in-memory://'
+when@test:
+    framework:
+        messenger:
+            routing:
+                # В тестах доставка синхронна — проверяем результат без запущенного воркера.
+                'App\Notifications\Domain\Event\NotificationBatch': sync
+                'App\Notifications\Domain\Event\NotificationDeliveryRequested': sync

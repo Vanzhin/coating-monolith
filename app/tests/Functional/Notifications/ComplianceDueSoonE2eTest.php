@@ -57,6 +57,7 @@ final class ComplianceDueSoonE2eTest extends KernelTestCase
         $rows = $c->get(NotificationRepositoryInterface::class)
             ->findByFilter(new NotificationFilter($admin->getUlid(), null, Pager::fromPage(1, 10)))->items;
         self::assertCount(1, $rows);
-        self::assertStringContainsString('Перчатки', $rows[0]->getMessage());
+        // Админ — надзор (не субъект) → сводка со счётчиком, без названий позиций.
+        self::assertStringContainsString('срок подходит у позиций: 1', $rows[0]->getMessage());
     }
 }

@@ -29,10 +29,10 @@ final class ChannelGateTest extends KernelTestCase
         $repo = self::getContainer()->get(SubscriptionRepositoryInterface::class);
         $gate = new ChannelGate($repo);
         $ulid = 'u-'.uniqid('', true);
-        $repo->save(new Subscription(Uuid::v7(), $ulid, NotificationType::ComplianceDueSoon, NotificationChannel::WebPush, true));
+        $repo->save(new Subscription(Uuid::v7(), $ulid, NotificationType::ComplianceDueSoon, NotificationChannel::Email, true));
 
         $channels = $gate->activeChannels($ulid, NotificationType::ComplianceDueSoon);
-        self::assertSame([NotificationChannel::WebPush], $channels, 'только подписанный push, без inbox/email');
+        self::assertSame([NotificationChannel::Email], $channels, 'только подписанная почта, без inbox (push — не канал подписки)');
     }
 
     public function test_configurable_type_no_subscription_empty(): void
