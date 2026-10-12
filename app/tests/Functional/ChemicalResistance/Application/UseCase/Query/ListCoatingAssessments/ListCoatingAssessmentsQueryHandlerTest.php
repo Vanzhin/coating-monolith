@@ -181,7 +181,7 @@ final class ListCoatingAssessmentsQueryHandlerTest extends KernelTestCase
 
             // System notes come first — the first note (if any) must have isSystem=true.
             if (count($row->notes) > 0) {
-                self::assertTrue($row->notes[0]['isSystem'],
+                self::assertTrue($row->notes[0]->isSystem,
                     'First note in every row must be a system note.');
             }
         }

@@ -15,7 +15,7 @@ final readonly class AssessmentRowDTO
         public array $aliases,
         public string $grade,
         public int $maxTemperatureCelsius,
-        /** @var list<array{title:string,description:string,isSystem:bool}> */
+        /** @var list<AssessmentNoteDTO> */
         public array $notes,
         public ?string $assessmentId = null,
         /** @var list<string> note IDs */

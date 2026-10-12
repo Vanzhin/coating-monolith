@@ -59,9 +59,33 @@
 
             {# Вердикт-чип первым + теги покрытия; ряд скроллится (scroll-fade), не переносится. #}
             <div class="ecard-tags" data-controller="scroll-fade">
+                {# Вещества с несистемным примечанием — для значка и popover (по веществам). #}
+                {% set notedVerdicts = item.verdicts|filter(v => v.notes|filter(n => not n.isSystem)|length > 0) %}
                 <span class="verdict {{ verdictClass }}"
                       title="{{ item.gradeLabel }}{% if item.maxTemperature is not null %} до {{ item.maxTemperature }} °C{% endif %}">
                     <i class="bi bi-droplet"></i>{% if item.maxTemperature is not null %}до {{ item.maxTemperature }} °C{% else %}{{ item.gradeLabel }}{% endif %}
+                    {% if notedVerdicts|length > 0 %}
+                        <span class="d-inline-flex align-items-center" data-controller="note-popover">
+                            <button type="button"
+                                    class="btn btn-link text-decoration-none text-reset p-0 border-0 ms-1 lh-1 align-baseline"
+                                    data-note-popover-target="trigger" aria-label="Примечания">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
+                            <template data-note-popover-target="content">
+                                {% for v in notedVerdicts %}
+                                    <div class="{% if not loop.first %}border-top pt-2 mt-2{% endif %}">
+                                        <div class="fw-semibold small">{{ v.substanceName }}</div>
+                                        {% for n in v.notes|filter(n => not n.isSystem) %}
+                                            <div class="small mt-1">
+                                                <span class="fw-semibold">{{ n.title }}</span>
+                                                <span class="d-block text-secondary">{{ n.description }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </template>
+                        </span>
+                    {% endif %}
                 </span>
                 {% for tag in c.tags %}
                     <span class="tag">{{ tag.title }}</span>
