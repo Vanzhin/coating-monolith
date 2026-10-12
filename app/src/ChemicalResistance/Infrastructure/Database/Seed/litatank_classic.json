@@ -258,7 +258,9 @@
             "aliases": [
                 "2-Hydroxypropanoic acid",
                 "Lactic acid",
-                "Кислота молочная"
+                "Milk acid",
+                "Кислота молочная",
+                "Милк кислота"
             ]
         },
         {
@@ -3168,10 +3170,13 @@
             ]
         },
         {
-            "canonical": "Lactic acid <20%",
+            "canonical": "Молочная кислота (<20%)",
             "cas": null,
             "aliases": [
-                "Молочная кислота <20%"
+                "Lactic acid <20%",
+                "Milk acid <20%",
+                "Молочная кислота <20%",
+                "Милк кислота <20%"
             ]
         },
         {
@@ -3575,20 +3580,6 @@
             "cas": null,
             "aliases": [
                 "МИК"
-            ]
-        },
-        {
-            "canonical": "Milk acid",
-            "cas": null,
-            "aliases": [
-                "Милк кислота"
-            ]
-        },
-        {
-            "canonical": "Milk acid <20%",
-            "cas": null,
-            "aliases": [
-                "Милк кислота <20%"
             ]
         },
         {
@@ -6000,7 +5991,7 @@
         },
         {
             "substance": "Молочная кислота",
-            "grade": "R",
+            "grade": "NR",
             "max_temperature": null,
             "notes": []
         },
@@ -9235,13 +9226,7 @@
             ]
         },
         {
-            "substance": "Молочная кислота",
-            "grade": "NR",
-            "max_temperature": null,
-            "notes": []
-        },
-        {
-            "substance": "Lactic acid <20%",
+            "substance": "Молочная кислота (<20%)",
             "grade": "R",
             "max_temperature": null,
             "notes": []
@@ -9761,18 +9746,6 @@
         {
             "substance": "MIK",
             "grade": "NR",
-            "max_temperature": null,
-            "notes": []
-        },
-        {
-            "substance": "Milk acid",
-            "grade": "NR",
-            "max_temperature": null,
-            "notes": []
-        },
-        {
-            "substance": "Milk acid <20%",
-            "grade": "R",
             "max_temperature": null,
             "notes": []
         },
