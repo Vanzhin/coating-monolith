@@ -1,15 +1,10 @@
 framework:
     router:
-        # Configure how to generate URLs in non-HTTP contexts, such as CLI commands.
-        # See https://symfony.com/doc/current/routing.html#generating-urls-in-commands
-        #default_uri: http://localhost
+        # Базовый адрес для генерации URL вне HTTP (CLI, воркеры уведомлений). Хост — из env APP_BASE_URL,
+        # в коде домен не пишем. dev — http://localhost:8080, prod — адрес сайта (задаётся на деплое).
+        default_uri: '%env(APP_BASE_URL)%'
 
 when@prod:
     framework:
         router:
             strict_requirements: null
-
-when@dev:
-  framework:
-    router:
-      default_uri: http://localhost:6878

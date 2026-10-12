@@ -16,6 +16,9 @@ parameters:
   # Дефолт: если ADMIN_NOTIFY_EMAIL не задан в окружении — пустая строка, а не падение резолва
   # env-переменной. Пустой email → админ не найден → уведомление о новом юзере просто пропускается.
   env(ADMIN_NOTIFY_EMAIL): ''
+  # Базовый адрес для ссылок в уведомлениях (генерятся в воркере, вне HTTP). Дефолт — чтобы резолв env не падал,
+  # если переменная не задана; реальные значения — в .env (dev) и в окружении деплоя (prod).
+  env(APP_BASE_URL): 'http://localhost'
 
 services:
   # default configuration for services in *this* file
@@ -27,6 +30,7 @@ services:
       $vapidPrivateKey: '%env(VAPID_PRIVATE_KEY)%'
       $vapidSubject: '%env(VAPID_SUBJECT)%'
       $adminNotifyEmail: '%env(ADMIN_NOTIFY_EMAIL)%'
+      $appBaseUrl: '%env(APP_BASE_URL)%'
 
   # makes classes in src/ available to be used as services
   # this creates a service per class whose id is the fully-qualified class name
