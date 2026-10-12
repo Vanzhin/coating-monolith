@@ -71,7 +71,6 @@
                                             {% for cs in ts.channels %}
                                                 {% set ch_icon = {
                                                     'inbox': 'bi-app-indicator',
-                                                    'web_push': 'bi-bell',
                                                     'email': 'bi-envelope',
                                                 }[cs.channel.value]|default('bi-dot') %}
                                                 <div class="bg-body rounded-3 px-3 py-2 d-flex justify-content-between align-items-center gap-3">
@@ -81,11 +80,6 @@
                                                             <i class="bi {{ ch_icon }} text-body-secondary"></i>
                                                             <span>{{ cs.channel.label }}</span>
                                                         </label>
-                                                        {% if 'web_push' == cs.channel.value %}
-                                                            <div class="text-body-secondary small mt-1">
-                                                                <i class="bi bi-exclamation-square me-1"></i>Необходимо включить для каждого устройства
-                                                            </div>
-                                                        {% endif %}
                                                     </div>
                                                     <div class="form-check form-switch form-switch-lg m-0">
                                                         <input class="form-check-input" type="checkbox" role="switch"

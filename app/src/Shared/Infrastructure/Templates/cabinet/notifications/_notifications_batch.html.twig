@@ -13,7 +13,7 @@
 {% else %}
     {% for n in notifications %}
         <div class="p-3 rounded-3 bg-body-tertiary">
-            <div class="{{ n.isRead ? '' : 'fw-semibold' }}">{{ n.message }}</div>
+            <div class="{{ n.isRead ? '' : 'fw-semibold' }}">{{ n.message|notification_text }}</div>
             <div class="small text-body-secondary mt-1">{{ n.createdAt|timeAgo }}</div>
         </div>
     {% endfor %}

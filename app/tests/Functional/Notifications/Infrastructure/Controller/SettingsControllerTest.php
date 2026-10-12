@@ -34,6 +34,7 @@ final class SettingsControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('СИЗ: подходит срок', $html, 'настраиваемый тип показан');
         self::assertStringNotContainsString('Новый пользователь', $html, 'системный тип скрыт');
+        self::assertStringNotContainsString('channels[web_push]', $html, 'push больше не канал подписки');
 
         $client->request('POST', '/cabinet/notifications/settings', [
             'type' => 'compliance.due_soon',
