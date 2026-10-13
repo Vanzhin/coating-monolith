@@ -1,7 +1,44 @@
-/* Popover примечаний химстойкости (карточки обратного поиска «вещество → покрытия»):
-   ограничиваем ширину и высоту — примечания бывают в несколько абзацев, тело скроллится. */
+/* Примечания химстойкости на карточках обратного поиска «вещество → покрытия».
+   Весь вердикт-чип кликабелен (крупная тап-зона на телефоне), раскрывает popover. */
+
+/* Обёртка-контроллер не создаёт бокс — кнопка-чип становится прямым флекс-ребёнком ряда
+   тегов и наследует .ecard-tags .verdict (flex-shrink, размеры). */
+.note-verdict {
+    display: contents;
+}
+
+/* Чип в роли кнопки: убираем дефолт браузерной кнопки, оставляя вид .verdict. */
+button.verdict {
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Значок-подсказка «есть примечание» — приглушённый, не перетягивает внимание. */
+.verdict-note-icon {
+    margin-left: 2px;
+    opacity: .7;
+}
+
+/* Popover — в стиле приложения (как дропдауны): без рамки-линии, мягкая тень, скруглённый,
+   поверхность и цвета из токенов (тема переключается сама). Тело скроллится — ноты длинные. */
 .note-popover {
-    max-width: 320px;
+    --bs-popover-max-width: 320px;
+    --bs-popover-bg: var(--surface);
+    --bs-popover-border-width: 0;
+    --bs-popover-border-radius: 12px;
+    --bs-popover-inner-border-radius: 12px;
+    --bs-popover-border-color: transparent;
+    --bs-popover-header-bg: transparent;
+    --bs-popover-header-color: var(--bs-body-color);
+    --bs-popover-body-color: var(--bs-body-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+}
+
+.note-popover .popover-header {
+    font-size: .8rem;
+    font-weight: 600;
+    padding-bottom: .25rem;
 }
 
 .note-popover .popover-body {
