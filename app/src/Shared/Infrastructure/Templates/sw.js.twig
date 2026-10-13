@@ -11,6 +11,12 @@
 const CACHE = 'app-{{ cacheVersion }}';
 const PRECACHE = {{ precacheUrls|json_encode(constant('JSON_UNESCAPED_SLASHES'))|raw }};
 const CACHE_FIRST = new Set({{ cacheFirstUrls|json_encode(constant('JSON_UNESCAPED_SLASHES'))|raw }});
+// Матчим кэш ТОЛЬКО по URL. На проде ответы несут Vary: Accept-Encoding, и Cache API по умолчанию
+// требует совпадения Accept-Encoding запроса-ключа с тем, что был у запроса прекэша. У реальной
+// навигации этот заголовок есть, у положенного в кэш `new Request(..)` — нет → Vary-промах → офлайн
+// отдавал offline.html вместо настоящей страницы. Прекэш ключуется по URL, encoding-вариантов не
+// храним — Vary тут только вредит, поэтому ignoreVary (как делает Workbox для precache).
+const MATCH = { ignoreVary: true };
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -50,7 +56,7 @@ self.addEventListener('fetch', (event) => {
     // Ассеты бандла + offline.html + иконка — cache-first (иммутабельны, identity-neutral).
     if (CACHE_FIRST.has(url.pathname)) {
         event.respondWith(
-            caches.match(req).then((hit) => hit || fetch(new Request(req, { credentials: 'omit' }))
+            caches.match(req, MATCH).then((hit) => hit || fetch(new Request(req, { credentials: 'omit' }))
                 .then((res) => {
                     if (isCacheableResponse(res)) {
                         const copy = res.clone();
@@ -58,7 +64,7 @@ self.addEventListener('fetch', (event) => {
                     }
                     return res;
                 })
-                .catch(() => (req.mode === 'navigate' ? caches.match('/offline.html') : Response.error())))
+                .catch(() => (req.mode === 'navigate' ? caches.match('/offline.html', MATCH) : Response.error())))
         );
         return;
     }
@@ -73,9 +79,9 @@ self.addEventListener('fetch', (event) => {
                 }
                 return res;
             })
-            .catch(() => caches.match(req).then((hit) => {
+            .catch(() => caches.match(req, MATCH).then((hit) => {
                 if (hit) return hit;
-                if (req.mode === 'navigate') return caches.match('/offline.html');
+                if (req.mode === 'navigate') return caches.match('/offline.html', MATCH);
                 return Response.error();
             }))
     );
