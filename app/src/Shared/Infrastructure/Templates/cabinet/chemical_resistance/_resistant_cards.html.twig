@@ -53,7 +53,9 @@
                      data-coating-id="{{ c.id }}">{{ c.description }}</div>
             {% endif %}
 
-            {% if not c.isTintable and c.possibleColors|length > 0 %}
+            {% if c.isTintable %}
+                <div class="ecard-meta">колеруемое</div>
+            {% elseif c.possibleColors|length > 0 %}
                 <div class="ecard-meta">{{ c.possibleColors|length }} цветов</div>
             {% endif %}
 
@@ -61,32 +63,34 @@
             <div class="ecard-tags" data-controller="scroll-fade">
                 {# Вещества с несистемным примечанием — для значка и popover (по веществам). #}
                 {% set notedVerdicts = item.verdicts|filter(v => v.notes|filter(n => not n.isSystem)|length > 0) %}
-                <span class="verdict {{ verdictClass }}"
-                      title="{{ item.gradeLabel }}{% if item.maxTemperature is not null %} до {{ item.maxTemperature }} °C{% endif %}">
-                    <i class="bi bi-droplet"></i>{% if item.maxTemperature is not null %}до {{ item.maxTemperature }} °C{% else %}{{ item.gradeLabel }}{% endif %}
-                    {% if notedVerdicts|length > 0 %}
-                        <span class="d-inline-flex align-items-center" data-controller="note-popover">
-                            <button type="button"
-                                    class="btn btn-link text-decoration-none text-reset p-0 border-0 ms-1 lh-1 d-inline-flex align-items-center"
-                                    data-note-popover-target="trigger" aria-label="Примечания">
-                                <i class="bi bi-info-circle"></i>
-                            </button>
-                            <template data-note-popover-target="content">
-                                {% for v in notedVerdicts %}
-                                    <div class="{% if not loop.first %}border-top pt-2 mt-2{% endif %}">
-                                        <div class="fw-semibold small">{{ v.substanceName }}</div>
-                                        {% for n in v.notes|filter(n => not n.isSystem) %}
-                                            <div class="small mt-1">
-                                                <span class="fw-semibold">{{ n.title }}</span>
-                                                <span class="d-block text-secondary">{{ n.description }}</span>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endfor %}
-                            </template>
-                        </span>
-                    {% endif %}
-                </span>
+                {# Содержимое чипа общее для обоих вариантов (не дублируем). #}
+                {% set chipBody %}<i class="bi bi-droplet"></i>{% if item.maxTemperature is not null %}до {{ item.maxTemperature }} °C{% else %}{{ item.gradeLabel }}{% endif %}{% endset %}
+                {% set chipTitle = item.gradeLabel ~ (item.maxTemperature is not null ? ' до ' ~ item.maxTemperature ~ ' °C' : '') %}
+                {% if notedVerdicts|length > 0 %}
+                    {# Есть примечания — весь чип кликабелен (крупная тап-зона), раскрывает popover. #}
+                    <span class="note-verdict" data-controller="note-popover">
+                        <button type="button" class="verdict {{ verdictClass }}"
+                                data-note-popover-target="trigger"
+                                aria-label="{{ chipTitle }}. Примечания">
+                            {{ chipBody }}<i class="bi bi-info-circle verdict-note-icon"></i>
+                        </button>
+                        <template data-note-popover-target="content">
+                            {% for v in notedVerdicts %}
+                                <div class="{% if not loop.first %}border-top pt-2 mt-2{% endif %}">
+                                    <div class="fw-semibold small">{{ v.substanceName }}</div>
+                                    {% for n in v.notes|filter(n => not n.isSystem) %}
+                                        <div class="small mt-1">
+                                            <span class="fw-semibold">{{ n.title }}</span>
+                                            <span class="d-block text-secondary">{{ n.description }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </template>
+                    </span>
+                {% else %}
+                    <span class="verdict {{ verdictClass }}" title="{{ chipTitle }}">{{ chipBody }}</span>
+                {% endif %}
                 {% for tag in c.tags %}
                     <span class="tag">{{ tag.title }}</span>
                 {% endfor %}
