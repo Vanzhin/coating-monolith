@@ -53,8 +53,6 @@
     flex: 0 0 auto; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: var(--bs-primary); color: #fff;
     font-size: .7rem; font-weight: 700; display: grid; place-items: center; line-height: 1;
 }
-.sf-step.is-locked .sf-step-num { background: var(--bs-secondary-color); }
-.sf-step.is-locked .form-select { background: var(--sunken); color: var(--bs-secondary-color); }
 .sf-step-name { font-size: .78rem; color: var(--bs-secondary-color); font-weight: 600; }
 .sf-chosen { margin: .55rem 0 0; display: inline-flex; align-items: center; gap: .4rem; align-self: flex-start;
     background: var(--accent-subtle); border-radius: 999px; padding: .3rem .7rem; font-size: .8rem; font-weight: 700; color: var(--bs-primary); }

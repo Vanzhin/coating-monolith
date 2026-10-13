@@ -134,11 +134,16 @@ export default class extends Controller {
 
     // --- режим ввода ---
     setMode(event) {
-        this.mode = event.currentTarget.dataset.sfMode;
-        this.element.querySelectorAll('[data-sf-mode]').forEach((b) => b.setAttribute('aria-pressed', b === event.currentTarget));
-        this.element.querySelector('.sf-sortament').hidden = this.mode !== 'sortament';
-        this.element.querySelector('.sf-manual').hidden = this.mode !== 'dims';
-        if ('sortament' === this.mode) this.loadSortament();
+        this.applyMode(event.currentTarget.dataset.sfMode);
+    }
+
+    // Переключение режима (из клика и программно — для типов без сортамента).
+    applyMode(mode) {
+        this.mode = mode;
+        this.element.querySelectorAll('[data-sf-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sfMode === mode));
+        this.element.querySelector('.sf-sortament').hidden = mode !== 'sortament';
+        this.element.querySelector('.sf-manual').hidden = mode !== 'dims';
+        if ('sortament' === mode) this.loadSortament();
         this.recompute();
     }
 
@@ -164,8 +169,15 @@ export default class extends Controller {
     rebuildCascade() {
         const std = this.element.querySelector('[data-sf-role="standard"]');
         if (!std) return;
-        if (!this.sortament || !this.sortament.types[this.type]) {
-            std.innerHTML = '<option>загрузка…</option>';
+        const hasSortament = !!(this.sortament && this.sortament.types[this.type]);
+        // Тумблер «Из сортамента / По размерам» нужен только типам с сортаментом. У трубы/круга/листа
+        // его нет — там только ручной ввод, тумблер прячем (иначе сортамент «висит» на «загрузка…»).
+        const modeSeg = this.element.querySelector('.sf-seg[aria-label="Способ ввода"]');
+        if (modeSeg) modeSeg.hidden = !!this.sortament && !hasSortament;
+        if (!hasSortament) {
+            // Сортамент ещё грузится — «загрузка…»; загружен, но у типа его нет — показываем размеры.
+            if (this.sortament) this.applyMode('dims');
+            else std.innerHTML = '<option>загрузка…</option>';
             return;
         }
         const standards = this.sortament.types[this.type].standards;
@@ -195,14 +207,15 @@ export default class extends Controller {
         const sel = this.element.querySelector(`[data-sf-role="level"][data-level="${index}"]`);
         if (!sel) return;
         sel.innerHTML = Object.keys(node).map((k) => `<option value="${k}">${k}</option>`).join('');
-        sel.closest('.sf-step').classList.remove('is-locked');
-        // сбросить и заблокировать глубже
-        for (let i = index + 1; i < this.levels.length; i++) {
-            const deeper = this.element.querySelector(`[data-sf-role="level"][data-level="${i}"]`);
-            deeper.innerHTML = '<option>—</option>';
-            deeper.closest('.sf-step').classList.add('is-locked');
+        // Сразу раскрываем следующий уровень по первому варианту — водопад НЕ ждёт change. При выборе
+        // стандарта/типа верхние уровни авто-выставлены в первый вариант без события, а повторный тап по
+        // уже выбранному варианту change не шлёт. Без авто-спуска глубокие уровни застревали на «—» и лист
+        // не находился (баг «Номер = —» на 2–3-уровневых стандартах). На последнем уровне — спуск к листу.
+        if (index + 1 < this.levels.length) {
+            this.renderLevel(index + 1, node[sel.value]);
+        } else {
+            this.descend();
         }
-        this.descend();
     }
 
     onLevelChange(event) {
