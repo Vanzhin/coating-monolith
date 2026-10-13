@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\GetResistantCoatings;
 
+use App\ChemicalResistance\Application\DTO\AssessmentNoteDTO;
 use App\ChemicalResistance\Application\DTO\ResistantCoatingDTO;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
+use App\ChemicalResistance\Domain\Service\EffectiveAssessmentNotes;
+use App\ChemicalResistance\Domain\Service\NoteView;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -18,6 +21,7 @@ class GetResistantCoatingsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
         private readonly AssessmentRepositoryInterface $assessments,
+        private readonly EffectiveAssessmentNotes $effectiveNotes,
     ) {
     }
 
@@ -39,6 +43,10 @@ class GetResistantCoatingsQueryHandler implements QueryHandlerInterface
                 maxTemperature: $a->getMaxTemperature()->celsius,
                 assessmentId: $a->getId(),
                 suitable: $grade->isSuitable(),
+                notes: array_map(
+                    fn (NoteView $n) => new AssessmentNoteDTO($n->title, $n->description, $n->isSystem),
+                    $this->effectiveNotes->of($a),
+                ),
             );
         }
 

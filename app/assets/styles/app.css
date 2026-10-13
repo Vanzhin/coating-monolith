@@ -21,6 +21,7 @@
 @import "components/form.css";
 @import "components/system-editor.css";
 @import "components/substance-search.css";
+@import "components/note-popover.css";
 @import "components/typeahead.css";
 @import "components/preview.css";
 @import "components/pending.css";

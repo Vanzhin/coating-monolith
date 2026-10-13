@@ -86,6 +86,7 @@ class GetCoatingsBySubstanceQueryHandler implements QueryHandlerInterface
                     gradeLabel: $rc->gradeLabel,
                     maxTemperature: $rc->maxTemperature,
                     assessmentId: $rc->assessmentId,
+                    notes: $rc->notes,
                 );
             }
             $rows[$coatingId] = ['worst' => $worst, 'minTemp' => $minTemp, 'verdicts' => $verdicts];

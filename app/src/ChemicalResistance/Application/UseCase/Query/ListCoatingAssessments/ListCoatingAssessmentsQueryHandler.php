@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\ListCoatingAssessments;
 
+use App\ChemicalResistance\Application\DTO\AssessmentNoteDTO;
 use App\ChemicalResistance\Application\DTO\AssessmentRowDTO;
 use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
 use App\ChemicalResistance\Domain\Repository\AssessmentRepositoryInterface;
@@ -53,11 +54,7 @@ final class ListCoatingAssessmentsQueryHandler
                 grade: $a->getGrade()->value,
                 maxTemperatureCelsius: $a->getMaxTemperature()->celsius,
                 notes: array_map(
-                    fn (NoteView $n) => [
-                        'title' => $n->title,
-                        'description' => $n->description,
-                        'isSystem' => $n->isSystem,
-                    ],
+                    fn (NoteView $n) => new AssessmentNoteDTO($n->title, $n->description, $n->isSystem),
                     $noteViews,
                 ),
                 assessmentId: $a->getId(),
