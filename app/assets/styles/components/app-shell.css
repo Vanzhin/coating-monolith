@@ -107,3 +107,7 @@
 }
 .offline-banner[hidden] { display: none; }
 .offline-banner a { color: var(--warn); font-weight: 600; margin-left: auto; }
+
+/* Онлайн-онли элементы (напр. кнопка «Войти» в анонимной кэш-странице) скрыты, когда сети нет:
+   класс is-offline на <html> ставит offline_indicator_controller (и FOUC-safe-скрипт в head). */
+.is-offline .online-only { display: none; }

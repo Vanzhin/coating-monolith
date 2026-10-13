@@ -27,6 +27,9 @@
                 var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 document.documentElement.setAttribute('data-bs-theme', theme);
             } catch (e) { /* localStorage может быть заблокирован — оставляем дефолт */ }
+            // Офлайн-онли элементы (кнопка «Войти» в кэш-странице) гасим без вспышки: ставим
+            // класс до первой отрисовки. Дальше состояние держит offline_indicator_controller.
+            if (!navigator.onLine) { document.documentElement.classList.add('is-offline'); }
         })();
     </script>
 

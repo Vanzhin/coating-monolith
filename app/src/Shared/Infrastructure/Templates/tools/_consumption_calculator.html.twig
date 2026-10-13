@@ -16,7 +16,7 @@
             <p class="mix-coating-msg msg msg-warning" data-consumption-calculator-target="coatingMsg" hidden></p>
         </div>
     {% else %}
-        <div class="tools-cta">
+        <div class="tools-cta online-only">
             <div class="tools-cta-title">Мы, кажется, не знакомы.</div>
             <p class="tools-cta-text">Войдите, чтобы подставлять данные покрытия (сухой остаток, плотность, фасовку) автоматически.</p>
             <a class="btn btn-primary" href="{{ path('app_login', {_target_path: app.request.requestUri}) }}">Войти</a>
