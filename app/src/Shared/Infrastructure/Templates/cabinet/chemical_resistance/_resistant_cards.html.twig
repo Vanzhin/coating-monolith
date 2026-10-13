@@ -71,6 +71,7 @@
                     <span class="note-verdict" data-controller="note-popover">
                         <button type="button" class="verdict {{ verdictClass }}"
                                 data-note-popover-target="trigger"
+                                data-action="click->note-popover#toggle"
                                 aria-label="{{ chipTitle }}. Примечания">
                             {{ chipBody }}<i class="bi bi-info-circle verdict-note-icon"></i>
                         </button>
