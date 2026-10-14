@@ -124,6 +124,7 @@ final readonly class ComplianceProjectionRebuilder
                     $item->label(), $item->type(), $item->cadence(),
                     $item instanceof MaterialItem ? $item->quantity() : null,
                     $departmentId, TrackedObligation::ORIGIN_NORM,
+                    $item instanceof MaterialItem ? $item->mode() : null,
                 );
                 $obligation->setActive($active);
                 $profileCompliance->putObligation($obligation);

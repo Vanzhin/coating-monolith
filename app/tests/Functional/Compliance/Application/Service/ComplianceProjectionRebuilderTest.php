@@ -11,6 +11,7 @@ use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComp
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
+use App\Compliance\Domain\Type\MaterialMode;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -82,6 +83,17 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         return $result->id;
     }
 
+    private function saveConsumableRequirement(string $positionId): string
+    {
+        $result = $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'ДСИЗ: мыло', 'material', [$positionId],
+            [['label' => 'Мыло', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'month', 'amount' => '1200', 'unit' => 'ml', 'basis' => 'п.7', 'mode' => 'consumable']],
+        ));
+        \assert($result instanceof SaveRequirementCommandResult);
+
+        return $result->id;
+    }
+
     private function saveSecondRequirement(string $positionId): string
     {
         $result = $this->commandBus->execute(new SaveRequirementCommand(
@@ -120,6 +132,26 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         self::assertCount(1, $pc->getObligations());
         self::assertSame('Перчатки', $pc->getObligations()[0]->label());
         self::assertFalse($pc->getObligations()[0]->isActive()); // документ не подписан
+    }
+
+    public function test_rebuild_sets_mode_from_material_item(): void
+    {
+        ['profileId' => $profileId, 'positionId' => $positionId] = $this->createProfileWithPosition();
+        $this->saveRequirement($positionId);             // Перчатки — инвентарная (дефолт)
+        $this->saveConsumableRequirement($positionId);   // Мыло — расходная
+
+        $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));
+
+        $pc = $this->repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $byLabel = [];
+        foreach ($pc->getObligations() as $obligation) {
+            $byLabel[$obligation->label()] = $obligation;
+        }
+        self::assertSame(MaterialMode::Inventoried, $byLabel['Перчатки']->mode());
+        self::assertFalse($byLabel['Перчатки']->isConsumable());
+        self::assertSame(MaterialMode::Consumable, $byLabel['Мыло']->mode());
+        self::assertTrue($byLabel['Мыло']->isConsumable());
     }
 
     public function test_rebuild_for_requirement_fans_out_to_covered_profile(): void
