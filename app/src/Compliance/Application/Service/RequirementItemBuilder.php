@@ -6,10 +6,12 @@ namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Infrastructure\Exception\AppException;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Собирает `RequirementItemInterface[]` из плоского ввода формы (shape → массив → {@see ComplianceType::makeItem()}).
@@ -32,13 +34,16 @@ final readonly class RequirementItemBuilder
                 continue;
             }
 
+            $id = trim((string) ($row['id'] ?? ''));
             $data = [
+                'id' => '' !== $id ? $id : Uuid::v7()->toRfc4122(),
                 'label' => (string) $row['label'],
                 'cadence' => $this->cadence($row),
                 'basis' => (string) ($row['basis'] ?? ''),
             ];
             if ($type->requiresQuantity()) {
                 $data['quantity'] = $this->quantity($row);
+                $data['mode'] = (MaterialMode::tryFrom((string) ($row['mode'] ?? '')) ?? MaterialMode::Inventoried)->value;
             }
 
             $items[] = $type->makeItem($data);
