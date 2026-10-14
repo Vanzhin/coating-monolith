@@ -31,12 +31,13 @@ final class ComplianceStatusResolver
         \DateTimeImmutable $now,
         ?float $norm = null,
         float $held = 0.0,
+        bool $consumable = false,
     ): ComplianceBucket {
         if (!$active) {
             return ComplianceBucket::Missing; // документ не подписан — не исполнено
         }
-        if (null !== $norm && $held < $norm) {
-            return ComplianceBucket::Missing; // недовыдано по количеству — требует выдачи
+        if (!$consumable && null !== $norm && $held < $norm) {
+            return ComplianceBucket::Missing; // недовыдано по количеству — требует выдачи (у расходника остаток не считаем)
         }
         if (null === $lastFulfilledAt) {
             return ComplianceBucket::Missing; // требуется, ни разу не выполнено
@@ -62,7 +63,8 @@ final class ComplianceStatusResolver
         \DateTimeImmutable $now,
         ?float $norm = null,
         float $held = 0.0,
+        bool $consumable = false,
     ): ComplianceStatus {
-        return ComplianceStatus::fromBucket($this->bucketFor($active, $lastFulfilledAt, $nextDueAt, $now, $norm, $held));
+        return ComplianceStatus::fromBucket($this->bucketFor($active, $lastFulfilledAt, $nextDueAt, $now, $norm, $held, $consumable));
     }
 }

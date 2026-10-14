@@ -54,6 +54,7 @@ final readonly class DueSoonScanner
                     $now,
                     $obligation->quantity()?->amount,
                     $obligation->heldQuantity(),
+                    $obligation->isConsumable(),
                 );
                 if (ComplianceBucket::Soon === $bucket || ComplianceBucket::Overdue === $bucket) {
                     $items[] = new ComplianceDueItem(

@@ -713,6 +713,7 @@ class ProfileCompliance extends Aggregate
                     $now,
                     $obligation->quantity()?->amount,
                     $obligation->heldQuantity(),
+                    $obligation->isConsumable(),
                 ),
             );
         }
