@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
 use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
-use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
@@ -58,39 +56,8 @@ final class ActsListControllerTest extends WebTestCase
         self::assertStringContainsString('Подписан', $html, 'статус подписанного акта');
         // Действие «Карточка» ведёт на per-document маршрут (слепок именно этого акта).
         self::assertGreaterThan(0, $crawler->filter('a[href*="/document/"][href*="/card"]')->count(), 'ссылка на карточку по документу');
-        // «Открыть» подписанного ведёт на КОНКРЕТНЫЙ акт (issue/act/{documentId}), а не на общий issue требования.
-        self::assertGreaterThan(0, $crawler->filter('a[href*="/issue/act/"]')->count(), 'ссылка «Открыть» на конкретный акт');
-    }
-
-    public function test_act_show_renders_specific_act(): void
-    {
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
-        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
-        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
-        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
-
-        $bus->execute(new FormDraftCommand($p, $r));
-        $em->clear();
-        $draftId = $repo->findByProfile($p)?->openDraftFor($r)?->getId();
-        self::assertNotNull($draftId);
-        $bus->execute(new SaveDraftCommand(
-            $p, $draftId, '2026-06-01',
-            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair', 'note' => 'Jeta JP711']],
-            'К-9', 'Петров П. П.',
-            $this->stageComplianceScan(),
-        ));
-        $em->clear();
-        $signed = $repo->findByProfile($p)?->signedDocumentsFor($r) ?? [];
-        self::assertNotEmpty($signed);
-        $docId = $signed[0]->getId();
-
-        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue/act/%s', $p, $r, $docId));
-        self::assertResponseIsSuccessful();
-        $html = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('К-9', $html, 'реквизиты акта (№)');
-        self::assertStringContainsString('Петров', $html, 'ответственное лицо акта');
-        self::assertStringContainsString('Перчатки', $html, 'позиция акта');
-        self::assertStringContainsString('Jeta JP711', $html, 'модель/марка (note) позиции');
+        // «Открыть» ведёт в журнал человека по требованию (отдельного просмотра акта больше нет — выдача в журнале).
+        self::assertGreaterThan(0, $crawler->filter('a[href*="/requirement/"][href*="/issue"]')->count(), 'ссылка «Открыть» на карточку требования');
     }
 
     // Owner-скоуп (не-админ → только свои акты, чужой ?profile игнорируется) обеспечивает общий

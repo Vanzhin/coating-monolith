@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\Fulfillment;
 
-use App\Compliance\Application\Service\ComplianceActViewBuilder;
-use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -24,86 +23,44 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Карточка требования у человека — одна форма, два режима по стадии документа:
- *  - открытый черновик → ОФОРМЛЕНИЕ (заполнить позиции; «Сохранить черновик» или «Оформить» + скан → SaveDraft);
- *  - подписан (финал) → СПИСАНИЕ (поля позиций заблокированы, чекбокс + причина → «Списать выбранное»).
+ * Карточка требования у человека — одна форма, два режима по состоянию нормы:
+ *  - есть неудовлетворённые позиции (статус ≠ Green) → ВЫДАЧА/ПРОХОЖДЕНИЕ: заполнить позиции (кол-во =
+ *    начальный дефицит) → «Записать выдачу» пишет факты прямо в журнал ({@see RecordIssuanceCommand});
+ *  - норма удовлетворена → СПИСАНИЕ: удерживаемое заблокировано, чекбокс + причина → «Списать выбранное».
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
-#[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue/act/{documentId}', name: 'app_cabinet_compliance_act_show', methods: ['GET'])]
 final class IssueAction extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
         private readonly ProfileComplianceRepositoryInterface $repository,
-        private readonly ComplianceActViewBuilder $actViewBuilder,
         private readonly RequirementRepositoryInterface $requirements,
     ) {
     }
 
-    public function __invoke(Request $request, string $profileId, string $requirementId, ?string $documentId = null): Response
+    public function __invoke(Request $request, string $profileId, string $requirementId): Response
     {
-        if (null !== $documentId) {
-            return $this->renderAct($profileId, $requirementId, $documentId);
-        }
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $inputData */
             $inputData = $request->getPayload()->all();
-            // «Оформить» (скан + подпись) либо «Сохранить черновик» (без скана). Сам скан решает в домене, но
-            // кнопкой фиксируем намерение: при сохранении скан игнорируем, даже если был прикреплён.
-            $isSign = 'sign' === ($inputData['action'] ?? 'sign');
             try {
-                $this->commandBus->execute(new SaveDraftCommand(
+                $this->commandBus->execute(new RecordIssuanceCommand(
                     $profileId,
-                    (string) ($inputData['draftId'] ?? ''),
+                    $requirementId,
                     (string) ($inputData['documentDate'] ?? ''),
                     array_values((array) ($inputData['items'] ?? [])),
-                    (string) ($inputData['cardNumber'] ?? ''),
-                    (string) ($inputData['responsibleFio'] ?? ''),
-                    $isSign ? (((string) ($inputData['stagedFileId'] ?? '')) ?: null) : null, // скан прикладываем только при «Оформить»
                     array_values((array) ($inputData['personalItems'] ?? [])),
-                    sign: $isSign, // «Оформить» → подпись (скан обязателен, инвариант в домене); «Сохранить» → только корзина
                 ));
-                $this->addFlash('success', $isSign ? 'Карточка оформлена и стала действующей.' : 'Черновик сохранён.');
+                $this->addFlash('success', 'Выдача записана в журнал.');
 
-                return $isSign
-                    ? $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId])
-                    : $this->redirectToRoute('app_cabinet_compliance_issue', ['profileId' => $profileId, 'requirementId' => $requirementId]);
+                return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
             } catch (AppException $e) {
                 return $this->renderForm($profileId, $requirementId, $e->getMessage(), $inputData);
             }
         }
 
         return $this->renderForm($profileId, $requirementId, null, []);
-    }
-
-    /**
-     * Просмотр КОНКРЕТНОГО подписанного акта выдачи (слепок): реквизиты + позиции именно этого документа
-     * (что выдано: наименование/модель/кол-во/дата + на руках/списание по его записям). Read-only.
-     */
-    private function renderAct(string $profileId, string $requirementId, string $documentId): Response
-    {
-        $view = $this->actViewBuilder->build($profileId, $requirementId, $documentId);
-        if (null === $view) {
-            $this->addFlash('warning', 'Подписанный акт не найден.');
-
-            return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
-        }
-
-        // Тип требования (мономорфен) — чтобы в акте процедуры не показывать списание (его у не материального нет).
-        $actType = $this->repository->findByProfile($profileId)?->typeOfRequirement($requirementId);
-
-        return $this->render('admin/compliance/person/issue.html.twig', [
-            'mode' => 'act',
-            'profileId' => $profileId,
-            'requirementId' => $requirementId,
-            'documentId' => $documentId,
-            'requirementName' => $view['requirementName'],
-            'profile' => $view['profile'],
-            'rows' => $view['rows'],
-            'act' => $view['act'],
-            'requirementType' => null !== $actType ? $actType->value : 'material',
-        ]);
     }
 
     /** Цвет чипа «на руках» относительно нормы (как подсветка кол-ва в оформлении): меньше — danger, ровно — success, больше — info. */
@@ -133,7 +90,6 @@ final class IssueAction extends AbstractController
             throw $this->createNotFoundException('Профиль не найден.');
         }
         $profileCompliance = $this->repository->findByProfile($profileId);
-        $openDraft = $profileCompliance?->openDraftFor($requirementId);
 
         /** @var GetProfileComplianceQueryResult $complianceResult */
         $complianceResult = $this->queryBus->execute(new GetProfileComplianceQuery($profileId));
@@ -167,9 +123,10 @@ final class IssueAction extends AbstractController
             }
         }
 
-        // Режим: открытый черновик → оформление; иначе есть подписанный акт → списание.
-        if (null !== $openDraft) {
-            $actType = $profileCompliance->typeOfRequirement($requirementId); // тип акта (мономорфен) для полей персональной строки
+        // Режим: есть неудовлетворённые позиции текущей нормы (статус ≠ Green) → форма выдачи/прохождения;
+        // иначе норма удовлетворена → удерживаемое + акты списания (режим списания ниже).
+        if ([] !== $issueRows) {
+            $actType = $profileCompliance?->typeOfRequirement($requirementId); // тип (мономорфен) для полей строки
 
             // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
             // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
@@ -185,50 +142,15 @@ final class IssueAction extends AbstractController
                 }
             }
 
-            // Гидрация из сохранённого черновика при GET (на reload inputData из POST пуст): реквизиты акта +
-            // количества строк берём из корзины, чтобы перезагрузка показывала сохранённое, а не только дефицит.
-            $inputData['cardNumber'] ??= $openDraft->actNumber() ?? '';
-            $inputData['responsibleFio'] ??= $openDraft->responsibleFio() ?? '';
-            // Состояние строки из корзины по ключу (кол-во/дата/износ/срок/единица) — чтобы GET-перезагрузка
-            // показывала сохранённое построчно, а не только документную дату и дефицит.
-            $cart = [];
-            $savedDate = null; // дата документа из сохранённой корзины — иначе «Оформить» после reload запишет сегодня
-            foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
-                if ($record->documentId() !== $openDraft->getId()) {
-                    continue;
-                }
-                $savedDate ??= $record->fulfilledAt();
-                $key = $record->obligationKey();
-                $cart[$key] ??= ['qty' => 0.0, 'hasQty' => false, 'date' => null, 'wear' => null, 'due' => null, 'unit' => null, 'note' => null, 'instruction' => []];
-                $cart[$key]['date'] ??= $record->fulfilledAt()->format('Y-m-d');
-                $cart[$key]['due'] ??= $record->manualDueDate()?->format('Y-m-d');
-                $cart[$key]['wear'] ??= null !== $record->wearPercent() ? (string) $record->wearPercent()->value() : null;
-                $cart[$key]['note'] ??= $record->note();
-                if ([] === $cart[$key]['instruction'] && null !== $record->instructionDetails()) {
-                    $cart[$key]['instruction'] = $record->instructionDetails()->values;
-                }
-                if (null !== $record->quantity()) {
-                    $cart[$key]['qty'] += $record->quantity()->amount;
-                    $cart[$key]['hasQty'] = true;
-                    $cart[$key]['unit'] ??= $record->quantity()->unit->value;
-                }
-            }
+            // Дефицит — начальное состояние формы, не сохранённая корзина (черновика больше нет): количество уже
+            // предзаполнено в issueRows (норма − held). На повторном рендере после ошибки восстанавливаем
+            // построчно только из присланного POST ($inputData) — поля инструктажа тоже.
+            $submittedItems = (array) ($inputData['items'] ?? []);
             foreach ($issueRows as $i => $issueRow) {
-                $saved = $cart[$issueRow['key']] ?? null;
-                if (null === $saved) {
-                    continue;
-                }
-                if ($saved['hasQty']) {
-                    $issueRows[$i]['deficitValue'] = AmountFormatter::trimmed($saved['qty']);
-                }
-                $issueRows[$i]['savedDate'] = $saved['date'];
-                $issueRows[$i]['savedWear'] = $saved['wear'];
-                $issueRows[$i]['savedDueDate'] = $saved['due'];
-                $issueRows[$i]['savedUnit'] = $saved['unit'];
-                $issueRows[$i]['savedNote'] = $saved['note'];
-                $issueRows[$i]['savedInstruction'] = $saved['instruction'] ?? [];
+                $submitted = (array) ($submittedItems[$i] ?? []);
+                $issueRows[$i]['savedInstruction'] = (array) ($submitted['instruction'] ?? []);
             }
-            $documentDate = (string) ($inputData['documentDate'] ?? '') ?: ($savedDate?->format('Y-m-d') ?? date('Y-m-d'));
+            $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
 
             return $this->render('admin/compliance/person/issue.html.twig', [
                 'mode' => 'issue',
@@ -236,7 +158,6 @@ final class IssueAction extends AbstractController
                 'requirementId' => $requirementId,
                 'requirementName' => $requirementName,
                 'profile' => $profileResult->profile,
-                'draftId' => $openDraft->getId(),
                 'rows' => $issueRows,
                 'requirementType' => null !== $actType ? $actType->value : 'material',
                 'instructionGroups' => $instructionGroups,
