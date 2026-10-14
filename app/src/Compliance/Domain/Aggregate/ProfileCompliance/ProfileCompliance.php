@@ -9,6 +9,7 @@ use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Quantity;
@@ -671,6 +672,56 @@ class ProfileCompliance extends Aggregate
             $quantity, $wearPercent, $note, $manualDueDate, documentId: $documentId,
         ));
         $this->recomputeObligation($obligationKey, $calculator);
+    }
+
+    /**
+     * Прямая дозапись в журнал (без акта-черновика): каждая строка выдачи становится фактом сразу, с
+     * `documentId=null` — значит сразу выдана ({@see isIssued}), в held и даты входит немедленно. Инвариант
+     * выдачи (по материальным позициям «на руках + выдача» не меньше нормы) — {@see assertIssuable}.
+     */
+    public function recordIssuance(ObligationDueCalculator $calculator, IssuanceLine ...$lines): void
+    {
+        $this->assertIssuable($lines);
+        foreach ($lines as $line) {
+            $this->records->add(new FulfillmentRecord(
+                $line->recordId, $this, $line->obligationKey, $line->fulfilledAt,
+                $line->quantity, $line->wearPercent, $line->note, $line->manualDueDate,
+                instructionDetails: $line->instructionDetails,
+            ));
+        }
+        foreach ($this->distinctKeys($lines) as $key) {
+            $this->recomputeObligation($key, $calculator);
+        }
+    }
+
+    /**
+     * Прямая дозапись в журнал инструктажей: по каждой строке сперва проверяется доменный инвариант полноты
+     * полей схемы вида журнала ({@see JournalKind::assertDetailsComplete}) — неполная карточка инструктажа не
+     * попадает в журнал, — затем делегирует в {@see recordIssuance}.
+     */
+    public function recordInstruction(ObligationDueCalculator $calculator, JournalKind $kind, IssuanceLine ...$lines): void
+    {
+        foreach ($lines as $line) {
+            $kind->assertDetailsComplete($line->instructionDetails);
+        }
+        $this->recordIssuance($calculator, ...$lines);
+    }
+
+    /**
+     * Ключи обязанностей, затронутых строками выдачи (без повторов) — что пересчитывать после дозаписи.
+     *
+     * @param IssuanceLine[] $lines
+     *
+     * @return list<string>
+     */
+    private function distinctKeys(array $lines): array
+    {
+        $keys = [];
+        foreach ($lines as $line) {
+            $keys[$line->obligationKey] = true;
+        }
+
+        return array_keys($keys);
     }
 
     public function removeRecord(string $recordId, ObligationDueCalculator $calculator): void

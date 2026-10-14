@@ -13,9 +13,11 @@ use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Cadence;
+use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\ValueObject\Commission;
@@ -53,6 +55,23 @@ final class ProfileComplianceTest extends TestCase
     private function glovesKey(): string
     {
         return TrackedObligation::keyOf($this->reqId, 'Перчатки');
+    }
+
+    private function pcWithFireSafetyObligation(): ProfileCompliance
+    {
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->putObligation(new TrackedObligation(
+            Uuid::v4(), $pc, 'req-2', 'Пожарная безопасность', 'Пожарный',
+            ComplianceType::NonMaterial, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
+            null, 'dept-1',
+        ));
+
+        return $pc;
+    }
+
+    private function fireSafetyKey(): string
+    {
+        return TrackedObligation::keyOf('req-2', 'Пожарный');
     }
 
     public function test_unsigned_is_red_even_when_fulfilled(): void
@@ -577,5 +596,31 @@ final class ProfileComplianceTest extends TestCase
         // held 1, норма 2 → до-выдать 1 достаточно
         $pc->assertIssuable([$this->glovesLine(1.0)]); // не бросает
         self::assertSame(1.0, $pc->heldOf($this->glovesKey()));
+    }
+
+    public function test_record_issuance_appends_journal_lines_and_recomputes(): void
+    {
+        $pc = $this->pcWithGloves(2.0); // норма 2
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+
+        self::assertSame(2.0, $pc->heldOf($this->glovesKey()), 'прямая дозапись сразу считается выданной (documentId=null)');
+        self::assertNotNull($pc->getObligations()[0]->lastFulfilledAt(), 'пересчёт обязанности отработал');
+    }
+
+    public function test_record_issuance_below_norm_throws(): void
+    {
+        $pc = $this->pcWithGloves(2.0); // норма 2, на руках 0
+        $this->expectException(AppException::class);
+        $pc->recordIssuance($this->calc, $this->glovesLine(1.0)); // 1 < нормы
+    }
+
+    public function test_record_instruction_requires_complete_fields(): void
+    {
+        $pc = $this->pcWithFireSafetyObligation();
+        $this->expectException(AppException::class);
+        $pc->recordInstruction(
+            $this->calc, JournalKind::FireSafety,
+            new IssuanceLine(Uuid::v4(), $this->fireSafetyKey(), new \DateTimeImmutable('2026-01-10'), instructionDetails: InstructionDetails::fromArray([])),
+        );
     }
 }
