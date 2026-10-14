@@ -87,31 +87,4 @@ final class ComplianceStatusResolverTest extends TestCase
         self::assertSame(ComplianceStatus::Green, $this->r->statusFor(true, new \DateTimeImmutable('2026-01-01'), null, $this->now));
         self::assertSame(ComplianceStatus::Red, $this->r->statusFor(true, new \DateTimeImmutable('2026-05-31'), new \DateTimeImmutable('2027-05-31'), $this->now, 2.0, 1.0));
     }
-
-    public function test_inventoried_under_norm_is_missing(): void
-    {
-        // active, выдано недавно, но held(1) < norm(2), не расходник → Missing
-        $b = $this->r->bucketFor(true, $this->now->modify('-10 days'), $this->now->modify('+300 days'), $this->now, 2.0, 1.0, false);
-        self::assertSame(ComplianceBucket::Missing, $b);
-    }
-
-    public function test_consumable_under_norm_but_recent_is_ok(): void
-    {
-        // held(0) < norm(1200), но расходник и выдан в срок → остаток игнор, Ok
-        $b = $this->r->bucketFor(true, $this->now->modify('-10 days'), $this->now->modify('+300 days'), $this->now, 1200.0, 0.0, true);
-        self::assertSame(ComplianceBucket::Ok, $b);
-    }
-
-    public function test_consumable_overdue_by_date_is_overdue(): void
-    {
-        $b = $this->r->bucketFor(true, $this->now->modify('-400 days'), $this->now->modify('-1 day'), $this->now, 1200.0, 0.0, true);
-        self::assertSame(ComplianceBucket::Overdue, $b);
-    }
-
-    public function test_non_material_unaffected_default_param(): void
-    {
-        // norm=null (нематериальное), consumable опущен → как раньше
-        $b = $this->r->bucketFor(true, $this->now->modify('-10 days'), null, $this->now);
-        self::assertSame(ComplianceBucket::Ok, $b);
-    }
 }

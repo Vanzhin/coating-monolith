@@ -58,7 +58,6 @@ class ProfileComplianceDTOTransformer
             $now,
             $obligation->quantity()?->amount,
             $obligation->heldQuantity(),
-            $obligation->isConsumable(),
         )->value;
 
         return $row;

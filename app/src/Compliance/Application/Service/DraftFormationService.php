@@ -95,7 +95,7 @@ final readonly class DraftFormationService
             if ($obligation->requirementId() !== $requirementId) {
                 continue;
             }
-            $bucket = $this->buckets->bucketFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now, $obligation->quantity()?->amount, $obligation->heldQuantity(), $obligation->isConsumable());
+            $bucket = $this->buckets->bucketFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now, $obligation->quantity()?->amount, $obligation->heldQuantity());
             if (ComplianceBucket::Ok !== $bucket) {
                 return true; // ни разу / просрочено / скоро / дефицит количества — есть что выдавать
             }
