@@ -467,6 +467,21 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
+     * Есть ли по обязанности хотя бы один выданный факт ({@see isIssued}) — журнальная замена «был подписанный
+     * акт»: трекинг сроков обязанности включает пересборщик проекции, не привязываясь к наличию акта-документа.
+     */
+    public function hasIssuedFactFor(string $obligationKey): bool
+    {
+        foreach ($this->records as $record) {
+            if ($record->obligationKey() === $obligationKey && $this->isIssued($record)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Открыть черновик акта списания по требованию, создав пустой, если открытого нет (кнопка «Перейти к акту
      * списания» на действующей карточке). Списывать можно только из действующей карточки. Возвращает id акта.
      */

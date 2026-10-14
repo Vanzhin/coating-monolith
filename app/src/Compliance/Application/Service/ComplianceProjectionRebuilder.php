@@ -21,7 +21,8 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Пересобирает проекцию учёта человека из ЖИВОЙ нормы (требования его должности) + фактов + личных
  * исключений. Норму не морозим — читаем текущую. Даты считаем из фактов ({@see ObligationDueCalculator}).
- * `active` (трекать сроки) выводим из наличия подписанного акта требования, а не несём по строке. Позиции,
+ * `active` (трекать сроки) выводим per-обязанность из наличия выданного факта журнала ({@see
+ * ProfileCompliance::hasIssuedFactFor}), а не несём по строке и не завязываемся на акт-документ. Позиции,
  * ушедшие из нормы: без фактов — убираем, с фактами — оставляем (история). Кросс-контекст к Personnel —
  * через query-шину.
  */
@@ -112,7 +113,6 @@ final readonly class ComplianceProjectionRebuilder
 
         $desired = [];
         foreach ($requirements as $requirement) {
-            $active = [] !== $profileCompliance->signedDocumentsFor($requirement->getId()); // был подписанный акт ⇒ трекинг включён
             foreach ($requirement->getItems() as $item) {
                 $key = TrackedObligation::keyOf($requirement->getId(), $item->label());
                 if (in_array($key, $excluded, true)) {
@@ -126,7 +126,7 @@ final readonly class ComplianceProjectionRebuilder
                     $departmentId, TrackedObligation::ORIGIN_NORM,
                     $item instanceof MaterialItem ? $item->mode() : null,
                 );
-                $obligation->setActive($active);
+                $obligation->setActive($profileCompliance->hasIssuedFactFor($key)); // выданный факт по ЭТОЙ позиции ⇒ трекинг включён
                 $profileCompliance->putObligation($obligation);
             }
         }

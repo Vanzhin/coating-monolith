@@ -673,4 +673,38 @@ final class ProfileComplianceTest extends TestCase
             new IssuanceLine(Uuid::v4(), $this->fireSafetyKey(), new \DateTimeImmutable('2026-01-10'), instructionDetails: InstructionDetails::fromArray([])),
         );
     }
+
+    public function test_has_issued_fact_for_no_record_is_false(): void
+    {
+        $pc = $this->pcWithGloves();
+        self::assertFalse($pc->hasIssuedFactFor($this->glovesKey()));
+    }
+
+    public function test_has_issued_fact_for_direct_issuance_is_true(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+
+        self::assertTrue($pc->hasIssuedFactFor($this->glovesKey()), 'прямая дозапись без акта — тоже выданный факт');
+    }
+
+    public function test_has_issued_fact_for_draft_only_record_is_false(): void
+    {
+        $pc = $this->pcWithGloves();
+        $id = Uuid::v4();
+        $pc->formDraft($id, $this->reqId, $this->now);
+        $pc->saveDraft((string) $id, 'К-1', 'Петров П. П.', [$this->glovesLine(10.0)], $this->now);
+
+        self::assertFalse($pc->hasIssuedFactFor($this->glovesKey()), 'строка в корзине черновика — ещё не выдано');
+    }
+
+    public function test_has_issued_fact_for_signed_document_is_true(): void
+    {
+        $pc = $this->pcWithGloves();
+        $id = Uuid::v4();
+        $pc->formDraft($id, $this->reqId, $this->now);
+        $pc->signDraft((string) $id, 'scan-1', [$this->glovesLine(10.0)], $this->calc, $this->now, 'К-1', 'Петров П. П.');
+
+        self::assertTrue($pc->hasIssuedFactFor($this->glovesKey()));
+    }
 }
