@@ -18,8 +18,8 @@ enum MaterialMode: string
     public function title(): string
     {
         return match ($this) {
-            self::Inventoried => 'инвентарная',
-            self::Consumable => 'расходная',
+            self::Inventoried => 'инвентарь',
+            self::Consumable => 'расходник',
         };
     }
 

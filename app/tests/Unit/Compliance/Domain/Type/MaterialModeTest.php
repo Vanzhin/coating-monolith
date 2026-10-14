@@ -13,8 +13,8 @@ final class MaterialModeTest extends TestCase
     {
         self::assertSame('inventoried', MaterialMode::Inventoried->value);
         self::assertSame('consumable', MaterialMode::Consumable->value);
-        self::assertSame('инвентарная', MaterialMode::Inventoried->title());
-        self::assertSame('расходная', MaterialMode::Consumable->title());
+        self::assertSame('инвентарь', MaterialMode::Inventoried->title());
+        self::assertSame('расходник', MaterialMode::Consumable->title());
     }
 
     public function test_consumable_predicate_and_writeoff_applicability(): void

@@ -14,11 +14,20 @@
         {% block list_content %}
             <div class="ecard-grid ecard-grid--uniform">
             {% for requirement in result.requirements %}
+                {% set editPath = path('app_cabinet_compliance_requirements_edit', {id: requirement.id}) %}
                 <div class="ecard">
-                    <div class="ecard-media"><i class="bi {{ requirement.type == 'material' ? 'bi-box-seam' : 'bi-card-checklist' }}"></i></div>
+                    {% if canEdit %}
+                        <a class="ecard-media text-decoration-none" href="{{ editPath }}" aria-label="Редактировать требование"><i class="bi {{ requirement.type == 'material' ? 'bi-box-seam' : 'bi-card-checklist' }}"></i></a>
+                    {% else %}
+                        <div class="ecard-media"><i class="bi {{ requirement.type == 'material' ? 'bi-box-seam' : 'bi-card-checklist' }}"></i></div>
+                    {% endif %}
                     <div class="ecard-body">
                         <div class="ecard-head">
-                            <div class="ecard-title">{{ requirement.name }}</div>
+                            {% if canEdit %}
+                                <a class="ecard-title text-decoration-none text-body" href="{{ editPath }}">{{ requirement.name }}</a>
+                            {% else %}
+                                <div class="ecard-title">{{ requirement.name }}</div>
+                            {% endif %}
                             {% if canEdit %}
                                 <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
                                     <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"

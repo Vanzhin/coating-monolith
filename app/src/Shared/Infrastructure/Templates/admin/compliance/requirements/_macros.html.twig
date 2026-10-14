@@ -33,10 +33,10 @@
                 </select>
             </div>
         </div>
-        {# Строка 1.1 — режим: своя строка, чтобы не ломать баланс 6+4+2 строки с количеством. #}
+        {# Строка 1.1 — тип позиции: своя строка, чтобы не ломать баланс 6+4+2 строки с количеством. #}
         <div class="row g-2 mt-1">
             <div class="col-md-4" data-item-quantity>
-                <label class="form-label small mb-1">Режим</label>
+                <label class="form-label small mb-1">Тип</label>
                 <select name="items[{{ i }}][mode]" class="form-select">
                     {% for mm in materialModes %}<option value="{{ mm.value }}" {{ (item.mode|default('inventoried')) == mm.value ? 'selected' : '' }}>{{ mm.title }}</option>{% endfor %}
                 </select>
