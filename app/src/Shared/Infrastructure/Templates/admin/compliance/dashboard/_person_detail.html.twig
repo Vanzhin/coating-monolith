@@ -4,16 +4,15 @@
 {% set icon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {% for g in person.groups %}
+    {% set hasRecords = g.rows|filter(r => r.lastFulfilledAt is not null) is not empty %}
     <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <span class="fw-semibold">{{ g.name }}</span>
             <span class="badge text-bg-light">{{ g.typeLabel }}</span>
-            {% if g.openDraftId %}
-                <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик</span>
-            {% elseif g.signedActs is not empty %}
-                <span class="badge text-bg-success"><i class="bi bi-lock-fill me-1"></i>Подписан</span>
+            {% if hasRecords %}
+                <span class="badge text-bg-success"><i class="bi bi-journal-check me-1"></i>Есть записи</span>
             {% else %}
-                <span class="badge text-bg-light"><i class="bi bi-file-earmark-dash me-1"></i>Нет карточки</span>
+                <span class="badge text-bg-light"><i class="bi bi-journal-x me-1"></i>Нет записей</span>
             {% endif %}
         </div>
 

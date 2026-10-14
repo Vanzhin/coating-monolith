@@ -24,6 +24,7 @@ use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Templating\RepeatValue;
+use App\Shared\Domain\Templating\TextValue;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -66,8 +67,7 @@ final class CardDownloadControllerTest extends WebTestCase
     public function test_download_card_streams_docx_with_identity_and_norm(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
-        // Стр. 1 бланка — НОРМА требования (не зависит от выдач). Черновик нужен лишь для № карточки/ответственного.
-        $this->client->getContainer()->get(CommandBusInterface::class)->execute(new FormDraftCommand($profileId, $requirementId));
+        // Стр. 1 бланка — НОРМА требования (не зависит от выдач и от наличия записей журнала).
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
 
@@ -195,33 +195,18 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('3', $row['return_qty'], 'возвращено = сумма подписанного списания');
         self::assertSame('01.07.2026', $row['return_date']);
         self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
+
+        // № карточки/ответственный — реквизиты акта-документа; журнал печатается без них, даже если акт их нёс
+        // (здесь подписанный акт имел № «К-1» / «Петров П. П.» — в карточке они не должны всплыть).
+        $cardNumber = $data->get('card_number');
+        $responsibleFio = $data->get('responsible_fio');
+        self::assertInstanceOf(TextValue::class, $cardNumber);
+        self::assertInstanceOf(TextValue::class, $responsibleFio);
+        self::assertSame('', $cardNumber->value);
+        self::assertSame('', $responsibleFio->value);
     }
 
-    public function test_blank_uses_saved_draft_details(): void
-    {
-        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
-        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
-        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
-        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
-
-        $bus->execute(new FormDraftCommand($profileId, $requirementId));
-        $em->clear();
-        $draft = $repo->findByProfile($profileId)?->openDraftFor($requirementId);
-        self::assertNotNull($draft);
-        $bus->execute(new SaveDraftCommand(
-            $profileId, $draft->getId(), '2026-03-01',
-            [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
-            'К-777', 'Сидоров С. С.', // без скана — просто сохранение черновика
-        ));
-
-        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $profileId, $requirementId));
-        self::assertResponseIsSuccessful();
-        $text = $this->docxText((string) $this->client->getResponse()->getContent());
-        self::assertStringContainsString('К-777', $text, '№ карточки из черновика подставлен в бланк');
-        self::assertStringContainsString('Сидоров', $text, 'ответственный из черновика подставлен в бланк');
-    }
-
-    public function test_card_by_document_shows_that_act_not_latest(): void
+    public function test_card_prints_whole_journal_regardless_of_which_document_route_is_used(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance('Перчатки');
         // Первый акт выдачи с моделью «AAA». Затем списываем всё (дефицит) и делаем ВТОРОЙ акт с моделью «BBB».
@@ -230,12 +215,19 @@ final class CardDownloadControllerTest extends WebTestCase
         $this->writeOffAllSigned($p, $r);
         $this->issueCardWithNote($p, $r, $k, 'BBB');
 
-        // Карточка ПО ПЕРВОМУ документу должна показывать его факт (AAA), а не последний (BBB).
+        // Карточка печатает ВЕСЬ журнал фактов требования — оба факта видны независимо от того, каким
+        // маршрутом её скачали (плоский или «по документу» — старая ссылка со страницы «Акты»).
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/document/%s/card', $p, $r, $firstDocId));
         self::assertResponseIsSuccessful();
-        $text = $this->docxText((string) $this->client->getResponse()->getContent());
-        self::assertStringContainsString('AAA', $text, 'карточка по документу показывает факт именно этого акта');
-        self::assertStringNotContainsString('BBB', $text, 'не подставляется факт последнего акта');
+        $textByDocument = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('AAA', $textByDocument, 'в журнале виден факт первого акта');
+        self::assertStringContainsString('BBB', $textByDocument, 'id документа в URL больше не фильтрует журнал — виден и второй факт');
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $p, $r));
+        self::assertResponseIsSuccessful();
+        $textPlain = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('AAA', $textPlain);
+        self::assertStringContainsString('BBB', $textPlain, 'плоский маршрут печатает тот же журнал целиком');
     }
 
     /** Списать всё на руках по требованию одним подписанным актом списания (чтобы образовался дефицит под новый акт). */

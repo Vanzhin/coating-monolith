@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
@@ -18,15 +17,16 @@ use App\Shared\Domain\Templating\TextValue;
  * {@see RenderData} для личной карточки СИЗ (docx/xlsx). Две части:
  *  - стр. 1 ({{items.*}}) — НОРМА требования: весь перечень положенного (наименование/основание/норм-количество/
  *    периодичность), не зависит от выдач;
- *  - стр. 2+ ({{log.*}}) — ФАКТ: позиции ЭТОГО акта (открытый черновик ?? последний подписанный) с моделью/маркой,
- *    датой и количеством выдачи + возврат/акт списания (джойн по recordId из подписанных актов списания).
- * Акт = слепок одной выдачи (новая выдача = новый акт), списание лишь дозаполняет колонки возврата — это не
- * сквозной лог. Идентичность сотрудника, № карточки и ответственное лицо — из того же акта-источника.
+ *  - стр. 2+ ({{log.*}}) — ФАКТ: ВЕСЬ журнал фактов требования (не одного акта) с моделью/маркой, датой и
+ *    количеством выдачи + возврат/акт списания (джойн по recordId из подписанных актов списания). Журнал —
+ *    сквозной источник истины, печать больше не привязана к конкретному акту-документу.
+ * № карточки/ответственное лицо — реквизиты акта-документа, которого у прямой журнальной записи нет; оставлены
+ * пустыми (плейсхолдер {{card_number}} всегда получает ключ, чтобы строгий рендер не падал).
  * Форматирование — здесь.
  */
 final readonly class RequirementCardProjector
 {
-    public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now, ?string $documentId = null): RenderData
+    public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now): RenderData
     {
         $obligationByKey = [];
         foreach ($profileCompliance->getObligations() as $obligation) {
@@ -34,12 +34,6 @@ final readonly class RequirementCardProjector
                 $obligationByKey[$obligation->key()] = $obligation;
             }
         }
-
-        // Источник факт-части и реквизитов бланка. Задан documentId — ровно этот акт (слепок из списка актов);
-        // иначе — открытый черновик, иначе последний подписанный (прямой вход по требованию).
-        $source = null !== $documentId
-            ? $this->documentOf($profileCompliance, $requirement->getId(), $documentId)
-            : ($profileCompliance->openDraftFor($requirement->getId()) ?? $this->latestSigned($profileCompliance, $requirement->getId()));
 
         $values = [
             'employee_fio' => new TextValue($this->fio($profile)),
@@ -50,7 +44,7 @@ final readonly class RequirementCardProjector
             'department_title' => new TextValue($profile->departmentTitle),
             'document_date' => new TextValue($now->format('d.m.Y')),
             'items' => new RepeatValue($this->normItems($requirement)),
-            'log' => new RepeatValue($this->logRows($profileCompliance, $source, $requirement, $obligationByKey, $profile)),
+            'log' => new RepeatValue($this->logRows($profileCompliance, $requirement, $obligationByKey, $profile)),
         ];
 
         $this->optional($values, 'employee_middle_name', $profile->middleName);
@@ -68,10 +62,10 @@ final readonly class RequirementCardProjector
             $values['position_change_date'] = new TextValue($hired); // дубль даты приёма (пока так)
         }
 
-        // № карточки и ответственное лицо — из того же акта ($source). Всегда отдаём ключ (пусто, если ещё
-        // не заполнено), чтобы строгий плейсхолдер {{card_number}} не падал на нераспечатанной карточке.
-        $values['card_number'] = new TextValue($source?->actNumber() ?? '');
-        $values['responsible_fio'] = new TextValue($source?->responsibleFio() ?? '');
+        // № карточки и ответственное лицо — реквизиты акта-документа, у журнальной записи их нет. Ключ всегда
+        // отдаём (пусто), чтобы строгий плейсхолдер {{card_number}} не падал на нераспечатанной карточке.
+        $values['card_number'] = new TextValue('');
+        $values['responsible_fio'] = new TextValue('');
 
         return new RenderData($values);
     }
@@ -103,23 +97,20 @@ final readonly class RequirementCardProjector
     }
 
     /**
-     * Строки факт-таблицы/журнала: записи акта (+ возвраты/списания по recordId) с добавленным контекстом
-     * сотрудника в каждую строку (колонка «инструктируемый» в журналах — построчно). Нет источника → пусто.
+     * Строки факт-таблицы/журнала: ВЕСЬ журнал фактов требования (+ возвраты/списания по recordId) с добавленным
+     * контекстом сотрудника в каждую строку (колонка «инструктируемый» в журналах — построчно). Нет фактов → пусто.
      *
      * @param array<string, TrackedObligation> $obligationByKey
      *
      * @return list<array<string, string>>
      */
-    private function logRows(ProfileCompliance $profileCompliance, ?RequirementDocument $source, Requirement $requirement, array $obligationByKey, ProfileDTO $profile): array
+    private function logRows(ProfileCompliance $profileCompliance, Requirement $requirement, array $obligationByKey, ProfileDTO $profile): array
     {
-        if (null === $source) {
-            return [];
-        }
         $basisByLabel = [];
         foreach ($requirement->getItems() as $item) {
             $basisByLabel[$item->label()] = $item->basis();
         }
-        $rows = $this->factLog($profileCompliance, $source, $requirement->getId(), $obligationByKey);
+        $rows = $this->factLog($profileCompliance, $requirement->getId(), $obligationByKey);
         foreach ($rows as $i => $row) {
             $rows[$i]['employee_fio'] = $this->fio($profile);
             $rows[$i]['employee_position'] = $profile->positionTitle;
@@ -131,21 +122,19 @@ final readonly class RequirementCardProjector
     }
 
     /**
-     * Стр. 2 — записи ЭТОГО акта как строки факт-таблицы + возвраты/списания по recordId. Сортировка по наименованию.
+     * Стр. 2 — ВЕСЬ журнал фактов требования как строки факт-таблицы + возвраты/списания по recordId. Сортировка
+     * по наименованию.
      *
      * @param array<string, TrackedObligation> $obligationByKey
      *
      * @return list<array<string, string>>
      */
-    private function factLog(ProfileCompliance $profileCompliance, RequirementDocument $source, string $requirementId, array $obligationByKey): array
+    private function factLog(ProfileCompliance $profileCompliance, string $requirementId, array $obligationByKey): array
     {
         $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirementId);
 
         $rows = [];
         foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
-            if ($record->documentId() !== $source->getId()) {
-                continue; // строка другого акта
-            }
             $obligation = $obligationByKey[$record->obligationKey()] ?? null;
             $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($record->obligationKey());
             $quantity = $record->quantity();
@@ -223,30 +212,6 @@ final readonly class RequirementCardProjector
         }
 
         return implode(' ', $parts);
-    }
-
-    /** Документ ЭТОГО профиля И требования по id (чужой/из другого требования → null → карточка не распечатается). */
-    private function documentOf(ProfileCompliance $profileCompliance, string $requirementId, string $documentId): ?RequirementDocument
-    {
-        foreach ($profileCompliance->getDocuments() as $document) {
-            if ($document->getId() === $documentId && $document->requirementId() === $requirementId) {
-                return $document;
-            }
-        }
-
-        return null;
-    }
-
-    private function latestSigned(ProfileCompliance $profileCompliance, string $requirementId): ?RequirementDocument
-    {
-        $latest = null;
-        foreach ($profileCompliance->signedDocumentsFor($requirementId) as $document) {
-            if (null === $latest || $document->signedAt() > $latest->signedAt()) {
-                $latest = $document;
-            }
-        }
-
-        return $latest;
     }
 
     /**

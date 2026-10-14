@@ -22,8 +22,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Скачать заполненный бланк карточки по (человек × требование): печать → подпись → приложить скан.
- * Без documentId — по текущему акту (открытый черновик ?? последний подписанный); с documentId — ровно этот акт
- * (слепок из списка актов): стр. 2 показывает факт именно того акта, а не последнего.
+ * Печатает ВЕСЬ журнал фактов требования (не привязан к конкретному акту). Путь с documentId сохранён ради
+ * старых ссылок со страницы «Акты» — id документа больше не влияет на содержимое карточки.
  */
 #[Route(
     path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/card',
@@ -49,7 +49,7 @@ final class DownloadCardAction extends AbstractController
     ) {
     }
 
-    public function __invoke(string $profileId, string $requirementId, ?string $documentId = null): Response
+    public function __invoke(string $profileId, string $requirementId): Response
     {
         if (!$this->access->canManage()) {
             throw new ForbiddenException();
@@ -64,7 +64,7 @@ final class DownloadCardAction extends AbstractController
             throw $this->createNotFoundException('Профиль не найден.');
         }
 
-        $data = $this->projector->project($profileCompliance, $profileResult->profile, $requirement, new \DateTimeImmutable(), $documentId);
+        $data = $this->projector->project($profileCompliance, $profileResult->profile, $requirement, new \DateTimeImmutable());
         $doc = $this->rendering->render(new TemplateFile($this->resolveTemplatePath($requirement->getTemplateFileId())), $data);
 
         $name = 'Карточка-'.$requirement->getName().'.'.$doc->extension();
