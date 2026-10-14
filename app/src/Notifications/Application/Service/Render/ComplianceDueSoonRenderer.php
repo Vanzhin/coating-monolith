@@ -19,7 +19,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * Текст уведомления о сроках. Персональный ({@see render}) — про одного сотрудника со счётчиками и ссылкой на
  * его карточку на дашборде. Сводный ({@see renderSummary}) — по нескольким сотрудникам: «Сотрудников: N» +
  * суммарные счётчики + ссылка на дашборд. Текст короткий, детали — на дашборде. Ссылки строит UrlGenerator;
- * хост — из router.default_uri (APP_BASE_URL), в коде домен не пишем.
+ * хост — из router.default_uri (env DOMAIN), в коде домен не пишем.
  */
 final readonly class ComplianceDueSoonRenderer implements MessageRendererInterface, SummaryRendererInterface
 {

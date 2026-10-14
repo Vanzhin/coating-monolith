@@ -1,8 +1,8 @@
 framework:
     router:
-        # Базовый адрес для генерации URL вне HTTP (CLI, воркеры уведомлений). Хост — из env APP_BASE_URL,
-        # в коде домен не пишем. dev — http://localhost:8080, prod — адрес сайта (задаётся на деплое).
-        default_uri: '%env(APP_BASE_URL)%'
+        # Базовый адрес для генерации URL вне HTTP (CLI, воркеры уведомлений). Домен — из env DOMAIN (та же
+        # переменная, что у Telegram-вебхука), в коде домен не пишем. prod — адрес сайта (задаётся на деплое).
+        default_uri: 'https://%env(DOMAIN)%'
 
 when@prod:
     framework:
