@@ -83,7 +83,7 @@
 
 **Где кликабельно.** В письме и разделе «Уведомления» — да (T6). В push клик ведёт в раздел уведомлений (`sw.js.twig`), там ссылка кликабельна.
 
-**Базовый адрес (хост).** Тексты рендерятся в воркере, вне HTTP → хост берётся из `router.default_uri`. Сейчас он задан только для dev и равен `http://localhost:6878` (порт по compose — 8080), для prod не задан. Правим: `default_uri: '%env(APP_BASE_URL)%'` для всех окружений; `APP_BASE_URL` — dev `http://localhost:8080`, prod — адрес сайта (значение задаёт деплой, в коде не пишем).
+**Базовый адрес (хост).** Тексты рендерятся в воркере, вне HTTP → хост берётся из `router.default_uri`. Сейчас он задан только для dev и равен `http://localhost:6878` (порт по compose — 8080), для prod не задан. Правим: `default_uri: 'https://%env(DOMAIN)%'` для всех окружений, переиспользуя существующую переменную `DOMAIN` (тот же хост, что у Telegram-вебхука; prod — `1helper.ru`, задаётся окружением деплоя; в коде домен не пишем). Отдельный `APP_BASE_URL` НЕ заводим; для CI/test — дефолт `env(DOMAIN): 'localhost'` в services.yaml.
 
 ## Что НЕ входит
 
@@ -135,8 +135,8 @@
 | `Templates/emails/notification.html.twig` | `message\|notification_text` (сейчас без экранирования — фикс XSS) |
 | `Templates/cabinet/notifications/settings.html.twig` | убрать тумблер «Push» по типам |
 | `config/packages/messenger.yaml` | `NotificationBatch: async`, `NotificationDeliveryRequested: async`; в `when@test` — `sync` |
-| `config/packages/routing.yaml` | `default_uri: '%env(APP_BASE_URL)%'` для всех окружений; старое dev-значение убрать |
-| `app/.env.example`, `app/.env.test`, деплой | `APP_BASE_URL` |
+| `config/packages/routing.yaml` | `default_uri: 'https://%env(DOMAIN)%'` для всех окружений; старое dev-значение убрать |
+| `app/.env.example`, `config/services.yaml` | переиспользуем `DOMAIN` (+ дефолт `env(DOMAIN): 'localhost'`); новая переменная не нужна |
 
 Существующие подписки с каналом `web_push` после снятия канала становятся неактуальны: чистить не обязательно (гейт их больше не вернёт); отдельной чистки в план не добавляем.
 
@@ -169,7 +169,7 @@
 - [ ] Юнит: пустая пачка/стопка/пустой текст → исключения; `type`/`perspective`.
 
 ### T2. Тексты и ссылки
-- [ ] `default_uri`→`APP_BASE_URL`; `ComplianceDueSoonRenderer::render`/`renderSummary` через `UrlGenerator`; `MessageRendererRegistry::messagesFor`.
+- [ ] `default_uri`→`https://%env(DOMAIN)%`; `ComplianceDueSoonRenderer::render`/`renderSummary` через `UrlGenerator`; `MessageRendererRegistry::messagesFor`.
 - [ ] Юнит рендерера (счётчики, нули, ссылка) и `messagesFor` (Personal / Oversight+сводка / Oversight без сводки).
 
 ### T3. Отправка отдельным сообщением + push на inbox
@@ -194,9 +194,9 @@
 - [ ] `./run check` зелёный.
 - [ ] Ручная: `app:compliance:scan-due` при живом воркере → сотруднику одно (+push), админу одно/два; ссылки открывают дашборд.
 - [ ] Нет мёртвого кода (старый `deliver()` перенесён/удалён).
-- [ ] Деплой: миграций нет; задать `APP_BASE_URL`; перезапустить `messenger-worker` и `scheduler-compliance` не в окно прохода (06:00 МСК).
+- [ ] Деплой: миграций нет; `DOMAIN` уже задан (Telegram-вебхук) — новой переменной не нужно; перезапустить `messenger-worker` и `scheduler-compliance` не в окно прохода (06:00 МСК).
 
 ## Открытые вопросы — закрыты
 
 1. Формулировки двух текстов — ПОДТВЕРЖДЕНЫ (как в примерах).
-2. `APP_BASE_URL` для prod — задаётся в env на деплое (значение — при раскатке, в коде/плане не фиксируем).
+2. Домен для prod — существующий `DOMAIN` (env деплоя, `1helper.ru`); новую переменную не вводим.
