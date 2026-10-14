@@ -501,6 +501,21 @@ final class ProfileComplianceTest extends TestCase
         self::assertCount(0, $pc->getWriteOffActs(), 'опустевший акт списания удалён вместе с фактом');
     }
 
+    public function test_remove_issuance_record_works_after_obligation_excluded(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // прямая дозапись — без backing-документа
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $pc->excludeObligation($this->glovesKey()); // обязанность убрана из проекции, факт остался
+
+        $result = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc); // не должно бросать
+
+        self::assertSame($this->reqId, $result['requirementId'], 'requirementId резолвится из ключа факта, а не из проекции/документов');
+        self::assertSame([], $result['fileIds']);
+        self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
+    }
+
     public function test_projection_holds_quantity(): void
     {
         $pc = $this->pcWithGloves(2.0);

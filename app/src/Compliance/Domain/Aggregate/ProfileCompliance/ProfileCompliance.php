@@ -363,25 +363,14 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * requirementId факта по ключу его обязанности. Формат ключа — знание домена {@see TrackedObligation}, сюда
-     * его не тащим: ищем среди УЖЕ известных requirementId (обязанности карточки, затем документы выдачи — факт
-     * мог пережить пересборку/исключение своей обязанности), которому ключ принадлежит по
-     * {@see TrackedObligation::keyBelongsToRequirement}.
+     * requirementId факта по ключу его обязанности — детерминированно, через обратную операцию к
+     * {@see TrackedObligation::keyOf} ({@see TrackedObligation::requirementIdOf}). Проекцию/документы не
+     * смотрим: факт может пережить исключение своей обязанности ({@see excludeObligation}) и не иметь
+     * backing-документа (прямая дозапись {@see recordIssuance}) — требование от этого не перестаёт существовать.
      */
     private function requirementIdOfKey(string $key): string
     {
-        foreach ($this->obligations as $obligation) {
-            if (TrackedObligation::keyBelongsToRequirement($key, $obligation->requirementId())) {
-                return $obligation->requirementId();
-            }
-        }
-        foreach ($this->documents as $document) {
-            if (TrackedObligation::keyBelongsToRequirement($key, $document->requirementId())) {
-                return $document->requirementId();
-            }
-        }
-
-        throw new AppException('Не удалось определить требование для записи журнала.');
+        return TrackedObligation::requirementIdOf($key);
     }
 
     /** Удалить черновик (подписанный акт не удаляется); возвращает requirementId удалённого (для пересчёта по событию) или null, если не найден. */

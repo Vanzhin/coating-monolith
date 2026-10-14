@@ -74,6 +74,20 @@ class TrackedObligation
         return str_starts_with($key, $requirementId.'|');
     }
 
+    /**
+     * Обратная операция к {@see keyOf}: requirementId — префикс ключа до первого `|` (сам requirementId — Uuid,
+     * символа `|` содержать не может, поэтому извлечение детерминированно и не требует перебора/проекции).
+     */
+    public static function requirementIdOf(string $key): string
+    {
+        $pos = strpos($key, '|');
+        if (false === $pos) {
+            throw new \InvalidArgumentException(sprintf('Некорректный ключ обязанности: "%s".', $key));
+        }
+
+        return substr($key, 0, $pos);
+    }
+
     public function key(): string
     {
         return self::keyOf($this->requirementId, $this->label);

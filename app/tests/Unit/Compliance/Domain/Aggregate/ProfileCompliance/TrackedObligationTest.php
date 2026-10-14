@@ -41,4 +41,17 @@ final class TrackedObligationTest extends TestCase
         self::assertNull($o->mode());
         self::assertFalse($o->isConsumable());
     }
+
+    public function test_requirement_id_of_round_trips_with_key_of(): void
+    {
+        $key = TrackedObligation::keyOf('req-42', 'Перчатки');
+
+        self::assertSame('req-42', TrackedObligation::requirementIdOf($key));
+    }
+
+    public function test_requirement_id_of_rejects_key_without_separator(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        TrackedObligation::requirementIdOf('нет-разделителя');
+    }
 }
