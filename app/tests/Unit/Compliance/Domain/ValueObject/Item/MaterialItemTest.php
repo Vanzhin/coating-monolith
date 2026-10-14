@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Compliance\Domain\ValueObject\Item;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
@@ -73,5 +74,30 @@ final class MaterialItemTest extends TestCase
     {
         $this->expectException(AppException::class);
         new MaterialItem('itm-x', 'Каска', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), '  ', new Quantity(1.0, Unit::Piece));
+    }
+
+    public function test_default_mode_is_inventoried(): void
+    {
+        self::assertSame(MaterialMode::Inventoried, $this->item()->mode());
+    }
+
+    public function test_mode_round_trips(): void
+    {
+        $consumable = new MaterialItem(
+            'itm-2', 'Мыло', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Month),
+            'п.X', new Quantity(1200.0, Unit::Milliliter), MaterialMode::Consumable,
+        );
+        $rebuilt = MaterialItem::fromArray($consumable->jsonSerialize());
+
+        self::assertSame(MaterialMode::Consumable, $rebuilt->mode());
+        self::assertSame('consumable', $consumable->jsonSerialize()['mode']);
+    }
+
+    public function test_legacy_json_without_mode_defaults_inventoried(): void
+    {
+        $data = $this->item()->jsonSerialize();
+        unset($data['mode']);
+
+        self::assertSame(MaterialMode::Inventoried, MaterialItem::fromArray($data)->mode());
     }
 }
