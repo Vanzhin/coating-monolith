@@ -13,9 +13,9 @@ use App\Compliance\Domain\ValueObject\Quantity;
  */
 final readonly class MaterialItem extends AbstractRequirementItem
 {
-    public function __construct(string $label, Cadence $cadence, string $basis, private Quantity $quantity)
+    public function __construct(string $id, string $label, Cadence $cadence, string $basis, private Quantity $quantity)
     {
-        parent::__construct($label, $cadence, $basis);
+        parent::__construct($id, $label, $cadence, $basis);
     }
 
     public function type(): ComplianceType
@@ -28,7 +28,7 @@ final readonly class MaterialItem extends AbstractRequirementItem
         return $this->quantity;
     }
 
-    /** @return array{label: string, cadence: array{kind: string, number: int|null}, basis: string, quantity: array{amount: float, unit: string}} */
+    /** @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string, quantity: array{amount: float, unit: string}} */
     public function jsonSerialize(): array
     {
         return [...$this->baseArray(), 'quantity' => $this->quantity->jsonSerialize()];
@@ -38,6 +38,7 @@ final readonly class MaterialItem extends AbstractRequirementItem
     public static function fromArray(array $data): self
     {
         return new self(
+            self::readId($data),
             (string) ($data['label'] ?? ''),
             Cadence::fromArray(is_array($data['cadence'] ?? null) ? $data['cadence'] : []),
             (string) ($data['basis'] ?? ''),

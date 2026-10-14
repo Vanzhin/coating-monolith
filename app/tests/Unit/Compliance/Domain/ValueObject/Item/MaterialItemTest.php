@@ -19,11 +19,28 @@ final class MaterialItemTest extends TestCase
     private function item(): MaterialItem
     {
         return new MaterialItem(
+            'itm-1',
             'Перчатки х/б',
             new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
             'п.5 Типовых норм',
             new Quantity(10.0, Unit::Pair),
         );
+    }
+
+    public function test_exposes_stable_id(): void
+    {
+        self::assertSame('itm-1', $this->item()->id());
+        self::assertArrayHasKey('id', $this->item()->jsonSerialize());
+        self::assertSame('itm-1', $this->item()->jsonSerialize()['id']);
+    }
+
+    public function test_from_array_without_id_generates_one(): void
+    {
+        $data = $this->item()->jsonSerialize();
+        unset($data['id']);
+        $rebuilt = MaterialItem::fromArray($data);
+
+        self::assertNotSame('', $rebuilt->id());
     }
 
     public function test_exposes_type_and_fields(): void
@@ -49,12 +66,12 @@ final class MaterialItemTest extends TestCase
     public function test_blank_label_rejected(): void
     {
         $this->expectException(AppException::class);
-        new MaterialItem('   ', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'основание', new Quantity(1.0, Unit::Piece));
+        new MaterialItem('itm-x', '   ', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'основание', new Quantity(1.0, Unit::Piece));
     }
 
     public function test_blank_basis_rejected(): void
     {
         $this->expectException(AppException::class);
-        new MaterialItem('Каска', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), '  ', new Quantity(1.0, Unit::Piece));
+        new MaterialItem('itm-x', 'Каска', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), '  ', new Quantity(1.0, Unit::Piece));
     }
 }

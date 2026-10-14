@@ -17,7 +17,7 @@ final readonly class NonMaterialItem extends AbstractRequirementItem
         return ComplianceType::NonMaterial;
     }
 
-    /** @return array{label: string, cadence: array{kind: string, number: int|null}, basis: string} */
+    /** @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string} */
     public function jsonSerialize(): array
     {
         return $this->baseArray();
@@ -27,6 +27,7 @@ final readonly class NonMaterialItem extends AbstractRequirementItem
     public static function fromArray(array $data): self
     {
         return new self(
+            self::readId($data),
             (string) ($data['label'] ?? ''),
             Cadence::fromArray(is_array($data['cadence'] ?? null) ? $data['cadence'] : []),
             (string) ($data['basis'] ?? ''),
