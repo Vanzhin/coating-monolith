@@ -12,9 +12,10 @@
     </div>
 {% endmacro %}
 
-{% macro item_row(i, item, cadenceKinds, periodUnits, units) %}
+{% macro item_row(i, item, cadenceKinds, periodUnits, units, materialModes) %}
     {% set isPeriodic = item.cadenceKind|default('') == 'periodic' %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-req-rows-target="row">
+        <input type="hidden" name="items[{{ i }}][id]" value="{{ item.id|default('') }}">
         {# Строка 1 — наименование + количество: количество всегда на своём месте, не зависит от периодичности. #}
         <div class="row g-2">
             <div class="col-md-6">
@@ -29,6 +30,12 @@
                 <label class="form-label small mb-1">Ед. <span class="text-danger">*</span></label>
                 <select name="items[{{ i }}][unit]" class="form-select">
                     {% for u in units %}<option value="{{ u.value }}" {{ item.unit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4" data-item-quantity>
+                <label class="form-label small mb-1">Режим</label>
+                <select name="items[{{ i }}][mode]" class="form-select">
+                    {% for mm in materialModes %}<option value="{{ mm.value }}" {{ (item.mode|default('inventoried')) == mm.value ? 'selected' : '' }}>{{ mm.title }}</option>{% endfor %}
                 </select>
             </div>
         </div>

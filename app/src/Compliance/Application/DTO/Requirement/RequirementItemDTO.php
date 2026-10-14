@@ -6,10 +6,12 @@ namespace App\Compliance\Application\DTO\Requirement;
 
 /**
  * Позиция требования для формы/показа. Типа не несёт — он на требовании. cadenceNumber/amount/unit — для
- * полей ввода; *Label — для показа. Количество заполнено только у материального требования.
+ * полей ввода; *Label — для показа. Количество и mode заполнены только у материального требования
+ * (mode='' у нематериального). id — стабильный идентификатор позиции, нужен форме для round-trip правки.
  */
 final class RequirementItemDTO
 {
+    public string $id;
     public string $label;
     public string $cadenceKind;
     public ?int $cadenceNumber = null;
@@ -19,4 +21,5 @@ final class RequirementItemDTO
     public ?string $unit = null;
     public string $quantityLabel = '';
     public string $basis;
+    public string $mode = '';
 }

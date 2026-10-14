@@ -179,4 +179,33 @@ final class RequirementUseCasesTest extends KernelTestCase
         $this->expectException(AppException::class);
         $this->save($id, 'СИЗ', 'non_material', [$posId], [$this->briefingItem()]);
     }
+
+    public function test_material_item_persists_mode_and_stable_id_across_edit(): void
+    {
+        $posId = $this->createPosition('Кладовщик');
+        $id = $this->save(null, 'Нормы расходников', 'material', [$posId], [
+            $this->materialItem('Мыло') + ['mode' => 'consumable'],
+        ]);
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertCount(1, $result->requirement->items);
+        $originalItemId = $result->requirement->items[0]->id;
+        self::assertNotSame('', $originalItemId);
+        self::assertSame('consumable', $result->requirement->items[0]->mode);
+
+        // правка: наименование меняем, id в форме возвращаем — id обязан сохраниться
+        $this->save($id, 'Нормы расходников', 'material', [$posId], [
+            $this->materialItem('Мыло жидкое') + ['id' => $originalItemId, 'mode' => 'consumable'],
+        ]);
+
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+        $reloaded = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($reloaded instanceof GetRequirementQueryResult);
+        self::assertNotNull($reloaded->requirement);
+        self::assertSame($originalItemId, $reloaded->requirement->items[0]->id);
+        self::assertSame('Мыло жидкое', $reloaded->requirement->items[0]->label);
+        self::assertSame('consumable', $reloaded->requirement->items[0]->mode);
+    }
 }

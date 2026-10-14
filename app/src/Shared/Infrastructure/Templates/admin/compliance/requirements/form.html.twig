@@ -104,9 +104,9 @@
                     <h6 class="fw-semibold mb-3">Позиции</h6>
                     <div data-controller="req-rows req-cadence-fields">
                         <div data-req-rows-target="rows">
-                            {% for item in inputData.items|default([]) %}{{ m.item_row(loop.index0, item, cadenceKinds, periodUnits, units) }}{% endfor %}
+                            {% for item in inputData.items|default([]) %}{{ m.item_row(loop.index0, item, cadenceKinds, periodUnits, units, materialModes) }}{% endfor %}
                         </div>
-                        <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units) }}</template>
+                        <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units, materialModes) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add" aria-label="Добавить позицию"><i class="bi bi-plus-lg"></i></button>
                     </div>
                     <div class="form-text">«Число» и «Единица периода» — только для «каждые N». Количество — у требования типа «Выдача»; основание обязательно.</div>
