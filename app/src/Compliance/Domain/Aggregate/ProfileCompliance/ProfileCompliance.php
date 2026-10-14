@@ -299,15 +299,7 @@ class ProfileCompliance extends Aggregate
         }
 
         // Списания по этим фактам: убрать порции; если акт списания опустел из-за этого — удалить и его (+ скан).
-        foreach ($this->writeOffActs->toArray() as $act) {
-            $removed = $act->removeItemsByRecordIds($recordIds);
-            if ($removed > 0 && $act->isEmpty()) {
-                if (null !== $act->scanFileId()) {
-                    $fileIds[] = $act->scanFileId();
-                }
-                $this->writeOffActs->removeElement($act);
-            }
-        }
+        array_push($fileIds, ...$this->detachRecordFromWriteOffActs($recordIds));
 
         // Записи и сам документ.
         foreach ($this->records->toArray() as $record) {
@@ -320,6 +312,76 @@ class ProfileCompliance extends Aggregate
         $this->pruneOrphanPersonalObligations($requirementId);
 
         return ['requirementId' => $requirementId, 'fileIds' => $fileIds];
+    }
+
+    /**
+     * Удалить одну запись журнала (факт) НЕ завязываясь на акт выдачи — источник факта может быть прямой
+     * дозаписью ({@see recordIssuance}) или актом, это не важно. Каскадом снимает её порции с актов списания
+     * (тот же механизм, что {@see deleteSignedDocument}), опустевший акт списания удаляется. Возвращает
+     * requirementId (для пересчёта по событию) и fileIds удалённых сканов опустевших актов списания.
+     *
+     * @return array{requirementId: string, fileIds: list<string>}
+     */
+    public function removeIssuanceRecord(Uuid $recordId, ObligationDueCalculator $calculator): array
+    {
+        $record = $this->recordById((string) $recordId) ?? throw new AppException('Запись журнала не найдена.');
+        $key = $record->obligationKey();
+        $requirementId = $this->requirementIdOfKey($key);
+
+        $fileIds = $this->detachRecordFromWriteOffActs([(string) $recordId => true]);
+
+        $this->records->removeElement($record);
+        $this->recomputeObligation($key, $calculator);
+        $this->pruneOrphanPersonalObligations($requirementId);
+
+        return ['requirementId' => $requirementId, 'fileIds' => $fileIds];
+    }
+
+    /**
+     * Общий каскад на акты списания: убрать порции, списанные с указанных фактов; если акт списания опустел
+     * из-за этого — удалить и его (+ собрать скан на зачистку). Переиспользуется {@see deleteSignedDocument}
+     * (факты целого документа) и {@see removeIssuanceRecord} (одна запись журнала).
+     *
+     * @param array<string, true> $recordIds
+     *
+     * @return list<string> fileIds опустевших актов списания
+     */
+    private function detachRecordFromWriteOffActs(array $recordIds): array
+    {
+        $fileIds = [];
+        foreach ($this->writeOffActs->toArray() as $act) {
+            $removed = $act->removeItemsByRecordIds($recordIds);
+            if ($removed > 0 && $act->isEmpty()) {
+                if (null !== $act->scanFileId()) {
+                    $fileIds[] = $act->scanFileId();
+                }
+                $this->writeOffActs->removeElement($act);
+            }
+        }
+
+        return $fileIds;
+    }
+
+    /**
+     * requirementId факта по ключу его обязанности. Формат ключа — знание домена {@see TrackedObligation}, сюда
+     * его не тащим: ищем среди УЖЕ известных requirementId (обязанности карточки, затем документы выдачи — факт
+     * мог пережить пересборку/исключение своей обязанности), которому ключ принадлежит по
+     * {@see TrackedObligation::keyBelongsToRequirement}.
+     */
+    private function requirementIdOfKey(string $key): string
+    {
+        foreach ($this->obligations as $obligation) {
+            if (TrackedObligation::keyBelongsToRequirement($key, $obligation->requirementId())) {
+                return $obligation->requirementId();
+            }
+        }
+        foreach ($this->documents as $document) {
+            if (TrackedObligation::keyBelongsToRequirement($key, $document->requirementId())) {
+                return $document->requirementId();
+            }
+        }
+
+        throw new AppException('Не удалось определить требование для записи журнала.');
     }
 
     /** Удалить черновик (подписанный акт не удаляется); возвращает requirementId удалённого (для пересчёта по событию) или null, если не найден. */
@@ -421,8 +483,14 @@ class ProfileCompliance extends Aggregate
      */
     public function startOrGetWriteOffDraft(Uuid $candidateActId, string $requirementId, \DateTimeImmutable $now): string
     {
-        if ([] === $this->signedDocumentsFor($requirementId)) {
-            throw new AppException('Списать можно только из действующей карточки — черновик не списывается.');
+        // Списание привязано к выданным ФАКТАМ журнала (не к акту выдачи — он может уйти при сносе актов),
+        // поэтому запись должна быть именно выдана ({@see isIssued}), а не лежать корзиной черновика.
+        $heldFacts = array_filter(
+            $this->recordsForRequirement($requirementId),
+            fn (FulfillmentRecord $r): bool => $this->isIssued($r) && $r->heldAmount() > 0.0,
+        );
+        if ([] === $heldFacts) {
+            throw new AppException('Списать можно только то, что выдано и на руках.');
         }
         $act = $this->openWriteOffDraftFor($requirementId);
         if (null === $act) {

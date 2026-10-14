@@ -374,6 +374,24 @@ final class ProfileComplianceTest extends TestCase
         $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
     }
 
+    public function test_start_write_off_requires_held_fact_not_document(): void
+    {
+        $pc = $this->pcWithGloves(2.0); // норма 2, акта выдачи вообще нет
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // факт журнала напрямую, без акта
+
+        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
+
+        self::assertNotSame('', $actId, 'гард смотрит на выданный факт, а не на акт выдачи');
+    }
+
+    public function test_start_write_off_without_held_fact_throws(): void
+    {
+        $pc = $this->pcWithGloves(2.0); // норма есть, но ни одного факта не выдано
+
+        $this->expectException(AppException::class);
+        $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
+    }
+
     public function test_save_portions_without_effect(): void
     {
         $pc = $this->pcWithGloves(2.0);
@@ -464,6 +482,23 @@ final class ProfileComplianceTest extends TestCase
 
         self::assertSame(0.0, $pc->heldOf($this->glovesKey())); // всё списано
         self::assertNull($pc->getObligations()[0]->lastFulfilledAt()); // позиция освобождена
+    }
+
+    public function test_remove_issuance_record_cascades_to_write_off(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $this->signedGlovesCard($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
+        $recordId = $pc->getRecords()[0]->getId();
+        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
+        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
+        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
+
+        $result = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc);
+
+        self::assertSame($this->reqId, $result['requirementId']);
+        self::assertContains('scan-wo', $result['fileIds'], 'скан опустевшего акта списания возвращён на зачистку');
+        self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
+        self::assertCount(0, $pc->getWriteOffActs(), 'опустевший акт списания удалён вместе с фактом');
     }
 
     public function test_projection_holds_quantity(): void
