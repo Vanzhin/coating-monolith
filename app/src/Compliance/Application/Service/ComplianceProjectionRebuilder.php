@@ -126,8 +126,7 @@ final readonly class ComplianceProjectionRebuilder
                     $departmentId, TrackedObligation::ORIGIN_NORM,
                     $item instanceof MaterialItem ? $item->mode() : null,
                 );
-                $obligation->setActive($profileCompliance->hasIssuedFactFor($key)); // выданный факт по ЭТОЙ позиции ⇒ трекинг включён
-                $profileCompliance->putObligation($obligation);
+                $profileCompliance->putObligation($obligation); // active ставит recompute* ниже (= есть выданный факт)
             }
         }
 

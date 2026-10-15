@@ -66,7 +66,6 @@ final class InstructionIssuanceTest extends KernelTestCase
 
         $pc = $repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        self::assertSame([], $pc->getDocuments(), 'инструктаж пишется прямо в журнал — акта-документа не возникает');
         $record = $pc->recordsForRequirement($this->requirementId)[0] ?? null;
         self::assertNotNull($record);
         $details = $record->instructionDetails();

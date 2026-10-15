@@ -326,8 +326,7 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($pc);
         // Два факта одной позиции разными актами: 6 + 4 пары. Каждый < нормы (10), но сумма = норме → зелёный.
         $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-06-01'), $calc, new Quantity(6.0, Unit::Pair));
-        $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-07-01'), $calc, new Quantity(4.0, Unit::Pair));
-        $pc->setActiveForRequirement($requirementId, true);
+        $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-07-01'), $calc, new Quantity(4.0, Unit::Pair)); // запись фактов синхронно включает трекинг (active)
         $repo->add($pc);
 
         $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));

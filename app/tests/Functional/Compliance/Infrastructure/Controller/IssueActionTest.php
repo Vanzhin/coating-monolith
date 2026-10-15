@@ -71,8 +71,7 @@ final class IssueActionTest extends WebTestCase
         $em->clear();
         $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
         self::assertNotNull($pc);
-        self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача записана в журнал, на руках = норма');
-        self::assertSame([], $pc->getDocuments(), 'факт пишется прямо в журнал — без акта-документа');
+        self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача записана прямо в журнал, на руках = норма');
     }
 
     private function issueUrl(string $profileId, string $requirementId): string

@@ -36,8 +36,6 @@ class ProfileCompliance extends Aggregate
     private Collection $obligations;
     /** @var Collection<int, FulfillmentRecord> */
     private Collection $records;
-    /** @var Collection<int, RequirementDocument> */
-    private Collection $documents;
     /** @var Collection<int, WriteOffAct> */
     private Collection $writeOffActs;
     private StringCollection $excludedKeys;
@@ -49,7 +47,6 @@ class ProfileCompliance extends Aggregate
         $this->profileId = $profileId;
         $this->obligations = new ArrayCollection();
         $this->records = new ArrayCollection();
-        $this->documents = new ArrayCollection();
         $this->writeOffActs = new ArrayCollection();
         $this->excludedKeys = new StringCollection();
     }
@@ -95,45 +92,10 @@ class ProfileCompliance extends Aggregate
         return $result;
     }
 
-    /** @return RequirementDocument[] */
-    public function getDocuments(): array
-    {
-        return $this->documents->toArray();
-    }
-
     /** @return WriteOffAct[] */
     public function getWriteOffActs(): array
     {
         return $this->writeOffActs->toArray();
-    }
-
-    /** Открытый черновик акта по требованию (инвариант: не более одного). */
-    public function openDraftFor(string $requirementId): ?RequirementDocument
-    {
-        foreach ($this->documents as $document) {
-            if ($document->requirementId() === $requirementId && $document->isDraft()) {
-                return $document;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Подписанные акты по требованию (история выдач-артефактов со сканами).
-     *
-     * @return list<RequirementDocument>
-     */
-    public function signedDocumentsFor(string $requirementId): array
-    {
-        $signed = [];
-        foreach ($this->documents as $document) {
-            if ($document->requirementId() === $requirementId && $document->isSigned()) {
-                $signed[] = $document;
-            }
-        }
-
-        return $signed;
     }
 
     /**
@@ -170,154 +132,10 @@ class ProfileCompliance extends Aggregate
         }
     }
 
-    /** Завести черновик акта по требованию (маркер «карточка нужна»). Открытый черновик уже есть → {@see AppException}. */
-    public function formDraft(Uuid $id, string $requirementId, \DateTimeImmutable $now): void
-    {
-        if (null !== $this->openDraftFor($requirementId)) {
-            throw new AppException('По требованию уже есть открытый черновик — оформите или удалите его.');
-        }
-        $this->documents->add(new RequirementDocument($id, $this, $requirementId, $now));
-    }
-
-    /**
-     * Оформить черновик: приложить подписанный скан и заморозить акт. Строки выдачи (из формы) становятся
-     * фактами, трекинг сроков требования включается.
-     *
-     * @param IssuanceLine[] $lines
-     */
-    public function signDraft(string $documentId, ?string $scanFileId, array $lines, ObligationDueCalculator $calculator, \DateTimeImmutable $now, string $actNumber, string $responsibleFio): void
-    {
-        $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
-        $this->recordAndSign($document, $lines, $scanFileId, $calculator, $now, $actNumber, $responsibleFio);
-    }
-
-    /**
-     * Сохранить черновик целиком: строки корзины (замена) + реквизиты. Акт остаётся Formed — в held не входит.
-     * Калькулятор не нужен: черновые записи гейт «выдано» не пускает, held/даты не меняются.
-     *
-     * @param IssuanceLine[] $lines
-     */
-    public function saveDraft(string $documentId, string $actNumber, string $responsibleFio, array $lines, \DateTimeImmutable $now): void
-    {
-        $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
-        $document->assertMutable();
-        foreach ($this->records as $record) {
-            if ($record->documentId() === $documentId) {
-                $this->records->removeElement($record); // orphan-removal удалит строку корзины
-            }
-        }
-        foreach ($lines as $line) {
-            $this->records->add(new FulfillmentRecord(
-                $line->recordId, $this, $line->obligationKey, $line->fulfilledAt,
-                $line->quantity, $line->wearPercent, $line->note, $line->manualDueDate,
-                documentId: $documentId, instructionDetails: $line->instructionDetails,
-            ));
-        }
-        $document->saveDraftDetails($actNumber, $responsibleFio, $now);
-        $this->pruneOrphanPersonalObligations($document->requirementId()); // убрали персональную строку → убрать её обязанность
-    }
-
-    /**
-     * Наполнить корзину черновика дефицитом по норме требования (идемпотентно, аддитивно). По материальной
-     * позиции добавляет недостающее `max(0, норма − на руках − уже в корзине)`; по нематериальной — строку
-     * присутствия, если её в корзине ещё нет. Существующие строки не трогает, ничего не удаляет; №/ответственного
-     * не пишет (это ввод пользователя). Повторный прогон без смены нормы ничего не добавляет.
-     */
-    public function topUpDraftFromNorm(string $documentId, string $requirementId, \DateTimeImmutable $now): void
-    {
-        $document = $this->documentById($documentId) ?? throw new AppException('Черновик не найден.');
-        $document->assertMutable();
-        foreach ($this->obligations as $obligation) {
-            if ($obligation->requirementId() !== $requirementId) {
-                continue;
-            }
-            $key = $obligation->key();
-            $norm = $obligation->quantity();
-            if (null === $norm) { // нематериальная — строка присутствия, если ещё нет
-                if (!$this->cartHasKey($documentId, $key)) {
-                    $this->records->add(new FulfillmentRecord(Uuid::v7(), $this, $key, $now, null, null, null, null, documentId: $documentId));
-                }
-                continue;
-            }
-            $missing = $norm->amount - $this->heldOf($key) - $this->cartSumFor($documentId, $key);
-            if ($missing > 1e-9) {
-                $this->records->add(new FulfillmentRecord(Uuid::v7(), $this, $key, $now, new Quantity($missing, $norm->unit), null, null, null, documentId: $documentId));
-            }
-        }
-    }
-
-    private function cartSumFor(string $documentId, string $obligationKey): float
-    {
-        $sum = 0.0;
-        foreach ($this->records as $record) {
-            if ($record->documentId() === $documentId && $record->obligationKey() === $obligationKey) {
-                $sum += $record->quantity()->amount ?? 0.0;
-            }
-        }
-
-        return $sum;
-    }
-
-    private function cartHasKey(string $documentId, string $obligationKey): bool
-    {
-        foreach ($this->records as $record) {
-            if ($record->documentId() === $documentId && $record->obligationKey() === $obligationKey) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Админское удаление ЛЮБОГО документа выдачи (в т.ч. подписанного — слепка) с каскадом: его записи-факты +
-     * связанные списания (порции по этим фактам; опустевший акт списания уходит целиком, чужие порции сохраняются).
-     * Возвращает requirementId (для пересчёта по событию) и fileIds удалённых сканов (акта + опустевших актов
-     * списания) — их чистит хендлер. null — документ не найден. Пересчёт проекции — асинхронно, не тут.
-     *
-     * @return array{requirementId: string, fileIds: list<string>}|null
-     */
-    public function deleteSignedDocument(string $documentId): ?array
-    {
-        $document = $this->documentById($documentId);
-        if (null === $document) {
-            return null;
-        }
-        $requirementId = $document->requirementId();
-
-        $fileIds = [];
-        if (null !== $document->scanFileId()) {
-            $fileIds[] = $document->scanFileId();
-        }
-
-        // Факты этого документа.
-        $recordIds = [];
-        foreach ($this->records as $record) {
-            if ($record->documentId() === $documentId) {
-                $recordIds[$record->getId()] = true;
-            }
-        }
-
-        // Списания по этим фактам: убрать порции; если акт списания опустел из-за этого — удалить и его (+ скан).
-        array_push($fileIds, ...$this->detachRecordFromWriteOffActs($recordIds));
-
-        // Записи и сам документ.
-        foreach ($this->records->toArray() as $record) {
-            if ($record->documentId() === $documentId) {
-                $this->records->removeElement($record);
-            }
-        }
-        $this->documents->removeElement($document);
-
-        $this->pruneOrphanPersonalObligations($requirementId);
-
-        return ['requirementId' => $requirementId, 'fileIds' => $fileIds];
-    }
-
     /**
      * Удалить одну запись журнала (факт) НЕ завязываясь на акт выдачи — источник факта может быть прямой
      * дозаписью ({@see recordIssuance}) или актом, это не важно. Каскадом снимает её порции с актов списания
-     * (тот же механизм, что {@see deleteSignedDocument}), опустевший акт списания удаляется. Возвращает
+     * (тот же механизм, что {@see detachRecordFromWriteOffActs}), опустевший акт списания удаляется. Возвращает
      * requirementId (для пересчёта по событию) и fileIds удалённых сканов опустевших актов списания.
      *
      * @return array{requirementId: string, fileIds: list<string>}
@@ -339,8 +157,7 @@ class ProfileCompliance extends Aggregate
 
     /**
      * Общий каскад на акты списания: убрать порции, списанные с указанных фактов; если акт списания опустел
-     * из-за этого — удалить и его (+ собрать скан на зачистку). Переиспользуется {@see deleteSignedDocument}
-     * (факты целого документа) и {@see removeIssuanceRecord} (одна запись журнала).
+     * из-за этого — удалить и его (+ собрать скан на зачистку). Зовётся из {@see removeIssuanceRecord}.
      *
      * @param array<string, true> $recordIds
      *
@@ -373,30 +190,10 @@ class ProfileCompliance extends Aggregate
         return TrackedObligation::requirementIdOf($key);
     }
 
-    /** Удалить черновик (подписанный акт не удаляется); возвращает requirementId удалённого (для пересчёта по событию) или null, если не найден. */
-    public function deleteDraft(string $documentId): ?string
-    {
-        $document = $this->documentById($documentId);
-        if (null === $document) {
-            return null;
-        }
-        $document->assertMutable();
-        $requirementId = $document->requirementId();
-        foreach ($this->records as $record) {
-            if ($record->documentId() === $documentId) {
-                $this->records->removeElement($record); // корзина уходит вместе с черновиком
-            }
-        }
-        $this->documents->removeElement($document);
-        $this->pruneOrphanPersonalObligations($requirementId); // персональные позиции без факта не висят фантомом
-
-        return $requirementId;
-    }
-
     /**
-     * Убрать персональные (origin=Personal) обязанности требования, под которыми не осталось НИ ОДНОГО факта
-     * (ни в корзине, ни подписанного). Нужно после удаления/пере-сохранения черновика: позиция вне нормы,
-     * которую завели и затем сняли, иначе осталась бы фантомом (пересборка проекции её не трогает).
+     * Убрать персональные (origin=Personal) обязанности требования, под которыми не осталось НИ ОДНОГО факта.
+     * Нужно после удаления факта: позицию вне нормы, которую завели и затем сняли, иначе осталась бы фантомом
+     * (пересборка проекции её не трогает).
      */
     private function pruneOrphanPersonalObligations(string $requirementId): void
     {
@@ -438,7 +235,7 @@ class ProfileCompliance extends Aggregate
         return null;
     }
 
-    /** На руках по позиции = Σ heldAmount по её ВЫДАННЫМ фактам (корзина черновика в held не входит). */
+    /** На руках по позиции = Σ heldAmount по её выданным фактам журнала. */
     public function heldOf(string $obligationKey): float
     {
         $sum = 0.0;
@@ -452,23 +249,17 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * Факт считается выданным (входит в held/сроки), только если его акт подписан. Запись без документа —
-     * прямой/исторический факт — считается выданной. Запись на черновике (Formed) — корзина, НЕ выдано.
+     * Любая запись журнала — выданный факт (входит в held/сроки): актов-документов больше нет, выдача идёт
+     * прямо в журнал ({@see recordIssuance}). Метод оставлен явной точкой смысла «факт выдан».
      */
     private function isIssued(FulfillmentRecord $record): bool
     {
-        $documentId = $record->documentId();
-        if (null === $documentId || '' === $documentId) {
-            return true;
-        }
-        $document = $this->documentById($documentId);
-
-        return null === $document || $document->isSigned();
+        return true; // прямой журнал — черновиков-корзин и актов нет, факт всегда выдан
     }
 
     /**
-     * Есть ли по обязанности хотя бы один выданный факт ({@see isIssued}) — журнальная замена «был подписанный
-     * акт»: трекинг сроков обязанности включает пересборщик проекции, не привязываясь к наличию акта-документа.
+     * Есть ли по обязанности хотя бы один выданный факт ({@see isIssued}) — именно это включает трекинг сроков
+     * обязанности (`active`), не привязываясь к какому-либо акту-документу.
      */
     public function hasIssuedFactFor(string $obligationKey): bool
     {
@@ -578,35 +369,6 @@ class ProfileCompliance extends Aggregate
         foreach ($act->items() as $portion) {
             $this->recordById($portion->recordId())?->addReturnedQuantity($portion->quantity());
         }
-    }
-
-    /**
-     * Общая запись-и-подпись: ИНВАРИАНТ — скан приложен И по материальным позициям выдано не меньше нормы
-     * ({@see assertIssuable}); строки → факты {@see FulfillmentRecord}; акт подписан; трекинг сроков включён.
-     *
-     * @param IssuanceLine[] $lines
-     */
-    private function recordAndSign(RequirementDocument $document, array $lines, ?string $scanFileId, ObligationDueCalculator $calculator, \DateTimeImmutable $now, string $actNumber, string $responsibleFio): void
-    {
-        if (null === $scanFileId || '' === trim($scanFileId)) {
-            throw new AppException('Приложите скан подписанной карточки — без него нельзя оформить.');
-        }
-        $this->assertIssuable($lines);
-        $this->saveDraft($document->getId(), $actNumber, $responsibleFio, $lines, $now); // корзина = строки формы (ещё Formed)
-        $document->markSigned($scanFileId, $actNumber, $responsibleFio, $now); // сначала подпись
-        $this->setActiveForRequirement($document->requirementId(), true);
-        $this->recomputeRequirement($document->requirementId(), $calculator); // потом пересчёт — записи прошли гейт
-    }
-
-    private function documentById(string $documentId): ?RequirementDocument
-    {
-        foreach ($this->documents as $document) {
-            if ($document->getId() === $documentId) {
-                return $document;
-            }
-        }
-
-        return null;
     }
 
     /** Факт выдачи по id (нужен проектору акта списания — наименование/единица/дата тянутся с факта порции). */
@@ -809,17 +571,7 @@ class ProfileCompliance extends Aggregate
         }
     }
 
-    /** Документ требования подписан/расподписан — включает/выключает трекинг сроков у его обязанностей. */
-    public function setActiveForRequirement(string $requirementId, bool $active): void
-    {
-        foreach ($this->obligations as $obligation) {
-            if ($obligation->requirementId() === $requirementId) {
-                $obligation->setActive($active);
-            }
-        }
-    }
-
-    /** Худший статус по обязанностям (для карточки/агрегата); учитывает подпись и сроки. */
+    /** Худший статус по обязанностям (для карточки/агрегата); учитывает активность (выданный факт) и сроки. */
     public function worstStatus(ComplianceStatusResolver $resolver, ?ComplianceType $filter, \DateTimeImmutable $now): ComplianceStatus
     {
         $worst = ComplianceStatus::Green;
@@ -896,5 +648,8 @@ class ProfileCompliance extends Aggregate
         $nextDueAt = $calculator->nextDue($obligation->cadence(), $lastFulfilledAt, $latest?->manualDueDate());
         $obligation->setDates($lastFulfilledAt, $nextDueAt);
         $obligation->setHeldQuantity($held);
+        // active = есть выданный факт по позиции. Любая запись/удаление факта зовёт recomputeObligation, значит
+        // светофор/даты синхронизируются сразу — без ожидания отдельной пересборки проекции (норм и personal).
+        $obligation->setActive($this->hasIssuedFactFor($key));
     }
 }

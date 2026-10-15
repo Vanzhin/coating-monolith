@@ -63,8 +63,7 @@ final class RecordIssuanceTest extends KernelTestCase
 
         $pc = $this->repo->findByProfile($p);
         self::assertNotNull($pc);
-        self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача сразу в held — без подписи акта');
-        self::assertSame([], $pc->getDocuments(), 'факт пишется напрямую в журнал — акта-документа не возникает');
+        self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача сразу в held — факт пишется прямо в журнал');
         self::assertCount(1, $pc->recordsForRequirement($r), 'одна строка журнала на одну выданную позицию');
     }
 
