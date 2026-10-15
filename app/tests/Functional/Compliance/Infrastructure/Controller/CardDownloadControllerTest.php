@@ -338,8 +338,16 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringContainsString('10 / 10 пара', $html, 'консолидировано: бейдж «на руках / норма» по сумме');
         self::assertStringContainsString('text-bg-success', $html, 'сумма 6+4 = норме 10 → зелёный (а не два красных по-фактно)');
         self::assertStringNotContainsString('text-bg-danger', $html, 'ни один факт не красит позицию по своему куску');
-        self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот (единообразно для всех)');
-        self::assertSame(2, substr_count($html, 'Выдан:'), 'в развороте — обе выдачи (2 акта)');
+        self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот истории (единообразно для всех)');
+
+        // Разбивка по фактам — в ЛЕНИВОЙ истории позиции (не в eager HTML страницы выдачи, карточка её не тащит).
+        $this->client->request('GET', sprintf(
+            '/cabinet/compliance/person/%s/requirement/%s/obligation/%s/history',
+            $profileId, $requirementId, rawurlencode($key),
+        ));
+        self::assertResponseIsSuccessful();
+        $historyHtml = (string) $this->client->getResponse()->getContent();
+        self::assertSame(2, substr_count($historyHtml, 'Выдано'), 'в истории — обе выдачи (2 акта), консолидация не потеряла ни одной');
     }
 
     public function test_write_off_draft_save_persists_number_and_commission(): void

@@ -22,11 +22,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Карточка требования у человека. Форма ВЫДАЧИ доступна ВСЕГДА (не гейтится статусом нормы): рисует ВСЕ позиции
- * текущей нормы с предзаполнением дефицитом (норма − на руках, не ниже 0), количество переопределяемо — замену
- * и досрочную выдачу можно записать даже при полностью удовлетворённой (Green) норме. «Записать выдачу» пишет
- * факты прямо в журнал ({@see RecordIssuanceCommand}). СПИСАНИЕ — параллельный вход на той же странице (блок
- * «Действующие позиции» + акты): «Списать» ведёт в акт списания ({@see GoToWriteOffAction}), доступно при held > 0.
+ * Карточка требования у человека. Каждая позиция нормы — ЕДИНАЯ карточка: статус-бейдж/норма/на руках/посл.
+ * выдача/след. срок — EAGER (из read-model {@see \App\Compliance\Application\DTO\ProfileCompliance\ObligationRowDTO}),
+ * форма «Записать выдачу» — EAGER, журнал истории позиции (выдачи+списания) — LAZY, по требованию
+ * ({@see ObligationHistoryAction}). Форма ВЫДАЧИ доступна
+ * ВСЕГДА (не гейтится статусом нормы): рисует ВСЕ позиции текущей нормы с предзаполнением дефицитом (норма −
+ * на руках, не ниже 0), количество переопределяемо — замену и досрочную выдачу можно записать даже при полностью
+ * удовлетворённой (Green) норме. «Записать выдачу» пишет факты прямо в журнал ({@see RecordIssuanceCommand}).
+ * СПИСАНИЕ — параллельный вход на той же странице (кнопка + акты списания аккордеоном): «Списать» ведёт в акт
+ * списания ({@see GoToWriteOffAction}), доступно при held > 0.
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
 final class IssueAction extends AbstractController
@@ -80,6 +84,16 @@ final class IssueAction extends AbstractController
         return 'success';
     }
 
+    /** Y-m-d (read-model) → d.m.Y (отображение в карточке); null проходит как null. */
+    private function formatDate(?string $ymd): ?string
+    {
+        if (null === $ymd) {
+            return null;
+        }
+
+        return \DateTimeImmutable::createFromFormat('!Y-m-d', $ymd)?->format('d.m.Y');
+    }
+
     /**
      * @param array<string, mixed> $inputData
      */
@@ -106,6 +120,7 @@ final class IssueAction extends AbstractController
             // Выдача доступна ВСЕГДА: форма строится из ВСЕХ позиций текущей нормы (а не только дефицитных),
             // поэтому замену/досрочную выдачу можно записать и при полностью удовлетворённой (Green) норме.
             $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
+            $norm = null !== $row->quantityValue ? (float) $row->quantityValue : null;
             $issueRows[] = [
                 'key' => $row->key,
                 'label' => $row->label,
@@ -117,11 +132,20 @@ final class IssueAction extends AbstractController
                 'quantityLabel' => $row->quantityLabel,
                 'quantityValue' => $row->quantityValue,
                 'quantityUnit' => $row->quantityUnit,
+                'unitTitle' => null !== $row->quantityUnit ? Unit::from($row->quantityUnit)->title() : null,
                 'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
                 // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках, но не ниже 0);
                 // при полной норме дефицит = 0, поле остаётся редактируемым (замена сверх нормы).
                 'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
                 'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, 'savedInstruction' => [],
+                // Единая карточка: статус-бейдж (тот же резолвер/бакет, что у дашборда), «на руках N/норма»,
+                // посл. выдача/след. срок — EAGER, видны без раскрытия ленивой истории.
+                'bucket' => $row->bucket,
+                'bucketLabel' => $row->bucketLabel,
+                'held' => AmountFormatter::trimmed($held),
+                'heldTone' => $this->heldTone($held, $norm),
+                'lastFulfilledAt' => $this->formatDate($row->lastFulfilledAt),
+                'nextDueAt' => $this->formatDate($row->nextDueAt),
             ];
         }
 
@@ -152,18 +176,19 @@ final class IssueAction extends AbstractController
         $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
 
         // Списание — ПАРАЛЛЕЛЬНЫЙ вход, доступный на той же странице (не взаимоисключающий с выдачей по статусу).
-        // Ниже собираем действующие позиции (на руках > 0) и акты списания; «Списать» в шаблоне показываем,
-        // когда есть что списывать. «на руках N» — текущий остаток (жёлтым, если часть уже списана).
-        $cadenceByKey = [];
-        $normByKey = [];
-        foreach ($obligations as $o) {
-            $cadenceByKey[$o->key] = $o->cadenceLabel;
-            $normByKey[$o->key] = null !== $o->quantityValue ? (float) $o->quantityValue : null;
+        // «Списать» показываем, когда есть хотя бы один материальный факт требования на руках; разбивка по
+        // позициям (что и когда выдано/списано) — в единой карточке выше + её ленивой истории
+        // ({@see \App\Compliance\Infrastructure\Controller\Fulfillment\ObligationHistoryAction}), здесь не дублируем.
+        $canWriteOff = false;
+        foreach ($profileCompliance?->recordsForRequirement($requirementId) ?? [] as $record) {
+            if (null !== $record->quantity() && $record->heldAmount() > 0.0) {
+                $canWriteOff = true;
+                break;
+            }
         }
 
-        // Акты списания по требованию; попутно карта списаний по факту recordId → [{№, кол-во}].
+        // Акты списания по требованию — список снизу страницы (аккордеон).
         $writeOffActs = [];
-        $writeOffsByRecord = [];
         if (null !== $profileCompliance) {
             foreach ($profileCompliance->getWriteOffActs() as $act) {
                 if ($act->requirementId() !== $requirementId) {
@@ -176,55 +201,9 @@ final class IssueAction extends AbstractController
                         'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
                         'reason' => $portion->reason()?->title(),
                     ];
-                    if ($act->isSigned()) {
-                        $writeOffsByRecord[$portion->recordId()][] = ['actNumber' => $act->actNumber(), 'qty' => $portion->quantity()];
-                    }
                 }
                 $writeOffActs[] = ['id' => $act->getId(), 'signed' => $act->isSigned(), 'actNumber' => $act->actNumber(), 'items' => $items];
             }
-        }
-
-        // Действующие позиции — ПО ПОЗИЦИИ (obligationKey): «на руках» = Σ held фактов, светофор по сумме против
-        // нормы (а не по отдельному факту), разбивка по актам выдачи — в развороте.
-        $positions = [];
-        foreach ($profileCompliance?->recordsForRequirement($requirementId) ?? [] as $record) {
-            if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
-                continue; // нематериальный факт или полностью списан
-            }
-            $key = $record->obligationKey();
-            $positions[$key] ??= [
-                'label' => $profileCompliance?->obligationLabelOf($key),
-                'meta' => $cadenceByKey[$key] ?? '',
-                'unit' => $record->quantity()->unit->title(),
-                'norm' => $normByKey[$key] ?? null,
-                'held' => 0.0,
-                'facts' => [],
-            ];
-            $held = $record->heldAmount();
-            $positions[$key]['held'] += $held;
-            $notes = [];
-            foreach ($writeOffsByRecord[$record->getId()] ?? [] as $w) {
-                $notes[] = 'списано '.AmountFormatter::trimmed($w['qty']).(null !== $w['actNumber'] && '' !== $w['actNumber'] ? ' (акт № '.$w['actNumber'].')' : '');
-            }
-            $positions[$key]['facts'][] = [
-                'date' => $record->fulfilledAt()->format('d.m.Y'),
-                'held' => AmountFormatter::trimmed($held),
-                'writeOffNote' => implode('; ', $notes),
-            ];
-        }
-
-        $heldPositions = [];
-        foreach ($positions as $p) {
-            $norm = $p['norm'];
-            $heldPositions[] = [
-                'label' => $p['label'],
-                'meta' => trim($p['meta'].(null !== $norm ? ' · норма '.AmountFormatter::trimmed($norm).' '.$p['unit'] : '')),
-                'unit' => $p['unit'],
-                'held' => AmountFormatter::trimmed($p['held']),
-                'norm' => null !== $norm ? AmountFormatter::trimmed($norm) : null,
-                'tone' => $this->heldTone($p['held'], $norm),
-                'facts' => $p['facts'],
-            ];
         }
 
         return $this->render('admin/compliance/person/issue.html.twig', [
@@ -243,7 +222,7 @@ final class IssueAction extends AbstractController
             'error' => $error,
             'units' => array_map(static fn (Unit $u): array => ['value' => $u->value, 'title' => $u->title()], Unit::cases()),
             // Параллельный блок списания на той же странице.
-            'heldPositions' => $heldPositions,
+            'canWriteOff' => $canWriteOff,
             'writeOffActs' => $writeOffActs,
         ]);
     }

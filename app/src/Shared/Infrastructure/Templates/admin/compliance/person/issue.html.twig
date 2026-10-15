@@ -3,7 +3,10 @@
 {% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
 {# Выдача доступна всегда; списание — параллельный блок на той же странице, показываем когда есть что списывать. #}
-{% set woPresent = heldPositions|default([]) is not empty or writeOffActs|default([]) is not empty %}
+{% set woPresent = canWriteOff|default(false) or writeOffActs|default([]) is not empty %}
+{# Статус-бейдж карточки позиции — тот же бакет/резолвер, что у дашборда (admin/compliance/dashboard/_person_detail.html.twig). #}
+{% set bucketBadge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
+{% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
    <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
@@ -63,17 +66,6 @@
             {% endfor %}
         {% endif %}
         <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="report-list-rows#remove"><i class="bi bi-trash"></i></button>
-    </div>
-{% endmacro %}
-
-{# Под-строка разбивки «Действующих позиций» по фактам выдачи: дата + на руках + пометка списания. #}
-{% macro wo_fact(f, unit, profileId) %}
-    <div class="p-2 mb-1 rounded-3 bg-body-tertiary d-flex flex-wrap align-items-center gap-2">
-        <div class="small">
-            Выдан: {{ f.date }}
-            {% if f.writeOffNote %}<span class="text-danger"> · {{ f.writeOffNote }}</span>{% endif %}
-        </div>
-        <div class="ms-auto small text-body-secondary">на руках <span class="fw-semibold text-body">{{ f.held }} {{ unit }}</span></div>
     </div>
 {% endmacro %}
 
@@ -146,15 +138,28 @@
                     {% endif %}
 
                     {% for o in rows %}
+                        {# Единая карточка позиции: EAGER-бейдж/норма/на руках/сроки (control) + EAGER-форма
+                           выдачи и LAZY-история (footer) — см. IssueAction PHPDoc. #}
                         {% embed 'admin/compliance/_item_card.html.twig' with {
                             name: o.label,
-                            meta: o.cadenceLabel ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : ''),
+                            meta: o.cadenceLabel
+                                ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : '')
+                                ~ (o.lastFulfilledAt ? ' · посл. ' ~ o.lastFulfilledAt : '')
+                                ~ (o.nextDueAt ? ' · след. ' ~ o.nextDueAt : ''),
                             attrs: 'data-row',
                             o: o, i: loop.index0, units: units, documentDate: documentDate,
                             s: inputData.items[loop.index0]|default({}),
                             instructionGroups: instructionGroups|default([]),
                             savedInstruction: o.savedInstruction|default({}),
                         } %}
+                            {% block control %}
+                                <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                    <span class="badge {{ bucketBadge[o.bucket] }} fw-normal"><i class="bi {{ bucketIcon[o.bucket] }} me-1"></i>{{ o.bucketLabel }}</span>
+                                    {% if o.type == 'material' %}
+                                        <span class="badge text-bg-{{ o.heldTone }} fw-normal">на руках {{ o.held }}{% if o.quantityValue %} / {{ o.quantityValue }}{% endif %} {{ o.unitTitle }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endblock %}
                             {% block footer %}
                                 <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
                                 {% if o.origin == 'personal' %}
@@ -236,6 +241,27 @@
                                         </div>
                                     {% endfor %}
                                 {% endif %}
+
+                                {# История позиции — LAZY: партиал фетчится на первое раскрытие (кэш в DOM), см.
+                                   obligation_history_controller.js. Без рамок — оттенком (bg-body-tertiary внутри
+                                   bg-body карточки) + report-block-toggle/chevron, как раскрытие актов ниже. #}
+                                <div class="w-100 mt-2">
+                                    <div class="small text-body-secondary d-inline-flex align-items-center gap-1 report-block-toggle" role="button"
+                                         data-bs-toggle="collapse" data-bs-target="#hist-{{ i }}" aria-expanded="false" aria-controls="hist-{{ i }}">
+                                        <i class="bi bi-clock-history"></i>История
+                                        <i class="bi bi-chevron-down report-block-chevron"></i>
+                                    </div>
+                                    <div class="collapse mt-2" id="hist-{{ i }}"
+                                         data-controller="obligation-history"
+                                         data-obligation-history-url-value="{{ path('app_cabinet_compliance_obligation_history', {profileId: profileId, requirementId: requirementId, obligationKey: o.key}) }}"
+                                         data-action="show.bs.collapse->obligation-history#load">
+                                        <div data-obligation-history-target="body">
+                                            <div class="p-3 rounded-3 bg-body-tertiary text-center text-body-secondary small">
+                                                <i class="bi bi-hourglass-split me-1"></i>Загрузка…
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             {% endblock %}
                         {% endembed %}
                     {% endfor %}
@@ -255,42 +281,21 @@
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             </form>
 
-            {# Списание — параллельный вход на той же странице. Показываем, когда есть действующие позиции/акты. #}
+            {# Списание — параллельный вход на той же странице. Показываем, когда есть что списывать/акты уже есть.
+               Разбивка по позициям (что на руках, когда выдано) — в единой карточке выше + её истории; тут
+               только точка входа «Списать» (по требованию, позицию выбирают на странице акта) + список актов. #}
             {% if woPresent %}
                 <div id="sec-writeoff" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                        <h2 class="h6 mb-0">Действующие позиции</h2>
-                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
-                        </form>
+                        <h2 class="h6 mb-0">Списание</h2>
+                        {% if canWriteOff %}
+                            <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                            </form>
+                        {% endif %}
                     </div>
                     <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — списание оформляется в акте списания</div>
-
-                    {% if heldPositions is empty %}
-                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих материальных позиций.</div>
-                    {% endif %}
-                    {% import 'admin/compliance/person/issue.html.twig' as wo %}
-                    {% for row in heldPositions %}
-                        {% set rid = 'wo-pos-' ~ loop.index0 %}
-                        <div class="p-3 mb-2 rounded-3 bg-body">
-                            <div class="d-flex flex-wrap align-items-center gap-2 report-block-toggle" role="button"
-                                 data-bs-toggle="collapse" data-bs-target="#{{ rid }}" aria-expanded="false">
-                                <div class="me-auto">
-                                    <div class="fw-semibold">{{ row.label }}</div>
-                                    {% if row.meta %}<div class="text-body-secondary small">{{ row.meta }}</div>{% endif %}
-                                </div>
-                                <div class="text-end">
-                                    <div class="small text-body-secondary mb-1">На руках</div>
-                                    <span class="badge text-bg-{{ row.tone }} fw-normal">{{ row.held }}{% if row.norm %} / {{ row.norm }}{% endif %} {{ row.unit }}</span>
-                                </div>
-                                <i class="bi bi-chevron-down ms-1 text-body-secondary report-block-chevron"></i>
-                            </div>
-                            <div class="collapse mt-2" id="{{ rid }}">
-                                {% for f in row.facts %}{{ wo.wo_fact(f, row.unit, profileId) }}{% endfor %}
-                            </div>
-                        </div>
-                    {% endfor %}
 
                     {% if writeOffActs is not empty %}
                         <h3 class="h6 mt-3 mb-2">Акты списания</h3>
@@ -313,6 +318,8 @@
                                 {% endfor %}
                             </div>
                         {% endfor %}
+                    {% else %}
+                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Актов списания пока нет.</div>
                     {% endif %}
                 </div>
             {% endif %}

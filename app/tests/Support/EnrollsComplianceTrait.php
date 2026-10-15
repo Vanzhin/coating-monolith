@@ -30,8 +30,13 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  */
 trait EnrollsComplianceTrait
 {
-    /** @return array{profileId: string, requirementId: string, key: string} */
-    private function enrollCompliance(string $itemLabel = 'Перчатки', ?string $userUlid = null): array
+    /**
+     * @param list<array<string, mixed>> $extraItems Доп. позиции той же нормы (без $itemLabel в возврате —
+     *                                               их ключ детерминирован, {@see TrackedObligation::keyOf}).
+     *
+     * @return array{profileId: string, requirementId: string, key: string}
+     */
+    private function enrollCompliance(string $itemLabel = 'Перчатки', ?string $userUlid = null, array $extraItems = []): array
     {
         $bus = static::getContainer()->get(CommandBusInterface::class);
 
@@ -52,7 +57,10 @@ trait EnrollsComplianceTrait
 
         $req = $bus->execute(new SaveRequirementCommand(
             null, 'Личная карточка учёта выдачи СИЗ', 'material', [$pos->id],
-            [['label' => $itemLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5']],
+            [
+                ['label' => $itemLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ...$extraItems,
+            ],
         ));
         \assert($req instanceof SaveRequirementCommandResult);
 

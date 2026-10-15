@@ -111,6 +111,23 @@ final class IssueActionTest extends WebTestCase
         self::assertEqualsWithDelta(15.0, $pc->heldOf($k), 1e-9, 'замена записана в журнал: на руках выросло сверх нормы (10 + 5)');
     }
 
+    public function test_item_card_shows_status_badge_and_lazy_history_toggle(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('не выдано', $html, 'единая карточка: статус-бейдж того же бакета, что у дашборда (Missing — дефицит)');
+        self::assertStringContainsString('История', $html, 'ленивый тоггл истории позиции присутствует в карточке');
+        self::assertStringContainsString(
+            sprintf('/cabinet/compliance/person/%s/requirement/%s/obligation/', $p, $r),
+            $html,
+            'url партиала истории зашит в data-атрибут карточки',
+        );
+    }
+
     public function test_writeoff_entry_available_when_something_is_issued(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
