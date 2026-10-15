@@ -67,9 +67,10 @@ class TrackedObligation
         $this->mode = $mode;
     }
 
-    public static function keyOf(string $requirementId, string $label): string
+    /** `$suffix` — стабильный itemId позиции (не человекочитаемый label), регистр не нормализуем. */
+    public static function keyOf(string $requirementId, string $suffix): string
     {
-        return $requirementId.'|'.mb_strtolower(trim($label));
+        return $requirementId.'|'.trim($suffix);
     }
 
     /** Принадлежность ключа обязанности требованию (формат ключа — знание домена, наружу не отдаём). */
