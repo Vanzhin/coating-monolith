@@ -127,15 +127,16 @@ export default class extends Controller {
         m.querySelector('[data-role="subtitle"]').textContent = subtitle;
         this.listTarget.innerHTML = '';
         items.forEach(({ label, qty }) => {
+            // Каждая позиция — отдельный «тонутый» блок (как строки истории/списания): имя слева, количество чипом справа.
             const li = document.createElement('li');
-            li.className = 'd-flex align-items-center gap-2';
-            const dot = document.createElement('i');
-            dot.className = 'bi bi-dot';
-            li.appendChild(dot);
-            li.appendChild(document.createTextNode(label));
+            li.className = 'd-flex justify-content-between align-items-center gap-2 p-2 rounded-3 bg-body-tertiary';
+            const name = document.createElement('span');
+            name.className = 'fw-medium text-break';
+            name.textContent = label;
+            li.appendChild(name);
             if (qty) {
                 const q = document.createElement('span');
-                q.className = 'ms-auto text-body-secondary small';
+                q.className = 'badge bg-body text-body-secondary fw-normal flex-shrink-0';
                 q.textContent = qty;
                 li.appendChild(q);
             }
