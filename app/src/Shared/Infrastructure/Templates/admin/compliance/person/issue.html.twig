@@ -2,8 +2,11 @@
 
 {% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
-{# Выдача доступна всегда; списание — параллельный блок на той же странице, показываем когда есть что списывать. #}
-{% set woPresent = canWriteOff|default(false) or writeOffActs|default([]) is not empty %}
+{# Выдача доступна всегда; списание — параллельный блок. Показываем секцию, когда есть что списывать (held) или
+   есть открытый черновик акта (корзина) — его единственного тут и показываем; оформленные акты доступны ссылкой
+   из истории позиции, списком их больше не дублируем. #}
+{% set draftAct = (writeOffActs|default([]))|filter(a => not a.signed)|first %}
+{% set woPresent = canWriteOff|default(false) or draftAct is not null %}
 {# Статус-бейдж карточки позиции — тот же бакет/резолвер, что у дашборда (admin/compliance/dashboard/_person_detail.html.twig). #}
 {% set bucketBadge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
 {% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
@@ -312,31 +315,17 @@
                             </form>
                         {% endif %}
                     </div>
-                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — списание оформляется в акте списания</div>
+                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — оформленные акты списания видны в истории позиции</div>
 
-                    {% if writeOffActs is not empty %}
-                        <h3 class="h6 mt-3 mb-2">Акты списания</h3>
-                        {% for a in writeOffActs %}
-                            <div class="p-3 mb-2 rounded-3 bg-body">
-                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <span class="badge {{ a.signed ? 'text-bg-success' : 'text-bg-secondary' }}">
-                                        <i class="bi {{ a.signed ? 'bi-lock-fill' : 'bi-file-earmark-text' }} me-1"></i>{{ a.signed ? 'Оформлен' : 'Черновик' }}{% if a.actNumber %} · № {{ a.actNumber }}{% endif %}
-                                    </span>
-                                    <div class="ms-auto d-flex flex-wrap gap-2">
-                                        <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-pencil-square me-1"></i>Открыть акт</a>
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-file-earmark-word me-1"></i>Скачать</a>
-                                        {% if a.signed %}
-                                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: a.id}) }}"><i class="bi bi-download me-1"></i>Скан</a>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% for it in a.items %}
-                                    <div class="text-body-secondary small">{{ it.label }}{% if it.reason %} — {{ it.reason }}{% endif %}</div>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Актов списания пока нет.</div>
+                    {# Только открытый черновик (корзина) — ссылка на оформление; оформленные акты — из истории позиции. #}
+                    {% if draftAct %}
+                        <div class="d-flex flex-wrap align-items-center gap-2 p-3 rounded-3 bg-body">
+                            <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик акта списания</span>
+                            <span class="text-body-secondary small">позиций: {{ draftAct.itemCount }}</span>
+                            <a class="btn btn-soft-success btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: draftAct.id}) }}">
+                                <i class="bi bi-pencil-square me-1"></i>Оформить
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             {% endif %}

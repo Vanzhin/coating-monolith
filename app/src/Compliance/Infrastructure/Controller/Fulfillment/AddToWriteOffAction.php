@@ -7,6 +7,7 @@ namespace App\Compliance\Infrastructure\Controller\Fulfillment;
 use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,6 +38,10 @@ final class AddToWriteOffAction extends AbstractController
         try {
             $this->commandBus->execute(new AddToWriteOffDraftCommand($profileId, $requirementId, $keys));
             $this->addFlash('success', 'Выбранные позиции добавлены в акт списания.');
+        } catch (OptimisticLockException) {
+            // Акт правили параллельно (двойной клик / другое окно): версия агрегата разошлась. Данные целы
+            // (дублей/второго черновика нет) — просим обновить и повторить вместо 500.
+            $this->addFlash('warning', 'Акт списания только что изменился в другом окне. Обновите страницу и повторите.');
         } catch (AppException $e) {
             $this->addFlash('danger', $e->getMessage());
         }

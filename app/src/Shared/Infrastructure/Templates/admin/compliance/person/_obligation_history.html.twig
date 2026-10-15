@@ -24,7 +24,7 @@
                         {% if e.quantityLabel %}<span class="small">{{ e.quantityLabel }}</span>{% endif %}
                     </div>
                     <div class="small text-body-secondary mt-1">
-                        {{ e.reason ?? 'причина не указана' }}{% if e.actNumber %} · акт № {{ e.actNumber }}{% endif %}
+                        {{ e.reason ?? 'причина не указана' }}{% if e.actId %} · <a href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: e.actId}) }}">акт{% if e.actNumber %} № {{ e.actNumber }}{% endif %}</a>{% endif %}
                     </div>
                 {% endif %}
             </div>

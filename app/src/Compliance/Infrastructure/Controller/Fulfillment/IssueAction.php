@@ -16,6 +16,7 @@ use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Exception\AppException;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -67,6 +68,10 @@ final class IssueAction extends AbstractController
                 $this->addFlash('success', 'Выдача записана в журнал.');
 
                 return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
+            } catch (OptimisticLockException) {
+                // Параллельная правка (двойной сабмит / другое окно): версия агрегата разошлась — данные целы,
+                // просим обновить и повторить вместо 500.
+                return $this->renderForm($profileId, $requirementId, 'Данные только что изменились в другом окне. Обновите страницу и повторите.', $inputData);
             } catch (AppException $e) {
                 return $this->renderForm($profileId, $requirementId, $e->getMessage(), $inputData);
             }
@@ -214,22 +219,20 @@ final class IssueAction extends AbstractController
             }
         }
 
-        // Акты списания по требованию — список снизу страницы (аккордеон).
+        // Акты списания по требованию: в секции показываем только открытый черновик (корзину) — его состав
+        // уточняют/оформляют на странице акта; оформленные акты доступны ссылкой из истории позиции. Поэтому
+        // тут достаточно id/флага/числа позиций, без резолва меток.
         $writeOffActs = [];
         if (null !== $profileCompliance) {
             foreach ($profileCompliance->getWriteOffActs() as $act) {
                 if ($act->requirementId() !== $requirementId) {
                     continue;
                 }
-                $items = [];
-                foreach ($profileCompliance->itemsOfWriteOffAct($act->getId()) as $portion) {
-                    $fact = $profileCompliance->recordById($portion->recordId());
-                    $items[] = [
-                        'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
-                        'reason' => $portion->reason()?->title(),
-                    ];
-                }
-                $writeOffActs[] = ['id' => $act->getId(), 'signed' => $act->isSigned(), 'actNumber' => $act->actNumber(), 'items' => $items];
+                $writeOffActs[] = [
+                    'id' => $act->getId(),
+                    'signed' => $act->isSigned(),
+                    'itemCount' => count($profileCompliance->itemsOfWriteOffAct($act->getId())),
+                ];
             }
         }
 

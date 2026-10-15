@@ -43,6 +43,7 @@ final class ObligationHistoryAction extends AbstractController
 
         return $this->render('admin/compliance/person/_obligation_history.html.twig', [
             'events' => $result->events,
+            'profileId' => $profileId, // для ссылки на страницу акта из события списания
         ]);
     }
 }
