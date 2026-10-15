@@ -25,6 +25,4 @@ final class ObligationHistoryEventDTO
     public ?string $actNumber = null;
     /** Только у списания — id акта (ссылка на страницу акта). */
     public ?string $actId = null;
-    /** Только у списания — акт оформлен (true) или ещё черновик (false). */
-    public bool $actSigned = false;
 }

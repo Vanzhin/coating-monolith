@@ -49,6 +49,9 @@ final readonly class GetObligationHistoryQueryHandler implements QueryHandlerInt
             if ($act->requirementId() !== $query->requirementId) {
                 continue;
             }
+            if (!$act->isSigned()) {
+                continue; // история — только факты (выдано/списано); неподписанный черновик акта не показываем
+            }
             foreach ($profileCompliance->itemsOfWriteOffAct($act->getId()) as $item) {
                 $record = $recordsById[$item->recordId()] ?? null;
                 if (null === $record) {
@@ -88,7 +91,6 @@ final readonly class GetObligationHistoryQueryHandler implements QueryHandlerInt
         $event->reason = $item->reason()?->title();
         $event->actNumber = $act->actNumber();
         $event->actId = $act->getId();
-        $event->actSigned = $act->isSigned();
 
         return $event;
     }

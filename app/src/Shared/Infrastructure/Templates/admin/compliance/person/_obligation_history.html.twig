@@ -19,7 +19,7 @@
                 {% else %}
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <i class="bi bi-box-arrow-up text-danger"></i>
-                        <span class="fw-medium">{{ e.actSigned ? 'Списано' : 'К списанию (черновик акта)' }}</span>
+                        <span class="fw-medium">Списано</span>
                         <span class="text-body-secondary small tnum">{{ e.date|date('d.m.Y') }}</span>
                         {% if e.quantityLabel %}<span class="small">{{ e.quantityLabel }}</span>{% endif %}
                     </div>

@@ -65,7 +65,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         self::assertNull($event->reason, 'причина — только у списания');
     }
 
-    public function test_draft_write_off_appears_as_unsigned_event(): void
+    public function test_draft_write_off_excluded_from_history(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
@@ -79,13 +79,9 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
 
         $result = $this->history($p, $r, $k);
 
-        self::assertCount(2, $result->events, 'выдача + черновик списания — обе в ленте');
-        $writeOff = $result->events[1];
-        self::assertSame(ObligationHistoryEventDTO::TYPE_WRITE_OFF, $writeOff->type);
-        self::assertSame('2026-07-01', $writeOff->date);
-        self::assertFalse($writeOff->actSigned, 'акт пока черновик — эффекта нет, но порция уже видна в истории');
-        self::assertSame('Физический износ', $writeOff->reason);
-        self::assertStringContainsString('1', (string) $writeOff->quantityLabel);
+        // История — только факты (выдано/списано). Неподписанный черновик акта в ленту не попадает.
+        self::assertCount(1, $result->events, 'в ленте только выдача — черновик списания не показываем');
+        self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[0]->type);
     }
 
     public function test_signed_write_off_event_chronological_after_issuance_and_carries_act_number(): void
@@ -111,7 +107,6 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         $writeOff = $result->events[1];
         self::assertSame(ObligationHistoryEventDTO::TYPE_WRITE_OFF, $writeOff->type);
         self::assertSame('2026-08-10', $writeOff->date, 'хронологически после выдачи — позже по дате акта');
-        self::assertTrue($writeOff->actSigned);
         self::assertSame('39', $writeOff->actNumber);
     }
 
