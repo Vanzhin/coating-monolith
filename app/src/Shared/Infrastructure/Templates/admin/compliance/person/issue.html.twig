@@ -143,6 +143,7 @@
                         {% embed 'admin/compliance/_item_card.html.twig' with {
                             name: o.label,
                             attrs: 'data-row',
+                            toggle: 'issue-' ~ loop.index0, expanded: o.expanded,
                             o: o, i: loop.index0, units: units, documentDate: documentDate,
                             s: inputData.items[loop.index0]|default({}),
                             instructionGroups: instructionGroups|default([]),
@@ -168,6 +169,9 @@
                                         <i class="bi bi-trash me-1"></i>Убрать позицию
                                     </button>
                                 {% endif %}
+                                {# Поля выдачи — сворачиваемы; шапка карточки кликабельна (тоггл в _item_card).
+                                   По умолчанию раскрыто у позиций с данными (o.expanded). #}
+                                <div class="collapse{{ o.expanded ? ' show' : '' }}" id="issue-{{ i }}" data-issue-fields>
                                 <div class="row g-2 w-100">
                                     <div class="col-12">
                                         <label class="form-label small mb-1">Наименование</label>
@@ -242,6 +246,7 @@
                                         </div>
                                     {% endfor %}
                                 {% endif %}
+                                </div>{# /collapse #issue — поля выдачи #}
 
                                 {# История позиции — LAZY: партиал фетчится на первое раскрытие (кэш в DOM), см.
                                    obligation_history_controller.js. Без рамок — оттенком (bg-body-tertiary внутри

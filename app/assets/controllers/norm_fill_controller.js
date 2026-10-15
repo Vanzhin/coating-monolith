@@ -19,10 +19,23 @@ export default class extends Controller {
             if (el.dataset.normAmount) {
                 el.value = el.dataset.normAmount;
                 this._mark(el);
+                this._expandRowIfPositive(el); // проставилось кол-во → раскрываем свёрнутую карточку выдачи
             }
         });
         // заполнение — тоже изменение: пересчитываем след. выдачу по всем строкам
         this.element.querySelectorAll('[data-issue-date]').forEach((el) => this._nextDue(el));
+    }
+
+    // раскрыть collapse с полями выдачи этой строки, если в поле кол-ва положительное число
+    _expandRowIfPositive(amountEl) {
+        const val = parseFloat((amountEl.value || '').replace(',', '.'));
+        if (!(val > 0)) {
+            return;
+        }
+        const fields = amountEl.closest('[data-row]')?.querySelector('[data-issue-fields]');
+        if (fields && window.bootstrap) {
+            window.bootstrap.Collapse.getOrCreateInstance(fields, { toggle: false }).show();
+        }
     }
 
     check(event) {

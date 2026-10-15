@@ -179,6 +179,13 @@ final class IssueAction extends AbstractController
         foreach ($issueRows as $i => $issueRow) {
             $submitted = (array) ($submittedItems[$i] ?? []);
             $issueRows[$i]['savedInstruction'] = (array) ($submitted['instruction'] ?? []);
+            // Поля выдачи раскрыты по умолчанию, только если есть что выдавать: присланное/предзаполненное
+            // количество > 0 (материальные с дефицитом) или заполнены поля инструктажа (нематериальные,
+            // ре-рендер после ошибки). «В норме» (дефицит 0) — свёрнуто.
+            $amountForExpand = str_replace(',', '.', (string) ($submitted['amount'] ?? $issueRow['deficitValue'] ?? ''));
+            $hasAmount = is_numeric($amountForExpand) && (float) $amountForExpand > 0.0;
+            $hasInstruction = [] !== array_filter($issueRows[$i]['savedInstruction'], static fn ($v): bool => '' !== (string) $v);
+            $issueRows[$i]['expanded'] = $hasAmount || $hasInstruction;
         }
         $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
 

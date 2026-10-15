@@ -1,16 +1,20 @@
 {#
   Единая карточка позиции СИЗ — один вид во всех актах (выдача/списание).
-  Переменные: name (строка), meta (строка, опц.), attrs (строка атрибутов обёртки, опц. — напр. data-row).
+  Переменные: name (строка), meta (строка, опц.), attrs (строка атрибутов обёртки, опц. — напр. data-row),
+    toggle (id целевого collapse, опц. — делает ШАПКУ кликабельной: клик по имени/бейджам раскрывает/сворачивает
+    этот collapse; показывает шеврон), expanded (bool, опц. — стартовое состояние шапки при toggle).
   Блоки: meta (подпись под наименованием; дефолт — строка meta, можно переопределить на значки), control (правый контрол — поле/бейдж), footer (на всю ширину — причина/поля; опц.).
   Раскладка: ряд «имя + control» — отдельный flex БЕЗ переноса; колонка имени сжимается (overflow-hidden → flex-min 0 + text-break), поэтому control держится справа даже при длинном имени (НЕ уезжает вниз). footer — блоком под рядом (на всю ширину), рендерится только если непустой.
 #}
+{% set clickable = toggle is defined and toggle %}
 <div class="p-3 mb-2 rounded-3 bg-body"{% if attrs is defined and attrs %} {{ attrs|raw }}{% endif %}>
-    <div class="d-flex align-items-start gap-2">
+    <div class="d-flex align-items-start gap-2{% if clickable %} report-block-toggle{% endif %}"{% if clickable %} data-bs-toggle="collapse" data-bs-target="#{{ toggle }}" role="button" aria-expanded="{{ (expanded|default(false)) ? 'true' : 'false' }}" aria-controls="{{ toggle }}"{% endif %}>
         <div class="me-auto overflow-hidden">
             <div class="fw-semibold text-break">{{ name }}</div>
             {% block meta %}{% if meta is defined and meta %}<div class="text-body-secondary small">{{ meta }}</div>{% endif %}{% endblock %}
         </div>
         {% block control %}{% endblock %}
+        {% if clickable %}<i class="bi bi-chevron-down report-block-chevron mt-1"></i>{% endif %}
     </div>
     {% set footerHtml %}{% block footer %}{% endblock %}{% endset %}
     {% if footerHtml|trim %}<div class="mt-2">{{ footerHtml|raw }}</div>{% endif %}
