@@ -151,7 +151,7 @@
                             toggle: 'issue-' ~ loop.index0, expanded: o.selected,
                             select_name: 'items[' ~ loop.index0 ~ '][selected]',
                             select_checked: o.selected,
-                            select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle click->issue-selection#stop" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '"',
+                            select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle click->issue-selection#stop" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '" data-held="' ~ o.held ~ '" data-unit-title="' ~ (o.unitTitle ?? '')|e('html_attr') ~ '"',
                             o: o, i: loop.index0, units: units, documentDate: documentDate,
                             s: inputData.items[loop.index0]|default({}),
                             instructionGroups: instructionGroups|default([]),
@@ -197,7 +197,7 @@
                                             <label class="form-label small mb-1">Кол-во</label>
                                             <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
                                                    value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
-                                                   data-norm-amount="{{ o.quantityValue }}" data-unit-title="{{ o.unitTitle }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
+                                                   data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
                                         </div>
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">Ед.</label>
@@ -341,9 +341,18 @@
                 </div>
             {% endif %}
 
-            {# Подтверждение групповой выдачи: список выбранных позиций + кнопка. Один компонент (как delete_modal),
-               наполняется контроллером issue-selection; без JS не нужен — кнопка савбара сабмитит форму напрямую. #}
+            {# Подтверждение группового действия (выдача/списание): список выбранных позиций + кнопка. Один компонент
+               (как delete_modal), наполняется контроллером issue-selection. #}
             {% include 'components/selection_confirm_modal.html.twig' %}
+
+            {% if canWriteOff %}
+                {# Скрытая форма «Списать выбранные»: контроллер issue-selection кладёт сюда keys[] выбранных позиций
+                   и сабмитит (JS-улучшение; без JS списание — через «Списать» в секции ниже, на странице акта). #}
+                <form id="writeoff-add-form" method="post" class="d-none"
+                      action="{{ path('app_cabinet_compliance_writeoff_add', {profileId: profileId, requirementId: requirementId}) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                </form>
+            {% endif %}
         {% endblock %}
 
         {% block savebar_extra %}
@@ -353,6 +362,13 @@
                     data-action="click->issue-selection#confirmIssue">
                 <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="count">0</span>)
             </button>
+            {% if canWriteOff %}
+                {# Списание выбранных — наполнение корзины (черновик акта). JS-улучшение: без JS списание доступно
+                   через «Списать» в секции ниже (страница акта). #}
+                <button type="button" class="btn btn-outline-danger" data-action="issue-selection#confirmWriteoff">
+                    <i class="bi bi-box-arrow-up me-1"></i>Списать выбранные (<span data-issue-selection-target="count">0</span>)
+                </button>
+            {% endif %}
         {% endblock %}
     {% endembed %}
 {% endblock %}

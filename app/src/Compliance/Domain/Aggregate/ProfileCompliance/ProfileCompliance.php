@@ -317,6 +317,42 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
+     * «Списать выбранные» с карточки выдачи — наполнение корзины: в открытый черновик акта списания по требованию
+     * (создаёт, если открытого нет) добавляет held-факты указанных позиций порциями (полное количество на руках,
+     * причина пустая — укажут на странице акта). Уже добавленные факты не дублирует. Возвращает id акта.
+     *
+     * @param list<string> $obligationKeys
+     */
+    public function addObligationsToWriteOffDraft(Uuid $candidateActId, string $requirementId, array $obligationKeys, \DateTimeImmutable $now): string
+    {
+        $actId = $this->startOrGetWriteOffDraft($candidateActId, $requirementId, $now);
+        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
+
+        $portions = [];
+        $alreadyIn = [];
+        foreach ($act->items() as $item) {
+            $portions[] = ['recordId' => $item->recordId(), 'quantity' => $item->quantity(), 'reason' => $item->reason()];
+            $alreadyIn[$item->recordId()] = true;
+        }
+
+        $wanted = array_fill_keys($obligationKeys, true);
+        foreach ($this->recordsForRequirement($requirementId) as $record) {
+            if (!isset($wanted[$record->obligationKey()]) || !$this->isIssued($record) || $record->heldAmount() <= 0.0) {
+                continue;
+            }
+            if (isset($alreadyIn[$record->getId()])) {
+                continue; // факт уже в корзине — не дублируем
+            }
+            $portions[] = ['recordId' => $record->getId(), 'quantity' => $record->heldAmount(), 'reason' => null];
+            $alreadyIn[$record->getId()] = true;
+        }
+
+        $act->replacePortions($portions, $now);
+
+        return $actId;
+    }
+
+    /**
      * Сохранить состав акта списания (на его странице, пока черновик): каждая строка — факт + количество к
      * списанию + причина. Set-семантика: заменяет весь состав. Количество не больше, чем на руках по факту.
      * Эффекта нет — он при оформлении акта ({@see signWriteOffAct}).

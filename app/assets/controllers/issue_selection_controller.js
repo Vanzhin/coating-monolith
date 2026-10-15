@@ -44,24 +44,61 @@ export default class extends Controller {
         this._modal().show();
     }
 
+    // «Списать выбранные»: подтверждение со списком (количество = на руках); только JS (без JS — «Списать» ниже)
+    confirmWriteoff(event) {
+        event.preventDefault();
+        const items = this._selectedItems('held');
+        if (items.length === 0) {
+            return;
+        }
+        this.kind = 'writeoff';
+        this._fillModal('Списать выбранные', `Добавить в акт списания — позиций: ${items.length}`, items);
+        this._modal().show();
+    }
+
     confirm() {
         this._modal().hide();
-        if (this.kind === 'issue') {
+        if (this.kind === 'writeoff') {
+            this._submitWriteoff();
+        } else {
             document.getElementById('issue-form')?.requestSubmit();
         }
+    }
+
+    // кладём ключи выбранных позиций в скрытую форму списания и сабмитим (наполнение корзины-акта)
+    _submitWriteoff() {
+        const form = document.getElementById('writeoff-add-form');
+        if (!form) {
+            return;
+        }
+        form.querySelectorAll('input[name="keys[]"]').forEach((el) => el.remove());
+        this._selected().forEach((cb) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'keys[]';
+            input.value = cb.dataset.key || '';
+            form.appendChild(input);
+        });
+        form.requestSubmit();
     }
 
     _selected() {
         return this.checkTargets.filter((cb) => cb.checked);
     }
 
-    // отмеченные позиции с их текущим количеством (из поля «Кол-во» строки) — для списка в модалке
-    _selectedItems() {
+    // отмеченные позиции с количеством для списка в модалке: source 'amount' — из поля «Кол-во» (выдача),
+    // 'held' — на руках из data-атрибута (списание). Единица — с чекбокса.
+    _selectedItems(source = 'amount') {
         return this._selected().map((cb) => {
-            const amountEl = cb.closest('[data-row]')?.querySelector('input[name$="[amount]"]');
-            const amount = amountEl ? (amountEl.value || '').trim() : '';
-            const unit = amountEl?.dataset.unitTitle || '';
-            return { label: cb.dataset.label || '', qty: amount !== '' ? `${amount} ${unit}`.trim() : '' };
+            const unit = cb.dataset.unitTitle || '';
+            let value = '';
+            if (source === 'held') {
+                value = (cb.dataset.held || '').trim();
+            } else {
+                const amountEl = cb.closest('[data-row]')?.querySelector('input[name$="[amount]"]');
+                value = amountEl ? (amountEl.value || '').trim() : '';
+            }
+            return { label: cb.dataset.label || '', qty: value !== '' ? `${value} ${unit}`.trim() : '' };
         });
     }
 
