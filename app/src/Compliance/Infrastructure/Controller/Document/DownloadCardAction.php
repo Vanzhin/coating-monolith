@@ -22,17 +22,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Скачать заполненный бланк карточки по (человек × требование): печать → подпись → приложить скан.
- * Печатает ВЕСЬ журнал фактов требования (не привязан к конкретному акту). Путь с documentId сохранён ради
- * старых ссылок со страницы «Акты» — id документа больше не влияет на содержимое карточки.
+ * Печатает ВЕСЬ журнал фактов требования (не привязан к конкретному акту).
  */
 #[Route(
     path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/card',
     name: 'app_cabinet_compliance_card_download',
-    methods: ['GET'],
-)]
-#[Route(
-    path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/document/{documentId}/card',
-    name: 'app_cabinet_compliance_document_card_download',
     methods: ['GET'],
 )]
 final class DownloadCardAction extends AbstractController

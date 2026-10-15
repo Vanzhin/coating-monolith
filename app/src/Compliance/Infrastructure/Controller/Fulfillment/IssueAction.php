@@ -180,14 +180,10 @@ final class IssueAction extends AbstractController
             $normByKey[$o->key] = null !== $o->quantityValue ? (float) $o->quantityValue : null;
         }
 
-        // Акты: подписанные карточки выдачи + акты списания; попутно карта списаний по факту recordId → [{№, кол-во}].
-        $signedActs = [];
+        // Акты списания по требованию; попутно карта списаний по факту recordId → [{№, кол-во}].
         $writeOffActs = [];
         $writeOffsByRecord = [];
         if (null !== $profileCompliance) {
-            foreach ($profileCompliance->signedDocumentsFor($requirementId) as $doc) {
-                $signedActs[] = ['documentId' => $doc->getId(), 'signedAt' => $doc->signedAt()?->format('d.m.Y')];
-            }
             foreach ($profileCompliance->getWriteOffActs() as $act) {
                 if ($act->requirementId() !== $requirementId) {
                     continue;
@@ -232,7 +228,6 @@ final class IssueAction extends AbstractController
             $positions[$key]['facts'][] = [
                 'date' => $record->fulfilledAt()->format('d.m.Y'),
                 'held' => AmountFormatter::trimmed($held),
-                'documentId' => $record->documentId(),
                 'writeOffNote' => implode('; ', $notes),
             ];
         }
@@ -251,8 +246,8 @@ final class IssueAction extends AbstractController
             ];
         }
 
-        if ([] === $signedActs && [] === $rows && [] === $writeOffActs) {
-            $this->addFlash('warning', 'По требованию нет ни черновика, ни выданных позиций.');
+        if ([] === $rows && [] === $writeOffActs) {
+            $this->addFlash('warning', 'По требованию нет выданных позиций.');
 
             return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
         }
@@ -265,7 +260,6 @@ final class IssueAction extends AbstractController
             'profile' => $profileResult->profile,
             'rows' => $rows,
             'openBasketId' => $openBasketId,
-            'signedActs' => $signedActs,
             'writeOffActs' => $writeOffActs,
         ]);
     }

@@ -6,8 +6,7 @@ namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\Service\RequirementCardProjector;
-use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
-use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
@@ -136,16 +135,10 @@ final class CardDownloadControllerTest extends WebTestCase
         $em = $this->client->getContainer()->get(EntityManagerInterface::class);
 
         // Выдать карточку: модель/марка (note) + кол-во 12 при норме 10 — значения разойдутся, чтобы доказать,
-        // что стр. 1 берёт норму (10), а стр. 2 — факт (12).
-        $bus->execute(new FormDraftCommand($p, $r));
-        $em->clear();
-        $draftId = $repo->findByProfile($p)?->openDraftFor($r)?->getId();
-        self::assertNotNull($draftId);
-        $bus->execute(new SaveDraftCommand(
-            $p, $draftId, '2026-06-01',
+        // что стр. 1 берёт норму (10), а стр. 2 — факт (12). Прямая запись в журнал (без черновика/подписи).
+        $bus->execute(new RecordIssuanceCommand(
+            $p, $r, '2026-06-01',
             [['obligationKey' => $k, 'amount' => '12', 'unit' => 'pair', 'note' => 'Jeta Safety JP711, кл.II']],
-            'К-1', 'Петров П. П.',
-            $this->stageComplianceScan(),
         ));
         $em->clear();
 
@@ -196,8 +189,8 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('01.07.2026', $row['return_date']);
         self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
 
-        // № карточки/ответственный — реквизиты акта-документа; журнал печатается без них, даже если акт их нёс
-        // (здесь подписанный акт имел № «К-1» / «Петров П. П.» — в карточке они не должны всплыть).
+        // № карточки/ответственный — реквизиты акта-документа; журнал пишется прямой записью без них, поэтому
+        // в карточке эти плейсхолдеры пустые.
         $cardNumber = $data->get('card_number');
         $responsibleFio = $data->get('responsible_fio');
         self::assertInstanceOf(TextValue::class, $cardNumber);
@@ -206,28 +199,21 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('', $responsibleFio->value);
     }
 
-    public function test_card_prints_whole_journal_regardless_of_which_document_route_is_used(): void
+    public function test_card_prints_whole_journal_of_requirement(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance('Перчатки');
-        // Первый акт выдачи с моделью «AAA». Затем списываем всё (дефицит) и делаем ВТОРОЙ акт с моделью «BBB».
-        // Инвариант «на руках ≥ норма» не даёт частичную выдачу, поэтому два акта — только через списание между ними.
-        $firstDocId = $this->issueCardWithNote($p, $r, $k, 'AAA');
+        // Первый факт выдачи с моделью «AAA». Затем списываем всё (дефицит) и делаем ВТОРОЙ факт с моделью «BBB».
+        // Инвариант «на руках ≥ норма» не даёт частичную выдачу, поэтому два факта — только через списание между ними.
+        $this->issueCardWithNote($p, $r, $k, 'AAA');
         $this->writeOffAllSigned($p, $r);
         $this->issueCardWithNote($p, $r, $k, 'BBB');
 
-        // Карточка печатает ВЕСЬ журнал фактов требования — оба факта видны независимо от того, каким
-        // маршрутом её скачали (плоский или «по документу» — старая ссылка со страницы «Акты»).
-        $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/document/%s/card', $p, $r, $firstDocId));
-        self::assertResponseIsSuccessful();
-        $textByDocument = $this->docxText((string) $this->client->getResponse()->getContent());
-        self::assertStringContainsString('AAA', $textByDocument, 'в журнале виден факт первого акта');
-        self::assertStringContainsString('BBB', $textByDocument, 'id документа в URL больше не фильтрует журнал — виден и второй факт');
-
+        // Карточка печатает ВЕСЬ журнал фактов требования — видны оба факта.
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/card', $p, $r));
         self::assertResponseIsSuccessful();
-        $textPlain = $this->docxText((string) $this->client->getResponse()->getContent());
-        self::assertStringContainsString('AAA', $textPlain);
-        self::assertStringContainsString('BBB', $textPlain, 'плоский маршрут печатает тот же журнал целиком');
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('AAA', $text, 'в журнале виден факт первого акта');
+        self::assertStringContainsString('BBB', $text, 'в журнале виден и второй факт');
     }
 
     /** Списать всё на руках по требованию одним подписанным актом списания (чтобы образовался дефицит под новый акт). */
@@ -260,26 +246,14 @@ final class CardDownloadControllerTest extends WebTestCase
             ->rebuild(profileIds: new StringCollection($profileId));
     }
 
-    /** Выдать карточку с моделью (note) на позиции и вернуть id подписанного документа. */
-    private function issueCardWithNote(string $profileId, string $requirementId, string $key, string $note): string
+    /** Выдать карточку с моделью (note) на позиции — прямая запись факта в журнал. */
+    private function issueCardWithNote(string $profileId, string $requirementId, string $key, string $note): void
     {
-        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
-        $repo = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class);
-        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
-
-        $bus->execute(new FormDraftCommand($profileId, $requirementId));
-        $em->clear();
-        $draftId = $repo->findByProfile($profileId)?->openDraftFor($requirementId)?->getId();
-        self::assertNotNull($draftId);
-        $bus->execute(new SaveDraftCommand(
-            $profileId, $draftId, '2026-06-01',
+        $this->client->getContainer()->get(CommandBusInterface::class)->execute(new RecordIssuanceCommand(
+            $profileId, $requirementId, '2026-06-01',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair', 'note' => $note]],
-            'К-1', 'Петров П. П.',
-            $this->stageComplianceScan(),
         ));
-        $em->clear();
-
-        return $draftId;
+        $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
     }
 
     private function docxText(string $bytes): string
@@ -297,14 +271,14 @@ final class CardDownloadControllerTest extends WebTestCase
     public function test_dashboard_person_and_issue_pages_render(): void
     {
         ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->enrollCompliance();
-        $this->client->getContainer()->get(CommandBusInterface::class)->execute(new FormDraftCommand($profileId, $requirementId));
 
         $this->client->request('GET', '/cabinet/compliance/requirements');
         self::assertResponseIsSuccessful();
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/preview', $profileId));
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('a[href*="/compliance/acts"]'); // модалка — read-only + кнопка «Акты»
+        self::assertSelectorExists('#personPreview-'.$profileId); // модалка быстрого просмотра рендерится
+        self::assertSelectorNotExists('a[href*="/compliance/acts"]'); // экрана «Акты» больше нет
 
         $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();

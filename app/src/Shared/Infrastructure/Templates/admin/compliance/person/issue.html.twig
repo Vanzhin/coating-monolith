@@ -65,11 +65,11 @@
     </div>
 {% endmacro %}
 
-{# Под-строка разбивки «Действующих позиций» по актам выдачи: дата (ссылка на скан акта) + на руках + пометка списания. #}
+{# Под-строка разбивки «Действующих позиций» по фактам выдачи: дата + на руках + пометка списания. #}
 {% macro wo_fact(f, unit, profileId) %}
     <div class="p-2 mb-1 rounded-3 bg-body-tertiary d-flex flex-wrap align-items-center gap-2">
         <div class="small">
-            Выдан: {% if f.documentId %}<a href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: f.documentId}) }}">{{ f.date }}</a>{% else %}{{ f.date }}{% endif %}
+            Выдан: {{ f.date }}
             {% if f.writeOffNote %}<span class="text-danger"> · {{ f.writeOffNote }}</span>{% endif %}
         </div>
         <div class="ms-auto small text-body-secondary">на руках <span class="fw-semibold text-body">{{ f.held }} {{ unit }}</span></div>
@@ -159,17 +159,6 @@
                                     <div class="text-body-secondary small">{{ it.label }}{% if it.reason %} — {{ it.reason }}{% endif %}</div>
                                 {% endfor %}
                             </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if signedActs is not empty %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
-                        <h2 class="h6 mb-2">Подписанные документы</h2>
-                        {% for act in signedActs %}
-                            <a class="btn btn-outline-secondary btn-sm me-2 mb-2" href="{{ path('app_cabinet_compliance_document_download_scan', {profileId: profileId, documentId: act.documentId}) }}">
-                                <i class="bi bi-download me-1"></i>Скан{% if act.signedAt %} · {{ act.signedAt }}{% endif %}
-                            </a>
                         {% endfor %}
                     </div>
                 {% endif %}
