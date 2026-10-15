@@ -128,6 +128,21 @@ final class IssueActionTest extends WebTestCase
         );
     }
 
+    /**
+     * Регрессия (прод 500): наименование позиции с «/» (напр. «Каска защитная до 1000В-1500В/50дж») делает
+     * obligationKey = requirementId|lower(label) с «/» внутри. Ключ истории — query-параметр, не путь-сегмент
+     * (см. ObligationHistoryAction) — иначе `path()` в карточке кидает 500 на генерации URL партиала.
+     */
+    public function test_item_card_renders_without_500_when_label_contains_slash(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance('Каска защитная до 1000В-1500В/50дж');
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('key=', (string) $this->client->getResponse()->getContent(), 'ключ ушёл в query, не в путь');
+    }
+
     public function test_writeoff_entry_available_when_something_is_issued(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();

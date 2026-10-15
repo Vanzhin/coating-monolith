@@ -251,9 +251,12 @@
                                         <i class="bi bi-clock-history"></i>История
                                         <i class="bi bi-chevron-down report-block-chevron"></i>
                                     </div>
+                                    {# obligationKey содержит «requirementId|lower(label)» — в label бывает «/»
+                                       (напр. «...до 1000В-1500В/50дж»), поэтому ключ — query-параметр `key`
+                                       (любые символы, Twig сам URL-кодирует), не путь-сегмент. #}
                                     <div class="collapse mt-2" id="hist-{{ i }}"
                                          data-controller="obligation-history"
-                                         data-obligation-history-url-value="{{ path('app_cabinet_compliance_obligation_history', {profileId: profileId, requirementId: requirementId, obligationKey: o.key}) }}"
+                                         data-obligation-history-url-value="{{ path('app_cabinet_compliance_obligation_history', {profileId: profileId, requirementId: requirementId, key: o.key}) }}"
                                          data-action="show.bs.collapse->obligation-history#load">
                                         <div data-obligation-history-target="body">
                                             <div class="p-3 rounded-3 bg-body-tertiary text-center text-body-secondary small">

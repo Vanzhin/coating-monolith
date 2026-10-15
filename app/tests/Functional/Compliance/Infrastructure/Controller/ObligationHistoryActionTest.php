@@ -89,10 +89,29 @@ final class ObligationHistoryActionTest extends WebTestCase
         self::assertStringContainsString('39', $html, 'номер акта виден в ленте');
     }
 
+    /**
+     * Регрессия (прод 500): obligationKey = requirementId|lower(label), label из формы может содержать «/»
+     * (напр. «Каска защитная до 1000В-1500В/50дж») — путь-параметр Symfony матчит по умолчанию «[^/]++» и
+     * «/» внутри ключа ломал генерацию URL в issue.html.twig. Ключ — query-параметр `key`, принимает любые
+     * символы с URL-кодированием.
+     */
+    public function test_renders_history_for_obligation_key_containing_slash(): void
+    {
+        $label = 'Каска защитная до 1000В-1500В/50дж';
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance($label);
+        self::assertStringContainsString('/', $k, 'ключ позиции действительно несёт «/» из наименования');
+        $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
+
+        $this->client->request('GET', $this->historyUrl($p, $r, $k));
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Выдано', (string) $this->client->getResponse()->getContent());
+    }
+
     private function historyUrl(string $profileId, string $requirementId, string $obligationKey): string
     {
         return sprintf(
-            '/cabinet/compliance/person/%s/requirement/%s/obligation/%s/history',
+            '/cabinet/compliance/person/%s/requirement/%s/obligation/history?key=%s',
             $profileId,
             $requirementId,
             rawurlencode($obligationKey),

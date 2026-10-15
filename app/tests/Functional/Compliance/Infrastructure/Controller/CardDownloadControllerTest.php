@@ -341,8 +341,9 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertGreaterThan(0, $crawler->filter('.collapse')->count(), 'у позиции есть разворот истории (единообразно для всех)');
 
         // Разбивка по фактам — в ЛЕНИВОЙ истории позиции (не в eager HTML страницы выдачи, карточка её не тащит).
+        // Ключ — query-параметр `key` (может нести «/» из наименования), не путь-сегмент.
         $this->client->request('GET', sprintf(
-            '/cabinet/compliance/person/%s/requirement/%s/obligation/%s/history',
+            '/cabinet/compliance/person/%s/requirement/%s/obligation/history?key=%s',
             $profileId, $requirementId, rawurlencode($key),
         ));
         self::assertResponseIsSuccessful();
