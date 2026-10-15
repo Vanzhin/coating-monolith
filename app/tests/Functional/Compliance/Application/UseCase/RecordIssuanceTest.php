@@ -8,7 +8,6 @@ use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
@@ -138,6 +137,6 @@ final class RecordIssuanceTest extends KernelTestCase
         self::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
         $this->em->clear();
 
-        return [$profile->id, $req->id, TrackedObligation::keyOf($req->id, self::NON_MATERIAL_LABEL)];
+        return [$profile->id, $req->id, $this->obligationKeyFor($req->id, self::NON_MATERIAL_LABEL)];
     }
 }

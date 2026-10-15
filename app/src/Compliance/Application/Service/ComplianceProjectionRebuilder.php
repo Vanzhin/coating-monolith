@@ -114,13 +114,13 @@ final readonly class ComplianceProjectionRebuilder
         $desired = [];
         foreach ($requirements as $requirement) {
             foreach ($requirement->getItems() as $item) {
-                $key = TrackedObligation::keyOf($requirement->getId(), $item->label());
+                $key = TrackedObligation::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
                     continue;
                 }
                 $desired[$key] = true;
                 $obligation = new TrackedObligation(
-                    Uuid::v7(), $profileCompliance, $requirement->getId(), $requirement->getName(),
+                    Uuid::v7(), $profileCompliance, $requirement->getId(), $item->id(), $requirement->getName(),
                     $item->label(), $item->type(), $item->cadence(),
                     $item instanceof MaterialItem ? $item->quantity() : null,
                     $departmentId, TrackedObligation::ORIGIN_NORM,

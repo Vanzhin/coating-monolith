@@ -35,14 +35,15 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
     {
         $profileId = 'prof-'.uniqid('', true);
         $reqId = 'req-'.uniqid('', true);
+        $itemId = 'item-'.uniqid('', true);
         $pc = new ProfileCompliance(Uuid::v7(), $profileId);
         $pc->putObligation(new TrackedObligation(
-            Uuid::v7(), $pc, $reqId, 'СИЗ основные', 'Перчатки',
+            Uuid::v7(), $pc, $reqId, $itemId, 'СИЗ основные', 'Перчатки',
             ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
             new Quantity(10.0, Unit::Pair), 'dept-1',
         ));
         $pc->recordFulfillment(
-            Uuid::v7(), TrackedObligation::keyOf($reqId, 'Перчатки'), new \DateTimeImmutable('2026-01-10'),
+            Uuid::v7(), TrackedObligation::keyOf($reqId, $itemId), new \DateTimeImmutable('2026-01-10'),
             $this->calc, new Quantity(10.0, Unit::Pair), new Percent(15),
         ); // запись факта синхронно включает трекинг (active) — отдельного вызова не нужно
         $this->repo->add($pc);
@@ -76,7 +77,7 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
         $reqId = 'req-'.uniqid('', true);
         $pc = new ProfileCompliance(Uuid::v7(), $profileId);
         $pc->putObligation(new TrackedObligation(
-            Uuid::v7(), $pc, $reqId, 'Журнал', 'Инструктаж',
+            Uuid::v7(), $pc, $reqId, 'item-instr', 'Журнал', 'Инструктаж',
             ComplianceType::NonMaterial, new Cadence(CadenceKind::Once), null, 'dept-1',
         ));
         $this->repo->add($pc);

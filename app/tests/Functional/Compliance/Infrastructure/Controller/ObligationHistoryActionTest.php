@@ -90,16 +90,16 @@ final class ObligationHistoryActionTest extends WebTestCase
     }
 
     /**
-     * Регрессия (прод 500): obligationKey = requirementId|lower(label), label из формы может содержать «/»
-     * (напр. «Каска защитная до 1000В-1500В/50дж») — путь-параметр Symfony матчит по умолчанию «[^/]++» и
-     * «/» внутри ключа ломал генерацию URL в issue.html.twig. Ключ — query-параметр `key`, принимает любые
-     * символы с URL-кодированием.
+     * Регрессия (прод 500): раньше obligationKey = requirementId|lower(label), и «/» в наименовании позиции
+     * (напр. «Каска защитная до 1000В-1500В/50дж») утекал в ключ, ломая генерацию URL. После rekey ключ =
+     * requirementId|itemId (стабильный uuid) — слэш в наименовании безопасен по построению, в ключ не попадает.
+     * Проверяем: позиция со «/» в label рендерит историю без 500 (ключ — query-param, но «/» в нём уже нет).
      */
-    public function test_renders_history_for_obligation_key_containing_slash(): void
+    public function test_renders_history_for_obligation_with_slash_in_label(): void
     {
         $label = 'Каска защитная до 1000В-1500В/50дж';
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance($label);
-        self::assertStringContainsString('/', $k, 'ключ позиции действительно несёт «/» из наименования');
+        self::assertStringNotContainsString('/', $k, 'ключ теперь uuid-основан — «/» из наименования в него не попадает');
         $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
 
         $this->client->request('GET', $this->historyUrl($p, $r, $k));

@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceComm
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -66,7 +67,24 @@ trait EnrollsComplianceTrait
 
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
 
-        return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => TrackedObligation::keyOf($req->id, $itemLabel)];
+        return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
+    }
+
+    /**
+     * Ключ обязанности по наименованию позиции: ключ теперь `requirementId|itemId`, а не `|label` — резолвим
+     * стабильный itemId из требования по label. Общая точка для всех функциональных compliance-тестов.
+     */
+    private function obligationKeyFor(string $requirementId, string $itemLabel): string
+    {
+        $requirement = static::getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        \assert(null !== $requirement);
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $itemLabel) {
+                return TrackedObligation::keyOf($requirementId, $item->id());
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Позиция «%s» не найдена в требовании %s.', $itemLabel, $requirementId));
     }
 
     /** Выдать карточку: прямая запись факта в журнал (без черновика/скана/подписи). $date — дата выдачи (для срока). */
