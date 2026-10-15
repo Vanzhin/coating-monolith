@@ -39,6 +39,7 @@ class ProfileCompliance extends Aggregate
     /** @var Collection<int, WriteOffAct> */
     private Collection $writeOffActs;
     private StringCollection $excludedKeys;
+    private ?string $cardNumber = null;
     private int $version = 1;
 
     public function __construct(Uuid $id, string $profileId)
@@ -59,6 +60,25 @@ class ProfileCompliance extends Aggregate
     public function getProfileId(): string
     {
         return $this->profileId;
+    }
+
+    /** № карточки СИЗ — свойство журнала, одна карточка на человека. Нет записей выдачи → ещё не закреплён. */
+    public function cardNumber(): ?string
+    {
+        return $this->cardNumber;
+    }
+
+    /**
+     * Закрепить № карточки СИЗ — ровно один раз. Повторная попытка (номер уже закреплён) — no-op: случайный
+     * другой POST не должен затереть уже выданную карточку. Пустая строка номером не считается.
+     */
+    public function assignCardNumber(string $number): void
+    {
+        $number = trim($number);
+        if ('' === $number || null !== $this->cardNumber) {
+            return;
+        }
+        $this->cardNumber = $number;
     }
 
     /** @return TrackedObligation[] */
@@ -515,6 +535,7 @@ class ProfileCompliance extends Aggregate
      */
     public function recordIssuance(ObligationDueCalculator $calculator, IssuanceLine ...$lines): void
     {
+        $this->assertHasCardNumber();
         $this->assertIssuable($lines);
         foreach ($lines as $line) {
             $this->records->add(new FulfillmentRecord(
@@ -539,6 +560,14 @@ class ProfileCompliance extends Aggregate
             $kind->assertDetailsComplete($line->instructionDetails);
         }
         $this->recordIssuance($calculator, ...$lines);
+    }
+
+    /** Инвариант выдачи: без № карточки факт в журнал не пишется — карточка СИЗ обязана иметь номер. */
+    private function assertHasCardNumber(): void
+    {
+        if (null === $this->cardNumber) {
+            throw new AppException('Укажите № карточки, без него выдачу записать нельзя.');
+        }
     }
 
     /**

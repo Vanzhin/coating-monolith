@@ -58,6 +58,7 @@ final class RecordIssuanceTest extends KernelTestCase
         $this->bus->execute(new RecordIssuanceCommand(
             $p, $r, '2026-06-01',
             [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair', 'note' => 'Jeta JP711']],
+            cardNumber: 'CARD-1',
         ));
         $this->em->clear();
 
@@ -65,6 +66,7 @@ final class RecordIssuanceTest extends KernelTestCase
         self::assertNotNull($pc);
         self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача сразу в held — факт пишется прямо в журнал');
         self::assertCount(1, $pc->recordsForRequirement($r), 'одна строка журнала на одну выданную позицию');
+        self::assertSame('CARD-1', $pc->cardNumber(), 'первая выдача закрепила № карточки');
     }
 
     public function test_material_issuance_below_norm_throws(): void
@@ -75,6 +77,18 @@ final class RecordIssuanceTest extends KernelTestCase
         $this->bus->execute(new RecordIssuanceCommand(
             $p, $r, '2026-06-01',
             [['obligationKey' => $k, 'amount' => '5', 'unit' => 'pair']], // на руках 0 + 5 < норма 10
+            cardNumber: 'CARD-1',
+        ));
+    }
+
+    public function test_issuance_without_card_number_throws(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance(); // норма 10, 10 достаточно
+
+        $this->expectException(AppException::class); // № карточки не передан и ещё не закреплён ранее
+        $this->bus->execute(new RecordIssuanceCommand(
+            $p, $r, '2026-06-01',
+            [['obligationKey' => $k, 'amount' => '10', 'unit' => 'pair']],
         ));
     }
 
@@ -90,6 +104,7 @@ final class RecordIssuanceTest extends KernelTestCase
                 'date' => '2026-08-05',
                 'instruction' => ['instruction_kind' => 'Повторный', 'instructor_doc' => 'Удостоверение № 1'],
             ]],
+            cardNumber: 'CARD-1',
         ));
     }
 

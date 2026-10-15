@@ -51,6 +51,7 @@ final class IssueAction extends AbstractController
                     (string) ($inputData['documentDate'] ?? ''),
                     array_values((array) ($inputData['items'] ?? [])),
                     array_values((array) ($inputData['personalItems'] ?? [])),
+                    (string) ($inputData['cardNumber'] ?? ''),
                 ));
                 $this->addFlash('success', 'Выдача записана в журнал.');
 
@@ -231,6 +232,9 @@ final class IssueAction extends AbstractController
             'requirementId' => $requirementId,
             'requirementName' => $requirementName,
             'profile' => $profileResult->profile,
+            // № карточки СИЗ — свойство журнала (одна карточка на человека): уже закреплён → форма покажет
+            // readonly; не закреплён → редактируемое поле, предзаполненное табельным (profile.personnelNumber).
+            'cardNumber' => $profileCompliance?->cardNumber(),
             'rows' => $issueRows,
             'requirementType' => null !== $actType ? $actType->value : 'material',
             'instructionGroups' => $instructionGroups,

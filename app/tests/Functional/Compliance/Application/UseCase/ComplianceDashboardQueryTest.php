@@ -95,6 +95,7 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         // Прямая дозапись факта в журнал (без акта-черновика) — журнальная модель выдачи.
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
+        $pc->assignCardNumber('CARD-1'); // инвариант выдачи — № карточки обязателен
         $pc->recordIssuance(
             static::getContainer()->get(ObligationDueCalculator::class),
             new IssuanceLine(Uuid::v7(), $key, new \DateTimeImmutable('2026-05-20'), new Quantity(10.0, Unit::Pair)),

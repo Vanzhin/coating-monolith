@@ -39,9 +39,13 @@ final class ProfileComplianceTest extends TestCase
         $this->now = new \DateTimeImmutable('2026-06-01');
     }
 
-    private function pcWithGloves(float $norm = 10.0): ProfileCompliance
+    /** № карточки по умолчанию уже закреплён — большинству тестов нужна рабочая выдача, не сам инвариант номера. */
+    private function pcWithGloves(float $norm = 10.0, ?string $cardNumber = 'CARD-001'): ProfileCompliance
     {
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        if (null !== $cardNumber) {
+            $pc->assignCardNumber($cardNumber);
+        }
         $pc->putObligation(new TrackedObligation(
             Uuid::v4(), $pc, $this->reqId, 'СИЗ основные', 'Перчатки',
             ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
@@ -59,6 +63,7 @@ final class ProfileComplianceTest extends TestCase
     private function pcWithFireSafetyObligation(): ProfileCompliance
     {
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
         $pc->putObligation(new TrackedObligation(
             Uuid::v4(), $pc, 'req-2', 'Пожарная безопасность', 'Пожарный',
             ComplianceType::NonMaterial, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
@@ -424,5 +429,40 @@ final class ProfileComplianceTest extends TestCase
         $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
 
         self::assertTrue($pc->hasIssuedFactFor($this->glovesKey()), 'прямая дозапись — выданный факт');
+    }
+
+    public function test_record_issuance_without_card_number_throws(): void
+    {
+        $pc = $this->pcWithGloves(2.0, cardNumber: null); // № карточки не закреплён
+        $this->expectException(AppException::class);
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // количество само по себе достаточно
+    }
+
+    public function test_assign_card_number_is_set_once(): void
+    {
+        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $pc->assignCardNumber('CARD-100');
+        $pc->assignCardNumber('CARD-200'); // повторная попытка сменить — no-op, номер уже закреплён
+
+        self::assertSame('CARD-100', $pc->cardNumber());
+    }
+
+    public function test_assign_card_number_ignores_blank_value(): void
+    {
+        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $pc->assignCardNumber('   '); // пусто после trim — номером не считается
+
+        self::assertNull($pc->cardNumber());
+    }
+
+    public function test_record_issuance_succeeds_after_card_number_assigned(): void
+    {
+        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $pc->assignCardNumber('CARD-1');
+
+        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+
+        self::assertSame('CARD-1', $pc->cardNumber());
+        self::assertSame(2.0, $pc->heldOf($this->glovesKey()));
     }
 }

@@ -69,6 +69,7 @@ trait EnrollsComplianceTrait
             $requirementId,
             $date,
             [['obligationKey' => $key, 'amount' => $amount, 'unit' => 'pair']],
+            cardNumber: 'CARD-TEST', // № карточки — свойство журнала, обязателен для записи выдачи
         ));
         // Проекция (active = есть выданный факт / даты / held) пересобирается событием recordIssuance в проде —
         // в тестах async не крутится, поэтому пересобираем вручную, как после enroll/списания.

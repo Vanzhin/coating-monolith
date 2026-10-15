@@ -61,6 +61,7 @@ final class InstructionIssuanceTest extends KernelTestCase
                     'instructor_doc' => 'Удостоверение № 1327339, 06.12.2021',
                 ],
             ]],
+            cardNumber: 'CARD-1',
         ));
         $em->clear();
 

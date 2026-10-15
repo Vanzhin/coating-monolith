@@ -139,6 +139,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $bus->execute(new RecordIssuanceCommand(
             $p, $r, '2026-06-01',
             [['obligationKey' => $k, 'amount' => '12', 'unit' => 'pair', 'note' => 'Jeta Safety JP711, кл.II']],
+            cardNumber: 'CARD-5',
         ));
         $em->clear();
 
@@ -189,13 +190,13 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('01.07.2026', $row['return_date']);
         self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
 
-        // № карточки/ответственный — реквизиты акта-документа; журнал пишется прямой записью без них, поэтому
-        // в карточке эти плейсхолдеры пустые.
+        // № карточки — свойство журнала, закреплено первой выдачей. Ответственный — реквизит акта-документа,
+        // журнал пишется прямой записью без него, поэтому плейсхолдер пустой.
         $cardNumber = $data->get('card_number');
         $responsibleFio = $data->get('responsible_fio');
         self::assertInstanceOf(TextValue::class, $cardNumber);
         self::assertInstanceOf(TextValue::class, $responsibleFio);
-        self::assertSame('', $cardNumber->value);
+        self::assertSame('CARD-5', $cardNumber->value);
         self::assertSame('', $responsibleFio->value);
     }
 
@@ -252,6 +253,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $this->client->getContainer()->get(CommandBusInterface::class)->execute(new RecordIssuanceCommand(
             $profileId, $requirementId, '2026-06-01',
             [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair', 'note' => $note]],
+            cardNumber: 'CARD-9', // № карточки закрепляется первой выдачей, повторные — readonly
         ));
         $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
     }

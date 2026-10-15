@@ -25,6 +25,8 @@ use Symfony\Component\Uid\Uuid;
  * полноты полей инструктажа), иначе → {@see ProfileCompliance::recordIssuance} (инвариант «не меньше нормы»).
  * Инварианты живут в домене — хендлер только оркеструет (достать учёт, собрать строки, записать). Черновика,
  * топ-апа, подписи и скана здесь нет: форма шлёт одну строку на позицию, запись неизменяема сразу.
+ * № карточки СИЗ — передаём домену как есть; закреплять его один раз или игнорировать как readonly решает
+ * {@see ProfileCompliance::assignCardNumber()}.
  */
 final readonly class RecordIssuanceCommandHandler implements CommandHandlerInterface
 {
@@ -44,6 +46,8 @@ final readonly class RecordIssuanceCommandHandler implements CommandHandlerInter
         }
         $profileCompliance = $this->repository->findByProfile($command->profileId)
             ?? throw new AppException('Учёт по сотруднику не создан.');
+
+        $profileCompliance->assignCardNumber($command->cardNumber ?? '');
 
         $documentDate = \DateTimeImmutable::createFromFormat('!Y-m-d', trim($command->documentDate))
             ?: throw new AppException('Укажите дату документа.');

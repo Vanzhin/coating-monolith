@@ -120,6 +120,16 @@
                             <label class="form-label small mb-1">Дата документа</label>
                             <input type="date" name="documentDate" value="{{ documentDate }}" class="form-control">
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">№ карточки СИЗ</label>
+                            {% if cardNumber %}
+                                {# Номер уже закреплён (первая выдача задала его) — readonly, дальше не меняется. #}
+                                <input type="text" name="cardNumber" value="{{ cardNumber }}" class="form-control" readonly>
+                            {% else %}
+                                {# Первая выдача: номер ещё не закреплён — редактируемое поле, предзаполнено табельным. #}
+                                <input type="text" name="cardNumber" value="{{ inputData.cardNumber|default(profile.personnelNumber) }}" class="form-control" required>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
