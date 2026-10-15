@@ -142,16 +142,17 @@
                            выдачи и LAZY-история (footer) — см. IssueAction PHPDoc. #}
                         {% embed 'admin/compliance/_item_card.html.twig' with {
                             name: o.label,
-                            meta: o.cadenceLabel
-                                ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : '')
-                                ~ (o.lastFulfilledAt ? ' · посл. ' ~ o.lastFulfilledAt : '')
-                                ~ (o.nextDueAt ? ' · след. ' ~ o.nextDueAt : ''),
                             attrs: 'data-row',
                             o: o, i: loop.index0, units: units, documentDate: documentDate,
                             s: inputData.items[loop.index0]|default({}),
                             instructionGroups: instructionGroups|default([]),
                             savedInstruction: o.savedInstruction|default({}),
                         } %}
+                            {% block meta %}
+                                <div class="text-body-secondary small">
+                                    <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}{% if o.nextDueAt %} · <i class="bi bi-arrow-repeat me-1" title="Следующая выдача"></i>{{ o.nextDueAt }}{% endif %}
+                                </div>
+                            {% endblock %}
                             {% block control %}
                                 <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
                                     <span class="badge {{ bucketBadge[o.bucket] }} fw-normal"><i class="bi {{ bucketIcon[o.bucket] }} me-1"></i>{{ o.bucketLabel }}</span>
