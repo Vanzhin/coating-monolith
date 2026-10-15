@@ -2,7 +2,8 @@
 
 {% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
-{% set writeoff = mode == 'writeoff' %}
+{# Выдача доступна всегда; списание — параллельный блок на той же странице, показываем когда есть что списывать. #}
+{% set woPresent = heldPositions|default([]) is not empty or writeOffActs|default([]) is not empty %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
    <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
@@ -76,17 +77,18 @@
     </div>
 {% endmacro %}
 
-{% set page_verb = writeoff ? 'Списание' : 'Выдача' %}
-{% block title %}{{ parent() }} | {{ page_verb }} — {{ requirementName }}{% endblock %}
+{% block title %}{{ parent() }} | Выдача — {{ requirementName }}{% endblock %}
 
 {% block content %}
+    {% set anchors = [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}] %}
+    {% if woPresent %}{% set anchors = anchors|merge([{id: 'sec-writeoff', label: 'Списание'}]) %}{% endif %}
     {% embed 'components/form_page.html.twig' with {
-        title: page_verb ~ ' — ' ~ requirementName,
+        title: 'Выдача — ' ~ requirementName,
         back_url: backUrl,
         save_enabled: false,
         save_form_id: 'issue-form',
         save_label: 'Записать выдачу',
-        anchors: writeoff ? [{id: 'sec-items', label: 'Позиции'}] : [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}],
+        anchors: anchors,
     } %}
         {% block sections %}
             {% if error is defined and error %}
@@ -96,27 +98,170 @@
                 </div>
             {% endif %}
 
-            {% if writeoff %}
-                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+            <form id="issue-form" method="post" novalidate
+                  data-controller="norm-fill" data-norm-fill-next-due-url-value="{{ path('app_cabinet_compliance_next_due') }}">
+
+                <div id="sec-doc" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                        <h2 class="h6 mb-0">Действующие позиции</h2>
+                        <h2 class="h6 mb-0">Документ</h2>
                         <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-check-lg me-1"></i>Записать выдачу
+                            </button>
                             <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
                                 <i class="bi bi-file-earmark-word me-1"></i>Скачать бланк
                             </a>
-                            <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
-                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
-                            </form>
                         </div>
+                    </div>
+                    <div class="form-text mb-2">Выдача пишется прямо в журнал и сразу становится действующей — черновика нет.</div>
+                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Дата документа</label>
+                            <input type="date" name="documentDate" value="{{ documentDate }}" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <h2 class="h6 mb-0">Позиции</h2>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-action="norm-fill#fill">
+                            <i class="bi bi-magic me-1"></i>Заполнить по норме
+                        </button>
+                    </div>
+
+                    {% if rows is empty %}
+                        <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет подошедших позиций.</div>
+                    {% endif %}
+
+                    {% for o in rows %}
+                        {% embed 'admin/compliance/_item_card.html.twig' with {
+                            name: o.label,
+                            meta: o.cadenceLabel ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : ''),
+                            attrs: 'data-row',
+                            o: o, i: loop.index0, units: units, documentDate: documentDate,
+                            s: inputData.items[loop.index0]|default({}),
+                            instructionGroups: instructionGroups|default([]),
+                            savedInstruction: o.savedInstruction|default({}),
+                        } %}
+                            {% block footer %}
+                                <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
+                                {% if o.origin == 'personal' %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger mb-2" data-action="norm-fill#removeRow" title="Убрать позицию вне нормы из черновика">
+                                        <i class="bi bi-trash me-1"></i>Убрать позицию
+                                    </button>
+                                {% endif %}
+                                <div class="row g-2 w-100">
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">Наименование</label>
+                                        <input type="text" name="items[{{ i }}][note]" value="{{ s.note|default(o.savedNote) }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small mb-1">Дата выдачи</label>
+                                        <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(o.savedDate ?: documentDate) }}" class="form-control"
+                                               data-issue-date data-action="change->norm-fill#nextDue"
+                                               data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
+                                        <div class="form-text">След. выдача: <span data-next-due>—</span></div>
+                                    </div>
+                                    {% if o.type == 'material' %}
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label small mb-1">Кол-во</label>
+                                            <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
+                                                   value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
+                                                   data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
+                                        </div>
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label small mb-1">Ед.</label>
+                                            {% if o.quantityUnit %}
+                                                {# Единица задана обязанностью (норма из требования / персональная с кол-вом) — не меняется (UX), домен это проверяет. #}
+                                                <select class="form-select" disabled aria-label="Единица измерения">
+                                                    {% for u in units %}<option value="{{ u.value }}"{{ o.quantityUnit == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                </select>
+                                                <input type="hidden" name="items[{{ i }}][unit]" value="{{ o.quantityUnit }}">
+                                            {% else %}
+                                                {# Персональная позиция без заданной единицы — выбираем. #}
+                                                <select name="items[{{ i }}][unit]" class="form-select">
+                                                    {% for u in units %}<option value="{{ u.value }}"{{ s.unit|default(o.savedUnit) == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                                                </select>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-6 col-md-2">
+                                            <label class="form-label small mb-1">% износа</label>
+                                            <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default(o.savedWear) }}" placeholder="0">
+                                        </div>
+                                    {% endif %}
+                                    {% if o.cadenceKind == 'by_manufacturer_doc' %}
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small mb-1">Срок годности (по документам)</label>
+                                            <input type="date" name="items[{{ i }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default(o.savedDueDate) }}">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% if o.type != 'material' and instructionGroups is not empty %}
+                                    {# Поля инструктажа по схеме журнала (config-first), сгруппированы блоками (теор./практ. часть). #}
+                                    {% for grp in instructionGroups %}
+                                        <div class="w-100 mt-2 p-2 rounded-3 bg-body">
+                                            {% if grp.label %}<div class="small fw-semibold text-body-secondary mb-2">{{ grp.label }}</div>{% endif %}
+                                            <div class="row g-2">
+                                                {% for f in grp.fields %}
+                                                    {% set ival = savedInstruction[f.key]|default('') %}
+                                                    <div class="col-12 col-md-6">
+                                                        <label class="form-label small mb-1">{{ f.label }}{% if f.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                                        {% if f.kind == 'select' %}
+                                                            <select name="items[{{ i }}][instruction][{{ f.key }}]" class="form-select">
+                                                                <option value="">—</option>
+                                                                {% for opt in f.options %}<option value="{{ opt }}"{{ ival == opt ? ' selected' : '' }}>{{ opt }}</option>{% endfor %}
+                                                            </select>
+                                                        {% elseif f.kind == 'date' %}
+                                                            <input type="date" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                                        {% elseif f.kind == 'text_list' %}
+                                                            <textarea name="items[{{ i }}][instruction][{{ f.key }}]" rows="2" class="form-control" placeholder="По одному на строку">{{ ival }}</textarea>
+                                                        {% else %}
+                                                            <input type="text" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+
+                    {% import 'admin/compliance/person/issue.html.twig' as personal %}
+                    <div class="mt-3 pt-3 border-top" data-controller="report-list-rows">
+                        <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
+                        <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
+                        <div data-report-list-rows-target="rows">
+                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([])) }}{% endfor %}
+                        </div>
+                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([])) }}</template>
+                        <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+
+            {# Списание — параллельный вход на той же странице. Показываем, когда есть действующие позиции/акты. #}
+            {% if woPresent %}
+                <div id="sec-writeoff" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                        <h2 class="h6 mb-0">Действующие позиции</h2>
+                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                        </form>
                     </div>
                     <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — списание оформляется в акте списания</div>
 
-                    {% if rows is empty %}
+                    {% if heldPositions is empty %}
                         <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих материальных позиций.</div>
                     {% endif %}
                     {% import 'admin/compliance/person/issue.html.twig' as wo %}
-                    {% for row in rows %}
+                    {% for row in heldPositions %}
                         {% set rid = 'wo-pos-' ~ loop.index0 %}
                         <div class="p-3 mb-2 rounded-3 bg-body">
                             <div class="d-flex flex-wrap align-items-center gap-2 report-block-toggle" role="button"
@@ -136,11 +281,9 @@
                             </div>
                         </div>
                     {% endfor %}
-                </div>
 
-                {% if writeOffActs is not empty %}
-                    <div class="p-3 mb-3 rounded-3 bg-body-tertiary fsec">
-                        <h2 class="h6 mb-2">Акты списания</h2>
+                    {% if writeOffActs is not empty %}
+                        <h3 class="h6 mt-3 mb-2">Акты списания</h3>
                         {% for a in writeOffActs %}
                             <div class="p-3 mb-2 rounded-3 bg-body">
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -160,155 +303,8 @@
                                 {% endfor %}
                             </div>
                         {% endfor %}
-                    </div>
-                {% endif %}
-            {% else %}
-                <form id="issue-form" method="post" novalidate
-                      data-controller="norm-fill" data-norm-fill-next-due-url-value="{{ path('app_cabinet_compliance_next_due') }}">
-
-                    <div id="sec-doc" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                            <h2 class="h6 mb-0">Документ</h2>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-check-lg me-1"></i>Записать выдачу
-                                </button>
-                                <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
-                                    <i class="bi bi-file-earmark-word me-1"></i>Скачать бланк
-                                </a>
-                            </div>
-                        </div>
-                        <div class="form-text mb-2">Выдача пишется прямо в журнал и сразу становится действующей — черновика нет.</div>
-                        <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }}</div>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label small mb-1">Дата документа</label>
-                                <input type="date" name="documentDate" value="{{ documentDate }}" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                            <h2 class="h6 mb-0">Позиции</h2>
-                            <button type="button" class="btn btn-outline-primary btn-sm" data-action="norm-fill#fill">
-                                <i class="bi bi-magic me-1"></i>Заполнить по норме
-                            </button>
-                        </div>
-
-                        {% if rows is empty %}
-                            <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет подошедших позиций.</div>
-                        {% endif %}
-
-                        {% for o in rows %}
-                            {% embed 'admin/compliance/_item_card.html.twig' with {
-                                name: o.label,
-                                meta: o.cadenceLabel ~ (o.quantityLabel ? ' · норма ' ~ o.quantityLabel : ''),
-                                attrs: 'data-row',
-                                o: o, i: loop.index0, units: units, documentDate: documentDate,
-                                s: inputData.items[loop.index0]|default({}),
-                                instructionGroups: instructionGroups|default([]),
-                                savedInstruction: o.savedInstruction|default({}),
-                            } %}
-                                {% block footer %}
-                                    <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
-                                    {% if o.origin == 'personal' %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger mb-2" data-action="norm-fill#removeRow" title="Убрать позицию вне нормы из черновика">
-                                            <i class="bi bi-trash me-1"></i>Убрать позицию
-                                        </button>
-                                    {% endif %}
-                                    <div class="row g-2 w-100">
-                                        <div class="col-12">
-                                            <label class="form-label small mb-1">Наименование</label>
-                                            <input type="text" name="items[{{ i }}][note]" value="{{ s.note|default(o.savedNote) }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
-                                        </div>
-                                        <div class="col-6 col-md-3">
-                                            <label class="form-label small mb-1">Дата выдачи</label>
-                                            <input type="date" name="items[{{ i }}][date]" value="{{ s.date|default(o.savedDate ?: documentDate) }}" class="form-control"
-                                                   data-issue-date data-action="change->norm-fill#nextDue"
-                                                   data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
-                                            <div class="form-text">След. выдача: <span data-next-due>—</span></div>
-                                        </div>
-                                        {% if o.type == 'material' %}
-                                            <div class="col-6 col-md-2">
-                                                <label class="form-label small mb-1">Кол-во</label>
-                                                <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
-                                                       value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
-                                                       data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
-                                            </div>
-                                            <div class="col-6 col-md-2">
-                                                <label class="form-label small mb-1">Ед.</label>
-                                                {% if o.quantityUnit %}
-                                                    {# Единица задана обязанностью (норма из требования / персональная с кол-вом) — не меняется (UX), домен это проверяет. #}
-                                                    <select class="form-select" disabled aria-label="Единица измерения">
-                                                        {% for u in units %}<option value="{{ u.value }}"{{ o.quantityUnit == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
-                                                    </select>
-                                                    <input type="hidden" name="items[{{ i }}][unit]" value="{{ o.quantityUnit }}">
-                                                {% else %}
-                                                    {# Персональная позиция без заданной единицы — выбираем. #}
-                                                    <select name="items[{{ i }}][unit]" class="form-select">
-                                                        {% for u in units %}<option value="{{ u.value }}"{{ s.unit|default(o.savedUnit) == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
-                                                    </select>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-6 col-md-2">
-                                                <label class="form-label small mb-1">% износа</label>
-                                                <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default(o.savedWear) }}" placeholder="0">
-                                            </div>
-                                        {% endif %}
-                                        {% if o.cadenceKind == 'by_manufacturer_doc' %}
-                                            <div class="col-6 col-md-3">
-                                                <label class="form-label small mb-1">Срок годности (по документам)</label>
-                                                <input type="date" name="items[{{ i }}][manualDueDate]" class="form-control" value="{{ s.manualDueDate|default(o.savedDueDate) }}">
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    {% if o.type != 'material' and instructionGroups is not empty %}
-                                        {# Поля инструктажа по схеме журнала (config-first), сгруппированы блоками (теор./практ. часть). #}
-                                        {% for grp in instructionGroups %}
-                                            <div class="w-100 mt-2 p-2 rounded-3 bg-body">
-                                                {% if grp.label %}<div class="small fw-semibold text-body-secondary mb-2">{{ grp.label }}</div>{% endif %}
-                                                <div class="row g-2">
-                                                    {% for f in grp.fields %}
-                                                        {% set ival = savedInstruction[f.key]|default('') %}
-                                                        <div class="col-12 col-md-6">
-                                                            <label class="form-label small mb-1">{{ f.label }}{% if f.required %} <span class="text-danger">*</span>{% endif %}</label>
-                                                            {% if f.kind == 'select' %}
-                                                                <select name="items[{{ i }}][instruction][{{ f.key }}]" class="form-select">
-                                                                    <option value="">—</option>
-                                                                    {% for opt in f.options %}<option value="{{ opt }}"{{ ival == opt ? ' selected' : '' }}>{{ opt }}</option>{% endfor %}
-                                                                </select>
-                                                            {% elseif f.kind == 'date' %}
-                                                                <input type="date" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
-                                                            {% elseif f.kind == 'text_list' %}
-                                                                <textarea name="items[{{ i }}][instruction][{{ f.key }}]" rows="2" class="form-control" placeholder="По одному на строку">{{ ival }}</textarea>
-                                                            {% else %}
-                                                                <input type="text" name="items[{{ i }}][instruction][{{ f.key }}]" value="{{ ival }}" class="form-control">
-                                                            {% endif %}
-                                                        </div>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
-                                {% endblock %}
-                            {% endembed %}
-                        {% endfor %}
-
-                        {% import 'admin/compliance/person/issue.html.twig' as personal %}
-                        <div class="mt-3 pt-3 border-top" data-controller="report-list-rows">
-                            <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
-                            <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
-                            <div data-report-list-rows-target="rows">
-                                {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([])) }}{% endfor %}
-                            </div>
-                            <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([])) }}</template>
-                            <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
-                        </div>
-                    </div>
-
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                </form>
+                    {% endif %}
+                </div>
             {% endif %}
         {% endblock %}
     {% endembed %}

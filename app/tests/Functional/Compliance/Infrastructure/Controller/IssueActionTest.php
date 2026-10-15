@@ -74,6 +74,56 @@ final class IssueActionTest extends WebTestCase
         self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'выдача записана прямо в журнал, на руках = норма');
     }
 
+    public function test_get_renders_issue_form_even_when_norm_is_fully_green(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // выдано 10 = норма → позиция Green (дефицита нет)
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('Записать выдачу', $html, 'форма выдачи открыта даже при полностью удовлетворённой норме');
+        self::assertStringContainsString('Перчатки', $html, 'Green-позиция присутствует в форме');
+        self::assertGreaterThan(
+            0,
+            $crawler->filter('input[name="items[0][amount]"]:not([disabled])')->count(),
+            'поле количества редактируемо (замена сверх нормы возможна)',
+        );
+    }
+
+    public function test_submit_on_green_norm_records_replacement_and_grows_held_beyond_norm(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // на руках = норма = 10
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Записать выдачу')->form();
+        $form['items[0][amount]'] = '5'; // переопределяем нулевой дефицит — досрочная замена
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        self::assertNotNull($pc);
+        self::assertEqualsWithDelta(15.0, $pc->heldOf($k), 1e-9, 'замена записана в журнал: на руках выросло сверх нормы (10 + 5)');
+    }
+
+    public function test_writeoff_entry_available_when_something_is_issued(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // есть выданное → списание доступно параллельно
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('write-off/open', $html, 'вход «Списать» доступен на той же странице, что и выдача');
+        self::assertStringContainsString('Списать', $html);
+    }
+
     private function issueUrl(string $profileId, string $requirementId): string
     {
         return sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId);

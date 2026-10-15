@@ -9,7 +9,6 @@ use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComp
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
-use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
@@ -23,10 +22,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Карточка требования у человека — одна форма, два режима по состоянию нормы:
- *  - есть неудовлетворённые позиции (статус ≠ Green) → ВЫДАЧА/ПРОХОЖДЕНИЕ: заполнить позиции (кол-во =
- *    начальный дефицит) → «Записать выдачу» пишет факты прямо в журнал ({@see RecordIssuanceCommand});
- *  - норма удовлетворена → СПИСАНИЕ: удерживаемое заблокировано, чекбокс + причина → «Списать выбранное».
+ * Карточка требования у человека. Форма ВЫДАЧИ доступна ВСЕГДА (не гейтится статусом нормы): рисует ВСЕ позиции
+ * текущей нормы с предзаполнением дефицитом (норма − на руках, не ниже 0), количество переопределяемо — замену
+ * и досрочную выдачу можно записать даже при полностью удовлетворённой (Green) норме. «Записать выдачу» пишет
+ * факты прямо в журнал ({@see RecordIssuanceCommand}). СПИСАНИЕ — параллельный вход на той же странице (блок
+ * «Действующие позиции» + акты): «Списать» ведёт в акт списания ({@see GoToWriteOffAction}), доступно при held > 0.
  */
 #[Route(path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/issue', name: 'app_cabinet_compliance_issue', methods: ['GET', 'POST'])]
 final class IssueAction extends AbstractController
@@ -102,77 +102,57 @@ final class IssueAction extends AbstractController
                 continue;
             }
             $requirementName = $row->requirementName;
-            if (ComplianceStatus::Green->value !== $row->status) {
-                $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
-                $issueRows[] = [
-                    'key' => $row->key,
-                    'label' => $row->label,
-                    'type' => $row->type,
-                    'cadenceKind' => $row->cadenceKind,
-                    'cadenceNumber' => $row->cadenceNumber,
-                    'cadenceUnit' => $row->cadenceUnit,
-                    'cadenceLabel' => $row->cadenceLabel,
-                    'quantityLabel' => $row->quantityLabel,
-                    'quantityValue' => $row->quantityValue,
-                    'quantityUnit' => $row->quantityUnit,
-                    'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
-                    // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках).
-                    'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
-                    'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, 'savedInstruction' => [], // из корзины ниже
-                ];
+            // Выдача доступна ВСЕГДА: форма строится из ВСЕХ позиций текущей нормы (а не только дефицитных),
+            // поэтому замену/досрочную выдачу можно записать и при полностью удовлетворённой (Green) норме.
+            $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
+            $issueRows[] = [
+                'key' => $row->key,
+                'label' => $row->label,
+                'type' => $row->type,
+                'cadenceKind' => $row->cadenceKind,
+                'cadenceNumber' => $row->cadenceNumber,
+                'cadenceUnit' => $row->cadenceUnit,
+                'cadenceLabel' => $row->cadenceLabel,
+                'quantityLabel' => $row->quantityLabel,
+                'quantityValue' => $row->quantityValue,
+                'quantityUnit' => $row->quantityUnit,
+                'origin' => $row->origin, // personal (вне нормы) → в форме можно удалить из черновика
+                // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках, но не ниже 0);
+                // при полной норме дефицит = 0, поле остаётся редактируемым (замена сверх нормы).
+                'deficitValue' => null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null,
+                'savedDate' => null, 'savedWear' => null, 'savedDueDate' => null, 'savedUnit' => null, 'savedNote' => null, 'savedInstruction' => [],
+            ];
+        }
+
+        $actType = $profileCompliance?->typeOfRequirement($requirementId); // тип (мономорфен) для полей строки
+
+        // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
+        // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
+        $journalKind = $this->requirements->findOneById($requirementId)?->getJournalKind();
+        $instructionGroups = [];
+        foreach (null !== $journalKind ? $journalKind->fields() : [] as $field) {
+            $fieldView = ['key' => $field->key, 'label' => $field->label, 'kind' => $field->kind->value, 'required' => $field->required, 'options' => $field->options];
+            $last = array_key_last($instructionGroups);
+            if (null !== $last && $instructionGroups[$last]['label'] === $field->group) {
+                $instructionGroups[$last]['fields'][] = $fieldView;
+            } else {
+                $instructionGroups[] = ['label' => $field->group, 'fields' => [$fieldView]];
             }
         }
 
-        // Режим: есть неудовлетворённые позиции текущей нормы (статус ≠ Green) → форма выдачи/прохождения;
-        // иначе норма удовлетворена → удерживаемое + акты списания (режим списания ниже).
-        if ([] !== $issueRows) {
-            $actType = $profileCompliance?->typeOfRequirement($requirementId); // тип (мономорфен) для полей строки
-
-            // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
-            // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
-            $journalKind = $this->requirements->findOneById($requirementId)?->getJournalKind();
-            $instructionGroups = [];
-            foreach (null !== $journalKind ? $journalKind->fields() : [] as $field) {
-                $fieldView = ['key' => $field->key, 'label' => $field->label, 'kind' => $field->kind->value, 'required' => $field->required, 'options' => $field->options];
-                $last = array_key_last($instructionGroups);
-                if (null !== $last && $instructionGroups[$last]['label'] === $field->group) {
-                    $instructionGroups[$last]['fields'][] = $fieldView;
-                } else {
-                    $instructionGroups[] = ['label' => $field->group, 'fields' => [$fieldView]];
-                }
-            }
-
-            // Дефицит — начальное состояние формы, не сохранённая корзина (черновика больше нет): количество уже
-            // предзаполнено в issueRows (норма − held). На повторном рендере после ошибки восстанавливаем
-            // построчно только из присланного POST ($inputData) — поля инструктажа тоже.
-            $submittedItems = (array) ($inputData['items'] ?? []);
-            foreach ($issueRows as $i => $issueRow) {
-                $submitted = (array) ($submittedItems[$i] ?? []);
-                $issueRows[$i]['savedInstruction'] = (array) ($submitted['instruction'] ?? []);
-            }
-            $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
-
-            return $this->render('admin/compliance/person/issue.html.twig', [
-                'mode' => 'issue',
-                'profileId' => $profileId,
-                'requirementId' => $requirementId,
-                'requirementName' => $requirementName,
-                'profile' => $profileResult->profile,
-                'rows' => $issueRows,
-                'requirementType' => null !== $actType ? $actType->value : 'material',
-                'instructionGroups' => $instructionGroups,
-                'inputData' => $inputData,
-                'documentDate' => $documentDate,
-                'error' => $error,
-                'units' => array_map(static fn (Unit $u): array => ['value' => $u->value, 'title' => $u->title()], Unit::cases()),
-            ]);
+        // Дефицит — начальное состояние формы, не сохранённая корзина (черновика больше нет): количество уже
+        // предзаполнено в issueRows (норма − held). На повторном рендере после ошибки восстанавливаем
+        // построчно только из присланного POST ($inputData) — поля инструктажа тоже.
+        $submittedItems = (array) ($inputData['items'] ?? []);
+        foreach ($issueRows as $i => $issueRow) {
+            $submitted = (array) ($submittedItems[$i] ?? []);
+            $issueRows[$i]['savedInstruction'] = (array) ($submitted['instruction'] ?? []);
         }
+        $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
 
-        // Корзина (открытый черновик акта списания) — саму помечаем кнопкой «Перейти».
-        $openBasketId = $profileCompliance?->openWriteOffDraftFor($requirementId)?->getId();
-
-        // Сформированный акт: та же форма, что при оформлении, но поля заблокированы и показывают ВЫДАННОЕ
-        // (по фактам). «на руках N» — текущий остаток (жёлтым, если часть уже списана). Списание — кнопкой.
+        // Списание — ПАРАЛЛЕЛЬНЫЙ вход, доступный на той же странице (не взаимоисключающий с выдачей по статусу).
+        // Ниже собираем действующие позиции (на руках > 0) и акты списания; «Списать» в шаблоне показываем,
+        // когда есть что списывать. «на руках N» — текущий остаток (жёлтым, если часть уже списана).
         $cadenceByKey = [];
         $normByKey = [];
         foreach ($obligations as $o) {
@@ -232,10 +212,10 @@ final class IssueAction extends AbstractController
             ];
         }
 
-        $rows = [];
+        $heldPositions = [];
         foreach ($positions as $p) {
             $norm = $p['norm'];
-            $rows[] = [
+            $heldPositions[] = [
                 'label' => $p['label'],
                 'meta' => trim($p['meta'].(null !== $norm ? ' · норма '.AmountFormatter::trimmed($norm).' '.$p['unit'] : '')),
                 'unit' => $p['unit'],
@@ -246,20 +226,20 @@ final class IssueAction extends AbstractController
             ];
         }
 
-        if ([] === $rows && [] === $writeOffActs) {
-            $this->addFlash('warning', 'По требованию нет выданных позиций.');
-
-            return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
-        }
-
         return $this->render('admin/compliance/person/issue.html.twig', [
-            'mode' => 'writeoff',
             'profileId' => $profileId,
             'requirementId' => $requirementId,
             'requirementName' => $requirementName,
             'profile' => $profileResult->profile,
-            'rows' => $rows,
-            'openBasketId' => $openBasketId,
+            'rows' => $issueRows,
+            'requirementType' => null !== $actType ? $actType->value : 'material',
+            'instructionGroups' => $instructionGroups,
+            'inputData' => $inputData,
+            'documentDate' => $documentDate,
+            'error' => $error,
+            'units' => array_map(static fn (Unit $u): array => ['value' => $u->value, 'title' => $u->title()], Unit::cases()),
+            // Параллельный блок списания на той же странице.
+            'heldPositions' => $heldPositions,
             'writeOffActs' => $writeOffActs,
         ]);
     }
