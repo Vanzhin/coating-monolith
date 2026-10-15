@@ -13,6 +13,7 @@ use App\Users\Domain\Service\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
 
 /**
  * Карточка требования: журнальная форма выдачи (черновика/подписи/скана больше нет). GET с дефицитом рисует
@@ -51,7 +52,7 @@ final class IssueActionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
 
-        self::assertStringContainsString('Записать выдачу', $html, 'единственная кнопка записи');
+        self::assertStringContainsString('Выдать выбранные', $html, 'групповое действие выдачи в савбаре');
         self::assertStringContainsString('Перчатки', $html, 'позиция текущей нормы в форме');
         self::assertStringNotContainsString('Сохранить черновик', $html, 'черновика больше нет');
         self::assertStringNotContainsString('Прикрепить скан', $html, 'секция скана убрана');
@@ -63,8 +64,9 @@ final class IssueActionTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
         self::assertResponseIsSuccessful();
-        // Форма server-render: количество предзаполнено дефицитом (10) — сабмитим как есть, без JS.
-        $this->client->submit($crawler->selectButton('Записать выдачу')->form());
+        // Дефицитная позиция отмечена по умолчанию (чекбокс checked), кол-во предзаполнено дефицитом (10) —
+        // сабмитим форму как есть, без JS (бэк пишет только отмеченные).
+        $this->client->submit($crawler->filter('#issue-form')->form());
 
         self::assertResponseRedirects();
         $em = $this->client->getContainer()->get(EntityManagerInterface::class);
@@ -83,7 +85,7 @@ final class IssueActionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
 
-        self::assertStringContainsString('Записать выдачу', $html, 'форма выдачи открыта даже при полностью удовлетворённой норме');
+        self::assertStringContainsString('Выдать выбранные', $html, 'действие выдачи доступно даже при полностью удовлетворённой норме');
         self::assertStringContainsString('Перчатки', $html, 'Green-позиция присутствует в форме');
         self::assertGreaterThan(
             0,
@@ -99,7 +101,10 @@ final class IssueActionTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
         self::assertResponseIsSuccessful();
-        $form = $crawler->selectButton('Записать выдачу')->form();
+        $form = $crawler->filter('#issue-form')->form();
+        $selected = $form['items[0][selected]'];
+        self::assertInstanceOf(ChoiceFormField::class, $selected);
+        $selected->tick(); // Green-позиция по умолчанию снята — отмечаем для выдачи
         $form['items[0][amount]'] = '5'; // переопределяем нулевой дефицит — досрочная замена
         $this->client->submit($form);
         self::assertResponseRedirects();
@@ -109,6 +114,26 @@ final class IssueActionTest extends WebTestCase
         $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
         self::assertNotNull($pc);
         self::assertEqualsWithDelta(15.0, $pc->heldOf($k), 1e-9, 'замена записана в журнал: на руках выросло сверх нормы (10 + 5)');
+    }
+
+    public function test_submit_skips_positions_left_unchecked(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $form = $crawler->filter('#issue-form')->form();
+        $selected = $form['items[0][selected]'];
+        self::assertInstanceOf(ChoiceFormField::class, $selected);
+        $selected->untick(); // снимаем отметку — позиция не должна попасть в запись
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        self::assertNotNull($pc);
+        self::assertEqualsWithDelta(0.0, $pc->heldOf($k), 1e-9, 'снятая позиция в журнал не записана');
     }
 
     public function test_item_card_shows_status_badge_and_lazy_history_toggle(): void

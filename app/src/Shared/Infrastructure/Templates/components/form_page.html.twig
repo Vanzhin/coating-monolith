@@ -16,6 +16,9 @@
      anchors      — list<{id, label}>: разделы для чипов-якорей и TOC. Пусто —
                     навигация не рендерится. id должен совпадать с id="" секции
                     в блоке sections; секции помечать data-form-scrollspy-target="section".
+     page_controller — доп. Stimulus-контроллер(ы) на корне .form-page рядом с
+                    form-scrollspy (строка, space-separated). Нужен, когда контроллер
+                    должен видеть и секции, и савбар (напр. выбор позиций выдачи).
 
    Блоки:
      sections     — содержимое формы: <form id="{{ save_form_id }}"> с секциями
@@ -23,6 +26,8 @@
                     плюс соседние sheet/модалки.
      appbar_extra — доп. действия в app-bar слева от «Сохранить» (напр. ссылка
                     на смежную сущность).
+     savebar_extra — доп. кнопки в липкой нижней панели (напр. групповые действия
+                    над выбранными). Рендерятся между «Назад» и «Сохранить».
 
    Использование:
        {% embed 'components/form_page.html.twig' with {
@@ -39,7 +44,7 @@
 {% set save_label = save_label|default('Сохранить') %}
 {% set save_enabled = save_enabled is defined ? save_enabled : true %}{# не default(): Twig считает false «пустым» и вернул бы true #}
 
-<div class="form-page" data-controller="form-scrollspy">
+<div class="form-page" data-controller="form-scrollspy{% if page_controller is defined and page_controller %} {{ page_controller }}{% endif %}">
     <div class="form-appbar">
         <div class="form-appbar-inner">
             <a href="{{ back_url }}" class="form-appbar-back" aria-label="Назад" title="Назад">
@@ -86,6 +91,7 @@
 
     <div class="form-savebar">
         <a href="{{ back_url }}" class="btn btn-outline-secondary">{{ save_enabled ? 'Отмена' : 'Назад' }}</a>
+        {% block savebar_extra %}{% endblock %}
         {% if save_enabled %}
             <button type="submit" form="{{ save_form_id }}" class="btn btn-primary">{{ save_label }}</button>
         {% endif %}

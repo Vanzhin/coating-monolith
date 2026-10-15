@@ -48,12 +48,19 @@ final class IssueAction extends AbstractController
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $inputData */
             $inputData = $request->getPayload()->all();
+            // В запись идут только ОТМЕЧЕННЫЕ чекбоксом позиции (снятый чекбокс браузер в POST не присылает).
+            // Персональные позиции (вне нормы) добавляются явной кнопкой — не гейтим.
+            /** @var list<array<string, mixed>> $selectedItems */
+            $selectedItems = array_values(array_filter(
+                (array) ($inputData['items'] ?? []),
+                static fn (mixed $row): bool => is_array($row) && !empty($row['selected']),
+            ));
             try {
                 $this->commandBus->execute(new RecordIssuanceCommand(
                     $profileId,
                     $requirementId,
                     (string) ($inputData['documentDate'] ?? ''),
-                    array_values((array) ($inputData['items'] ?? [])),
+                    $selectedItems,
                     array_values((array) ($inputData['personalItems'] ?? [])),
                     (string) ($inputData['cardNumber'] ?? ''),
                 ));
@@ -176,16 +183,22 @@ final class IssueAction extends AbstractController
         // предзаполнено в issueRows (норма − held). На повторном рендере после ошибки восстанавливаем
         // построчно только из присланного POST ($inputData) — поля инструктажа тоже.
         $submittedItems = (array) ($inputData['items'] ?? []);
+        $isResubmit = [] !== $submittedItems;
         foreach ($issueRows as $i => $issueRow) {
             $submitted = (array) ($submittedItems[$i] ?? []);
             $issueRows[$i]['savedInstruction'] = (array) ($submitted['instruction'] ?? []);
-            // Поля выдачи раскрыты по умолчанию, только если есть что выдавать: присланное/предзаполненное
-            // количество > 0 (материальные с дефицитом) или заполнены поля инструктажа (нематериальные,
-            // ре-рендер после ошибки). «В норме» (дефицит 0) — свёрнуто.
-            $amountForExpand = str_replace(',', '.', (string) ($submitted['amount'] ?? $issueRow['deficitValue'] ?? ''));
-            $hasAmount = is_numeric($amountForExpand) && (float) $amountForExpand > 0.0;
-            $hasInstruction = [] !== array_filter($issueRows[$i]['savedInstruction'], static fn ($v): bool => '' !== (string) $v);
-            $issueRows[$i]['expanded'] = $hasAmount || $hasInstruction;
+            // Отметка позиции (чекбокс) = идёт ли в групповое действие И раскрыта ли карточка. На повторном
+            // рендере после ошибки — по присланному флагу (сохраняем выбор); на первом — по наличию данных к
+            // выдаче: дефицит (кол-во > 0) у материальных или заполненный инструктаж. «В норме» (дефицит 0) — снято.
+            if ($isResubmit) {
+                $selected = isset($submitted['selected']);
+            } else {
+                $amount = str_replace(',', '.', (string) ($issueRow['deficitValue'] ?? ''));
+                $hasAmount = is_numeric($amount) && (float) $amount > 0.0;
+                $hasInstruction = [] !== array_filter($issueRows[$i]['savedInstruction'], static fn ($v): bool => '' !== (string) $v);
+                $selected = $hasAmount || $hasInstruction;
+            }
+            $issueRows[$i]['selected'] = $selected;
         }
         $documentDate = (string) ($inputData['documentDate'] ?? '') ?: date('Y-m-d');
 

@@ -1,0 +1,20 @@
+{# Подтверждение группового действия над выбранными позициями СИЗ: заголовок + подпись + список имён + кнопка.
+   Один компонент (как delete_modal), наполняется контроллером issue-selection по отмеченным чекбоксам; кнопка
+   подтверждения зовёт issue-selection#confirm (что именно делать — по сохранённому в контроллере действию).
+   Используется для «Выдать выбранные» (и позже «Списать выбранные»). Без JS не нужен — кнопка савбара сабмитит форму. #}
+<div class="modal fade" id="selectionModal" tabindex="-1" aria-hidden="true" aria-labelledby="selectionModalLabel"
+     data-issue-selection-target="modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body pt-4 pb-2">
+                <h5 class="modal-title mb-1" id="selectionModalLabel" data-role="title">Подтверждение</h5>
+                <p class="text-body-secondary small mb-3" data-role="subtitle"></p>
+                <ul class="list-unstyled d-flex flex-column gap-1 mb-0" data-issue-selection-target="list"></ul>
+            </div>
+            <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary flex-fill" data-action="issue-selection#confirm">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>

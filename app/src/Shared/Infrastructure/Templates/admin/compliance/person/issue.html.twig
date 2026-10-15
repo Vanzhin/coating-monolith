@@ -81,6 +81,7 @@
         save_form_id: 'issue-form',
         save_label: 'Записать выдачу',
         anchors: anchors,
+        page_controller: 'issue-selection',
     } %}
         {% block sections %}
             {% if error is defined and error %}
@@ -97,9 +98,6 @@
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
                         <h2 class="h6 mb-0">Документ</h2>
                         <div class="d-flex flex-wrap gap-2">
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-check-lg me-1"></i>Записать выдачу
-                            </button>
                             <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_card_download', {profileId: profileId, requirementId: requirementId}) }}">
                                 <i class="bi bi-file-earmark-word me-1"></i>Скачать бланк
                             </a>
@@ -128,9 +126,16 @@
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                         <h2 class="h6 mb-0">Позиции</h2>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-action="norm-fill#fill">
-                            <i class="bi bi-magic me-1"></i>Заполнить по норме
-                        </button>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="select-all"
+                                       data-issue-selection-target="all" data-action="change->issue-selection#toggleAll">
+                                <label class="form-check-label small" for="select-all">Выбрать все</label>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-action="norm-fill#fill">
+                                <i class="bi bi-magic me-1"></i>Заполнить по норме
+                            </button>
+                        </div>
                     </div>
 
                     {% if rows is empty %}
@@ -143,7 +148,10 @@
                         {% embed 'admin/compliance/_item_card.html.twig' with {
                             name: o.label,
                             attrs: 'data-row',
-                            toggle: 'issue-' ~ loop.index0, expanded: o.expanded,
+                            toggle: 'issue-' ~ loop.index0, expanded: o.selected,
+                            select_name: 'items[' ~ loop.index0 ~ '][selected]',
+                            select_checked: o.selected,
+                            select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle click->issue-selection#stop" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '"',
                             o: o, i: loop.index0, units: units, documentDate: documentDate,
                             s: inputData.items[loop.index0]|default({}),
                             instructionGroups: instructionGroups|default([]),
@@ -171,7 +179,7 @@
                                 {% endif %}
                                 {# Поля выдачи — сворачиваемы; шапка карточки кликабельна (тоггл в _item_card).
                                    По умолчанию раскрыто у позиций с данными (o.expanded). #}
-                                <div class="collapse{{ o.expanded ? ' show' : '' }}" id="issue-{{ i }}" data-issue-fields>
+                                <div class="collapse{{ o.selected ? ' show' : '' }}" id="issue-{{ i }}" data-issue-fields>
                                 <div class="row g-2 w-100">
                                     <div class="col-12">
                                         <label class="form-label small mb-1">Наименование</label>
@@ -189,7 +197,7 @@
                                             <label class="form-label small mb-1">Кол-во</label>
                                             <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
                                                    value="{{ s.amount|default(o.deficitValue) }}" placeholder="{{ o.quantityValue ?? '10' }}"
-                                                   data-norm-amount="{{ o.quantityValue }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
+                                                   data-norm-amount="{{ o.quantityValue }}" data-unit-title="{{ o.unitTitle }}" data-action="input->norm-fill#check change->norm-fill#rowDue">
                                         </div>
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">Ед.</label>
@@ -332,6 +340,19 @@
                     {% endif %}
                 </div>
             {% endif %}
+
+            {# Подтверждение групповой выдачи: список выбранных позиций + кнопка. Один компонент (как delete_modal),
+               наполняется контроллером issue-selection; без JS не нужен — кнопка савбара сабмитит форму напрямую. #}
+            {% include 'components/selection_confirm_modal.html.twig' %}
+        {% endblock %}
+
+        {% block savebar_extra %}
+            {# Групповое действие над отмеченными позициями. type=submit form=issue-form — без JS сабмитит форму
+               напрямую (бэк пишет только отмеченные). С JS контроллер перехватывает и сперва показывает подтверждение. #}
+            <button type="submit" form="issue-form" class="btn btn-soft-success"
+                    data-action="click->issue-selection#confirmIssue">
+                <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="count">0</span>)
+            </button>
         {% endblock %}
     {% endembed %}
 {% endblock %}
