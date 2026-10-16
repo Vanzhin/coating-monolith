@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
+namespace App\Compliance\Domain\Type;
 
 /** Цикл акта выдачи (личной карточки): черновик → подписан (заморожен). */
 enum DocumentStatus: string

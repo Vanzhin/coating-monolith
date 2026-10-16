@@ -9,7 +9,7 @@
         </id>
         <field name="requirementId" type="string" length="64" column="requirement_id"/>
         <field name="status" type="string" length="16" column="status"
-               enum-type="App\Compliance\Domain\Aggregate\ProfileCompliance\DocumentStatus"/>
+               enum-type="App\Compliance\Domain\Type\DocumentStatus"/>
         <field name="commission" type="compliance_writeoff_commission" column="commission" nullable="true"/>
         <field name="actNumber" type="string" length="64" column="act_number" nullable="true"/>
         <field name="actDate" type="datetime_immutable" column="act_date" nullable="true"/>

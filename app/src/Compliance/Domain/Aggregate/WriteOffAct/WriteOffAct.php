@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\Aggregate\WriteOffAct;
 
-use App\Compliance\Domain\Aggregate\ProfileCompliance\DocumentStatus;
+use App\Compliance\Domain\Type\DocumentStatus;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Shared\Domain\ValueObject\Commission;
 use App\Shared\Infrastructure\Exception\AppException;
