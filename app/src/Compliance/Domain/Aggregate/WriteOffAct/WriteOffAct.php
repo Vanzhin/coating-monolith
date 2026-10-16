@@ -107,8 +107,11 @@ class WriteOffAct
             if (null === $existing) {
                 throw new AppException(sprintf('Позиция %s не входит в акт списания.', $line['recordId']));
             }
+            // Новой строке — свежий id, не id старой. Старая уходит в orphan-removal; если присвоить ей
+            // id старой строки, повторный persist (после findById/findOpenDraft, когда старая строка ещё
+            // managed в identity map) кидает EntityIdentityCollisionException.
             $replaced[] = new WriteOffActLine(
-                Uuid::fromString($existing->getId()),
+                Uuid::v7(),
                 $existing->profileId(),
                 $existing->recordId(),
                 $existing->labelSnapshot(),

@@ -75,6 +75,38 @@ final class WriteOffActRepositoryTest extends KernelTestCase
         self::assertSame([], $this->repo->findDraftsContainingRecord('no-such-record'));
     }
 
+    /**
+     * Регрессия: открыл сохранённый черновик → поправил порции → сохранил заново (путь Task 4, карточка
+     * акта). Старая строка уходит в orphan-removal, новая строка СОЗДАЁТСЯ (не мутирует существующую) —
+     * если бы новой строке присвоили id старой, `repo->add()` столкнул бы `EntityIdentityCollisionException`
+     * (старая строка из `findById` ещё managed в identity map, пока persist каскадом регистрирует новую с
+     * тем же id). `replacePortions` обязан генерить свежий `Uuid::v7()` на замене — это и проверяем.
+     */
+    public function test_replace_portions_after_reload_persists_without_identity_collision(): void
+    {
+        $act = new WriteOffAct(Uuid::v7(), 'req-'.uniqid('', true), 'org-'.uniqid('', true), new \DateTimeImmutable('2026-10-20'));
+        $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
+        $actId = $act->getId();
+        $this->repo->add($act);
+        $this->clear();
+
+        $loaded = $this->repo->findById($actId);
+        self::assertNotNull($loaded);
+        $loaded->replacePortions([['recordId' => 'r1', 'quantity' => 3.0, 'reason' => WriteOffReason::TermExpired]]);
+        $this->repo->add($loaded); // до фикса — EntityIdentityCollisionException
+        $this->clear();
+
+        $reloaded = $this->repo->findById($actId);
+        self::assertNotNull($reloaded);
+        self::assertCount(1, $reloaded->lines(), 'старая строка заменена, не задублирована');
+        $line = $reloaded->lines()[0];
+        self::assertSame('r1', $line->recordId());
+        self::assertSame('p1', $line->profileId(), 'profileId сохранён с исходной строки');
+        self::assertSame('Перчатки', $line->labelSnapshot(), 'labelSnapshot сохранён с исходной строки');
+        self::assertEqualsWithDelta(3.0, $line->quantity(), 1e-9, 'quantity обновлено');
+        self::assertSame(WriteOffReason::TermExpired, $line->reason(), 'reason обновлена');
+    }
+
     public function test_remove(): void
     {
         $act = new WriteOffAct(Uuid::v7(), 'req-'.uniqid('', true), 'org-'.uniqid('', true), new \DateTimeImmutable('2026-10-20'));
