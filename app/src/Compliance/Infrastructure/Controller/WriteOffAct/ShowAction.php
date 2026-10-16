@@ -20,6 +20,7 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\ValueObject\CommissionMember;
 use App\Shared\Infrastructure\Exception\AppException;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -81,6 +82,10 @@ final class ShowAction extends AbstractController
                 $this->addFlash('success', 'Акт списания оформлен. Позиции списаны.');
 
                 return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['actId' => $actId]);
+            } catch (OptimisticLockException) {
+                // Акт правили параллельно (двойной клик / другое окно): версия агрегата разошлась. Данные целы
+                // (дублей/второго черновика нет) — просим обновить и повторить вместо 500.
+                return $this->renderPage($actId, 'Акт списания только что изменился в другом окне. Обновите страницу и повторите.', $commissionRows);
             } catch (AppException $e) {
                 return $this->renderPage($actId, $e->getMessage(), $commissionRows);
             }

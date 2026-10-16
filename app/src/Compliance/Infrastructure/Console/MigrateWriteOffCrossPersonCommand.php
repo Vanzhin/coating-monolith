@@ -235,14 +235,13 @@ final class MigrateWriteOffCrossPersonCommand extends Command
             /** @var list<array{recordId: string, quantity: float, reason: ?string}> $items */
             $items = $old['items'];
             foreach ($items as $item) {
-                $fact = $profileCompliance?->recordById($item['recordId']);
-                if (null === $fact) {
-                    ++$dropped; // факт выдачи исчез — переносить нечего, считаем явно (не тихо)
+                if (null === $profileCompliance || null === ($fact = $profileCompliance->recordById($item['recordId']))) {
+                    ++$dropped; // учёт/факт выдачи не резолвится — переносить нечего, считаем явно (не тихо)
                     continue;
                 }
                 $linesByProfile[$profileId][] = [
                     'recordId' => $item['recordId'],
-                    'labelSnapshot' => $profileCompliance?->obligationLabelOf($fact->obligationKey()) ?? $fact->obligationKey(),
+                    'labelSnapshot' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
                     'quantity' => $item['quantity'],
                 ];
                 $reasonByRecordId[$item['recordId']] = null !== $item['reason'] ? WriteOffReason::tryFrom($item['reason']) : null;

@@ -145,7 +145,44 @@ final class WriteOffCrossPersonMigrationTest extends KernelTestCase
         self::assertSame($expected, $profiles, 'строки двух разных профилей');
     }
 
-    private function insertOldAct(string $id, string $pcId, string $requirementId, string $status, ?string $actNumber = null, bool $signed = false): void
+    /**
+     * Легаси подписанный акт без скана (данные старее инварианта {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct::sign}
+     * «скан обязателен») не абортит весь прогон: команда ловит \Throwable на акте, логирует и идёт дальше —
+     * проверяем это и то, что соседний корректный подписанный акт при этом переносится как обычно.
+     */
+    public function test_signed_act_without_scan_is_skipped_but_sibling_act_still_migrates(): void
+    {
+        ['profileId' => $p1, 'requirementId' => $r1, 'key' => $k1] = $this->enrollCompliance();
+        $this->issueCard($p1, $r1, $k1);
+        $pc1 = $this->profileComplianceId($p1);
+        $rec1 = $this->firstRecordId($p1);
+
+        ['profileId' => $p2, 'requirementId' => $r2, 'key' => $k2] = $this->enrollCompliance();
+        $this->issueCard($p2, $r2, $k2);
+        $pc2 = $this->profileComplianceId($p2);
+        $rec2 = $this->firstRecordId($p2);
+
+        $noScanActId = Uuid::v7()->toRfc4122();
+        $this->insertOldAct($noScanActId, $pc1, $r1, 'signed', actNumber: '41', signed: true, withScan: false);
+        $this->insertOldItem($noScanActId, $rec1, 2.0, 'physical_wear');
+
+        $withScanActId = Uuid::v7()->toRfc4122();
+        $this->insertOldAct($withScanActId, $pc2, $r2, 'signed', actNumber: '42', signed: true);
+        $this->insertOldItem($withScanActId, $rec2, 4.0, 'physical_wear');
+
+        $display = $this->runCommand()->getDisplay(); // команда не должна бросить/завершиться с ошибкой
+        $this->clear();
+
+        self::assertNull($this->writeOffActRepo->findById($noScanActId), 'акт без скана пропущен, не перенесён');
+        self::assertStringContainsString(sprintf('Акт %s не перенесён', $noScanActId), $display);
+
+        $migrated = $this->writeOffActRepo->findById($withScanActId);
+        self::assertNotNull($migrated, 'соседний корректный подписанный акт перенёсся несмотря на ошибку в другом');
+        self::assertTrue($migrated->isSigned());
+        self::assertSame('42', $migrated->actNumber());
+    }
+
+    private function insertOldAct(string $id, string $pcId, string $requirementId, string $status, ?string $actNumber = null, bool $signed = false, bool $withScan = true): void
     {
         $commission = $signed ? json_encode(['members' => [['organization' => '', 'position' => 'рук. ОТиПБ', 'fio' => 'Алиханова Н.И.', 'date' => '']]], JSON_THROW_ON_ERROR) : null;
         $this->conn->executeStatement(
@@ -155,7 +192,7 @@ final class WriteOffCrossPersonMigrationTest extends KernelTestCase
             [
                 $id, $pcId, $requirementId, $status, $commission, $actNumber,
                 $signed ? '2026-08-10 00:00:00' : null,
-                $signed ? 'scan-'.substr($id, 0, 8) : null,
+                $signed && $withScan ? 'scan-'.substr($id, 0, 8) : null,
                 $signed ? '2026-08-10 12:00:00' : null,
                 '2026-08-01 10:00:00', '2026-08-01 10:00:00',
             ],
