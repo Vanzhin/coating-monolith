@@ -112,6 +112,53 @@ class ProfileCompliance extends Aggregate
         return $result;
     }
 
+    /**
+     * Факты требования, годные к списанию (наполнение корзины — «Списать выбранные/всё» с карточки выдачи):
+     * есть что списывать ({@see FulfillmentRecord::heldAmount} > 0), позиция не расходная (ДСИЗ — списанию не
+     * подлежит никогда, независимо от выбора клиента — источник истины здесь, не на фронте) и, при явном
+     * выборе позиций, её ключ среди запрошенных. Нематериальные факты отсекаются уже условием held>0 — у
+     * них количества нет, `heldAmount()` всегда 0.
+     *
+     * @param ?list<string> $obligationKeys null = все инвентарные held>0 позиции требования («Списать всё»)
+     *
+     * @return list<FulfillmentRecord>
+     */
+    public function writeOffEligibleFactsForRequirement(string $requirementId, ?array $obligationKeys): array
+    {
+        $consumableKeys = $this->consumableObligationKeys();
+        $wantedKeys = null === $obligationKeys ? null : array_fill_keys($obligationKeys, true);
+
+        $eligible = [];
+        foreach ($this->recordsForRequirement($requirementId) as $fact) {
+            $isHeld = $fact->heldAmount() > 0.0;
+            $isConsumable = isset($consumableKeys[$fact->obligationKey()]);
+            $isRequested = null === $wantedKeys || isset($wantedKeys[$fact->obligationKey()]);
+            if ($isHeld && !$isConsumable && $isRequested) {
+                $eligible[] = $fact;
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * Ключи обязанностей в режиме «расходная» (ДСИЗ) — списанию не подлежат никогда. Нет режима (напр.
+     * персональная позиция вне нормы) — трактуем как инвентарь, в множество не включаем.
+     *
+     * @return array<string, true>
+     */
+    private function consumableObligationKeys(): array
+    {
+        $keys = [];
+        foreach ($this->obligations as $obligation) {
+            if ($obligation->isConsumable()) {
+                $keys[$obligation->key()] = true;
+            }
+        }
+
+        return $keys;
+    }
+
     /** @return WriteOffAct[] */
     public function getWriteOffActs(): array
     {

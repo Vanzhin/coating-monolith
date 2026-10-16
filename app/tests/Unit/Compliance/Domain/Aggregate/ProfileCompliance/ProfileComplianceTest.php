@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Compliance\Domain\Aggregate\ProfileCompliance;
 
+use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
@@ -13,6 +14,7 @@ use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
+use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Cadence;
@@ -33,6 +35,8 @@ final class ProfileComplianceTest extends TestCase
     private string $reqId = 'req-1';
     private string $glovesItemId = 'item-gloves';
     private string $fireSafetyItemId = 'item-fire';
+    private string $creamItemId = 'item-cream';
+    private string $helmetItemId = 'item-helmet';
 
     protected function setUp(): void
     {
@@ -84,6 +88,46 @@ final class ProfileComplianceTest extends TestCase
     private function issuedGloves(ProfileCompliance $pc, \DateTimeImmutable $at, float $amount = 10.0): void
     {
         $pc->recordIssuance($this->calc, $this->glovesLine($amount, $at->format('Y-m-d')));
+    }
+
+    /** Перчатки (инвентарь, held>0) + Крем защитный (расходная ДСИЗ, held>0) — обе того же требования. */
+    private function pcWithGlovesAndConsumableCream(): ProfileCompliance
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $pc->putObligation(new TrackedObligation(
+            Uuid::v4(), $pc, $this->reqId, $this->creamItemId, 'СИЗ основные', 'Крем защитный',
+            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
+            new Quantity(3.0, Unit::Pair), 'dept-1', TrackedObligation::ORIGIN_NORM, MaterialMode::Consumable,
+        ));
+        $this->issuedGloves($pc, $this->now, 10.0);
+        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
+
+        return $pc;
+    }
+
+    private function creamKey(): string
+    {
+        return TrackedObligation::keyOf($this->reqId, $this->creamItemId);
+    }
+
+    /** Перчатки + Каска — обе инвентарные (mode=null), того же требования, обе выданы. */
+    private function pcWithGlovesAndHelmet(): ProfileCompliance
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $pc->putObligation(new TrackedObligation(
+            Uuid::v4(), $pc, $this->reqId, $this->helmetItemId, 'СИЗ основные', 'Каска',
+            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
+            new Quantity(1.0, Unit::Piece), 'dept-1',
+        ));
+        $this->issuedGloves($pc, $this->now, 10.0);
+        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $this->helmetKey(), $this->now, new Quantity(1.0, Unit::Piece)));
+
+        return $pc;
+    }
+
+    private function helmetKey(): string
+    {
+        return TrackedObligation::keyOf($this->reqId, $this->helmetItemId);
     }
 
     public function test_fulfillment_recomputes_dates(): void
@@ -511,5 +555,69 @@ final class ProfileComplianceTest extends TestCase
         $pc->applyWriteOff(['нет-такой-записи' => 5.0]); // не должно бросать — акт кросс-персон, не вся строка «своя»
 
         self::assertEqualsWithDelta(10.0, $pc->heldOf($this->glovesKey()), 1e-9, 'held не изменился');
+    }
+
+    public function test_write_off_eligible_facts_includes_inventory_held_position(): void
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $this->issuedGloves($pc, $this->now, 10.0);
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+
+        self::assertCount(1, $eligible);
+        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+    }
+
+    public function test_write_off_eligible_facts_excludes_consumable_position_when_selecting_all(): void
+    {
+        $pc = $this->pcWithGlovesAndConsumableCream();
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+
+        self::assertCount(1, $eligible, '«Списать всё» не берёт расходную (ДСИЗ) позицию');
+        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+    }
+
+    public function test_write_off_eligible_facts_ignores_explicit_consumable_key(): void
+    {
+        $pc = $this->pcWithGlovesAndConsumableCream();
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, [$this->glovesKey(), $this->creamKey()]);
+
+        self::assertCount(1, $eligible, 'явный выбор расходной позиции всё равно отфильтрован — бэк источник истины');
+        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+    }
+
+    public function test_write_off_eligible_facts_excludes_non_material_fact(): void
+    {
+        $pc = $this->pcWithFireSafetyObligation();
+        $pc->recordFulfillment(Uuid::v4(), $this->fireSafetyKey(), $this->now, $this->calc); // нематериальный факт, quantity нет
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement('req-2', null);
+
+        self::assertSame([], $eligible, 'нематериальный факт отсекается own held=0, списанию не подлежит');
+    }
+
+    public function test_write_off_eligible_facts_filters_by_explicit_keys(): void
+    {
+        $pc = $this->pcWithGlovesAndHelmet();
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, [$this->glovesKey()]);
+
+        self::assertCount(1, $eligible, 'явный выбор ограничивает до запрошенного ключа — вторая held-позиция (каска) не попала');
+        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+    }
+
+    public function test_write_off_eligible_facts_includes_personal_obligation_with_null_mode(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $itemId = Uuid::v4()->toRfc4122();
+        $key = $pc->addPersonalObligation(Uuid::v4(), $itemId, $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece), manualDueDate: new \DateTimeImmutable('2027-06-01')));
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+
+        $keys = array_map(static fn (FulfillmentRecord $f): string => $f->obligationKey(), $eligible);
+        self::assertContains($key, $keys, 'персональная позиция без режима (mode=null) трактуется как инвентарь');
     }
 }
