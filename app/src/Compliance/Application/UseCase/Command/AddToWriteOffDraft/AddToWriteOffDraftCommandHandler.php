@@ -7,6 +7,7 @@ namespace App\Compliance\Application\UseCase\Command\AddToWriteOffDraft;
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
@@ -47,8 +48,12 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
         $profile = $profileResult->profile ?? throw new AppException('Сотрудник не найден.');
         $organizationId = $profile->organizationId;
 
-        $act = $this->writeOffActRepository->findOpenDraft($command->requirementId, $organizationId)
-            ?? new WriteOffAct(Uuid::v7(), $command->requirementId, $organizationId, new \DateTimeImmutable());
+        $facts = $this->selectHeldFacts($profileCompliance, $command->requirementId, $command->obligationKeys);
+        $existingAct = $this->writeOffActRepository->findOpenDraft($command->requirementId, $organizationId);
+        if ([] === $facts && null === $existingAct) {
+            return; // добавить нечего, открытого черновика нет — пустой акт не плодим
+        }
+        $act = $existingAct ?? new WriteOffAct(Uuid::v7(), $command->requirementId, $organizationId, new \DateTimeImmutable());
 
         $lines = array_map(
             static fn (FulfillmentRecord $fact): array => [
@@ -56,7 +61,7 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
                 'labelSnapshot' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
                 'quantity' => $fact->heldAmount(),
             ],
-            $this->selectHeldFacts($profileCompliance, $command->requirementId, $command->obligationKeys),
+            $facts,
         );
         $act->addLinesForProfile($command->profileId, $lines);
 
@@ -65,8 +70,9 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
 
     /**
      * Held-факты человека по требованию, целевые для корзины. Явный выбор («Списать выбранные») — только
-     * указанные позиции; `null` («Списать всё») — все ИНВЕНТАРНЫЕ held>0 (материальный факт — у него есть
-     * `quantity`; расходные/нематериальные позиции списанию не подлежат и в «всё» не попадают).
+     * указанные позиции; `null` («Списать всё») — все ИНВЕНТАРНЫЕ held>0. В обоих случаях расходные (ДСИЗ,
+     * {@see \App\Compliance\Domain\Type\MaterialMode::Consumable}) и нематериальные факты НИКОГДА не попадают
+     * в списание — источник истины бэк, явный выбор их ключа клиентом игнорируется.
      *
      * @param ?list<string> $obligationKeys
      *
@@ -74,11 +80,12 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
      */
     private function selectHeldFacts(ProfileCompliance $profileCompliance, string $requirementId, ?array $obligationKeys): array
     {
+        $consumableKeys = $this->consumableKeysOf($profileCompliance);
         $wanted = null === $obligationKeys ? null : array_fill_keys($obligationKeys, true);
 
         $facts = [];
         foreach ($profileCompliance->recordsForRequirement($requirementId) as $fact) {
-            if ($fact->heldAmount() <= 0.0) {
+            if ($fact->heldAmount() <= 0.0 || isset($consumableKeys[$fact->obligationKey()])) {
                 continue;
             }
             if (null === $wanted) {
@@ -92,5 +99,25 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
         }
 
         return $facts;
+    }
+
+    /**
+     * Ключи обязанностей в режиме «расходная» (ДСИЗ) — списанию не подлежат никогда, независимо от выбора
+     * клиента. Режим живёт на проекции обязанности ({@see TrackedObligation::isConsumable}), не на факте —
+     * сам факт выдачи не знает, инвентарная его позиция или расходная. Нет режима (напр. персональная
+     * позиция вне нормы) — трактуем как инвентарь, не исключаем.
+     *
+     * @return array<string, true>
+     */
+    private function consumableKeysOf(ProfileCompliance $profileCompliance): array
+    {
+        $keys = [];
+        foreach ($profileCompliance->getObligations() as $obligation) {
+            if ($obligation->isConsumable()) {
+                $keys[$obligation->key()] = true;
+            }
+        }
+
+        return $keys;
     }
 }

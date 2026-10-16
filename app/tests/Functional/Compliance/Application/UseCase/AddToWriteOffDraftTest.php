@@ -145,6 +145,54 @@ final class AddToWriteOffDraftTest extends KernelTestCase
         self::assertSame(['Нарукавники', 'Перчатки'], $labels, '«Списать всё» захватило обе инвентарные позиции');
     }
 
+    public function test_select_all_excludes_consumable_position(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $kGloves, 'organizationId' => $org] = $this->enrollCompliance('Перчатки', null, [
+            ['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '3', 'unit' => 'pair', 'basis' => 'п.8', 'mode' => 'consumable'],
+        ]);
+        $kCream = $this->obligationKeyFor($r, 'Крем защитный');
+        $this->issueCard($p, $r, $kGloves); // инвентарная, на руках 10
+        $this->issueCard($p, $r, $kCream, '3'); // расходная (ДСИЗ), на руках 3
+
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $this->reload();
+
+        $act = $this->writeOffActRepo->findOpenDraft($r, $org);
+        self::assertNotNull($act, 'инвентарная позиция всё равно есть — черновик создан');
+        $labels = array_map(static fn ($line): string => $line->labelSnapshot(), $act->lines());
+        self::assertSame(['Перчатки'], $labels, '«Списать всё» не берёт расходную (ДСИЗ) позицию');
+    }
+
+    public function test_explicit_selection_of_consumable_key_is_filtered_out(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $kGloves, 'organizationId' => $org] = $this->enrollCompliance('Перчатки', null, [
+            ['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '3', 'unit' => 'pair', 'basis' => 'п.8', 'mode' => 'consumable'],
+        ]);
+        $kCream = $this->obligationKeyFor($r, 'Крем защитный');
+        $this->issueCard($p, $r, $kGloves);
+        $this->issueCard($p, $r, $kCream, '3');
+
+        // Явно выбрали и инвентарную, и расходную — бэк, источник истины, расходную всё равно отфильтрует.
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $r, [$kGloves, $kCream]));
+        $this->reload();
+
+        $act = $this->writeOffActRepo->findOpenDraft($r, $org);
+        self::assertNotNull($act);
+        $labels = array_map(static fn ($line): string => $line->labelSnapshot(), $act->lines());
+        self::assertSame(['Перчатки'], $labels, 'явный выбор расходной позиции хендлер игнорирует');
+    }
+
+    public function test_select_all_creates_no_draft_when_nothing_inventory_to_write_off(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'organizationId' => $org] = $this->enrollCompliance();
+        // Ничего не выдано — held 0 по всем позициям требования, добавить в корзину нечего.
+
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $this->reload();
+
+        self::assertNull($this->writeOffActRepo->findOpenDraft($r, $org), 'нечего списывать — черновик не создан');
+    }
+
     /** @return array{positionId: string, requirementId: string, key: string} */
     private function createSharedRequirement(string $itemLabel = 'Перчатки'): array
     {
