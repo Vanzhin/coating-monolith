@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Infrastructure\Repository;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -68,5 +69,25 @@ class ProfileComplianceRepository extends ServiceEntityRepository implements Pro
             ->fetchFirstColumn('SELECT profile_id FROM compliance_profile_compliance');
 
         return $ids;
+    }
+
+    public function findDueSoonObligations(\DateTimeImmutable $threshold): array
+    {
+        // Прямой скан проекции compliance_tracked_obligation (не весь агрегат с records) — для прохода
+        // уведомлений. `p` addSelect'ится рядом ради profileId: readonly-id + to-one на агрегат без fetch-join
+        // в этом же запросе роняет LAZY-прокси.
+        /** @var list<TrackedObligation> $result */
+        $result = $this->getEntityManager()->createQueryBuilder()
+            ->select('o', 'p')
+            ->from(TrackedObligation::class, 'o')
+            ->innerJoin('o.profileCompliance', 'p')
+            ->where('o.active = true')
+            ->andWhere('o.nextDueAt IS NOT NULL')
+            ->andWhere('o.nextDueAt <= :threshold')
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
     }
 }

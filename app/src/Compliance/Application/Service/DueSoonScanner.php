@@ -11,10 +11,11 @@ use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Notifications\Domain\Event\ComplianceDueItem;
 use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;
-use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
-use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
+use App\Personnel\Application\UseCase\Query\GetProfilesByIds\GetProfilesByIdsQuery;
+use App\Personnel\Application\UseCase\Query\GetProfilesByIds\GetProfilesByIdsQueryResult;
 use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 /**
  * Проход сроков: по каждому сотруднику считает состояние его обязанностей ЕДИНЫМ резолвером
@@ -38,15 +39,26 @@ final readonly class DueSoonScanner
     /** @return int число дайджестов (сотрудников) в опубликованной пачке */
     public function scan(\DateTimeImmutable $now): int
     {
-        $digests = [];
-        foreach ($this->profiles->findAllProfileIds() as $profileId) {
-            $profileCompliance = $this->profiles->findByProfile($profileId);
-            if (null === $profileCompliance) {
-                continue;
-            }
+        // Порог совпадает с окном резолвера (DUE_SOON_DAYS) — SQL отбирает ровно тех кандидатов, которых
+        // bucketFor() ниже мог бы признать Soon/Overdue (сам bucketFor решает финально — held<норма всё ещё
+        // валит в Missing, несмотря на близкий срок).
+        $threshold = $now->modify('+'.ComplianceStatusResolver::DUE_SOON_DAYS.' days');
 
+        $obligationsByProfile = [];
+        foreach ($this->profiles->findDueSoonObligations($threshold) as $obligation) {
+            $obligationsByProfile[$obligation->profileCompliance()->getProfileId()][] = $obligation;
+        }
+
+        if ([] === $obligationsByProfile) {
+            return 0;
+        }
+
+        $fioByProfileId = $this->fioByProfileIds(array_keys($obligationsByProfile));
+
+        $digests = [];
+        foreach ($obligationsByProfile as $profileId => $obligations) {
             $items = [];
-            foreach ($profileCompliance->getObligations() as $obligation) {
+            foreach ($obligations as $obligation) {
                 $bucket = $this->resolver->bucketFor(
                     $obligation->isActive(),
                     $obligation->lastFulfilledAt(),
@@ -65,7 +77,7 @@ final readonly class DueSoonScanner
             }
 
             if ([] !== $items) {
-                $digests[] = new ComplianceDueSoon($profileId, $this->fio($profileId), ...$items);
+                $digests[] = new ComplianceDueSoon((string) $profileId, $fioByProfileId[$profileId] ?? '', ...$items);
             }
         }
 
@@ -78,15 +90,23 @@ final readonly class DueSoonScanner
         return \count($digests);
     }
 
-    private function fio(string $profileId): string
+    /**
+     * ФИО батчем на всех сотрудников дайджеста (не N+1 запросов по одному на человека).
+     *
+     * @param list<string> $profileIds
+     *
+     * @return array<string, string> profileId => ФИО
+     */
+    private function fioByProfileIds(array $profileIds): array
     {
-        $result = $this->queryBus->execute(new GetProfileQuery($profileId));
-        \assert($result instanceof GetProfileQueryResult);
-        $profile = $result->profile;
-        if (null === $profile) {
-            return '';
+        $result = $this->queryBus->execute(new GetProfilesByIdsQuery(new StringCollection(...$profileIds)));
+        \assert($result instanceof GetProfilesByIdsQueryResult);
+
+        $fio = [];
+        foreach ($result->profiles as $profile) {
+            $fio[$profile->id] = trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
         }
 
-        return trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
+        return $fio;
     }
 }
