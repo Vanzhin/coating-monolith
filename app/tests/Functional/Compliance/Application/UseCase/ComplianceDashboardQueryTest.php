@@ -144,6 +144,10 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         ));
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
 
+        // Re-save выше без round-trip id пересоздал id позиций → ключ «Перчаток» теперь другой; берём актуальный
+        // (в проде форма правки возвращает id, здесь команда собрана руками без него).
+        $glovesKey = $this->obligationKeyFor($reqId, 'Перчатки');
+
         // Выдаём ТОЛЬКО Перчатки, задним числом (2020 → срок 2021 < now) → Overdue; Каска остаётся Missing.
         $this->issueCard($profileId, $reqId, $glovesKey, '10', '2020-01-01');
 

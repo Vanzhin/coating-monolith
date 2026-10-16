@@ -10,7 +10,6 @@ use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCo
 use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQuery;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQueryResult;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -119,7 +118,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         ['profileId' => $p, 'requirementId' => $r, 'key' => $kGloves] = $this->enrollCompliance('Перчатки', extraItems: [
             ['label' => 'Очки защитные', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pair', 'basis' => 'п.6'],
         ]);
-        $kGoggles = TrackedObligation::keyOf($r, 'Очки защитные');
+        $kGoggles = $this->obligationKeyFor($r, 'Очки защитные');
         $this->issueCard($p, $r, $kGloves, amount: '10', date: '2026-06-01');
         $this->issueCard($p, $r, $kGoggles, amount: '1', date: '2026-06-02');
 

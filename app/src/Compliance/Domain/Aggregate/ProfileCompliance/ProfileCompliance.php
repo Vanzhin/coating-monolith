@@ -518,18 +518,22 @@ class ProfileCompliance extends Aggregate
     /**
      * Персональная позиция (origin=Personal) в акте требования: не из нормы, но трекается наравне. Тип (= тип
      * акта, мономорфен), имя требования и отдел берём с существующей обязанности акта — клиент тип не задаёт.
-     * Нет обязанностей требования → нельзя добавить (карточка без нормы). Возвращает ключ созданной обязанности.
+     * Нет обязанностей требования → нельзя добавить (карточка без нормы). Дедуп по `lower(label)` среди
+     * персональных того же требования: та же позиция уже есть → переиспользуем её itemId (кандидаты игнорим),
+     * иначе создаём с переданным кандидатом. id/itemId генерит вызывающий (как с черновиком списания).
+     * Возвращает ключ обязанности (`keyOf(requirementId, itemId)`).
      */
-    public function addPersonalObligation(Uuid $id, string $requirementId, string $label, Cadence $cadence, ?Quantity $quantity): string
+    public function addPersonalObligation(Uuid $candidateId, string $candidateItemId, string $requirementId, string $label, Cadence $cadence, ?Quantity $quantity): string
     {
-        $key = TrackedObligation::keyOf($requirementId, $label);
+        $normalizedLabel = mb_strtolower(trim($label));
         $reference = null;
         foreach ($this->obligations as $obligation) {
-            if ($obligation->key() === $key) {
-                throw new AppException(sprintf('Позиция «%s» уже есть в карточке.', trim($label)));
+            if (!TrackedObligation::keyBelongsToRequirement($obligation->key(), $requirementId)) {
+                continue;
             }
-            if (null === $reference && TrackedObligation::keyBelongsToRequirement($obligation->key(), $requirementId)) {
-                $reference = $obligation;
+            $reference ??= $obligation;
+            if (TrackedObligation::ORIGIN_PERSONAL === $obligation->origin() && mb_strtolower(trim($obligation->label())) === $normalizedLabel) {
+                return $obligation->key();
             }
         }
         if (null === $reference) {
@@ -537,12 +541,12 @@ class ProfileCompliance extends Aggregate
         }
 
         $this->putObligation(new TrackedObligation(
-            $id, $this, $requirementId, $reference->requirementName(),
+            $candidateId, $this, $requirementId, $candidateItemId, $reference->requirementName(),
             trim($label), $reference->type(), $cadence, $quantity, $reference->departmentId(),
             TrackedObligation::ORIGIN_PERSONAL,
         ));
 
-        return $key;
+        return TrackedObligation::keyOf($requirementId, $candidateItemId);
     }
 
     /** Зафиксировать выдачу/прохождение и пересчитать даты затронутой обязанности. */

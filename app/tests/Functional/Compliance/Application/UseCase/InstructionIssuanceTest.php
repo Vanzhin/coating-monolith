@@ -9,7 +9,6 @@ use App\Compliance\Application\Service\RequirementCardProjector;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
@@ -129,6 +128,6 @@ final class InstructionIssuanceTest extends KernelTestCase
 
         $c->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
 
-        return [$bus, $repo, $em, $profile->id, TrackedObligation::keyOf($req->id, self::LABEL)];
+        return [$bus, $repo, $em, $profile->id, $this->obligationKeyFor($req->id, self::LABEL)];
     }
 }

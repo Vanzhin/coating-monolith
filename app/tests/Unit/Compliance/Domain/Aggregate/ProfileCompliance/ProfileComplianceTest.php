@@ -31,6 +31,8 @@ final class ProfileComplianceTest extends TestCase
     private ComplianceStatusResolver $resolver;
     private \DateTimeImmutable $now;
     private string $reqId = 'req-1';
+    private string $glovesItemId = 'item-gloves';
+    private string $fireSafetyItemId = 'item-fire';
 
     protected function setUp(): void
     {
@@ -47,7 +49,7 @@ final class ProfileComplianceTest extends TestCase
             $pc->assignCardNumber($cardNumber);
         }
         $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $this->reqId, 'СИЗ основные', 'Перчатки',
+            Uuid::v4(), $pc, $this->reqId, $this->glovesItemId, 'СИЗ основные', 'Перчатки',
             ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
             new Quantity($norm, Unit::Pair), 'dept-1',
         ));
@@ -57,7 +59,7 @@ final class ProfileComplianceTest extends TestCase
 
     private function glovesKey(): string
     {
-        return TrackedObligation::keyOf($this->reqId, 'Перчатки');
+        return TrackedObligation::keyOf($this->reqId, $this->glovesItemId);
     }
 
     private function pcWithFireSafetyObligation(): ProfileCompliance
@@ -65,7 +67,7 @@ final class ProfileComplianceTest extends TestCase
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
         $pc->assignCardNumber('CARD-001');
         $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, 'req-2', 'Пожарная безопасность', 'Пожарный',
+            Uuid::v4(), $pc, 'req-2', $this->fireSafetyItemId, 'Пожарная безопасность', 'Пожарный',
             ComplianceType::NonMaterial, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
             null, 'dept-1',
         ));
@@ -75,7 +77,7 @@ final class ProfileComplianceTest extends TestCase
 
     private function fireSafetyKey(): string
     {
-        return TrackedObligation::keyOf('req-2', 'Пожарный');
+        return TrackedObligation::keyOf('req-2', $this->fireSafetyItemId);
     }
 
     /** Выдать перчатки прямой записью в журнал (журнальная замена «подписанного акта» в тестах списания). */
@@ -304,19 +306,28 @@ final class ProfileComplianceTest extends TestCase
         self::assertNull($pc->typeOfRequirement('нет-такого'));
     }
 
-    public function test_add_personal_obligation_is_tracked_and_rejects_duplicate(): void
+    public function test_add_personal_obligation_is_tracked(): void
     {
         $pc = $this->pcWithGloves(2.0);
-        $key = $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $itemId = Uuid::v4()->toRfc4122();
+        $key = $pc->addPersonalObligation(Uuid::v4(), $itemId, $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
 
-        self::assertSame(TrackedObligation::keyOf($this->reqId, 'Очки'), $key);
+        self::assertSame(TrackedObligation::keyOf($this->reqId, $itemId), $key); // ключ = reqId|itemId кандидата
         $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $key));
         self::assertCount(1, $added);
         self::assertSame(TrackedObligation::ORIGIN_PERSONAL, $added[0]->origin());
         self::assertSame(ComplianceType::Material, $added[0]->type()); // тип выведен от нормы акта (перчатки — материальные)
+    }
 
-        $this->expectException(AppException::class); // дубль по тому же ключу (keyOf лоуэркейсит label)
-        $pc->addPersonalObligation(Uuid::v4(), $this->reqId, 'очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+    public function test_personal_obligation_dedup_by_label_returns_same_key(): void
+    {
+        $pc = $this->pcWithGloves(2.0);
+        $k1 = $pc->addPersonalObligation(Uuid::v4(), Uuid::v4()->toRfc4122(), $this->reqId, 'Фартук', new Cadence(CadenceKind::ByManufacturerDoc), null);
+        $k2 = $pc->addPersonalObligation(Uuid::v4(), Uuid::v4()->toRfc4122(), $this->reqId, 'ФАРТУК', new Cadence(CadenceKind::ByManufacturerDoc), null);
+
+        self::assertSame($k1, $k2, 'повторная персональная с тем же label (регистронезависимо) — та же обязанность');
+        $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $k1));
+        self::assertCount(1, $added, 'кандидаты второго вызова проигнорированы — одна позиция');
     }
 
     private function commission(): Commission
@@ -351,13 +362,14 @@ final class ProfileComplianceTest extends TestCase
     {
         $pc = $this->pcWithGloves();
         $otherReqId = 'req-2';
+        $kaskaItemId = 'item-kaska';
         $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $otherReqId, 'Другое требование', 'Каска',
+            Uuid::v4(), $pc, $otherReqId, $kaskaItemId, 'Другое требование', 'Каска',
             ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
             new Quantity(1.0, Unit::Piece), 'dept-1',
         ));
         $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
-        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, 'Каска'), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(1.0, Unit::Piece));
+        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, $kaskaItemId), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(1.0, Unit::Piece));
 
         $records = $pc->recordsForRequirement($this->reqId);
 

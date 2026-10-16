@@ -14,7 +14,8 @@ use Symfony\Component\Uid\Uuid;
  * Проекция обязанности человека — производная (норма + факты), материализованная строкой ради дешёвых
  * запросов дашборда/алертов (Д4). Хранит ДАТЫ (событийные), но НЕ статус (выводится на чтении). `active` =
  * документ требования (человек×требование) подписан — только тогда трекаем сроки; иначе требование не
- * исполнено (Red). Идентичность строки — `key()` = `requirementId|label`, переживает пересборку.
+ * исполнено (Red). Идентичность строки — `key()` = `requirementId|itemId` (стабильный id позиции;
+ * переименование позиции не рвёт связь факта), переживает пересборку.
  */
 class TrackedObligation
 {
@@ -24,6 +25,7 @@ class TrackedObligation
     private readonly Uuid $id;
     private ProfileCompliance $profileCompliance;
     private string $requirementId;
+    private string $itemId;
     private string $requirementName;
     private string $label;
     private ComplianceType $type;
@@ -41,6 +43,7 @@ class TrackedObligation
         Uuid $id,
         ProfileCompliance $profileCompliance,
         string $requirementId,
+        string $itemId,
         string $requirementName,
         string $label,
         ComplianceType $type,
@@ -53,6 +56,7 @@ class TrackedObligation
         $this->id = $id;
         $this->profileCompliance = $profileCompliance;
         $this->requirementId = $requirementId;
+        $this->itemId = $itemId;
         $this->requirementName = $requirementName;
         $this->label = $label;
         $this->type = $type;
@@ -63,9 +67,10 @@ class TrackedObligation
         $this->mode = $mode;
     }
 
-    public static function keyOf(string $requirementId, string $label): string
+    /** `$suffix` — стабильный itemId позиции (не человекочитаемый label), регистр не нормализуем. */
+    public static function keyOf(string $requirementId, string $suffix): string
     {
-        return $requirementId.'|'.mb_strtolower(trim($label));
+        return $requirementId.'|'.trim($suffix);
     }
 
     /** Принадлежность ключа обязанности требованию (формат ключа — знание домена, наружу не отдаём). */
@@ -90,7 +95,7 @@ class TrackedObligation
 
     public function key(): string
     {
-        return self::keyOf($this->requirementId, $this->label);
+        return self::keyOf($this->requirementId, $this->itemId);
     }
 
     public function setDates(?\DateTimeImmutable $lastFulfilledAt, ?\DateTimeImmutable $nextDueAt): void
@@ -127,6 +132,11 @@ class TrackedObligation
     public function requirementId(): string
     {
         return $this->requirementId;
+    }
+
+    public function itemId(): string
+    {
+        return $this->itemId;
     }
 
     public function requirementName(): string
