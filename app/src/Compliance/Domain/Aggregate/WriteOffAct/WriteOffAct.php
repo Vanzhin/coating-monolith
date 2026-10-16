@@ -8,6 +8,8 @@ use App\Compliance\Domain\Type\DocumentStatus;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Shared\Domain\ValueObject\Commission;
 use App\Shared\Infrastructure\Exception\AppException;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -23,8 +25,13 @@ class WriteOffAct
     private string $requirementId;
     private string $organizationId;
     private DocumentStatus $status;
-    /** @var list<WriteOffActLine> */
-    private array $lines = [];
+    /**
+     * Doctrine one-to-many требует `Collection`, не `array`, — иначе падает при flush
+     * (`PersistentCollection` не ложится в типизированное `array`-свойство).
+     *
+     * @var Collection<int, WriteOffActLine>
+     */
+    private Collection $lines;
     private ?Commission $commission = null;
     private ?string $actNumber = null;
     private ?\DateTimeImmutable $actDate = null;
@@ -36,6 +43,7 @@ class WriteOffAct
     private ?\DateTimeImmutable $signedAt = null;
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
+    private int $version = 1; // Doctrine optimistic lock — только читаем, не мутируем сами
 
     public function __construct(Uuid $id, string $requirementId, string $organizationId, \DateTimeImmutable $now)
     {
@@ -43,6 +51,7 @@ class WriteOffAct
         $this->requirementId = $requirementId;
         $this->organizationId = $organizationId;
         $this->status = DocumentStatus::Formed;
+        $this->lines = new ArrayCollection();
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -56,14 +65,23 @@ class WriteOffAct
     public function addLinesForProfile(string $profileId, array $lines): void
     {
         $this->assertMutable();
-        $existingRecordIds = array_map(static fn (WriteOffActLine $line): string => $line->recordId(), $this->lines);
+        $existingRecordIds = array_map(static fn (WriteOffActLine $line): string => $line->recordId(), $this->lines->toArray());
+
+        // Собираем в локальный массив и мутируем состояние акта ТОЛЬКО после того, как все строки батча
+        // успешно сконструировались — иначе строка с quantity<=0 в середине батча оставляет акт с частью
+        // уже добавленных строк (несогласованное состояние до персиста).
+        $toAdd = [];
         foreach ($lines as $line) {
             if (in_array($line['recordId'], $existingRecordIds, true)) {
                 continue; // дубль по recordId — тихо пропускаем
             }
-            $newLine = new WriteOffActLine(Uuid::v7(), $profileId, $line['recordId'], $line['labelSnapshot'], $line['quantity']);
-            $this->lines[] = $newLine;
+            $newLine = new WriteOffActLine(Uuid::v7(), $profileId, $line['recordId'], $line['labelSnapshot'], $line['quantity'], null, $this);
+            $toAdd[] = $newLine;
             $existingRecordIds[] = $newLine->recordId();
+        }
+
+        foreach ($toAdd as $newLine) {
+            $this->lines->add($newLine);
         }
     }
 
@@ -96,9 +114,14 @@ class WriteOffAct
                 $existing->labelSnapshot(),
                 $line['quantity'],
                 $line['reason'] ?? null,
+                $this,
             );
         }
-        $this->lines = $replaced;
+
+        $this->lines->clear();
+        foreach ($replaced as $newLine) {
+            $this->lines->add($newLine);
+        }
     }
 
     /**
@@ -109,10 +132,11 @@ class WriteOffAct
     public function removeLinesByRecordIds(array $recordIds): void
     {
         $toRemove = array_fill_keys($recordIds, true);
-        $this->lines = array_values(array_filter(
-            $this->lines,
-            static fn (WriteOffActLine $line): bool => !isset($toRemove[$line->recordId()]),
-        ));
+        foreach ($this->lines->toArray() as $line) {
+            if (isset($toRemove[$line->recordId()])) {
+                $this->lines->removeElement($line);
+            }
+        }
     }
 
     /**
@@ -180,7 +204,7 @@ class WriteOffAct
     /** @return list<WriteOffActLine> */
     public function lines(): array
     {
-        return $this->lines;
+        return array_values($this->lines->toArray());
     }
 
     public function isDraft(): bool
@@ -282,5 +306,10 @@ class WriteOffAct
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function version(): int
+    {
+        return $this->version;
     }
 }

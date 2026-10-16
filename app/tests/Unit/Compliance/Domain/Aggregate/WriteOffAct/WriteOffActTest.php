@@ -38,6 +38,23 @@ final class WriteOffActTest extends TestCase
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 0.0]]);
     }
 
+    public function test_add_lines_is_atomic_bad_line_in_batch_adds_nothing(): void
+    {
+        $act = $this->act();
+
+        try {
+            $act->addLinesForProfile('p1', [
+                ['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0],
+                ['recordId' => 'r2', 'labelSnapshot' => 'Каска', 'quantity' => 0.0], // битая — весь батч не применяется
+            ]);
+            self::fail('Ожидалось AppException из-за quantity<=0 во второй строке батча.');
+        } catch (AppException) {
+            // ожидаемо
+        }
+
+        self::assertCount(0, $act->lines(), 'батч с битой строкой не должен добавить ни одной строки');
+    }
+
     public function test_add_lines_only_allowed_in_draft(): void
     {
         $act = $this->act();
@@ -122,6 +139,37 @@ final class WriteOffActTest extends TestCase
 
         self::assertCount(1, $act->lines());
         self::assertSame('r2', $act->lines()[0]->recordId());
+    }
+
+    public function test_replace_portions_blocked_after_sign(): void
+    {
+        $act = $this->act();
+        $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
+        $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+
+        $this->expectException(AppException::class);
+        $act->replacePortions([['recordId' => 'r1', 'quantity' => 5.0, 'reason' => WriteOffReason::TermExpired]]);
+    }
+
+    public function test_save_details_blocked_after_sign(): void
+    {
+        $act = $this->act();
+        $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
+        $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+
+        $this->expectException(AppException::class);
+        $act->saveDetails(
+            '40',
+            new \DateTimeImmutable('2026-08-02'),
+            Commission::fromRows([['fio' => 'Иванов']]),
+            '',
+            null,
+            '',
+            '',
+            new \DateTimeImmutable('2026-08-02'),
+        );
     }
 
     public function test_signed_act_is_immutable(): void
