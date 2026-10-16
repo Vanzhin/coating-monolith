@@ -427,6 +427,22 @@ class ProfileCompliance extends Aggregate
         }
     }
 
+    /**
+     * Применить эффект акта списания (кросс-персон, {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}):
+     * по каждой своей строке акта гасит количество на факте ({@see FulfillmentRecord::addReturnedQuantity}).
+     * Акт зовёт этот метод на каждом затронутом `ProfileCompliance` отдельно (оркестрация — в
+     * Application-хендлере оформления акта), поэтому recordId, которого нет в своём журнале — не наш факт,
+     * тихо пропускаем.
+     *
+     * @param array<string, float> $recordIdToQty
+     */
+    public function applyWriteOff(array $recordIdToQty): void
+    {
+        foreach ($recordIdToQty as $recordId => $qty) {
+            $this->recordById((string) $recordId)?->addReturnedQuantity($qty);
+        }
+    }
+
     /** Факт выдачи по id (нужен проектору акта списания — наименование/единица/дата тянутся с факта порции). */
     public function recordById(string $recordId): ?FulfillmentRecord
     {

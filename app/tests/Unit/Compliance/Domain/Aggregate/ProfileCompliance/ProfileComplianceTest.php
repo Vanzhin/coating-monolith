@@ -477,4 +477,39 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame('CARD-1', $pc->cardNumber());
         self::assertSame(2.0, $pc->heldOf($this->glovesKey()));
     }
+
+    public function test_apply_write_off_quenches_held_quantity_of_own_record(): void
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $this->issuedGloves($pc, $this->now, 10.0);
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $pc->applyWriteOff([$recordId => 4.0]);
+
+        self::assertEqualsWithDelta(6.0, $pc->heldOf($this->glovesKey()), 1e-9, 'на руках уменьшилось на списанное количество');
+    }
+
+    public function test_apply_write_off_handles_several_records_by_id(): void
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $this->issuedGloves($pc, $this->now, 10.0); // первый факт, held 10
+        $firstRecordId = $pc->getRecords()[0]->getId();
+        $pc->recordIssuance($this->calc, $this->glovesLine(5.0, '2026-07-01')); // второй факт, held 5
+        $secondRecordId = $pc->getRecords()[1]->getId();
+
+        $pc->applyWriteOff([$firstRecordId => 10.0, $secondRecordId => 2.0]);
+
+        self::assertEqualsWithDelta(0.0, $pc->getRecords()[0]->heldAmount(), 1e-9);
+        self::assertEqualsWithDelta(3.0, $pc->getRecords()[1]->heldAmount(), 1e-9);
+    }
+
+    public function test_apply_write_off_ignores_unknown_record_id(): void
+    {
+        $pc = $this->pcWithGloves(10.0);
+        $this->issuedGloves($pc, $this->now, 10.0);
+
+        $pc->applyWriteOff(['нет-такой-записи' => 5.0]); // не должно бросать — акт кросс-персон, не вся строка «своя»
+
+        self::assertEqualsWithDelta(10.0, $pc->heldOf($this->glovesKey()), 1e-9, 'held не изменился');
+    }
 }
