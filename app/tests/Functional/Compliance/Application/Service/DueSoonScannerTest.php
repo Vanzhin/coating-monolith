@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\Service;
 
 use App\Compliance\Application\Service\DueSoonScanner;
+use App\Compliance\Domain\Event\ComplianceDueSoon;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;
 use App\Shared\Application\Event\EventBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -40,6 +42,16 @@ final class DueSoonScannerTest extends KernelTestCase
         self::assertCount(1, $bus->published, 'ровно одна пачка, а не событие на человека');
         self::assertInstanceOf(NotificationBatch::class, $bus->published[0]);
         self::assertCount($count, $bus->published[0]->events(), 'в пачке — дайджест на каждого сотрудника');
+
+        // Содержимое дайджеста (ФИО + позиция + бакет) — то же, что отдавал старый проход по агрегатам: ФИО
+        // теперь приходит батчем (GetProfilesByIdsQuery), а не по одному (GetProfileQuery) на сотрудника.
+        $digest = $bus->published[0]->events()[0];
+        self::assertInstanceOf(ComplianceDueSoon::class, $digest);
+        self::assertSame($profileId, $digest->subjectProfileId());
+        self::assertSame('Иванов Иван Иванович', $digest->employeeFio());
+        self::assertCount(1, $digest->items());
+        self::assertSame('Перчатки', $digest->items()[0]->label);
+        self::assertSame(DueKind::Overdue, $digest->items()[0]->kind);
     }
 
     public function test_publishes_nothing_when_no_due_items(): void
