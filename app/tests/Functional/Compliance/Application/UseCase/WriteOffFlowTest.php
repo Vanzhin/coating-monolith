@@ -72,7 +72,7 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $recordId = $this->firstRecordId($p);
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
 
         $this->reload();
         $act = $this->writeOffActRepo->findById($actId);
@@ -89,7 +89,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $recordId = $this->firstRecordId($p);
 
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
         $this->signWriteOff($actId, $r, [$p]);
 
         $this->reload();
@@ -111,7 +111,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $recordId = $this->firstRecordId($p);
 
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
         $this->signWriteOff($actId, $r, [$p]);
 
         $this->reload();
@@ -141,7 +141,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $held = $this->repo->findByProfile($p)?->heldOf($k) ?? 0.0;
 
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => $held, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => $held, 'reason' => 'physical_wear']]));
         $this->signWriteOff($actId, $r, [$p]);
 
         $this->reload();
@@ -159,7 +159,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->issueCard($p, $r, $k);
         $recordId = $this->firstRecordId($p);
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
         $this->signWriteOff($actId, $r, [$p]); // подпись + первая обработка события
 
         // Повторная обработка события (воркер мог переобработать) не должна задваивать эффект.
@@ -175,11 +175,11 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->issueCard($p, $r, $k);
         $recordId = $this->firstRecordId($p);
         $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
         $this->reload();
 
         $this->expectException(AppException::class); // оформление акта списания без скана — инвариант домена, не тихое сохранение
-        $this->commandBus->execute(new SignWriteOffActCommand($p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], 'А-1', '2026-03-01', null));
+        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], 'А-1', '2026-03-01', null));
     }
 
     public function test_save_portion_exceeding_held_throws(): void
@@ -190,7 +190,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $actId = $this->startWriteOff($p, $r);
 
         $this->expectException(AppException::class); // 11 > held(10) — бэк источник истины, не фронт-валидация
-        $this->commandBus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 11.0, 'reason' => 'physical_wear']]));
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 11.0, 'reason' => 'physical_wear']]));
     }
 
     /**
@@ -222,7 +222,7 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $p1RecordId = $this->firstRecordId($p1);
         $p2RecordId = $this->firstRecordId($p2);
-        $this->commandBus->execute(new SaveWriteOffActCommand($p1, $actId, [
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [
             ['recordId' => $p1RecordId, 'quantity' => 10.0, 'reason' => 'physical_wear'],
             ['recordId' => $p2RecordId, 'quantity' => 1.0, 'reason' => 'physical_wear'],
         ]));
@@ -263,7 +263,7 @@ final class WriteOffFlowTest extends KernelTestCase
      */
     private function signWriteOff(string $actId, string $requirementId, array $profileIds): void
     {
-        $this->commandBus->execute(new SignWriteOffActCommand($profileIds[0], $actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
         $this->reload();
         (static::getContainer()->get(RecomputeOnWriteOffActSignedHandler::class))(new WriteOffActSigned($requirementId, $profileIds));
         $this->reload();

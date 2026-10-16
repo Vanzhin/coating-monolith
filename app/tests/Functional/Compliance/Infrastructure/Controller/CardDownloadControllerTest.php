@@ -158,8 +158,8 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($act);
         $actId = $act->getId();
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($p, $actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Проектор напрямую (независимо от шаблона): стр. 1 = норма, стр. 2 = факт этого акта + возврат.
@@ -246,8 +246,8 @@ final class CardDownloadControllerTest extends WebTestCase
             }
         }
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($profileId, $actId, $portions, 'А-1', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($profileId, $actId, $commission, 'А-1', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, $portions, 'А-1', '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-1', '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Пересчёт проекции (held) после списания идёт async-событием WriteOffActSigned, в тестах не обрабатывается —
@@ -387,7 +387,7 @@ final class CardDownloadControllerTest extends WebTestCase
 
         // Сохранить черновик акта списания (op=save): состав + № + комиссия, без скана/подписи.
         $bus->execute(new SaveWriteOffActCommand(
-            $p, $actId,
+            $actId,
             [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
             'А-5', '2026-03-01',
             [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-03-01']],

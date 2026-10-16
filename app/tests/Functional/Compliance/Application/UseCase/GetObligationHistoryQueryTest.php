@@ -75,7 +75,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand(
-            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-07-01',
+            $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-07-01',
         ));
         $this->reload();
 
@@ -94,10 +94,10 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand(
-            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
+            $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
         ));
         $this->commandBus->execute(new SignWriteOffActCommand(
-            $p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
         ));
         $this->reload();
 

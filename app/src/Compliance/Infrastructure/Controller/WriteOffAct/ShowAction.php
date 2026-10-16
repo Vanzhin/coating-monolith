@@ -49,12 +49,6 @@ final class ShowAction extends AbstractController
     public function __invoke(Request $request, string $actId): Response
     {
         if ($request->isMethod('POST')) {
-            $act = $this->writeOffActRepository->findById($actId)
-                ?? throw $this->createNotFoundException('Акт списания не найден.');
-            // profileId на командах Save/Sign рудиментарен (акт кросс-персон, хендлеры его игнорируют) — отдаём
-            // первый профиль акта для осмысленности.
-            $primaryProfileId = $act->profileIds()[0] ?? '';
-
             /** @var array<string, mixed> $input */
             $input = $request->getPayload()->all();
             /** @var list<array{recordId: string, quantity: float, reason: string}> $lines */
@@ -69,7 +63,7 @@ final class ShowAction extends AbstractController
             try {
                 // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (№/дата/приказ/представитель/комиссия) на черновик.
                 $this->commandBus->execute(new SaveWriteOffActCommand(
-                    $primaryProfileId, $actId, $lines, $actNumber, $actDate, $commissionRows,
+                    $actId, $lines, $actNumber, $actDate, $commissionRows,
                     $orderNumber, $orderDate, $representativePosition, $representativeFio,
                 ));
                 if ('save' === ($input['op'] ?? 'sign')) {
@@ -78,7 +72,6 @@ final class ShowAction extends AbstractController
                     return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['actId' => $actId]);
                 }
                 $this->commandBus->execute(new SignWriteOffActCommand(
-                    $primaryProfileId,
                     $actId,
                     $commissionRows,
                     $actNumber,
