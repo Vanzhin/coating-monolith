@@ -32,7 +32,6 @@ class ProfileComplianceRepository extends ServiceEntityRepository implements Pro
         return $this->createQueryBuilder('p')
             ->leftJoin('p.obligations', 'o')->addSelect('o')
             ->leftJoin('p.records', 'r')->addSelect('r')
-            ->leftJoin('p.documents', 'd')->addSelect('d')
             ->where('p.profileId = :pid')->setParameter('pid', $profileId)
             ->getQuery()
             ->getOneOrNullResult();
@@ -44,10 +43,9 @@ class ProfileComplianceRepository extends ServiceEntityRepository implements Pro
             return []; // сужение задано и пусто — никого
         }
 
-        // innerJoin obligations = только учёты с обязанностями (+ fetch-join их); документы — leftJoin.
+        // innerJoin obligations = только учёты с обязанностями (+ fetch-join их).
         $qb = $this->createQueryBuilder('p')
-            ->innerJoin('p.obligations', 'o')->addSelect('o')
-            ->leftJoin('p.documents', 'd')->addSelect('d');
+            ->innerJoin('p.obligations', 'o')->addSelect('o');
 
         if (null !== $restrictProfileIds) {
             $qb->andWhere('p.profileId IN (:pids)')->setParameter('pids', $restrictProfileIds->getList());

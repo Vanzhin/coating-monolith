@@ -1,19 +1,34 @@
-{# Деталь человека: группы требований + таблица позиций. Только просмотр ситуации — действия цикла документа
-   (оформить/списать/сформировать) переехали на страницу «Акты» (кнопка в шапке модалки). Только Bootstrap. #}
+{# Деталь человека: группы требований + таблица позиций. По каждому требованию — два всегда-доступных действия:
+   «Выдать» (форма выдачи) и «Списать» (акт списания, когда есть что списывать). Кнопки под ROLE_ADMIN — это
+   только UX-видимость, авторизацию держит хендлер. Только Bootstrap. #}
+{% set canEdit = is_granted('ROLE_ADMIN') %}
 {% set badge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
 {% set icon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {% for g in person.groups %}
+    {% set hasRecords = g.rows|filter(r => r.lastFulfilledAt is not null) is not empty %}
     <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <span class="fw-semibold">{{ g.name }}</span>
             <span class="badge text-bg-light">{{ g.typeLabel }}</span>
-            {% if g.openDraftId %}
-                <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик</span>
-            {% elseif g.signedActs is not empty %}
-                <span class="badge text-bg-success"><i class="bi bi-lock-fill me-1"></i>Подписан</span>
+            {% if hasRecords %}
+                <span class="badge text-bg-success"><i class="bi bi-journal-check me-1"></i>Есть записи</span>
             {% else %}
-                <span class="badge text-bg-light"><i class="bi bi-file-earmark-dash me-1"></i>Нет карточки</span>
+                <span class="badge text-bg-light"><i class="bi bi-journal-x me-1"></i>Нет записей</span>
+            {% endif %}
+
+            {% if canEdit %}
+                <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                    <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                        <i class="bi bi-plus-lg me-1"></i>Выдать
+                    </a>
+                    {% if hasRecords %}
+                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                        </form>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
 

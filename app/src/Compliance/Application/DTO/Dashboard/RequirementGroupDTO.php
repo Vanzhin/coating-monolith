@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\Dashboard;
 
-/** Группа требования в детали человека: имя + тип + открытый черновик + история подписанных актов + строки. */
+/** Группа требования в детали человека: имя + тип + строки. */
 final class RequirementGroupDTO
 {
     public string $requirementId;
@@ -14,10 +14,6 @@ final class RequirementGroupDTO
     public string $typeLabel;
     /** Счёт позиций группы по бакетам — для разреза «по требованиям» (единица = позиция, не группа). */
     public BucketCountsDTO $counts;
-    /** id открытого черновика (если есть) — для «Оформить»/«Удалить». */
-    public ?string $openDraftId = null;
-    /** @var list<IssuanceActDTO> подписанные акты (история выдач со сканами) */
-    public array $signedActs = [];
     /** @var list<ObligationBucketRowDTO> */
     public array $rows = [];
 }

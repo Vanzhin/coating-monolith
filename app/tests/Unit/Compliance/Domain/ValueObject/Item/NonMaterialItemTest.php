@@ -16,6 +16,7 @@ final class NonMaterialItemTest extends TestCase
     private function item(): NonMaterialItem
     {
         return new NonMaterialItem(
+            'itm-1',
             'Инструктаж на рабочем месте',
             new Cadence(CadenceKind::Once),
             'ГОСТ 12.0.004',
@@ -38,9 +39,16 @@ final class NonMaterialItemTest extends TestCase
         self::assertEquals($item, NonMaterialItem::fromArray($item->jsonSerialize()));
     }
 
+    public function test_exposes_stable_id(): void
+    {
+        self::assertSame('itm-1', $this->item()->id());
+        self::assertArrayHasKey('id', $this->item()->jsonSerialize());
+        self::assertSame('itm-1', $this->item()->jsonSerialize()['id']);
+    }
+
     public function test_blank_label_rejected(): void
     {
         $this->expectException(AppException::class);
-        new NonMaterialItem('', new Cadence(CadenceKind::Once), 'основание');
+        new NonMaterialItem('itm-x', '', new Cadence(CadenceKind::Once), 'основание');
     }
 }

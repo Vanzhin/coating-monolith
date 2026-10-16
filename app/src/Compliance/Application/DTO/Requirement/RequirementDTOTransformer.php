@@ -34,6 +34,7 @@ class RequirementDTOTransformer
     private function itemDto(RequirementItemInterface $item): RequirementItemDTO
     {
         $dto = new RequirementItemDTO();
+        $dto->id = $item->id();
         $dto->label = $item->label();
         $dto->cadenceKind = $item->cadence()->kind->value;
         $dto->cadenceNumber = $item->cadence()->number;
@@ -45,6 +46,7 @@ class RequirementDTOTransformer
             $dto->amount = $item->quantity()->amount;
             $dto->unit = $item->quantity()->unit->value;
             $dto->quantityLabel = $item->quantity()->label();
+            $dto->mode = $item->mode()->value;
         }
 
         return $dto;

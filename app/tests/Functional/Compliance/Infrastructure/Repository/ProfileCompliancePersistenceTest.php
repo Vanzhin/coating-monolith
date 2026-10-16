@@ -44,8 +44,7 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
         $pc->recordFulfillment(
             Uuid::v7(), TrackedObligation::keyOf($reqId, 'Перчатки'), new \DateTimeImmutable('2026-01-10'),
             $this->calc, new Quantity(10.0, Unit::Pair), new Percent(15),
-        );
-        $pc->setActiveForRequirement($reqId, true);
+        ); // запись факта синхронно включает трекинг (active) — отдельного вызова не нужно
         $this->repo->add($pc);
 
         static::getContainer()->get(EntityManagerInterface::class)->clear();
@@ -87,7 +86,7 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
         $loaded = $this->repo->findByProfile($profileId);
         self::assertNotNull($loaded);
         $ob = $loaded->getObligations()[0];
-        self::assertFalse($ob->isActive()); // документ не подписан
+        self::assertFalse($ob->isActive()); // нет выданного факта → трекинг выключен
         self::assertNull($ob->quantity());
         self::assertSame(CadenceKind::Once, $ob->cadence()->kind);
     }

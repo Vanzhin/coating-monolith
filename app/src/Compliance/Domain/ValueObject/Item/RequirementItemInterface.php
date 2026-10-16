@@ -14,6 +14,8 @@ use App\Compliance\Domain\ValueObject\Cadence;
  */
 interface RequirementItemInterface extends \JsonSerializable
 {
+    public function id(): string;
+
     public function type(): ComplianceType;
 
     public function label(): string;

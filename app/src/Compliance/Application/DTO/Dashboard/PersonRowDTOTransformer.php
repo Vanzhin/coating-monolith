@@ -44,7 +44,7 @@ final readonly class PersonRowDTOTransformer
 
             $requirementId = $obligation->requirementId();
             if (!isset($groups[$requirementId])) {
-                $groups[$requirementId] = $this->group($pc, $obligation);
+                $groups[$requirementId] = $this->group($obligation);
             }
             $group = $groups[$requirementId];
             $group->rows[] = $this->rowOf($obligation, $bucket);
@@ -57,19 +57,14 @@ final readonly class PersonRowDTOTransformer
         return $row;
     }
 
-    private function group(ProfileCompliance $pc, TrackedObligation $obligation): RequirementGroupDTO
+    private function group(TrackedObligation $obligation): RequirementGroupDTO
     {
-        $requirementId = $obligation->requirementId();
         $group = new RequirementGroupDTO();
-        $group->requirementId = $requirementId;
+        $group->requirementId = $obligation->requirementId();
         $group->name = $obligation->requirementName();
         $group->type = $obligation->type()->value;
         $group->typeLabel = $obligation->type()->title();
         $group->counts = new BucketCountsDTO();
-        $group->openDraftId = $pc->openDraftFor($requirementId)?->getId();
-        foreach ($pc->signedDocumentsFor($requirementId) as $act) {
-            $group->signedActs[] = new IssuanceActDTO($act->getId(), $act->signedAt()?->format('d.m.Y'));
-        }
 
         return $group;
     }

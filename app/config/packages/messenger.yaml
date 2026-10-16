@@ -50,10 +50,8 @@ framework:
             'App\Compliance\Domain\Event\RequirementChanged': async
             # Профиль создан/сменил должность → пересборка учёта + черновики карточек (в воркере).
             'App\Personnel\Domain\Event\ProfileSaved': async
-            # Акт списания оформлен → пересчёт проекции человека по требованию + черновик на дефицит (в воркере).
+            # Акт списания оформлен → пересчёт проекции человека по требованию (в воркере).
             'App\Compliance\Domain\Event\WriteOffActSigned': async
-            # Черновик карточки удалён → пересчёт проекции человека по требованию + черновик на дефицит (в воркере).
-            'App\Compliance\Domain\Event\DraftDeleted': async
             # Подходит срок выдачи СИЗ → уведомляющее событие на единый диспетчер (inbox/email по подпискам).
             'App\Compliance\Domain\Event\ComplianceDueSoon': async
             # Пачка уведомлений от прохода → раскладка по получателям (одно сводное на надзор), в воркере.

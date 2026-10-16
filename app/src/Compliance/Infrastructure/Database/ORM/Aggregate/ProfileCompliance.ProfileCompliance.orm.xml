@@ -9,6 +9,7 @@
         </id>
         <field name="profileId" type="string" length="64" column="profile_id"/>
         <field name="excludedKeys" type="string_collection" column="excluded_keys"/>
+        <field name="cardNumber" type="string" length="64" column="card_number" nullable="true"/>
         <field name="version" type="integer" column="version" version="true"/>
 
         <one-to-many field="obligations"
@@ -22,15 +23,6 @@
 
         <one-to-many field="records"
                      target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord"
-                     mapped-by="profileCompliance" orphan-removal="true">
-            <cascade>
-                <cascade-persist/>
-                <cascade-remove/>
-            </cascade>
-        </one-to-many>
-
-        <one-to-many field="documents"
-                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\RequirementDocument"
                      mapped-by="profileCompliance" orphan-removal="true">
             <cascade>
                 <cascade-persist/>

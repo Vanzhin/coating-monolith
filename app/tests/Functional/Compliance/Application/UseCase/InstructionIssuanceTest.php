@@ -6,8 +6,7 @@ namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\Service\RequirementCardProjector;
-use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
-use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
@@ -28,35 +27,31 @@ use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\RepeatValue;
-use App\Shared\Infrastructure\Exception\AppException;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Оформление не материального акта (журнал ОТ): поля инструктажа захватываются на факт (InstructionDetails),
- * а при подписи обязательные поля схемы валидируются (пусто → AppException). materiální инвариант количества
- * к процедуре не применяется.
+ * Прохождение не материального требования (журнал ОТ) журнальной записью ({@see RecordIssuanceCommand} →
+ * `recordInstruction`): поля `InstructionDetails` захватываются прямо на неизменяемый факт журнала, без акта-
+ * документа. Инвариант полноты обязательных полей — в домене, проверен в {@see RecordIssuanceTest}; здесь же —
+ * печать журнала поверх прямой записи: {@see RequirementCardProjector} больше не привязан к акту-документу,
+ * его лог — весь журнал фактов требования, включая записи без документа.
  */
 final class InstructionIssuanceTest extends KernelTestCase
 {
     use AuthenticatesActorTrait;
-    use EnrollsComplianceTrait; // даёт randomTin()/stageComplianceScan()
+    use EnrollsComplianceTrait; // даёт randomTin()
 
     private const LABEL = 'Повторный инструктаж на рабочем месте';
 
-    public function test_signed_record_carries_instruction_details(): void
+    public function test_recorded_instruction_carries_details_to_journal_fact(): void
     {
         [$bus, $repo, $em, $profileId, $key] = $this->setupNonMaterial();
 
-        $bus->execute(new FormDraftCommand($profileId, $this->requirementId));
-        $em->clear();
-        $draftId = $repo->findByProfile($profileId)?->openDraftFor($this->requirementId)?->getId();
-        self::assertNotNull($draftId);
-
-        $bus->execute(new SaveDraftCommand(
-            $profileId, $draftId, '2026-08-05',
+        $bus->execute(new RecordIssuanceCommand(
+            $profileId, $this->requirementId, '2026-08-05',
             [[
                 'obligationKey' => $key,
                 'date' => '2026-08-05',
@@ -66,53 +61,33 @@ final class InstructionIssuanceTest extends KernelTestCase
                     'instructor_doc' => 'Удостоверение № 1327339, 06.12.2021',
                 ],
             ]],
-            'Ж-1', 'Петров П. П.', $this->stageComplianceScan(), [], sign: true,
+            cardNumber: 'CARD-1',
         ));
         $em->clear();
 
-        $record = $repo->findByProfile($profileId)?->recordsForRequirement($this->requirementId)[0] ?? null;
+        $pc = $repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $record = $pc->recordsForRequirement($this->requirementId)[0] ?? null;
         self::assertNotNull($record);
         $details = $record->instructionDetails();
         self::assertNotNull($details, 'поля инструктажа сохранены на факте');
         self::assertSame('Повторный', $details->get('instruction_kind'));
         self::assertSame('Шумилов Александр Николаевич', $details->get('instructor_fio'));
 
-        // Проектор кладёт поля инструктажа в строку журнала (под {{log.instruction_kind}} и т.п.).
+        // Карточка печатает журнал целиком: прямая запись без акта-документа всё равно попадает в лог.
         $c = self::getContainer();
-        $pc = $repo->findByProfile($profileId);
-        self::assertNotNull($pc);
-        /** @var GetProfileQueryResult $pr */
-        $pr = $c->get(QueryBusInterface::class)->execute(new GetProfileQuery($profileId));
         $requirement = $c->get(RequirementRepositoryInterface::class)->findOneById($this->requirementId);
-        self::assertNotNull($pr->profile);
         self::assertNotNull($requirement);
-        $data = $c->get(RequirementCardProjector::class)->project($pc, $pr->profile, $requirement, new \DateTimeImmutable());
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $c->get(QueryBusInterface::class)->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($profileResult->profile);
+
+        $data = $c->get(RequirementCardProjector::class)->project($pc, $profileResult->profile, $requirement, new \DateTimeImmutable('2026-08-10'));
         $log = $data->get('log');
         self::assertInstanceOf(RepeatValue::class, $log);
-        self::assertSame('Повторный', $log->rows[0]['instruction_kind'] ?? null, 'вид инструктажа попал в строку журнала');
-        self::assertSame('ГОСТ 12.0.004', $log->rows[0]['basis'] ?? null, 'основание (перечень локальных актов) из требования в строке журнала');
-    }
-
-    public function test_sign_rejects_missing_required_instruction_field(): void
-    {
-        [$bus, $repo, $em, $profileId, $key] = $this->setupNonMaterial();
-
-        $bus->execute(new FormDraftCommand($profileId, $this->requirementId));
-        $em->clear();
-        $draftId = $repo->findByProfile($profileId)?->openDraftFor($this->requirementId)?->getId();
-        self::assertNotNull($draftId);
-
-        $this->expectException(AppException::class);
-        $bus->execute(new SaveDraftCommand(
-            $profileId, $draftId, '2026-08-05',
-            [[
-                'obligationKey' => $key,
-                'date' => '2026-08-05',
-                // instructor_fio (обязательное) пропущено → подпись должна отбиться.
-                'instruction' => ['instruction_kind' => 'Повторный', 'instructor_doc' => 'Удостоверение № 1'],
-            ]],
-            'Ж-1', 'Петров П. П.', $this->stageComplianceScan(), [], sign: true,
-        ));
+        self::assertCount(1, $log->rows, 'в логе ровно одна запись — прямая дозапись, без акта');
+        self::assertSame('Повторный', $log->rows[0]['instruction_kind'], 'поля инструктажа всплыли в лог плоскими ключами');
+        self::assertSame('Шумилов Александр Николаевич', $log->rows[0]['instructor_fio']);
     }
 
     private string $requirementId = '';

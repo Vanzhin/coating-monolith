@@ -23,17 +23,17 @@ final class RequirementTest extends TestCase
 {
     private function gloves(): MaterialItem
     {
-        return new MaterialItem('Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity(10.0, Unit::Pair));
+        return new MaterialItem('itm-gloves', 'Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity(10.0, Unit::Pair));
     }
 
     private function helmet(): MaterialItem
     {
-        return new MaterialItem('Каска', new Cadence(CadenceKind::Periodic, 2, PeriodUnit::Year), 'п.6', new Quantity(1.0, Unit::Piece));
+        return new MaterialItem('itm-helmet', 'Каска', new Cadence(CadenceKind::Periodic, 2, PeriodUnit::Year), 'п.6', new Quantity(1.0, Unit::Piece));
     }
 
     private function briefing(): NonMaterialItem
     {
-        return new NonMaterialItem('Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004');
+        return new NonMaterialItem('itm-briefing', 'Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004');
     }
 
     private function material(MaterialItem ...$items): Requirement

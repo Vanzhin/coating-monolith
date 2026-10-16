@@ -20,6 +20,8 @@
         <field name="heldQuantity" type="float" column="held_quantity"/>
         <field name="active" type="boolean" column="active"/>
         <field name="origin" type="string" length="16" column="origin"/>
+        <field name="mode" type="string" length="16" column="mode" nullable="true"
+               enum-type="App\Compliance\Domain\Type\MaterialMode"/>
 
         <many-to-one field="profileCompliance"
                      target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"

@@ -19,13 +19,13 @@ final class RequirementItemLabelLengthTest extends TestCase
     public function test_label_up_to_1000_chars_is_accepted(): void
     {
         $label = str_repeat('а', 1000);
-        $item = new NonMaterialItem($label, new Cadence(CadenceKind::Once), 'основание');
+        $item = new NonMaterialItem('itm-x', $label, new Cadence(CadenceKind::Once), 'основание');
         self::assertSame($label, $item->label());
     }
 
     public function test_label_longer_than_1000_chars_rejected(): void
     {
         $this->expectException(AppException::class);
-        new NonMaterialItem(str_repeat('а', 1001), new Cadence(CadenceKind::Once), 'основание');
+        new NonMaterialItem('itm-x', str_repeat('а', 1001), new Cadence(CadenceKind::Once), 'основание');
     }
 }

@@ -1,0 +1,33 @@
+{# Партиал ленты истории одной позиции: выдачи + списания, хронологически. Грузится лениво
+   (см. obligation_history_controller.js) в карточку позиции на странице выдачи. Без рамок —
+   события на оттенке (bg-body-tertiary) внутри карточки-носителя (bg-body). #}
+{% if events is empty %}
+    <div class="p-3 rounded-3 bg-body-tertiary text-center text-body-secondary small">История пока пуста — ни одной записи.</div>
+{% else %}
+    <div class="d-flex flex-column gap-2">
+        {% for e in events %}
+            <div class="p-2 rounded-3 bg-body-tertiary">
+                {% if e.type == 'issued' %}
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <i class="bi bi-box-arrow-in-down text-success"></i>
+                        <span class="fw-medium">Выдано</span>
+                        <span class="text-body-secondary small tnum">{{ e.date|date('d.m.Y') }}</span>
+                        {% if e.quantityLabel %}<span class="small">{{ e.quantityLabel }}</span>{% endif %}
+                        {% if e.wearPercent is not null %}<span class="small text-body-secondary">износ {{ e.wearPercent }}%</span>{% endif %}
+                    </div>
+                    {% if e.note %}<div class="small text-body-secondary mt-1">{{ e.note }}</div>{% endif %}
+                {% else %}
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <i class="bi bi-box-arrow-up text-danger"></i>
+                        <span class="fw-medium">Списано</span>
+                        <span class="text-body-secondary small tnum">{{ e.date|date('d.m.Y') }}</span>
+                        {% if e.quantityLabel %}<span class="small">{{ e.quantityLabel }}</span>{% endif %}
+                    </div>
+                    <div class="small text-body-secondary mt-1">
+                        {{ e.reason ?? 'причина не указана' }}{% if e.actId %} · <a href="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: e.actId}) }}">акт{% if e.actNumber %} № {{ e.actNumber }}{% endif %}</a>{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

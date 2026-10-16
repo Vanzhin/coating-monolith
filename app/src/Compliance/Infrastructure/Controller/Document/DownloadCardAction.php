@@ -22,17 +22,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Скачать заполненный бланк карточки по (человек × требование): печать → подпись → приложить скан.
- * Без documentId — по текущему акту (открытый черновик ?? последний подписанный); с documentId — ровно этот акт
- * (слепок из списка актов): стр. 2 показывает факт именно того акта, а не последнего.
+ * Печатает ВЕСЬ журнал фактов требования (не привязан к конкретному акту).
  */
 #[Route(
     path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/card',
     name: 'app_cabinet_compliance_card_download',
-    methods: ['GET'],
-)]
-#[Route(
-    path: '/cabinet/compliance/person/{profileId}/requirement/{requirementId}/document/{documentId}/card',
-    name: 'app_cabinet_compliance_document_card_download',
     methods: ['GET'],
 )]
 final class DownloadCardAction extends AbstractController
@@ -49,7 +43,7 @@ final class DownloadCardAction extends AbstractController
     ) {
     }
 
-    public function __invoke(string $profileId, string $requirementId, ?string $documentId = null): Response
+    public function __invoke(string $profileId, string $requirementId): Response
     {
         if (!$this->access->canManage()) {
             throw new ForbiddenException();
@@ -64,7 +58,7 @@ final class DownloadCardAction extends AbstractController
             throw $this->createNotFoundException('Профиль не найден.');
         }
 
-        $data = $this->projector->project($profileCompliance, $profileResult->profile, $requirement, new \DateTimeImmutable(), $documentId);
+        $data = $this->projector->project($profileCompliance, $profileResult->profile, $requirement, new \DateTimeImmutable());
         $doc = $this->rendering->render(new TemplateFile($this->resolveTemplatePath($requirement->getTemplateFileId())), $data);
 
         $name = 'Карточка-'.$requirement->getName().'.'.$doc->extension();

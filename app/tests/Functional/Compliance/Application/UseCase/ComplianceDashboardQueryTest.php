@@ -6,8 +6,6 @@ namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
-use App\Compliance\Application\UseCase\Command\FormDraft\FormDraftCommand;
-use App\Compliance\Application\UseCase\Command\SaveDraft\SaveDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Query\Dashboard\ComplianceDashboardFilter;
@@ -15,9 +13,13 @@ use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQuer
 use App\Compliance\Application\UseCase\Query\Dashboard\GetComplianceOverviewQueryResult;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\ValueObject\Quantity;
+use App\Compliance\Domain\ValueObject\Unit;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -26,6 +28,7 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class ComplianceDashboardQueryTest extends KernelTestCase
 {
@@ -46,14 +49,14 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         $this->authenticateAsSystem(); // isManager → админ-скоуп (видит всех)
     }
 
-    public function test_unsigned_person_is_missing_in_list_and_kpi(): void
+    public function test_no_fact_person_is_missing_in_list_and_kpi(): void
     {
         ['profileId' => $profileId] = $this->enrollCompliance();
 
         $list = $this->paged(new ComplianceDashboardFilter());
         $row = $this->rowOf($list, $profileId);
         self::assertNotNull($row, 'человек должен быть в списке');
-        self::assertSame(ComplianceBucket::Missing->value, $row->worstBucket, 'не подписан ⇒ не выдано');
+        self::assertSame(ComplianceBucket::Missing->value, $row->worstBucket, 'нет выданного факта ⇒ не выдано');
         self::assertNotEmpty($row->groups);
 
         $overview = $this->overview(new ComplianceDashboardFilter());
@@ -85,24 +88,24 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertSame(2, $overview->departments[0]->counts->total(), 'но два требования-экземпляра');
     }
 
-    public function test_signed_and_fulfilled_becomes_ok(): void
+    public function test_issued_fact_becomes_ok(): void
     {
-        ['profileId' => $profileId, 'requirementId' => $reqId, 'key' => $key] = $this->enrollCompliance();
+        ['profileId' => $profileId, 'key' => $key] = $this->enrollCompliance();
 
-        // Оформление черновика (скан, кол-во = норма) пишет факт + подписывает акт → active.
-        $this->commandBus->execute(new FormDraftCommand($profileId, $reqId));
-        $draft = $this->repo->findByProfile($profileId)?->openDraftFor($reqId);
-        self::assertNotNull($draft);
-        $this->commandBus->execute(new SaveDraftCommand(
-            $profileId, $draft->getId(), '2026-05-20',
-            [['obligationKey' => $key, 'amount' => '10', 'unit' => 'pair']],
-            'К-1', 'Петров П. П.',
-            $this->stageComplianceScan(),
-        ));
+        // Прямая дозапись факта в журнал (без акта-черновика) — журнальная модель выдачи.
+        $pc = $this->repo->findByProfile($profileId);
+        self::assertNotNull($pc);
+        $pc->assignCardNumber('CARD-1'); // инвариант выдачи — № карточки обязателен
+        $pc->recordIssuance(
+            static::getContainer()->get(ObligationDueCalculator::class),
+            new IssuanceLine(Uuid::v7(), $key, new \DateTimeImmutable('2026-05-20'), new Quantity(10.0, Unit::Pair)),
+        );
+        $this->repo->add($pc);
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
 
         $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
         self::assertNotNull($row);
-        self::assertSame(ComplianceBucket::Ok->value, $row->worstBucket, 'подписан + выдан в срок ⇒ в норме');
+        self::assertSame(ComplianceBucket::Ok->value, $row->worstBucket, 'выдан факт в срок, без акта ⇒ в норме');
     }
 
     public function test_status_filter_missing_includes_type_ok_excludes(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Quantity;
 use Symfony\Component\Uid\Uuid;
@@ -34,6 +35,7 @@ class TrackedObligation
     private float $heldQuantity = 0.0;
     private bool $active = false;
     private string $origin;
+    private ?MaterialMode $mode = null;
 
     public function __construct(
         Uuid $id,
@@ -46,6 +48,7 @@ class TrackedObligation
         ?Quantity $quantity,
         string $departmentId,
         string $origin = self::ORIGIN_NORM,
+        ?MaterialMode $mode = null,
     ) {
         $this->id = $id;
         $this->profileCompliance = $profileCompliance;
@@ -57,6 +60,7 @@ class TrackedObligation
         $this->quantity = $quantity;
         $this->departmentId = $departmentId;
         $this->origin = $origin;
+        $this->mode = $mode;
     }
 
     public static function keyOf(string $requirementId, string $label): string
@@ -68,6 +72,20 @@ class TrackedObligation
     public static function keyBelongsToRequirement(string $key, string $requirementId): bool
     {
         return str_starts_with($key, $requirementId.'|');
+    }
+
+    /**
+     * Обратная операция к {@see keyOf}: requirementId — префикс ключа до первого `|` (сам requirementId — Uuid,
+     * символа `|` содержать не может, поэтому извлечение детерминированно и не требует перебора/проекции).
+     */
+    public static function requirementIdOf(string $key): string
+    {
+        $pos = strpos($key, '|');
+        if (false === $pos) {
+            throw new \InvalidArgumentException(sprintf('Некорректный ключ обязанности: "%s".', $key));
+        }
+
+        return substr($key, 0, $pos);
     }
 
     public function key(): string
@@ -159,5 +177,15 @@ class TrackedObligation
     public function origin(): string
     {
         return $this->origin;
+    }
+
+    public function mode(): ?MaterialMode
+    {
+        return $this->mode;
+    }
+
+    public function isConsumable(): bool
+    {
+        return null !== $this->mode && $this->mode->isConsumable();
     }
 }

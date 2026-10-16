@@ -29,7 +29,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 /**
  * Флоу списания: с действующей карточки «Перейти к акту списания» (StartWriteOffAct) создаёт/открывает черновик
  * акта; на его странице указывают количество+причину (SaveWriteOffAct) БЕЗ эффекта; оформление (комиссия+№+скан)
- * замораживает И гасит факты на количество → позиция освобождается/становится дефицитной → черновик новой выдачи.
+ * замораживает И гасит факты на количество → на руках падает (дефицит виден прямо в журнале, без карточек-актов).
  */
 final class WriteOffFlowTest extends KernelTestCase
 {
@@ -65,10 +65,10 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertCount(1, $pc->getWriteOffActs());
         self::assertTrue($pc->getWriteOffActs()[0]->isDraft());
         self::assertCount(1, $pc->itemsOfWriteOffAct($actId));
-        self::assertNull($pc->openDraftFor($r), 'эффекта нет — новый черновик выдачи не заводится до оформления акта');
+        self::assertEqualsWithDelta(10.0, $pc->heldOf($k), 1e-9, 'эффекта нет — на руках всё ещё норма до оформления акта');
     }
 
-    public function test_partial_write_off_then_deficit_draft(): void
+    public function test_partial_write_off_leaves_deficit(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance(); // норма 10 (материальная)
         $this->issueCard($p, $r, $k); // выдано 10 ≥ нормы
@@ -82,7 +82,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $pc = $this->repo->findByProfile($p);
         self::assertNotNull($pc);
         self::assertTrue($pc->getWriteOffActs()[0]->isSigned());
-        self::assertNotNull($pc->openDraftFor($r), 'дефицит (на руках 9 < норма 10) → черновик новой выдачи');
+        self::assertEqualsWithDelta(9.0, $pc->heldOf($k), 1e-9, 'списали 1 из 10 → на руках 9 < норма 10 (дефицит виден в журнале)');
     }
 
     /**
@@ -119,7 +119,7 @@ final class WriteOffFlowTest extends KernelTestCase
         );
     }
 
-    public function test_sign_write_off_act_frees_position_and_creates_new_draft(): void
+    public function test_sign_write_off_act_frees_position(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k);
@@ -137,10 +137,10 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertTrue($act->isSigned());
         self::assertSame('39', $act->actNumber());
         self::assertNotNull($act->commission());
-        self::assertNotNull($pc->openDraftFor($r), 'позиция освободилась полностью → заведён черновик новой выдачи');
+        self::assertEqualsWithDelta(0.0, $pc->heldOf($k), 1e-9, 'списали всё → на руках 0 (дефицит виден в журнале)');
     }
 
-    public function test_sign_recompute_and_draft_are_idempotent(): void
+    public function test_sign_recompute_is_idempotent(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k);
@@ -156,13 +156,6 @@ final class WriteOffFlowTest extends KernelTestCase
         $pc = $this->repo->findByProfile($p);
         self::assertNotNull($pc);
         self::assertEqualsWithDelta(9.0, $pc->heldOf($k), 1e-9, 'количество погашено ровно один раз в синхронной подписи — повтор события его не трогает');
-        $openDrafts = 0;
-        foreach ($pc->getDocuments() as $doc) {
-            if ($doc->requirementId() === $r && $doc->isDraft()) {
-                ++$openDrafts;
-            }
-        }
-        self::assertSame(1, $openDrafts, 'повторная обработка события не плодит черновики выдачи');
     }
 
     public function test_sign_write_off_without_scan_throws(): void

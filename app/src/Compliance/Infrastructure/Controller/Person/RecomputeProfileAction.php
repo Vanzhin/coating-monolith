@@ -33,6 +33,6 @@ final class RecomputeProfileAction extends AbstractController
             $this->addFlash('danger', $e->getMessage());
         }
 
-        return $this->redirectToRoute('app_cabinet_compliance_acts', ['profile' => $profileId]);
+        return $this->redirectToRoute('app_cabinet_compliance_dashboard', ['profile' => $profileId]);
     }
 }
