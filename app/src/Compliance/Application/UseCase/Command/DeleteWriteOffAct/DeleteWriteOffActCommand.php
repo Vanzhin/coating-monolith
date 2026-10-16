@@ -6,11 +6,10 @@ namespace App\Compliance\Application\UseCase\Command\DeleteWriteOffAct;
 
 use App\Shared\Application\Command\Command;
 
-/** Удалить черновик акта списания (оформленный — нельзя). */
+/** Удалить черновик акта списания (оформленный — нельзя). Акт — самостоятельный кросс-персон агрегат, по его id. */
 readonly class DeleteWriteOffActCommand extends Command
 {
     public function __construct(
-        public string $profileId,
         public string $writeOffActId,
     ) {
     }

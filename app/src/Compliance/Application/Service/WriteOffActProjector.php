@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\Service;
 
-use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffItem;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
+use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
+use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
@@ -14,28 +14,38 @@ use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Domain\ValueObject\CommissionMember;
 
 /**
- * RenderData для docx-акта списания: идентичность сотрудника + таблица списанных позиций (повтор строк) +
- * реквизиты/комиссия (если акт подписан — иначе пусто, заполняется при подписании). Строка — порция
- * {@see WriteOffItem}: наименование/единица — с факта-выдачи ({@see ProfileCompliance::recordById}), количество
- * и причина — с самой порции (один факт может быть списан несколькими порциями, в разных актах).
+ * RenderData для docx-акта списания самостоятельного кросс-персон агрегата {@see WriteOffAct}: таблица
+ * списанных позиций (повтор строк) + реквизиты/комиссия. Строка — порция {@see WriteOffActLine}: наименование
+ * берём из снимка строки ({@see WriteOffActLine::labelSnapshot}), единицу/дату выдачи — с факта-выдачи
+ * (резолвит контроллер, передаёт `$recordsById`). Идентичность в шапке — сведённая по всем людям акта
+ * (`$profilesById`): акт один, может покрывать позиции нескольких сотрудников одной организации.
  */
 final readonly class WriteOffActProjector
 {
-    public function project(WriteOffAct $act, ProfileDTO $employee): RenderData
+    /**
+     * @param array<string, ProfileDTO>        $profilesById профили людей акта по profileId (для шапки)
+     * @param array<string, FulfillmentRecord> $recordsById  факты-выдачи строк акта по recordId (единица/дата)
+     */
+    public function project(WriteOffAct $act, array $profilesById, array $recordsById): RenderData
     {
-        $compliance = $act->profileCompliance();
+        // Строки сгруппированы по человеку (все строки p1, затем p2…) и каждая несёт ФИО своего человека —
+        // так плоский шаблон (повтор по `items`) рендерит акт с людьми и держит их строки рядом.
         $items = [];
-        foreach ($compliance->itemsOfWriteOffAct($act->getId()) as $portion) {
-            $items[] = $this->rowOf($portion, $compliance);
+        foreach ($act->linesByProfile() as $profileId => $lines) {
+            $fio = isset($profilesById[$profileId]) ? $this->fio($profilesById[$profileId]) : '';
+            foreach ($lines as $line) {
+                $items[] = $this->rowOf($line, $recordsById, $fio);
+            }
         }
 
-        $members = $act->commission()->members ?? [];
+        $commission = $act->commission();
+        $members = null !== $commission ? $commission->members : [];
 
         // Все ключи отдаём ВСЕГДА (пустыми, если не заполнено) — так и строгий {{x}}, и {{x?}} не падают
         // на незаполненном черновике. Повторяемые группы (items/commission) — списком (пустой → строка удалится).
         $values = [
-            'employee_fio' => new TextValue($this->fio($employee)),
-            'org_title' => new TextValue($employee->organizationTitle),
+            'employee_fio' => new TextValue($this->employeesFio($act, $profilesById)),
+            'org_title' => new TextValue($this->orgTitle($act, $profilesById)),
             'act_number' => new TextValue($act->actNumber() ?? ''),
             'act_date' => new TextValue($act->actDate()?->format('d.m.Y') ?? ''),
             'order_number' => new TextValue($act->orderNumber() ?? ''),
@@ -61,18 +71,50 @@ final readonly class WriteOffActProjector
         return new RenderData($values);
     }
 
-    /** @return array{name: string, qty: string, issue_date: string, reason: string} */
-    private function rowOf(WriteOffItem $portion, ProfileCompliance $compliance): array
+    /**
+     * @param array<string, FulfillmentRecord> $recordsById
+     *
+     * @return array{name: string, qty: string, issue_date: string, reason: string, employee_fio: string}
+     */
+    private function rowOf(WriteOffActLine $line, array $recordsById, string $employeeFio): array
     {
-        $fact = $compliance->recordById($portion->recordId());
+        $fact = $recordsById[$line->recordId()] ?? null;
         $unit = $fact?->quantity()?->unit->title() ?? '';
 
         return [
-            'name' => null !== $fact ? $compliance->obligationLabelOf($fact->obligationKey()) : '',
-            'qty' => '' !== $unit ? $this->number($portion->quantity()).' '.$unit : $this->number($portion->quantity()),
+            'name' => $line->labelSnapshot(),
+            'qty' => '' !== $unit ? $this->number($line->quantity()).' '.$unit : $this->number($line->quantity()),
             'issue_date' => $fact?->fulfilledAt()->format('d.m.Y') ?? '',
-            'reason' => $portion->reason()?->title() ?? '',
+            'reason' => $line->reason()?->title() ?? '',
+            'employee_fio' => $employeeFio,
         ];
+    }
+
+    /** @param array<string, ProfileDTO> $profilesById */
+    private function employeesFio(WriteOffAct $act, array $profilesById): string
+    {
+        $names = [];
+        foreach ($act->profileIds() as $profileId) {
+            $profile = $profilesById[$profileId] ?? null;
+            if (null !== $profile) {
+                $names[] = $this->fio($profile);
+            }
+        }
+
+        return implode('; ', $names);
+    }
+
+    /** @param array<string, ProfileDTO> $profilesById Организация одна на акт (org-scoped) — берём у первого профиля. */
+    private function orgTitle(WriteOffAct $act, array $profilesById): string
+    {
+        foreach ($act->profileIds() as $profileId) {
+            $profile = $profilesById[$profileId] ?? null;
+            if (null !== $profile) {
+                return $profile->organizationTitle;
+            }
+        }
+
+        return '';
     }
 
     private function number(float $amount): string

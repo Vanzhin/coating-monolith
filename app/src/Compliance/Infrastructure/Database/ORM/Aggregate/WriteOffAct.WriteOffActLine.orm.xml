@@ -2,18 +2,23 @@
                   xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
                   xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
-    <entity name="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffItem" table="compliance_write_off_item">
+
+    <entity name="App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine" table="compliance_writeoff_line">
         <id name="id" type="uuid" column="id">
             <generator strategy="NONE"/>
         </id>
+        <field name="profileId" type="string" length="64" column="profile_id"/>
         <field name="recordId" type="string" length="36" column="record_id"/>
+        <field name="labelSnapshot" type="string" length="1000" column="label_snapshot"/>
         <field name="quantity" type="float" column="quantity"/>
         <field name="reason" type="string" length="32" column="reason" nullable="true"
                enum-type="App\Compliance\Domain\Type\WriteOffReason"/>
+
         <many-to-one field="writeOffAct"
-                     target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\WriteOffAct"
-                     inversed-by="items" fetch="LAZY">
+                     target-entity="App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct"
+                     inversed-by="lines" fetch="LAZY">
             <join-column name="write_off_act_id" nullable="false" on-delete="CASCADE"/>
         </many-to-one>
     </entity>
+
 </doctrine-mapping>

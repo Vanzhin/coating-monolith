@@ -17,7 +17,6 @@ readonly class SaveWriteOffActCommand extends Command
      * @param list<array<string, mixed>>                                     $members строки комиссии (как в оформлении)
      */
     public function __construct(
-        public string $profileId,
         public string $writeOffActId,
         public array $lines,
         public string $actNumber = '',

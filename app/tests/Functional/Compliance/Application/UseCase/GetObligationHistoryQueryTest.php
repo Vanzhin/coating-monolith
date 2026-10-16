@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\ObligationHistory\ObligationHistoryEventDTO;
+use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
-use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQuery;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -72,7 +75,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand(
-            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-07-01',
+            $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-07-01',
         ));
         $this->reload();
 
@@ -91,10 +94,10 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
 
         $actId = $this->startWriteOff($p, $r);
         $this->commandBus->execute(new SaveWriteOffActCommand(
-            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
+            $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
         ));
         $this->commandBus->execute(new SignWriteOffActCommand(
-            $p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
         ));
         $this->reload();
 
@@ -139,14 +142,17 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         return $result;
     }
 
+    /** Наполнить корзину всеми held-фактами требования ({@see AddToWriteOffDraftCommand}) и вернуть id черновика. */
     private function startWriteOff(string $profileId, string $requirementId): string
     {
-        $this->commandBus->execute(new StartWriteOffActCommand($profileId, $requirementId));
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($profileId, $requirementId, null));
         $this->reload();
-        $pc = static::getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
-        self::assertNotNull($pc);
-        $act = $pc->openWriteOffDraftFor($requirementId);
-        self::assertNotNull($act);
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $this->queryBus->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($profileResult->profile);
+        $act = static::getContainer()->get(WriteOffActRepositoryInterface::class)
+            ->findOpenDraft($requirementId, $profileResult->profile->organizationId);
+        self::assertNotNull($act, 'черновик создан наполнением корзины с карточки выдачи');
 
         return $act->getId();
     }
