@@ -10,9 +10,10 @@ use App\Shared\Application\Event\EventHandlerInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 /**
- * Акт списания оформлен → пересобрать проекцию этого человека по этому требованию (единый сервис пересчёта).
- * Дефицит после списания виден в журнале — отдельную выдачу-черновик заводить не нужно. В воркере (async),
- * идемпотентно: пересчёт — чистая пересборка из фактов.
+ * Акт списания оформлен → пересобрать проекцию КАЖДОГО затронутого актом человека по этому требованию (единый
+ * сервис пересчёта, fan-out по {@see WriteOffActSigned::$profileIds} — акт кросс-персон). Дефицит после
+ * списания виден в журнале — отдельную выдачу-черновик заводить не нужно. В воркере (async), идемпотентно:
+ * пересчёт — чистая пересборка из фактов.
  */
 final readonly class RecomputeOnWriteOffActSignedHandler implements EventHandlerInterface
 {
@@ -25,7 +26,7 @@ final readonly class RecomputeOnWriteOffActSignedHandler implements EventHandler
     {
         $this->rebuilder->rebuild(
             requirementIds: new StringCollection($event->requirementId),
-            profileIds: new StringCollection($event->profileId),
+            profileIds: new StringCollection(...$event->profileIds),
         );
     }
 }
