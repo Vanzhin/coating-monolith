@@ -111,39 +111,42 @@
                          data-controller="writeoff-fill">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <h2 class="h6 mb-0">Позиции к списанию</h2>
-                            {% if positions is not empty %}
+                            {% if hasPositions %}
                                 <button type="button" class="btn btn-outline-primary btn-sm" data-action="writeoff-fill#fillAll">
                                     <i class="bi bi-check-all me-1"></i>Списать всё
                                 </button>
                             {% endif %}
                         </div>
-                        {% if positions is empty %}
+                        {% if not hasPositions %}
                             <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих позиций для списания.</div>
                         {% endif %}
-                        {% for p in positions %}
-                            {% embed 'admin/compliance/_item_card.html.twig' with {name: p.label, meta: p.meta, p: p, i: loop.index0, reasons: reasons} %}
-                                {% block control %}
-                                    <div class="text-end" style="width: 8rem;">
-                                        <label class="form-label small mb-1">Списать</label>
-                                        <div class="d-flex align-items-baseline gap-1 justify-content-end">
-                                            <input type="number" min="0" max="{{ p.held }}" step="any" inputmode="decimal" class="form-control form-control-sm"
-                                                   name="portions[{{ i }}][quantity]" value="{{ p.quantity }}" placeholder="0"
-                                                   data-writeoff-fill-target="qty">
-                                            <span class="text-body-secondary small">{{ p.unit }}</span>
+                        {% for g in personGroups %}
+                            <div class="text-body-secondary small fw-semibold mb-2{{ not loop.first ? ' mt-3' : '' }}">{{ g.fio }}{% if g.position %} · {{ g.position }}{% endif %} · позиций: {{ g.count }}</div>
+                            {% for p in g.positions %}
+                                {% embed 'admin/compliance/_item_card.html.twig' with {name: p.label, meta: p.meta, p: p, i: p.index, reasons: reasons} %}
+                                    {% block control %}
+                                        <div class="text-end" style="width: 8rem;">
+                                            <label class="form-label small mb-1">Списать</label>
+                                            <div class="d-flex align-items-baseline gap-1 justify-content-end">
+                                                <input type="number" min="0" max="{{ p.held }}" step="any" inputmode="decimal" class="form-control form-control-sm"
+                                                       name="portions[{{ i }}][quantity]" value="{{ p.quantity }}" placeholder="0"
+                                                       data-writeoff-fill-target="qty">
+                                                <span class="text-body-secondary small">{{ p.unit }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                {% endblock %}
-                                {% block footer %}
-                                    <input type="hidden" name="portions[{{ i }}][recordId]" value="{{ p.recordId }}">
-                                    <div class="w-100">
-                                        <label class="form-label small mb-1">Причина</label>
-                                        <select name="portions[{{ i }}][reason]" class="form-select form-select-sm">
-                                            <option value="">— выберите —</option>
-                                            {% for r in reasons %}<option value="{{ r.value }}"{{ p.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
-                                        </select>
-                                    </div>
-                                {% endblock %}
-                            {% endembed %}
+                                    {% endblock %}
+                                    {% block footer %}
+                                        <input type="hidden" name="portions[{{ i }}][recordId]" value="{{ p.recordId }}">
+                                        <div class="w-100">
+                                            <label class="form-label small mb-1">Причина</label>
+                                            <select name="portions[{{ i }}][reason]" class="form-select form-select-sm">
+                                                <option value="">— выберите —</option>
+                                                {% for r in reasons %}<option value="{{ r.value }}"{{ p.reason == r.value ? ' selected' : '' }}>{{ r.title }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                    {% endblock %}
+                                {% endembed %}
+                            {% endfor %}
                         {% endfor %}
                     </div>
 
@@ -154,18 +157,21 @@
             {% else %}
                 <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h2 class="h6 mb-3">Списано{% if actDate %} · {{ actDate }}{% endif %}</h2>
-                    {% for it in signedItems %}
-                        {% embed 'admin/compliance/_item_card.html.twig' with {name: it.label, meta: it.meta, it: it} %}
-                            {% block control %}
-                                <div class="text-end">
-                                    <div class="small text-body-secondary mb-1">Списано</div>
-                                    <span class="badge text-bg-danger fw-normal">{{ it.quantityLabel }}</span>
-                                </div>
-                            {% endblock %}
-                            {% block footer %}
-                                {% if it.reason %}<div class="w-100 text-body-secondary small">Причина: {{ it.reason }}</div>{% endif %}
-                            {% endblock %}
-                        {% endembed %}
+                    {% for g in signedGroups %}
+                        <div class="text-body-secondary small fw-semibold mb-2{{ not loop.first ? ' mt-3' : '' }}">{{ g.fio }}{% if g.position %} · {{ g.position }}{% endif %} · позиций: {{ g.count }}</div>
+                        {% for it in g.positions %}
+                            {% embed 'admin/compliance/_item_card.html.twig' with {name: it.label, meta: it.meta, it: it} %}
+                                {% block control %}
+                                    <div class="text-end">
+                                        <div class="small text-body-secondary mb-1">Списано</div>
+                                        <span class="badge text-bg-danger fw-normal">{{ it.quantityLabel }}</span>
+                                    </div>
+                                {% endblock %}
+                                {% block footer %}
+                                    {% if it.reason %}<div class="w-100 text-body-secondary small">Причина: {{ it.reason }}</div>{% endif %}
+                                {% endblock %}
+                            {% endembed %}
+                        {% endfor %}
                     {% endfor %}
                 </div>
 

@@ -114,9 +114,17 @@ final class ShowAction extends AbstractController
         $backProfileId = $act->profileIds()[0] ?? null;
 
         if ($act->isDraft()) {
-            $positions = [];
-            foreach ($act->lines() as $line) {
-                $positions[] = $this->draftPosition($line, $profiles, $owners);
+            // Позиции сгруппированы по людям (секция на человека), сквозной индекс строки держит portions[] плоским.
+            $personGroups = [];
+            $index = 0;
+            foreach ($act->linesByProfile() as $profileId => $lines) {
+                $positions = [];
+                foreach ($lines as $line) {
+                    $position = $this->draftPosition($line, $owners);
+                    $position['index'] = $index++;
+                    $positions[] = $position;
+                }
+                $personGroups[] = $this->personGroup($profileId, $profiles, $positions);
             }
 
             // Комиссия на reload — из сохранённого черновика (при ошибке — из POST, чтобы не терять ввод).
@@ -131,7 +139,8 @@ final class ShowAction extends AbstractController
                 'requirementId' => $act->requirementId(),
                 'backProfileId' => $backProfileId,
                 'draft' => true,
-                'positions' => $positions,
+                'personGroups' => $personGroups,
+                'hasPositions' => $index > 0,
                 'actNumber' => $act->actNumber(),
                 'actDate' => $act->actDate()?->format('Y-m-d') ?: date('Y-m-d'),
                 'orderNumber' => $act->orderNumber(),
@@ -144,10 +153,14 @@ final class ShowAction extends AbstractController
             ]);
         }
 
-        // Оформленный акт — только просмотр: что списано + комиссия + скан.
-        $signedItems = [];
-        foreach ($act->lines() as $line) {
-            $signedItems[] = $this->signedItem($line, $profiles, $owners);
+        // Оформленный акт — только просмотр: что списано + комиссия + скан, тоже группами по людям.
+        $signedGroups = [];
+        foreach ($act->linesByProfile() as $profileId => $lines) {
+            $items = [];
+            foreach ($lines as $line) {
+                $items[] = $this->signedItem($line, $owners);
+            }
+            $signedGroups[] = $this->personGroup($profileId, $profiles, $items);
         }
         $commission = $act->commission();
         $commissionMembers = null !== $commission ? array_map(
@@ -165,7 +178,7 @@ final class ShowAction extends AbstractController
             'requirementId' => $act->requirementId(),
             'backProfileId' => $backProfileId,
             'draft' => false,
-            'signedItems' => $signedItems,
+            'signedGroups' => $signedGroups,
             'actNumber' => $act->actNumber(),
             'actDate' => $act->actDate()?->format('d.m.Y'),
             'commissionMembers' => $commissionMembers,
@@ -174,25 +187,44 @@ final class ShowAction extends AbstractController
     }
 
     /**
-     * @param array<string, ProfileDTO>        $profiles
+     * Шапка секции-человека: ФИО + должность + число позиций. Строки позиций уже посчитаны вызывающим.
+     *
+     * @param array<string, ProfileDTO>  $profiles
+     * @param list<array<string, mixed>> $positions
+     *
+     * @return array<string, mixed>
+     */
+    private function personGroup(string $profileId, array $profiles, array $positions): array
+    {
+        $profile = $profiles[$profileId] ?? null;
+
+        return [
+            'fio' => null !== $profile ? $this->fio($profile) : '',
+            'position' => null !== $profile ? $profile->positionTitle : '',
+            'count' => \count($positions),
+            'positions' => $positions,
+        ];
+    }
+
+    /**
+     * Строка позиции черновика. ФИО владельца — в шапке секции, поэтому в meta его нет: только «на руках» и дата.
+     *
      * @param array<string, ProfileCompliance> $owners
      *
      * @return array<string, mixed>
      */
-    private function draftPosition(WriteOffActLine $line, array $profiles, array $owners): array
+    private function draftPosition(WriteOffActLine $line, array $owners): array
     {
         $fact = ($owners[$line->profileId()] ?? null)?->recordById($line->recordId());
         $held = $fact?->heldAmount() ?? $line->quantity();
         $unit = $fact?->quantity()?->unit->title() ?? '';
         $heldStr = AmountFormatter::trimmed($held);
-        $ownerFio = isset($profiles[$line->profileId()]) ? $this->fio($profiles[$line->profileId()]) : '';
         $issued = null !== $fact ? ' · выдано '.$fact->fulfilledAt()->format('d.m.Y') : '';
 
         return [
             'recordId' => $line->recordId(),
             'label' => $line->labelSnapshot(),
-            'owner' => $ownerFio,
-            'meta' => trim(('' !== $ownerFio ? $ownerFio.' · ' : '').'на руках '.$heldStr.' '.$unit.$issued),
+            'meta' => trim('на руках '.$heldStr.' '.$unit.$issued),
             'held' => $heldStr,
             'unit' => $unit,
             'quantity' => AmountFormatter::trimmed($line->quantity()),
@@ -201,20 +233,20 @@ final class ShowAction extends AbstractController
     }
 
     /**
-     * @param array<string, ProfileDTO>        $profiles
+     * Строка списанной позиции (просмотр). ФИО владельца — в шапке секции, в meta только дата выдачи.
+     *
      * @param array<string, ProfileCompliance> $owners
      *
      * @return array<string, mixed>
      */
-    private function signedItem(WriteOffActLine $line, array $profiles, array $owners): array
+    private function signedItem(WriteOffActLine $line, array $owners): array
     {
         $fact = ($owners[$line->profileId()] ?? null)?->recordById($line->recordId());
         $unit = $fact?->quantity()?->unit->title() ?? '';
-        $ownerFio = isset($profiles[$line->profileId()]) ? $this->fio($profiles[$line->profileId()]) : '';
 
         return [
             'label' => $line->labelSnapshot(),
-            'meta' => trim(('' !== $ownerFio ? $ownerFio.' · ' : '').(null !== $fact ? 'выдано '.$fact->fulfilledAt()->format('d.m.Y') : '')),
+            'meta' => null !== $fact ? 'выдано '.$fact->fulfilledAt()->format('d.m.Y') : '',
             'quantityLabel' => AmountFormatter::trimmed($line->quantity()).('' !== $unit ? ' '.$unit : ''),
             'reason' => $line->reason()?->title(),
         ];

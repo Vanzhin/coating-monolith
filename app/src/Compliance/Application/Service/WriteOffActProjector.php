@@ -28,9 +28,14 @@ final readonly class WriteOffActProjector
      */
     public function project(WriteOffAct $act, array $profilesById, array $recordsById): RenderData
     {
+        // Строки сгруппированы по человеку (все строки p1, затем p2…) и каждая несёт ФИО своего человека —
+        // так плоский шаблон (повтор по `items`) рендерит акт с людьми и держит их строки рядом.
         $items = [];
-        foreach ($act->lines() as $line) {
-            $items[] = $this->rowOf($line, $recordsById);
+        foreach ($act->linesByProfile() as $profileId => $lines) {
+            $fio = isset($profilesById[$profileId]) ? $this->fio($profilesById[$profileId]) : '';
+            foreach ($lines as $line) {
+                $items[] = $this->rowOf($line, $recordsById, $fio);
+            }
         }
 
         $commission = $act->commission();
@@ -69,9 +74,9 @@ final readonly class WriteOffActProjector
     /**
      * @param array<string, FulfillmentRecord> $recordsById
      *
-     * @return array{name: string, qty: string, issue_date: string, reason: string}
+     * @return array{name: string, qty: string, issue_date: string, reason: string, employee_fio: string}
      */
-    private function rowOf(WriteOffActLine $line, array $recordsById): array
+    private function rowOf(WriteOffActLine $line, array $recordsById, string $employeeFio): array
     {
         $fact = $recordsById[$line->recordId()] ?? null;
         $unit = $fact?->quantity()?->unit->title() ?? '';
@@ -81,6 +86,7 @@ final readonly class WriteOffActProjector
             'qty' => '' !== $unit ? $this->number($line->quantity()).' '.$unit : $this->number($line->quantity()),
             'issue_date' => $fact?->fulfilledAt()->format('d.m.Y') ?? '',
             'reason' => $line->reason()?->title() ?? '',
+            'employee_fio' => $employeeFio,
         ];
     }
 
