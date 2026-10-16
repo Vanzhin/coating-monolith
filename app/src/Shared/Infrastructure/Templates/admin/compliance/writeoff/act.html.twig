@@ -1,13 +1,12 @@
 {% extends '/cabinet/index.html.twig' %}
 
-{% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
-{% set backUrl = path('app_cabinet_compliance_issue', {profileId: profileId, requirementId: requirementId}) %}
+{% set backUrl = backProfileId ? path('app_cabinet_compliance_issue', {profileId: backProfileId, requirementId: requirementId}) : path('app_cabinet_compliance_dashboard') %}
 
-{% block title %}{{ parent() }} | Акт списания — {{ fio }}{% endblock %}
+{% block title %}{{ parent() }} | Акт списания{% endblock %}
 
 {% block content %}
     {% embed 'components/form_page.html.twig' with {
-        title: 'Акт списания — ' ~ fio,
+        title: 'Акт списания',
         back_url: backUrl,
         save_enabled: false,
         save_form_id: 'wo-act-form',
@@ -28,10 +27,10 @@
                 </span>
                 {% if not draft %}
                     <div class="ms-auto d-flex flex-wrap gap-2">
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {actId: actId}) }}">
                             <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
                         </a>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {profileId: profileId, actId: actId}) }}">
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_scan', {actId: actId}) }}">
                             <i class="bi bi-download me-1"></i>Скан
                         </a>
                     </div>
@@ -39,7 +38,7 @@
             </div>
 
             {% if draft %}
-                <form id="wo-act-form" method="post" action="{{ path('app_cabinet_compliance_writeoff_show', {profileId: profileId, actId: actId}) }}"
+                <form id="wo-act-form" method="post" action="{{ path('app_cabinet_compliance_writeoff_show', {actId: actId}) }}"
                       data-controller="staged-file" data-staged-file-stage-url-value="{{ path('app_cabinet_file_stage') }}">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
                         <h2 class="h6 mb-0">Акт списания</h2>
@@ -53,10 +52,10 @@
                             <button type="button" class="btn btn-outline-danger btn-sm"
                                     data-bs-toggle="modal" data-bs-target="#deleteModal"
                                     data-bs-title="акт списания"
-                                    data-bs-url="{{ path('app_cabinet_compliance_writeoff_delete', {profileId: profileId, actId: actId}) }}">
+                                    data-bs-url="{{ path('app_cabinet_compliance_writeoff_delete', {actId: actId}) }}">
                                 <i class="bi bi-trash3 me-1"></i>Удалить
                             </button>
-                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {profileId: profileId, actId: actId}) }}">
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_cabinet_compliance_writeoff_download', {actId: actId}) }}">
                                 <i class="bi bi-file-earmark-word me-1"></i>Скачать акт
                             </a>
                         </div>

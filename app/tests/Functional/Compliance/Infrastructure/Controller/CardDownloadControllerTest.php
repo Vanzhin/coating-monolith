@@ -23,6 +23,8 @@ use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\File\FileStorage;
+use App\Shared\Domain\Templating\RepeatValue;
+use App\Shared\Domain\Templating\TextValue;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -126,17 +128,76 @@ final class CardDownloadControllerTest extends WebTestCase
         return new UploadedFile($tmp, 'journal.xlsx', null, null, true);
     }
 
-    /**
-     * @todo D5/Task 6-8 (docs/plans/compliance-writeoff-crossperson-plan.md): колонки возврата (`return_qty`/
-     * `return_date`/`writeoff_act`) в {@see RequirementCardProjector::returnsByRecord} собираются из СТАРОЙ
-     * коллекции {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::getWriteOffActs()}.
-     * После Task 4 подпись живёт на самостоятельном агрегате {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}
-     * и эту коллекцию не наполняет — временный разрыв (факт гасится верно, но карточка не показывает возврат)
-     * до репойнта проектора на новый агрегат.
-     */
     public function test_projector_page1_norm_page2_facts_with_writeoff(): void
     {
-        self::markTestSkipped('Временный разрыв: RequirementCardProjector читает возврат со старого агрегата ProfileCompliance::getWriteOffActs(), ещё не перенесён на WriteOffAct (D5 Task 6/8).');
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $container = $this->client->getContainer();
+        $bus = $container->get(CommandBusInterface::class);
+        $repo = $container->get(ProfileComplianceRepositoryInterface::class);
+        $em = $container->get(EntityManagerInterface::class);
+
+        // Выдать карточку: модель/марка (note) + кол-во 12 при норме 10 — значения разойдутся, чтобы доказать,
+        // что стр. 1 берёт норму (10), а стр. 2 — факт (12). Прямая запись в журнал (без черновика/подписи).
+        $bus->execute(new RecordIssuanceCommand(
+            $p, $r, '2026-06-01',
+            [['obligationKey' => $k, 'amount' => '12', 'unit' => 'pair', 'note' => 'Jeta Safety JP711, кл.II']],
+            cardNumber: 'CARD-5',
+        ));
+        $em->clear();
+
+        $recordId = $repo->findByProfile($p)?->recordsForRequirement($r)[0]->getId();
+        self::assertNotNull($recordId);
+
+        // Частично списать 3 — ПОДПИСАННЫЙ кросс-персон акт списания (должен заполнить колонки возврата факт-таблицы).
+        $bus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $em->clear();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $container->get(WriteOffActRepositoryInterface::class)->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+        $actId = $act->getId();
+        $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
+        $bus->execute(new SaveWriteOffActCommand($p, $actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($p, $actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
+        $em->clear();
+
+        // Проектор напрямую (независимо от шаблона): стр. 1 = норма, стр. 2 = факт этого акта + возврат.
+        $requirement = $container->get(RequirementRepositoryInterface::class)->findOneById($r);
+        $pc = $repo->findByProfile($p);
+        self::assertNotNull($requirement);
+        self::assertNotNull($pc);
+        $data = $container->get(RequirementCardProjector::class)->project($pc, $profileResult->profile, $requirement, new \DateTimeImmutable('2026-07-02'));
+
+        // Стр. 1 — норма требования (норм-количество, весь перечень).
+        $items = $data->get('items');
+        self::assertInstanceOf(RepeatValue::class, $items);
+        self::assertCount(1, $items->rows);
+        self::assertSame('Перчатки', $items->rows[0]['label']);
+        self::assertSame('10', $items->rows[0]['quantity'], 'стр. 1 количество = норма (10), а не выданное (12)');
+        self::assertStringContainsString('ежегодно', (string) $items->rows[0]['unit_cadence']);
+
+        // Стр. 2 — факт этого акта: модель(note)/дата/выдано + возврат/акт списания.
+        $log = $data->get('log');
+        self::assertInstanceOf(RepeatValue::class, $log);
+        self::assertCount(1, $log->rows);
+        $row = $log->rows[0];
+        self::assertSame('Перчатки', $row['name']);
+        self::assertSame('Jeta Safety JP711, кл.II', $row['model'], 'колонка модель/марка = note записи');
+        self::assertSame('01.06.2026', $row['issue_date']);
+        self::assertSame('12', $row['issue_qty'], 'стр. 2 количество = выданное (12), а не норма');
+        self::assertSame('3', $row['return_qty'], 'возвращено = сумма подписанного списания');
+        self::assertSame('01.07.2026', $row['return_date']);
+        self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
+
+        // № карточки — свойство журнала, закреплено первой выдачей. Ответственный — реквизит акта-документа,
+        // журнал пишется прямой записью без него, поэтому плейсхолдер пустой.
+        $cardNumber = $data->get('card_number');
+        $responsibleFio = $data->get('responsible_fio');
+        self::assertInstanceOf(TextValue::class, $cardNumber);
+        self::assertInstanceOf(TextValue::class, $responsibleFio);
+        self::assertSame('CARD-5', $cardNumber->value);
+        self::assertSame('', $responsibleFio->value);
     }
 
     public function test_card_prints_whole_journal_of_requirement(): void
@@ -259,10 +320,13 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertGreaterThan(0, $actCrawler->filter('input[name="portions[0][quantity]"]')->count(), 'есть поле количества к списанию');
         self::assertGreaterThan(0, $actCrawler->filter('select[name="portions[0][reason]"]')->count(), 'есть выбор причины');
 
-        $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
-        self::assertNotNull($pc);
-        self::assertCount(1, $pc->getWriteOffActs());
-        self::assertTrue($pc->getWriteOffActs()[0]->isDraft());
+        $container = $this->client->getContainer();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($profileResult->profile);
+        $act = $container->get(WriteOffActRepositoryInterface::class)->findOpenDraft($requirementId, $profileResult->profile->organizationId);
+        self::assertNotNull($act, 'открытый кросс-персон черновик создан «Перейти к акту списания»');
+        self::assertTrue($act->isDraft());
         // Скачивание заполненного акта (с комиссией) проверяется в test_write_off_draft_save_persists_number_and_commission.
     }
 
@@ -298,19 +362,53 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame(2, substr_count($historyHtml, 'Выдано'), 'в истории — обе выдачи (2 акта), консолидация не потеряла ни одной');
     }
 
-    /**
-     * @todo D5/Task 6 (docs/plans/compliance-writeoff-crossperson-plan.md): `/writeoff/{actId}/download`
-     * ({@see \App\Compliance\Infrastructure\Controller\WriteOffAct\DownloadAction}) резолвит акт через СТАРУЮ
-     * коллекцию {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::getWriteOffActs()}.
-     * После Task 4 `SaveWriteOffActCommand` пишет черновик на самостоятельный агрегат
-     * {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct} — контроллер скачивания до репойнта
-     * (Task 6) этот черновик не найдёт. Сохранение состава/реквизитов на новом агрегате покрыто
-     * {@see \App\Tests\Functional\Compliance\Application\UseCase\WriteOffFlowTest::test_sign_write_off_act_frees_position}
-     * и соседними — здесь временно отключаем именно связку с контроллером скачивания черновика.
-     */
     public function test_write_off_draft_save_persists_number_and_commission(): void
     {
-        self::markTestSkipped('Временный разрыв: DownloadAction резолвит акт со старого агрегата ProfileCompliance::getWriteOffActs(), ещё не перенесён на WriteOffAct (D5 Task 6).');
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // действующая карточка (на руках 10)
+        $container = $this->client->getContainer();
+        $bus = $container->get(CommandBusInterface::class);
+        $repo = $container->get(ProfileComplianceRepositoryInterface::class);
+        $writeOffRepo = $container->get(WriteOffActRepositoryInterface::class);
+        $em = $container->get(EntityManagerInterface::class);
+
+        // Наполнить корзину (кросс-персон черновик) и достать её id + recordId факта.
+        $bus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $em->clear();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $writeOffRepo->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+        $actId = $act->getId();
+        $pc = $repo->findByProfile($p);
+        self::assertNotNull($pc);
+        $recordId = $pc->recordsForRequirement($r)[0]->getId();
+
+        // Сохранить черновик акта списания (op=save): состав + № + комиссия, без скана/подписи.
+        $bus->execute(new SaveWriteOffActCommand(
+            $p, $actId,
+            [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
+            'А-5', '2026-03-01',
+            [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-03-01']],
+        ));
+
+        $em->clear();
+        $saved = $writeOffRepo->findById($actId);
+        self::assertNotNull($saved);
+        self::assertTrue($saved->isDraft(), 'осталось черновиком (без подписи)');
+        self::assertSame('А-5', $saved->actNumber(), '№ акта сохранён на черновике');
+        self::assertNotNull($saved->commission());
+        self::assertCount(1, $saved->commission()->members);
+        self::assertSame('Сидоров С. С.', $saved->commission()->members[0]->fio);
+
+        // Шаблон рендерится из сохранённого черновика (комиссия заполнена): нет битых {{, данные на месте.
+        $this->client->request('GET', sprintf('/cabinet/compliance/writeoff/%s/download', $actId));
+        self::assertResponseIsSuccessful();
+        $text = $this->docxText((string) $this->client->getResponse()->getContent());
+        self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены (нет битых скобок)');
+        self::assertStringContainsString('А-5', $text, '№ акта в документе');
+        self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
     }
 
     private function setPrivate(object $object, string $property, mixed $value): void

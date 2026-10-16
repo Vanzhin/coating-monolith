@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\WriteOffAct;
 
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Shared\Domain\File\FileStorage;
 use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -13,30 +13,23 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** Скачать скан подписанного акта списания. Просмотр — авторизованным (security.yaml). */
+/** Скачать скан подписанного акта списания. Просмотр — авторизованным (security.yaml). Акт кросс-персон — по его id. */
 #[Route(
-    path: '/cabinet/compliance/person/{profileId}/writeoff/{actId}/scan',
+    path: '/cabinet/compliance/writeoff/{actId}/scan',
     name: 'app_cabinet_compliance_writeoff_scan',
     methods: ['GET'],
 )]
 final class DownloadScanAction extends AbstractController
 {
     public function __construct(
-        private readonly ProfileComplianceRepositoryInterface $repository,
+        private readonly WriteOffActRepositoryInterface $writeOffActRepository,
         private readonly FileStorage $storage,
     ) {
     }
 
-    public function __invoke(string $profileId, string $actId): Response
+    public function __invoke(string $actId): Response
     {
-        $scanFileId = null;
-        $profileCompliance = $this->repository->findByProfile($profileId);
-        foreach (null !== $profileCompliance ? $profileCompliance->getWriteOffActs() : [] as $act) {
-            if ($act->getId() === $actId) {
-                $scanFileId = $act->scanFileId();
-                break;
-            }
-        }
+        $scanFileId = $this->writeOffActRepository->findById($actId)?->scanFileId();
         if (null === $scanFileId) {
             throw new AppException('Скан акта списания не найден.', Response::HTTP_NOT_FOUND);
         }

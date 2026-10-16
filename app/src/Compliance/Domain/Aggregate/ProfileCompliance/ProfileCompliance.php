@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
+use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
 use App\Compliance\Domain\Service\ComplianceStatusResolver;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
-use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
-use App\Shared\Domain\ValueObject\Commission;
 use App\Shared\Infrastructure\Exception\AppException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -36,8 +35,6 @@ class ProfileCompliance extends Aggregate
     private Collection $obligations;
     /** @var Collection<int, FulfillmentRecord> */
     private Collection $records;
-    /** @var Collection<int, WriteOffAct> */
-    private Collection $writeOffActs;
     private StringCollection $excludedKeys;
     private ?string $cardNumber = null;
     private int $version = 1;
@@ -48,7 +45,6 @@ class ProfileCompliance extends Aggregate
         $this->profileId = $profileId;
         $this->obligations = new ArrayCollection();
         $this->records = new ArrayCollection();
-        $this->writeOffActs = new ArrayCollection();
         $this->excludedKeys = new StringCollection();
     }
 
@@ -159,12 +155,6 @@ class ProfileCompliance extends Aggregate
         return $keys;
     }
 
-    /** @return WriteOffAct[] */
-    public function getWriteOffActs(): array
-    {
-        return $this->writeOffActs->toArray();
-    }
-
     /**
      * Инвариант выдачи: по материальным позициям «на руках + выдаётся» не меньше нормы (нельзя оставить ниже
      * нормы). Без мутаций — можно звать до промоута скана.
@@ -201,49 +191,24 @@ class ProfileCompliance extends Aggregate
 
     /**
      * Удалить одну запись журнала (факт) НЕ завязываясь на акт выдачи — источник факта может быть прямой
-     * дозаписью ({@see recordIssuance}) или актом, это не важно. Каскадом снимает её порции с актов списания
-     * (тот же механизм, что {@see detachRecordFromWriteOffActs}), опустевший акт списания удаляется. Возвращает
-     * requirementId (для пересчёта по событию) и fileIds удалённых сканов опустевших актов списания.
-     *
-     * @return array{requirementId: string, fileIds: list<string>}
+     * дозаписью ({@see recordIssuance}) или актом, это не важно. Акт списания живёт отдельным кросс-персон
+     * агрегатом ({@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}), поэтому каскад снятия порций с
+     * его черновиков отсюда не делаем — эмитим доменное событие {@see FulfillmentRecordRemoved}, его ловит
+     * {@see \App\Compliance\Application\Event\DetachRemovedRecordFromWriteOffsHandler} и отцепляет запись от
+     * черновиков через репозиторий. Возвращает requirementId (для пересчёта по событию).
      */
-    public function removeIssuanceRecord(Uuid $recordId, ObligationDueCalculator $calculator): array
+    public function removeIssuanceRecord(Uuid $recordId, ObligationDueCalculator $calculator): string
     {
         $record = $this->recordById((string) $recordId) ?? throw new AppException('Запись журнала не найдена.');
         $key = $record->obligationKey();
         $requirementId = $this->requirementIdOfKey($key);
 
-        $fileIds = $this->detachRecordFromWriteOffActs([(string) $recordId => true]);
-
         $this->records->removeElement($record);
         $this->recomputeObligation($key, $calculator);
         $this->pruneOrphanPersonalObligations($requirementId);
+        $this->raise(new FulfillmentRecordRemoved($this->profileId, (string) $recordId));
 
-        return ['requirementId' => $requirementId, 'fileIds' => $fileIds];
-    }
-
-    /**
-     * Общий каскад на акты списания: убрать порции, списанные с указанных фактов; если акт списания опустел
-     * из-за этого — удалить и его (+ собрать скан на зачистку). Зовётся из {@see removeIssuanceRecord}.
-     *
-     * @param array<string, true> $recordIds
-     *
-     * @return list<string> fileIds опустевших актов списания
-     */
-    private function detachRecordFromWriteOffActs(array $recordIds): array
-    {
-        $fileIds = [];
-        foreach ($this->writeOffActs->toArray() as $act) {
-            $removed = $act->removeItemsByRecordIds($recordIds);
-            if ($removed > 0 && $act->isEmpty()) {
-                if (null !== $act->scanFileId()) {
-                    $fileIds[] = $act->scanFileId();
-                }
-                $this->writeOffActs->removeElement($act);
-            }
-        }
-
-        return $fileIds;
+        return $requirementId;
     }
 
     /**
@@ -290,18 +255,6 @@ class ProfileCompliance extends Aggregate
         return false;
     }
 
-    /** Открытый черновик акта списания по требованию (корзина; инвариант: не более одного). */
-    public function openWriteOffDraftFor(string $requirementId): ?WriteOffAct
-    {
-        foreach ($this->writeOffActs as $act) {
-            if ($act->requirementId() === $requirementId && $act->isDraft()) {
-                return $act;
-            }
-        }
-
-        return null;
-    }
-
     /** На руках по позиции = Σ heldAmount по её выданным фактам журнала. */
     public function heldOf(string $obligationKey): float
     {
@@ -340,141 +293,6 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * Открыть черновик акта списания по требованию, создав пустой, если открытого нет (кнопка «Перейти к акту
-     * списания» на действующей карточке). Списывать можно только из действующей карточки. Возвращает id акта.
-     */
-    public function startOrGetWriteOffDraft(Uuid $candidateActId, string $requirementId, \DateTimeImmutable $now): string
-    {
-        // Списание привязано к выданным ФАКТАМ журнала (не к акту выдачи — он может уйти при сносе актов),
-        // поэтому запись должна быть именно выдана ({@see isIssued}), а не лежать корзиной черновика.
-        $heldFacts = array_filter(
-            $this->recordsForRequirement($requirementId),
-            fn (FulfillmentRecord $r): bool => $this->isIssued($r) && $r->heldAmount() > 0.0,
-        );
-        if ([] === $heldFacts) {
-            throw new AppException('Списать можно только то, что выдано и на руках.');
-        }
-        $act = $this->openWriteOffDraftFor($requirementId);
-        if (null === $act) {
-            $act = new WriteOffAct($candidateActId, $this, $requirementId, $now);
-            $this->writeOffActs->add($act);
-        }
-
-        return $act->getId();
-    }
-
-    /**
-     * «Списать выбранные» с карточки выдачи — наполнение корзины: в открытый черновик акта списания по требованию
-     * (создаёт, если открытого нет) добавляет held-факты указанных позиций порциями (полное количество на руках,
-     * причина пустая — укажут на странице акта). Уже добавленные факты не дублирует. Возвращает id акта.
-     *
-     * @param list<string> $obligationKeys
-     */
-    public function addObligationsToWriteOffDraft(Uuid $candidateActId, string $requirementId, array $obligationKeys, \DateTimeImmutable $now): string
-    {
-        $actId = $this->startOrGetWriteOffDraft($candidateActId, $requirementId, $now);
-        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-
-        $portions = [];
-        $alreadyIn = [];
-        foreach ($act->items() as $item) {
-            $portions[] = ['recordId' => $item->recordId(), 'quantity' => $item->quantity(), 'reason' => $item->reason()];
-            $alreadyIn[$item->recordId()] = true;
-        }
-
-        $wanted = array_fill_keys($obligationKeys, true);
-        foreach ($this->recordsForRequirement($requirementId) as $record) {
-            if (!isset($wanted[$record->obligationKey()]) || !$this->isIssued($record) || $record->heldAmount() <= 0.0) {
-                continue;
-            }
-            if (isset($alreadyIn[$record->getId()])) {
-                continue; // факт уже в корзине — не дублируем
-            }
-            $portions[] = ['recordId' => $record->getId(), 'quantity' => $record->heldAmount(), 'reason' => null];
-            $alreadyIn[$record->getId()] = true;
-        }
-
-        $act->replacePortions($portions, $now);
-
-        return $actId;
-    }
-
-    /**
-     * Сохранить состав акта списания (на его странице, пока черновик): каждая строка — факт + количество к
-     * списанию + причина. Set-семантика: заменяет весь состав. Количество не больше, чем на руках по факту.
-     * Эффекта нет — он при оформлении акта ({@see signWriteOffAct}).
-     *
-     * @param list<array{recordId: string, quantity: float, reason: ?WriteOffReason}> $lines
-     */
-    public function saveWriteOffAct(
-        string $actId,
-        array $lines,
-        \DateTimeImmutable $now,
-        string $actNumber = '',
-        ?\DateTimeImmutable $actDate = null,
-        ?Commission $commission = null,
-        string $orderNumber = '',
-        ?\DateTimeImmutable $orderDate = null,
-        string $representativePosition = '',
-        string $representativeFio = '',
-    ): void {
-        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-        $portions = [];
-        foreach ($lines as $line) {
-            $quantity = (float) $line['quantity'];
-            if ($quantity <= 0.0) {
-                continue;
-            }
-            $fact = $this->recordById((string) $line['recordId']);
-            if (null === $fact) {
-                continue;
-            }
-            if ($quantity > $fact->heldAmount()) {
-                throw new AppException(sprintf('Нельзя списать больше, чем на руках (%s).', $this->obligationLabelOf($fact->obligationKey())));
-            }
-            // Причина в черновике может быть пустой (позиция ещё не списана); обязательна при оформлении — {@see WriteOffAct::sign()}.
-            $portions[] = ['recordId' => $fact->getId(), 'quantity' => $quantity, 'reason' => $line['reason'] ?? null];
-        }
-        $act->replacePortions($portions, $now);
-        // № / дата акта + приказ + представитель + комиссия на черновике (без подписи)
-        $act->saveDraftDetails($actNumber, $actDate, $commission ?? new Commission(), $orderNumber, $orderDate, $representativePosition, $representativeFio, $now);
-    }
-
-    /** @return list<WriteOffItem> */
-    public function itemsOfWriteOffAct(string $actId): array
-    {
-        $act = $this->writeOffActById($actId);
-
-        return null === $act ? [] : $act->items();
-    }
-
-    /** Удалить черновик акта списания (оформленный не удаляется). */
-    public function deleteWriteOffDraft(string $actId): void
-    {
-        $act = $this->writeOffActById($actId);
-        if (null === $act) {
-            return;
-        }
-        $act->assertMutable();
-        $this->writeOffActs->removeElement($act);
-    }
-
-    /** Оформить акт списания (комиссия+№/дата+скан): замораживает и гасит количество на фактах + пересчёт. */
-    /**
-     * Синхронная часть оформления акта: заморозить акт и погасить количество на фактах (источник истины, ровно
-     * один раз — повтор невозможен, акт уже подписан). Производное — пересчёт проекции и черновик выдачи на
-     * дефицит — делаем в воркере по событию {@see \App\Compliance\Domain\Event\WriteOffActSigned} (идемпотентно).
-     */
-    public function signWriteOffAct(string $actId, Commission $commission, string $actNumber, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now): void
-    {
-        $act = $this->writeOffActById($actId) ?? throw new AppException('Акт списания не найден.');
-        $act->sign($commission, $actNumber, $actDate, $scanFileId, $now);
-        foreach ($act->items() as $portion) {
-            $this->recordById($portion->recordId())?->addReturnedQuantity($portion->quantity());
-        }
-    }
-
-    /**
      * Применить эффект акта списания (кросс-персон, {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}):
      * по каждой своей строке акта гасит количество на факте ({@see FulfillmentRecord::addReturnedQuantity}).
      * Акт зовёт этот метод на каждом затронутом `ProfileCompliance` отдельно (оркестрация — в
@@ -496,17 +314,6 @@ class ProfileCompliance extends Aggregate
         foreach ($this->records as $record) {
             if ($record->getId() === $recordId) {
                 return $record;
-            }
-        }
-
-        return null;
-    }
-
-    private function writeOffActById(string $actId): ?WriteOffAct
-    {
-        foreach ($this->writeOffActs as $act) {
-            if ($act->getId() === $actId) {
-                return $act;
             }
         }
 

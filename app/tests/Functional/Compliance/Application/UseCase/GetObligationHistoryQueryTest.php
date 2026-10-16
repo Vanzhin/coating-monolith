@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Compliance\Application\UseCase;
 use App\Compliance\Application\DTO\ObligationHistory\ObligationHistoryEventDTO;
 use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
+use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQuery;
 use App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -85,17 +86,30 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[0]->type);
     }
 
-    /**
-     * @todo D5/Task 6-8 (docs/plans/compliance-writeoff-crossperson-plan.md): после переноса акта списания на
-     * самостоятельный кросс-персон агрегат ({@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct})
-     * {@see \App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQueryHandler}
-     * всё ещё читает списание из СТАРОЙ коллекции {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::getWriteOffActs()},
-     * которая новым подписанием не наполняется — временный разрыв (акт реально гасит факт, но в ленте истории
-     * списание не видно) до репойнта этого read-path на новый агрегат.
-     */
     public function test_signed_write_off_event_chronological_after_issuance_and_carries_act_number(): void
     {
-        self::markTestSkipped('Временный разрыв: GetObligationHistoryQueryHandler читает списание со старого агрегата ProfileCompliance::getWriteOffActs(), ещё не перенесён на WriteOffAct (D5 Task 6/8).');
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
+        $recordId = $this->firstRecordId($p);
+
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand(
+            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
+        ));
+        $this->commandBus->execute(new SignWriteOffActCommand(
+            $p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+        ));
+        $this->reload();
+
+        $result = $this->history($p, $r, $k);
+
+        self::assertCount(2, $result->events);
+        self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[0]->type);
+        self::assertSame('2026-06-01', $result->events[0]->date);
+        $writeOff = $result->events[1];
+        self::assertSame(ObligationHistoryEventDTO::TYPE_WRITE_OFF, $writeOff->type);
+        self::assertSame('2026-08-10', $writeOff->date, 'хронологически после выдачи — позже по дате акта');
+        self::assertSame('39', $writeOff->actNumber);
     }
 
     public function test_history_is_scoped_to_its_own_obligation_key_not_to_whole_requirement(): void

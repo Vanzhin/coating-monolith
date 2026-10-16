@@ -87,4 +87,37 @@ class WriteOffActRepository extends ServiceEntityRepository implements WriteOffA
 
         return $result;
     }
+
+    public function findSignedForProfileRequirement(string $profileId, string $requirementId): array
+    {
+        // Шаг 1: id подписанных актов требования, у которых есть строка этого профиля (WHERE на join'нутой
+        // строке иначе обрежет fetch-join'нутую коллекцию до совпавших строк — а дальше нужен весь состав).
+        $actIds = $this->getEntityManager()->createQueryBuilder()
+            ->select('DISTINCT a.id')
+            ->from(WriteOffAct::class, 'a')
+            ->innerJoin('a.lines', 'l')
+            ->where('a.requirementId = :requirementId')
+            ->andWhere('a.status = :status')
+            ->andWhere('l.profileId = :profileId')
+            ->setParameter('requirementId', $requirementId)
+            ->setParameter('status', DocumentStatus::Signed->value)
+            ->setParameter('profileId', $profileId)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        if ([] === $actIds) {
+            return [];
+        }
+
+        // Шаг 2: полная загрузка со ВСЕМ составом строк (строки чужих профилей того же акта отфильтрует вызывающий).
+        /** @var list<WriteOffAct> $result */
+        $result = $this->createQueryBuilder('a')
+            ->leftJoin('a.lines', 'l')->addSelect('l')
+            ->where('a.id IN (:ids)')
+            ->setParameter('ids', $actIds)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
 }

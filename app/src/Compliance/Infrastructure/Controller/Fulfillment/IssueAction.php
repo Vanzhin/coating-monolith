@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComp
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
@@ -41,6 +42,7 @@ final class IssueAction extends AbstractController
         private readonly CommandBusInterface $commandBus,
         private readonly ProfileComplianceRepositoryInterface $repository,
         private readonly RequirementRepositoryInterface $requirements,
+        private readonly WriteOffActRepositoryInterface $writeOffActRepository,
     ) {
     }
 
@@ -219,21 +221,18 @@ final class IssueAction extends AbstractController
             }
         }
 
-        // Акты списания по требованию: в секции показываем только открытый черновик (корзину) — его состав
-        // уточняют/оформляют на странице акта; оформленные акты доступны ссылкой из истории позиции. Поэтому
-        // тут достаточно id/флага/числа позиций, без резолва меток.
+        // Акт списания — самостоятельный кросс-персон агрегат, корзина одна на пару (требование × организация).
+        // В секции показываем открытый черновик (его состав уточняют/оформляют на странице акта; оформленные акты
+        // доступны ссылкой из истории позиции). Достаточно id/флага/числа строк, без резолва меток.
         $writeOffActs = [];
-        if (null !== $profileCompliance) {
-            foreach ($profileCompliance->getWriteOffActs() as $act) {
-                if ($act->requirementId() !== $requirementId) {
-                    continue;
-                }
-                $writeOffActs[] = [
-                    'id' => $act->getId(),
-                    'signed' => $act->isSigned(),
-                    'itemCount' => count($profileCompliance->itemsOfWriteOffAct($act->getId())),
-                ];
-            }
+        $organizationId = $profileResult->profile->organizationId;
+        $draft = $this->writeOffActRepository->findOpenDraft($requirementId, $organizationId);
+        if (null !== $draft) {
+            $writeOffActs[] = [
+                'id' => $draft->getId(),
+                'signed' => false,
+                'itemCount' => count($draft->lines()),
+            ];
         }
 
         return $this->render('admin/compliance/person/issue.html.twig', [

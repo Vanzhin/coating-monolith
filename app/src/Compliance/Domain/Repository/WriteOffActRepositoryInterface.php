@@ -24,4 +24,12 @@ interface WriteOffActRepositoryInterface
      * @return list<WriteOffAct>
      */
     public function findDraftsContainingRecord(string $recordId): array;
+
+    /**
+     * Подписанные акты требования, содержащие строки указанного профиля — read-path личной истории/карточки
+     * человека (строки других профилей того же кросс-персон акта вызывающий отфильтрует по {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine::profileId}).
+     *
+     * @return list<WriteOffAct>
+     */
+    public function findSignedForProfileRequirement(string $profileId, string $requirementId): array;
 }

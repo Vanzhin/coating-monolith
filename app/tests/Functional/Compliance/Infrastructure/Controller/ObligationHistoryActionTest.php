@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
+use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
+use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
+use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
+use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -51,17 +60,45 @@ final class ObligationHistoryActionTest extends WebTestCase
         self::assertStringContainsString('История пока пуста', (string) $this->client->getResponse()->getContent());
     }
 
-    /**
-     * @todo D5/Task 6-8 (docs/plans/compliance-writeoff-crossperson-plan.md): страница истории читает списание
-     * через {@see \App\Compliance\Application\UseCase\Query\GetObligationHistory\GetObligationHistoryQueryHandler},
-     * который всё ещё смотрит в СТАРУЮ коллекцию {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::getWriteOffActs()}.
-     * После Task 4 подпись живёт на самостоятельном агрегате {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}
-     * и эту коллекцию не наполняет — временный разрыв (факт гасится верно, но в ленте списание не видно) до
-     * репойнта хендлера.
-     */
     public function test_renders_issuance_and_signed_write_off_in_the_feed(): void
     {
-        self::markTestSkipped('Временный разрыв: GetObligationHistoryQueryHandler читает списание со старого агрегата ProfileCompliance::getWriteOffActs(), ещё не перенесён на WriteOffAct (D5 Task 6/8).');
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
+
+        $c = $this->client->getContainer();
+        $bus = $c->get(CommandBusInterface::class);
+        $em = $c->get(EntityManagerInterface::class);
+
+        // Корзину наполняем с карточки выдачи (кросс-персон агрегат), затем сохраняем состав и оформляем акт.
+        $bus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $em->clear();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $c->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $c->get(WriteOffActRepositoryInterface::class)->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+        $actId = $act->getId();
+        $pc = $c->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        self::assertNotNull($pc);
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $bus->execute(new SaveWriteOffActCommand(
+            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
+        ));
+        $bus->execute(new SignWriteOffActCommand(
+            $p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+        ));
+        $em->clear();
+
+        $this->client->request('GET', $this->historyUrl($p, $r, $k));
+
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Выдано', $html);
+        self::assertStringContainsString('01.06.2026', $html);
+        self::assertStringContainsString('Списано', $html);
+        self::assertStringContainsString('Физический износ', $html);
+        self::assertStringContainsString('39', $html, 'номер акта виден в ленте');
     }
 
     /**

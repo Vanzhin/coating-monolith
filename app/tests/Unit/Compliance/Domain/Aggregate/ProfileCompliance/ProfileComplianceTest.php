@@ -8,6 +8,7 @@ use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
+use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
 use App\Compliance\Domain\Service\ComplianceStatusResolver;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
@@ -16,13 +17,10 @@ use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
-use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
-use App\Shared\Domain\ValueObject\Commission;
-use App\Shared\Domain\ValueObject\CommissionMember;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -181,142 +179,23 @@ final class ProfileComplianceTest extends TestCase
         self::assertContains($this->glovesKey(), $pc->getExcludedKeys()->getList());
     }
 
-    public function test_start_returns_same_open_write_off_draft(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
-
-        $a1 = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $a2 = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-
-        self::assertSame($a1, $a2); // один открытый черновик списания
-        self::assertCount(1, $pc->getWriteOffActs());
-    }
-
-    public function test_start_write_off_requires_held_fact_not_document(): void
-    {
-        $pc = $this->pcWithGloves(2.0); // норма 2
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // факт журнала напрямую
-
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-
-        self::assertNotSame('', $actId, 'гард смотрит на выданный факт журнала');
-    }
-
-    public function test_start_write_off_without_held_fact_throws(): void
-    {
-        $pc = $this->pcWithGloves(2.0); // норма есть, но ни одного факта не выдано
-
-        $this->expectException(AppException::class);
-        $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-    }
-
-    public function test_save_portions_without_effect(): void
+    public function test_remove_issuance_record_raises_fulfillment_record_removed_event(): void
     {
         $pc = $this->pcWithGloves(2.0);
         $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
         $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
 
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
+        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc);
 
-        // эффекта нет — на руках всё ещё 2
-        self::assertSame(2.0, $pc->heldOf($this->glovesKey()));
-        self::assertCount(1, $pc->itemsOfWriteOffAct($actId));
-        self::assertSame(1.0, $pc->itemsOfWriteOffAct($actId)[0]->quantity());
-    }
-
-    public function test_save_more_than_held_throws(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, $this->now, 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-
-        $this->expectException(AppException::class);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-    }
-
-    public function test_save_replaces_portions(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, $this->now, 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 2.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now); // set, не add
-
-        self::assertCount(1, $pc->itemsOfWriteOffAct($actId));
-        self::assertSame(2.0, $pc->itemsOfWriteOffAct($actId)[0]->quantity());
-    }
-
-    public function test_delete_write_off_draft_removes_act(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, $this->now, 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-
-        $pc->deleteWriteOffDraft($actId);
-
-        self::assertCount(0, $pc->getWriteOffActs());
-        self::assertSame(2.0, $pc->heldOf($this->glovesKey())); // ничего не списано
-    }
-
-    public function test_sign_without_reason_throws(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, $this->now, 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => null]], $this->now);
-
-        $this->expectException(AppException::class); // причина не указана
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
-    }
-
-    public function test_sign_act_applies_partial_write_off(): void
-    {
-        $pc = $this->pcWithGloves(2.0); // норма 2
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
-        $pc->recomputeRequirement($this->reqId, $this->calc); // пересчёт проекции — в проде async по событию
-
-        self::assertTrue($pc->getWriteOffActs()[0]->isSigned());
-        self::assertSame(1.0, $pc->heldOf($this->glovesKey())); // на руках 1 из 2 (гашение — синхронно в подписи)
-        self::assertNotNull($pc->getObligations()[0]->lastFulfilledAt());
-
-        // списываем второй (новый акт по тому же требованию)
-        $actId2 = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId2, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->signWriteOffAct($actId2, $this->commission(), '40', new \DateTimeImmutable('2026-09-01'), 'scan-wo2', $this->now);
-        $pc->recomputeRequirement($this->reqId, $this->calc);
-
-        self::assertSame(0.0, $pc->heldOf($this->glovesKey())); // всё списано
-        self::assertNull($pc->getObligations()[0]->lastFulfilledAt()); // позиция освобождена
-    }
-
-    public function test_remove_issuance_record_cascades_to_write_off(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
-        $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-wo', $this->now);
-
-        $result = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc);
-
-        self::assertSame($this->reqId, $result['requirementId']);
-        self::assertContains('scan-wo', $result['fileIds'], 'скан опустевшего акта списания возвращён на зачистку');
+        self::assertSame($this->reqId, $requirementId);
         self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
-        self::assertCount(0, $pc->getWriteOffActs(), 'опустевший акт списания удалён вместе с фактом');
+        // Каскад снятия порций с черновиков акта списания — отдельный кросс-персон агрегат: эмитим событие,
+        // его ловит DetachRemovedRecordFromWriteOffsHandler (покрыт функционально).
+        $events = $pc->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(FulfillmentRecordRemoved::class, $events[0]);
+        self::assertSame('prof-1', $events[0]->profileId);
+        self::assertSame($recordId, $events[0]->recordId);
     }
 
     public function test_remove_issuance_record_works_after_obligation_excluded(): void
@@ -327,10 +206,9 @@ final class ProfileComplianceTest extends TestCase
 
         $pc->excludeObligation($this->glovesKey()); // обязанность убрана из проекции, факт остался
 
-        $result = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc); // не должно бросать
+        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc); // не должно бросать
 
-        self::assertSame($this->reqId, $result['requirementId'], 'requirementId резолвится из ключа факта, а не из проекции');
-        self::assertSame([], $result['fileIds']);
+        self::assertSame($this->reqId, $requirementId, 'requirementId резолвится из ключа факта, а не из проекции');
         self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
     }
 
@@ -372,14 +250,6 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame($k1, $k2, 'повторная персональная с тем же label (регистронезависимо) — та же обязанность');
         $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $k1));
         self::assertCount(1, $added, 'кандидаты второго вызова проигнорированы — одна позиция');
-    }
-
-    private function commission(): Commission
-    {
-        return new Commission(
-            new CommissionMember('Алиханова Н.И.', position: 'руководитель отдела ОТ и ПБ'),
-            new CommissionMember('Корзун П.Е.', position: 'специалист по учету ТМЦ'),
-        );
     }
 
     private function glovesLine(float $amount, string $issueDate = '2026-06-01'): IssuanceLine
@@ -426,9 +296,7 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves(2.0);
         $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0); // held 2
         $recordId = $pc->getRecords()[0]->getId();
-        $actId = $pc->startOrGetWriteOffDraft(Uuid::v4(), $this->reqId, $this->now);
-        $pc->saveWriteOffAct($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => WriteOffReason::PhysicalWear]], $this->now);
-        $pc->signWriteOffAct($actId, $this->commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan', $this->now);
+        $pc->applyWriteOff([$recordId => 1.0]); // эффект подписанного акта списания — гашение 1 (held 2 → 1)
         // held 1, норма 2 → до-выдать 1 достаточно
         $pc->assertIssuable([$this->glovesLine(1.0)]); // не бросает
         self::assertSame(1.0, $pc->heldOf($this->glovesKey()));

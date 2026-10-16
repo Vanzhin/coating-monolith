@@ -7,6 +7,7 @@ namespace App\Compliance\Application\Service;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Templating\RenderData;
@@ -27,6 +28,10 @@ use App\Shared\Domain\Templating\TextValue;
  */
 final readonly class RequirementCardProjector
 {
+    public function __construct(private WriteOffActRepositoryInterface $writeOffActRepository)
+    {
+    }
+
     public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now): RenderData
     {
         $obligationByKey = [];
@@ -176,23 +181,26 @@ final readonly class RequirementCardProjector
     }
 
     /**
-     * Возвраты по recordId из ПОДПИСАННЫХ актов списания требования: количество → «возвращено», дата и
-     * «№ … от …» → колонки возврата/акта (несколько списаний на запись — все, сворачиваются через «; »).
+     * Возвраты по recordId из ПОДПИСАННЫХ актов списания требования, содержащих строки этого человека
+     * (самостоятельный кросс-персон агрегат {@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct}):
+     * количество → «возвращено», дата и «№ … от …» → колонки возврата/акта (несколько списаний на запись —
+     * все, сворачиваются через «; »).
      *
      * @return array<string, list<array{qty: float, date: string, act: string}>>
      */
     private function returnsByRecord(ProfileCompliance $profileCompliance, string $requirementId): array
     {
+        $profileId = $profileCompliance->getProfileId();
         $byRecord = [];
-        foreach ($profileCompliance->getWriteOffActs() as $act) {
-            if ($act->requirementId() !== $requirementId || !$act->isSigned()) {
-                continue;
-            }
+        foreach ($this->writeOffActRepository->findSignedForProfileRequirement($profileId, $requirementId) as $act) {
             $date = $act->actDate()?->format('d.m.Y') ?? '';
             $actLabel = $this->actLabel((string) $act->actNumber(), $date);
-            foreach ($profileCompliance->itemsOfWriteOffAct($act->getId()) as $portion) {
-                $byRecord[$portion->recordId()][] = [
-                    'qty' => $portion->quantity(),
+            foreach ($act->lines() as $line) {
+                if ($line->profileId() !== $profileId) {
+                    continue; // строка другого профиля того же кросс-персон акта
+                }
+                $byRecord[$line->recordId()][] = [
+                    'qty' => $line->quantity(),
                     'date' => $date,
                     'act' => $actLabel,
                 ];

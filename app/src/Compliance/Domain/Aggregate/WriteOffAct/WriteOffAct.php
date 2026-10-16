@@ -128,12 +128,14 @@ class WriteOffAct
     }
 
     /**
-     * Удалить строки, относящиеся к указанным фактам выдачи (каскад при удалении факта/акта выдачи).
+     * Удалить строки, относящиеся к указанным фактам выдачи (каскад при удалении факта выдачи). Только черновик:
+     * подписанный акт заморожен — защита инвариантом, не только SQL-фильтром выборки черновиков в репозитории.
      *
      * @param list<string> $recordIds
      */
     public function removeLinesByRecordIds(array $recordIds): void
     {
+        $this->assertMutable();
         $toRemove = array_fill_keys($recordIds, true);
         foreach ($this->lines->toArray() as $line) {
             if (isset($toRemove[$line->recordId()])) {

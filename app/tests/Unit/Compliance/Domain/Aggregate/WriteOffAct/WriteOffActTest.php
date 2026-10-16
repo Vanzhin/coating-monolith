@@ -141,6 +141,17 @@ final class WriteOffActTest extends TestCase
         self::assertSame('r2', $act->lines()[0]->recordId());
     }
 
+    public function test_remove_lines_by_record_ids_blocked_after_sign(): void
+    {
+        $act = $this->act();
+        $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
+        $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+
+        $this->expectException(AppException::class); // подписанный акт заморожен — строки не снимаем даже каскадом
+        $act->removeLinesByRecordIds(['r1']);
+    }
+
     public function test_replace_portions_blocked_after_sign(): void
     {
         $act = $this->act();
