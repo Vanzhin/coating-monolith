@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Repository;
 
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
+use App\Shared\Domain\Repository\PaginationResult;
 
 interface WriteOffActRepositoryInterface
 {
@@ -32,4 +33,7 @@ interface WriteOffActRepositoryInterface
      * @return list<WriteOffAct>
      */
     public function findSignedForProfileRequirement(string $profileId, string $requirementId): array;
+
+    /** Единый поиск/список актов списания через фильтр с пагинацией (кросс-организационный, для админа). */
+    public function findByFilter(WriteOffActFilter $filter): PaginationResult;
 }

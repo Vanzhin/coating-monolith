@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Compliance\Infrastructure\Repository;
 
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
+use App\Compliance\Domain\Repository\WriteOffActFilter;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\DocumentStatus;
+use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -119,5 +122,77 @@ class WriteOffActRepository extends ServiceEntityRepository implements WriteOffA
             ->getResult();
 
         return $result;
+    }
+
+    /**
+     * Список актов с фильтром + пагинацией (кросс-организационный, для админа). Тот же двухшаговый приём,
+     * что у {@see findDraftsContainingRecord}/{@see findSignedForProfileRequirement}: сперва лёгкий скан id
+     * страницы с LIMIT/OFFSET (fetch-join строк сломал бы постраничность — JOIN размножает строки акта по
+     * количеству его позиций), затем полная загрузка найденных актов со всем составом строк одним запросом,
+     * с восстановлением порядка страницы (`IN` не гарантирует порядок).
+     */
+    public function findByFilter(WriteOffActFilter $filter): PaginationResult
+    {
+        $pager = $filter->pager;
+        $filtered = $this->filteredQueryBuilder($filter);
+
+        $total = (int) (clone $filtered)
+            ->select('COUNT(a.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        /** @var list<string> $actIds */
+        $actIds = (clone $filtered)
+            ->select('a.id')
+            ->orderBy('a.createdAt', 'DESC')
+            ->addOrderBy('a.id', 'DESC')
+            ->setFirstResult($pager->getOffset())
+            ->setMaxResults($pager->getLimit())
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        if ([] === $actIds) {
+            return new PaginationResult([], $total);
+        }
+
+        /** @var list<WriteOffAct> $loaded */
+        $loaded = $this->createQueryBuilder('a')
+            ->leftJoin('a.lines', 'l')->addSelect('l')
+            ->where('a.id IN (:ids)')
+            ->setParameter('ids', $actIds)
+            ->getQuery()
+            ->getResult();
+
+        $byId = [];
+        foreach ($loaded as $act) {
+            $byId[$act->getId()] = $act;
+        }
+        $ordered = [];
+        foreach ($actIds as $id) {
+            if (isset($byId[$id])) {
+                $ordered[] = $byId[$id];
+            }
+        }
+
+        return new PaginationResult($ordered, $total);
+    }
+
+    private function filteredQueryBuilder(WriteOffActFilter $filter): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('a');
+        if (null !== $filter->organizationId) {
+            $qb->andWhere('a.organizationId = :organizationId')->setParameter('organizationId', $filter->organizationId);
+        }
+        if (null !== $filter->requirementId) {
+            $qb->andWhere('a.requirementId = :requirementId')->setParameter('requirementId', $filter->requirementId);
+        }
+        if (null !== $filter->status) {
+            $qb->andWhere('a.status = :status')->setParameter('status', $filter->status->value);
+        }
+        if (null !== $filter->actNumber) {
+            $qb->andWhere('a.actNumber = :actNumber')->setParameter('actNumber', $filter->actNumber);
+        }
+
+        return $qb;
     }
 }
