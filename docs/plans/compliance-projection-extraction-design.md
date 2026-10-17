@@ -18,20 +18,20 @@
    - **Тяжёлый fan-out** (смена нормы требования → десятки людей; переезд профиля; bulk) → **АСИНХРОННО по событию** (как сейчас `RecomputeOnRequirementChanged`/`RecomputeOnProfileSaved`), чтобы редкая админская операция не блокировалась пересчётом сотни строк. Дневной rebuild — страховка (уже есть).
    - Дорогое — это ЧТЕНИЕ (загрузка агрегата с фактами), и его мы убиваем материализацией в любом случае; запись одной строки дорогой не является, поэтому платить за неё eventual-consistency на горячем пути незачем.
 
-3. **Переиспользуем существующую таблицу, не плодим новую.** `compliance_tracked_obligation` уже отдельная таблица с нужными полями и уже наполнена. Деплой = РАСЦЕПЛЕНИЕ: снять ORM-мэппинг «child агрегата» (cascade/inverse на `ProfileCompliance`), дать свой репозиторий + read-only entity для JOIN + проектор-писатель. Строку ключуем по `profileId` (Personnel) напрямую, чтобы читатели не трогали агрегат. Переименование в `compliance_obligation_projection` (имя из §4.4) — косметика, по желанию отдельной `ALTER … RENAME`; по умолчанию НЕ переименовываем (минимизируем миграцию). РЕШЕНИЕ НА РЕВЬЮ.
+3. **Expand/contract на НОВОЙ таблице `compliance_obligation_projection`** (разворот первоначального «переиспользовать в месте» — решено с заказчиком ради зелёности по-задачно и безопасности прода). Проектор наполняет НОВУЮ таблицу ПАРАЛЛЕЛЬНО, пока агрегат ещё ведёт старую `compliance_tracked_obligation` (двойная запись в РАЗНЫЕ таблицы — не конфликтует); читатели перецепляются на новую по одному; в конце старая снимается с агрегата и дропается. Так каждая задача остаётся зелёной (нет big-bang: одна таблица не может быть одновременно child-агрегата и таблицей-проектора), а на проде идёт безопасный параллельный прогон → флип → дроп. Данные крошечные (124 строки). Новая таблица ключуется по `profileId` (Personnel) напрямую + read-only entity `ObligationProjection` для JOIN. Цена — временно две таблицы (старая дропается в финале).
 
 ## 3. Отвергнутые подходы
 
 - **Чисто асинхронно всё.** Максимальный декуплинг, но eventual-consistency на горячем вводе («только что выдал → вижу старое») + риск «мёртвый воркер → дрейф до дневного rebuild» на проде с нестабильным supervisor. Запись одной строки не настолько дорога, чтобы это оправдать.
 - **Чисто синхронно всё.** Свежо и без воркера, но смена нормы (fan-out на десятки людей) блокировала бы админскую операцию тяжёлой транзакцией.
 - **Хранить bucket колонкой (буква §4.4).** Фильтр/сорт по bucket прямо в SQL, но протухание + нужен крон-rebuild + два источника правды о статусе (хранимый vs живые даты). На нашем объёме выгода нулевая.
-- **Новая таблица `compliance_obligation_projection` + копирующая миграция.** Лишний перенос данных, которые уже лежат в готовой таблице с теми же полями.
+- **Переиспользовать `compliance_tracked_obligation` в месте (big-bang).** Меньше миграции, но переключение одной большой задачей (одна таблица не бывает сразу child-агрегата и таблицей-проектора) — тяжело держать зелёным по-задачно и рискованнее на проде. Отвергнуто в пользу expand/contract.
 
 ## 4. Дизайн по областям
 
 ### 4.1 Read-модель (таблица + entity)
-- Таблица `compliance_tracked_obligation` (переиспользуем), поля (время-независимые): `id`, `profile_id` (Personnel, НОВОЕ — для чтения без агрегата; бэкфилл из `profile_compliance_id → profile_id`), `requirement_id`, `item_id`, `requirement_name`, `label`, `type`, `cadence`, `quantity`, `department_id`, `last_fulfilled_at`, `next_due_at`, `held_quantity`, `active`, `origin`, `mode`. Ключ обязанности `requirement_id|item_id`. **НЕТ** колонки bucket/status.
-- Read-only Doctrine entity `ObligationProjection` (`read-only="true"`, по образцу Coatings `CoatingSearch`/`Coating.CoatingSearch.orm.xml`) — для DQL-чтений/JOIN на стороне запросов. Приложение её НЕ пишет напрямую через ORM — пишет проектор.
+- НОВАЯ таблица `compliance_obligation_projection`, поля (время-независимые): `id`, `profile_id` (Personnel — читаем без агрегата), `requirement_id`, `item_id`, `requirement_name`, `label`, `type`, `cadence`, `quantity`, `department_id`, `last_fulfilled_at`, `next_due_at`, `held_quantity`, `active`, `origin`, `mode`. Ключ обязанности `requirement_id|item_id`, PK/уник по `(profile_id, requirement_id, item_id)` для UPSERT. **НЕТ** колонки bucket/status. Старая `compliance_tracked_obligation` живёт параллельно до финального дропа.
+- Read-only Doctrine entity `ObligationProjection` (`read-only="true"`, по образцу Coatings `CoatingSearch`/`Coating.CoatingSearch.orm.xml`) на НОВУЮ таблицу — для DQL-чтений/JOIN на стороне запросов. Приложение её НЕ пишет через ORM — пишет проектор (DBAL-upsert).
 
 ### 4.2 Проектор (пишущая сторона)
 - `ComplianceObligationProjector` (Application/Service) — ЕДИНСТВЕННЫЙ писатель проекции. Метод уровня «пересобрать строки для (профиль[, требование])»: берёт живую норму (`RequirementRepository`), персональные декларации (с агрегата), журнал фактов (с агрегата), считает `lastFulfilledAt`/`nextDueAt`(через `ObligationDueCalculator`)/`heldQuantity`/`active`, UPSERT-ит строки, удаляет орфанов (норменные без фактов + вне нормы). Пишет через infra-репозиторий (DBAL `INSERT … ON CONFLICT DO UPDATE`, образец — `CoatingSystemSearchCacheRepository`) ИЛИ через ORM на read-only-entity-близнеце — РЕШЕНИЕ в плане (DBAL-upsert предпочтительнее: явная таблица, без ORM-владения).
@@ -60,12 +60,12 @@
 - Вынести ~170 строк сборки read-модели из `IssueAction` в Application view-builder/query (`GetIssuePageQuery`/`…ViewBuilder` либо расширить существующий query-путь). Контроллер — тонкий: собрать POST → команда; GET → query → render.
 - Дедуп: формат числа — только `AmountFormatter` (убрать инлайн-копии в `ProfileComplianceDTOTransformer`, свериться с `Quantity::label`); ФИО — ОДИН хелпер (сейчас 7 копий: `PersonRowDTOTransformer`, `RequirementCardProjector`, `WriteOffActProjector`, `DueSoonScanner`, `IndexAction`, `WriteOffAct/ShowAction`, `EmitComplianceDueSoonCommand`) — вынести в общий (Personnel `ProfileDTO::fio()` или Shared-хелпер); порог held<norm — только в резолвере.
 
-## 5. Миграция + ops
+## 5. Миграция + ops (expand/contract)
 
-1. `ALTER TABLE compliance_tracked_obligation ADD COLUMN IF NOT EXISTS profile_id VARCHAR(64)`; бэкфилл `UPDATE … SET profile_id = (SELECT profile_id FROM compliance_profile_compliance pc WHERE pc.id = profile_compliance_id)`; затем NOT NULL + индексы (`profile_id`, `next_due_at`, `active`). Идемпотентно.
-2. ORM: снять `one-to-many obligations`/`many-to-one profileCompliance` cascade с `ProfileCompliance`; завести read-only entity `ObligationProjection` на ту же таблицу.
-3. После деплоя — `app:compliance:rebuild-projection` на проде (пересобрать проектором, подтвердить консистентность; строки уже есть, пересборка выравнивает поля/profile_id). Migrate-first, запись редкая/админская.
-4. FK `profile_compliance_id` оставить временно (бэкфилл-источник), дропнуть позже отдельной миграцией вместе с cascade-семантикой — после подтверждения.
+1. **Expand:** `CREATE TABLE IF NOT EXISTS compliance_obligation_projection (…)` + индексы (`profile_id`, `next_due_at`, `active`) + уник `(profile_id, requirement_id, item_id)`. Идемпотентно. Старую `compliance_tracked_obligation` НЕ трогаем.
+2. **Backfill:** после деплоя кода проектора — `app:compliance:rebuild-projection` на проде наполняет НОВУЮ таблицу из нормы+журнала+деклараций (строк ≈124). Параллельно агрегат ещё ведёт старую таблицу.
+3. **Flip:** читатели перецеплены на новую таблицу (в коде, по задачам); проверка паритета новая-vs-старая на проде перед снятием старой.
+4. **Contract:** снять `one-to-many obligations` с `ProfileCompliance` (агрегат перестаёт вести `TrackedObligation`), затем отдельной поздней миграцией `DROP TABLE compliance_tracked_obligation` — после подтверждения паритета. Migrate-first, запись редкая/админская.
 
 ## 6. Тесты
 
@@ -79,17 +79,24 @@
 ## 7. Вне охвата (non-goals)
 
 - Хранение bucket колонкой (осознанно нет, §2.1).
-- Переименование таблицы в `compliance_obligation_projection` (косметика, опционально).
 - D6 (ответственные/комиссия→profileId), Вариант B (сгорание расходника), card_number NOT NULL — отдельные деплои.
 - Переосмысление дашборд-агрегаций (`ComplianceBucketResolver` как единый источник — да; новые метрики — нет).
 
 ## 8. Риски
 
 - **Гибрид-двоепутие записи:** синхронный write-through и асинхронный fan-out должны сходиться к одному результату. Митигируем: оба зовут ОДИН проектор (одна логика материализации), дневной rebuild выравнивает дрейф.
-- **Персональные декларации при расцеплении:** потерять их = потерять off-norm позиции людей. Митигируем: перенос ДЕКЛАРАЦИИ в доменный VO до снятия `TrackedObligation`, миграция/тест на round-trip.
+- **Параллельный прогон (expand/contract):** пока агрегат ведёт старую таблицу, а проектор — новую, они не должны разойтись до флипа читателей. Митигируем: паритет-проверка новая-vs-старая на проде перед дропом; порядок задач держит старую как источник чтения до флипа.
+- **Персональные декларации при расцеплении:** потерять их = потерять off-norm позиции людей. Митигируем: перенос ДЕКЛАРАЦИИ в доменный VO до снятия `TrackedObligation`, миграция/тест на round-trip; проектор до этого читает декларации из старых `origin=personal` строк, после — из VO (атомарно в задаче).
 - **Читатели, забытые при репойнте:** строка проекции, прочитанная ещё через агрегат. Митигируем: греп всех `getObligations()`/`findForDashboard`/`findByProfile`-с-obligations, финальное ревью.
-- **profile_id бэкфилл на проде:** если у строки нет соответствующего `profile_compliance` — осиротевшая строка. Пред-проверка числа несматченных (ожидаем 0 на 124).
 
-## 9. Декомпозиция
+## 9. Декомпозиция (expand/contract, зелёный на каждом шаге)
 
-Один деплой, один план (через writing-plans). Ориентир порядка задач (TDD): (1) read-only entity + `profile_id` колонка/бэкфилл-миграция; (2) `ComplianceBucketResolver` единый + репойнт 4 call-site; (3) `ComplianceObligationProjector` + infra-репозиторий (поглощает `ComplianceProjectionRebuilder`); (4) синхронный write-through в командных хендлерах + снятие мутации проекции с агрегата; (5) `PersonalObligation` VO + перенос деклараций; (6) асинхронные event-хендлеры + `rebuild-projection` на проектор; (7) `ObligationProjectionRepository::findByFilter` + репойнт читателей (дашборд/карточка/сканер/печать/preview); (8) чистка `/issue` в view-builder + дедуп ФИО/формата; (9) снятие read-сервисов/`worstStatus` с домена + удаление мёртвого; data-миграция/ops. Детализация — в плане.
+Один деплой, один план (через writing-plans). Ориентир порядка задач (TDD):
+1. **Expand:** миграция новой таблицы `compliance_obligation_projection` + read-only entity `ObligationProjection` + `ObligationProjectionRepository::findByFilter` (аддитивно, таблица пустая).
+2. **Единый резолвер:** `ComplianceBucketResolver::bucketFor(ObligationView, now)` над узким интерфейсом `ObligationView` (его реализуют и старый `TrackedObligation`, и новый `ObligationProjection`), репойнт 4 call-site; эпсилон порога канонизирован.
+3. **Проектор (параллельная запись):** `ComplianceObligationProjector` + DBAL-upsert репозиторий пишет НОВУЮ таблицу; sync write-through в `RecordIssuance`/`RecordInstruction`/`SignWriteOffAct` + async event-хендлеры (норма/профиль) зовут проектор; `rebuild-projection` наполняет новую. Агрегат ПОКА ведёт старую параллельно. Проектор читает персональные декларации из старых `origin=personal` строк.
+4. **Флип читателей:** дашборд/карточка/сканер/печать/preview/`/issue` читают НОВУЮ таблицу через `findByFilter`/репозиторий без загрузки агрегата; тесты репойнт.
+5. **Contract (домен):** `PersonalObligation` VO + перенос деклараций на него (проектор переключается на VO как источник); снятие с `ProfileCompliance` коллекции `obligations`, `recompute*`, `worstStatus`, импортов read-сервисов; агрегат перестаёт вести старую таблицу.
+6. **Чистка `/issue`:** вынос read-модели в view-builder/query + дедуп ФИО (7×)/формата числа (3×).
+7. **Финал/ops:** data-миграция дропа старой `compliance_tracked_obligation` (поздняя, после паритета) + удаление мёртвого (`ComplianceProjectionRebuilder` если поглощён, `ObligationDueCalculator` перемещён) + ops-чеклист.
+Детализация — в плане.
