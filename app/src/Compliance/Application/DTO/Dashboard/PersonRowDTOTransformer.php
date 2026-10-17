@@ -6,18 +6,18 @@ namespace App\Compliance\Application\DTO\Dashboard;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 
 /**
  * Строит строку дашборда из проекции учёта + профиля (идентичность). Бакеты — на чтении
- * {@see ComplianceStatusResolver}. `$onlyType` сужает показанные обязанности (фильтр по типу).
+ * {@see ComplianceBucketResolver}. `$onlyType` сужает показанные обязанности (фильтр по типу).
  */
 final readonly class PersonRowDTOTransformer
 {
-    public function __construct(private ComplianceStatusResolver $resolver)
+    public function __construct(private ComplianceBucketResolver $resolver)
     {
     }
 
@@ -38,7 +38,7 @@ final readonly class PersonRowDTOTransformer
             if (null !== $onlyType && $obligation->type() !== $onlyType) {
                 continue;
             }
-            $bucket = $this->resolver->bucketFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now, $obligation->quantity()?->amount, $obligation->heldQuantity());
+            $bucket = $this->resolver->bucketFor($obligation, $now);
             $worst = null === $worst ? $bucket : ComplianceBucket::worseOf($worst, $bucket);
             (ComplianceType::Material === $obligation->type() ? $row->material : $row->nonMaterial)->add($bucket);
 

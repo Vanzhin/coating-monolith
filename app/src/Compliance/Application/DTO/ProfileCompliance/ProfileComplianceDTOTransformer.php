@@ -6,12 +6,12 @@ namespace App\Compliance\Application\DTO\ProfileCompliance;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceStatus;
 
 class ProfileComplianceDTOTransformer
 {
-    public function __construct(private readonly ComplianceStatusResolver $resolver)
+    public function __construct(private readonly ComplianceBucketResolver $resolver)
     {
     }
 
@@ -53,14 +53,7 @@ class ProfileComplianceDTOTransformer
         $row->origin = $obligation->origin();
         // Один вызов резолвера — канонический 4-бакет (тот же, что у дашборда), трёхцветный статус выводим из
         // него же {@see ComplianceStatus::fromBucket}, не считаем параллельным ладдером.
-        $bucket = $this->resolver->bucketFor(
-            $obligation->isActive(),
-            $obligation->lastFulfilledAt(),
-            $obligation->nextDueAt(),
-            $now,
-            $obligation->quantity()?->amount,
-            $obligation->heldQuantity(),
-        );
+        $bucket = $this->resolver->bucketFor($obligation, $now);
         $row->status = ComplianceStatus::fromBucket($bucket)->value;
         $row->bucket = $bucket->value;
         $row->bucketLabel = $bucket->label($obligation->type());

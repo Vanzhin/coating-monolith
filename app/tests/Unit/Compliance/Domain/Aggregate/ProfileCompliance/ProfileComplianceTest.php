@@ -9,7 +9,7 @@ use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
@@ -28,7 +28,7 @@ use Symfony\Component\Uid\Uuid;
 final class ProfileComplianceTest extends TestCase
 {
     private ObligationDueCalculator $calc;
-    private ComplianceStatusResolver $resolver;
+    private ComplianceBucketResolver $resolver;
     private \DateTimeImmutable $now;
     private string $reqId = 'req-1';
     private string $glovesItemId = 'item-gloves';
@@ -39,7 +39,7 @@ final class ProfileComplianceTest extends TestCase
     protected function setUp(): void
     {
         $this->calc = new ObligationDueCalculator();
-        $this->resolver = new ComplianceStatusResolver();
+        $this->resolver = new ComplianceBucketResolver();
         $this->now = new \DateTimeImmutable('2026-06-01');
     }
 

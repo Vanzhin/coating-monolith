@@ -7,6 +7,7 @@ namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
+use App\Compliance\Domain\ValueObject\ObligationView;
 use App\Compliance\Domain\ValueObject\Quantity;
 use Symfony\Component\Uid\Uuid;
 
@@ -17,7 +18,7 @@ use Symfony\Component\Uid\Uuid;
  * исполнено (Red). Идентичность строки — `key()` = `requirementId|itemId` (стабильный id позиции;
  * переименование позиции не рвёт связь факта), переживает пересборку.
  */
-class TrackedObligation
+class TrackedObligation implements ObligationView
 {
     public const ORIGIN_NORM = 'norm';
     public const ORIGIN_PERSONAL = 'personal';
@@ -162,6 +163,12 @@ class TrackedObligation
     public function quantity(): ?Quantity
     {
         return $this->quantity;
+    }
+
+    /** {@see ObligationView}: норма как число (без единицы) — для резолвера бакета/статуса. */
+    public function normQuantity(): ?float
+    {
+        return $this->quantity?->amount;
     }
 
     public function departmentId(): string

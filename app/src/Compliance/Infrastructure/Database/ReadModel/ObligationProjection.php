@@ -6,6 +6,7 @@ namespace App\Compliance\Infrastructure\Database\ReadModel;
 
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
+use App\Compliance\Domain\ValueObject\ObligationView;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -15,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
  * минуя ORM); этот класс используется строго для чтения через DQL — ORM его не персистит.
  * Идентичность строки — {@see self::key()}, тот же формат, что у `TrackedObligation::key()`.
  */
-class ObligationProjection
+class ObligationProjection implements ObligationView
 {
     // Свойства наполняются только ORM hydration (read-only entity, без конструктора) — phpstan не видит
     // присвоения, суппрессия на каждом поле (приём как у App\Coatings\Domain\Aggregate\Coating\CoatingSearch).
@@ -94,6 +95,12 @@ class ObligationProjection
     }
 
     public function quantity(): ?float
+    {
+        return $this->quantity;
+    }
+
+    /** {@see ObligationView}: норма — то же, что {@see self::quantity()}, именем интерфейса резолвера. */
+    public function normQuantity(): ?float
     {
         return $this->quantity;
     }

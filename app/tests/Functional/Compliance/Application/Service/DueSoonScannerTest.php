@@ -7,7 +7,7 @@ namespace App\Tests\Functional\Compliance\Application\Service;
 use App\Compliance\Application\Service\DueSoonScanner;
 use App\Compliance\Domain\Event\ComplianceDueSoon;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;
 use App\Shared\Application\Event\EventBusInterface;
@@ -73,7 +73,7 @@ final class DueSoonScannerTest extends KernelTestCase
 
         return new DueSoonScanner(
             $c->get(ProfileComplianceRepositoryInterface::class),
-            $c->get(ComplianceStatusResolver::class),
+            $c->get(ComplianceBucketResolver::class),
             $c->get(QueryBusInterface::class),
             $bus,
         );

@@ -6,7 +6,7 @@ namespace App\Compliance\Domain\Type;
 
 /**
  * Светофор соответствия. НЕ хранится в БД — выводится на чтении из дат обязанности + текущего момента
- * ({@see \App\Compliance\Domain\Service\ComplianceStatusResolver}).
+ * ({@see \App\Compliance\Domain\Service\ComplianceBucketResolver}).
  */
 enum ComplianceStatus: string
 {

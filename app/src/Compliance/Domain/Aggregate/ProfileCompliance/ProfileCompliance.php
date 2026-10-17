@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 
 use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceStatus;
@@ -25,7 +25,7 @@ use Symfony\Component\Uid\Uuid;
  * Учёт по человеку (один на `profileId`). Держит журнал фактов `FulfillmentRecord` (источник истины) +
  * проекцию `TrackedObligation` (производная от нормы+фактов, пересобирается сервисом в Д4) + личные
  * исключения `excludedKeys`. Даты обязанностей пересчитываются при изменении фактов доменным сервисом
- * {@see ObligationDueCalculator}. Статус — не хранится, выводится {@see ComplianceStatusResolver}.
+ * {@see ObligationDueCalculator}. Статус — не хранится, выводится {@see ComplianceBucketResolver}.
  */
 class ProfileCompliance extends Aggregate
 {
@@ -511,24 +511,14 @@ class ProfileCompliance extends Aggregate
     }
 
     /** Худший статус по обязанностям (для карточки/агрегата); учитывает активность (выданный факт) и сроки. */
-    public function worstStatus(ComplianceStatusResolver $resolver, ?ComplianceType $filter, \DateTimeImmutable $now): ComplianceStatus
+    public function worstStatus(ComplianceBucketResolver $resolver, ?ComplianceType $filter, \DateTimeImmutable $now): ComplianceStatus
     {
         $worst = ComplianceStatus::Green;
         foreach ($this->obligations as $obligation) {
             if (null !== $filter && $obligation->type() !== $filter) {
                 continue;
             }
-            $worst = ComplianceStatus::worseOf(
-                $worst,
-                $resolver->statusFor(
-                    $obligation->isActive(),
-                    $obligation->lastFulfilledAt(),
-                    $obligation->nextDueAt(),
-                    $now,
-                    $obligation->quantity()?->amount,
-                    $obligation->heldQuantity(),
-                ),
-            );
+            $worst = ComplianceStatus::worseOf($worst, $resolver->statusFor($obligation, $now));
         }
 
         return $worst;
