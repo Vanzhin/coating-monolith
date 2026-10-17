@@ -18,6 +18,16 @@ services:
   App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository:
     public: true
 
+  # Compliance D-проекция (expand-шаг): пока без потребителя в графе DI (проектор — следующая задача),
+  # поэтому сервис/алиас без явного public: true вычищается RemoveUnusedDefinitionsPass — тест фетчит
+  # репозиторий по интерфейсу напрямую из контейнера.
+  App\Compliance\Infrastructure\Repository\ObligationProjectionRepository:
+    public: true
+
+  App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface:
+    alias: App\Compliance\Infrastructure\Repository\ObligationProjectionRepository
+    public: true
+
   App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository:
     public: true
   App\ChemicalResistance\Infrastructure\Repository\NoteRepository:
