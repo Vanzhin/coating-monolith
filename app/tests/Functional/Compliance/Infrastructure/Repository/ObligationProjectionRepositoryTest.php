@@ -54,6 +54,30 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
         self::assertSame(5.0, $page->items[0]->heldQuantity());
     }
 
+    /**
+     * Регрессия: `active => false` ломал `upsertMany` (DBAL без явного типа параметра биндит PHP bool
+     * как ParameterType::STRING → PDO кастит false в "" → Postgres SQLSTATE 22P02 на boolean-колонке).
+     * `true` случайно выживал (кастится в "1"), поэтому баг не поймали два теста выше. Заодно гоняет
+     * непустую дату (last_fulfilled_at) — проверить, что строковый формат даты бьётся в TIMESTAMP штатно.
+     */
+    public function test_upsert_with_active_false_round_trips(): void
+    {
+        $this->repo->upsertMany([$this->rowArray('p1', 'r1', 'i2', held: 3.0, active: false, lastFulfilledAt: '2026-01-15 00:00:00')]);
+        $this->clear();
+
+        $page = $this->repo->findByFilter(new ObligationProjectionFilter(
+            Pager::fromPage(1, 10),
+            profileIds: new StringCollection('p1'),
+            active: false,
+        ));
+
+        self::assertCount(1, $page->items);
+        self::assertSame('p1', $page->items[0]->profileId());
+        self::assertFalse($page->items[0]->isActive());
+        self::assertSame(3.0, $page->items[0]->heldQuantity());
+        self::assertEquals(new \DateTimeImmutable('2026-01-15 00:00:00'), $page->items[0]->lastFulfilledAt());
+    }
+
     private function clear(): void
     {
         static::getContainer()->get(EntityManagerInterface::class)->clear();
@@ -62,8 +86,14 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
     /**
      * @return array<string, mixed>
      */
-    private function rowArray(string $profileId, string $requirementId, string $itemId, float $held = 0.0): array
-    {
+    private function rowArray(
+        string $profileId,
+        string $requirementId,
+        string $itemId,
+        float $held = 0.0,
+        bool $active = true,
+        ?string $lastFulfilledAt = null,
+    ): array {
         return [
             'id' => (string) Uuid::v7(),
             'profile_id' => $profileId,
@@ -75,10 +105,10 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'cadence' => 'periodic',
             'quantity' => 1.0,
             'department_id' => 'dep-1',
-            'last_fulfilled_at' => null,
+            'last_fulfilled_at' => $lastFulfilledAt,
             'next_due_at' => null,
             'held_quantity' => $held,
-            'active' => true,
+            'active' => $active,
             'origin' => TrackedObligation::ORIGIN_NORM,
             'mode' => MaterialMode::Inventoried->value,
         ];

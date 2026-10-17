@@ -11,6 +11,7 @@ use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -93,6 +94,11 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
                         mode              = EXCLUDED.mode
                     SQL,
                 $row,
+                // Без явного типа DBAL::bindParameters биндит ЛЮБОЙ параметр без записи в $types как
+                // ParameterType::STRING (нет авто-инференса по PHP-типу значения) — PDO кастит bool false
+                // в "" (пустую строку), а Postgres на boolean-колонке падает SQLSTATE 22P02. `true` живёт
+                // случайно (кастится в "1", Postgres это парсит), поэтому баг не был заметен на active:true.
+                ['active' => ParameterType::BOOLEAN],
             );
         }
     }
