@@ -51,9 +51,17 @@
 - Репойнт: дашборд (`GetComplianceOverviewQueryHandler`, `GetPagedComplianceQueryHandler` → читать проекцию, не `findForDashboard` по агрегату), карточка (`GetProfileComplianceQueryHandler`), `/issue` (см. 4.7), печать (`RequirementCardProjector`/`DownloadCardAction` — читает строки проекции, не агрегат), preview, сканер. Ни один читатель проекции больше не грузит `ProfileCompliance`.
 - `ProfileComplianceRepository::findForDashboard`/`findByProfile`-с-fetch-join-obligations — удаляются/упрощаются (агрегат грузится только там, где нужен журнал фактов: запись, история, списание).
 
-### 4.6 Чистка домена
-- `ProfileCompliance` ТЕРЯЕТ: коллекцию `obligations` (`TrackedObligation`) и её ORM-мэппинг; методы `putObligation`/`removeObligationByKey`/`recomputeObligation`/`recomputeAll`/`recomputeRequirement`/`worstStatus`; импорты `ComplianceStatusResolver`/`ObligationDueCalculator`.
-- `ProfileCompliance` СОХРАНЯЕТ (это домен, не проекция): журнал `FulfillmentRecord[]`; `excludedKeys` (StringCollection); `cardNumber`; **декларации персональных обязанностей** — НОВЫЙ лёгкий VO `PersonalObligation(itemId, requirementId, label, type, cadence, ?quantity)` (список), т.к. факт «человеку добавили off-norm позицию» — доменное отклонение, его негде больше хранить (сейчас оно сидит в `TrackedObligation(origin=PERSONAL)` — переносим ДЕКЛАРАЦИЮ в VO, а её даты/held проектор материализует в строку проекции как origin=personal). `addPersonalObligation`/дедуп-по-label/`pruneOrphanPersonalObligations` остаются на агрегате, но оперируют VO-списком, не проекцией.
+### 4.6 Чистка домена (Вариант B — норма из Requirement, НЕ материализуется на агрегате)
+
+Решено с заказчиком: агрегат вообще перестаёт материализовать норму (никакого write-side каталога-копии — иначе инварианты судили бы по производной копии, которая может отстать от `Requirement`; два источника правды). Норма — ТОЛЬКО в `Requirement`; write-инварианты агрегата получают `Requirement` параметром. Персональные (off-norm) — в доменном VO.
+
+- `ProfileCompliance` ТЕРЯЕТ: коллекцию `obligations` (`TrackedObligation`) и её ORM-мэппинг; `putObligation`/`removeObligationByKey`/`obligationByKey`/`recomputeObligation`/`recomputeAll`/`recomputeRequirement`/`worstStatus`; импорты `ComplianceStatusResolver`/`ObligationDueCalculator`.
+- `ProfileCompliance` СОХРАНЯЕТ: журнал `FulfillmentRecord[]`; `excludedKeys` (StringCollection); `cardNumber`; **декларации персональных обязанностей** — НОВЫЙ `final readonly PersonalObligation(itemId, requirementId, label, ComplianceType type, Cadence cadence, ?Quantity quantity)` (список), т.к. off-norm позиция — доменное отклонение, которого нет в норме. `addPersonalObligation`/дедуп-по-label/`pruneOrphanPersonalObligations` — на VO-списке.
+- **Write-инварианты получают `Requirement` параметром** (источник нормы), персональное — из VO:
+  - `recordIssuance(Requirement, ...lines)` / `recordInstruction(Requirement, JournalKind, ...lines)` — `assertIssuable` резолвит обязанность/тип из `Requirement`+VO (был `obligationByKey` по каталогу). Вызывающий `RecordIssuanceCommandHandler` УЖЕ грузит `Requirement` — прокинуть.
+  - `writeOffEligibleFactsForRequirement(Requirement, ?keys)` — `consumableObligationKeys` выводится из `Requirement`(mode позиций)+VO. Вызывающий `AddToWriteOffDraftCommandHandler` грузит `Requirement` → прокинуть.
+  - `obligationLabelOf` на write-пути (снимок названия строки списания в `AddToWriteOffDraftCommandHandler`) — резолв из `Requirement`+VO.
+- **Read-использования нормы уходят на проекцию, не на агрегат:** `typeOfRequirement` в `IssueAction` → `type` строки проекции; `obligationLabelOf` fallback в `RequirementCardProjector` → `label` строки проекции. (`ObligationDueCalculator` для nextDue теперь только в проекторе.)
 - Инвариант неизменности/количества/полноты инструктажа/№ карточки — на агрегате, как есть.
 
 ### 4.7 Чистка `/issue` (§7)
