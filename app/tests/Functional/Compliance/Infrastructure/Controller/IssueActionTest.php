@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Shared\Application\Command\CommandBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -230,6 +232,57 @@ final class IssueActionTest extends WebTestCase
 
         self::assertStringContainsString('write-off/open', $html, 'вход «Списать» доступен на той же странице, что и выдача');
         self::assertStringContainsString('Списать', $html);
+    }
+
+    /**
+     * Task 6: /issue теперь читает read-модель через GetIssuePageQuery (view-builder в Application), не
+     * собирает её прямо в контроллере. Три позиции одной нормы с разными датами выдачи → разные бакеты
+     * (просрочено/скоро/в норме); сортировка по срочности — просроченная выше позиции со скорым сроком, та выше
+     * позиции в норме (тот же порядок, что при сборке в контроллере раньше).
+     */
+    public function test_issue_page_renders_positions_sorted_by_urgency(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $keyOverdue] = $this->enrollCompliance(
+            'Просрочено-позиция',
+            extraItems: [
+                ['label' => 'Скоро-позиция', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ['label' => 'ОК-позиция', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+            ],
+        );
+        $keySoon = $this->obligationKeyFor($r, 'Скоро-позиция');
+        $keyOk = $this->obligationKeyFor($r, 'ОК-позиция');
+
+        $now = new \DateTimeImmutable();
+        static::getContainer()->get(CommandBusInterface::class)->execute(new RecordIssuanceCommand(
+            $p,
+            $r,
+            $now->format('Y-m-d'),
+            [
+                // Периодичность 1 год: дата выдачи 400 дн. назад → след. срок уже прошёл (просрочено).
+                ['obligationKey' => $keyOverdue, 'date' => $now->modify('-400 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+                // 335 дн. назад → след. срок через ~30 дн. — внутри горизонта «скоро» (60 дн.).
+                ['obligationKey' => $keySoon, 'date' => $now->modify('-335 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+                // 10 дн. назад → след. срок через ~355 дн. — далеко за горизонтом, в норме.
+                ['obligationKey' => $keyOk, 'date' => $now->modify('-10 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+            ],
+            cardNumber: 'CARD-TEST',
+        ));
+        // Write-through проектора прошёл в той же транзакции команды; очищаем identity map перед чтением
+        // проекции через DQL (upsertMany пишет мимо ORM — закэшированный инстанс иначе отдаст старые даты).
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        $posOverdue = strpos($html, 'Просрочено-позиция');
+        $posSoon = strpos($html, 'Скоро-позиция');
+        $posOk = strpos($html, 'ОК-позиция');
+        self::assertNotFalse($posOverdue, 'просроченная позиция присутствует в форме');
+        self::assertNotFalse($posSoon, 'позиция со скорым сроком присутствует в форме');
+        self::assertNotFalse($posOk, 'позиция в норме присутствует в форме');
+        self::assertLessThan($posSoon, $posOverdue, 'просроченная позиция рендерится выше позиции со скорым сроком');
+        self::assertLessThan($posOk, $posSoon, 'позиция со скорым сроком рендерится выше позиции в норме');
     }
 
     private function issueUrl(string $profileId, string $requirementId): string

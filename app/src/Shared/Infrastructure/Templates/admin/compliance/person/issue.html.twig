@@ -1,6 +1,6 @@
 {% extends '/cabinet/index.html.twig' %}
 
-{% set fio = profile.lastName ~ ' ' ~ profile.firstName ~ (profile.middleName ? ' ' ~ profile.middleName : '') %}
+{% set fio = profile.fio %}
 {% set backUrl = path('app_cabinet_compliance_dashboard', {profile: profileId}) %}
 {# Выдача доступна всегда; списание — параллельный блок. Показываем секцию, когда есть что списывать (held) или
    есть открытый черновик акта (корзина) — его единственного тут и показываем; оформленные акты доступны ссылкой

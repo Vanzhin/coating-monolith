@@ -240,7 +240,7 @@ final readonly class RequirementCardProjector
 
     private function fio(ProfileDTO $profile): string
     {
-        return trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
+        return $profile->fio();
     }
 
     private function number(float $amount): string

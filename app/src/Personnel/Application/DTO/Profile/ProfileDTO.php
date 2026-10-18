@@ -27,4 +27,10 @@ class ProfileDTO
     public ?string $gloves = null;
     public ?string $height = null;
     public ?GenderDTO $gender = null;
+
+    /** ФИО одной строкой — каноническая сборка для всех читателей профиля (карточки, журналы, уведомления). */
+    public function fio(): string
+    {
+        return trim($this->lastName.' '.$this->firstName.' '.($this->middleName ?? ''));
+    }
 }

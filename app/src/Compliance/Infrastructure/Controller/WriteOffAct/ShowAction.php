@@ -204,7 +204,7 @@ final class ShowAction extends AbstractController
         $profile = $profiles[$profileId] ?? null;
 
         return [
-            'fio' => null !== $profile ? $this->fio($profile) : '',
+            'fio' => $profile?->fio() ?? '',
             'position' => null !== $profile ? $profile->positionTitle : '',
             'count' => \count($positions),
             'positions' => $positions,
@@ -255,10 +255,5 @@ final class ShowAction extends AbstractController
             'quantityLabel' => AmountFormatter::trimmed($line->quantity()).('' !== $unit ? ' '.$unit : ''),
             'reason' => $line->reason()?->title(),
         ];
-    }
-
-    private function fio(ProfileDTO $profile): string
-    {
-        return trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
     }
 }

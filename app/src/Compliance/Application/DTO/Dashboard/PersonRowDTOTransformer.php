@@ -27,7 +27,7 @@ final readonly class PersonRowDTOTransformer
     {
         $row = new PersonRowDTO();
         $row->profileId = $profile->id;
-        $row->fullName = trim($profile->lastName.' '.$profile->firstName.' '.($profile->middleName ?? ''));
+        $row->fullName = $profile->fio();
         $row->initials = $this->initials($profile->lastName, $profile->firstName);
         $row->positionTitle = $profile->positionTitle;
         $row->departmentTitle = $profile->departmentTitle;

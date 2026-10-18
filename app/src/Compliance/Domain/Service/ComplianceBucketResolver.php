@@ -28,8 +28,13 @@ final class ComplianceBucketResolver
     /** Горизонт «подходит срок» (дней) — общий для дашборда, карточки и прохода уведомлений. */
     public const DUE_SOON_DAYS = 60;
 
-    /** Допуск сравнения held/norm — значение как у {@see \App\Compliance\Infrastructure\Controller\Fulfillment\IssueAction::heldTone()} (UI-тон бейджа), но это ЕДИНСТВЕННЫЙ источник порога для статуса/бакета. */
-    private const QUANTITY_EPSILON = 1e-9;
+    /**
+     * Допуск сравнения held/norm — ЕДИНСТВЕННЫЙ источник порога для статуса/бакета. Публичная, потому что
+     * UI-тон «на руках» ({@see \App\Compliance\Application\UseCase\Query\GetIssuePage\GetIssuePageQueryHandler::heldTone()})
+     * несёт свой нюанс (перевыдача сверх нормы — отдельный цвет) и не сводится к одному из 4 бакетов, но порог
+     * должен быть ровно тем же, не вторым хардкодом.
+     */
+    public const QUANTITY_EPSILON = 1e-9;
 
     public function bucketFor(ObligationView $obligation, \DateTimeImmutable $now): ComplianceBucket
     {

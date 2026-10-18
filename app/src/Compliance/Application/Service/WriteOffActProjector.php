@@ -124,6 +124,6 @@ final readonly class WriteOffActProjector
 
     private function fio(ProfileDTO $employee): string
     {
-        return trim(sprintf('%s %s %s', $employee->lastName, $employee->firstName, $employee->middleName ?? ''));
+        return $employee->fio();
     }
 }

@@ -129,7 +129,7 @@ final readonly class DueSoonScanner
 
         $fio = [];
         foreach ($result->profiles as $profile) {
-            $fio[$profile->id] = trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
+            $fio[$profile->id] = $profile->fio();
         }
 
         return $fio;

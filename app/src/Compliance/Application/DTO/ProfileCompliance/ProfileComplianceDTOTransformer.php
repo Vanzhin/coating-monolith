@@ -6,6 +6,7 @@ namespace App\Compliance\Application\DTO\ProfileCompliance;
 
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceStatus;
+use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 
 class ProfileComplianceDTOTransformer
@@ -52,8 +53,8 @@ class ProfileComplianceDTOTransformer
         $row->cadenceLabel = $obligation->cadence();
         $amount = $obligation->quantity();
         $unit = $obligation->quantityUnit();
-        $row->quantityLabel = null !== $amount && null !== $unit ? $this->amountLabel($amount).' '.$unit->title() : '';
-        $row->quantityValue = null === $amount ? null : $this->amountLabel($amount);
+        $row->quantityLabel = null !== $amount && null !== $unit ? AmountFormatter::trimmed($amount).' '.$unit->title() : '';
+        $row->quantityValue = null === $amount ? null : AmountFormatter::trimmed($amount);
         $row->quantityUnit = $unit?->value;
         $row->lastFulfilledAt = $obligation->lastFulfilledAt()?->format('Y-m-d');
         $row->nextDueAt = $obligation->nextDueAt()?->format('Y-m-d');
@@ -67,10 +68,5 @@ class ProfileComplianceDTOTransformer
         $row->bucketLabel = $bucket->label($obligation->type());
 
         return $row;
-    }
-
-    private function amountLabel(float $amount): string
-    {
-        return 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
     }
 }
