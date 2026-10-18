@@ -46,7 +46,7 @@ final readonly class RequirementCardProjector
         }
 
         $values = [
-            'employee_fio' => new TextValue($this->fio($profile)),
+            'employee_fio' => new TextValue($profile->fio()),
             'employee_last_name' => new TextValue($profile->lastName),
             'employee_first_name' => new TextValue($profile->firstName),
             'position_title' => new TextValue($profile->positionTitle),
@@ -123,7 +123,7 @@ final readonly class RequirementCardProjector
         }
         $rows = $this->factLog($profileCompliance, $requirement, $obligationByKey);
         foreach ($rows as $i => $row) {
-            $rows[$i]['employee_fio'] = $this->fio($profile);
+            $rows[$i]['employee_fio'] = $profile->fio();
             $rows[$i]['employee_position'] = $profile->positionTitle;
             $rows[$i]['basis'] = $basisByLabel[$row['name']] ?? ''; // основание требования (напр. перечень локальных актов)
             $rows[$i]['birth_date'] = $profile->birthDate?->format('d.m.Y') ?? ''; // из карточки сотрудника, если заполнена
@@ -236,11 +236,6 @@ final readonly class RequirementCardProjector
         if (null !== $value && '' !== trim($value)) {
             $values[$key] = new TextValue($value);
         }
-    }
-
-    private function fio(ProfileDTO $profile): string
-    {
-        return $profile->fio();
     }
 
     private function number(float $amount): string

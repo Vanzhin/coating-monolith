@@ -11,9 +11,9 @@ use App\Compliance\Domain\ValueObject\ObligationView;
 /**
  * ЕДИНЫЙ расчёт состояния обязанности из подписи документа + хранимых дат + нормы/наличия + текущего момента.
  * Состояние НЕ хранится (меняется от хода времени, а не по событиям) — это чистая функция, зовётся на чтении
- * (карточка, дашборд, проход уведомлений). Один ладдер — одно место правки. Вход — {@see ObligationView}:
- * резолверу не важно, пришла ли обязанность из агрегата ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation})
- * или из read-проекции ({@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection}).
+ * (карточка, дашборд, проход уведомлений). Один ладдер — одно место правки. Вход — {@see ObligationView},
+ * единственный носитель — read-проекция {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection}
+ * (агрегат норму не материализует, Вариант B).
  *
  * {@see bucketFor()} — канонический 4-бакет ({@see ComplianceBucket}); {@see statusFor()} — трёхцветный
  * светофор, ПРОИЗВОДНЫЙ от бакета ({@see ComplianceStatus::fromBucket()}). Второго ладдера нет.

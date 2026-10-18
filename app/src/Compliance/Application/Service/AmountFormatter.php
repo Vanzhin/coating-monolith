@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Compliance\Infrastructure\Controller;
+namespace App\Compliance\Application\Service;
 
 /** Отображение количества в карточках/актах учёта — без хвостового «.0» у целых значений. */
 final class AmountFormatter

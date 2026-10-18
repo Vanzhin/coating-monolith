@@ -12,7 +12,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Длинное наименование позиции (ГОСТ-название СИЗ > 255 символов) не роняет пересборку проекции:
- * TrackedObligation.label вмещает до 1000 символов (раньше varchar(255) → truncation → откат пересборки).
+ * `compliance_obligation_projection.label` вмещает до 1000 символов (раньше varchar(255) → truncation →
+ * откат пересборки).
  */
 final class LongLabelRebuildTest extends KernelTestCase
 {

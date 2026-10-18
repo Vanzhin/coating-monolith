@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\ProfileCompliance;
 
+use App\Compliance\Application\Service\AmountFormatter;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceStatus;
-use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 
 class ProfileComplianceDTOTransformer
@@ -42,10 +42,10 @@ class ProfileComplianceDTOTransformer
         $row->requirementName = $obligation->requirementName() ?? '';
         $row->label = $obligation->label();
         $row->type = $obligation->type()->value;
-        // Структурная периодичность (kind+число+единица) — из cadence_struct (JSONB, тот же формат, что у
-        // TrackedObligation::cadence()); нужна форме выдачи для ПЕРЕСЧЁТА (клиентский предпросмотр «след.
-        // срок»), не только показа. null — переходный случай (строка написана до добавления колонки и ещё не
-        // переписана ни одним write-through) — отдаём пустой каданс, как было до его появления.
+        // Структурная периодичность (kind+число+единица) — из cadence_struct (JSONB); нужна форме выдачи для
+        // ПЕРЕСЧЁТА (клиентский предпросмотр «след. срок»), не только показа. null — переходный случай (строка
+        // написана до добавления колонки и ещё не переписана ни одним write-through) — отдаём пустой каданс,
+        // как было до его появления.
         $cadence = $obligation->cadenceStruct();
         $row->cadenceKind = $cadence?->kind->value ?? '';
         $row->cadenceNumber = $cadence?->number;

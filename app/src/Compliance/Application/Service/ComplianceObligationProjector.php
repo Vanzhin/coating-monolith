@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
-use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
+use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -53,22 +52,18 @@ final readonly class ComplianceObligationProjector
      */
     public function projectProfile(string $profileId, ?string $requirementId = null): void
     {
-        $this->projectProfileSlice($profileId, null === $requirementId ? null : [$requirementId]);
+        $this->projectProfileSlice($profileId, null === $requirementId ? null : new StringCollection($requirementId));
     }
 
     /**
      * Bulk-пересборка (замена {@see ComplianceProjectionRebuilder::rebuild} по целям). Фильтры комбинируются,
      * все пусты → всё. Множество профилей = явные + по должностям + (если заданы ТОЛЬКО требования) покрытые ими.
-     *
-     * @param list<string>|null $requirementIds
-     * @param list<string>|null $positionIds
-     * @param list<string>|null $profileIds
      */
-    public function projectMany(?array $requirementIds, ?array $positionIds, ?array $profileIds): void
+    public function projectMany(?StringCollection $requirementIds, ?StringCollection $positionIds, ?StringCollection $profileIds): void
     {
-        $reqIds = $requirementIds ?? [];
-        $posIds = $positionIds ?? [];
-        $profIds = $profileIds ?? [];
+        $reqIds = $requirementIds?->getList() ?? [];
+        $posIds = $positionIds?->getList() ?? [];
+        $profIds = $profileIds?->getList() ?? [];
 
         $targets = $profIds;
         if ([] !== $posIds) {
@@ -81,7 +76,7 @@ final readonly class ComplianceObligationProjector
             $targets = $this->repository->findAllProfileIds();
         }
 
-        $scope = [] !== $reqIds ? $reqIds : null;
+        $scope = [] !== $reqIds ? new StringCollection(...$reqIds) : null;
         foreach (array_values(array_unique($targets)) as $profileId) {
             $this->projectProfileSlice($profileId, $scope);
         }
@@ -92,9 +87,9 @@ final readonly class ComplianceObligationProjector
      * `Requirement::getItems()` + персональные {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\PersonalObligation})
      * против журнала фактов, запись — upsert + orphan-delete.
      *
-     * @param list<string>|null $onlyRequirementIds null → полная пересборка профиля
+     * $onlyRequirementIds null → полная пересборка профиля
      */
-    private function projectProfileSlice(string $profileId, ?array $onlyRequirementIds): void
+    private function projectProfileSlice(string $profileId, ?StringCollection $onlyRequirementIds): void
     {
         $profileCompliance = $this->repository->findByProfile($profileId);
 
@@ -135,14 +130,14 @@ final readonly class ComplianceObligationProjector
         foreach ($requirements as $requirement) {
             $requirementNames[$requirement->getId()] = $requirement->getName();
             foreach ($requirement->getItems() as $item) {
-                $key = TrackedObligation::keyOf($requirement->getId(), $item->id());
+                $key = ObligationKey::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
                     continue;
                 }
                 $rows[$key] = $this->buildRow(
                     $profileId, $requirement->getId(), $item->id(), $requirement->getName(), $item->label(),
                     $item->type(), $item->cadence(), $item instanceof MaterialItem ? $item->quantity() : null,
-                    $departmentId, TrackedObligation::ORIGIN_NORM, $item instanceof MaterialItem ? $item->mode() : null,
+                    $departmentId, ObligationOrigin::Norm->value, $item instanceof MaterialItem ? $item->mode() : null,
                     $records, $key,
                 );
                 $keptItemIds[$requirement->getId()][] = $item->id();
@@ -151,11 +146,11 @@ final readonly class ComplianceObligationProjector
 
         // 2. Персональные декларации (off-norm, из VO агрегата) — держим всегда, норма их не несёт.
         foreach ($personalObligations as $personal) {
-            $key = TrackedObligation::keyOf($personal->requirementId, $personal->itemId);
+            $key = ObligationKey::keyOf($personal->requirementId, $personal->itemId);
             if (isset($rows[$key])) {
                 continue; // уже покрыта живой нормой (не должно происходить, но защитно)
             }
-            if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds)) {
+            if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds->getList())) {
                 continue; // точечная пересборка чужие требования не трогает
             }
             $requirementName = $requirementNames[$personal->requirementId]
@@ -163,7 +158,7 @@ final readonly class ComplianceObligationProjector
             $rows[$key] = $this->buildRow(
                 $profileId, $personal->requirementId, $personal->itemId, $requirementName,
                 $personal->label, $personal->type, $personal->cadence, $personal->quantity,
-                $departmentId, TrackedObligation::ORIGIN_PERSONAL, null, $records, $key,
+                $departmentId, ObligationOrigin::Personal->value, null, $records, $key,
             );
             $keptItemIds[$personal->requirementId][] = $personal->itemId;
         }
@@ -171,7 +166,7 @@ final readonly class ComplianceObligationProjector
         // Orphan-чистка по пересобранным требованиям: точечно — только заданные; полностью — объединение требований
         // живой нормы и уже лежащих строк профиля (чтобы снять строки требований, целиком ушедших из нормы).
         $requirementIdsToClean = null !== $onlyRequirementIds
-            ? $onlyRequirementIds
+            ? $onlyRequirementIds->getList()
             : $this->requirementIdsHavingRows($profileId, array_keys($keptItemIds));
 
         $this->projection->upsertMany(array_values($rows));
@@ -217,7 +212,7 @@ final readonly class ComplianceObligationProjector
             'label' => $label,
             'type' => $type->value,
             'cadence' => $cadence->label(),
-            // Структурная периодичность (kind+число+единица) — JSONB, тот же формат, что у TrackedObligation::cadence()
+            // Структурная периодичность (kind+число+единица) — JSONB
             // ({@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}). Нужна форме выдачи для
             // ПЕРЕСЧЁТА (предпросмотр «след. выдача»), не только показа готового label-снимка выше.
             'cadence_struct' => json_encode($cadence->jsonSerialize(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
@@ -234,9 +229,9 @@ final readonly class ComplianceObligationProjector
     }
 
     /**
-     * Время-независимые поля из журнала фактов позиции — ТОЧНЫЙ порт {@see ProfileCompliance::recomputeObligation}:
-     * held = Σ на руках по фактам, lastFulfilledAt = дата последнего НЕ истощённого факта, nextDueAt — через
-     * {@see ObligationDueCalculator}, active = есть хотя бы один факт по позиции (любая запись журнала выдана).
+     * Время-независимые поля из журнала фактов позиции: held = Σ на руках по фактам, lastFulfilledAt = дата
+     * последнего НЕ истощённого факта, nextDueAt — через {@see ObligationDueCalculator}, active = есть хотя бы
+     * один факт по позиции (любая запись журнала выдана).
      *
      * @param FulfillmentRecord[] $records
      *
@@ -269,7 +264,7 @@ final readonly class ComplianceObligationProjector
     private function keyInAnyRequirement(string $key, array $requirementIds): bool
     {
         foreach ($requirementIds as $requirementId) {
-            if (TrackedObligation::keyBelongsToRequirement($key, $requirementId)) {
+            if (ObligationKey::keyBelongsToRequirement($key, $requirementId)) {
                 return true;
             }
         }

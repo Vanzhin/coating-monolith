@@ -28,7 +28,7 @@ class ProfileComplianceRepository extends ServiceEntityRepository implements Pro
     public function findByProfile(string $profileId): ?ProfileCompliance
     {
         // Fetch-join детей в одном запросе (readonly-id детей + to-one на корень — иначе прокси-краш).
-        // Норму (TrackedObligation) агрегат больше не материализует (Вариант B) — join снят вместе с полем.
+        // Норму агрегат больше не материализует (Вариант B) — join на норменную проекцию снят вместе с полем.
         return $this->createQueryBuilder('p')
             ->leftJoin('p.records', 'r')->addSelect('r')
             ->where('p.profileId = :pid')->setParameter('pid', $profileId)

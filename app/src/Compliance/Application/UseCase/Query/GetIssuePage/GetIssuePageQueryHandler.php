@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Application\UseCase\Query\GetIssuePage;
 
 use App\Compliance\Application\DTO\ProfileCompliance\ObligationRowDTO;
+use App\Compliance\Application\Service\AmountFormatter;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -12,7 +13,6 @@ use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\ValueObject\Unit;
-use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Infrastructure\Repository;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Cadence;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
@@ -38,7 +38,7 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
         $itemId = 'item-'.uniqid('', true);
         $pc = new ProfileCompliance(Uuid::v7(), $profileId);
         $pc->recordFulfillment(
-            Uuid::v7(), TrackedObligation::keyOf($reqId, $itemId), new \DateTimeImmutable('2026-01-10'),
+            Uuid::v7(), ObligationKey::keyOf($reqId, $itemId), new \DateTimeImmutable('2026-01-10'),
             new Quantity(10.0, Unit::Pair), new Percent(15),
         );
         $this->repo->add($pc);

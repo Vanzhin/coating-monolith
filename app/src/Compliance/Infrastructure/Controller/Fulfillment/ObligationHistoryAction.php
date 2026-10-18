@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * на странице выдачи (см. Stimulus-контроллер obligation-history), не на рендере самой страницы. Просмотр
  * доступен любому авторизованному (как и вся карточка) — аутентификация в security.yaml, мутаций тут нет.
  *
- * `obligationKey` ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation::keyOf}) =
+ * `obligationKey` ({@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf}) =
  * `requirementId|lower(label)` — label приходит из формы и может содержать «/» («...до 1000В-1500В/50дж»),
  * пробелы, кириллицу. ПУТЬ-параметр Symfony матчит по умолчанию `[^/]++` — «/» внутри ключа ломает генерацию
  * URL (`path()` в issue.html.twig кидал 500 при рендере). Поэтому ключ — query-параметр `key`, он принимает

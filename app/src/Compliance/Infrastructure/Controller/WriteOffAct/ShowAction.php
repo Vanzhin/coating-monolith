@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Controller\WriteOffAct;
 
+use App\Compliance\Application\Service\AmountFormatter;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
@@ -12,7 +13,6 @@ use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\WriteOffReason;
-use App\Compliance\Infrastructure\Controller\AmountFormatter;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;

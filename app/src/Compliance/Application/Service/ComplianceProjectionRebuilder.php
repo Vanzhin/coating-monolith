@@ -59,7 +59,11 @@ final readonly class ComplianceProjectionRebuilder
 
         // Проектор сам резолвит цели из тех же фильтров (самодостаточен — переживёт снятие этого сервиса
         // в финальной задаче). Материализация норменных/персональных строк — целиком его забота.
-        $this->projector->projectMany($reqIds ?: null, $posIds ?: null, $profIds ?: null);
+        $this->projector->projectMany(
+            [] !== $reqIds ? new StringCollection(...$reqIds) : null,
+            [] !== $posIds ? new StringCollection(...$posIds) : null,
+            [] !== $profIds ? new StringCollection(...$profIds) : null,
+        );
     }
 
     /**

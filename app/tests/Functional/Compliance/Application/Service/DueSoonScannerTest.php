@@ -15,7 +15,6 @@ use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Event\EventInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
@@ -69,34 +68,6 @@ final class DueSoonScannerTest extends KernelTestCase
 
         self::assertSame(0, $count, 'срок почти через год не должен попасть в due-soon скан (горизонт 60 дней)');
         self::assertSame([], $bus->published);
-    }
-
-    /**
-     * Пин флипа (Task 4): сканер источником берёт НОВУЮ read-модель, не агрегат. Корёжим СТАРУЮ таблицу
-     * (`compliance_tracked_obligation.active=false`) напрямую, минуя проектор — если сканер ещё читает агрегат,
-     * позиция стала бы неактивной и пропала из дайджеста; читает проекцию — остаётся как есть (Overdue).
-     */
-    public function test_scan_reads_new_projection_even_when_old_aggregate_table_diverges(): void
-    {
-        self::bootKernel();
-        $this->authenticateAsSystem();
-        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
-        $this->issueCard($profileId, $requirementId, $key, '10', '2020-01-01'); // Overdue (2021 < 2027) в обеих таблицах
-
-        self::getContainer()->get(EntityManagerInterface::class)->getConnection()->executeStatement(
-            'UPDATE compliance_tracked_obligation SET active = false
-             WHERE profile_compliance_id = (SELECT id FROM compliance_profile_compliance WHERE profile_id = :p)',
-            ['p' => $profileId],
-        );
-
-        $bus = $this->capturingBus();
-        $count = $this->scannerWith($bus)->scan(new \DateTimeImmutable('2027-07-01'));
-
-        self::assertSame(1, $count, 'сканер читает НОВУЮ проекцию (active=true), а не корёженную старую таблицу агрегата');
-        self::assertInstanceOf(NotificationBatch::class, $bus->published[0]);
-        $digest = $bus->published[0]->events()[0];
-        self::assertInstanceOf(ComplianceDueSoon::class, $digest);
-        self::assertSame(DueKind::Overdue, $digest->items()[0]->kind);
     }
 
     public function test_publishes_nothing_when_no_due_items(): void

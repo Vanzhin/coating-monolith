@@ -177,32 +177,6 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         );
     }
 
-    /**
-     * Пин флипа (Task 4): дашборд (список и overview) источником берёт НОВУЮ проекцию, не агрегат. Корёжим
-     * СТАРУЮ таблицу (`compliance_tracked_obligation.active=false`) напрямую, минуя проектор — если хендлеры
-     * ещё читают `ProfileComplianceRepository::findForDashboard` (агрегат), позиция стала бы Missing; если
-     * проекцию — остаётся Ok (как было после синхронной выдачи).
-     */
-    public function test_dashboard_and_overview_reflect_projection_even_when_old_aggregate_table_diverges(): void
-    {
-        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
-        $this->issueCard($profileId, $requirementId, $key); // синхронно: обе таблицы в Ok
-
-        static::getContainer()->get(EntityManagerInterface::class)->getConnection()->executeStatement(
-            'UPDATE compliance_tracked_obligation SET active = false
-             WHERE profile_compliance_id = (SELECT id FROM compliance_profile_compliance WHERE profile_id = :p)',
-            ['p' => $profileId],
-        );
-
-        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
-        self::assertNotNull($row);
-        self::assertSame(ComplianceBucket::Ok->value, $row->worstBucket, 'список дашборда читает НОВУЮ проекцию, не корёженную старую таблицу агрегата');
-
-        $overview = $this->overview(new ComplianceDashboardFilter());
-        self::assertSame(0, $overview->kpi->missing, 'overview тоже читает проекцию: позиция не стала Missing');
-        self::assertGreaterThanOrEqual(1, $overview->kpi->ok);
-    }
-
     private function paged(ComplianceDashboardFilter $filter): GetPagedComplianceQueryResult
     {
         /** @var GetPagedComplianceQueryResult $result */

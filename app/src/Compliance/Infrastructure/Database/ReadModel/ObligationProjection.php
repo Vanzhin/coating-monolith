@@ -16,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
  * (profileId, requirementId, itemId). Материализует её ТОЛЬКО проектор, через
  * {@see \App\Compliance\Infrastructure\Repository\ObligationProjectionRepository::upsertMany} (DBAL,
  * минуя ORM); этот класс используется строго для чтения через DQL — ORM его не персистит.
- * Идентичность строки — {@see self::key()}, тот же формат, что у `TrackedObligation::key()`.
+ * Идентичность строки — {@see self::key()}, тот же формат, что у {@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf}.
  */
 class ObligationProjection implements ObligationView
 {
@@ -102,8 +102,8 @@ class ObligationProjection implements ObligationView
 
     /**
      * Структурная периодичность (kind+число+единица) — для форм, которым нужно её ПЕРЕСЧИТАТЬ (предпросмотр
-     * «след. выдача» на `/issue`), а не просто показать. Та же колонка-формат (JSONB), что у
-     * `TrackedObligation::cadence()` — переиспользует {@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}.
+     * «след. выдача» на `/issue`), а не просто показать. JSONB-колонка, переиспользует
+     * {@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}.
      */
     public function cadenceStruct(): ?Cadence
     {
@@ -152,7 +152,7 @@ class ObligationProjection implements ObligationView
         return $this->active;
     }
 
-    /** `TrackedObligation::ORIGIN_NORM`/`ORIGIN_PERSONAL` — строкой, без завязки на доменный класс. */
+    /** {@see \App\Compliance\Domain\Type\ObligationOrigin} — строкой (`->value`), без завязки на enum в интерфейсе. */
     public function origin(): string
     {
         return $this->origin;
@@ -163,7 +163,7 @@ class ObligationProjection implements ObligationView
         return null !== $this->mode ? MaterialMode::from($this->mode) : null;
     }
 
-    /** Идентичность строки — `requirementId|itemId`, формат как у `TrackedObligation::keyOf()`. */
+    /** Идентичность строки — `requirementId|itemId`, формат как у {@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf}. */
     public function key(): string
     {
         return $this->requirementId.'|'.$this->itemId;

@@ -66,9 +66,9 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
                 $profileCompliance->applyWriteOff($this->sumByRecordId($lines));
                 $this->profileComplianceRepository->add($profileCompliance);
 
-                // Write-through: гасим и материализуем строки новой read-модели КАЖДОГО затронутого человека
-                // (fan-out кросс-персон акта) в ТОЙ ЖЕ транзакции. Пересборка старой таблицы — по-прежнему async
-                // событием {@see WriteOffActSigned}; это намеренный параллельный прогон (разные таблицы).
+                // Write-through: гасим и материализуем строки read-модели КАЖДОГО затронутого человека (fan-out
+                // кросс-персон акта) в ТОЙ ЖЕ транзакции. Асинхронный проход событием {@see WriteOffActSigned}
+                // остаётся доп. страховкой (пересобирает ту же проекцию повторно) — других таблиц больше нет.
                 $this->projector->projectProfile((string) $profileId, $act->requirementId());
             }
 

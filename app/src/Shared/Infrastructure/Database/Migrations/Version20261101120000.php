@@ -12,7 +12,7 @@ use Doctrine\Migrations\AbstractMigration;
  * expand). Новая read-model таблица `compliance_obligation_projection` — денормализованная строка на
  * (profile_id, requirement_id, item_id), пишет её DBAL-upsert'ом проектор (следующая задача), читает
  * read-only ORM-сущность `ObligationProjection`. Таблица аддитивна и пуста до проектора — существующую
- * `TrackedObligation`/`ProfileCompliance` не трогаем. Идемпотентно.
+ * старую проекцию/`ProfileCompliance` не трогаем. Идемпотентно.
  */
 final class Version20261101120000 extends AbstractMigration
 {

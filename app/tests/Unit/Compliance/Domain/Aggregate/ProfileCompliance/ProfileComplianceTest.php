@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Compliance\Domain\Aggregate\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
 use App\Compliance\Domain\Type\CadenceKind;
@@ -19,6 +18,7 @@ use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -30,9 +30,8 @@ use Symfony\Component\Uid\Uuid;
  * Норма (Вариант B) агрегатом не материализуется — она передаётся write-инвариантам (`recordIssuance`/
  * `assertIssuable`/`writeOffEligibleFactsForRequirement`/`obligationLabelOf`) параметром {@see Requirement}.
  * requirementId фиксирован на реальный Uuid ({@see self::$reqId}), чтобы ключи обязанностей (`reqId|itemId`)
- * совпадали с `$requirement->getId()`. Даты/held/active/статус read-модели (бывшие `TrackedObligation`/
- * `worstStatus`) теперь считает проектор — покрыто `ComplianceObligationProjectorTest`/
- * `ObligationProjectionRepositoryTest`, здесь не дублируется.
+ * совпадали с `$requirement->getId()`. Даты/held/active/статус read-модели считает проектор — покрыто
+ * `ComplianceObligationProjectorTest`/`ObligationProjectionRepositoryTest`, здесь не дублируется.
  */
 final class ProfileComplianceTest extends TestCase
 {
@@ -62,7 +61,7 @@ final class ProfileComplianceTest extends TestCase
 
     private function glovesKey(): string
     {
-        return TrackedObligation::keyOf($this->reqId, $this->glovesItemId);
+        return ObligationKey::keyOf($this->reqId, $this->glovesItemId);
     }
 
     /** Требование с одной материальной позицией (Перчатки, норма $norm пар, периодичность 1 год). */
@@ -104,7 +103,7 @@ final class ProfileComplianceTest extends TestCase
 
     private function fireSafetyKey(): string
     {
-        return TrackedObligation::keyOf($this->reqId, $this->fireSafetyItemId);
+        return ObligationKey::keyOf($this->reqId, $this->fireSafetyItemId);
     }
 
     /** Выдать перчатки прямой записью в журнал. */
@@ -115,12 +114,12 @@ final class ProfileComplianceTest extends TestCase
 
     private function creamKey(): string
     {
-        return TrackedObligation::keyOf($this->reqId, $this->creamItemId);
+        return ObligationKey::keyOf($this->reqId, $this->creamItemId);
     }
 
     private function helmetKey(): string
     {
-        return TrackedObligation::keyOf($this->reqId, $this->helmetItemId);
+        return ObligationKey::keyOf($this->reqId, $this->helmetItemId);
     }
 
     private function glovesLine(float $amount, string $issueDate = '2026-06-01'): IssuanceLine
@@ -186,7 +185,7 @@ final class ProfileComplianceTest extends TestCase
         $itemId = Uuid::v4()->toRfc4122();
         $key = $pc->addPersonalObligation($itemId, $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
 
-        self::assertSame(TrackedObligation::keyOf($this->reqId, $itemId), $key);
+        self::assertSame(ObligationKey::keyOf($this->reqId, $itemId), $key);
         $added = array_values(array_filter($pc->personalObligations(), static fn ($o): bool => $o->itemId === $itemId));
         self::assertCount(1, $added);
         self::assertSame('Очки', $added[0]->label);
@@ -250,7 +249,7 @@ final class ProfileComplianceTest extends TestCase
         $requirement = $this->glovesRequirement(2.0);
         $pc = $this->pcWithGloves();
         // Ключ принадлежит требованию, но не найден ни в норме, ни в персональных — пропускается (не бросает).
-        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), TrackedObligation::keyOf($this->reqId, 'нет-такой-позиции'), $this->now)]);
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), ObligationKey::keyOf($this->reqId, 'нет-такой-позиции'), $this->now)]);
 
         $this->addToAssertionCount(1); // не бросило — это и есть ассерт
     }
@@ -270,7 +269,7 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves();
         $otherReqId = (string) Uuid::v4();
         $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), new Quantity(10.0, Unit::Pair));
-        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, 'item-kaska'), new \DateTimeImmutable('2026-01-10'), new Quantity(1.0, Unit::Piece));
+        $pc->recordFulfillment(Uuid::v4(), ObligationKey::keyOf($otherReqId, 'item-kaska'), new \DateTimeImmutable('2026-01-10'), new Quantity(1.0, Unit::Piece));
 
         $records = $pc->recordsForRequirement($this->reqId);
 
@@ -507,7 +506,7 @@ final class ProfileComplianceTest extends TestCase
     {
         $requirement = $this->glovesRequirement(2.0);
         $pc = $this->pcWithGloves();
-        $unknownKey = TrackedObligation::keyOf($this->reqId, 'нет-такой-позиции');
+        $unknownKey = ObligationKey::keyOf($this->reqId, 'нет-такой-позиции');
 
         self::assertSame($unknownKey, $pc->obligationLabelOf($requirement, $unknownKey));
     }

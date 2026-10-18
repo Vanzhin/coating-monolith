@@ -11,6 +11,7 @@ use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -96,7 +97,7 @@ class ProfileCompliance extends Aggregate
 
     /**
      * Факты выдачи, относящиеся к требованию (принадлежность по ключу обязанности определяет домен —
-     * {@see TrackedObligation::keyBelongsToRequirement}). Нужен представлению (карточка «Списать»), чтобы
+     * {@see ObligationKey::keyBelongsToRequirement}). Нужен представлению (карточка «Списать»), чтобы
      * не лезть в формат ключа снаружи.
      *
      * @return list<FulfillmentRecord>
@@ -105,7 +106,7 @@ class ProfileCompliance extends Aggregate
     {
         $result = [];
         foreach ($this->records as $record) {
-            if (TrackedObligation::keyBelongsToRequirement($record->obligationKey(), $requirementId)) {
+            if (ObligationKey::keyBelongsToRequirement($record->obligationKey(), $requirementId)) {
                 $result[] = $record;
             }
         }
@@ -153,7 +154,7 @@ class ProfileCompliance extends Aggregate
         $keys = [];
         foreach ($requirement->getItems() as $item) {
             if ($item instanceof MaterialItem && MaterialMode::Consumable === $item->mode()) {
-                $keys[TrackedObligation::keyOf($requirement->getId(), $item->id())] = true;
+                $keys[ObligationKey::keyOf($requirement->getId(), $item->id())] = true;
             }
         }
 
@@ -169,7 +170,7 @@ class ProfileCompliance extends Aggregate
      */
     private function obligationSpecOf(Requirement $requirement, string $key): ?array
     {
-        if (!TrackedObligation::keyBelongsToRequirement($key, $requirement->getId())) {
+        if (!ObligationKey::keyBelongsToRequirement($key, $requirement->getId())) {
             return null;
         }
         $itemId = substr($key, strlen($requirement->getId()) + 1);
@@ -246,13 +247,13 @@ class ProfileCompliance extends Aggregate
 
     /**
      * requirementId факта по ключу его обязанности — детерминированно, через обратную операцию к
-     * {@see TrackedObligation::keyOf} ({@see TrackedObligation::requirementIdOf}). Проекцию/документы не
+     * {@see ObligationKey::keyOf} ({@see ObligationKey::requirementIdOf}). Проекцию/документы не
      * смотрим: факт может пережить исключение своей обязанности ({@see excludeObligation}) и не иметь
      * backing-документа (прямая дозапись {@see recordIssuance}) — требование от этого не перестаёт существовать.
      */
     private function requirementIdOfKey(string $key): string
     {
-        return TrackedObligation::requirementIdOf($key);
+        return ObligationKey::requirementIdOf($key);
     }
 
     /**
@@ -264,7 +265,7 @@ class ProfileCompliance extends Aggregate
         $this->personalObligations = array_values(array_filter(
             $this->personalObligations,
             fn (PersonalObligation $personal): bool => $personal->requirementId !== $requirementId
-                || $this->hasRecordForKey(TrackedObligation::keyOf($personal->requirementId, $personal->itemId)),
+                || $this->hasRecordForKey(ObligationKey::keyOf($personal->requirementId, $personal->itemId)),
         ));
     }
 
@@ -371,20 +372,20 @@ class ProfileCompliance extends Aggregate
      * трекается наравне. Дедуп по `lower(label)` среди персональных того же требования: та же позиция уже есть →
      * переиспользуем её itemId (кандидат игнорируется), иначе добавляем декларацию с переданным itemId.
      * id/itemId генерит вызывающий (как с черновиком списания). Возвращает ключ обязанности
-     * (`TrackedObligation::keyOf(requirementId, itemId)`).
+     * (`ObligationKey::keyOf(requirementId, itemId)`).
      */
     public function addPersonalObligation(string $itemId, string $requirementId, string $label, ComplianceType $type, Cadence $cadence, ?Quantity $quantity): string
     {
         $normalizedLabel = mb_strtolower(trim($label));
         foreach ($this->personalObligations as $existing) {
             if ($existing->requirementId === $requirementId && mb_strtolower(trim($existing->label)) === $normalizedLabel) {
-                return TrackedObligation::keyOf($existing->requirementId, $existing->itemId);
+                return ObligationKey::keyOf($existing->requirementId, $existing->itemId);
             }
         }
 
         $this->personalObligations[] = new PersonalObligation($itemId, $requirementId, trim($label), $type, $cadence, $quantity);
 
-        return TrackedObligation::keyOf($requirementId, $itemId);
+        return ObligationKey::keyOf($requirementId, $itemId);
     }
 
     /** Зафиксировать выдачу/прохождение факта напрямую в журнал (без промежуточного акта-черновика). */

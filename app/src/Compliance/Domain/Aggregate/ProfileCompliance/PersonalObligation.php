@@ -14,7 +14,8 @@ use App\Compliance\Domain\ValueObject\Quantity;
  * агрегат не материализует копию нормы, только то, что нормой не покрыто). Хранится списком на агрегате
  * ({@see ProfileCompliance::personalObligations()}) как JSONB — зеркалит хранение позиций нормы
  * ({@see \App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType}), но без полиморфизма (класс один).
- * Ключ обязанности — {@see TrackedObligation::keyOf} от той же пары (requirementId, itemId), что у норменных позиций.
+ * Ключ обязанности — {@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf} от той же пары
+ * (requirementId, itemId), что у норменных позиций.
  */
 final readonly class PersonalObligation implements \JsonSerializable
 {

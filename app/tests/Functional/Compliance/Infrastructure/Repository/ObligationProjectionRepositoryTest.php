@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Repository;
 
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ObligationProjectionFilter;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
+use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -170,7 +170,7 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'next_due_at' => $nextDueAt,
             'held_quantity' => $held,
             'active' => $active,
-            'origin' => TrackedObligation::ORIGIN_NORM,
+            'origin' => ObligationOrigin::Norm->value,
             'mode' => MaterialMode::Inventoried->value,
         ];
     }

@@ -171,32 +171,6 @@ final class IssueActionTest extends WebTestCase
     }
 
     /**
-     * Пин флипа (Task 4): карточка требования (obligation-строки /issue) источником берёт НОВУЮ проекцию, не
-     * агрегат. Корёжим СТАРУЮ таблицу (`compliance_tracked_obligation.active=false`) напрямую, минуя проектор —
-     * если `GetProfileComplianceQueryHandler` ещё читает `ProfileCompliance::getObligations()`, бейдж позиции
-     * стал бы «не выдано» (Missing); если проекцию — остаётся «в норме» (Ok, как после синхронной выдачи).
-     */
-    public function test_item_card_reflects_projection_even_when_old_aggregate_table_diverges(): void
-    {
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
-        $this->issueCard($p, $r, $k); // выдано 10 = норма → Ok в обеих таблицах
-
-        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
-        $em->getConnection()->executeStatement(
-            'UPDATE compliance_tracked_obligation SET active = false
-             WHERE profile_compliance_id = (SELECT id FROM compliance_profile_compliance WHERE profile_id = :p)',
-            ['p' => $p],
-        );
-
-        $this->client->request('GET', $this->issueUrl($p, $r));
-        self::assertResponseIsSuccessful();
-        $html = (string) $this->client->getResponse()->getContent();
-
-        self::assertStringContainsString('в норме', $html, 'карточка читает НОВУЮ проекцию (active=true), не корёженную старую таблицу агрегата');
-        self::assertStringNotContainsString('не выдано', $html);
-    }
-
-    /**
      * Пин Task 4 (структурный cadence в проекции): позиция нормы отдаёт РЕАЛЬНЫЙ kind/число/единицу в
      * data-атрибуты поля даты (не пустую строку) — ими кормится клиентский AJAX-предпросмотр «след. выдача»
      * ({@see \App\Compliance\Infrastructure\Controller\Fulfillment\NextDueAction}). С теми же значениями,

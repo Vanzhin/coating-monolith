@@ -32,7 +32,7 @@ final readonly class WriteOffActProjector
         // так плоский шаблон (повтор по `items`) рендерит акт с людьми и держит их строки рядом.
         $items = [];
         foreach ($act->linesByProfile() as $profileId => $lines) {
-            $fio = isset($profilesById[$profileId]) ? $this->fio($profilesById[$profileId]) : '';
+            $fio = isset($profilesById[$profileId]) ? $profilesById[$profileId]->fio() : '';
             foreach ($lines as $line) {
                 $items[] = $this->rowOf($line, $recordsById, $fio);
             }
@@ -97,7 +97,7 @@ final readonly class WriteOffActProjector
         foreach ($act->profileIds() as $profileId) {
             $profile = $profilesById[$profileId] ?? null;
             if (null !== $profile) {
-                $names[] = $this->fio($profile);
+                $names[] = $profile->fio();
             }
         }
 
@@ -120,10 +120,5 @@ final readonly class WriteOffActProjector
     private function number(float $amount): string
     {
         return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.');
-    }
-
-    private function fio(ProfileDTO $employee): string
-    {
-        return $employee->fio();
     }
 }
