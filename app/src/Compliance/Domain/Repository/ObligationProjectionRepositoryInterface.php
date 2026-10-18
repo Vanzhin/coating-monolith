@@ -38,10 +38,8 @@ interface ObligationProjectionRepositoryInterface
      * Orphan-чистка: оставить по паре (profileId, requirementId) только переданные itemId, остальные строки
      * удалить. Нужна проектору после пересборки нормы требования — позиции, которых больше нет в норме и по
      * которым не осталось фактов, не должны фантомом висеть в проекции.
-     *
-     * @param list<string> $keepItemIds
      */
-    public function deleteForProfileRequirementexcept(string $profileId, string $requirementId, array $keepItemIds): void;
+    public function deleteObsoleteForProfileRequirement(string $profileId, string $requirementId, StringCollection $keepItemIds): void;
 
     /** Удалить все строки проекции человека (напр. при удалении его учёта). */
     public function deleteForProfile(string $profileId): void;

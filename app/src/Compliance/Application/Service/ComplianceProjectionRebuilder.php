@@ -33,6 +33,7 @@ final readonly class ComplianceProjectionRebuilder
         private RequirementRepositoryInterface $requirements,
         private QueryBusInterface $queryBus,
         private ObligationDueCalculator $calculator,
+        private ComplianceObligationProjector $projector,
     ) {
     }
 
@@ -68,6 +69,10 @@ final readonly class ComplianceProjectionRebuilder
         foreach (array_values(array_unique($targets)) as $profileId) {
             $this->rebuildProfile($profileId, $scope);
         }
+
+        // Параллельный прогон: та же пересборка материализует и НОВУЮ read-модель. Проектор сам резолвит цели
+        // из тех же фильтров (он самодостаточен — переживёт снятие этого сервиса в финальной задаче).
+        $this->projector->projectMany($reqIds ?: null, $posIds ?: null, $profIds ?: null);
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Application\UseCase\Command\RecordIssuance;
 
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
+use App\Compliance\Application\Service\ComplianceObligationProjector;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
@@ -35,6 +36,7 @@ final readonly class RecordIssuanceCommandHandler implements CommandHandlerInter
         private ObligationDueCalculator $calculator,
         private IssuanceLineMapper $mapper,
         private RequirementRepositoryInterface $requirements,
+        private ComplianceObligationProjector $projector,
     ) {
     }
 
@@ -61,6 +63,11 @@ final readonly class RecordIssuanceCommandHandler implements CommandHandlerInter
             $profileCompliance->recordIssuance($this->calculator, ...$lines);
         }
         $this->repository->add($profileCompliance);
+
+        // Write-through: синхронно материализуем строки новой read-модели этого требования в ТОЙ ЖЕ транзакции
+        // команды (шина — doctrine_transaction). Агрегат при этом ПРОДОЛЖАЕТ вести старую таблицу через
+        // recomputeObligation — намеренный параллельный прогон (expand/contract), запись в РАЗНЫЕ таблицы.
+        $this->projector->projectProfile($command->profileId, $command->requirementId);
     }
 
     /**

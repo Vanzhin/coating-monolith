@@ -103,9 +103,9 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
         }
     }
 
-    public function deleteForProfileRequirementexcept(string $profileId, string $requirementId, array $keepItemIds): void
+    public function deleteObsoleteForProfileRequirement(string $profileId, string $requirementId, StringCollection $keepItemIds): void
     {
-        if ([] === $keepItemIds) {
+        if (0 === $keepItemIds->count()) {
             $this->conn->executeStatement(
                 'DELETE FROM compliance_obligation_projection WHERE profile_id = :profileId AND requirement_id = :requirementId',
                 ['profileId' => $profileId, 'requirementId' => $requirementId],
@@ -117,7 +117,7 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
         $this->conn->executeStatement(
             'DELETE FROM compliance_obligation_projection
              WHERE profile_id = :profileId AND requirement_id = :requirementId AND item_id NOT IN (:keepItemIds)',
-            ['profileId' => $profileId, 'requirementId' => $requirementId, 'keepItemIds' => $keepItemIds],
+            ['profileId' => $profileId, 'requirementId' => $requirementId, 'keepItemIds' => $keepItemIds->getList()],
             ['keepItemIds' => ArrayParameterType::STRING],
         );
     }

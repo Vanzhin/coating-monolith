@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Compliance\Application\UseCase\Command\SignWriteOffAct;
 
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
+use App\Compliance\Application\Service\ComplianceObligationProjector;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Compliance\Domain\Event\WriteOffActSigned;
 use App\Compliance\Domain\File\RequirementScanPurpose;
@@ -33,6 +34,7 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
         private ProfileComplianceRepositoryInterface $profileComplianceRepository,
         private FileStorage $storage,
         private EventBusInterface $eventBus,
+        private ComplianceObligationProjector $projector,
     ) {
     }
 
@@ -59,10 +61,15 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
             $act->sign($commission, $command->actNumber, $actDate, $fileId, $now);
 
             foreach ($act->linesByProfile() as $profileId => $lines) {
-                $profileCompliance = $this->profileComplianceRepository->findByProfile($profileId)
+                $profileCompliance = $this->profileComplianceRepository->findByProfile((string) $profileId)
                     ?? throw new AppException('Учёт по сотруднику не создан.');
                 $profileCompliance->applyWriteOff($this->sumByRecordId($lines));
                 $this->profileComplianceRepository->add($profileCompliance);
+
+                // Write-through: гасим и материализуем строки новой read-модели КАЖДОГО затронутого человека
+                // (fan-out кросс-персон акта) в ТОЙ ЖЕ транзакции. Пересборка старой таблицы — по-прежнему async
+                // событием {@see WriteOffActSigned}; это намеренный параллельный прогон (разные таблицы).
+                $this->projector->projectProfile((string) $profileId, $act->requirementId());
             }
 
             $this->writeOffActRepository->add($act);
