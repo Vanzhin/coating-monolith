@@ -221,7 +221,12 @@ final readonly class ComplianceObligationProjector
             'label' => $label,
             'type' => $type->value,
             'cadence' => $cadence->label(),
+            // Структурная периодичность (kind+число+единица) — JSONB, тот же формат, что у TrackedObligation::cadence()
+            // ({@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}). Нужна форме выдачи для
+            // ПЕРЕСЧЁТА (предпросмотр «след. выдача»), не только показа готового label-снимка выше.
+            'cadence_struct' => json_encode($cadence->jsonSerialize(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'quantity' => $quantity?->amount,
+            'quantity_unit' => $quantity?->unit->value,
             'department_id' => $departmentId,
             'last_fulfilled_at' => $lastFulfilledAt?->format('Y-m-d H:i:s'),
             'next_due_at' => $nextDueAt?->format('Y-m-d H:i:s'),

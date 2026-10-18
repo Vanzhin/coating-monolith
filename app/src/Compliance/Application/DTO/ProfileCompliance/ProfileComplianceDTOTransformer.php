@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\ProfileCompliance;
 
-use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceStatus;
+use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 
 class ProfileComplianceDTOTransformer
 {
@@ -15,13 +14,16 @@ class ProfileComplianceDTOTransformer
     {
     }
 
-    public function fromEntity(ProfileCompliance $profileCompliance, \DateTimeImmutable $now): ProfileComplianceDTO
+    /**
+     * @param list<ObligationProjection> $rows строки проекции ОДНОГО профиля
+     */
+    public function fromRows(array $rows, string $profileId, \DateTimeImmutable $now): ProfileComplianceDTO
     {
         $dto = new ProfileComplianceDTO();
-        $dto->profileId = $profileCompliance->getProfileId();
+        $dto->profileId = $profileId;
 
         $worst = ComplianceStatus::Green;
-        foreach ($profileCompliance->getObligations() as $obligation) {
+        foreach ($rows as $obligation) {
             $row = $this->rowDto($obligation, $now);
             $dto->obligations[] = $row;
             $worst = ComplianceStatus::worseOf($worst, ComplianceStatus::from($row->status));
@@ -31,22 +33,28 @@ class ProfileComplianceDTOTransformer
         return $dto;
     }
 
-    private function rowDto(TrackedObligation $obligation, \DateTimeImmutable $now): ObligationRowDTO
+    private function rowDto(ObligationProjection $obligation, \DateTimeImmutable $now): ObligationRowDTO
     {
         $row = new ObligationRowDTO();
         $row->key = $obligation->key();
         $row->requirementId = $obligation->requirementId();
-        $row->requirementName = $obligation->requirementName();
+        $row->requirementName = $obligation->requirementName() ?? '';
         $row->label = $obligation->label();
         $row->type = $obligation->type()->value;
-        $row->cadenceKind = $obligation->cadence()->kind->value;
-        $row->cadenceNumber = $obligation->cadence()->number;
-        $row->cadenceUnit = $obligation->cadence()->unit?->value;
-        $row->cadenceLabel = $obligation->cadence()->label();
-        $quantity = $obligation->quantity();
-        $row->quantityLabel = $quantity?->label() ?? '';
-        $row->quantityValue = null === $quantity ? null : (0.0 === fmod($quantity->amount, 1.0) ? (string) (int) $quantity->amount : (string) $quantity->amount);
-        $row->quantityUnit = $quantity?->unit->value;
+        // Структурная периодичность (kind+число+единица) — из cadence_struct (JSONB, тот же формат, что у
+        // TrackedObligation::cadence()); нужна форме выдачи для ПЕРЕСЧЁТА (клиентский предпросмотр «след.
+        // срок»), не только показа. null — переходный случай (строка написана до добавления колонки и ещё не
+        // переписана ни одним write-through) — отдаём пустой каданс, как было до его появления.
+        $cadence = $obligation->cadenceStruct();
+        $row->cadenceKind = $cadence?->kind->value ?? '';
+        $row->cadenceNumber = $cadence?->number;
+        $row->cadenceUnit = $cadence?->unit?->value;
+        $row->cadenceLabel = $obligation->cadence();
+        $amount = $obligation->quantity();
+        $unit = $obligation->quantityUnit();
+        $row->quantityLabel = null !== $amount && null !== $unit ? $this->amountLabel($amount).' '.$unit->title() : '';
+        $row->quantityValue = null === $amount ? null : $this->amountLabel($amount);
+        $row->quantityUnit = $unit?->value;
         $row->lastFulfilledAt = $obligation->lastFulfilledAt()?->format('Y-m-d');
         $row->nextDueAt = $obligation->nextDueAt()?->format('Y-m-d');
         $row->active = $obligation->isActive();
@@ -59,5 +67,10 @@ class ProfileComplianceDTOTransformer
         $row->bucketLabel = $bucket->label($obligation->type());
 
         return $row;
+    }
+
+    private function amountLabel(float $amount): string
+    {
+        return 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
     }
 }

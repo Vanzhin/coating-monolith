@@ -7,19 +7,20 @@ namespace App\Compliance\Application\UseCase\Query\Dashboard;
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTOTransformer;
 use App\Compliance\Application\Service\ComplianceDashboardScope;
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 
 /**
- * Список людей дашборда: owner-скоуп + пред-сужение (сервис), загрузка проекций, бакеты/фильтры/сорт/пагинация
- * — в PHP (масштаб — сотрудники).
+ * Список людей дашборда: owner-скоуп + пред-сужение (сервис), загрузка строк проекции, бакеты/фильтры/сорт/
+ * пагинация — в PHP (масштаб — сотрудники). Источник обязанностей — read-модель проекции
+ * ({@see ObligationProjectionRepositoryInterface}), не агрегат.
  */
 final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private ProfileComplianceRepositoryInterface $repository,
+        private ObligationProjectionRepositoryInterface $repository,
         private PersonRowDTOTransformer $transformer,
         private ComplianceDashboardScope $scope,
     ) {
@@ -31,23 +32,21 @@ final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInter
         $pager = $filter->pager ?? Pager::fromPage();
         $now = new \DateTimeImmutable();
 
-        $projections = $this->repository->findForDashboard(
-            $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q),
-            $filter->departmentIds,
-        );
-        if ([] === $projections) {
+        $scopeIds = $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q);
+        $rows = $this->repository->findForProfiles($scopeIds);
+        if ([] === $rows) {
             return new GetPagedComplianceQueryResult([], new Pager($pager->page, $pager->perPage, 0));
         }
 
-        $profilesById = $this->scope->profilesById($projections);
+        $profilesById = $this->scope->profilesById($rows);
 
-        $rows = [];
-        foreach ($projections as $projection) {
-            $profile = $profilesById[$projection->getProfileId()] ?? null;
-            if (null === $profile) {
-                continue; // профиль удалён — строку не показываем
+        $people = [];
+        foreach ($this->scope->groupByProfile($rows) as $profileId => $obligationRows) {
+            $profile = $profilesById[$profileId] ?? null;
+            if (null === $profile || ($filter->departmentIds->count() > 0 && !in_array($profile->departmentId, $filter->departmentIds->getList(), true))) {
+                continue; // профиль удалён/не попадает в выбранный отдел — строку не показываем
             }
-            $row = $this->transformer->fromEntity($projection, $profile, $now, $filter->type);
+            $row = $this->transformer->fromRows($obligationRows, $profile, $now, $filter->type);
             if ([] === $row->groups) {
                 continue; // фильтр по типу отсёк все обязанности
             }
@@ -61,17 +60,17 @@ final readonly class GetPagedComplianceQueryHandler implements QueryHandlerInter
             if ($filter->onlyProblems && 0 === $row->material->problems() + $row->nonMaterial->problems()) {
                 continue;
             }
-            $rows[] = $row;
+            $people[] = $row;
         }
 
-        usort($rows, static function (PersonRowDTO $a, PersonRowDTO $b): int {
+        usort($people, static function (PersonRowDTO $a, PersonRowDTO $b): int {
             $severity = ComplianceBucket::from($b->worstBucket)->severity() <=> ComplianceBucket::from($a->worstBucket)->severity();
 
             return 0 !== $severity ? $severity : strcmp($a->fullName, $b->fullName);
         });
 
-        $total = \count($rows);
-        $page = \array_slice($rows, $pager->getOffset(), $pager->getLimit());
+        $total = \count($people);
+        $page = \array_slice($people, $pager->getOffset(), $pager->getLimit());
 
         return new GetPagedComplianceQueryResult(array_values($page), new Pager($pager->page, $pager->perPage, $total));
     }

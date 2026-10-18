@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
@@ -28,14 +30,16 @@ use App\Shared\Domain\Templating\TextValue;
  */
 final readonly class RequirementCardProjector
 {
-    public function __construct(private WriteOffActRepositoryInterface $writeOffActRepository)
-    {
+    public function __construct(
+        private WriteOffActRepositoryInterface $writeOffActRepository,
+        private ObligationProjectionRepositoryInterface $projectionRepository,
+    ) {
     }
 
     public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now): RenderData
     {
         $obligationByKey = [];
-        foreach ($profileCompliance->getObligations() as $obligation) {
+        foreach ($this->projectionRepository->findForProfiles(new StringCollection($profileCompliance->getProfileId())) as $obligation) {
             if ($obligation->requirementId() === $requirement->getId()) {
                 $obligationByKey[$obligation->key()] = $obligation;
             }
@@ -107,7 +111,7 @@ final readonly class RequirementCardProjector
      * Строки факт-таблицы/журнала: ВЕСЬ журнал фактов требования (+ возвраты/списания по recordId) с добавленным
      * контекстом сотрудника в каждую строку (колонка «инструктируемый» в журналах — построчно). Нет фактов → пусто.
      *
-     * @param array<string, TrackedObligation> $obligationByKey
+     * @param array<string, ObligationProjection> $obligationByKey
      *
      * @return list<array<string, string>>
      */
@@ -132,7 +136,7 @@ final readonly class RequirementCardProjector
      * Стр. 2 — ВЕСЬ журнал фактов требования как строки факт-таблицы + возвраты/списания по recordId. Сортировка
      * по наименованию.
      *
-     * @param array<string, TrackedObligation> $obligationByKey
+     * @param array<string, ObligationProjection> $obligationByKey
      *
      * @return list<array<string, string>>
      */

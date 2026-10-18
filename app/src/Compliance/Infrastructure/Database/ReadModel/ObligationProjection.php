@@ -6,7 +6,9 @@ namespace App\Compliance\Infrastructure\Database\ReadModel;
 
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
+use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\ObligationView;
+use App\Compliance\Domain\ValueObject\Unit;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -37,7 +39,11 @@ class ObligationProjection implements ObligationView
     // @phpstan-ignore-next-line property.onlyRead
     private string $cadence;
     // @phpstan-ignore-next-line property.onlyRead
+    private ?Cadence $cadenceStruct;
+    // @phpstan-ignore-next-line property.onlyRead
     private ?float $quantity;
+    // @phpstan-ignore-next-line property.onlyRead
+    private ?string $quantityUnit;
     // @phpstan-ignore-next-line property.onlyRead
     private ?string $departmentId;
     // @phpstan-ignore-next-line property.onlyRead
@@ -88,10 +94,20 @@ class ObligationProjection implements ObligationView
         return ComplianceType::from($this->type);
     }
 
-    /** Снимок периодичности (как у `Cadence::label()`/`CadenceKind`) — хранится строкой, полный VO не восстановить без number/unit. */
+    /** Готовый label-снимок периодичности («ежегодно») — для отображения (дашборд/карточка), без похода в структуру. */
     public function cadence(): string
     {
         return $this->cadence;
+    }
+
+    /**
+     * Структурная периодичность (kind+число+единица) — для форм, которым нужно её ПЕРЕСЧИТАТЬ (предпросмотр
+     * «след. выдача» на `/issue`), а не просто показать. Та же колонка-формат (JSONB), что у
+     * `TrackedObligation::cadence()` — переиспользует {@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}.
+     */
+    public function cadenceStruct(): ?Cadence
+    {
+        return $this->cadenceStruct;
     }
 
     public function quantity(): ?float
@@ -103,6 +119,12 @@ class ObligationProjection implements ObligationView
     public function normQuantity(): ?float
     {
         return $this->quantity;
+    }
+
+    /** Единица нормы {@see self::quantity()} — для предзаполнения формы выдачи (норма + персональные позиции). */
+    public function quantityUnit(): ?Unit
+    {
+        return null !== $this->quantityUnit ? Unit::from($this->quantityUnit) : null;
     }
 
     public function departmentId(): ?string

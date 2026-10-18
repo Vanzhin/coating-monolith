@@ -168,6 +168,57 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('key=', (string) $this->client->getResponse()->getContent(), 'ключ ушёл в query, не в путь');
     }
 
+    /**
+     * Пин флипа (Task 4): карточка требования (obligation-строки /issue) источником берёт НОВУЮ проекцию, не
+     * агрегат. Корёжим СТАРУЮ таблицу (`compliance_tracked_obligation.active=false`) напрямую, минуя проектор —
+     * если `GetProfileComplianceQueryHandler` ещё читает `ProfileCompliance::getObligations()`, бейдж позиции
+     * стал бы «не выдано» (Missing); если проекцию — остаётся «в норме» (Ok, как после синхронной выдачи).
+     */
+    public function test_item_card_reflects_projection_even_when_old_aggregate_table_diverges(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k); // выдано 10 = норма → Ok в обеих таблицах
+
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+        $em->getConnection()->executeStatement(
+            'UPDATE compliance_tracked_obligation SET active = false
+             WHERE profile_compliance_id = (SELECT id FROM compliance_profile_compliance WHERE profile_id = :p)',
+            ['p' => $p],
+        );
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('в норме', $html, 'карточка читает НОВУЮ проекцию (active=true), не корёженную старую таблицу агрегата');
+        self::assertStringNotContainsString('не выдано', $html);
+    }
+
+    /**
+     * Пин Task 4 (структурный cadence в проекции): позиция нормы отдаёт РЕАЛЬНЫЙ kind/число/единицу в
+     * data-атрибуты поля даты (не пустую строку) — ими кормится клиентский AJAX-предпросмотр «след. выдача»
+     * ({@see \App\Compliance\Infrastructure\Controller\Fulfillment\NextDueAction}). С теми же значениями,
+     * что форма реально отправит, бэк должен посчитать дату (не null) — до структурного cadence в проекции
+     * (только label-снимок) kind/число/единица были бы пустыми, и превью всегда показывал бы «—».
+     */
+    public function test_norm_position_cadence_struct_feeds_next_due_preview(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance(); // Перчатки: periodic, 1 год
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $dateInput = $crawler->filter('input[data-issue-date]')->first();
+        self::assertSame('periodic', $dateInput->attr('data-cadence-kind'), 'норменная позиция отдаёт структурный cadence из проекции, не пустую строку');
+        self::assertSame('1', $dateInput->attr('data-cadence-number'));
+        self::assertSame('year', $dateInput->attr('data-cadence-unit'));
+
+        // Те же значения — на бэк-калькулятор превью: должен вернуть дату, а не null.
+        $this->client->request('GET', '/cabinet/compliance/next-due?date=2026-06-01&kind=periodic&number=1&unit=year');
+        self::assertResponseIsSuccessful();
+        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('2027-06-01', $body['data']['nextDue'], 'предпросмотр считает дату по cadence из проекции, не «—»');
+    }
+
     public function test_writeoff_entry_available_when_something_is_issued(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();

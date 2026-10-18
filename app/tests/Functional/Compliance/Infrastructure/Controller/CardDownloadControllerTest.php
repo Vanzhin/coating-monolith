@@ -341,6 +341,12 @@ final class CardDownloadControllerTest extends WebTestCase
         $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-06-01'), $calc, new Quantity(6.0, Unit::Pair));
         $pc->recordFulfillment(Uuid::v7(), $key, new \DateTimeImmutable('2026-07-01'), $calc, new Quantity(4.0, Unit::Pair)); // запись фактов синхронно включает трекинг (active)
         $repo->add($pc);
+        // Прямой вызов домена (не через RecordIssuanceCommandHandler) не триггерит write-through проектора —
+        // карточка /issue теперь читает НОВУЮ проекцию, пересобираем её явно (как остальные тесты этого файла).
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+        // Без clear() identity map отдаст СТАРЫЙ закэшированный инстанс строки проекции (DQL-прочитан внутри
+        // enrollCompliance ранее; upsertMany пишет DBAL мимо ORM, in-memory его не обновляет).
+        $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
 
         $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();

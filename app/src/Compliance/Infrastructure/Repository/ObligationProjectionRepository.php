@@ -75,16 +75,20 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
                 <<<'SQL'
                     INSERT INTO compliance_obligation_projection
                         (id, profile_id, requirement_id, item_id, requirement_name, label, type, cadence,
-                         quantity, department_id, last_fulfilled_at, next_due_at, held_quantity, active, origin, mode)
+                         cadence_struct, quantity, quantity_unit, department_id, last_fulfilled_at, next_due_at,
+                         held_quantity, active, origin, mode)
                     VALUES
                         (:id, :profile_id, :requirement_id, :item_id, :requirement_name, :label, :type, :cadence,
-                         :quantity, :department_id, :last_fulfilled_at, :next_due_at, :held_quantity, :active, :origin, :mode)
+                         :cadence_struct, :quantity, :quantity_unit, :department_id, :last_fulfilled_at, :next_due_at,
+                         :held_quantity, :active, :origin, :mode)
                     ON CONFLICT (profile_id, requirement_id, item_id) DO UPDATE
                     SET requirement_name  = EXCLUDED.requirement_name,
                         label             = EXCLUDED.label,
                         type              = EXCLUDED.type,
                         cadence           = EXCLUDED.cadence,
+                        cadence_struct    = EXCLUDED.cadence_struct,
                         quantity          = EXCLUDED.quantity,
+                        quantity_unit     = EXCLUDED.quantity_unit,
                         department_id     = EXCLUDED.department_id,
                         last_fulfilled_at = EXCLUDED.last_fulfilled_at,
                         next_due_at       = EXCLUDED.next_due_at,

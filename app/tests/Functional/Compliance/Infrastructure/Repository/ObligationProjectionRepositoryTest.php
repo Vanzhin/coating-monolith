@@ -7,8 +7,11 @@ namespace App\Tests\Functional\Compliance\Infrastructure\Repository;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ObligationProjectionFilter;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
+use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
+use App\Compliance\Domain\Type\PeriodUnit;
+use App\Compliance\Domain\ValueObject\Cadence;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\Pager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -78,6 +81,58 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
         self::assertEquals(new \DateTimeImmutable('2026-01-15 00:00:00'), $page->items[0]->lastFulfilledAt());
     }
 
+    /**
+     * Условия due-soon скана ({@see \App\Compliance\Application\Service\DueSoonScanner}) после флипа на проекцию:
+     * active=true И next_due_at задан И не позже порога. Та же проверка, что раньше гоняла прямой SQL-скан
+     * `compliance_tracked_obligation` ({@see \App\Compliance\Infrastructure\Repository\ProfileComplianceRepository::findDueSoonObligations},
+     * снят этой задачей) — переносим на новую таблицу, чтобы условие не осталось непроверенным после флипа.
+     */
+    public function test_find_by_filter_active_and_due_before_matches_due_soon_scan_conditions(): void
+    {
+        $now = new \DateTimeImmutable('2027-01-01');
+        $threshold = $now->modify('+60 days');
+
+        $this->repo->upsertMany([
+            $this->rowArray('p1', 'r1', 'due-soon', active: true, nextDueAt: $now->modify('+10 days')->format('Y-m-d H:i:s')),
+            $this->rowArray('p1', 'r1', 'overdue', active: true, nextDueAt: $now->modify('-5 days')->format('Y-m-d H:i:s')),
+            $this->rowArray('p1', 'r1', 'far-future', active: true, nextDueAt: $now->modify('+120 days')->format('Y-m-d H:i:s')),
+            $this->rowArray('p1', 'r1', 'inactive', active: false, nextDueAt: $now->modify('+10 days')->format('Y-m-d H:i:s')),
+            $this->rowArray('p1', 'r1', 'no-date', active: true, nextDueAt: null),
+        ]);
+        $this->clear();
+
+        $page = $this->repo->findByFilter(new ObligationProjectionFilter(
+            Pager::fromPage(1, 10),
+            profileIds: new StringCollection('p1'),
+            active: true,
+            dueBefore: $threshold,
+        ));
+
+        $itemIds = array_map(static fn ($row): string => $row->itemId(), $page->items);
+        sort($itemIds);
+        self::assertSame(['due-soon', 'overdue'], $itemIds, 'далёкий срок/неактивная/без срока не должны пройти фильтр');
+    }
+
+    /**
+     * `cadence_struct` (JSONB) реконструирует полный VO {@see Cadence} на чтении — не только label-снимок
+     * {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection::cadence()}. Нужно форме
+     * выдачи для живого предпросмотра «след. выдача» (считает kind+число+единица, не готовую дату).
+     */
+    public function test_cadence_struct_round_trips_full_value_object(): void
+    {
+        $this->repo->upsertMany([$this->rowArray('p1', 'r1', 'i1', cadenceStruct: new Cadence(CadenceKind::Periodic, 2, PeriodUnit::Month))]);
+        $this->clear();
+
+        $page = $this->repo->findByFilter(new ObligationProjectionFilter(Pager::fromPage(1, 10), profileIds: new StringCollection('p1')));
+
+        self::assertCount(1, $page->items);
+        $cadence = $page->items[0]->cadenceStruct();
+        self::assertNotNull($cadence);
+        self::assertSame(CadenceKind::Periodic, $cadence->kind);
+        self::assertSame(2, $cadence->number);
+        self::assertSame(PeriodUnit::Month, $cadence->unit);
+    }
+
     private function clear(): void
     {
         static::getContainer()->get(EntityManagerInterface::class)->clear();
@@ -93,7 +148,11 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
         float $held = 0.0,
         bool $active = true,
         ?string $lastFulfilledAt = null,
+        ?string $nextDueAt = null,
+        ?Cadence $cadenceStruct = null,
     ): array {
+        $cadenceStruct ??= new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year);
+
         return [
             'id' => (string) Uuid::v7(),
             'profile_id' => $profileId,
@@ -103,10 +162,12 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'label' => 'Тестовая позиция',
             'type' => ComplianceType::Material->value,
             'cadence' => 'periodic',
+            'cadence_struct' => json_encode($cadenceStruct->jsonSerialize(), JSON_THROW_ON_ERROR),
             'quantity' => 1.0,
+            'quantity_unit' => 'pcs',
             'department_id' => 'dep-1',
             'last_fulfilled_at' => $lastFulfilledAt,
-            'next_due_at' => null,
+            'next_due_at' => $nextDueAt,
             'held_quantity' => $held,
             'active' => $active,
             'origin' => TrackedObligation::ORIGIN_NORM,

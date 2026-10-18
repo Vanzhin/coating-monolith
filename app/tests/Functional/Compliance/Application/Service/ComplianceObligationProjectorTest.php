@@ -85,6 +85,8 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         self::assertSame($obligation->heldQuantity(), $row->heldQuantity());
         self::assertEquals($obligation->nextDueAt(), $row->nextDueAt());
         self::assertSame($obligation->isActive(), $row->isActive());
+        // Структурный cadence (kind+число+единица) — тот же VO, что хранит обязанность агрегата, не только label.
+        self::assertEquals($obligation->cadence(), $row->cadenceStruct());
     }
 
     public function test_sign_writeoff_updates_projection_for_all_people_in_one_tx(): void
