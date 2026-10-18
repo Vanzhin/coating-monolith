@@ -115,7 +115,7 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
 
     /**
      * `cadence_struct` (JSONB) реконструирует полный VO {@see Cadence} на чтении — не только label-снимок
-     * {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection::cadence()}. Нужно форме
+     * {@see \App\Compliance\Domain\ReadModel\ObligationProjection::cadence()}. Нужно форме
      * выдачи для живого предпросмотра «след. выдача» (считает kind+число+единица, не готовую дату).
      */
     public function test_cadence_struct_round_trips_full_value_object(): void

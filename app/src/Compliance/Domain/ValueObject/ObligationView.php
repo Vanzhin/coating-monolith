@@ -6,7 +6,7 @@ namespace App\Compliance\Domain\ValueObject;
 
 /**
  * Узкий срез обязанности человека, нужный {@see \App\Compliance\Domain\Service\ComplianceBucketResolver} для
- * расчёта бакета/статуса. Единственный носитель — read-модель {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection}
+ * расчёта бакета/статуса. Единственный носитель — read-модель {@see \App\Compliance\Domain\ReadModel\ObligationProjection}
  * (агрегат `ProfileCompliance` норму не материализует, Вариант B); интерфейс выделен, чтобы резолвер не был
  * завязан на конкретный класс read-модели.
  */

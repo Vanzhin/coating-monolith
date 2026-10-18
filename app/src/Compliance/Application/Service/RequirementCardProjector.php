@@ -6,10 +6,10 @@ namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RenderData;

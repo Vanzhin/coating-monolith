@@ -23,7 +23,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * новая позиция. Ключ обязанности {@see ObligationKey::keyOf} строится от itemId, не от label, поэтому
  * факт (held/история), выданный ДО переименования, должен остаться привязан к той же обязанности ПОСЛЕ.
  *
- * Ядро проверки — ПРОЕКЦИЯ (пересобранная строка {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection}),
+ * Ядро проверки — ПРОЕКЦИЯ (пересобранная строка {@see \App\Compliance\Domain\ReadModel\ObligationProjection}),
  * а не прямое сканирование {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::heldOf()}:
  * held-скан фактов стабилен по построению (факты неизменяемы, их obligationKey никто не переписывает), поэтому
  * он не поймал бы регресс, если бы ребилдер ключевал ЗАНОВО по label — получилась бы ОСИРОТЕВШАЯ под старым

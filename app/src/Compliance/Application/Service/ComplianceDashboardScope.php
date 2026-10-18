@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfileByUserUlid\GetProfileByUserUlidQuery;
 use App\Personnel\Application\UseCase\Query\GetProfileByUserUlid\GetProfileByUserUlidQueryResult;

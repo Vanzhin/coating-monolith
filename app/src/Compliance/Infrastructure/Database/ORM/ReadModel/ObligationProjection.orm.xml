@@ -3,7 +3,7 @@
                   xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
-    <entity name="App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection"
+    <entity name="App\Compliance\Domain\ReadModel\ObligationProjection"
             table="compliance_obligation_projection"
             read-only="true">
         <id name="id" column="id" type="uuid">
@@ -15,7 +15,7 @@
         <field name="requirementName" column="requirement_name" type="string" length="255" nullable="true"/>
         <field name="label" column="label" type="string" length="1000"/>
         <field name="type" column="type" type="string" length="32"/>
-        <field name="cadence" column="cadence" type="string" length="32"/>
+        <field name="cadence" column="cadence" type="string" length="255"/>
         <field name="cadenceStruct" column="cadence_struct" type="compliance_cadence" nullable="true"/>
         <field name="quantity" column="quantity" type="float" nullable="true"/>
         <field name="quantityUnit" column="quantity_unit" type="string" length="16" nullable="true"/>

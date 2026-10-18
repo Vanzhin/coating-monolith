@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Compliance\Application\DTO\ProfileCompliance;
 
 use App\Compliance\Application\Service\AmountFormatter;
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceStatus;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 
 class ProfileComplianceDTOTransformer
 {

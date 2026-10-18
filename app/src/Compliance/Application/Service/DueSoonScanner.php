@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Event\ComplianceDueSoon;
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionFilter;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceBucket;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Notifications\Domain\Event\ComplianceDueItem;
 use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;

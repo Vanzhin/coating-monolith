@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Compliance\Infrastructure\Database\ReadModel;
+namespace App\Compliance\Domain\ReadModel;
 
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Compliance\Infrastructure\Repository;
 
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionFilter;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\DBAL\ArrayParameterType;

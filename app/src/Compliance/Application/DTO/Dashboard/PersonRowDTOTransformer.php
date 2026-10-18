@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\Dashboard;
 
+use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 
 /**

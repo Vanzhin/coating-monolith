@@ -12,7 +12,7 @@ use App\Compliance\Domain\ValueObject\ObligationView;
  * ЕДИНЫЙ расчёт состояния обязанности из подписи документа + хранимых дат + нормы/наличия + текущего момента.
  * Состояние НЕ хранится (меняется от хода времени, а не по событиям) — это чистая функция, зовётся на чтении
  * (карточка, дашборд, проход уведомлений). Один ладдер — одно место правки. Вход — {@see ObligationView},
- * единственный носитель — read-проекция {@see \App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection}
+ * единственный носитель — read-проекция {@see \App\Compliance\Domain\ReadModel\ObligationProjection}
  * (агрегат норму не материализует, Вариант B).
  *
  * {@see bucketFor()} — канонический 4-бакет ({@see ComplianceBucket}); {@see statusFor()} — трёхцветный

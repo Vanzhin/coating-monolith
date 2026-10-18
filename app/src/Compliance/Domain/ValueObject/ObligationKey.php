@@ -12,7 +12,7 @@ namespace App\Compliance\Domain\ValueObject;
  * общий контракт между журналом фактов {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance}
  * и проектором read-модели {@see \App\Compliance\Application\Service\ComplianceObligationProjector}).
  */
-final class ObligationKey
+final readonly class ObligationKey
 {
     /** `$suffix` — стабильный itemId позиции (не человекочитаемый label), регистр не нормализуем. */
     public static function keyOf(string $requirementId, string $suffix): string

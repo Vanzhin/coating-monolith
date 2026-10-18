@@ -71,9 +71,9 @@
 ## 5. Миграция + ops (expand/contract)
 
 1. **Expand:** `CREATE TABLE IF NOT EXISTS compliance_obligation_projection (…)` + индексы (`profile_id`, `next_due_at`, `active`) + уник `(profile_id, requirement_id, item_id)`. Идемпотентно. Старую `compliance_tracked_obligation` НЕ трогаем.
-2. **Backfill:** после деплоя кода проектора — `app:compliance:rebuild-projection` на проде наполняет НОВУЮ таблицу из нормы+журнала+деклараций (строк ≈124). Параллельно агрегат ещё ведёт старую таблицу.
+2. **Backfill:** `app:compliance:rebuild-projection` выполняется В migrate-first гейте, ДО свопа кода (переключённые читатели не должны застать пустую проекцию) — наполняет НОВУЮ таблицу из нормы+журнала+деклараций (строк ≈124). Параллельно агрегат ещё ведёт старую таблицу.
 3. **Flip:** читатели перецеплены на новую таблицу (в коде, по задачам); проверка паритета новая-vs-старая на проде перед снятием старой.
-4. **Contract:** снять `one-to-many obligations` с `ProfileCompliance` (агрегат перестаёт вести `TrackedObligation`), затем отдельной поздней миграцией `DROP TABLE compliance_tracked_obligation` — после подтверждения паритета. Migrate-first, запись редкая/админская.
+4. **Contract:** снять `one-to-many obligations` с `ProfileCompliance` (агрегат перестаёт вести `TrackedObligation`). Физический `DROP TABLE compliance_tracked_obligation` — ОТДЕЛЬНАЯ позднейшая миграция, ПОСЛЕ подтверждения прод-паритета; в сам деплой этой задачи не входит.
 
 ## 6. Тесты
 

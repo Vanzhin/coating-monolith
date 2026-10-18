@@ -21,7 +21,7 @@ interface ObligationProjectionRepositoryInterface
     /**
      * Все строки проекции указанных людей, без пагинации — read-path дашборда (нужен весь состав, не страница).
      *
-     * @return list<\App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection>
+     * @return list<\App\Compliance\Domain\ReadModel\ObligationProjection>
      */
     public function findForProfiles(StringCollection $profileIds): array;
 

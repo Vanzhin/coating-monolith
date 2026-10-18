@@ -127,7 +127,7 @@ doctrine:
                 is_bundle: false
                 type: xml
                 dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/ReadModel'
-                prefix: 'App\Compliance\Infrastructure\Database\ReadModel'
+                prefix: 'App\Compliance\Domain\ReadModel'
                 alias: ComplianceReadModel
 
 
