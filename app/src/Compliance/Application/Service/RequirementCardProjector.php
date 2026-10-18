@@ -121,7 +121,7 @@ final readonly class RequirementCardProjector
         foreach ($requirement->getItems() as $item) {
             $basisByLabel[$item->label()] = $item->basis();
         }
-        $rows = $this->factLog($profileCompliance, $requirement->getId(), $obligationByKey);
+        $rows = $this->factLog($profileCompliance, $requirement, $obligationByKey);
         foreach ($rows as $i => $row) {
             $rows[$i]['employee_fio'] = $this->fio($profile);
             $rows[$i]['employee_position'] = $profile->positionTitle;
@@ -140,14 +140,14 @@ final readonly class RequirementCardProjector
      *
      * @return list<array<string, string>>
      */
-    private function factLog(ProfileCompliance $profileCompliance, string $requirementId, array $obligationByKey): array
+    private function factLog(ProfileCompliance $profileCompliance, Requirement $requirement, array $obligationByKey): array
     {
-        $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirementId);
+        $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirement->getId());
 
         $rows = [];
-        foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
+        foreach ($profileCompliance->recordsForRequirement($requirement->getId()) as $record) {
             $obligation = $obligationByKey[$record->obligationKey()] ?? null;
-            $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($record->obligationKey());
+            $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($requirement, $record->obligationKey());
             $quantity = $record->quantity();
             $returns = $returnsByRecord[$record->getId()] ?? [];
 

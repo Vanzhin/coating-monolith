@@ -125,12 +125,14 @@ final class IssueAction extends AbstractController
         $obligations = null !== $complianceResult->compliance ? $complianceResult->compliance->obligations : [];
 
         $requirementName = 'Требование';
+        $requirementTypeValue = null; // тип акта (мономорфен) — из первой строки проекции этого требования
         $issueRows = [];
         foreach ($obligations as $row) {
             if ($row->requirementId !== $requirementId) {
                 continue;
             }
             $requirementName = $row->requirementName;
+            $requirementTypeValue ??= $row->type;
             // Выдача доступна ВСЕГДА: форма строится из ВСЕХ позиций текущей нормы (а не только дефицитных),
             // поэтому замену/досрочную выдачу можно записать и при полностью удовлетворённой (Green) норме.
             $held = $profileCompliance?->heldOf($row->key) ?? 0.0;
@@ -169,8 +171,6 @@ final class IssueAction extends AbstractController
         // ошибке (ничего не сохранилось → бакеты те же → порядок тот же).
         $bucketOrder = ['overdue' => 0, 'missing' => 0, 'soon' => 1, 'ok' => 2];
         usort($issueRows, static fn (array $a, array $b): int => ($bucketOrder[$a['bucket']] ?? 9) <=> ($bucketOrder[$b['bucket']] ?? 9));
-
-        $actType = $profileCompliance?->typeOfRequirement($requirementId); // тип (мономорфен) для полей строки
 
         // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
         // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
@@ -244,7 +244,7 @@ final class IssueAction extends AbstractController
             // readonly; не закреплён → редактируемое поле, предзаполненное табельным (profile.personnelNumber).
             'cardNumber' => $profileCompliance?->cardNumber(),
             'rows' => $issueRows,
-            'requirementType' => null !== $actType ? $actType->value : 'material',
+            'requirementType' => $requirementTypeValue ?? 'material',
             'instructionGroups' => $instructionGroups,
             'inputData' => $inputData,
             'documentDate' => $documentDate,

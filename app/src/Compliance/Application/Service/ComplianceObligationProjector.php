@@ -27,18 +27,14 @@ use Symfony\Component\Uid\Uuid;
 /**
  * ЕДИНСТВЕННЫЙ писатель read-модели `compliance_obligation_projection`. Материализует строку обязанности на
  * (profileId, requirementId, itemId) из ЖИВОЙ нормы (требования должности) + персональных деклараций + журнала
- * фактов, считая ВРЕМЯ-НЕЗАВИСИМЫЕ поля `lastFulfilledAt`/`nextDueAt`(через {@see ObligationDueCalculator})/
- * `heldQuantity`/`active` ТОЧНО как {@see ProfileCompliance::recomputeObligation} и набор строк — как
- * desired-vs-facts + orphan-cleanup в {@see ComplianceProjectionRebuilder}. Bucket/статус НЕ хранит — он чистая
- * функция от строки и `now`, выводится на чтении единым резолвером.
+ * фактов, считая ВРЕМЯ-НЕЗАВИСИМЫЕ поля `lastFulfilledAt`/`nextDueAt` (через {@see ObligationDueCalculator})/
+ * `heldQuantity`/`active`. Bucket/статус НЕ хранит — он чистая функция от строки и `now`, выводится на чтении
+ * единым резолвером.
  *
- * Запись идёт DBAL-upsert'ом в НОВУЮ таблицу ({@see ObligationProjectionRepositoryInterface::upsertMany} +
- * orphan-delete), а НЕ мутацией child-коллекции агрегата. В параллельном прогоне (expand/contract) агрегат ВСЁ
- * ещё ведёт старую `compliance_tracked_obligation` через `recomputeObligation` — это намеренная двойная запись
- * в РАЗНЫЕ таблицы, не конфликт.
- *
- * RULING 3: персональные декларации (off-norm позиции) берутся из старых `origin=personal` строк агрегата —
- * в Task 5 источник переключится на отдельный VO, здесь это не трогаем.
+ * Запись идёт DBAL-upsert'ом в таблицу ({@see ObligationProjectionRepositoryInterface::upsertMany} + orphan-delete).
+ * Агрегат (Вариант B) норму больше не материализует — единственный источник нормы здесь это `Requirement`,
+ * персональных (off-norm) деклараций — VO-список {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\PersonalObligation}
+ * на агрегате.
  */
 final readonly class ComplianceObligationProjector
 {
@@ -92,8 +88,9 @@ final readonly class ComplianceObligationProjector
     }
 
     /**
-     * Пересборка строк одного профиля (опц. среза требований). Порт desired-vs-facts + orphan-cleanup из
-     * {@see ComplianceProjectionRebuilder::rebuildProfile}, но запись — в НОВУЮ таблицу через upsert + orphan-delete.
+     * Пересборка строк одного профиля (опц. среза требований): desired-vs-facts (норменные позиции
+     * `Requirement::getItems()` + персональные {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\PersonalObligation})
+     * против журнала фактов, запись — upsert + orphan-delete.
      *
      * @param list<string>|null $onlyRequirementIds null → полная пересборка профиля
      */
@@ -110,7 +107,7 @@ final readonly class ComplianceObligationProjector
         $positionId = $result->profile->positionId;
 
         $records = null !== $profileCompliance ? $profileCompliance->getRecords() : [];
-        $existingObligations = null !== $profileCompliance ? $profileCompliance->getObligations() : [];
+        $personalObligations = null !== $profileCompliance ? $profileCompliance->personalObligations() : [];
         $excluded = null !== $profileCompliance ? $profileCompliance->getExcludedKeys()->getList() : [];
 
         // Пересобираемый срез нормы: все требования должности (полностью) или заданные (точечно) — но только те
@@ -131,9 +128,12 @@ final readonly class ComplianceObligationProjector
         $rows = [];
         /** @var array<string, list<string>> $keptItemIds requirementId => itemId[] (для orphan-delete) */
         $keptItemIds = [];
+        /** @var array<string, string> $requirementNames requirementId => name (норменные уже загружены; для персональных — лениво) */
+        $requirementNames = [];
 
         // 1. Норменные строки живой нормы.
         foreach ($requirements as $requirement) {
+            $requirementNames[$requirement->getId()] = $requirement->getName();
             foreach ($requirement->getItems() as $item) {
                 $key = TrackedObligation::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
@@ -149,27 +149,23 @@ final readonly class ComplianceObligationProjector
             }
         }
 
-        // 2. Персональные декларации (origin=personal, RULING 3) + норменные-сироты С ФАКТАМИ (история) — берём
-        // их метаданные с обязанностей агрегата: персональные вне нормы, а сирота уже выпала из живой нормы.
-        // Без фактов норменную-сироту НЕ держим (как пересборщик); персональную держим всегда.
-        foreach ($existingObligations as $obligation) {
-            $key = $obligation->key();
+        // 2. Персональные декларации (off-norm, из VO агрегата) — держим всегда, норма их не несёт.
+        foreach ($personalObligations as $personal) {
+            $key = TrackedObligation::keyOf($personal->requirementId, $personal->itemId);
             if (isset($rows[$key])) {
-                continue; // уже покрыта живой нормой
+                continue; // уже покрыта живой нормой (не должно происходить, но защитно)
             }
             if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds)) {
                 continue; // точечная пересборка чужие требования не трогает
             }
-            $isPersonal = TrackedObligation::ORIGIN_PERSONAL === $obligation->origin();
-            if (!$isPersonal && !$this->hasRecordForKey($records, $key)) {
-                continue;
-            }
+            $requirementName = $requirementNames[$personal->requirementId]
+                ??= $this->requirements->findOneById($personal->requirementId)?->getName() ?? '';
             $rows[$key] = $this->buildRow(
-                $profileId, $obligation->requirementId(), $obligation->itemId(), $obligation->requirementName(),
-                $obligation->label(), $obligation->type(), $obligation->cadence(), $obligation->quantity(),
-                $obligation->departmentId(), $obligation->origin(), $obligation->mode(), $records, $key,
+                $profileId, $personal->requirementId, $personal->itemId, $requirementName,
+                $personal->label, $personal->type, $personal->cadence, $personal->quantity,
+                $departmentId, TrackedObligation::ORIGIN_PERSONAL, null, $records, $key,
             );
-            $keptItemIds[$obligation->requirementId()][] = $obligation->itemId();
+            $keptItemIds[$personal->requirementId][] = $personal->itemId;
         }
 
         // Orphan-чистка по пересобранным требованиям: точечно — только заданные; полностью — объединение требований
@@ -267,18 +263,6 @@ final readonly class ComplianceObligationProjector
         $nextDueAt = $this->calculator->nextDue($cadence, $lastFulfilledAt, $latest?->manualDueDate());
 
         return [$lastFulfilledAt, $nextDueAt, $held, $hasFact];
-    }
-
-    /** @param FulfillmentRecord[] $records */
-    private function hasRecordForKey(array $records, string $key): bool
-    {
-        foreach ($records as $record) {
-            if ($record->obligationKey() === $key) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /** @param list<string> $requirementIds */

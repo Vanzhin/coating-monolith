@@ -24,9 +24,11 @@
         <field name="mode" type="string" length="16" column="mode" nullable="true"
                enum-type="App\Compliance\Domain\Type\MaterialMode"/>
 
+        <!-- Unidirectional (ProfileCompliance больше не держит inverse-коллекцию obligations — Вариант B,
+             норма не материализуется на агрегате; TrackedObligation остаётся standalone-маппингом до Task 7). -->
         <many-to-one field="profileCompliance"
                      target-entity="App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance"
-                     inversed-by="obligations" fetch="LAZY">
+                     fetch="LAZY">
             <join-column name="profile_compliance_id" nullable="false" on-delete="CASCADE"/>
         </many-to-one>
     </entity>

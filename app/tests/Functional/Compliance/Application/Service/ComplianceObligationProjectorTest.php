@@ -11,11 +11,12 @@ use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCo
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Compliance\Domain\Type\CadenceKind;
+use App\Compliance\Domain\Type\PeriodUnit;
+use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
@@ -34,9 +35,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Проектор пишет НОВУЮ read-модель `compliance_obligation_projection`. Два фокуса ревью:
- *  - паритет: строка новой таблицы после проекции = то, что агрегат держит в своей (старой) обязанности
- *    (held/nextDueAt/active) для того же ключа;
+ * Проектор пишет read-модель `compliance_obligation_projection` из живой нормы (Requirement) + журнала фактов
+ * (агрегат, Вариант B, норму не несёт). Два фокуса ревью:
+ *  - held/nextDueAt/active строки проекции считаются корректно из фактов для известной нормы (periodic/1/год);
  *  - fan-out подписи списания: синхронная подпись кросс-персон акта обновляет строки проекции ВСЕХ
  *    затронутых людей одной транзакцией (write-through в {@see SignWriteOffActCommandHandler}).
  */
@@ -77,16 +78,8 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         self::assertSame(10.0, $row->heldQuantity());
         self::assertEquals(new \DateTimeImmutable('2027-06-01 00:00:00'), $row->nextDueAt());
         self::assertTrue($row->isActive());
-
-        // Паритет: строка новой таблицы совпадает с тем, что агрегат держит в старой обязанности того же ключа.
-        $pc = $this->repo->findByProfile($p);
-        self::assertNotNull($pc);
-        $obligation = $this->obligationFor($pc, $k);
-        self::assertSame($obligation->heldQuantity(), $row->heldQuantity());
-        self::assertEquals($obligation->nextDueAt(), $row->nextDueAt());
-        self::assertSame($obligation->isActive(), $row->isActive());
-        // Структурный cadence (kind+число+единица) — тот же VO, что хранит обязанность агрегата, не только label.
-        self::assertEquals($obligation->cadence(), $row->cadenceStruct());
+        // Структурный cadence (kind+число+единица) — та же норма, что в enrollCompliance (periodic/1/год).
+        self::assertEquals(new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), $row->cadenceStruct());
     }
 
     public function test_sign_writeoff_updates_projection_for_all_people_in_one_tx(): void
@@ -139,16 +132,6 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
             }
         }
         self::fail(sprintf('В проекции нет строки по ключу «%s».', $key));
-    }
-
-    private function obligationFor(ProfileCompliance $pc, string $key): TrackedObligation
-    {
-        foreach ($pc->getObligations() as $obligation) {
-            if ($obligation->key() === $key) {
-                return $obligation;
-            }
-        }
-        self::fail(sprintf('В агрегате нет обязанности по ключу «%s».', $key));
     }
 
     /** @return array{positionId: string, requirementId: string, key: string} Норма с одной материальной позицией (Перчатки), общая должность. */

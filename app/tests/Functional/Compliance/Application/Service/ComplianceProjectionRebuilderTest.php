@@ -9,6 +9,7 @@ use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCo
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\MaterialMode;
@@ -36,6 +37,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
     private QueryBusInterface $queryBus;
     private ComplianceProjectionRebuilder $rebuilder;
     private ProfileComplianceRepositoryInterface $repo;
+    private ObligationProjectionRepositoryInterface $projectionRepo;
 
     protected function setUp(): void
     {
@@ -45,6 +47,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         $this->queryBus = $c->get(QueryBusInterface::class);
         $this->rebuilder = $c->get(ComplianceProjectionRebuilder::class);
         $this->repo = $c->get(ProfileComplianceRepositoryInterface::class);
+        $this->projectionRepo = $c->get(ObligationProjectionRepositoryInterface::class);
         $this->authenticateAsSystem();
     }
 
@@ -128,10 +131,11 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));
 
         $pc = $this->repo->findByProfile($profileId);
-        self::assertNotNull($pc);
-        self::assertCount(1, $pc->getObligations());
-        self::assertSame('Перчатки', $pc->getObligations()[0]->label());
-        self::assertFalse($pc->getObligations()[0]->isActive()); // документ не подписан
+        self::assertNotNull($pc, 'rebuild гарантирует существование учёта человека');
+        $rows = $this->projectionRepo->findForProfiles(new StringCollection($profileId));
+        self::assertCount(1, $rows);
+        self::assertSame('Перчатки', $rows[0]->label());
+        self::assertFalse($rows[0]->isActive()); // документ не подписан
     }
 
     public function test_rebuild_sets_mode_from_material_item(): void
@@ -142,16 +146,13 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
 
         $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));
 
-        $pc = $this->repo->findByProfile($profileId);
-        self::assertNotNull($pc);
+        $rows = $this->projectionRepo->findForProfiles(new StringCollection($profileId));
         $byLabel = [];
-        foreach ($pc->getObligations() as $obligation) {
-            $byLabel[$obligation->label()] = $obligation;
+        foreach ($rows as $row) {
+            $byLabel[$row->label()] = $row;
         }
         self::assertSame(MaterialMode::Inventoried, $byLabel['Перчатки']->mode());
-        self::assertFalse($byLabel['Перчатки']->isConsumable());
         self::assertSame(MaterialMode::Consumable, $byLabel['Мыло']->mode());
-        self::assertTrue($byLabel['Мыло']->isConsumable());
     }
 
     public function test_rebuild_for_requirement_fans_out_to_covered_profile(): void
@@ -179,7 +180,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
         $this->rebuilder->rebuild(profileIds: new StringCollection($profileId));      // материализуем обе обязанности
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        self::assertCount(2, $pc->getObligations());
+        self::assertCount(2, $this->projectionRepo->findForProfiles(new StringCollection($profileId)));
 
         // Расхождение: убираем требование B из нормы (его проекцию НЕ трогаем).
         $requirements = static::getContainer()->get(RequirementRepositoryInterface::class);
@@ -194,7 +195,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
 
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        $labels = array_map(static fn ($o): string => $o->label(), $pc->getObligations());
+        $labels = array_map(static fn ($o): string => $o->label(), $this->projectionRepo->findForProfiles(new StringCollection($profileId)));
         self::assertContains('Перчатки', $labels);
         self::assertContains('Инструктаж', $labels, 'пересборка требования A не должна трогать обязанности требования B');
     }
@@ -211,7 +212,7 @@ final class ComplianceProjectionRebuilderTest extends KernelTestCase
 
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        $labels = array_map(static fn ($o): string => $o->label(), $pc->getObligations());
+        $labels = array_map(static fn ($o): string => $o->label(), $this->projectionRepo->findForProfiles(new StringCollection($profileId)));
         self::assertSame(['Перчатки'], $labels, 'правка одной нормы без карточки создаёт только её срез — журнал не появляется');
     }
 }

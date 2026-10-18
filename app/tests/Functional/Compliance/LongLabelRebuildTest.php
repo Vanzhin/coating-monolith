@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance;
 
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -29,9 +30,9 @@ final class LongLabelRebuildTest extends KernelTestCase
 
         ['profileId' => $profileId] = $this->enrollCompliance($longLabel); // enroll делает rebuild внутри
 
-        $pc = self::getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
-        self::assertNotNull($pc);
-        $labels = array_map(static fn ($o): string => $o->label(), $pc->getObligations());
+        $rows = self::getContainer()->get(ObligationProjectionRepositoryInterface::class)
+            ->findForProfiles(new StringCollection($profileId));
+        $labels = array_map(static fn ($row): string => $row->label(), $rows);
         self::assertContains($longLabel, $labels, 'длинный label сохранился в проекции, пересборка не упала');
     }
 }

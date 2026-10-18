@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Compliance\Application\UseCase;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Shared\Application\Command\CommandBusInterface;
@@ -65,8 +66,10 @@ final class RenameDoesNotBreakFactLinkTest extends KernelTestCase
         $key = TrackedObligation::keyOf($r, $itemId);
         self::assertSame($k, $key, 'ключ стабилен к переименованию (тот же itemId)');
 
+        $rows = static::getContainer()->get(ObligationProjectionRepositoryInterface::class)
+            ->findForProfiles(new StringCollection($p));
         $obligation = null;
-        foreach ($pc->getObligations() as $candidate) {
+        foreach ($rows as $candidate) {
             if ($candidate->key() === $key) {
                 $obligation = $candidate;
                 break;

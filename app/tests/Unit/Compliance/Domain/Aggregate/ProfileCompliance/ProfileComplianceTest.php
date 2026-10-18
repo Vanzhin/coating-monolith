@@ -8,29 +8,36 @@ use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
+use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
-use App\Compliance\Domain\Service\ComplianceBucketResolver;
-use App\Compliance\Domain\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
-use App\Compliance\Domain\Type\ComplianceStatus;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
+use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Норма (Вариант B) агрегатом не материализуется — она передаётся write-инвариантам (`recordIssuance`/
+ * `assertIssuable`/`writeOffEligibleFactsForRequirement`/`obligationLabelOf`) параметром {@see Requirement}.
+ * requirementId фиксирован на реальный Uuid ({@see self::$reqId}), чтобы ключи обязанностей (`reqId|itemId`)
+ * совпадали с `$requirement->getId()`. Даты/held/active/статус read-модели (бывшие `TrackedObligation`/
+ * `worstStatus`) теперь считает проектор — покрыто `ComplianceObligationProjectorTest`/
+ * `ObligationProjectionRepositoryTest`, здесь не дублируется.
+ */
 final class ProfileComplianceTest extends TestCase
 {
-    private ObligationDueCalculator $calc;
-    private ComplianceBucketResolver $resolver;
     private \DateTimeImmutable $now;
-    private string $reqId = 'req-1';
+    private string $reqId;
     private string $glovesItemId = 'item-gloves';
     private string $fireSafetyItemId = 'item-fire';
     private string $creamItemId = 'item-cream';
@@ -38,23 +45,17 @@ final class ProfileComplianceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->calc = new ObligationDueCalculator();
-        $this->resolver = new ComplianceBucketResolver();
         $this->now = new \DateTimeImmutable('2026-06-01');
+        $this->reqId = (string) Uuid::v4();
     }
 
     /** № карточки по умолчанию уже закреплён — большинству тестов нужна рабочая выдача, не сам инвариант номера. */
-    private function pcWithGloves(float $norm = 10.0, ?string $cardNumber = 'CARD-001'): ProfileCompliance
+    private function pcWithGloves(?string $cardNumber = 'CARD-001'): ProfileCompliance
     {
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
         if (null !== $cardNumber) {
             $pc->assignCardNumber($cardNumber);
         }
-        $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $this->reqId, $this->glovesItemId, 'СИЗ основные', 'Перчатки',
-            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            new Quantity($norm, Unit::Pair), 'dept-1',
-        ));
 
         return $pc;
     }
@@ -64,43 +65,52 @@ final class ProfileComplianceTest extends TestCase
         return TrackedObligation::keyOf($this->reqId, $this->glovesItemId);
     }
 
-    private function pcWithFireSafetyObligation(): ProfileCompliance
+    /** Требование с одной материальной позицией (Перчатки, норма $norm пар, периодичность 1 год). */
+    private function glovesRequirement(float $norm = 10.0): Requirement
     {
-        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
-        $pc->assignCardNumber('CARD-001');
-        $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, 'req-2', $this->fireSafetyItemId, 'Пожарная безопасность', 'Пожарный',
-            ComplianceType::NonMaterial, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            null, 'dept-1',
-        ));
+        return new Requirement(
+            Uuid::fromString($this->reqId), 'СИЗ основные', ComplianceType::Material, new StringCollection(),
+            new MaterialItem($this->glovesItemId, 'Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity($norm, Unit::Pair)),
+        );
+    }
 
-        return $pc;
+    /** То же требование + Крем защитный (расходная ДСИЗ). */
+    private function glovesAndConsumableCreamRequirement(float $glovesNorm = 10.0): Requirement
+    {
+        return new Requirement(
+            Uuid::fromString($this->reqId), 'СИЗ основные', ComplianceType::Material, new StringCollection(),
+            new MaterialItem($this->glovesItemId, 'Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity($glovesNorm, Unit::Pair)),
+            new MaterialItem($this->creamItemId, 'Крем защитный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.7', new Quantity(3.0, Unit::Pair), MaterialMode::Consumable),
+        );
+    }
+
+    /** То же требование + Каска (инвентарная). */
+    private function glovesAndHelmetRequirement(float $glovesNorm = 10.0): Requirement
+    {
+        return new Requirement(
+            Uuid::fromString($this->reqId), 'СИЗ основные', ComplianceType::Material, new StringCollection(),
+            new MaterialItem($this->glovesItemId, 'Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity($glovesNorm, Unit::Pair)),
+            new MaterialItem($this->helmetItemId, 'Каска', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.9', new Quantity(1.0, Unit::Piece)),
+        );
+    }
+
+    private function fireSafetyRequirement(): Requirement
+    {
+        return new Requirement(
+            Uuid::fromString($this->reqId), 'Пожарная безопасность', ComplianceType::NonMaterial, new StringCollection(),
+            new NonMaterialItem($this->fireSafetyItemId, 'Пожарный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.1'),
+        );
     }
 
     private function fireSafetyKey(): string
     {
-        return TrackedObligation::keyOf('req-2', $this->fireSafetyItemId);
+        return TrackedObligation::keyOf($this->reqId, $this->fireSafetyItemId);
     }
 
-    /** Выдать перчатки прямой записью в журнал (журнальная замена «подписанного акта» в тестах списания). */
-    private function issuedGloves(ProfileCompliance $pc, \DateTimeImmutable $at, float $amount = 10.0): void
+    /** Выдать перчатки прямой записью в журнал. */
+    private function issuedGloves(ProfileCompliance $pc, Requirement $requirement, \DateTimeImmutable $at, float $amount = 10.0): void
     {
-        $pc->recordIssuance($this->calc, $this->glovesLine($amount, $at->format('Y-m-d')));
-    }
-
-    /** Перчатки (инвентарь, held>0) + Крем защитный (расходная ДСИЗ, held>0) — обе того же требования. */
-    private function pcWithGlovesAndConsumableCream(): ProfileCompliance
-    {
-        $pc = $this->pcWithGloves(10.0);
-        $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $this->reqId, $this->creamItemId, 'СИЗ основные', 'Крем защитный',
-            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            new Quantity(3.0, Unit::Pair), 'dept-1', TrackedObligation::ORIGIN_NORM, MaterialMode::Consumable,
-        ));
-        $this->issuedGloves($pc, $this->now, 10.0);
-        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
-
-        return $pc;
+        $pc->recordIssuance($requirement, $this->glovesLine($amount, $at->format('Y-m-d')));
     }
 
     private function creamKey(): string
@@ -108,84 +118,41 @@ final class ProfileComplianceTest extends TestCase
         return TrackedObligation::keyOf($this->reqId, $this->creamItemId);
     }
 
-    /** Перчатки + Каска — обе инвентарные (mode=null), того же требования, обе выданы. */
-    private function pcWithGlovesAndHelmet(): ProfileCompliance
-    {
-        $pc = $this->pcWithGloves(10.0);
-        $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $this->reqId, $this->helmetItemId, 'СИЗ основные', 'Каска',
-            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            new Quantity(1.0, Unit::Piece), 'dept-1',
-        ));
-        $this->issuedGloves($pc, $this->now, 10.0);
-        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $this->helmetKey(), $this->now, new Quantity(1.0, Unit::Piece)));
-
-        return $pc;
-    }
-
     private function helmetKey(): string
     {
         return TrackedObligation::keyOf($this->reqId, $this->helmetItemId);
     }
 
-    public function test_fulfillment_recomputes_dates(): void
+    private function glovesLine(float $amount, string $issueDate = '2026-06-01'): IssuanceLine
     {
-        $pc = $this->pcWithGloves();
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc);
-
-        $ob = $pc->getObligations()[0];
-        self::assertSame('2026-01-10', $ob->lastFulfilledAt()?->format('Y-m-d'));
-        self::assertSame('2027-01-10', $ob->nextDueAt()?->format('Y-m-d'));
+        return new IssuanceLine(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable($issueDate), new Quantity($amount, Unit::Pair));
     }
 
-    public function test_fulfilled_far_is_green(): void
-    {
-        $pc = $this->pcWithGloves();
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
-
-        // Запись факта синхронно включила трекинг (active) — отдельная пересборка не нужна.
-        self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, null, $this->now));
-    }
-
-    public function test_removing_last_record_rolls_back_dates_and_status(): void
-    {
-        $pc = $this->pcWithGloves();
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc);
-
-        $recId = $pc->getRecords()[0]->getId();
-        $pc->removeRecord($recId, $this->calc);
-
-        self::assertNull($pc->getObligations()[0]->lastFulfilledAt());
-        self::assertNull($pc->getObligations()[0]->nextDueAt());
-        self::assertFalse($pc->getObligations()[0]->isActive(), 'факта не осталось → трекинг снят синхронно');
-        self::assertSame(ComplianceStatus::Red, $pc->worstStatus($this->resolver, null, $this->now)); // нет выданного факта
-    }
-
-    public function test_type_filter_in_worst_status(): void
-    {
-        $pc = $this->pcWithGloves();
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
-
-        self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, ComplianceType::Material, $this->now));
-        self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, ComplianceType::NonMaterial, $this->now)); // нет нематериальных — худший остаётся Green
-    }
-
-    public function test_exclude_removes_obligation(): void
+    public function test_exclude_adds_key_to_excluded_list(): void
     {
         $pc = $this->pcWithGloves();
         $pc->excludeObligation($this->glovesKey());
 
-        self::assertCount(0, $pc->getObligations());
         self::assertContains($this->glovesKey(), $pc->getExcludedKeys()->getList());
+    }
+
+    public function test_exclude_is_idempotent(): void
+    {
+        $pc = $this->pcWithGloves();
+        $pc->excludeObligation($this->glovesKey());
+        $pc->excludeObligation($this->glovesKey());
+
+        self::assertCount(1, $pc->getExcludedKeys()->getList());
     }
 
     public function test_remove_issuance_record_raises_fulfillment_record_removed_event(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0, '2026-06-01'));
         $recordId = $pc->getRecords()[0]->getId();
 
-        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc);
+        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId));
 
         self::assertSame($this->reqId, $requirementId);
         self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
@@ -200,90 +167,110 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_remove_issuance_record_works_after_obligation_excluded(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // прямая дозапись
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0));
         $recordId = $pc->getRecords()[0]->getId();
 
-        $pc->excludeObligation($this->glovesKey()); // обязанность убрана из проекции, факт остался
+        $pc->excludeObligation($this->glovesKey()); // личное отклонение — запись журнала не трогает
 
-        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId), $this->calc); // не должно бросать
+        $requirementId = $pc->removeIssuanceRecord(Uuid::fromString($recordId)); // не должно бросать
 
-        self::assertSame($this->reqId, $requirementId, 'requirementId резолвится из ключа факта, а не из проекции');
+        self::assertSame($this->reqId, $requirementId, 'requirementId резолвится из ключа факта');
         self::assertNull($pc->recordById($recordId), 'факт журнала удалён');
-    }
-
-    public function test_projection_holds_quantity(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0);
-
-        self::assertSame(2.0, $pc->getObligations()[0]->heldQuantity());
-    }
-
-    public function test_type_of_requirement_returns_mono_type(): void
-    {
-        $pc = $this->pcWithGloves(2.0);
-
-        self::assertSame(ComplianceType::Material, $pc->typeOfRequirement($this->reqId));
-        self::assertNull($pc->typeOfRequirement('нет-такого'));
     }
 
     public function test_add_personal_obligation_is_tracked(): void
     {
-        $pc = $this->pcWithGloves(2.0);
+        $pc = $this->pcWithGloves();
         $itemId = Uuid::v4()->toRfc4122();
-        $key = $pc->addPersonalObligation(Uuid::v4(), $itemId, $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $key = $pc->addPersonalObligation($itemId, $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
 
-        self::assertSame(TrackedObligation::keyOf($this->reqId, $itemId), $key); // ключ = reqId|itemId кандидата
-        $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $key));
+        self::assertSame(TrackedObligation::keyOf($this->reqId, $itemId), $key);
+        $added = array_values(array_filter($pc->personalObligations(), static fn ($o): bool => $o->itemId === $itemId));
         self::assertCount(1, $added);
-        self::assertSame(TrackedObligation::ORIGIN_PERSONAL, $added[0]->origin());
-        self::assertSame(ComplianceType::Material, $added[0]->type()); // тип выведен от нормы акта (перчатки — материальные)
+        self::assertSame('Очки', $added[0]->label);
+        self::assertSame(ComplianceType::Material, $added[0]->type);
     }
 
     public function test_personal_obligation_dedup_by_label_returns_same_key(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $k1 = $pc->addPersonalObligation(Uuid::v4(), Uuid::v4()->toRfc4122(), $this->reqId, 'Фартук', new Cadence(CadenceKind::ByManufacturerDoc), null);
-        $k2 = $pc->addPersonalObligation(Uuid::v4(), Uuid::v4()->toRfc4122(), $this->reqId, 'ФАРТУК', new Cadence(CadenceKind::ByManufacturerDoc), null);
+        $pc = $this->pcWithGloves();
+        $k1 = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Фартук', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), null);
+        $k2 = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'ФАРТУК', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), null);
 
         self::assertSame($k1, $k2, 'повторная персональная с тем же label (регистронезависимо) — та же обязанность');
-        $added = array_values(array_filter($pc->getObligations(), static fn (TrackedObligation $o): bool => $o->key() === $k1));
-        self::assertCount(1, $added, 'кандидаты второго вызова проигнорированы — одна позиция');
+        self::assertCount(1, $pc->personalObligations(), 'кандидаты второго вызова проигнорированы — одна позиция');
     }
 
-    private function glovesLine(float $amount, string $issueDate = '2026-06-01'): IssuanceLine
+    public function test_prune_orphan_personal_obligation_after_record_removed(): void
     {
-        return new IssuanceLine(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable($issueDate), new Quantity($amount, Unit::Pair));
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->recordFulfillment(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece));
+        $recordId = $pc->getRecords()[0]->getId();
+
+        $pc->removeIssuanceRecord(Uuid::fromString($recordId));
+
+        self::assertCount(0, $pc->personalObligations(), 'без единого факта персональная декларация — фантом, прунится');
+    }
+
+    public function test_personal_obligation_survives_while_other_record_remains(): void
+    {
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->recordFulfillment(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece));
+        $pc->recordFulfillment(Uuid::v4(), $key, $this->now->modify('+1 day'), new Quantity(1.0, Unit::Piece));
+        $firstRecordId = $pc->getRecords()[0]->getId();
+
+        $pc->removeIssuanceRecord(Uuid::fromString($firstRecordId));
+
+        self::assertCount(1, $pc->personalObligations(), 'остался ещё один факт по этой же позиции — не фантом');
     }
 
     public function test_issue_below_norm_minus_held_throws(): void
     {
-        $pc = $this->pcWithGloves(2.0);
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
         // ничего на руках (held 0), норма 2 → выдать 1 нельзя
         $this->expectException(AppException::class);
-        $pc->assertIssuable([$this->glovesLine(1.0)]);
+        $pc->assertIssuable($requirement, [$this->glovesLine(1.0)]);
     }
 
     public function test_issue_with_unit_other_than_norm_throws(): void
     {
-        $pc = $this->pcWithGloves(10.0); // норма 10 пар
+        $requirement = $this->glovesRequirement(10.0); // норма 10 пар
+        $pc = $this->pcWithGloves();
         $this->expectException(AppException::class); // «шт.» вместо «пар» — единица обязана совпадать с нормой
-        $pc->assertIssuable([new IssuanceLine(Uuid::v4(), $this->glovesKey(), $this->now, new Quantity(10.0, Unit::Piece))]);
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->glovesKey(), $this->now, new Quantity(10.0, Unit::Piece))]);
+    }
+
+    public function test_assert_issuable_ignores_key_outside_requirement_and_personal(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        // Ключ принадлежит требованию, но не найден ни в норме, ни в персональных — пропускается (не бросает).
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), TrackedObligation::keyOf($this->reqId, 'нет-такой-позиции'), $this->now)]);
+
+        $this->addToAssertionCount(1); // не бросило — это и есть ассерт
+    }
+
+    public function test_assert_issuable_requires_manual_due_date_for_personal_by_manufacturer_doc(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+
+        $this->expectException(AppException::class);
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece))]);
     }
 
     public function test_records_for_requirement_filters_by_key(): void
     {
         $pc = $this->pcWithGloves();
-        $otherReqId = 'req-2';
-        $kaskaItemId = 'item-kaska';
-        $pc->putObligation(new TrackedObligation(
-            Uuid::v4(), $pc, $otherReqId, $kaskaItemId, 'Другое требование', 'Каска',
-            ComplianceType::Material, new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year),
-            new Quantity(1.0, Unit::Piece), 'dept-1',
-        ));
-        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(10.0, Unit::Pair));
-        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, $kaskaItemId), new \DateTimeImmutable('2026-01-10'), $this->calc, new Quantity(1.0, Unit::Piece));
+        $otherReqId = (string) Uuid::v4();
+        $pc->recordFulfillment(Uuid::v4(), $this->glovesKey(), new \DateTimeImmutable('2026-01-10'), new Quantity(10.0, Unit::Pair));
+        $pc->recordFulfillment(Uuid::v4(), TrackedObligation::keyOf($otherReqId, 'item-kaska'), new \DateTimeImmutable('2026-01-10'), new Quantity(1.0, Unit::Piece));
 
         $records = $pc->recordsForRequirement($this->reqId);
 
@@ -293,50 +280,43 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_issue_covers_deficit_ok(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $this->issuedGloves($pc, new \DateTimeImmutable('2026-06-01'), 2.0); // held 2
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, new \DateTimeImmutable('2026-06-01'), 2.0); // held 2
         $recordId = $pc->getRecords()[0]->getId();
         $pc->applyWriteOff([$recordId => 1.0]); // эффект подписанного акта списания — гашение 1 (held 2 → 1)
         // held 1, норма 2 → до-выдать 1 достаточно
-        $pc->assertIssuable([$this->glovesLine(1.0)]); // не бросает
+        $pc->assertIssuable($requirement, [$this->glovesLine(1.0)]); // не бросает
         self::assertSame(1.0, $pc->heldOf($this->glovesKey()));
     }
 
-    public function test_record_issuance_appends_journal_lines_and_recomputes(): void
+    public function test_record_issuance_appends_journal_lines(): void
     {
-        $pc = $this->pcWithGloves(2.0); // норма 2
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+        $requirement = $this->glovesRequirement(2.0); // норма 2
+        $pc = $this->pcWithGloves();
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0));
 
         self::assertSame(2.0, $pc->heldOf($this->glovesKey()), 'прямая дозапись сразу считается выданной');
-        self::assertNotNull($pc->getObligations()[0]->lastFulfilledAt(), 'пересчёт обязанности отработал');
-    }
-
-    public function test_record_issuance_activates_obligation_synchronously(): void
-    {
-        $pc = $this->pcWithGloves(2.0); // норма 2, на руках 0 — без факта трекинг выключен → Red
-        self::assertFalse($pc->getObligations()[0]->isActive());
-        self::assertSame(ComplianceStatus::Red, $pc->worstStatus($this->resolver, null, $this->now));
-
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
-
-        // Запись факта синхронно включает трекинг и наполняет норму — без отдельной пересборки проекции.
-        self::assertTrue($pc->getObligations()[0]->isActive(), 'active включился сразу при записи факта');
-        self::assertSame(ComplianceStatus::Green, $pc->worstStatus($this->resolver, null, $this->now), 'светофор зелёный без rebuild');
     }
 
     public function test_record_issuance_below_norm_throws(): void
     {
-        $pc = $this->pcWithGloves(2.0); // норма 2, на руках 0
+        $requirement = $this->glovesRequirement(2.0); // норма 2, на руках 0
+        $pc = $this->pcWithGloves();
         $this->expectException(AppException::class);
-        $pc->recordIssuance($this->calc, $this->glovesLine(1.0)); // 1 < нормы
+        $pc->recordIssuance($requirement, $this->glovesLine(1.0)); // 1 < нормы
     }
 
     public function test_record_instruction_requires_complete_fields(): void
     {
-        $pc = $this->pcWithFireSafetyObligation();
+        $requirement = $this->fireSafetyRequirement();
+        $requirement->setJournalKind(JournalKind::FireSafety);
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+
         $this->expectException(AppException::class);
         $pc->recordInstruction(
-            $this->calc, JournalKind::FireSafety,
+            $requirement,
             new IssuanceLine(Uuid::v4(), $this->fireSafetyKey(), new \DateTimeImmutable('2026-01-10'), instructionDetails: InstructionDetails::fromArray([])),
         );
     }
@@ -349,22 +329,24 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_has_issued_fact_for_direct_issuance_is_true(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0));
 
         self::assertTrue($pc->hasIssuedFactFor($this->glovesKey()), 'прямая дозапись — выданный факт');
     }
 
     public function test_record_issuance_without_card_number_throws(): void
     {
-        $pc = $this->pcWithGloves(2.0, cardNumber: null); // № карточки не закреплён
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves(cardNumber: null); // № карточки не закреплён
         $this->expectException(AppException::class);
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0)); // количество само по себе достаточно
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0)); // количество само по себе достаточно
     }
 
     public function test_assign_card_number_is_set_once(): void
     {
-        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $pc = $this->pcWithGloves(cardNumber: null);
         $pc->assignCardNumber('CARD-100');
         $pc->assignCardNumber('CARD-200'); // повторная попытка сменить — no-op, номер уже закреплён
 
@@ -373,7 +355,7 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_assign_card_number_ignores_blank_value(): void
     {
-        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $pc = $this->pcWithGloves(cardNumber: null);
         $pc->assignCardNumber('   '); // пусто после trim — номером не считается
 
         self::assertNull($pc->cardNumber());
@@ -381,10 +363,11 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_record_issuance_succeeds_after_card_number_assigned(): void
     {
-        $pc = $this->pcWithGloves(2.0, cardNumber: null);
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves(cardNumber: null);
         $pc->assignCardNumber('CARD-1');
 
-        $pc->recordIssuance($this->calc, $this->glovesLine(2.0));
+        $pc->recordIssuance($requirement, $this->glovesLine(2.0));
 
         self::assertSame('CARD-1', $pc->cardNumber());
         self::assertSame(2.0, $pc->heldOf($this->glovesKey()));
@@ -392,8 +375,9 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_apply_write_off_quenches_held_quantity_of_own_record(): void
     {
-        $pc = $this->pcWithGloves(10.0);
-        $this->issuedGloves($pc, $this->now, 10.0);
+        $requirement = $this->glovesRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
         $recordId = $pc->getRecords()[0]->getId();
 
         $pc->applyWriteOff([$recordId => 4.0]);
@@ -403,10 +387,11 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_apply_write_off_handles_several_records_by_id(): void
     {
-        $pc = $this->pcWithGloves(10.0);
-        $this->issuedGloves($pc, $this->now, 10.0); // первый факт, held 10
+        $requirement = $this->glovesRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0); // первый факт, held 10
         $firstRecordId = $pc->getRecords()[0]->getId();
-        $pc->recordIssuance($this->calc, $this->glovesLine(5.0, '2026-07-01')); // второй факт, held 5
+        $pc->recordIssuance($requirement, $this->glovesLine(5.0, '2026-07-01')); // второй факт, held 5
         $secondRecordId = $pc->getRecords()[1]->getId();
 
         $pc->applyWriteOff([$firstRecordId => 10.0, $secondRecordId => 2.0]);
@@ -417,8 +402,9 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_apply_write_off_ignores_unknown_record_id(): void
     {
-        $pc = $this->pcWithGloves(10.0);
-        $this->issuedGloves($pc, $this->now, 10.0);
+        $requirement = $this->glovesRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
 
         $pc->applyWriteOff(['нет-такой-записи' => 5.0]); // не должно бросать — акт кросс-персон, не вся строка «своя»
 
@@ -427,10 +413,11 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_write_off_eligible_facts_includes_inventory_held_position(): void
     {
-        $pc = $this->pcWithGloves(10.0);
-        $this->issuedGloves($pc, $this->now, 10.0);
+        $requirement = $this->glovesRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
         self::assertCount(1, $eligible);
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
@@ -438,9 +425,12 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_write_off_eligible_facts_excludes_consumable_position_when_selecting_all(): void
     {
-        $pc = $this->pcWithGlovesAndConsumableCream();
+        $requirement = $this->glovesAndConsumableCreamRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
         self::assertCount(1, $eligible, '«Списать всё» не берёт расходную (ДСИЗ) позицию');
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
@@ -448,9 +438,12 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_write_off_eligible_facts_ignores_explicit_consumable_key(): void
     {
-        $pc = $this->pcWithGlovesAndConsumableCream();
+        $requirement = $this->glovesAndConsumableCreamRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, [$this->glovesKey(), $this->creamKey()]);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, [$this->glovesKey(), $this->creamKey()]);
 
         self::assertCount(1, $eligible, 'явный выбор расходной позиции всё равно отфильтрован — бэк источник истины');
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
@@ -458,19 +451,23 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_write_off_eligible_facts_excludes_non_material_fact(): void
     {
-        $pc = $this->pcWithFireSafetyObligation();
-        $pc->recordFulfillment(Uuid::v4(), $this->fireSafetyKey(), $this->now, $this->calc); // нематериальный факт, quantity нет
+        $requirement = $this->fireSafetyRequirement();
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->recordFulfillment(Uuid::v4(), $this->fireSafetyKey(), $this->now); // нематериальный факт, quantity нет
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement('req-2', null);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
         self::assertSame([], $eligible, 'нематериальный факт отсекается own held=0, списанию не подлежит');
     }
 
     public function test_write_off_eligible_facts_filters_by_explicit_keys(): void
     {
-        $pc = $this->pcWithGlovesAndHelmet();
+        $requirement = $this->glovesAndHelmetRequirement(10.0);
+        $pc = $this->pcWithGloves();
+        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->helmetKey(), $this->now, new Quantity(1.0, Unit::Piece)));
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, [$this->glovesKey()]);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, [$this->glovesKey()]);
 
         self::assertCount(1, $eligible, 'явный выбор ограничивает до запрошенного ключа — вторая held-позиция (каска) не попала');
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
@@ -478,14 +475,40 @@ final class ProfileComplianceTest extends TestCase
 
     public function test_write_off_eligible_facts_includes_personal_obligation_with_null_mode(): void
     {
-        $pc = $this->pcWithGloves(2.0);
-        $itemId = Uuid::v4()->toRfc4122();
-        $key = $pc->addPersonalObligation(Uuid::v4(), $itemId, $this->reqId, 'Очки', new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
-        $pc->recordIssuance($this->calc, new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece), manualDueDate: new \DateTimeImmutable('2027-06-01')));
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece), manualDueDate: new \DateTimeImmutable('2027-06-01')));
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($this->reqId, null);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
         $keys = array_map(static fn (FulfillmentRecord $f): string => $f->obligationKey(), $eligible);
         self::assertContains($key, $keys, 'персональная позиция без режима (mode=null) трактуется как инвентарь');
+    }
+
+    public function test_obligation_label_of_resolves_norm_item_label(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+
+        self::assertSame('Перчатки', $pc->obligationLabelOf($requirement, $this->glovesKey()));
+    }
+
+    public function test_obligation_label_of_resolves_personal_label(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Очки', ComplianceType::Material, new Cadence(CadenceKind::ByManufacturerDoc), null);
+
+        self::assertSame('Очки', $pc->obligationLabelOf($requirement, $key));
+    }
+
+    public function test_obligation_label_of_falls_back_to_key_when_unresolved(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $unknownKey = TrackedObligation::keyOf($this->reqId, 'нет-такой-позиции');
+
+        self::assertSame($unknownKey, $pc->obligationLabelOf($requirement, $unknownKey));
     }
 }

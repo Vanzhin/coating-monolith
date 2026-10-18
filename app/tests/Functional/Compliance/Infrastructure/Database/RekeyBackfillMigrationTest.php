@@ -37,18 +37,16 @@ final class RekeyBackfillMigrationTest extends KernelTestCase
 
     public function test_norm_fact_and_obligation_rekeyed_to_item_id(): void
     {
-        [$reqId, $itemId, , $pcId, $recordId] = $this->seedLabelKeyed('Перчатки');
+        [$reqId, $itemId, , , $recordId] = $this->seedLabelKeyed('Перчатки');
 
         $this->runMigration();
 
         $factKey = $this->conn->fetchOne('SELECT obligation_key FROM compliance_fulfillment_record WHERE id = ?', [$recordId]);
         self::assertSame($reqId.'|'.$itemId, $factKey, 'факт переключён на itemId');
 
-        $obItemId = $this->conn->fetchOne(
-            'SELECT item_id FROM compliance_tracked_obligation WHERE profile_compliance_id = ? AND requirement_id = ?',
-            [$pcId, $reqId],
-        );
-        self::assertSame($itemId, $obItemId, 'проекции проставлен item_id');
+        // Ассерт item_id на compliance_tracked_obligation снят: Вариант B снял материализацию обязанностей с
+        // агрегата (норма только в Requirement) — issueCard больше не создаёт строку этой таблицы, а в Task 7
+        // она дропается. Актуальная половина rekey — переключение ключа ФАКТА (выше) — остаётся под контролем.
     }
 
     public function test_orphan_fact_label_not_in_norm_is_left_untouched(): void
