@@ -35,7 +35,7 @@ trait EnrollsComplianceTrait
      * @param list<array<string, mixed>> $extraItems Доп. позиции той же нормы (без $itemLabel в возврате —
      *                                               их ключ детерминирован, {@see TrackedObligation::keyOf}).
      *
-     * @return array{profileId: string, requirementId: string, key: string}
+     * @return array{profileId: string, requirementId: string, key: string, organizationId: string}
      */
     private function enrollCompliance(string $itemLabel = 'Перчатки', ?string $userUlid = null, array $extraItems = []): array
     {
@@ -67,7 +67,12 @@ trait EnrollsComplianceTrait
 
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
 
-        return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
+        return [
+            'profileId' => $profile->id,
+            'requirementId' => $req->id,
+            'key' => $this->obligationKeyFor($req->id, $itemLabel),
+            'organizationId' => $org->id,
+        ];
     }
 
     /**

@@ -1,0 +1,88 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Акты списания{% endblock %}
+
+{% block content %}
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Акты списания',
+        create_route: null,
+        can_edit: false,
+        is_empty: result.items is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_compliance_writeoff_list') }}" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Организация</label>
+                    <input type="text" class="form-control"
+                           data-controller="typeahead"
+                           data-typeahead-endpoint-value="{{ path('app_cabinet_reports_counterparty_suggest') }}"
+                           data-typeahead-allow-create-value="false"
+                           data-typeahead-hidden-name-value="organizationId"
+                           data-typeahead-min-length-value="1"
+                           {% if organizationId %}data-typeahead-existing-value="{{ {id: organizationId, title: organizationTitle|default('')}|json_encode|e('html_attr') }}"{% endif %}
+                           placeholder="Поиск организации…">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Требование</label>
+                    <select name="requirementId" class="form-select">
+                        <option value="">Все</option>
+                        {% for requirement in requirements %}
+                            <option value="{{ requirement.id }}" {{ requirementId == requirement.id ? 'selected' : '' }}>{{ requirement.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Статус</label>
+                    <select name="status" class="form-select">
+                        <option value="">Все</option>
+                        {% for s in statuses %}
+                            <option value="{{ s.value }}" {{ status == s.value ? 'selected' : '' }}>{{ s.title() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">№ акта</label>
+                    <input type="text" name="actNumber" value="{{ actNumber }}" class="form-control" placeholder="39">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Показать</button>
+                    <a href="{{ path('app_cabinet_compliance_writeoff_list') }}" class="btn btn-outline-secondary" title="Сбросить фильтр"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="ecard-grid ecard-grid--uniform">
+                {% for item in result.items %}
+                    {% set showPath = path('app_cabinet_compliance_writeoff_show', {actId: item.id}) %}
+                    {% set isSigned = item.status.value == 'signed' %}
+                    <div class="ecard">
+                        <a class="ecard-media text-decoration-none" href="{{ showPath }}" aria-label="Открыть акт списания">
+                            <i class="bi {{ isSigned ? 'bi-lock-fill' : 'bi-file-earmark-text' }}"></i>
+                        </a>
+                        <div class="ecard-body">
+                            <div class="ecard-head">
+                                <a class="ecard-title text-decoration-none text-body" href="{{ showPath }}">
+                                    {{ item.actNumber ? '№ ' ~ item.actNumber : 'Без номера' }}
+                                </a>
+                                <span class="badge {{ isSigned ? 'text-bg-success' : 'text-bg-secondary' }}">{{ item.status.title() }}</span>
+                            </div>
+                            <div class="ecard-desc">
+                                {{ item.requirementName }} · {{ item.organizationTitle }}
+                            </div>
+                            <div class="ecard-meta">
+                                <span>Людей: {{ item.profileCount }}</span>
+                                <span>Позиций: {{ item.lineCount }}</span>
+                                {% if item.actDate %}<span>{{ item.actDate|date('d.m.Y') }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block below_list %}
+            {% include 'components/pager.html.twig' with {'pager': result.pager} %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

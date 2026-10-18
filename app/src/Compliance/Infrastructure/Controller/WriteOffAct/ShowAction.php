@@ -6,29 +6,34 @@ namespace App\Compliance\Infrastructure\Controller\WriteOffAct;
 
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
-use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
-use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
+use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
+use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\WriteOffReason;
 use App\Compliance\Infrastructure\Controller\AmountFormatter;
+use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\ValueObject\CommissionMember;
 use App\Shared\Infrastructure\Exception\AppException;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Страница акта списания: позиции выглядят как в акте выдачи (наименование + на руках), у каждой — количество
- * к списанию и причина. POST: «Сохранить» (op=save — состав акта) или «Оформить» (op=sign — состав + комиссия +
- * №/дата + скан → заморозка и эффект: гашение количества + пересчёт + дефицит-черновик). Права — в хендлерах.
+ * Страница акта списания (самостоятельный кросс-персон агрегат {@see WriteOffAct} — резолвим по его id, без
+ * profileId в адресе). Позиции — строки акта, сгруппированные по людям: у каждой наименование + на руках у
+ * владельца, количество к списанию и причина. POST: «Сохранить» (op=save — состав+реквизиты) или «Оформить»
+ * (op=sign — + комиссия/скан → заморозка и эффект: гашение количества у всех затронутых людей). Права — в хендлерах.
  */
 #[Route(
-    path: '/cabinet/compliance/person/{profileId}/writeoff/{actId}',
+    path: '/cabinet/compliance/writeoff/{actId}',
     name: 'app_cabinet_compliance_writeoff_show',
     methods: ['GET', 'POST'],
 )]
@@ -37,11 +42,12 @@ final class ShowAction extends AbstractController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly CommandBusInterface $commandBus,
+        private readonly WriteOffActRepositoryInterface $writeOffActRepository,
         private readonly ProfileComplianceRepositoryInterface $repository,
     ) {
     }
 
-    public function __invoke(Request $request, string $profileId, string $actId): Response
+    public function __invoke(Request $request, string $actId): Response
     {
         if ($request->isMethod('POST')) {
             /** @var array<string, mixed> $input */
@@ -58,16 +64,15 @@ final class ShowAction extends AbstractController
             try {
                 // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (№/дата/приказ/представитель/комиссия) на черновик.
                 $this->commandBus->execute(new SaveWriteOffActCommand(
-                    $profileId, $actId, $lines, $actNumber, $actDate, $commissionRows,
+                    $actId, $lines, $actNumber, $actDate, $commissionRows,
                     $orderNumber, $orderDate, $representativePosition, $representativeFio,
                 ));
                 if ('save' === ($input['op'] ?? 'sign')) {
                     $this->addFlash('success', 'Черновик акта списания сохранён.');
 
-                    return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['profileId' => $profileId, 'actId' => $actId]);
+                    return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['actId' => $actId]);
                 }
                 $this->commandBus->execute(new SignWriteOffActCommand(
-                    $profileId,
                     $actId,
                     $commissionRows,
                     $actNumber,
@@ -76,71 +81,55 @@ final class ShowAction extends AbstractController
                 ));
                 $this->addFlash('success', 'Акт списания оформлен. Позиции списаны.');
 
-                return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['profileId' => $profileId, 'actId' => $actId]);
+                return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['actId' => $actId]);
+            } catch (OptimisticLockException) {
+                // Акт правили параллельно (двойной клик / другое окно): версия агрегата разошлась. Данные целы
+                // (дублей/второго черновика нет) — просим обновить и повторить вместо 500.
+                return $this->renderPage($actId, 'Акт списания только что изменился в другом окне. Обновите страницу и повторите.', $commissionRows);
             } catch (AppException $e) {
-                return $this->renderPage($profileId, $actId, $e->getMessage(), $commissionRows);
+                return $this->renderPage($actId, $e->getMessage(), $commissionRows);
             }
         }
 
-        return $this->renderPage($profileId, $actId, null);
+        return $this->renderPage($actId, null);
     }
 
     /** @param list<array<string, mixed>>|null $postedCommission Строки комиссии из POST — вернуть в форму при ошибке оформления. */
-    private function renderPage(string $profileId, string $actId, ?string $error, ?array $postedCommission = null): Response
+    private function renderPage(string $actId, ?string $error, ?array $postedCommission = null): Response
     {
-        /** @var GetProfileQueryResult $profileResult */
-        $profileResult = $this->queryBus->execute(new GetProfileQuery($profileId));
-        if (null === $profileResult->profile) {
-            throw $this->createNotFoundException('Профиль не найден.');
-        }
-        $profileCompliance = $this->repository->findByProfile($profileId)
-            ?? throw $this->createNotFoundException('Учёт по сотруднику не создан.');
+        $act = $this->writeOffActRepository->findById($actId)
+            ?? throw $this->createNotFoundException('Акт списания не найден.');
 
-        $act = null;
-        foreach ($profileCompliance->getWriteOffActs() as $candidate) {
-            if ($candidate->getId() === $actId) {
-                $act = $candidate;
-                break;
+        // Акт кросс-персон: грузим профиль и учёт каждого затронутого человека один раз (наименование/единица/
+        // на руках/дата берутся с его факта-выдачи).
+        $profiles = [];
+        $owners = [];
+        foreach ($act->profileIds() as $profileId) {
+            /** @var GetProfileQueryResult $profileResult */
+            $profileResult = $this->queryBus->execute(new GetProfileQuery($profileId));
+            if (null !== $profileResult->profile) {
+                $profiles[$profileId] = $profileResult->profile;
+            }
+            $owner = $this->repository->findByProfile($profileId);
+            if (null !== $owner) {
+                $owners[$profileId] = $owner;
             }
         }
-        if (null === $act) {
-            throw $this->createNotFoundException('Акт списания не найден.');
-        }
 
-        // Периодичность по позициям — из проекции (тот же источник, что у акта выдачи), для единой меты.
-        $cadenceByKey = [];
-        /** @var GetProfileComplianceQueryResult $complianceResult */
-        $complianceResult = $this->queryBus->execute(new GetProfileComplianceQuery($profileId));
-        foreach (null !== $complianceResult->compliance ? $complianceResult->compliance->obligations : [] as $o) {
-            $cadenceByKey[$o->key] = $o->cadenceLabel;
-        }
-
-        // Уже выбранное в акте: recordId → {количество, причина}.
-        $chosen = [];
-        foreach ($profileCompliance->itemsOfWriteOffAct($actId) as $portion) {
-            $chosen[$portion->recordId()] = ['quantity' => $portion->quantity(), 'reason' => $portion->reason()?->value];
-        }
+        $backProfileId = $act->profileIds()[0] ?? null;
 
         if ($act->isDraft()) {
-            // Позиции как в акте выдачи: действующие материальные факты требования + поля «Списать N» и причина.
-            $positions = [];
-            foreach ($profileCompliance->recordsForRequirement($act->requirementId()) as $record) {
-                if (null === $record->quantity() || $record->heldAmount() <= 0.0) {
-                    continue;
+            // Позиции сгруппированы по людям (секция на человека), сквозной индекс строки держит portions[] плоским.
+            $personGroups = [];
+            $index = 0;
+            foreach ($act->linesByProfile() as $profileId => $lines) {
+                $positions = [];
+                foreach ($lines as $line) {
+                    $position = $this->draftPosition($line, $owners);
+                    $position['index'] = $index++;
+                    $positions[] = $position;
                 }
-                $pick = $chosen[$record->getId()] ?? null;
-                $cadence = $cadenceByKey[$record->obligationKey()] ?? '';
-                $heldStr = AmountFormatter::trimmed($record->heldAmount());
-                $unit = $record->quantity()->unit->title();
-                $positions[] = [
-                    'recordId' => $record->getId(),
-                    'label' => $profileCompliance->obligationLabelOf($record->obligationKey()),
-                    'meta' => trim(($cadence ? $cadence.' · ' : '').'на руках '.$heldStr.' '.$unit.' · выдано '.$record->fulfilledAt()->format('d.m.Y')),
-                    'held' => $heldStr,
-                    'unit' => $unit,
-                    'quantity' => null !== $pick ? AmountFormatter::trimmed($pick['quantity']) : '',
-                    'reason' => $pick['reason'] ?? null,
-                ];
+                $personGroups[] = $this->personGroup($profileId, $profiles, $positions);
             }
 
             // Комиссия на reload — из сохранённого черновика (при ошибке — из POST, чтобы не терять ввод).
@@ -151,12 +140,12 @@ final class ShowAction extends AbstractController
             ) : []);
 
             return $this->render('admin/compliance/writeoff/act.html.twig', [
-                'profileId' => $profileId,
                 'actId' => $actId,
                 'requirementId' => $act->requirementId(),
-                'profile' => $profileResult->profile,
+                'backProfileId' => $backProfileId,
                 'draft' => true,
-                'positions' => $positions,
+                'personGroups' => $personGroups,
+                'hasPositions' => $index > 0,
                 'actNumber' => $act->actNumber(),
                 'actDate' => $act->actDate()?->format('Y-m-d') ?: date('Y-m-d'),
                 'orderNumber' => $act->orderNumber(),
@@ -169,17 +158,14 @@ final class ShowAction extends AbstractController
             ]);
         }
 
-        // Оформленный акт — только просмотр: что списано + комиссия + скан.
-        $signedItems = [];
-        foreach ($profileCompliance->itemsOfWriteOffAct($actId) as $portion) {
-            $fact = $profileCompliance->recordById($portion->recordId());
-            $cadence = null !== $fact ? ($cadenceByKey[$fact->obligationKey()] ?? '') : '';
-            $signedItems[] = [
-                'label' => null !== $fact ? $profileCompliance->obligationLabelOf($fact->obligationKey()) : '',
-                'meta' => trim(($cadence ? $cadence.' · ' : '').'выдано '.($fact?->fulfilledAt()->format('d.m.Y') ?? '')),
-                'quantityLabel' => AmountFormatter::trimmed($portion->quantity()).' '.($fact?->quantity()?->unit->title() ?? ''),
-                'reason' => $portion->reason()?->title(),
-            ];
+        // Оформленный акт — только просмотр: что списано + комиссия + скан, тоже группами по людям.
+        $signedGroups = [];
+        foreach ($act->linesByProfile() as $profileId => $lines) {
+            $items = [];
+            foreach ($lines as $line) {
+                $items[] = $this->signedItem($line, $owners);
+            }
+            $signedGroups[] = $this->personGroup($profileId, $profiles, $items);
         }
         $commission = $act->commission();
         $commissionMembers = null !== $commission ? array_map(
@@ -193,16 +179,86 @@ final class ShowAction extends AbstractController
         ) : [];
 
         return $this->render('admin/compliance/writeoff/act.html.twig', [
-            'profileId' => $profileId,
             'actId' => $actId,
             'requirementId' => $act->requirementId(),
-            'profile' => $profileResult->profile,
+            'backProfileId' => $backProfileId,
             'draft' => false,
-            'signedItems' => $signedItems,
+            'signedGroups' => $signedGroups,
             'actNumber' => $act->actNumber(),
             'actDate' => $act->actDate()?->format('d.m.Y'),
             'commissionMembers' => $commissionMembers,
             'error' => $error,
         ]);
+    }
+
+    /**
+     * Шапка секции-человека: ФИО + должность + число позиций. Строки позиций уже посчитаны вызывающим.
+     *
+     * @param array<string, ProfileDTO>  $profiles
+     * @param list<array<string, mixed>> $positions
+     *
+     * @return array<string, mixed>
+     */
+    private function personGroup(string $profileId, array $profiles, array $positions): array
+    {
+        $profile = $profiles[$profileId] ?? null;
+
+        return [
+            'fio' => null !== $profile ? $this->fio($profile) : '',
+            'position' => null !== $profile ? $profile->positionTitle : '',
+            'count' => \count($positions),
+            'positions' => $positions,
+        ];
+    }
+
+    /**
+     * Строка позиции черновика. ФИО владельца — в шапке секции, поэтому в meta его нет: только «на руках» и дата.
+     *
+     * @param array<string, ProfileCompliance> $owners
+     *
+     * @return array<string, mixed>
+     */
+    private function draftPosition(WriteOffActLine $line, array $owners): array
+    {
+        $fact = ($owners[$line->profileId()] ?? null)?->recordById($line->recordId());
+        $held = $fact?->heldAmount() ?? $line->quantity();
+        $unit = $fact?->quantity()?->unit->title() ?? '';
+        $heldStr = AmountFormatter::trimmed($held);
+        $issued = null !== $fact ? ' · выдано '.$fact->fulfilledAt()->format('d.m.Y') : '';
+
+        return [
+            'recordId' => $line->recordId(),
+            'label' => $line->labelSnapshot(),
+            'meta' => trim('на руках '.$heldStr.' '.$unit.$issued),
+            'held' => $heldStr,
+            'unit' => $unit,
+            'quantity' => AmountFormatter::trimmed($line->quantity()),
+            'reason' => $line->reason()?->value,
+        ];
+    }
+
+    /**
+     * Строка списанной позиции (просмотр). ФИО владельца — в шапке секции, в meta только дата выдачи.
+     *
+     * @param array<string, ProfileCompliance> $owners
+     *
+     * @return array<string, mixed>
+     */
+    private function signedItem(WriteOffActLine $line, array $owners): array
+    {
+        $fact = ($owners[$line->profileId()] ?? null)?->recordById($line->recordId());
+        $unit = $fact?->quantity()?->unit->title() ?? '';
+
+        return [
+            'label' => $line->labelSnapshot(),
+            'meta' => null !== $fact ? 'выдано '.$fact->fulfilledAt()->format('d.m.Y') : '',
+            'quantityLabel' => AmountFormatter::trimmed($line->quantity()).('' !== $unit ? ' '.$unit : ''),
+            'reason' => $line->reason()?->title(),
+        ];
+    }
+
+    private function fio(ProfileDTO $profile): string
+    {
+        return trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
     }
 }

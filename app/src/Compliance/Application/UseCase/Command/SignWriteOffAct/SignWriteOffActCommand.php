@@ -11,7 +11,6 @@ readonly class SignWriteOffActCommand extends Command
 {
     /** @param list<array<string, mixed>> $members Строки комиссии: organization/position/name(fio)/date. */
     public function __construct(
-        public string $profileId,
         public string $writeOffActId,
         public array $members,
         public string $actNumber,

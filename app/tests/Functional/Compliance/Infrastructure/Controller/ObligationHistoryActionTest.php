@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
-use App\Compliance\Application\UseCase\Command\StartWriteOffAct\StartWriteOffActCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
+use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -61,22 +65,30 @@ final class ObligationHistoryActionTest extends WebTestCase
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
 
-        $bus = static::getContainer()->get(CommandBusInterface::class);
-        $bus->execute(new StartWriteOffActCommand($p, $r));
-        static::getContainer()->get(EntityManagerInterface::class)->clear();
-        $pc = static::getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        $c = $this->client->getContainer();
+        $bus = $c->get(CommandBusInterface::class);
+        $em = $c->get(EntityManagerInterface::class);
+
+        // Корзину наполняем с карточки выдачи (кросс-персон агрегат), затем сохраняем состав и оформляем акт.
+        $bus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $em->clear();
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $c->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $c->get(WriteOffActRepositoryInterface::class)->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+        $actId = $act->getId();
+        $pc = $c->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
         self::assertNotNull($pc);
-        $actId = $pc->openWriteOffDraftFor($r)?->getId();
-        self::assertNotNull($actId);
         $recordId = $pc->getRecords()[0]->getId();
 
         $bus->execute(new SaveWriteOffActCommand(
-            $p, $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
+            $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
         ));
         $bus->execute(new SignWriteOffActCommand(
-            $p, $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
         ));
-        static::getContainer()->get(EntityManagerInterface::class)->clear();
+        $em->clear();
 
         $this->client->request('GET', $this->historyUrl($p, $r, $k));
 

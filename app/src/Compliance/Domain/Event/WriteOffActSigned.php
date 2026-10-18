@@ -7,14 +7,17 @@ namespace App\Compliance\Domain\Event;
 use App\Shared\Domain\Event\EventInterface;
 
 /**
- * Акт списания оформлен (подписан) — количество на фактах уже погашено синхронно, а производное (пересчёт
- * проекции учёта этого человека по требованию + черновик выдачи на дефицит) делаем в воркере, идемпотентно.
+ * Акт списания оформлен (подписан) — количество на фактах уже погашено синхронно, fan-out, у ВСЕХ людей акта
+ * ({@see \App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct} кросс-персон: одно требование, несколько
+ * профилей). Производное (пересчёт проекции каждого затронутого человека по этому требованию) — в воркере,
+ * идемпотентно.
  */
 final readonly class WriteOffActSigned implements EventInterface
 {
+    /** @param list<string> $profileIds Все профили, затронутые актом ({@see WriteOffAct::profileIds}). */
     public function __construct(
-        public string $profileId,
         public string $requirementId,
+        public array $profileIds,
     ) {
     }
 }
