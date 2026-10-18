@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -38,14 +40,15 @@ final class RecomputeProfileControllerTest extends WebTestCase
 
         ['profileId' => $profileId] = $this->enrollCompliance();
 
-        // Рассинхрон: убираем все обязанности из проекции напрямую — recompute должен их восстановить из нормы.
+        // Рассинхрон: убираем все строки проекции напрямую — recompute должен их восстановить из живой нормы.
         $repo = $c->get(ProfileComplianceRepositoryInterface::class);
+        $projectionRepo = $c->get(ObligationProjectionRepositoryInterface::class);
         $pc = $repo->findByProfile($profileId);
         self::assertNotNull($pc);
-        self::assertNotEmpty($pc->getObligations());
+        self::assertNotEmpty($projectionRepo->findForProfiles(new StringCollection($profileId)));
         $em->getConnection()->executeStatement(
-            'DELETE FROM compliance_tracked_obligation WHERE profile_compliance_id = :id',
-            ['id' => $pc->getId()]
+            'DELETE FROM compliance_obligation_projection WHERE profile_id = :id',
+            ['id' => $profileId]
         );
         $em->clear();
 
@@ -53,8 +56,6 @@ final class RecomputeProfileControllerTest extends WebTestCase
         self::assertResponseRedirects();
 
         $em->clear();
-        $pcAfter = $repo->findByProfile($profileId);
-        self::assertNotNull($pcAfter);
-        self::assertNotEmpty($pcAfter->getObligations(), 'проекция восстановлена пересчётом');
+        self::assertNotEmpty($projectionRepo->findForProfiles(new StringCollection($profileId)), 'проекция восстановлена пересчётом');
     }
 }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Compliance\Domain\Service;
+namespace App\Tests\Unit\Compliance\Application\Service;
 
-use App\Compliance\Domain\Service\ObligationDueCalculator;
+use App\Compliance\Application\Service\ObligationDueCalculator;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;

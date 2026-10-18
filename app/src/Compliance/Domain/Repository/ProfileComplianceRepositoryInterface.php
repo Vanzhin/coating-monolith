@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Repository;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
-use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 interface ProfileComplianceRepositoryInterface
 {
@@ -15,28 +13,12 @@ interface ProfileComplianceRepositoryInterface
     public function findByProfile(string $profileId): ?ProfileCompliance;
 
     /**
-     * Учёты с обязанностями для дашборда (fetch-join obligations+documents). Сужение по profileId
-     * ($restrictProfileIds=null — без сужения; пустой — ничего) и по денорм-отделу. Бакеты/сорт/пагинация —
-     * в PHP-хендлере (масштаб — сотрудники).
-     *
-     * @return list<ProfileCompliance>
-     */
-    public function findForDashboard(?StringCollection $restrictProfileIds, StringCollection $departmentIds): array;
-
-    /**
-     * profileId всех заведённых учётов — для служебной пересборки проекции.
+     * profileId всех заведённых учётов — для служебной пересборки проекции И для read-путей дашборда,
+     * которым нужен полный universe профилей с учётом без обхода агрегата (дашборд передаёт id-шки в
+     * {@see ObligationProjectionRepositoryInterface::findForProfiles()}
+     * за самими обязанностями — этот метод отдаёт только identity, не грузит обязанности).
      *
      * @return list<string>
      */
     public function findAllProfileIds(): array;
-
-    /**
-     * Активные обязанности с датой следующего срока не позже $threshold — прямое чтение проекции
-     * `compliance_tracked_obligation` (минуя загрузку всех агрегатов) для прохода уведомлений due-soon.
-     * `profileCompliance` (profileId) addSelect'ится в том же запросе — readonly-id + to-one на агрегат иначе
-     * падает LAZY-прокси.
-     *
-     * @return list<TrackedObligation>
-     */
-    public function findDueSoonObligations(\DateTimeImmutable $threshold): array;
 }

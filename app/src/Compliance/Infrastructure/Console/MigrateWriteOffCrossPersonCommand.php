@@ -7,6 +7,7 @@ namespace App\Compliance\Infrastructure\Console;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\DocumentStatus;
 use App\Compliance\Domain\Type\WriteOffReason;
@@ -51,6 +52,7 @@ final class MigrateWriteOffCrossPersonCommand extends Command
         private readonly QueryBusInterface $queryBus,
         private readonly ProfileComplianceRepositoryInterface $profileComplianceRepository,
         private readonly WriteOffActRepositoryInterface $writeOffActRepository,
+        private readonly RequirementRepositoryInterface $requirements,
     ) {
         parent::__construct();
     }
@@ -222,6 +224,7 @@ final class MigrateWriteOffCrossPersonCommand extends Command
 
         $createdAt = new \DateTimeImmutable($primary['createdAt']);
         $act = new WriteOffAct(Uuid::fromString($targetId), $primary['requirementId'], $primary['organizationId'], $createdAt);
+        $requirement = $this->requirements->findOneById($primary['requirementId']); // для человекочитаемого label строки
 
         /** @var array<string, list<array{recordId: string, labelSnapshot: string, quantity: float}>> $linesByProfile */
         $linesByProfile = [];
@@ -241,7 +244,9 @@ final class MigrateWriteOffCrossPersonCommand extends Command
                 }
                 $linesByProfile[$profileId][] = [
                     'recordId' => $item['recordId'],
-                    'labelSnapshot' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
+                    'labelSnapshot' => null !== $requirement
+                        ? $profileCompliance->obligationLabelOf($requirement, $fact->obligationKey())
+                        : $fact->obligationKey(),
                     'quantity' => $item['quantity'],
                 ];
                 $reasonByRecordId[$item['recordId']] = null !== $item['reason'] ? WriteOffReason::tryFrom($item['reason']) : null;

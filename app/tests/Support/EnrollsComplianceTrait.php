@@ -8,8 +8,8 @@ use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -33,7 +33,7 @@ trait EnrollsComplianceTrait
 {
     /**
      * @param list<array<string, mixed>> $extraItems Доп. позиции той же нормы (без $itemLabel в возврате —
-     *                                               их ключ детерминирован, {@see TrackedObligation::keyOf}).
+     *                                               их ключ детерминирован, {@see ObligationKey::keyOf}).
      *
      * @return array{profileId: string, requirementId: string, key: string, organizationId: string}
      */
@@ -85,7 +85,7 @@ trait EnrollsComplianceTrait
         \assert(null !== $requirement);
         foreach ($requirement->getItems() as $item) {
             if ($item->label() === $itemLabel) {
-                return TrackedObligation::keyOf($requirementId, $item->id());
+                return ObligationKey::keyOf($requirementId, $item->id());
             }
         }
 

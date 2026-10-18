@@ -9,8 +9,9 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Учёт по человеку (context Compliance, Д3): `ProfileCompliance` (корень, один на профиль) + событийная
- * проекция `TrackedObligation` (даты хранимые, статус производный, `active`=документ подписан) +
- * журнал фактов `FulfillmentRecord`. Индексы под дашборд/алерт Д4. Идемпотентно.
+ * проекция `compliance_tracked_obligation` (даты хранимые, статус производный, `active`=документ подписан;
+ * снесена Task 7, см. `Version20261105120000`) + журнал фактов `FulfillmentRecord`. Индексы под дашборд/алерт
+ * Д4. Идемпотентно.
  */
 final class Version20260930120000 extends AbstractMigration
 {

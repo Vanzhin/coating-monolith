@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Compliance\Domain\Service;
+namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\ValueObject\Cadence;

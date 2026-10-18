@@ -6,8 +6,8 @@ namespace App\Tests\Functional\Compliance\Application\Service;
 
 use App\Compliance\Application\Service\DueSoonScanner;
 use App\Compliance\Domain\Event\ComplianceDueSoon;
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;
 use App\Shared\Application\Event\EventBusInterface;
@@ -54,6 +54,22 @@ final class DueSoonScannerTest extends KernelTestCase
         self::assertSame(DueKind::Overdue, $digest->items()[0]->kind);
     }
 
+    /** Срок за горизонтом DUE_SOON_DAYS (60 дней) не должен попасть в скан — пин фильтра dueBefore на новой таблице. */
+    public function test_excludes_items_due_far_beyond_threshold(): void
+    {
+        self::bootKernel();
+        $this->authenticateAsSystem();
+        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
+        // выдано 2027-01-01, цикл год → срок 2028-01-01 — почти год вперёд от "сейчас" ниже, далеко за 60 дней.
+        $this->issueCard($profileId, $requirementId, $key, '10', '2027-01-01');
+
+        $bus = $this->capturingBus();
+        $count = $this->scannerWith($bus)->scan(new \DateTimeImmutable('2027-01-10'));
+
+        self::assertSame(0, $count, 'срок почти через год не должен попасть в due-soon скан (горизонт 60 дней)');
+        self::assertSame([], $bus->published);
+    }
+
     public function test_publishes_nothing_when_no_due_items(): void
     {
         self::bootKernel();
@@ -72,8 +88,8 @@ final class DueSoonScannerTest extends KernelTestCase
         $c = self::getContainer();
 
         return new DueSoonScanner(
-            $c->get(ProfileComplianceRepositoryInterface::class),
-            $c->get(ComplianceStatusResolver::class),
+            $c->get(ObligationProjectionRepositoryInterface::class),
+            $c->get(ComplianceBucketResolver::class),
             $c->get(QueryBusInterface::class),
             $bus,
         );

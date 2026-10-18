@@ -10,18 +10,19 @@ use App\Compliance\Application\DTO\Dashboard\PersonRowDTOTransformer;
 use App\Compliance\Application\DTO\Dashboard\RequirementBreakdownDTO;
 use App\Compliance\Application\DTO\Dashboard\RequirementGroupDTO;
 use App\Compliance\Application\Service\ComplianceDashboardScope;
-use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**
  * Картина: KPI + разрезы отдел/требование — всё по (человек × требование), т.е. единица счёта — требование
  * человека в своём бакете (у одного человека несколько требований). Считает по популяции фильтра БЕЗ
  * statusBucket/onlyProblems (те — drill-down списка), чтобы KPI показывал полную раскладку. PHP над набором.
+ * Источник обязанностей — read-модель проекции ({@see ObligationProjectionRepositoryInterface}), не агрегат.
  */
 final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private ProfileComplianceRepositoryInterface $repository,
+        private ObligationProjectionRepositoryInterface $repository,
         private PersonRowDTOTransformer $transformer,
         private ComplianceDashboardScope $scope,
     ) {
@@ -32,11 +33,9 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
         $filter = $query->filter;
         $now = new \DateTimeImmutable();
 
-        $projections = $this->repository->findForDashboard(
-            $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q),
-            $filter->departmentIds,
-        );
-        $profilesById = [] === $projections ? [] : $this->scope->profilesById($projections);
+        $scopeIds = $this->scope->restrictProfileIds($filter->profileIds, $filter->positionIds, $filter->q);
+        $rows = $this->repository->findForProfiles($scopeIds);
+        $profilesById = [] === $rows ? [] : $this->scope->profilesById($rows);
 
         $kpi = new BucketCountsDTO();
         /** @var array<string, DeptBreakdownDTO> $depts */
@@ -44,12 +43,12 @@ final readonly class GetComplianceOverviewQueryHandler implements QueryHandlerIn
         /** @var array<string, RequirementBreakdownDTO> $reqs */
         $reqs = [];
 
-        foreach ($projections as $projection) {
-            $profile = $profilesById[$projection->getProfileId()] ?? null;
-            if (null === $profile) {
+        foreach ($this->scope->groupByProfile($rows) as $profileId => $obligationRows) {
+            $profile = $profilesById[$profileId] ?? null;
+            if (null === $profile || ($filter->departmentIds->count() > 0 && !in_array($profile->departmentId, $filter->departmentIds->getList(), true))) {
                 continue;
             }
-            $row = $this->transformer->fromEntity($projection, $profile, $now, $filter->type);
+            $row = $this->transformer->fromRows($obligationRows, $profile, $now, $filter->type);
             if ([] === $row->groups) {
                 continue;
             }

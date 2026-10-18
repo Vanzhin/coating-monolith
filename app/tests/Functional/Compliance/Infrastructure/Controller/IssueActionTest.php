@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Shared\Application\Command\CommandBusInterface;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -168,6 +170,31 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('key=', (string) $this->client->getResponse()->getContent(), 'ключ ушёл в query, не в путь');
     }
 
+    /**
+     * Пин Task 4 (структурный cadence в проекции): позиция нормы отдаёт РЕАЛЬНЫЙ kind/число/единицу в
+     * data-атрибуты поля даты (не пустую строку) — ими кормится клиентский AJAX-предпросмотр «след. выдача»
+     * ({@see \App\Compliance\Infrastructure\Controller\Fulfillment\NextDueAction}). С теми же значениями,
+     * что форма реально отправит, бэк должен посчитать дату (не null) — до структурного cadence в проекции
+     * (только label-снимок) kind/число/единица были бы пустыми, и превью всегда показывал бы «—».
+     */
+    public function test_norm_position_cadence_struct_feeds_next_due_preview(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance(); // Перчатки: periodic, 1 год
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $dateInput = $crawler->filter('input[data-issue-date]')->first();
+        self::assertSame('periodic', $dateInput->attr('data-cadence-kind'), 'норменная позиция отдаёт структурный cadence из проекции, не пустую строку');
+        self::assertSame('1', $dateInput->attr('data-cadence-number'));
+        self::assertSame('year', $dateInput->attr('data-cadence-unit'));
+
+        // Те же значения — на бэк-калькулятор превью: должен вернуть дату, а не null.
+        $this->client->request('GET', '/cabinet/compliance/next-due?date=2026-06-01&kind=periodic&number=1&unit=year');
+        self::assertResponseIsSuccessful();
+        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('2027-06-01', $body['data']['nextDue'], 'предпросмотр считает дату по cadence из проекции, не «—»');
+    }
+
     public function test_writeoff_entry_available_when_something_is_issued(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
@@ -179,6 +206,57 @@ final class IssueActionTest extends WebTestCase
 
         self::assertStringContainsString('write-off/open', $html, 'вход «Списать» доступен на той же странице, что и выдача');
         self::assertStringContainsString('Списать', $html);
+    }
+
+    /**
+     * Task 6: /issue теперь читает read-модель через GetIssuePageQuery (view-builder в Application), не
+     * собирает её прямо в контроллере. Три позиции одной нормы с разными датами выдачи → разные бакеты
+     * (просрочено/скоро/в норме); сортировка по срочности — просроченная выше позиции со скорым сроком, та выше
+     * позиции в норме (тот же порядок, что при сборке в контроллере раньше).
+     */
+    public function test_issue_page_renders_positions_sorted_by_urgency(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $keyOverdue] = $this->enrollCompliance(
+            'Просрочено-позиция',
+            extraItems: [
+                ['label' => 'Скоро-позиция', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ['label' => 'ОК-позиция', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+            ],
+        );
+        $keySoon = $this->obligationKeyFor($r, 'Скоро-позиция');
+        $keyOk = $this->obligationKeyFor($r, 'ОК-позиция');
+
+        $now = new \DateTimeImmutable();
+        static::getContainer()->get(CommandBusInterface::class)->execute(new RecordIssuanceCommand(
+            $p,
+            $r,
+            $now->format('Y-m-d'),
+            [
+                // Периодичность 1 год: дата выдачи 400 дн. назад → след. срок уже прошёл (просрочено).
+                ['obligationKey' => $keyOverdue, 'date' => $now->modify('-400 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+                // 335 дн. назад → след. срок через ~30 дн. — внутри горизонта «скоро» (60 дн.).
+                ['obligationKey' => $keySoon, 'date' => $now->modify('-335 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+                // 10 дн. назад → след. срок через ~355 дн. — далеко за горизонтом, в норме.
+                ['obligationKey' => $keyOk, 'date' => $now->modify('-10 days')->format('Y-m-d'), 'amount' => '10', 'unit' => 'pair'],
+            ],
+            cardNumber: 'CARD-TEST',
+        ));
+        // Write-through проектора прошёл в той же транзакции команды; очищаем identity map перед чтением
+        // проекции через DQL (upsertMany пишет мимо ORM — закэшированный инстанс иначе отдаст старые даты).
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        $posOverdue = strpos($html, 'Просрочено-позиция');
+        $posSoon = strpos($html, 'Скоро-позиция');
+        $posOk = strpos($html, 'ОК-позиция');
+        self::assertNotFalse($posOverdue, 'просроченная позиция присутствует в форме');
+        self::assertNotFalse($posSoon, 'позиция со скорым сроком присутствует в форме');
+        self::assertNotFalse($posOk, 'позиция в норме присутствует в форме');
+        self::assertLessThan($posSoon, $posOverdue, 'просроченная позиция рендерится выше позиции со скорым сроком');
+        self::assertLessThan($posOk, $posSoon, 'позиция со скорым сроком рендерится выше позиции в норме');
     }
 
     private function issueUrl(string $profileId, string $requirementId): string

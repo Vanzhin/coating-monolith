@@ -14,7 +14,7 @@ use Symfony\Component\Uid\Uuid;
  */
 abstract readonly class AbstractRequirementItem implements RequirementItemInterface
 {
-    /** Предел длины наименования — проекция (TrackedObligation.label) должна его вмещать, иначе пересборка откатится. */
+    /** Предел длины наименования — проекция (`compliance_obligation_projection.label`) должна его вмещать, иначе пересборка откатится. */
     public const MAX_LABEL_LENGTH = 1000;
 
     private string $id;

@@ -11,8 +11,8 @@ use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Длина наименования позиции ограничена сверху, чтобы проекция (TrackedObligation.label) её вмещала —
- * иначе пересборка падает на INSERT (varchar) и молча откатывается. Граница = 1000 символов.
+ * Длина наименования позиции ограничена сверху, чтобы проекция (`compliance_obligation_projection.label`)
+ * её вмещала — иначе пересборка падает на INSERT (varchar) и молча откатывается. Граница = 1000 символов.
  */
 final class RequirementItemLabelLengthTest extends TestCase
 {

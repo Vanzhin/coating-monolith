@@ -24,6 +24,7 @@ doctrine:
             personnel_full_name: App\Personnel\Infrastructure\Database\DBAL\FullNameType
             personnel_sizes: App\Personnel\Infrastructure\Database\DBAL\SizesType
             compliance_requirement_items: App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType
+            compliance_personal_obligations: App\Compliance\Infrastructure\Database\DBAL\PersonalObligationsType
             compliance_cadence: App\Compliance\Infrastructure\Database\DBAL\CadenceType
             compliance_quantity: App\Compliance\Infrastructure\Database\DBAL\QuantityType
             compliance_writeoff_commission: App\Compliance\Infrastructure\Database\DBAL\WriteOffCommissionType
@@ -122,6 +123,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Compliance\Domain\Aggregate'
                 alias: Compliance
+            ComplianceReadModel:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/ReadModel'
+                prefix: 'App\Compliance\Infrastructure\Database\ReadModel'
+                alias: ComplianceReadModel
 
 
 #            App:

@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Compliance: антифлуд-маркер прохода уведомлений — последнее известное состояние (бакет) обязанности
  * (человек×позиция) + когда по ней в последний раз уведомляли. Отдельная таблица, переживает пересборку
- * проекции TrackedObligation.
+ * проекции обязанностей.
  */
 final class Version20261016120000 extends AbstractMigration
 {

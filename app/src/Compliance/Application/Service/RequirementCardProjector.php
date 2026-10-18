@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
@@ -28,21 +30,23 @@ use App\Shared\Domain\Templating\TextValue;
  */
 final readonly class RequirementCardProjector
 {
-    public function __construct(private WriteOffActRepositoryInterface $writeOffActRepository)
-    {
+    public function __construct(
+        private WriteOffActRepositoryInterface $writeOffActRepository,
+        private ObligationProjectionRepositoryInterface $projectionRepository,
+    ) {
     }
 
     public function project(ProfileCompliance $profileCompliance, ProfileDTO $profile, Requirement $requirement, \DateTimeImmutable $now): RenderData
     {
         $obligationByKey = [];
-        foreach ($profileCompliance->getObligations() as $obligation) {
+        foreach ($this->projectionRepository->findForProfiles(new StringCollection($profileCompliance->getProfileId())) as $obligation) {
             if ($obligation->requirementId() === $requirement->getId()) {
                 $obligationByKey[$obligation->key()] = $obligation;
             }
         }
 
         $values = [
-            'employee_fio' => new TextValue($this->fio($profile)),
+            'employee_fio' => new TextValue($profile->fio()),
             'employee_last_name' => new TextValue($profile->lastName),
             'employee_first_name' => new TextValue($profile->firstName),
             'position_title' => new TextValue($profile->positionTitle),
@@ -107,7 +111,7 @@ final readonly class RequirementCardProjector
      * Строки факт-таблицы/журнала: ВЕСЬ журнал фактов требования (+ возвраты/списания по recordId) с добавленным
      * контекстом сотрудника в каждую строку (колонка «инструктируемый» в журналах — построчно). Нет фактов → пусто.
      *
-     * @param array<string, TrackedObligation> $obligationByKey
+     * @param array<string, ObligationProjection> $obligationByKey
      *
      * @return list<array<string, string>>
      */
@@ -117,9 +121,9 @@ final readonly class RequirementCardProjector
         foreach ($requirement->getItems() as $item) {
             $basisByLabel[$item->label()] = $item->basis();
         }
-        $rows = $this->factLog($profileCompliance, $requirement->getId(), $obligationByKey);
+        $rows = $this->factLog($profileCompliance, $requirement, $obligationByKey);
         foreach ($rows as $i => $row) {
-            $rows[$i]['employee_fio'] = $this->fio($profile);
+            $rows[$i]['employee_fio'] = $profile->fio();
             $rows[$i]['employee_position'] = $profile->positionTitle;
             $rows[$i]['basis'] = $basisByLabel[$row['name']] ?? ''; // основание требования (напр. перечень локальных актов)
             $rows[$i]['birth_date'] = $profile->birthDate?->format('d.m.Y') ?? ''; // из карточки сотрудника, если заполнена
@@ -132,18 +136,18 @@ final readonly class RequirementCardProjector
      * Стр. 2 — ВЕСЬ журнал фактов требования как строки факт-таблицы + возвраты/списания по recordId. Сортировка
      * по наименованию.
      *
-     * @param array<string, TrackedObligation> $obligationByKey
+     * @param array<string, ObligationProjection> $obligationByKey
      *
      * @return list<array<string, string>>
      */
-    private function factLog(ProfileCompliance $profileCompliance, string $requirementId, array $obligationByKey): array
+    private function factLog(ProfileCompliance $profileCompliance, Requirement $requirement, array $obligationByKey): array
     {
-        $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirementId);
+        $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirement->getId());
 
         $rows = [];
-        foreach ($profileCompliance->recordsForRequirement($requirementId) as $record) {
+        foreach ($profileCompliance->recordsForRequirement($requirement->getId()) as $record) {
             $obligation = $obligationByKey[$record->obligationKey()] ?? null;
-            $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($record->obligationKey());
+            $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($requirement, $record->obligationKey());
             $quantity = $record->quantity();
             $returns = $returnsByRecord[$record->getId()] ?? [];
 
@@ -232,11 +236,6 @@ final readonly class RequirementCardProjector
         if (null !== $value && '' !== trim($value)) {
             $values[$key] = new TextValue($value);
         }
-    }
-
-    private function fio(ProfileDTO $profile): string
-    {
-        return trim(sprintf('%s %s %s', $profile->lastName, $profile->firstName, $profile->middleName ?? ''));
     }
 
     private function number(float $amount): string

@@ -15,7 +15,7 @@ use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\IssuanceLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
-use App\Compliance\Domain\Service\ObligationDueCalculator;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Quantity;
@@ -27,6 +27,7 @@ use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -90,18 +91,25 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
 
     public function test_issued_fact_becomes_ok(): void
     {
-        ['profileId' => $profileId, 'key' => $key] = $this->enrollCompliance();
+        ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
 
         // Прямая дозапись факта в журнал (без акта-черновика) — журнальная модель выдачи.
         $pc = $this->repo->findByProfile($profileId);
         self::assertNotNull($pc);
         $pc->assignCardNumber('CARD-1'); // инвариант выдачи — № карточки обязателен
+        // Вариант B: агрегат нормы не материализует — инвариант выдачи резолвит норму из переданного Requirement.
+        $requirement = static::getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
         $pc->recordIssuance(
-            static::getContainer()->get(ObligationDueCalculator::class),
+            $requirement,
             new IssuanceLine(Uuid::v7(), $key, new \DateTimeImmutable('2026-05-20'), new Quantity(10.0, Unit::Pair)),
         );
         $this->repo->add($pc);
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+        // Читатель теперь читает read-only ObligationProjection через DQL: без clear() identity map отдаёт
+        // СТАРЫЙ закэшированный инстанс строки проекции (upsertMany пишет DBAL мимо ORM, не обновляет его
+        // in-memory), см. докблок ObligationProjectionRepository.
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
 
         $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
         self::assertNotNull($row);

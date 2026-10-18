@@ -11,7 +11,6 @@ use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQuery;
 use App\Compliance\Application\UseCase\Query\Dashboard\GetPagedComplianceQueryResult;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfilesByIds\GetProfilesByIdsQuery;
 use App\Personnel\Application\UseCase\Query\GetProfilesByIds\GetProfilesByIdsQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -116,14 +115,9 @@ final class IndexAction extends AbstractController
 
         $names = [];
         foreach ($result->profiles as $profile) {
-            $names[$profile->id] = $this->fullName($profile);
+            $names[$profile->id] = $profile->fio();
         }
 
         return $names;
-    }
-
-    private function fullName(ProfileDTO $profile): string
-    {
-        return trim($profile->lastName.' '.$profile->firstName.' '.($profile->middleName ?? ''));
     }
 }

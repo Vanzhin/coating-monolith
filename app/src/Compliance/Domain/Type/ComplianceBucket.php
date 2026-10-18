@@ -6,7 +6,7 @@ namespace App\Compliance\Domain\Type;
 
 /**
  * Состояние обязанности — 4 бакета (Ok/Soon/Overdue/Missing). Канонический результат единого расчёта
- * {@see \App\Compliance\Domain\Service\ComplianceStatusResolver::bucketFor()} из подписи документа + хранимых
+ * {@see \App\Compliance\Domain\Service\ComplianceBucketResolver::bucketFor()} из подписи документа + хранимых
  * дат + нормы/наличия + текущего момента. НЕ хранится (меняется от хода времени) — выводится на чтении
  * (дашборд, карточка, проход уведомлений) ОДНИМ резолвером.
  *

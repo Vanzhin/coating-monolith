@@ -8,6 +8,7 @@ use App\Compliance\Application\Service\AccessControl\ComplianceAccessControl;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -28,6 +29,7 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
     public function __construct(
         private ComplianceAccessControl $access,
         private ProfileComplianceRepositoryInterface $repository,
+        private RequirementRepositoryInterface $requirements,
         private WriteOffActRepositoryInterface $writeOffActRepository,
         private QueryBusInterface $queryBus,
     ) {
@@ -40,13 +42,15 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
         }
         $profileCompliance = $this->repository->findByProfile($command->profileId)
             ?? throw new AppException('Учёт по сотруднику не создан.');
+        $requirement = $this->requirements->findOneById($command->requirementId)
+            ?? throw new AppException('Требование не найдено.');
 
         /** @var GetProfileQueryResult $profileResult */
         $profileResult = $this->queryBus->execute(new GetProfileQuery($command->profileId));
         $profile = $profileResult->profile ?? throw new AppException('Сотрудник не найден.');
         $organizationId = $profile->organizationId;
 
-        $facts = $profileCompliance->writeOffEligibleFactsForRequirement($command->requirementId, $command->obligationKeys);
+        $facts = $profileCompliance->writeOffEligibleFactsForRequirement($requirement, $command->obligationKeys);
         $existingAct = $this->writeOffActRepository->findOpenDraft($command->requirementId, $organizationId);
         if ([] === $facts && null === $existingAct) {
             return; // добавить нечего, открытого черновика нет — пустой акт не плодим
@@ -56,7 +60,7 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
         $lines = array_map(
             static fn (FulfillmentRecord $fact): array => [
                 'recordId' => $fact->getId(),
-                'labelSnapshot' => $profileCompliance->obligationLabelOf($fact->obligationKey()),
+                'labelSnapshot' => $profileCompliance->obligationLabelOf($requirement, $fact->obligationKey()),
                 'quantity' => $fact->heldAmount(),
             ],
             $facts,

@@ -51,7 +51,7 @@ final class EmitComplianceDueSoonCommand extends Command
 
             return Command::FAILURE;
         }
-        $fio = trim(sprintf('%s %s %s', $result->profile->lastName, $result->profile->firstName, $result->profile->middleName ?? ''));
+        $fio = $result->profile->fio();
 
         $kind = DueKind::tryFrom((string) $input->getArgument('kind')) ?? DueKind::Soon;
         $this->eventBus->execute(new ComplianceDueSoon(

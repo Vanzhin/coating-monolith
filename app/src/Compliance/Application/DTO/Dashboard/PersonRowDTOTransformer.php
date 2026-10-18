@@ -4,28 +4,30 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\DTO\Dashboard;
 
-use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
-use App\Compliance\Domain\Aggregate\ProfileCompliance\TrackedObligation;
-use App\Compliance\Domain\Service\ComplianceStatusResolver;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\ComplianceType;
+use App\Compliance\Infrastructure\Database\ReadModel\ObligationProjection;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 
 /**
- * Строит строку дашборда из проекции учёта + профиля (идентичность). Бакеты — на чтении
- * {@see ComplianceStatusResolver}. `$onlyType` сужает показанные обязанности (фильтр по типу).
+ * Строит строку дашборда из строк проекции учёта (одного человека) + профиля (идентичность). Бакеты — на
+ * чтении {@see ComplianceBucketResolver}. `$onlyType` сужает показанные обязанности (фильтр по типу).
  */
 final readonly class PersonRowDTOTransformer
 {
-    public function __construct(private ComplianceStatusResolver $resolver)
+    public function __construct(private ComplianceBucketResolver $resolver)
     {
     }
 
-    public function fromEntity(ProfileCompliance $pc, ProfileDTO $profile, \DateTimeImmutable $now, ?ComplianceType $onlyType = null): PersonRowDTO
+    /**
+     * @param list<ObligationProjection> $rows строки проекции ОДНОГО профиля ({@see ObligationProjection::profileId()} одинаков у всех)
+     */
+    public function fromRows(array $rows, ProfileDTO $profile, \DateTimeImmutable $now, ?ComplianceType $onlyType = null): PersonRowDTO
     {
         $row = new PersonRowDTO();
         $row->profileId = $profile->id;
-        $row->fullName = trim($profile->lastName.' '.$profile->firstName.' '.($profile->middleName ?? ''));
+        $row->fullName = $profile->fio();
         $row->initials = $this->initials($profile->lastName, $profile->firstName);
         $row->positionTitle = $profile->positionTitle;
         $row->departmentTitle = $profile->departmentTitle;
@@ -34,11 +36,11 @@ final readonly class PersonRowDTOTransformer
 
         $groups = [];
         $worst = null;
-        foreach ($pc->getObligations() as $obligation) {
+        foreach ($rows as $obligation) {
             if (null !== $onlyType && $obligation->type() !== $onlyType) {
                 continue;
             }
-            $bucket = $this->resolver->bucketFor($obligation->isActive(), $obligation->lastFulfilledAt(), $obligation->nextDueAt(), $now, $obligation->quantity()?->amount, $obligation->heldQuantity());
+            $bucket = $this->resolver->bucketFor($obligation, $now);
             $worst = null === $worst ? $bucket : ComplianceBucket::worseOf($worst, $bucket);
             (ComplianceType::Material === $obligation->type() ? $row->material : $row->nonMaterial)->add($bucket);
 
@@ -57,11 +59,11 @@ final readonly class PersonRowDTOTransformer
         return $row;
     }
 
-    private function group(TrackedObligation $obligation): RequirementGroupDTO
+    private function group(ObligationProjection $obligation): RequirementGroupDTO
     {
         $group = new RequirementGroupDTO();
         $group->requirementId = $obligation->requirementId();
-        $group->name = $obligation->requirementName();
+        $group->name = $obligation->requirementName() ?? '';
         $group->type = $obligation->type()->value;
         $group->typeLabel = $obligation->type()->title();
         $group->counts = new BucketCountsDTO();
@@ -69,7 +71,7 @@ final readonly class PersonRowDTOTransformer
         return $group;
     }
 
-    private function rowOf(TrackedObligation $obligation, ComplianceBucket $bucket): ObligationBucketRowDTO
+    private function rowOf(ObligationProjection $obligation, ComplianceBucket $bucket): ObligationBucketRowDTO
     {
         $row = new ObligationBucketRowDTO();
         $row->label = $obligation->label();
@@ -82,12 +84,26 @@ final readonly class PersonRowDTOTransformer
         return $row;
     }
 
-    private function spec(TrackedObligation $obligation): string
+    /** «5 пара · ежегодно» — норма (сумма+единица) + периодичность; нематериальная позиция — только периодичность. */
+    private function spec(ObligationProjection $obligation): string
     {
-        $quantity = $obligation->quantity()?->label();
-        $cadence = $obligation->cadence()->label();
+        $quantity = $this->quantityLabel($obligation);
+        $cadence = $obligation->cadence(); // уже готовый label-снимок, см. ObligationProjection::cadence()
 
-        return null !== $quantity && '' !== $quantity ? $quantity.' · '.$cadence : $cadence;
+        return null !== $quantity ? $quantity.' · '.$cadence : $cadence;
+    }
+
+    /** Норма «5 пара» — сумма ({@see ObligationProjection::quantity()}) + единица ({@see ObligationProjection::quantityUnit()}). */
+    private function quantityLabel(ObligationProjection $obligation): ?string
+    {
+        $amount = $obligation->quantity();
+        $unit = $obligation->quantityUnit();
+        if (null === $amount || null === $unit) {
+            return null;
+        }
+        $formatted = 0.0 === fmod($amount, 1.0) ? (string) (int) $amount : (string) $amount;
+
+        return $formatted.' '.$unit->title();
     }
 
     private function initials(string $lastName, string $firstName): string
