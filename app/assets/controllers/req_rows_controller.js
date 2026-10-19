@@ -22,4 +22,13 @@ export default class extends Controller {
     remove(event) {
         event.target.closest('[data-req-rows-target="row"]')?.remove();
     }
+
+    requestRemove(event) {
+        this._pendingRow = event.target.closest('[data-req-rows-target="row"]');
+    }
+
+    confirmRemove() {
+        this._pendingRow?.remove();
+        this._pendingRow = null;
+    }
 }

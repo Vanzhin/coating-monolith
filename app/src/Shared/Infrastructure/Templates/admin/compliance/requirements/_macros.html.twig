@@ -74,6 +74,6 @@
                 <input type="text" name="items[{{ i }}][basis]" value="{{ item.basis|default('') }}" class="form-control" placeholder="п.5 Типовых норм / по результатам СОУТ">
             </div>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#remove" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
+        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#requestRemove" data-bs-toggle="modal" data-bs-target="#rm-item-modal" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
     </div>
 {% endmacro %}

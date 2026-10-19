@@ -115,6 +115,20 @@
                         </div>
                         <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units, effectiveType, allowsMixedMap) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add" aria-label="Добавить позицию"><i class="bi bi-plus-lg"></i></button>
+
+                        <div class="modal fade" id="rm-item-modal" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                            <div class="modal-body text-center pt-4 pb-2">
+                              <div class="del-ic"><i class="bi bi-trash3"></i></div>
+                              <h5 class="modal-title mb-2">Убрать позицию из требования?</h5>
+                              <p class="text-body-secondary small mb-0">Если позиция уже выдавалась — она останется для учёта и списания (мягкое удаление). Уберётся при сохранении требования.</p>
+                            </div>
+                            <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                              <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                              <button type="button" class="btn btn-danger flex-fill" data-action="req-rows#confirmRemove" data-bs-dismiss="modal"><i class="bi bi-trash3 me-1"></i>Убрать</button>
+                            </div>
+                          </div></div>
+                        </div>
                     </div>
                     <div class="form-text">«Число» и «Единица периода» — только для «каждые N». Количество — у требования типа «Выдача» и «Периодическая»; основание обязательно.</div>
                 </div>

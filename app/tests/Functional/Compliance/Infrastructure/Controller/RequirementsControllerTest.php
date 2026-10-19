@@ -133,6 +133,38 @@ final class RequirementsControllerTest extends WebTestCase
         self::assertNotEmpty($templateFileId, 'у созданного требования проставлен шаблон');
     }
 
+    public function test_edit_form_renders_remove_confirmation_modal_for_items(): void
+    {
+        $name = 'Выдача СИЗ для удаления позиции '.uniqid('', true);
+        $this->client->request(
+            'POST',
+            '/cabinet/compliance/requirements/create',
+            [
+                'name' => $name,
+                'type' => 'material',
+                'positionIds' => ['pos-rm-item-1'],
+                'items' => [[
+                    'label' => 'Перчатки',
+                    'cadenceKind' => 'once',
+                    'amount' => '2',
+                    'unit' => 'pcs',
+                    'basis' => 'Типовые нормы',
+                ]],
+            ],
+        );
+        self::assertResponseRedirects();
+
+        $container = $this->client->getContainer();
+        $id = $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT id FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertNotEmpty($id);
+
+        $this->client->request('GET', "/cabinet/compliance/requirements/{$id}/edit");
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#rm-item-modal');
+        self::assertSelectorExists('[data-req-rows-target="row"] button[data-action="req-rows#requestRemove"][data-bs-target="#rm-item-modal"]');
+    }
+
     private function docxUpload(string $projectDir): UploadedFile
     {
         $src = $projectDir.'/src/Compliance/Infrastructure/Resources/templates/requirement_card.docx';
