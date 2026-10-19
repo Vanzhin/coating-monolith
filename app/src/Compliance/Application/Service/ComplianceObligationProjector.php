@@ -201,7 +201,7 @@ final readonly class ComplianceObligationProjector
         array $records,
         string $key,
     ): array {
-        [$lastFulfilledAt, $nextDueAt, $held, $active] = $this->computeFromFacts($records, $key, $cadence);
+        [$lastFulfilledAt, $nextDueAt, $held, $active] = $this->computeFromFacts($records, $key, $cadence, $type);
 
         return [
             'id' => (string) Uuid::v7(), // на ON CONFLICT существующий id сохраняется (в SET не входит)
@@ -229,15 +229,17 @@ final readonly class ComplianceObligationProjector
     }
 
     /**
-     * Время-независимые поля из журнала фактов позиции: held = Σ на руках по фактам, lastFulfilledAt = дата
-     * последнего НЕ истощённого факта, nextDueAt — через {@see ObligationDueCalculator}, active = есть хотя бы
-     * один факт по позиции (любая запись журнала выдана).
+     * Время-независимые поля из журнала фактов позиции: lastFulfilledAt = дата последнего НЕ истощённого факта,
+     * nextDueAt — через {@see ObligationDueCalculator}, active = есть хотя бы один факт по позиции (любая запись
+     * журнала выдана). `held` зависит от типа обязанности: инвентарь (материальная) — Σ на руках по всем фактам
+     * (накопительно, списания уменьшают); периодическая — количество ТОЛЬКО самой свежей выдачи (доввыдача не
+     * копится, старые факты не складываются с новыми — "последняя выдача", а не "сумма за всё время").
      *
      * @param FulfillmentRecord[] $records
      *
      * @return array{0: ?\DateTimeImmutable, 1: ?\DateTimeImmutable, 2: float, 3: bool}
      */
-    private function computeFromFacts(array $records, string $key, Cadence $cadence): array
+    private function computeFromFacts(array $records, string $key, Cadence $cadence, ComplianceType $type): array
     {
         $latest = null;
         $held = 0.0;
@@ -252,6 +254,11 @@ final readonly class ComplianceObligationProjector
             if ($isCurrent && (null === $latest || $record->fulfilledAt() > $latest->fulfilledAt())) {
                 $latest = $record;
             }
+        }
+
+        if (ComplianceType::Periodic === $type) {
+            // Периодическая не накапливает: held = количество самой свежей (по fulfilledAt) выдачи, не сумма.
+            $held = $latest?->quantity()->amount ?? 0.0;
         }
 
         $lastFulfilledAt = $latest?->fulfilledAt();

@@ -152,6 +152,12 @@ class ObligationProjection implements ObligationView
         return $this->active;
     }
 
+    /** {@see ObligationView}: периодическая — по своей колонке `type`, без похода в отдельный класс позиции. */
+    public function isPeriodic(): bool
+    {
+        return ComplianceType::Periodic->value === $this->type;
+    }
+
     /** {@see \App\Compliance\Domain\Type\ObligationOrigin} — строкой (`->value`), без завязки на enum в интерфейсе. */
     public function origin(): string
     {

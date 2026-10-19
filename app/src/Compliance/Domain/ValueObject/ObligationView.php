@@ -23,4 +23,10 @@ interface ObligationView
 
     /** Количество на руках (для материальных обязательств; у нематериальных не используется резолвером). */
     public function heldQuantity(): float;
+
+    /**
+     * Периодическая обязанность ({@see \App\Compliance\Domain\Type\ComplianceType::Periodic}) — резолвер считает
+     * её отдельным ладдером (срок первичен: просрочка бьёт держащую норму, недовыдача — между Overdue и Soon).
+     */
+    public function isPeriodic(): bool;
 }
