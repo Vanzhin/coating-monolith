@@ -8,7 +8,6 @@ use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
@@ -116,10 +115,11 @@ class ProfileCompliance extends Aggregate
 
     /**
      * Факты требования, годные к списанию (наполнение корзины — «Списать выбранные/всё» с карточки выдачи):
-     * есть что списывать ({@see FulfillmentRecord::heldAmount} > 0), позиция не расходная (ДСИЗ — списанию не
-     * подлежит никогда, независимо от выбора клиента — источник истины здесь, не на фронте) и, при явном
-     * выборе позиций, её ключ среди запрошенных. Нематериальные факты отсекаются уже условием held>0 — у
-     * них количества нет, `heldAmount()` всегда 0.
+     * списанию подлежат только инвентарные (MaterialItem) позиции — структурно, по типу позиции, не по режиму
+     * (режима больше нет: периодическая позиция, бывший расходник/инструктаж, остаток не ведёт и списанию не
+     * подлежит никогда, независимо от выбора клиента — источник истины здесь, не на фронте). Дополнительно
+     * нужно: есть что списывать ({@see FulfillmentRecord::heldAmount} > 0) и, при явном выборе позиций,
+     * её ключ среди запрошенных.
      *
      * @param ?list<string> $obligationKeys null = все инвентарные held>0 позиции требования («Списать всё»)
      *
@@ -127,15 +127,15 @@ class ProfileCompliance extends Aggregate
      */
     public function writeOffEligibleFactsForRequirement(Requirement $requirement, ?array $obligationKeys): array
     {
-        $consumableKeys = $this->consumableKeys($requirement);
+        $inventoryKeys = $this->inventoryKeys($requirement);
         $wantedKeys = null === $obligationKeys ? null : array_fill_keys($obligationKeys, true);
 
         $eligible = [];
         foreach ($this->recordsForRequirement($requirement->getId()) as $fact) {
             $isHeld = $fact->heldAmount() > 0.0;
-            $isConsumable = isset($consumableKeys[$fact->obligationKey()]);
+            $isInventory = isset($inventoryKeys[$fact->obligationKey()]);
             $isRequested = null === $wantedKeys || isset($wantedKeys[$fact->obligationKey()]);
-            if ($isHeld && !$isConsumable && $isRequested) {
+            if ($isHeld && $isInventory && $isRequested) {
                 $eligible[] = $fact;
             }
         }
@@ -144,17 +144,25 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * Ключи обязанностей требования в режиме «расходная» (ДСИЗ) — списанию не подлежат никогда. Персональные
-     * (off-norm) позиции расходными не бывают (как и раньше) — режим есть только у материальной позиции нормы.
+     * Ключи обязанностей требования, подлежащих списанию — инвентарные (MaterialItem) позиции нормы +
+     * персональные (off-norm) декларации материального типа (они режима/типа-позиции не несут, но физически
+     * те же СИЗ на руках — списываются наравне с норменными). Периодическая позиция нормы (бывший расходник/
+     * инструктаж) и персональная декларация любого другого типа в этот набор не попадают НИКОГДА — это и есть
+     * «списание структурно только инвентарь».
      *
      * @return array<string, true>
      */
-    private function consumableKeys(Requirement $requirement): array
+    private function inventoryKeys(Requirement $requirement): array
     {
         $keys = [];
         foreach ($requirement->getItems() as $item) {
-            if ($item instanceof MaterialItem && MaterialMode::Consumable === $item->mode()) {
+            if ($item instanceof MaterialItem) {
                 $keys[ObligationKey::keyOf($requirement->getId(), $item->id())] = true;
+            }
+        }
+        foreach ($this->personalObligations as $personal) {
+            if ($personal->requirementId === $requirement->getId() && ComplianceType::Material === $personal->type) {
+                $keys[ObligationKey::keyOf($personal->requirementId, $personal->itemId)] = true;
             }
         }
 

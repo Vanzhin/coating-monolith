@@ -36,7 +36,7 @@ final class ComplianceBucketTest extends TestCase
     public function test_missing_label_is_type_specific(): void
     {
         self::assertSame('не выдано', ComplianceBucket::Missing->label(ComplianceType::Material));
-        self::assertSame('не пройдено', ComplianceBucket::Missing->label(ComplianceType::NonMaterial));
+        self::assertSame('не пройдено', ComplianceBucket::Missing->label(ComplianceType::Periodic));
         self::assertSame('подходит срок', ComplianceBucket::Soon->label(ComplianceType::Material));
     }
 }

@@ -64,7 +64,7 @@
                         {% if type %}
                             {% set removeUrl = path('app_cabinet_compliance_dashboard', baseQuery|merge({type: null, page: null})|filter(v => v is not null)) %}
                             <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр">
-                                {{ type == 'material' ? 'Выдача' : 'Процедура' }} <i class="bi bi-x-lg"></i>
+                                {{ type == 'material' ? 'Выдача' : 'Периодическая' }} <i class="bi bi-x-lg"></i>
                             </a>
                         {% endif %}
                         {% if onlyProblems %}
@@ -101,7 +101,7 @@
                             <div class="d-flex flex-wrap gap-2">
                                 <label class="facet-pill"><input type="radio" name="type" value=""{{ not type ? ' checked' : '' }}>Любой</label>
                                 <label class="facet-pill"><input type="radio" name="type" value="material"{{ type == 'material' ? ' checked' : '' }}>Выдача</label>
-                                <label class="facet-pill"><input type="radio" name="type" value="non_material"{{ type == 'non_material' ? ' checked' : '' }}>Процедура</label>
+                                <label class="facet-pill"><input type="radio" name="type" value="periodic"{{ type == 'periodic' ? ' checked' : '' }}>Периодическая</label>
                             </div>
                         </div>
                         <div class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">

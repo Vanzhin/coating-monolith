@@ -145,41 +145,40 @@ final class AddToWriteOffDraftTest extends KernelTestCase
         self::assertSame(['Нарукавники', 'Перчатки'], $labels, '«Списать всё» захватило обе инвентарные позиции');
     }
 
-    public function test_select_all_excludes_consumable_position(): void
+    /**
+     * Требования мономорфны (Requirement::supports) — инвентарная и периодическая (бывш. расходная ДСИЗ)
+     * позиция больше не могут жить в ОДНОМ требовании, поэтому «Крем защитный» теперь отдельное periodic-
+     * требование на той же должности. Списание проверяется ПО ТРЕБОВАНИЮ: инвентарное — черновик с позицией,
+     * периодическое — «Списать всё»/явный выбор не создают черновик вообще (0 eligible).
+     */
+    public function test_select_all_excludes_periodic_requirement_entirely(): void
     {
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $kGloves, 'organizationId' => $org] = $this->enrollCompliance('Перчатки', null, [
-            ['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '3', 'unit' => 'pair', 'basis' => 'п.8', 'mode' => 'consumable'],
-        ]);
-        $kCream = $this->obligationKeyFor($r, 'Крем защитный');
-        $this->issueCard($p, $r, $kGloves); // инвентарная, на руках 10
-        $this->issueCard($p, $r, $kCream, '3'); // расходная (ДСИЗ), на руках 3
+        ['profileId' => $p, 'organizationId' => $org, 'reqGlovesId' => $rGloves, 'keyGloves' => $kGloves, 'reqCreamId' => $rCream, 'keyCream' => $kCream] = $this->glovesAndPeriodicCreamSetup();
+        $this->issueCard($p, $rGloves, $kGloves); // инвентарная, на руках 10
+        $this->issueCard($p, $rCream, $kCream, '3'); // периодическая (бывш. расходная ДСИЗ), на руках 3
 
-        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $rGloves, null));
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $rCream, null)); // «Списать всё» — 0 eligible
         $this->reload();
 
-        $act = $this->writeOffActRepo->findOpenDraft($r, $org);
-        self::assertNotNull($act, 'инвентарная позиция всё равно есть — черновик создан');
-        $labels = array_map(static fn ($line): string => $line->labelSnapshot(), $act->lines());
-        self::assertSame(['Перчатки'], $labels, '«Списать всё» не берёт расходную (ДСИЗ) позицию');
+        $actGloves = $this->writeOffActRepo->findOpenDraft($rGloves, $org);
+        self::assertNotNull($actGloves, 'инвентарное требование — черновик создан');
+        $labels = array_map(static fn ($line): string => $line->labelSnapshot(), $actGloves->lines());
+        self::assertSame(['Перчатки'], $labels);
+
+        self::assertNull($this->writeOffActRepo->findOpenDraft($rCream, $org), '«Списать всё» на периодическом требовании черновик не создаёт');
     }
 
-    public function test_explicit_selection_of_consumable_key_is_filtered_out(): void
+    public function test_explicit_selection_of_periodic_key_is_filtered_out(): void
     {
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $kGloves, 'organizationId' => $org] = $this->enrollCompliance('Перчатки', null, [
-            ['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '3', 'unit' => 'pair', 'basis' => 'п.8', 'mode' => 'consumable'],
-        ]);
-        $kCream = $this->obligationKeyFor($r, 'Крем защитный');
-        $this->issueCard($p, $r, $kGloves);
-        $this->issueCard($p, $r, $kCream, '3');
+        ['profileId' => $p, 'organizationId' => $org, 'reqCreamId' => $rCream, 'keyCream' => $kCream] = $this->glovesAndPeriodicCreamSetup();
+        $this->issueCard($p, $rCream, $kCream, '3');
 
-        // Явно выбрали и инвентарную, и расходную — бэк, источник истины, расходную всё равно отфильтрует.
-        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $r, [$kGloves, $kCream]));
+        // Явный выбор периодической позиции — бэк, источник истины, всё равно отфильтрует (0 eligible).
+        $this->commandBus->execute(new AddToWriteOffDraftCommand($p, $rCream, [$kCream]));
         $this->reload();
 
-        $act = $this->writeOffActRepo->findOpenDraft($r, $org);
-        self::assertNotNull($act);
-        $labels = array_map(static fn ($line): string => $line->labelSnapshot(), $act->lines());
-        self::assertSame(['Перчатки'], $labels, 'явный выбор расходной позиции хендлер игнорирует');
+        self::assertNull($this->writeOffActRepo->findOpenDraft($rCream, $org), 'явный выбор периодической позиции хендлер игнорирует — черновик не создан');
     }
 
     public function test_select_all_creates_no_draft_when_nothing_inventory_to_write_off(): void
@@ -191,6 +190,46 @@ final class AddToWriteOffDraftTest extends KernelTestCase
         $this->reload();
 
         self::assertNull($this->writeOffActRepo->findOpenDraft($r, $org), 'нечего списывать — черновик не создан');
+    }
+
+    /**
+     * Инвентарное (Перчатки) + периодическое (Крем защитный, бывш. расходная ДСИЗ) требования на ОДНОЙ
+     * должности — раздельные Requirement (мономорфны), один профиль покрыт обоими.
+     *
+     * @return array{profileId: string, organizationId: string, reqGlovesId: string, keyGloves: string, reqCreamId: string, keyCream: string}
+     */
+    private function glovesAndPeriodicCreamSetup(): array
+    {
+        $bus = static::getContainer()->get(CommandBusInterface::class);
+        $pos = $bus->execute(new CreatePositionCommand('Маляр '.uniqid('', true)));
+        \assert($pos instanceof CreatePositionCommandResult);
+
+        $reqGloves = $bus->execute(new SaveRequirementCommand(
+            null, 'Личная карточка учёта выдачи СИЗ', 'material', [$pos->id],
+            [['label' => 'Перчатки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5']],
+        ));
+        \assert($reqGloves instanceof SaveRequirementCommandResult);
+
+        $reqCream = $bus->execute(new SaveRequirementCommand(
+            null, 'ДСИЗ', 'periodic', [$pos->id],
+            [['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '3', 'unit' => 'pair', 'basis' => 'п.8']],
+        ));
+        \assert($reqCream instanceof SaveRequirementCommandResult);
+
+        $org = $bus->execute(new CreateCounterpartyCommand('ООО Тест '.uniqid('', true), $this->randomTin()));
+        \assert($org instanceof CreateCounterpartyCommandResult);
+        $dept = $bus->execute(new CreateDepartmentCommand($org->id, 'Цех '.uniqid('', true)));
+        \assert($dept instanceof CreateDepartmentCommandResult);
+        $profileId = $this->enrollSecondProfileInOrganization($org->id, $dept->id, $pos->id);
+
+        return [
+            'profileId' => $profileId,
+            'organizationId' => $org->id,
+            'reqGlovesId' => $reqGloves->id,
+            'keyGloves' => $this->obligationKeyFor($reqGloves->id, 'Перчатки'),
+            'reqCreamId' => $reqCream->id,
+            'keyCream' => $this->obligationKeyFor($reqCream->id, 'Крем защитный'),
+        ];
     }
 
     /** @return array{positionId: string, requirementId: string, key: string} */

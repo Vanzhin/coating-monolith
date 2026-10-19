@@ -6,7 +6,6 @@ namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 use App\Compliance\Domain\ValueObject\Unit;
@@ -15,10 +14,9 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Собирает `RequirementItemInterface[]` из плоского ввода формы (shape → массив → {@see ComplianceType::makeItem()}).
- * Тип решает, какой класс позиции собрать: материальному и периодическому нужно количество, нематериальному —
- * нет; режим (инвентарный/расходный) есть только у материального. Правила (положительность, основание,
- * допустимость числа периодичности) — в самих VO; здесь только парсинг shape и понятная ошибка на неизвестном
- * enum-значении. Полностью пустые строки (без наименования) пропускаем.
+ * Тип решает, какой класс позиции собрать: обоим (материальному и периодическому) нужно количество. Правила
+ * (положительность, основание, допустимость числа периодичности) — в самих VO; здесь только парсинг shape и
+ * понятная ошибка на неизвестном enum-значении. Полностью пустые строки (без наименования) пропускаем.
  */
 final readonly class RequirementItemBuilder
 {
@@ -44,9 +42,6 @@ final readonly class RequirementItemBuilder
             ];
             if ($type->requiresQuantity()) {
                 $data['quantity'] = $this->quantity($row);
-            }
-            if (ComplianceType::Material === $type) {
-                $data['mode'] = (MaterialMode::tryFrom((string) ($row['mode'] ?? '')) ?? MaterialMode::Inventoried)->value;
             }
 
             $items[] = $type->makeItem($data);

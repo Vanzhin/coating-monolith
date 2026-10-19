@@ -33,7 +33,7 @@ final class SaveRequirementTemplateTest extends KernelTestCase
         $storage = $c->get(FileStorage::class);
         $em = $c->get(EntityManagerInterface::class);
 
-        // Создать не материальное требование со своим шаблоном.
+        // Создать периодическое требование со своим шаблоном.
         $result = $bus->execute($this->save(null, templateUpload: $this->docxUpload()));
         self::assertInstanceOf(SaveRequirementCommandResult::class, $result);
         $id = $result->id;
@@ -66,9 +66,9 @@ final class SaveRequirementTemplateTest extends KernelTestCase
         return new SaveRequirementCommand(
             $id,
             'Противопожарный инструктаж',
-            'non_material',
+            'periodic',
             ['pos-1'],
-            [['label' => 'Повторный инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '6', 'cadenceUnit' => 'month', 'basis' => 'ГОСТ 12.0.004']],
+            [['label' => 'Повторный инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '6', 'cadenceUnit' => 'month', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'ГОСТ 12.0.004']],
             $templateUpload,
             $removeTemplate,
         );

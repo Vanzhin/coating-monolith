@@ -72,7 +72,7 @@ final class RequirementsControllerTest extends WebTestCase
     {
         $this->client->request('GET', '/cabinet/compliance/requirements/create');
         self::assertResponseIsSuccessful();
-        // Тип: инвентарь/периодическая (и пока живой non_material до T6) — без спец-фильтра.
+        // Тип: инвентарь/периодическая — без спец-фильтра.
         self::assertSelectorExists('input[name="type"][value="periodic"]');
         self::assertSelectorExists('input[name="type"][value="material"]');
         // Количество — на месте (материал/период.), а выбор режима (инвентарь/расходник) из формы убран.
@@ -120,9 +120,9 @@ final class RequirementsControllerTest extends WebTestCase
             '/cabinet/compliance/requirements/create',
             [
                 'name' => $name,
-                'type' => 'non_material',
+                'type' => 'periodic',
                 'positionIds' => ['pos-1'],
-                'items' => [['label' => 'Повторный инструктаж', 'cadenceKind' => 'once', 'basis' => 'ГОСТ 12.0.004']],
+                'items' => [['label' => 'Повторный инструктаж', 'cadenceKind' => 'once', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'ГОСТ 12.0.004']],
             ],
             ['template' => $this->docxUpload($container->getParameter('kernel.project_dir'))],
         );

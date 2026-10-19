@@ -11,7 +11,7 @@ use App\Compliance\Domain\Type\JournalKind;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -31,9 +31,9 @@ final class RequirementTest extends TestCase
         return new MaterialItem('itm-helmet', 'Каска', new Cadence(CadenceKind::Periodic, 2, PeriodUnit::Year), 'п.6', new Quantity(1.0, Unit::Piece));
     }
 
-    private function briefing(): NonMaterialItem
+    private function briefing(): PeriodicItem
     {
-        return new NonMaterialItem('itm-briefing', 'Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004');
+        return new PeriodicItem('itm-briefing', 'Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004', new Quantity(1.0, Unit::Piece));
     }
 
     private function material(MaterialItem ...$items): Requirement
@@ -47,12 +47,12 @@ final class RequirementTest extends TestCase
         );
     }
 
-    private function nonMaterial(NonMaterialItem ...$items): Requirement
+    private function periodic(PeriodicItem ...$items): Requirement
     {
         return new Requirement(
             Uuid::v4(),
             'Журнал инструктажей',
-            ComplianceType::NonMaterial,
+            ComplianceType::Periodic,
             new StringCollection('pos-1', 'pos-2'),
             ...$items,
         );
@@ -140,14 +140,15 @@ final class RequirementTest extends TestCase
         self::assertNull($req->getTemplateFileId(), 'пустая строка → null');
     }
 
-    public function test_non_material_requirement_accepts_journal_kind(): void
+    public function test_periodic_requirement_never_carries_journal_kind(): void
     {
-        $req = $this->nonMaterial($this->briefing());
-
-        self::assertNull($req->getJournalKind());
+        // Периодическая несёт количество (requiresQuantity) — JournalKind структурно недостижим ни у одного
+        // оставшегося типа требования (Material/Periodic), см. Requirement::setJournalKind. Зафиксировано
+        // планом как ортогональная, принятая граница (не задача этого деплоя).
+        $req = $this->periodic($this->briefing());
 
         $req->setJournalKind(JournalKind::FireSafety);
-        self::assertSame(JournalKind::FireSafety, $req->getJournalKind());
+        self::assertNull($req->getJournalKind());
     }
 
     public function test_material_requirement_never_carries_journal_kind(): void

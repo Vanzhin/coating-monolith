@@ -25,7 +25,8 @@
         <field name="heldQuantity" column="held_quantity" type="float"/>
         <field name="active" column="active" type="boolean"/>
         <field name="origin" column="origin" type="string" length="16"/>
-        <field name="mode" column="mode" type="string" length="16" nullable="true"/>
+        <!-- Колонка `mode` остаётся в схеме (nullable, физический дроп — отдельной поздней миграцией), но
+             больше не ORM-маппится: MaterialMode снят, проектор всегда пишет NULL. -->
     </entity>
 
 </doctrine-mapping>

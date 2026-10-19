@@ -6,7 +6,6 @@ namespace App\Compliance\Domain\ReadModel;
 
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\ObligationView;
 use App\Compliance\Domain\ValueObject\Unit;
@@ -57,8 +56,6 @@ class ObligationProjection implements ObligationView
     private bool $active;
     // @phpstan-ignore-next-line property.onlyRead
     private string $origin;
-    // @phpstan-ignore-next-line property.onlyRead
-    private ?string $mode;
 
     public function id(): string
     {
@@ -177,11 +174,6 @@ class ObligationProjection implements ObligationView
             && Unit::Piece === $this->quantityUnit()
             && null !== $this->quantity()
             && abs($this->quantity() - 1.0) < ComplianceBucketResolver::QUANTITY_EPSILON;
-    }
-
-    public function mode(): ?MaterialMode
-    {
-        return null !== $this->mode ? MaterialMode::from($this->mode) : null;
     }
 
     /** Идентичность строки — `requirementId|itemId`, формат как у {@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf}. */

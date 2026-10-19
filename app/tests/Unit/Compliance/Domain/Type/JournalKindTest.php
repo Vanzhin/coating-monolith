@@ -6,6 +6,8 @@ namespace App\Tests\Unit\Compliance\Domain\Type;
 
 use App\Compliance\Domain\Type\FieldKind;
 use App\Compliance\Domain\Type\JournalKind;
+use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
+use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
 final class JournalKindTest extends TestCase
@@ -38,6 +40,29 @@ final class JournalKindTest extends TestCase
     {
         self::assertNotSame('', JournalKind::FireSafety->label());
         self::assertNotSame('', JournalKind::WorkplaceOt->label());
+    }
+
+    /**
+     * Инвариант полноты обязательных полей — на самом enum, не через полный путь Requirement/ProfileCompliance:
+     * JournalKind структурно недостижим ни у одного оставшегося типа требования (оба requiresQuantity()==true,
+     * см. Requirement::setJournalKind), поэтому только так и остаётся покрыть сам throw.
+     */
+    public function test_assert_details_complete_throws_on_missing_required_field(): void
+    {
+        $this->expectException(AppException::class);
+        // instructor_fio/instructor_doc обязательны у WorkplaceOt — передан только instruction_kind.
+        JournalKind::WorkplaceOt->assertDetailsComplete(InstructionDetails::fromArray(['instruction_kind' => 'Повторный']));
+    }
+
+    public function test_assert_details_complete_passes_when_all_required_fields_present(): void
+    {
+        JournalKind::WorkplaceOt->assertDetailsComplete(InstructionDetails::fromArray([
+            'instruction_kind' => 'Повторный',
+            'instructor_fio' => 'Шумилов Александр Николаевич',
+            'instructor_doc' => 'Удостоверение № 1',
+        ]));
+
+        $this->addToAssertionCount(1); // не бросило — это и есть ассерт
     }
 
     /** @return array<string, \App\Compliance\Domain\Type\FieldSpec> */

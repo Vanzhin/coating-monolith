@@ -9,7 +9,7 @@ final class RequirementGroupDTO
 {
     public string $requirementId;
     public string $name;
-    /** material|non_material */
+    /** material|periodic */
     public string $type;
     public string $typeLabel;
     /** Счёт позиций группы по бакетам — для разреза «по требованиям» (единица = позиция, не группа). */

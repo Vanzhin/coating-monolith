@@ -35,7 +35,7 @@ final class PersonalObligationTest extends TestCase
     public function test_json_round_trip_without_quantity(): void
     {
         $obligation = new PersonalObligation(
-            'item-2', 'req-1', 'Инструктаж вне нормы', ComplianceType::NonMaterial,
+            'item-2', 'req-1', 'Инструктаж вне нормы', ComplianceType::Periodic,
             new Cadence(CadenceKind::ByManufacturerDoc), null,
         );
 
@@ -43,7 +43,7 @@ final class PersonalObligationTest extends TestCase
 
         self::assertNull($restored->quantity);
         self::assertSame('Инструктаж вне нормы', $restored->label);
-        self::assertSame(ComplianceType::NonMaterial, $restored->type);
+        self::assertSame(ComplianceType::Periodic, $restored->type);
     }
 
     public function test_json_serialize_shape(): void

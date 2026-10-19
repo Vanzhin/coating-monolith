@@ -9,10 +9,8 @@ use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\ValueObject\Cadence;
-use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
@@ -138,7 +136,7 @@ final readonly class ComplianceObligationProjector
                 $rows[$key] = $this->buildRow(
                     $profileId, $requirement->getId(), $item->id(), $requirement->getName(), $item->label(),
                     $item->type(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null,
-                    $departmentId, ObligationOrigin::Norm->value, $item instanceof MaterialItem ? $item->mode() : null,
+                    $departmentId, ObligationOrigin::Norm->value,
                     $records, $key,
                 );
                 $keptItemIds[$requirement->getId()][] = $item->id();
@@ -159,7 +157,7 @@ final readonly class ComplianceObligationProjector
             $rows[$key] = $this->buildRow(
                 $profileId, $personal->requirementId, $personal->itemId, $requirementName,
                 $personal->label, $personal->type, $personal->cadence, $personal->quantity,
-                $departmentId, ObligationOrigin::Personal->value, null, $records, $key,
+                $departmentId, ObligationOrigin::Personal->value, $records, $key,
             );
             $keptItemIds[$personal->requirementId][] = $personal->itemId;
         }
@@ -198,7 +196,6 @@ final readonly class ComplianceObligationProjector
         ?Quantity $quantity,
         string $departmentId,
         string $origin,
-        ?MaterialMode $mode,
         array $records,
         string $key,
     ): array {
@@ -225,7 +222,9 @@ final readonly class ComplianceObligationProjector
             'held_quantity' => $held,
             'active' => $active,
             'origin' => $origin,
-            'mode' => $mode?->value,
+            // Режим снят вместе с MaterialMode (расходники теперь периодические, не материальные) — колонка
+            // остаётся nullable для обратной совместимости схемы, физический дроп — отдельной миграцией.
+            'mode' => null,
         ];
     }
 

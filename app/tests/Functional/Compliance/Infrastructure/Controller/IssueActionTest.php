@@ -356,18 +356,6 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('name="personalItems[__i__][amount]"', $html, 'периодическое требование без JournalKind: вне-нормовая позиция всё равно несёт ввод количества');
     }
 
-    /** Task 4b review-fix: нематериальное требование не несёт количества — personal_row без «Кол-во»/«Ед.». */
-    public function test_personal_row_hides_amount_input_under_non_material_requirement(): void
-    {
-        ['profileId' => $p, 'requirementId' => $r] = $this->nonMaterialRequirement();
-
-        $this->client->request('GET', $this->issueUrl($p, $r));
-        self::assertResponseIsSuccessful();
-        $html = (string) $this->client->getResponse()->getContent();
-
-        self::assertStringNotContainsString('name="personalItems[__i__][amount]"', $html, 'нематериальное требование: вне-нормовая позиция количества не несёт');
-    }
-
     /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
     private function periodicConsumableRequirement(): array
     {
@@ -396,23 +384,7 @@ final class IssueActionTest extends WebTestCase
         return ['profileId' => $profileId, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
     }
 
-    /** @return array{profileId: string, requirementId: string} Нематериальное требование (без количества, без журнала) — для теста personal_row. */
-    private function nonMaterialRequirement(): array
-    {
-        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
-        ['positionId' => $positionId, 'profileId' => $profileId] = $this->createPositionAndProfile();
-
-        $req = $bus->execute(new SaveRequirementCommand(
-            null, 'Медосмотр', 'non_material', [$positionId],
-            [['label' => 'Медосмотр', 'cadenceKind' => 'once', 'basis' => 'п.9']],
-        ));
-        \assert($req instanceof SaveRequirementCommandResult);
-        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
-
-        return ['profileId' => $profileId, 'requirementId' => $req->id];
-    }
-
-    /** @return array{positionId: string, profileId: string} Должность+организация+отдел+профиль — общий сетап periodic/non_material фикстур этого файла. */
+    /** @return array{positionId: string, profileId: string} Должность+организация+отдел+профиль — общий сетап periodic-фикстур этого файла. */
     private function createPositionAndProfile(): array
     {
         $bus = $this->client->getContainer()->get(CommandBusInterface::class);

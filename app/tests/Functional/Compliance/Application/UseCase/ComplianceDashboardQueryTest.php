@@ -76,8 +76,8 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
 
         // 2-е требование на ту же должность → у человека ДВА требования, оба не исполнены (не подписаны).
         $req2 = $this->commandBus->execute(new SaveRequirementCommand(
-            null, 'Журнал инструктажа', 'non_material', [$pr->profile->positionId],
-            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'basis' => 'п.6']],
+            null, 'Журнал инструктажа', 'periodic', [$pr->profile->positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.6']],
         ));
         \assert($req2 instanceof SaveRequirementCommandResult);
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
@@ -124,12 +124,12 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Ok)), $profileId));
     }
 
-    public function test_type_filter_nonmaterial_excludes_material_person(): void
+    public function test_type_filter_periodic_excludes_material_person(): void
     {
         ['profileId' => $profileId] = $this->enrollCompliance();
 
-        // у человека только материальное требование → фильтр по процедурам его убирает
-        self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(type: ComplianceType::NonMaterial)), $profileId));
+        // у человека только материальное требование → фильтр по периодическим его убирает
+        self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(type: ComplianceType::Periodic)), $profileId));
     }
 
     public function test_overdue_counted_and_listed_even_when_hidden_behind_missing_in_same_requirement(): void

@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Compliance\Domain\Type;
 
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
 use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +14,6 @@ final class ComplianceTypeTest extends TestCase
     public function test_titles(): void
     {
         self::assertSame('Выдача', ComplianceType::Material->title());
-        self::assertSame('Процедура', ComplianceType::NonMaterial->title());
         self::assertSame('Периодическая', ComplianceType::Periodic->title());
     }
 
@@ -23,7 +21,6 @@ final class ComplianceTypeTest extends TestCase
     {
         self::assertTrue(ComplianceType::Material->requiresQuantity());
         self::assertTrue(ComplianceType::Periodic->requiresQuantity());
-        self::assertFalse(ComplianceType::NonMaterial->requiresQuantity());
     }
 
     public function test_material_makes_material_item_with_quantity(): void
@@ -38,18 +35,6 @@ final class ComplianceTypeTest extends TestCase
         self::assertInstanceOf(MaterialItem::class, $item);
         self::assertSame(ComplianceType::Material, $item->type());
         self::assertSame(10.0, $item->quantity()->amount);
-    }
-
-    public function test_non_material_makes_non_material_item(): void
-    {
-        $item = ComplianceType::NonMaterial->makeItem([
-            'label' => 'Инструктаж на рабочем месте',
-            'cadence' => ['kind' => 'once', 'number' => null],
-            'basis' => 'ГОСТ 12.0.004',
-        ]);
-
-        self::assertInstanceOf(NonMaterialItem::class, $item);
-        self::assertSame(ComplianceType::NonMaterial, $item->type());
     }
 
     public function test_periodic_makes_periodic_item_with_quantity(): void
