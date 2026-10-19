@@ -10,7 +10,6 @@ use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQueryR
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Personnel\Application\UseCase\Query\GetPositionsByIds\GetPositionsByIdsQuery;
@@ -102,10 +101,6 @@ final class EditAction extends AbstractController
                 static fn (PeriodUnit $u): array => ['value' => $u->value, 'title' => $u->title()],
                 PeriodUnit::cases(),
             ),
-            'materialModes' => array_map(
-                static fn (MaterialMode $m): array => ['value' => $m->value, 'title' => $m->title()],
-                MaterialMode::cases(),
-            ),
         ]);
     }
 
@@ -142,7 +137,6 @@ final class EditAction extends AbstractController
                     'amount' => $i->amount,
                     'unit' => $i->unit,
                     'basis' => $i->basis,
-                    'mode' => $i->mode,
                 ],
                 $requirement->items,
             ),

@@ -6,6 +6,7 @@ namespace App\Compliance\Application\DTO\Requirement;
 
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 
 class RequirementDTOTransformer
@@ -42,10 +43,12 @@ class RequirementDTOTransformer
         $dto->cadenceLabel = $item->cadence()->label();
         $dto->basis = $item->basis();
 
-        if ($item instanceof MaterialItem) {
+        if ($item instanceof QuantifiedItem) {
             $dto->amount = $item->quantity()->amount;
             $dto->unit = $item->quantity()->unit->value;
             $dto->quantityLabel = $item->quantity()->label();
+        }
+        if ($item instanceof MaterialItem) {
             $dto->mode = $item->mode()->value;
         }
 

@@ -12,8 +12,13 @@
     </div>
 {% endmacro %}
 
-{% macro item_row(i, item, cadenceKinds, periodUnits, units, materialModes) %}
-    {% set isPeriodic = item.cadenceKind|default('') == 'periodic' %}
+{% macro item_row(i, item, cadenceKinds, periodUnits, units, type) %}
+    {% set isCadencePeriodic = item.cadenceKind|default('') == 'periodic' %}
+    {# Новая (никогда не отправлявшаяся) позиция периодического требования — предзаполняем разумный дефолт
+       для инструктажа (1 шт.); пользователь волен задать иное (напр. 1200 мл для расходника). #}
+    {% set isFreshPeriodicItem = type == 'periodic' and item.amount is not defined %}
+    {% set amountValue = isFreshPeriodicItem ? 1 : item.amount|default('') %}
+    {% set unitValue = isFreshPeriodicItem ? 'pcs' : item.unit|default('') %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-req-rows-target="row">
         <input type="hidden" name="items[{{ i }}][id]" value="{{ item.id|default('') }}">
         {# Строка 1 — наименование + количество: количество всегда на своём месте, не зависит от периодичности. #}
@@ -24,21 +29,12 @@
             </div>
             <div class="col-md-4" data-item-quantity>
                 <label class="form-label small mb-1">Кол-во <span class="text-danger">*</span></label>
-                <input type="text" inputmode="decimal" name="items[{{ i }}][amount]" value="{{ item.amount|default('') }}" class="form-control" placeholder="10">
+                <input type="text" inputmode="decimal" name="items[{{ i }}][amount]" value="{{ amountValue }}" class="form-control" placeholder="10">
             </div>
             <div class="col-md-2" data-item-quantity>
                 <label class="form-label small mb-1">Ед. <span class="text-danger">*</span></label>
                 <select name="items[{{ i }}][unit]" class="form-select">
-                    {% for u in units %}<option value="{{ u.value }}" {{ item.unit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
-                </select>
-            </div>
-        </div>
-        {# Строка 1.1 — тип позиции: своя строка, чтобы не ломать баланс 6+4+2 строки с количеством. #}
-        <div class="row g-2 mt-1">
-            <div class="col-md-4" data-item-quantity>
-                <label class="form-label small mb-1">Тип</label>
-                <select name="items[{{ i }}][mode]" class="form-select">
-                    {% for mm in materialModes %}<option value="{{ mm.value }}" {{ (item.mode|default('inventoried')) == mm.value ? 'selected' : '' }}>{{ mm.title }}</option>{% endfor %}
+                    {% for u in units %}<option value="{{ u.value }}" {{ unitValue == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
                 </select>
             </div>
         </div>
@@ -50,11 +46,11 @@
                     {% for k in cadenceKinds %}<option value="{{ k.value }}" {{ item.cadenceKind|default('') == k.value ? 'selected' : '' }}>{{ k.title }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="col-md-3" data-cadence-period {{ isPeriodic ? '' : 'hidden' }}>
+            <div class="col-md-3" data-cadence-period {{ isCadencePeriodic ? '' : 'hidden' }}>
                 <label class="form-label small mb-1">Число <span class="text-danger">*</span></label>
                 <input type="number" min="1" step="1" name="items[{{ i }}][cadenceNumber]" value="{{ item.cadenceNumber|default('') }}" class="form-control" placeholder="2">
             </div>
-            <div class="col-md-5" data-cadence-period {{ isPeriodic ? '' : 'hidden' }}>
+            <div class="col-md-5" data-cadence-period {{ isCadencePeriodic ? '' : 'hidden' }}>
                 <label class="form-label small mb-1">Единица периода <span class="text-danger">*</span></label>
                 <select name="items[{{ i }}][cadenceUnit]" class="form-select">
                     {% for u in periodUnits %}<option value="{{ u.value }}" {{ item.cadenceUnit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
