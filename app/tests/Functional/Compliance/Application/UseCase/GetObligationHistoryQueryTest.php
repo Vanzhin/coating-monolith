@@ -86,7 +86,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[0]->type);
     }
 
-    public function test_signed_write_off_event_chronological_after_issuance_and_carries_act_number(): void
+    public function test_signed_write_off_event_newest_first_before_issuance_and_carries_act_number(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k, amount: '10', date: '2026-06-01');
@@ -104,12 +104,13 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         $result = $this->history($p, $r, $k);
 
         self::assertCount(2, $result->events);
-        self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[0]->type);
-        self::assertSame('2026-06-01', $result->events[0]->date);
-        $writeOff = $result->events[1];
+        // Свежее — вверху: списание (10.08) позже выдачи (01.06) по дате, значит идёт первым.
+        $writeOff = $result->events[0];
         self::assertSame(ObligationHistoryEventDTO::TYPE_WRITE_OFF, $writeOff->type);
-        self::assertSame('2026-08-10', $writeOff->date, 'хронологически после выдачи — позже по дате акта');
+        self::assertSame('2026-08-10', $writeOff->date);
         self::assertSame('39', $writeOff->actNumber);
+        self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[1]->type);
+        self::assertSame('2026-06-01', $result->events[1]->date);
     }
 
     public function test_history_is_scoped_to_its_own_obligation_key_not_to_whole_requirement(): void

@@ -20,7 +20,7 @@
             {% if canEdit %}
                 <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                     <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
-                        <i class="bi bi-plus-lg me-1"></i>Выдать
+                        <i class="bi bi-box-arrow-in-down me-1"></i>Выдать
                     </a>
                     {% if hasRecords %}
                         <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: person.profileId, requirementId: g.requirementId}) }}">
