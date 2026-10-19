@@ -60,6 +60,8 @@ class ProfileComplianceDTOTransformer
         $row->nextDueAt = $obligation->nextDueAt()?->format('Y-m-d');
         $row->active = $obligation->isActive();
         $row->origin = $obligation->origin();
+        $row->heldQuantity = $obligation->heldQuantity();
+        $row->hideQuantity = $obligation->isInstructionLike();
         // Один вызов резолвера — канонический 4-бакет (тот же, что у дашборда), трёхцветный статус выводим из
         // него же {@see ComplianceStatus::fromBucket}, не считаем параллельным ладдером.
         $bucket = $this->resolver->bucketFor($obligation, $now);

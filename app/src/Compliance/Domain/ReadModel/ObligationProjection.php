@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\ReadModel;
 
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
@@ -162,6 +163,20 @@ class ObligationProjection implements ObligationView
     public function origin(): string
     {
         return $this->origin;
+    }
+
+    /**
+     * Инструктаж — периодическая позиция с нормой «1 шт.»: количество технического смысла не несёт
+     * («прошёл/не прошёл»), поэтому экраны выдачи/карточки его не показывают. ЕДИНСТВЕННОЕ место предиката —
+     * читатели (DTO-трансформеры) переносят результат дальше готовым булем, не пересчитывают условие сами.
+     * Не используется резолвером/бакетом — там количество полноценный инвариант недовыдачи для любой нормы.
+     */
+    public function isInstructionLike(): bool
+    {
+        return $this->isPeriodic()
+            && Unit::Piece === $this->quantityUnit()
+            && null !== $this->quantity()
+            && abs($this->quantity() - 1.0) < ComplianceBucketResolver::QUANTITY_EPSILON;
     }
 
     public function mode(): ?MaterialMode

@@ -4,9 +4,22 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
+use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
+use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
+use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommandResult;
+use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommand;
+use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommandResult;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Service\UuidService;
 use App\Tests\Support\AuthenticatesActorTrait;
 use App\Tests\Support\EnrollsComplianceTrait;
 use App\Users\Domain\Entity\User;
@@ -257,6 +270,96 @@ final class IssueActionTest extends WebTestCase
         self::assertNotFalse($posOk, 'позиция в норме присутствует в форме');
         self::assertLessThan($posSoon, $posOverdue, 'просроченная позиция рендерится выше позиции со скорым сроком');
         self::assertLessThan($posOk, $posSoon, 'позиция со скорым сроком рендерится выше позиции в норме');
+    }
+
+    /**
+     * Task 4: периодическая-расходник (крем, норма 1200 мл) — «на руках» на `/issue` = ПОСЛЕДНЯЯ выдача
+     * (T2 held), не сумма. Доввыдача 200 → 1000 не копится, бейдж должен показать 1000, не 1200.
+     */
+    public function test_periodic_consumable_shows_held_as_last_issuance(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->periodicConsumableRequirement();
+
+        $this->issuePeriodic($p, $r, $k, '200', '2026-06-01', 'ml');
+        $this->issuePeriodic($p, $r, $k, '1000', '2026-09-01', 'ml');
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('на руках 1000 / 1200 мл', $html, 'крем — количество показано, held = последняя выдача (1000), не сумма (1200)');
+    }
+
+    /**
+     * Task 4: инструктаж (периодическая, норма 1 шт) — количество/«на руках» на `/issue` НЕ показывается
+     * (норма 1 шт. технического смысла не несёт); «выдано»/«след. срок» остаются видны.
+     */
+    public function test_periodic_instruction_hides_quantity(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->periodicInstructionRequirement();
+        $this->issuePeriodic($p, $r, $k, '1', '2026-06-01', 'pcs');
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringNotContainsString('на руках', $html, 'инструктаж: «на руках» не показывается вовсе');
+        self::assertStringNotContainsString('Норма', $html, 'инструктаж: норма (1 шт.) в мета-строке не показывается');
+        self::assertStringContainsString('01.06.2026', $html, 'дата последней выдачи (прошёл инструктаж) всё равно видна');
+    }
+
+    /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
+    private function periodicConsumableRequirement(): array
+    {
+        return $this->periodicRequirement('Крем защитный', '1200', 'ml');
+    }
+
+    /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование-инструктаж: норма 1 шт, 1 раз в год. */
+    private function periodicInstructionRequirement(): array
+    {
+        return $this->periodicRequirement('Вводный инструктаж', '1', 'pcs');
+    }
+
+    /** @return array{profileId: string, requirementId: string, key: string} */
+    private function periodicRequirement(string $itemLabel, string $amount, string $unit): array
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+
+        $pos = $bus->execute(new CreatePositionCommand('Маляр '.uniqid('', true)));
+        \assert($pos instanceof CreatePositionCommandResult);
+        $org = $bus->execute(new CreateCounterpartyCommand('ООО Тест '.uniqid('', true), $this->randomTin()));
+        \assert($org instanceof CreateCounterpartyCommandResult);
+        $dept = $bus->execute(new CreateDepartmentCommand($org->id, 'Цех '.uniqid('', true)));
+        \assert($dept instanceof CreateDepartmentCommandResult);
+        $profile = $bus->execute(new CreateProfileCommand(
+            userUlid: UuidService::generateUlid(),
+            lastName: 'Петров', firstName: 'Пётр', middleName: 'Петрович',
+            positionId: $pos->id, organizationId: $org->id, departmentId: $dept->id,
+            personnelNumber: 'PN-'.uniqid('', true), hiredAt: new \DateTimeImmutable('2024-01-15'),
+            clothing: null, shoes: null, headgear: null, respirator: null, gloves: null, height: null, gender: null,
+        ));
+        \assert($profile instanceof CreateProfileCommandResult);
+
+        $req = $bus->execute(new SaveRequirementCommand(
+            null, 'Периодическая выдача', 'periodic', [$pos->id],
+            [['label' => $itemLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => $amount, 'unit' => $unit, 'basis' => 'п.9']],
+        ));
+        \assert($req instanceof SaveRequirementCommandResult);
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
+
+        return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
+    }
+
+    /** Прямая запись факта периодического требования в журнал (без черновика/скана/подписи) + пересборка проекции. */
+    private function issuePeriodic(string $profileId, string $requirementId, string $key, string $amount, string $date, string $unit): void
+    {
+        $this->client->getContainer()->get(CommandBusInterface::class)->execute(new RecordIssuanceCommand(
+            $profileId, $requirementId, $date,
+            [['obligationKey' => $key, 'amount' => $amount, 'unit' => $unit]],
+            cardNumber: 'CARD-PERIODIC',
+        ));
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+        $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
     }
 
     private function issueUrl(string $profileId, string $requirementId): string

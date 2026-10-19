@@ -162,13 +162,14 @@
                         } %}
                             {% block meta %}
                                 <div class="text-body-secondary small">
-                                    <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}{% if o.nextDueAt %} · <i class="bi bi-arrow-repeat me-1" title="Следующая выдача"></i>{{ o.nextDueAt }}{% endif %}
+                                    <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel and not o.hideQuantity %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}{% if o.nextDueAt %} · <i class="bi bi-arrow-repeat me-1" title="Следующая выдача"></i>{{ o.nextDueAt }}{% endif %}
                                 </div>
                             {% endblock %}
                             {% block control %}
                                 <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
                                     <span class="badge {{ bucketBadge[o.bucket] }} fw-normal"><i class="bi {{ bucketIcon[o.bucket] }} me-1"></i>{{ o.bucketLabel }}</span>
-                                    {% if o.type == 'material' %}
+                                    {# Инструктаж (периодическая, норма 1 шт) — количество не несёт смысла, прячем «на руках». #}
+                                    {% if o.quantityValue and not o.hideQuantity %}
                                         <span class="badge text-bg-{{ o.heldTone }} fw-normal">на руках {{ o.held }}{% if o.quantityValue %} / {{ o.quantityValue }}{% endif %} {{ o.unitTitle }}</span>
                                     {% endif %}
                                 </div>

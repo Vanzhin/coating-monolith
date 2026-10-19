@@ -20,9 +20,11 @@ use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**
  * Собирает read-модель формы выдачи `/issue`: позиции текущей нормы (бейдж/норма/на руках/сроки — EAGER), схему
- * полей инструктажа, доступность и черновик списания, № карточки. Obligation-строки (даты/бакет) — из read-модели
- * {@see GetProfileComplianceQuery} (проекция, не агрегат); агрегат {@see ProfileComplianceRepositoryInterface}
- * грузится ТОЛЬКО для `heldOf`/`recordsForRequirement`/`cardNumber` — этих данных в проекции нет.
+ * полей инструктажа, доступность и черновик списания, № карточки. Obligation-строки (даты/бакет/на руках) — из
+ * read-модели {@see GetProfileComplianceQuery} (проекция, не агрегат — «на руках» периодической там уже ПОСЛЕДНЯЯ
+ * выдача, не Σ, см. {@see \App\Compliance\Domain\ReadModel\ObligationProjection::heldQuantity()}); агрегат
+ * {@see ProfileComplianceRepositoryInterface} грузится ТОЛЬКО для `recordsForRequirement`/`cardNumber` — этих
+ * данных в проекции нет.
  * Presentation-merge текущего HTTP-запроса (восстановление формы после ошибки сабмита — `savedInstruction`/
  * `selected`) сюда НЕ входит: это не read-модель, а состояние конкретного запроса, его накладывает
  * {@see \App\Compliance\Infrastructure\Controller\Fulfillment\IssueAction} после получения страницы.
@@ -61,7 +63,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
             }
             $page->requirementName = $row->requirementName;
             $requirementType ??= $row->type;
-            $page->rows[] = $this->issueRow($row, $profileCompliance?->heldOf($row->key) ?? 0.0);
+            $page->rows[] = $this->issueRow($row);
         }
         $page->requirementType = $requirementType ?? 'material';
 
@@ -118,9 +120,10 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         return $page;
     }
 
-    private function issueRow(ObligationRowDTO $row, float $held): IssueRowDTO
+    private function issueRow(ObligationRowDTO $row): IssueRowDTO
     {
         $norm = null !== $row->quantityValue ? (float) $row->quantityValue : null;
+        $held = $row->heldQuantity; // проекция — у периодической это ПОСЛЕДНЯЯ выдача, не пересчитываем
 
         $issueRow = new IssueRowDTO();
         $issueRow->key = $row->key;
@@ -135,6 +138,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         $issueRow->quantityUnit = $row->quantityUnit;
         $issueRow->unitTitle = null !== $row->quantityUnit ? Unit::from($row->quantityUnit)->title() : null;
         $issueRow->origin = $row->origin; // personal (вне нормы) → в форме можно удалить из черновика
+        $issueRow->hideQuantity = $row->hideQuantity;
         // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках, но не ниже 0);
         // при полной норме дефицит = 0, поле остаётся редактируемым (замена сверх нормы).
         $issueRow->deficitValue = null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null;

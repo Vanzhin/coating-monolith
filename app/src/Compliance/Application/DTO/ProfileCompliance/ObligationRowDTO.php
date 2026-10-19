@@ -28,4 +28,8 @@ final class ObligationRowDTO
     public string $bucket;
     public string $bucketLabel;
     public string $origin = 'norm'; // norm | personal — персональную (вне нормы) можно убрать из черновика
+    /** На руках — у периодической это ПОСЛЕДНЯЯ выдача, не сумма ({@see \App\Compliance\Domain\ReadModel\ObligationProjection::heldQuantity()}). Читатели берут готовым, не пересчитывают. */
+    public float $heldQuantity = 0.0;
+    /** Прятать количество/«на руках» на экране — инструктаж (периодическая, норма 1 шт). Источник — {@see \App\Compliance\Domain\ReadModel\ObligationProjection::isInstructionLike()}. */
+    public bool $hideQuantity = false;
 }

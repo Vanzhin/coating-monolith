@@ -9,7 +9,7 @@ use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
-use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RenderData;
@@ -91,7 +91,10 @@ final readonly class RequirementCardProjector
     {
         $rows = [];
         foreach ($requirement->getItems() as $item) {
-            $quantity = $item instanceof MaterialItem ? $item->quantity() : null;
+            // Печатная карточка — норма ВСЕГО перечня, количество показываем для любой количественной позиции
+            // (инвентарь и периодическая — сиблинги по {@see QuantifiedItem}); экранный hide-предикат
+            // инструктажа (1 шт) на печать нормы не распространяется.
+            $quantity = $item instanceof QuantifiedItem ? $item->quantity() : null;
             $unit = $quantity?->unit->title() ?? '';
             $cadence = $item->cadence()->label();
             $rows[] = [
