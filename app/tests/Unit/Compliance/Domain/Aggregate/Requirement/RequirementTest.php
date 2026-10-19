@@ -37,6 +37,17 @@ final class RequirementTest extends TestCase
         return new PeriodicItem('itm-briefing', 'Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004', new Quantity(1.0, Unit::Piece));
     }
 
+    private function materialItem(string $id, string $label): MaterialItem
+    {
+        return MaterialItem::fromArray([
+            'id' => $id,
+            'label' => $label,
+            'cadence' => ['kind' => 'once'],
+            'basis' => 'п.1',
+            'quantity' => ['amount' => 1.0, 'unit' => 'pcs'],
+        ]);
+    }
+
     /** «Выдача» теперь полиморфна (инвентарь + расходник в одной карточке) — помощник принимает любой вид позиции. */
     private function material(RequirementItemInterface ...$items): Requirement
     {
@@ -124,21 +135,21 @@ final class RequirementTest extends TestCase
         $this->material($this->gloves(), $this->gloves());
     }
 
-    public function test_replace_items_accepts_mixed_items_for_material_requirement(): void
+    public function test_merge_items_accepts_mixed_items_for_material_requirement(): void
     {
         $req = $this->material($this->gloves());
 
-        $req->replaceItems($this->gloves(), $this->briefing());
+        $req->mergeItems($this->gloves(), $this->briefing());
 
         self::assertCount(2, $req->getItems());
     }
 
-    public function test_replace_items_revalidates_type_for_periodic_requirement(): void
+    public function test_merge_items_revalidates_type_for_periodic_requirement(): void
     {
         $req = $this->periodic($this->briefing());
 
         $this->expectException(AppException::class);
-        $req->replaceItems($this->gloves());
+        $req->mergeItems($this->gloves());
     }
 
     public function test_blank_name_rejected(): void
@@ -185,5 +196,31 @@ final class RequirementTest extends TestCase
         // (выдача СИЗ) журнала не носит, иначе подпись акта упрётся в проверку полей инструктажа.
         $req->setJournalKind(JournalKind::FireSafety);
         self::assertNull($req->getJournalKind());
+    }
+
+    public function test_merge_soft_removes_absent_item_and_active_excludes_it(): void
+    {
+        $gloves = $this->materialItem('g1', 'Перчатки');
+        $boots = $this->materialItem('b1', 'Ботинки');
+        $req = new Requirement(Uuid::v7(), 'Карточка', ComplianceType::Material, new StringCollection('pos1'), $gloves, $boots);
+
+        // пере-сохранение формы прислало только перчатки → ботинки должны стать removed, не исчезнуть
+        $req->mergeItems($this->materialItem('g1', 'Перчатки'));
+
+        self::assertCount(2, $req->getItems());                       // надгробие сохранено
+        self::assertCount(1, $req->activeItems());                    // активна одна
+        self::assertSame('Перчатки', $req->activeItems()[0]->label());
+        $bootsNow = array_values(array_filter($req->getItems(), static fn ($i) => 'b1' === $i->id()))[0];
+        self::assertTrue($bootsNow->isRemoved());
+    }
+
+    public function test_merge_allows_new_active_item_with_same_label_as_removed_tombstone(): void
+    {
+        $socks = $this->materialItem('s1', 'Носки');
+        $req = new Requirement(Uuid::v7(), 'Карточка', ComplianceType::Material, new StringCollection('pos1'), $socks);
+        $req->mergeItems(); // убрали носки → надгробие
+        $req->mergeItems($this->materialItem('s2', 'Носки')); // новая активная с тем же названием — дедуп не падает
+        self::assertCount(1, $req->activeItems());
+        self::assertSame('Носки', $req->activeItems()[0]->label());
     }
 }

@@ -66,7 +66,7 @@ final readonly class SaveRequirementCommandHandler implements CommandHandlerInte
             }
             $requirement->rename($command->name);
             $requirement->replacePositions($positions);
-            $requirement->replaceItems(...$items);
+            $requirement->mergeItems(...$items);
         }
 
         $requirement->setJournalKind(null !== $command->journalKind ? JournalKind::tryFrom($command->journalKind) : null);

@@ -172,8 +172,10 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertNotEmpty($id);
     }
 
-    public function test_update_replaces_items(): void
+    public function test_update_merges_items_and_soft_removes_absent(): void
     {
+        // Сохранение формы без id исходной позиции — она пропадает из состава и помечается removed
+        // (мягкое удаление, см. Requirement::mergeItems), а не исчезает: getItems() отдаёт все 3.
         $posId = $this->createPosition('Электрик');
         $id = $this->save(null, 'СИЗ', 'material', [$posId], [$this->materialItem()]);
         $this->save($id, 'СИЗ', 'material', [$posId], [$this->materialItem('Каска'), $this->materialItem('Ботинки')]);
@@ -181,7 +183,11 @@ final class RequirementUseCasesTest extends KernelTestCase
         $result = $this->queryBus->execute(new GetRequirementQuery($id));
         \assert($result instanceof GetRequirementQueryResult);
         self::assertNotNull($result->requirement);
-        self::assertCount(2, $result->requirement->items);
+        self::assertCount(3, $result->requirement->items);
+
+        $requirement = $this->repo->findOneById($id);
+        self::assertNotNull($requirement);
+        self::assertCount(2, $requirement->activeItems());
     }
 
     public function test_type_change_on_update_rejected(): void

@@ -66,9 +66,37 @@ class Requirement extends Aggregate
         $this->positionIds = $positionIds;
     }
 
-    public function replaceItems(RequirementItemInterface ...$items): void
+    /**
+     * Сохранение состава из формы: присланные позиции обновляют/добавляют; существующие, которых в форме нет,
+     * помечаются removed (мягкое удаление — не выкидываем, held по ним списывается, имя резолвится). Дедуп
+     * по названию и проверка типа — среди присланных (активных), через {@see accepted()}.
+     */
+    public function mergeItems(RequirementItemInterface ...$submitted): void
     {
-        $this->items = $this->accepted($items);
+        $accepted = $this->accepted($submitted);
+        $submittedById = [];
+        foreach ($accepted as $item) {
+            $submittedById[$item->id()] = $item;
+        }
+
+        $merged = [];
+        $seenIds = [];
+        foreach ($this->items as $existing) {
+            $seenIds[$existing->id()] = true;
+            if (isset($submittedById[$existing->id()])) {
+                $merged[] = $submittedById[$existing->id()];       // обновлённая версия
+            } elseif ($existing->isRemoved()) {
+                $merged[] = $existing;                             // уже надгробие — как есть
+            } else {
+                $merged[] = $existing->withRemoved();              // мягко удаляем
+            }
+        }
+        foreach ($accepted as $item) {
+            if (!isset($seenIds[$item->id()])) {
+                $merged[] = $item;                                 // новая позиция
+            }
+        }
+        $this->items = $merged;
     }
 
     /**
@@ -130,6 +158,16 @@ class Requirement extends Aggregate
     public function getItems(): array
     {
         return $this->items;
+    }
+
+    /**
+     * Активные позиции (не удалённые) — норм-контроль.
+     *
+     * @return RequirementItemInterface[]
+     */
+    public function activeItems(): array
+    {
+        return array_values(array_filter($this->items, static fn (RequirementItemInterface $i): bool => !$i->isRemoved()));
     }
 
     public function coversPosition(string $positionId): bool
