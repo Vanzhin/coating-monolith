@@ -12,6 +12,8 @@
 {% for t in complianceTypes %}{% set requiresQuantityMap = requiresQuantityMap|merge({(t.value): t.requiresQuantity}) %}{% endfor %}
 {% set carriesJournalMap = {} %}
 {% for t in complianceTypes %}{% set carriesJournalMap = carriesJournalMap|merge({(t.value): t.carriesJournal}) %}{% endfor %}
+{% set allowsMixedMap = {} %}
+{% for t in complianceTypes %}{% set allowsMixedMap = allowsMixedMap|merge({(t.value): t.allowsMixed}) %}{% endfor %}
 
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
@@ -29,7 +31,8 @@
                   enctype="multipart/form-data"
                   data-controller="req-type-fields"
                   data-req-type-fields-requires-quantity-value="{{ requiresQuantityMap|json_encode|e('html_attr') }}"
-                  data-req-type-fields-carries-journal-value="{{ carriesJournalMap|json_encode|e('html_attr') }}">
+                  data-req-type-fields-carries-journal-value="{{ carriesJournalMap|json_encode|e('html_attr') }}"
+                  data-req-type-fields-allows-mixed-value="{{ allowsMixedMap|json_encode|e('html_attr') }}">
                 {% if error is defined and error %}
                     <div class="form-alert" role="alert">
                         <i class="bi bi-exclamation-octagon"></i>
@@ -108,9 +111,9 @@
                     <h6 class="fw-semibold mb-3">Позиции</h6>
                     <div data-controller="req-rows req-cadence-fields">
                         <div data-req-rows-target="rows">
-                            {% for item in inputData.items|default([]) %}{{ m.item_row(loop.index0, item, cadenceKinds, periodUnits, units, effectiveType) }}{% endfor %}
+                            {% for item in inputData.items|default([]) %}{{ m.item_row(loop.index0, item, cadenceKinds, periodUnits, units, effectiveType, allowsMixedMap) }}{% endfor %}
                         </div>
-                        <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units, effectiveType) }}</template>
+                        <template data-req-rows-target="template">{{ m.item_row('__i__', {}, cadenceKinds, periodUnits, units, effectiveType, allowsMixedMap) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm" data-action="req-rows#add" aria-label="Добавить позицию"><i class="bi bi-plus-lg"></i></button>
                     </div>
                     <div class="form-text">«Число» и «Единица периода» — только для «каждые N». Количество — у требования типа «Выдача» и «Периодическая»; основание обязательно.</div>

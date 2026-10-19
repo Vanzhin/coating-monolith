@@ -13,7 +13,10 @@ use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
  * (инвентарь, выдаётся в количестве, учитывается остаток — СИЗ) и периодическое (событие, которое всегда
  * в количестве, но остаток не ведётся — проходится/выдаётся раз в N: инструктаж, медосмотр, расходник).
  * Позиция типа не хранит: свой класс она заявляет через {@see RequirementItemInterface::type()}, а тип требования
- * решает, какой класс позиции собрать из хранилища ({@see self::makeItem()}) и какую позицию принять.
+ * решает, какой класс позиции собрать из хранилища ({@see self::makeItem()}). Какие виды позиций требование
+ * принимает в одной карточке — решает {@see self::allowsMixedItems()}: «Выдача» держит инвентарь и расходник
+ * вместе (личная карточка СИЗ), «Периодическая» — только позиции своего вида (см. {@see
+ * \App\Compliance\Domain\Aggregate\Requirement\Requirement::supports()}).
  * Новый вид = новый case + своя ветка в makeItem + свой класс позиции; ядро (Requirement) не трогаем.
  */
 enum ComplianceType: string
@@ -48,6 +51,15 @@ enum ComplianceType: string
         return match ($this) {
             self::Material => false,
             self::Periodic => true,
+        };
+    }
+
+    /** «Выдача» (личная карточка СИЗ) держит и инвентарь, и расходник; «Периодическая» — только периодические. */
+    public function allowsMixedItems(): bool
+    {
+        return match ($this) {
+            self::Material => true,
+            self::Periodic => false,
         };
     }
 

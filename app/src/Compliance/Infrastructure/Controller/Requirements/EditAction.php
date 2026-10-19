@@ -82,7 +82,7 @@ final class EditAction extends AbstractController
             'error' => $error,
             'inputData' => $inputData,
             'complianceTypes' => array_map(
-                static fn (ComplianceType $t): array => ['value' => $t->value, 'title' => $t->title(), 'requiresQuantity' => $t->requiresQuantity(), 'carriesJournal' => $t->carriesJournal()],
+                static fn (ComplianceType $t): array => ['value' => $t->value, 'title' => $t->title(), 'requiresQuantity' => $t->requiresQuantity(), 'carriesJournal' => $t->carriesJournal(), 'allowsMixed' => $t->allowsMixedItems()],
                 ComplianceType::cases(),
             ),
             'journalKinds' => array_map(
@@ -131,6 +131,7 @@ final class EditAction extends AbstractController
                 static fn ($i): array => [
                     'id' => $i->id,
                     'label' => $i->label,
+                    'type' => $i->type,
                     'cadenceKind' => $i->cadenceKind,
                     'cadenceNumber' => $i->cadenceNumber,
                     'cadenceUnit' => $i->cadenceUnit,

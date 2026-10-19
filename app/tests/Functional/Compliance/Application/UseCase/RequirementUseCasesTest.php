@@ -130,6 +130,31 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertSame(10.0, $items[0]->quantity()->amount);
     }
 
+    public function test_material_requirement_holds_mixed_inventory_and_consumable_items(): void
+    {
+        $posId = $this->createPosition('Маляр СИЗ');
+        $id = $this->save(null, 'Личная карточка учёта выдачи СИЗ', 'material', [$posId], [
+            ['type' => 'material'] + $this->materialItem('Каска'),
+            ['type' => 'periodic', 'amount' => '1200', 'unit' => 'ml'] + $this->periodicItem('Мыло жидкое', 'п.9 Типовых норм'),
+        ]);
+
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $requirement = $this->repo->findOneById($id);
+        self::assertNotNull($requirement);
+        self::assertSame(ComplianceType::Material, $requirement->getType(), 'требование остаётся «Выдачей»');
+        $items = $requirement->getItems();
+        self::assertCount(2, $items);
+        self::assertInstanceOf(MaterialItem::class, $items[0]);
+        self::assertInstanceOf(PeriodicItem::class, $items[1]);
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertSame('material', $result->requirement->items[0]->type);
+        self::assertSame('periodic', $result->requirement->items[1]->type);
+    }
+
     public function test_empty_basis_rejected(): void
     {
         $posId = $this->createPosition('Сварщик');

@@ -7,18 +7,17 @@ namespace App\Tests\Functional\Compliance\Infrastructure\Database;
 use App\Shared\Infrastructure\Database\Migrations\Version20261106121000;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\Exception\AbortMigration;
 use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Данные-миграция {@see Version20261106121000}: приводит существующие требования к новой таксономии
- * (material/periodic вместо material+non_material+mode). Сеем строки сырым SQL прямо в
- * `compliance_requirement` (мимикрируя реальную jsonb-форму, которую пишет
+ * (material/periodic вместо material+non_material+mode). «Выдача» (material) полиморфна — смешанное
+ * material-требование (инвентарь+расходник) НЕ аномалия: остаётся material, тип меняется позиционно.
+ * Сеем строки сырым SQL прямо в `compliance_requirement` (мимикрируя реальную jsonb-форму, которую пишет
  * {@see \App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType} — каждая позиция несёт
- * инфраструктурный дискриминатор `type`), минуя домен — миграция намеренно декаплена от доменных классов
- * (следующая задача плана удаляет `MaterialMode`/`NonMaterialItem`).
+ * инфраструктурный дискриминатор `type`), минуя домен — миграция намеренно декаплена от доменных классов.
  */
 final class PeriodicItemMigrationTest extends KernelTestCase
 {
@@ -58,7 +57,7 @@ final class PeriodicItemMigrationTest extends KernelTestCase
         self::assertSame(2, $item['quantity']['amount'], 'уже заданное quantity не перетирается единицей по умолчанию');
     }
 
-    public function test_consumable_material_becomes_periodic_without_mode(): void
+    public function test_consumable_material_item_becomes_periodic_item_requirement_stays_material(): void
     {
         $id = $this->insertRequirement('material', [
             $this->item('material', 'Мыло', 'п.2', quantity: ['amount' => 1200.0, 'unit' => 'ml'], mode: 'consumable'),
@@ -67,7 +66,7 @@ final class PeriodicItemMigrationTest extends KernelTestCase
         $this->runMigration();
 
         $row = $this->fetchRequirement($id);
-        self::assertSame('periodic', $row['type']);
+        self::assertSame('material', $row['type'], 'требование «Выдача» остаётся material — меняется только тип позиции');
         $item = $this->decodeItems($row)[0];
         self::assertArrayNotHasKey('mode', $item);
         self::assertSame('periodic', $item['type']);
@@ -133,22 +132,25 @@ final class PeriodicItemMigrationTest extends KernelTestCase
         self::assertSame($after1, $after2, 'повторный прогон не меняет состояние уже приведённых требований');
     }
 
-    public function test_mixed_material_requirement_aborts_and_is_left_untouched(): void
+    public function test_mixed_material_requirement_keeps_material_type_and_splits_items_by_mode(): void
     {
         $id = $this->insertRequirement('material', [
             $this->item('material', 'Перчатки', 'п.3', quantity: ['amount' => 10.0, 'unit' => 'pair'], mode: 'inventoried'),
             $this->item('material', 'Мыло', 'п.2', quantity: ['amount' => 1200.0, 'unit' => 'ml'], mode: 'consumable'),
         ]);
-        $before = $this->fetchRequirement($id);
 
-        try {
-            $this->runMigration();
-            self::fail('Ожидали AbortMigration для смешанного material-требования.');
-        } catch (AbortMigration $e) {
-            self::assertStringContainsString($id, $e->getMessage(), 'id смешанного требования в сообщении аборта');
-        }
+        $this->runMigration();
 
-        self::assertSame($before, $this->fetchRequirement($id), 'смешанное требование осталось нетронутым');
+        $row = $this->fetchRequirement($id);
+        self::assertSame('material', $row['type'], 'смешанное material-требование остаётся «Выдачей»');
+        $items = $this->decodeItems($row);
+
+        self::assertArrayNotHasKey('mode', $items[0]);
+        self::assertSame('material', $items[0]['type'], 'инвентарная позиция остаётся material');
+
+        self::assertArrayNotHasKey('mode', $items[1]);
+        self::assertSame('periodic', $items[1]['type'], 'расходная позиция становится periodic');
+        self::assertEqualsWithDelta(1200.0, $items[1]['quantity']['amount'], 1e-9, 'quantity расходника сохранён');
     }
 
     private function runMigration(): void

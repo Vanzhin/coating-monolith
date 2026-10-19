@@ -29,6 +29,12 @@ final class ComplianceTypeTest extends TestCase
         self::assertTrue(ComplianceType::Periodic->carriesJournal());
     }
 
+    public function test_allows_mixed_items(): void
+    {
+        self::assertTrue(ComplianceType::Material->allowsMixedItems());
+        self::assertFalse(ComplianceType::Periodic->allowsMixedItems());
+    }
+
     public function test_material_makes_material_item_with_quantity(): void
     {
         $item = ComplianceType::Material->makeItem([

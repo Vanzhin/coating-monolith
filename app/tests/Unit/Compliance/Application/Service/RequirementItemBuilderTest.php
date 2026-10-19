@@ -62,4 +62,22 @@ final class RequirementItemBuilderTest extends TestCase
         $this->expectException(AppException::class);
         (new RequirementItemBuilder())->build(ComplianceType::Periodic, [$this->row(['amount' => ''])]);
     }
+
+    public function test_per_row_type_overrides_requirement_type(): void
+    {
+        $items = (new RequirementItemBuilder())->build(ComplianceType::Material, [
+            $this->row(['label' => 'Каска', 'type' => 'material']),
+            $this->row(['label' => 'Мыло', 'type' => 'periodic']),
+        ]);
+
+        self::assertInstanceOf(MaterialItem::class, $items[0]);
+        self::assertInstanceOf(PeriodicItem::class, $items[1]);
+    }
+
+    public function test_row_without_type_falls_back_to_requirement_type(): void
+    {
+        $items = (new RequirementItemBuilder())->build(ComplianceType::Periodic, [$this->row()]);
+
+        self::assertInstanceOf(PeriodicItem::class, $items[0]);
+    }
 }

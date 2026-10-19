@@ -12,6 +12,7 @@ use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
+use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -36,7 +37,8 @@ final class RequirementTest extends TestCase
         return new PeriodicItem('itm-briefing', 'Инструктаж', new Cadence(CadenceKind::Once), 'ГОСТ 12.0.004', new Quantity(1.0, Unit::Piece));
     }
 
-    private function material(MaterialItem ...$items): Requirement
+    /** «Выдача» теперь полиморфна (инвентарь + расходник в одной карточке) — помощник принимает любой вид позиции. */
+    private function material(RequirementItemInterface ...$items): Requirement
     {
         return new Requirement(
             Uuid::v4(),
@@ -78,24 +80,41 @@ final class RequirementTest extends TestCase
         self::assertSame(Unit::Pair, $item->quantity()->unit);
     }
 
-    public function test_supports_matches_own_type(): void
+    public function test_material_requirement_supports_both_item_kinds(): void
     {
+        // «Выдача» — личная карточка СИЗ: держит и инвентарь (MaterialItem), и расходник (PeriodicItem) вместе.
         $req = $this->material();
 
         self::assertTrue($req->supports($this->gloves()));
-        self::assertFalse($req->supports($this->briefing()));
+        self::assertTrue($req->supports($this->briefing()));
     }
 
-    public function test_rejects_foreign_type_item(): void
+    public function test_periodic_requirement_supports_only_periodic_items(): void
+    {
+        $req = $this->periodic();
+
+        self::assertTrue($req->supports($this->briefing()));
+        self::assertFalse($req->supports($this->gloves()));
+    }
+
+    public function test_material_requirement_accepts_mixed_items(): void
+    {
+        $req = $this->material($this->gloves(), $this->briefing());
+
+        self::assertCount(2, $req->getItems());
+        self::assertInstanceOf(MaterialItem::class, $req->getItems()[0]);
+        self::assertInstanceOf(PeriodicItem::class, $req->getItems()[1]);
+    }
+
+    public function test_periodic_requirement_rejects_material_item(): void
     {
         $this->expectException(AppException::class);
         new Requirement(
             Uuid::v4(),
-            'Смешанное',
-            ComplianceType::Material,
+            'Журнал инструктажей',
+            ComplianceType::Periodic,
             new StringCollection('pos-1'),
             $this->gloves(),
-            $this->briefing(),
         );
     }
 
@@ -105,12 +124,21 @@ final class RequirementTest extends TestCase
         $this->material($this->gloves(), $this->gloves());
     }
 
-    public function test_replace_items_revalidates_type(): void
+    public function test_replace_items_accepts_mixed_items_for_material_requirement(): void
     {
         $req = $this->material($this->gloves());
 
+        $req->replaceItems($this->gloves(), $this->briefing());
+
+        self::assertCount(2, $req->getItems());
+    }
+
+    public function test_replace_items_revalidates_type_for_periodic_requirement(): void
+    {
+        $req = $this->periodic($this->briefing());
+
         $this->expectException(AppException::class);
-        $req->replaceItems($this->briefing());
+        $req->replaceItems($this->gloves());
     }
 
     public function test_blank_name_rejected(): void

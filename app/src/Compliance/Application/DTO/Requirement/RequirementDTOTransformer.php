@@ -36,6 +36,7 @@ class RequirementDTOTransformer
         $dto = new RequirementItemDTO();
         $dto->id = $item->id();
         $dto->label = $item->label();
+        $dto->type = $item->type()->value;
         $dto->cadenceKind = $item->cadence()->kind->value;
         $dto->cadenceNumber = $item->cadence()->number;
         $dto->cadenceUnit = $item->cadence()->unit?->value;

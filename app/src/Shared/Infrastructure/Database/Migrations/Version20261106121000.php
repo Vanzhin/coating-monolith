@@ -10,23 +10,25 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Compliance: приводим существующие требования (`compliance_requirement`) к новой таксономии —
  * материальное (`material`) и периодическое (`periodic`) вместо материального+нематериального+режима.
+ * «Выдача» (`material`) полиморфна: держит и инвентарь, и расходник в одной карточке — смешанное
+ * material-требование это норма, не аномалия; тип меняется ПОЗИЦИОННО, а не у требования целиком.
  *
- * - `non_material` → `periodic`: позициям без `quantity` проставляем `{amount:1,unit:'pcs'}` (инструктаж = 1 раз).
- * - `material`, у позиций ВСЕ эффективные режимы `consumable` → `periodic`, у позиций убираем `mode`.
- * - `material`, у позиций ВСЕ эффективные режимы `inventoried` → остаётся `material`, у позиций убираем `mode`.
- * - `material` со смесью `inventoried`+`consumable` в одном требовании не приводится мономорфно — требование
- *   НЕ мутируем, id собираем и после прохода по всем строкам абортим миграцию (на проде ожидаем 0 таких строк;
- *   если есть — разводить руками до деплоя).
+ * - `non_material` → требование `periodic`: позициям без `quantity` проставляем `{amount:1,unit:'pcs'}`
+ *   (инструктаж = 1 раз), позиция становится `periodic`.
+ * - `material` → требование ОСТАЁТСЯ `material`; у каждой позиции смотрим `mode`: `consumable` → позиция
+ *   становится `periodic` (расходник/ДСИЗ, quantity сохраняется), иначе (`inventoried` или `mode` вовсе
+ *   не задан — исторический дефолт инвентаря) → позиция остаётся `material`. `mode` в обоих случаях убираем.
+ * - `periodic` — уже приведено, не трогаем.
  *
  * Дискриминатор `type` внутри каждой позиции (инфраструктурная метка класса — {@see
  * \App\Compliance\Infrastructure\Database\DBAL\RequirementItemsType}, не часть доменной сериализации позиции)
- * синхронизируем с новым классом позиции — иначе при гидратации Doctrine соберёт позицию старого класса
- * (например, `NonMaterialItem` при `requirement.type = periodic`), и свежепроставленное `quantity` потеряется.
+ * синхронизируем с новым классом позиции — иначе при гидратации Doctrine соберёт позицию старого класса, и
+ * свежепроставленное `quantity` потеряется.
  *
- * Идемпотентно: `non_material`/`material`-с-`mode` строки мутируются один раз, повторный прогон их не находит
- * (type уже `periodic`, либо у позиций уже нет `mode`) — no-op. Намеренно читаем/пишем jsonb сырыми
- * массивами (json_decode/json_encode), без доменных классов — по шаблону {@see Version20261020120500}:
- * `MaterialMode`/`NonMaterialItem` будут удалены следующей задачей плана, миграция не должна от них зависеть.
+ * Идемпотентно: `non_material` строки мутируются один раз (type требования уже `periodic` — не находим).
+ * `material` строка, где НИ у одной позиции нет ключа `mode` — уже приведена (mode убран ранее), no-op.
+ * Намеренно читаем/пишем jsonb сырыми массивами (json_decode/json_encode), без доменных классов — по
+ * шаблону {@see Version20261020120500}: `MaterialMode`/`NonMaterialItem` удалены, миграция от них не зависит.
  *
  * `down()` — no-op: откат смешал бы обратно `periodic`-позиции разного происхождения (были `non_material`
  * или `material`-consumable) без возможности различить, откуда какая, — необратимо.
@@ -35,15 +37,13 @@ final class Version20261106121000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Compliance: требования non_material/material(consumable) → periodic, mode убран, пред-проверка смешанных.';
+        return 'Compliance: требования non_material → periodic; material — тип позиций по mode (consumable→periodic), требование остаётся material.';
     }
 
     public function up(Schema $schema): void
     {
         /** @var list<array{id: string, type: string, items: string}> $rows */
         $rows = $this->connection->fetchAllAssociative('SELECT id, type, items FROM compliance_requirement');
-
-        $mixedIds = [];
 
         foreach ($rows as $row) {
             $items = json_decode((string) $row['items'], true, 512, JSON_THROW_ON_ERROR);
@@ -66,35 +66,19 @@ final class Version20261106121000 extends AbstractMigration
                 }
                 unset($item);
             } elseif ('material' === $type) {
-                $hasModeKey = false;
-                $effectiveModes = [];
-                foreach ($items as $item) {
-                    if (is_array($item) && array_key_exists('mode', $item)) {
-                        $hasModeKey = true;
-                    }
-                    $effectiveModes[] = is_array($item) ? (string) ($item['mode'] ?? 'inventoried') : 'inventoried';
-                }
-
+                $hasModeKey = array_any($items, static fn ($item): bool => is_array($item) && array_key_exists('mode', $item));
                 if (!$hasModeKey) {
                     continue; // уже приведено (mode убран ранее) — идемпотентный no-op
                 }
 
-                $uniqueModes = array_values(array_unique($effectiveModes));
-                if (\count($uniqueModes) > 1) {
-                    $mixedIds[] = (string) $row['id'];
-                    continue; // смешанное material-требование — не мутируем
-                }
-
-                $allConsumable = 'consumable' === $uniqueModes[0];
-                $newType = $allConsumable ? 'periodic' : 'material';
+                $newType = 'material'; // требование остаётся «Выдачей» — меняется только тип позиций
                 foreach ($items as &$item) {
                     if (!is_array($item)) {
                         continue;
                     }
+                    $isConsumable = 'consumable' === ($item['mode'] ?? 'inventoried');
                     unset($item['mode']);
-                    if ($allConsumable) {
-                        $item['type'] = 'periodic';
-                    }
+                    $item['type'] = $isConsumable ? 'periodic' : 'material';
                 }
                 unset($item);
             } else {
@@ -110,12 +94,6 @@ final class Version20261106121000 extends AbstractMigration
                 ],
             );
         }
-
-        $this->abortIf(
-            [] !== $mixedIds,
-            'Смешанные material-требования (inventoried+consumable в одном требовании) не приводятся '
-            .'мономорфно к новой таксономии: '.implode(', ', $mixedIds).'. Разведите вручную перед деплоем.',
-        );
     }
 
     public function down(Schema $schema): void
