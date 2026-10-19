@@ -338,6 +338,36 @@ final class IssueActionTest extends WebTestCase
         self::assertSame(0, $crawler->filter('input[name="items[0][amount]"]')->count(), 'инструктаж: поля количества нет');
     }
 
+    /**
+     * Task 4b review-fix: добавляемая вне нормы позиция (`personal_row`) гейтит «Кол-во»/«Ед.» ТРЕБОВАНИЕМ
+     * (material/periodic несёт количество — {@see \App\Compliance\Domain\Type\ComplianceType::requiresQuantity()}),
+     * не схемой журнала инструктажа. Периодическое требование легально существует БЕЗ JournalKind (как
+     * {@see self::periodicInstructionRequirement()} — её журнал пуст), и поле «Кол-во» всё равно должно быть
+     * доступно для вне-нормовой позиции (админ сам решает, заполнять её или нет).
+     */
+    public function test_personal_row_shows_amount_input_under_periodic_requirement_without_journal_kind(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->periodicInstructionRequirement();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('name="personalItems[__i__][amount]"', $html, 'периодическое требование без JournalKind: вне-нормовая позиция всё равно несёт ввод количества');
+    }
+
+    /** Task 4b review-fix: нематериальное требование не несёт количества — personal_row без «Кол-во»/«Ед.». */
+    public function test_personal_row_hides_amount_input_under_non_material_requirement(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->nonMaterialRequirement();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringNotContainsString('name="personalItems[__i__][amount]"', $html, 'нематериальное требование: вне-нормовая позиция количества не несёт');
+    }
+
     /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
     private function periodicConsumableRequirement(): array
     {
@@ -352,6 +382,38 @@ final class IssueActionTest extends WebTestCase
 
     /** @return array{profileId: string, requirementId: string, key: string} */
     private function periodicRequirement(string $itemLabel, string $amount, string $unit): array
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        ['positionId' => $positionId, 'profileId' => $profileId] = $this->createPositionAndProfile();
+
+        $req = $bus->execute(new SaveRequirementCommand(
+            null, 'Периодическая выдача', 'periodic', [$positionId],
+            [['label' => $itemLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => $amount, 'unit' => $unit, 'basis' => 'п.9']],
+        ));
+        \assert($req instanceof SaveRequirementCommandResult);
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        return ['profileId' => $profileId, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
+    }
+
+    /** @return array{profileId: string, requirementId: string} Нематериальное требование (без количества, без журнала) — для теста personal_row. */
+    private function nonMaterialRequirement(): array
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+        ['positionId' => $positionId, 'profileId' => $profileId] = $this->createPositionAndProfile();
+
+        $req = $bus->execute(new SaveRequirementCommand(
+            null, 'Медосмотр', 'non_material', [$positionId],
+            [['label' => 'Медосмотр', 'cadenceKind' => 'once', 'basis' => 'п.9']],
+        ));
+        \assert($req instanceof SaveRequirementCommandResult);
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        return ['profileId' => $profileId, 'requirementId' => $req->id];
+    }
+
+    /** @return array{positionId: string, profileId: string} Должность+организация+отдел+профиль — общий сетап periodic/non_material фикстур этого файла. */
+    private function createPositionAndProfile(): array
     {
         $bus = $this->client->getContainer()->get(CommandBusInterface::class);
 
@@ -370,14 +432,7 @@ final class IssueActionTest extends WebTestCase
         ));
         \assert($profile instanceof CreateProfileCommandResult);
 
-        $req = $bus->execute(new SaveRequirementCommand(
-            null, 'Периодическая выдача', 'periodic', [$pos->id],
-            [['label' => $itemLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => $amount, 'unit' => $unit, 'basis' => 'п.9']],
-        ));
-        \assert($req instanceof SaveRequirementCommandResult);
-        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
-
-        return ['profileId' => $profile->id, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, $itemLabel)];
+        return ['positionId' => $pos->id, 'profileId' => $profile->id];
     }
 
     /** Прямая запись факта периодического требования в журнал (без черновика/скана/подписи) + пересборка проекции. */

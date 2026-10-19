@@ -12,13 +12,10 @@
 {% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
-   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — для материала и периодического
-   расходника, не для инструктажа. #}
-{% macro personal_row(prefix, row, requirementType, units, instructionGroups) %}
-    {# Персональная позиция не привязана к строке проекции (нет готового o.showAmountInput) — признак тот же:
-       требование несёт количество (material/periodic) и это не инструктаж. Инструктаж вне нормы распознаём
-       по той же схеме журнала, что и ниже (instructionGroups непуст только у periodic-с-JournalKind). #}
-    {% set showAmountInput = requirementType in ['material', 'periodic'] and instructionGroups|default([]) is empty %}
+   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — под требованием, несущим количество
+   (material/periodic); админ заполнит их или оставит пустыми — ad-hoc позиция не привязана к норме/проекции,
+   поэтому точного «это инструктаж» тут не определить (это признак КОНКРЕТНОЙ позиции нормы, не требования). #}
+{% macro personal_row(prefix, row, requirementType, units, instructionGroups, requirementRequiresQuantity) %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
         <div class="row g-2">
             <div class="col-12 col-md-5">
@@ -31,7 +28,7 @@
                     <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
                 </div>
             {% endif %}
-            {% if showAmountInput %}
+            {% if requirementRequiresQuantity %}
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Кол-во</label>
                     <input type="number" min="0" step="any" inputmode="decimal" name="{{ prefix }}[amount]" value="{{ row.amount|default('') }}" class="form-control">
@@ -301,9 +298,9 @@
                         <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
                         <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
                         <div data-report-list-rows-target="rows">
-                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([])) }}{% endfor %}
+                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity) }}{% endfor %}
                         </div>
-                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([])) }}</template>
+                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
                     </div>
                 </div>

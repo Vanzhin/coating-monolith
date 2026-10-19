@@ -67,6 +67,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
             $page->rows[] = $this->issueRow($row);
         }
         $page->requirementType = $requirementType ?? 'material';
+        $page->requirementRequiresQuantity = ComplianceType::from($page->requirementType)->requiresQuantity();
 
         // Сортировка позиций по срочности для удобства выдачи: сверху требующие внимания (просрочено/не
         // выдано), затем «скоро срок», затем «в норме». usort в PHP 8 стабилен → внутри группы сохраняется
