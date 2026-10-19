@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Application\DTO\ProfileCompliance\ObligationRowDTO;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
+use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
+use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -18,6 +24,7 @@ use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommand
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
 use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
 use App\Shared\Application\Command\CommandBusInterface;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Service\UuidService;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -385,6 +392,117 @@ final class IssueActionTest extends WebTestCase
 
         self::assertStringContainsString('в норме', $html, 'инструктаж пройден (held=0 — количество для него не инвариант) — бакет Ok');
         self::assertStringNotContainsString('не пройдено', $html, 'больше не красный Missing после прохождения');
+    }
+
+    /**
+     * Finding 1 (продуктово одобрено): позиция «вне нормы» на смешанной «Выдаче» больше не наследует тип
+     * контейнера жёстко — у неё свой выбор «Вид» в форме. Периодический ad-hoc расходник обязан вести себя
+     * как расходник: проекция держит его периодической позицией (не копит остаток, см.
+     * {@see \App\Compliance\Application\Service\ComplianceObligationProjector::computeFromFacts}) и он не
+     * подлежит списанию ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::writeOffEligibleFactsForRequirement}
+     * — структурно только инвентарь).
+     */
+    public function test_adhoc_personal_item_submitted_as_periodic_is_not_writeoff_eligible(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance(); // material «Выдача» — допускает смешение
+
+        $this->submitAdHocPersonalItem($p, $r, 'Крем защитный (вне нормы)', 'periodic', '200', 'ml');
+        $key = $this->personalObligationKeyFor($p, $r, 'Крем защитный (вне нормы)');
+
+        $row = $this->obligationRowFor($p, $r, $key);
+        self::assertSame('periodic', $row->type, 'вне-нормовая позиция записана как расходник (periodic), не инвентарь — проекция не будет копить остаток');
+
+        self::assertNotContains($key, $this->writeOffEligibleKeys($p, $r), 'расходник вне нормы не подлежит списанию');
+    }
+
+    /** Finding 1: явный «Инвентарь» или отсутствующее поле (дефолт — тип требования, тут material) — позиция списанию подлежит. */
+    public function test_adhoc_personal_item_submitted_as_material_is_writeoff_eligible(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
+
+        $this->submitAdHocPersonalItem($p, $r, 'Каска защитная (вне нормы)', 'material', '1', 'pcs');
+        $key = $this->personalObligationKeyFor($p, $r, 'Каска защитная (вне нормы)');
+
+        $row = $this->obligationRowFor($p, $r, $key);
+        self::assertSame('material', $row->type);
+        self::assertContains($key, $this->writeOffEligibleKeys($p, $r), 'инвентарная позиция вне нормы подлежит списанию наравне с норменной');
+    }
+
+    /** Finding 1: поле «Вид» не прислано вовсе (старая форма/снятый выбор) — хендлер дефолтит в тип требования. */
+    public function test_adhoc_personal_item_without_type_field_defaults_to_requirement_type(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance(); // контейнер — material
+
+        $this->submitAdHocPersonalItem($p, $r, 'Очки защитные (вне нормы)', null, '1', 'pcs');
+        $key = $this->personalObligationKeyFor($p, $r, 'Очки защитные (вне нормы)');
+
+        $row = $this->obligationRowFor($p, $r, $key);
+        self::assertSame('material', $row->type, 'тип не прислан — дефолт тип требования (material)');
+    }
+
+    /**
+     * Сабмит реальной формы `/issue` ровно с одной позицией «вне нормы» (норменные позиции не отмечаем —
+     * проверяем только материализацию ad-hoc позиции). `$type` — значение поля `personalItems[0][type]`,
+     * null → поле не отправляем вовсе (хендлер дефолтит в тип требования).
+     */
+    private function submitAdHocPersonalItem(string $profileId, string $requirementId, string $label, ?string $type, string $amount, string $unit): void
+    {
+        $crawler = $this->client->request('GET', $this->issueUrl($profileId, $requirementId));
+        self::assertResponseIsSuccessful();
+        $token = (string) $crawler->filter('#issue-form input[name="_csrf_token"]')->attr('value');
+
+        $personalRow = ['label' => $label, 'amount' => $amount, 'unit' => $unit, 'manualDueDate' => '2026-12-31'];
+        if (null !== $type) {
+            $personalRow['type'] = $type;
+        }
+        $this->client->request('POST', $this->issueUrl($profileId, $requirementId), [
+            '_csrf_token' => $token,
+            'documentDate' => '2026-06-01',
+            'cardNumber' => 'CARD-ADHOC',
+            'personalItems' => [$personalRow],
+        ]);
+        self::assertResponseRedirects();
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+        $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
+    }
+
+    /** Ключ персональной (вне нормы) обязанности по наименованию — itemId генерится хендлером, заранее не известен. */
+    private function personalObligationKeyFor(string $profileId, string $requirementId, string $label): string
+    {
+        $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
+        self::assertNotNull($pc);
+        foreach ($pc->personalObligations() as $personal) {
+            if ($personal->requirementId === $requirementId && $personal->label === $label) {
+                return ObligationKey::keyOf($personal->requirementId, $personal->itemId);
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Персональная позиция «%s» не найдена.', $label));
+    }
+
+    private function obligationRowFor(string $profileId, string $requirementId, string $key): ObligationRowDTO
+    {
+        /** @var GetProfileComplianceQueryResult $result */
+        $result = $this->client->getContainer()->get(QueryBusInterface::class)->execute(new GetProfileComplianceQuery($profileId));
+        self::assertNotNull($result->compliance);
+        foreach ($result->compliance->obligations as $row) {
+            if ($row->requirementId === $requirementId && $row->key === $key) {
+                return $row;
+            }
+        }
+
+        throw new \RuntimeException('Строка проекции по ключу не найдена.');
+    }
+
+    /** @return list<string> Ключи фактов требования, годных к списанию ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::writeOffEligibleFactsForRequirement}). */
+    private function writeOffEligibleKeys(string $profileId, string $requirementId): array
+    {
+        $requirement = $this->client->getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $pc = $this->client->getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
+        self::assertNotNull($pc);
+
+        return array_map(static fn (FulfillmentRecord $fact): string => $fact->obligationKey(), $pc->writeOffEligibleFactsForRequirement($requirement, null));
     }
 
     /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */

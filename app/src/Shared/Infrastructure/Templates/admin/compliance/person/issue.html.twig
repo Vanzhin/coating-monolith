@@ -15,7 +15,7 @@
    <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — под требованием, несущим количество
    (material/periodic); админ заполнит их или оставит пустыми — ad-hoc позиция не привязана к норме/проекции,
    поэтому точного «это инструктаж» тут не определить (это признак КОНКРЕТНОЙ позиции нормы, не требования). #}
-{% macro personal_row(prefix, row, requirementType, units, instructionGroups, requirementRequiresQuantity) %}
+{% macro personal_row(prefix, row, requirementType, units, instructionGroups, requirementRequiresQuantity, requirementAllowsMixed) %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
         <div class="row g-2">
             <div class="col-12 col-md-5">
@@ -37,6 +37,18 @@
                     <label class="form-label small mb-1">Ед.</label>
                     <select name="{{ prefix }}[unit]" class="form-select">
                         {% for u in units %}<option value="{{ u.value }}"{{ row.unit|default('') == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if requirementAllowsMixed %}
+                {# Вне нормы позиция на смешанной «Выдаче» может быть и инвентарём, и расходником (см.
+                   admin/compliance/requirements/_macros.html.twig item_row — тот же выбор у норменной позиции):
+                   дефолт — инвентарь, домен хендлера подставит его же, если поле не придёт вовсе. #}
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Вид</label>
+                    <select name="{{ prefix }}[type]" class="form-select">
+                        <option value="material"{{ row.type|default('material') == 'material' ? ' selected' : '' }}>Инвентарь</option>
+                        <option value="periodic"{{ row.type|default('material') == 'periodic' ? ' selected' : '' }}>Расходник</option>
                     </select>
                 </div>
             {% endif %}
@@ -298,9 +310,9 @@
                         <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
                         <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
                         <div data-report-list-rows-target="rows">
-                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity) }}{% endfor %}
+                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity, requirementAllowsMixed|default(false)) }}{% endfor %}
                         </div>
-                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity) }}</template>
+                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity, requirementAllowsMixed|default(false)) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
                     </div>
                 </div>

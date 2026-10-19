@@ -98,6 +98,7 @@ final class IssueAction extends AbstractController
             'rows' => $page->rows,
             'requirementType' => $page->requirementType,
             'requirementRequiresQuantity' => $page->requirementRequiresQuantity,
+            'requirementAllowsMixed' => $page->requirementAllowsMixed,
             'instructionGroups' => $page->instructionGroups,
             'inputData' => $inputData,
             'documentDate' => $documentDate,

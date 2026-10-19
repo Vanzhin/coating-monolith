@@ -51,23 +51,28 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         $page = new IssuePageDTO();
         $page->profile = $profileResult->profile;
 
+        // Тип страницы — КОНТЕЙНЕРНЫЙ тип требования (Выдача/Периодическая), не тип позиции: «Выдача» полиморфна
+        // (инвентарь+расходник в одной карточке), а позиции проекции — в произвольном порядке, первая попавшаяся
+        // не годится как источник типа страницы (была бы недетерминированной). Грузим требование ОДИН раз —
+        // переиспользуем его же ниже для схемы инструктажа.
+        $requirement = $this->requirements->findOneById($query->requirementId);
+        $page->requirementType = $requirement?->getType()->value ?? 'material';
+        $page->requirementRequiresQuantity = ComplianceType::from($page->requirementType)->requiresQuantity();
+        $page->requirementAllowsMixed = $requirement?->getType()->allowsMixedItems() ?? false;
+
         $profileCompliance = $this->repository->findByProfile($query->profileId);
 
         /** @var GetProfileComplianceQueryResult $complianceResult */
         $complianceResult = $this->queryBus->execute(new GetProfileComplianceQuery($query->profileId));
         $obligations = null !== $complianceResult->compliance ? $complianceResult->compliance->obligations : [];
 
-        $requirementType = null; // тип акта (мономорфен) — из первой строки проекции этого требования
         foreach ($obligations as $row) {
             if ($row->requirementId !== $query->requirementId) {
                 continue;
             }
             $page->requirementName = $row->requirementName;
-            $requirementType ??= $row->type;
             $page->rows[] = $this->issueRow($row);
         }
-        $page->requirementType = $requirementType ?? 'material';
-        $page->requirementRequiresQuantity = ComplianceType::from($page->requirementType)->requiresQuantity();
 
         // Сортировка позиций по срочности для удобства выдачи: сверху требующие внимания (просрочено/не
         // выдано), затем «скоро срок», затем «в норме». usort в PHP 8 стабилен → внутри группы сохраняется
@@ -78,7 +83,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
 
         // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
         // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
-        $journalKind = $this->requirements->findOneById($query->requirementId)?->getJournalKind();
+        $journalKind = $requirement?->getJournalKind();
         foreach (null !== $journalKind ? $journalKind->fields() : [] as $field) {
             $fieldView = new IssueInstructionFieldDTO();
             $fieldView->key = $field->key;

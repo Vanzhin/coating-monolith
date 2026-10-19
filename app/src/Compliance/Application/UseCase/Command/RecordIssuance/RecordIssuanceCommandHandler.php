@@ -12,6 +12,7 @@ use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\CadenceKind;
+use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Infrastructure\Mapper\IssuanceLineMapper;
 use App\Shared\Application\Command\CommandHandlerInterface;
@@ -73,8 +74,10 @@ final readonly class RecordIssuanceCommandHandler implements CommandHandlerInter
     /**
      * Позиции вне нормы, добавленные прямо в форму → материализуем в персональные декларации (вне нормы,
      * cadence «по дате»). itemId генерим здесь (как с черновиком списания) и отдаём домену — тот дедупит по
-     * наименованию (повтор того же label = та же позиция) и возвращает её ключ. Тип берём с требования
-     * (мономорфен — позиция акта принимает тип акта). Возвращает строки выдачи этих позиций.
+     * наименованию (повтор того же label = та же позиция) и возвращает её ключ. Тип позиции — из строки формы
+     * (на смешанной «Выдаче» позиция вне нормы может оказаться расходником, не только инвентарём, как и
+     * норменная — {@see \App\Compliance\Application\Service\RequirementItemBuilder}); не прислано (старая форма,
+     * «Периодическая» без выбора) — дефолт тип требования. Возвращает строки выдачи этих позиций.
      *
      * @return list<IssuanceLine>
      */
@@ -89,10 +92,11 @@ final readonly class RecordIssuanceCommandHandler implements CommandHandlerInter
             if ('' === $label) {
                 continue;
             }
+            $itemType = ComplianceType::tryFrom((string) ($row['type'] ?? '')) ?? $requirement->getType();
             $quantity = $this->mapper->quantityOf($row); // null, если поля кол-ва нет (нематериальный акт)
             $due = \DateTimeImmutable::createFromFormat('!Y-m-d', trim((string) ($row['manualDueDate'] ?? ''))) ?: null;
             $key = $profileCompliance->addPersonalObligation(
-                Uuid::v7()->toRfc4122(), $requirement->getId(), $label, $requirement->getType(), new Cadence(CadenceKind::ByManufacturerDoc), $quantity,
+                Uuid::v7()->toRfc4122(), $requirement->getId(), $label, $itemType, new Cadence(CadenceKind::ByManufacturerDoc), $quantity,
             );
             $lines[] = new IssuanceLine(Uuid::v7(), $key, $documentDate, $quantity, null, $due, $this->mapper->note($row), $this->mapper->instructionDetails($row));
         }

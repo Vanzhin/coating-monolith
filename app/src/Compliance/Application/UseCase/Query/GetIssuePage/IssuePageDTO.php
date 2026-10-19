@@ -19,6 +19,13 @@ final class IssuePageDTO
      * твиг гейтит ввод «Кол-во»/«Ед.» этим флагом, а не литералом типа.
      */
     public bool $requirementRequiresQuantity = true;
+    /**
+     * Держит ли требование-контейнер смешанные позиции (инвентарь+расходник) — {@see
+     * \App\Compliance\Domain\Type\ComplianceType::allowsMixedItems()} от {@see self::$requirementType}. Форма
+     * показывает по нему выбор «Вид» у позиции, добавляемой вне нормы (на «Периодической» все позиции и так
+     * периодические — выбор не нужен).
+     */
+    public bool $requirementAllowsMixed = false;
     /** @var list<IssueRowDTO> позиции нормы, отсортированные по срочности (просрочено/не выдано → скоро → в норме) */
     public array $rows = [];
     /** @var list<IssueInstructionGroupDTO> */

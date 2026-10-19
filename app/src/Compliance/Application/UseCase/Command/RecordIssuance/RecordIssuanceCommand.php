@@ -16,7 +16,7 @@ use App\Shared\Application\Command\Command;
  * команды игнорируется ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::assignCardNumber()}).
  *
  * @phpstan-type IssuanceInput array{obligationKey?: string, date?: string, amount?: string, unit?: string, wearPercent?: string, manualDueDate?: string, note?: string, instruction?: array<string, mixed>}
- * @phpstan-type PersonalInput array{label?: string, amount?: string, unit?: string, manualDueDate?: string, note?: string, instruction?: array<string, mixed>}
+ * @phpstan-type PersonalInput array{label?: string, type?: string, amount?: string, unit?: string, manualDueDate?: string, note?: string, instruction?: array<string, mixed>}
  */
 readonly class RecordIssuanceCommand extends Command
 {

@@ -160,9 +160,12 @@ final readonly class ComplianceObligationProjector
             if (!isset($requirementNames[$personal->requirementId])) {
                 // Ленивый поход ОДИН раз на requirementId — результат сразу кормит оба кэша (имя + контейнерный
                 // тип), второй отдельный запрос за типом не нужен. Требование могло уже уйти из нормы (личная
-                // декларация вне нормы живёт и без него) — тогда тип берём с самой декларации (см. докблок
-                // materializePersonalItems в RecordIssuanceCommandHandler: персональная позиция ВСЕГДА мономорфна
-                // с требованием-актом на момент создания, поэтому это не приближение, а точное значение).
+                // декларация вне нормы живёт и без него) — тогда контейнерный тип неизвестен, берём тип САМОЙ
+                // декларации как приближение (на смешанной «Выдаче» позиция вне нормы может быть расходником,
+                // см. {@see \App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommandHandler::materializePersonalItems}
+                // — декларация больше НЕ обязана совпадать типом с контейнером). Влияет только на поле
+                // `requirement_type` отображения ушедшего из нормы требования, не на `held`/списание — те
+                // считаются по типу самой позиции (`$personal->type`), переданному ниже отдельно.
                 $lookedUp = $this->requirements->findOneById($personal->requirementId);
                 $requirementNames[$personal->requirementId] = $lookedUp?->getName() ?? '';
                 $requirementTypes[$personal->requirementId] = $lookedUp?->getType() ?? $personal->type;
