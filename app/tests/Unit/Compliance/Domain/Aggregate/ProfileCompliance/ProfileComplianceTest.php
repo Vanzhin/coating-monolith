@@ -312,27 +312,21 @@ final class ProfileComplianceTest extends TestCase
     }
 
     /**
-     * JournalKind структурно недостижим для любого оставшегося типа требования — оба (Material/Periodic)
-     * requiresQuantity()==true, а {@see Requirement::setJournalKind} гасит его в null для таких типов.
-     * Следствие: recordInstruction больше никогда не может делегировать проверку полноты полей инструктажа
-     * ни для одного реального Requirement (ортогональное решение JournalKind/Periodic из Task 1-4b этого
-     * плана, зафиксировано ревью — не предмет этой задачи). Сама проверка полноты полей
-     * ({@see JournalKind::assertDetailsComplete}) покрыта юнит-тестом на самом enum, не через этот путь.
+     * JournalKind восстановлен для периодического требования ({@see ComplianceType::carriesJournal}) —
+     * recordInstruction снова делегирует проверку полноты полей инструктажа в JournalKind::assertDetailsComplete.
      */
-    public function test_record_instruction_accepts_incomplete_fields_since_periodic_has_no_journal_kind(): void
+    public function test_record_instruction_requires_complete_fields(): void
     {
         $requirement = $this->fireSafetyRequirement();
-        $requirement->setJournalKind(JournalKind::FireSafety); // гасится: Periodic::requiresQuantity()===true
+        $requirement->setJournalKind(JournalKind::FireSafety);
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
         $pc->assignCardNumber('CARD-001');
 
+        $this->expectException(AppException::class);
         $pc->recordInstruction(
             $requirement,
             new IssuanceLine(Uuid::v4(), $this->fireSafetyKey(), new \DateTimeImmutable('2026-01-10'), instructionDetails: InstructionDetails::fromArray([])),
         );
-
-        self::assertNull($requirement->getJournalKind());
-        self::assertCount(1, $pc->getRecords(), 'запись принята без проверки полноты полей — делегирование недостижимо');
     }
 
     public function test_has_issued_fact_for_no_record_is_false(): void

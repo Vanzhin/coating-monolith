@@ -33,7 +33,7 @@ class Requirement extends Aggregate
     private array $items;
     /** Файл-шаблон документа этого требования (uuid в едином файловом реестре); null → печатается дефолтная карточка. */
     private ?string $templateFileId = null;
-    /** Вид журнала (для не материального — задаёт схему полей инструктажа); null у материального/не выбран. */
+    /** Вид журнала (для периодического — задаёт схему полей инструктажа); null у материального/не выбран. */
     private ?JournalKind $journalKind = null;
     private int $version = 1;
 
@@ -109,10 +109,11 @@ class Requirement extends Aggregate
 
     public function setJournalKind(?JournalKind $journalKind): void
     {
-        // Вид журнала — атрибут нематериального требования (инструктажа). Материальное (выдача СИЗ) журнала
-        // не носит: даже если форма прислала значение из скрытого селекта при переключении типа, гасим —
-        // иначе подпись акта упрётся в проверку обязательных полей инструктажа по несуществующей схеме.
-        $this->journalKind = $this->type->requiresQuantity() ? null : $journalKind;
+        // Вид журнала — атрибут периодического требования (инструктаж/процедура, проходится по сроку).
+        // Выдача СИЗ (материальное) журнала не носит: даже если форма прислала значение из скрытого селекта
+        // при переключении типа, гасим — иначе подпись акта упрётся в проверку полей инструктажа по
+        // несуществующей схеме. Решает carriesJournal(), а не requiresQuantity() — оба типа требуют количество.
+        $this->journalKind = $this->type->carriesJournal() ? $journalKind : null;
     }
 
     public function getPositionIds(): StringCollection

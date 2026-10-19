@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * templateUpload — новый/заменяющий Word-шаблон документа требования (null → не трогаем);
  * removeTemplate — снять шаблон (вернуться к дефолтной карточке). Команда синхронная (не сериализуется).
  *
- * @phpstan-type ItemInput array{id?: string, label?: string, cadenceKind?: string, cadenceNumber?: string, amount?: string, unit?: string, basis?: string, mode?: string}
+ * @phpstan-type ItemInput array{id?: string, label?: string, cadenceKind?: string, cadenceNumber?: string, amount?: string, unit?: string, basis?: string}
  */
 readonly class SaveRequirementCommand extends Command
 {

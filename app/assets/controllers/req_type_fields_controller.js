@@ -1,13 +1,15 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Тип требования (материальное/нематериальное) на уровне всей формы решает, показывать ли поля количества
- * у позиций. На создании тип выбирается радио-кнопками, на правке — залочен (hidden). Прячем/показываем
- * ячейки [data-item-quantity] у существующих строк И внутри <template> клонирования, чтобы новые строки
- * наследовали правильное состояние. Сервер всё равно игнорирует количество у нематериального типа.
+ * Тип требования на уровне всей формы решает две НЕЗАВИСИМЫЕ вещи: показывать ли поля количества у позиций
+ * (requiresQuantity — сейчас true у обоих типов) и показывать ли селектор вида журнала (carriesJournal —
+ * только у периодического, инструктаж/процедура). На создании тип выбирается радио-кнопками, на правке —
+ * залочен (hidden). Прячем/показываем ячейки [data-item-quantity] у существующих строк И внутри <template>
+ * клонирования, чтобы новые строки наследовали правильное состояние. Сервер всё равно гасит журнал у
+ * материального и игнорирует количество там, где оно не требуется.
  */
 export default class extends Controller {
-    static values = { requiresQuantity: Object };
+    static values = { requiresQuantity: Object, carriesJournal: Object };
 
     connect() {
         this._onChange = this._onChange.bind(this);
@@ -26,11 +28,13 @@ export default class extends Controller {
     }
 
     _apply() {
-        const need = this.requiresQuantityValue[this._currentType()] ?? true;
+        const type = this._currentType();
+        const need = this.requiresQuantityValue[type] ?? true;
+        const journal = this.carriesJournalValue[type] ?? false;
 
         this.element.querySelectorAll('[data-item-quantity]').forEach((cell) => { cell.hidden = !need; });
-        // Поля только для нематериального (вид журнала) — показываем, когда количество НЕ требуется.
-        this.element.querySelectorAll('[data-non-material-only]').forEach((el) => { el.hidden = need; });
+        // Селектор вида журнала — показываем только у типа, который журнал несёт (периодическое).
+        this.element.querySelectorAll('[data-non-material-only]').forEach((el) => { el.hidden = !journal; });
         this.element.querySelectorAll('template').forEach((tpl) => {
             tpl.content.querySelectorAll('[data-item-quantity]').forEach((cell) => { cell.hidden = !need; });
         });

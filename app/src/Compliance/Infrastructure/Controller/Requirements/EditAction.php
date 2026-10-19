@@ -82,7 +82,7 @@ final class EditAction extends AbstractController
             'error' => $error,
             'inputData' => $inputData,
             'complianceTypes' => array_map(
-                static fn (ComplianceType $t): array => ['value' => $t->value, 'title' => $t->title(), 'requiresQuantity' => $t->requiresQuantity()],
+                static fn (ComplianceType $t): array => ['value' => $t->value, 'title' => $t->title(), 'requiresQuantity' => $t->requiresQuantity(), 'carriesJournal' => $t->carriesJournal()],
                 ComplianceType::cases(),
             ),
             'journalKinds' => array_map(

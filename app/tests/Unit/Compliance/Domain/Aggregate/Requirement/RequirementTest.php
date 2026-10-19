@@ -140,15 +140,13 @@ final class RequirementTest extends TestCase
         self::assertNull($req->getTemplateFileId(), 'пустая строка → null');
     }
 
-    public function test_periodic_requirement_never_carries_journal_kind(): void
+    public function test_periodic_requirement_keeps_journal_kind(): void
     {
-        // Периодическая несёт количество (requiresQuantity) — JournalKind структурно недостижим ни у одного
-        // оставшегося типа требования (Material/Periodic), см. Requirement::setJournalKind. Зафиксировано
-        // планом как ортогональная, принятая граница (не задача этого деплоя).
+        // Журнал — атрибут периодического требования (инструктаж/процедура), см. Requirement::setJournalKind.
         $req = $this->periodic($this->briefing());
 
         $req->setJournalKind(JournalKind::FireSafety);
-        self::assertNull($req->getJournalKind());
+        self::assertSame(JournalKind::FireSafety, $req->getJournalKind());
     }
 
     public function test_material_requirement_never_carries_journal_kind(): void

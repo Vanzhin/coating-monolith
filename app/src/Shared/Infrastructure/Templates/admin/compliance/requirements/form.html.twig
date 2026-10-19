@@ -10,6 +10,8 @@
 {% set effectiveType = currentType ?: complianceTypes|first.value %}
 {% set requiresQuantityMap = {} %}
 {% for t in complianceTypes %}{% set requiresQuantityMap = requiresQuantityMap|merge({(t.value): t.requiresQuantity}) %}{% endfor %}
+{% set carriesJournalMap = {} %}
+{% for t in complianceTypes %}{% set carriesJournalMap = carriesJournalMap|merge({(t.value): t.carriesJournal}) %}{% endfor %}
 
 {% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
 
@@ -26,7 +28,8 @@
             <form id="req-form" method="post" action="{{ actionUrl }}" class="w-100" novalidate
                   enctype="multipart/form-data"
                   data-controller="req-type-fields"
-                  data-req-type-fields-requires-quantity-value="{{ requiresQuantityMap|json_encode|e('html_attr') }}">
+                  data-req-type-fields-requires-quantity-value="{{ requiresQuantityMap|json_encode|e('html_attr') }}"
+                  data-req-type-fields-carries-journal-value="{{ carriesJournalMap|json_encode|e('html_attr') }}">
                 {% if error is defined and error %}
                     <div class="form-alert" role="alert">
                         <i class="bi bi-exclamation-octagon"></i>
@@ -60,10 +63,10 @@
                                     <label class="duration-seg-btn" for="type-{{ t.value }}">{{ t.title }}</label>
                                 {% endfor %}
                             </div>
-                            <div class="form-text">Выдача — выдаётся в количестве (СИЗ, спецодежда). Процедура — проходится по сроку, без количества (инструктаж, медосмотр). Периодическая — проходится/выдаётся раз в N, всегда в количестве.</div>
+                            <div class="form-text">Выдача — выдаётся в количестве (СИЗ, спецодежда), ведётся остаток и списание. Периодическая — проходится/выдаётся раз в N в количестве (инструктаж 1 шт, расходник), не списывается.</div>
                         {% endif %}
                     </div>
-                    <div class="mt-3" data-non-material-only{{ (requiresQuantityMap[effectiveType]|default(true)) ? ' hidden' : '' }}>
+                    <div class="mt-3" data-non-material-only{{ (carriesJournalMap[effectiveType]|default(false)) ? '' : ' hidden' }}>
                         <label class="form-label small mb-1">Вид журнала</label>
                         <select name="journalKind" class="form-select">
                             <option value="">— не задан (печать по общему шаблону) —</option>
@@ -71,7 +74,7 @@
                                 <option value="{{ jk.value }}"{{ inputData.journalKind|default('') == jk.value ? ' selected' : '' }}>{{ jk.title }}</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Задаёт набор полей инструктажа при оформлении (для процедур).</div>
+                        <div class="form-text">Задаёт набор полей инструктажа при оформлении (для периодических: инструктаж, процедура).</div>
                     </div>
                     <div class="mt-3">
                         <label class="form-label small mb-1">Шаблон документа (Word/Excel)</label>

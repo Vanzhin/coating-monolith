@@ -75,9 +75,9 @@ final class RequirementUseCasesTest extends KernelTestCase
      * @param list<string>               $positionIds
      * @param list<array<string, mixed>> $items
      */
-    private function save(?string $id, string $name, string $type, array $positionIds, array $items): string
+    private function save(?string $id, string $name, string $type, array $positionIds, array $items, ?string $journalKind = null): string
     {
-        $result = $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items));
+        $result = $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items, journalKind: $journalKind));
         \assert($result instanceof SaveRequirementCommandResult);
         $this->createdIds[] = $result->id;
 
@@ -230,5 +230,27 @@ final class RequirementUseCasesTest extends KernelTestCase
         $itemWithoutQuantity = ['amount' => ''] + $this->periodicItem();
         $this->expectException(AppException::class);
         $this->save(null, 'Инструктаж без количества', 'periodic', [$posId], [$itemWithoutQuantity]);
+    }
+
+    public function test_periodic_requirement_persists_journal_kind(): void
+    {
+        $posId = $this->createPosition('Инструктор по ПБ');
+        $id = $this->save(null, 'Журнал ПБ', 'periodic', [$posId], [$this->periodicItem()], journalKind: 'fire_safety');
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertSame('fire_safety', $result->requirement->journalKind);
+    }
+
+    public function test_material_requirement_never_persists_journal_kind(): void
+    {
+        $posId = $this->createPosition('Кладовщик СИЗ');
+        $id = $this->save(null, 'СИЗ с журналом', 'material', [$posId], [$this->materialItem()], journalKind: 'fire_safety');
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertNull($result->requirement->journalKind);
     }
 }

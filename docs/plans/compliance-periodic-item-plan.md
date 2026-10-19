@@ -216,6 +216,29 @@ self::assertSame(1000.0, $this->row($ctx)->heldQuantity());       // после�
 
 ---
 
+## Task 7: Вернуть журналы инструктажей — перегейтить JournalKind на `carriesJournal` (НЕ на `requiresQuantity`)
+
+Контекст (развилка, апрув пользователя 2026-10-19): удаление `NonMaterial` сделало `ComplianceType::requiresQuantity()` безусловно `true`. И доменный гейт `Requirement::setJournalKind` (нулит при `requiresQuantity`), и селектор «Вид журнала» в форме (скрыт при `requiresQuantity`), и JS `req_type_fields` использовали `!requiresQuantity()` как прокси для «нематериальное/инструктаж». Теперь journalKind нельзя задать ни одному требованию → фича нематериальных журналов (PR #110) мертва на создании/правке. Инструктаж теперь `periodic` — журнал должен жить на `periodic`, но не на `material` (выдача СИЗ). Решение: завести явный признак `carriesJournal` и перегейтить на него, развязав с `requiresQuantity`.
+
+**Files:**
+- Modify: `app/src/Compliance/Domain/Type/ComplianceType.php` (+метод `carriesJournal(): bool` — `Material=false`, `Periodic=true`).
+- Modify: `app/src/Compliance/Domain/Aggregate/Requirement/Requirement.php` (`setJournalKind` гейт → `carriesJournal`).
+- Modify: `app/src/Shared/Infrastructure/Templates/admin/compliance/requirements/form.html.twig` (селектор журнала гейтить на `carriesJournalMap`, не на `requiresQuantityMap`; прокинуть `carriesJournalMap` в контроллер; поправить устаревшую справку, упоминающую удалённый тип «Процедура»).
+- Modify: `app/assets/controllers/req_type_fields_controller.js` (добавить `carriesJournal: Object` в values; тоггл `[data-non-material-only]` гейтить на `carriesJournal[type]`, а не на `requiresQuantity`; количество позиций остаётся на `requiresQuantity`; поправить docblock).
+- Test: `tests/Unit/Compliance/Domain/Type/ComplianceTypeTest.php` (carriesJournal), `tests/Unit/Compliance/Domain/Aggregate/Requirement/RequirementTest.php` (или где живут тесты агрегата — `setJournalKind` держит у Periodic, нулит у Material), функциональный SaveRequirement (periodic сохраняет journalKind; material — нулит).
+
+**Interfaces:**
+- Consumes: `ComplianceType::{Material,Periodic}` (Task 1/6), `JournalKind`.
+- Produces: `ComplianceType::carriesJournal(): bool`; journalKind доступен на `periodic`, запрещён на `material`; форма/JS/домен согласованы на одном признаке.
+
+- [ ] **Step 1: Failing unit** — `ComplianceType::carriesJournal()`: `Material=false`, `Periodic=true`. И `setJournalKind`: для `Periodic` сохраняет переданный kind, для `Material` — `null`.
+- [ ] **Step 2: Прогнать — FAIL.**
+- [ ] **Step 3:** Добавить `carriesJournal()`; перегейтить `setJournalKind` на `$this->type->carriesJournal() ? $journalKind : null` (+docblock: журнал — у периодической/инструктажа, не у выдачи СИЗ); форма — `carriesJournalMap` + атрибут `data-req-type-fields-carries-journal-value`, блок журнала `hidden` при `not carriesJournalMap[effectiveType]`, справку под селектором и общую справку типов привести к двум типам (Выдача/Периодическая); JS — отдельный тоггл журнала на `carriesJournal`, количество на `requiresQuantity`. `cd app && yarn dev`.
+- [ ] **Step 4: Прогнать — PASS**; полный `./run check`.
+- [ ] **Step 5: Commit** — `git commit -m "Compliance периодическая: журналы инструктажей вернули — JournalKind гейтим по carriesJournal (периодическая несёт, выдача нет), развязали с requiresQuantity"`
+
+---
+
 ## Deploy / ops (после мержа)
 
 1. Migrate-first: `Version20261106121000` (jsonb требований) в гейте ДО свопа.

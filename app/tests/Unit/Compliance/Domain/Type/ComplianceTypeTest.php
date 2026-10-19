@@ -23,6 +23,12 @@ final class ComplianceTypeTest extends TestCase
         self::assertTrue(ComplianceType::Periodic->requiresQuantity());
     }
 
+    public function test_carries_journal(): void
+    {
+        self::assertFalse(ComplianceType::Material->carriesJournal());
+        self::assertTrue(ComplianceType::Periodic->carriesJournal());
+    }
+
     public function test_material_makes_material_item_with_quantity(): void
     {
         $item = ComplianceType::Material->makeItem([
