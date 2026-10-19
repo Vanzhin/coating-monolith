@@ -14,7 +14,7 @@ use App\Compliance\Domain\ValueObject\Quantity;
  * него не собрать. В отличие от {@see MaterialItem} у позиции нет режима (инвентарный/расходный):
  * периодическая позиция не ведёт остаток, контроль только по дате следующего прохождения.
  */
-final readonly class PeriodicItem extends AbstractRequirementItem
+final readonly class PeriodicItem extends AbstractRequirementItem implements QuantifiedItem
 {
     public function __construct(
         string $id,

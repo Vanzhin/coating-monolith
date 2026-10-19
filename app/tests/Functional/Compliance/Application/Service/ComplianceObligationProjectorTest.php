@@ -16,7 +16,9 @@ use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\CadenceKind;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
@@ -102,6 +104,28 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         $this->reload();
         $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
         self::assertSame(1000.0, $row->heldQuantity(), 'доввыдача НЕ копится: held = последняя (1000), не сумма 1200');
+    }
+
+    /**
+     * Норменная ПЕРИОДИЧЕСКАЯ позиция (не персональная): норма должна попасть в строку проекции
+     * ({@see ObligationProjection::normQuantity()}), иначе лестница резолвера (held<norm→Missing) мёртвая —
+     * недовыдача по норме не ловится, бакет ошибочно читается по одной дате.
+     */
+    public function test_periodic_norm_item_under_issued_and_in_date_is_missing(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->periodicSolventRequirement();
+
+        $this->issuePeriodic($p, $r, $k, '200', '2026-06-01'); // недостаточно (норма 1200), срок далеко (2027-06-01)
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(1200.0, $row->normQuantity(), 'норма периодической НОРМЕННОЙ позиции должна попасть в проекцию');
+        self::assertSame(
+            ComplianceBucket::Missing,
+            (new ComplianceBucketResolver())->bucketFor($row, new \DateTimeImmutable('2026-06-02')),
+            'недовыдано (200 из 1200), срок не подошёл — бакет обязан быть Missing, не Ok/Soon',
+        );
     }
 
     public function test_sign_writeoff_updates_projection_for_all_people_in_one_tx(): void

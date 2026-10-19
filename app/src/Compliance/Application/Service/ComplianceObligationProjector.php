@@ -13,6 +13,7 @@ use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
@@ -136,7 +137,7 @@ final readonly class ComplianceObligationProjector
                 }
                 $rows[$key] = $this->buildRow(
                     $profileId, $requirement->getId(), $item->id(), $requirement->getName(), $item->label(),
-                    $item->type(), $item->cadence(), $item instanceof MaterialItem ? $item->quantity() : null,
+                    $item->type(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null,
                     $departmentId, ObligationOrigin::Norm->value, $item instanceof MaterialItem ? $item->mode() : null,
                     $records, $key,
                 );

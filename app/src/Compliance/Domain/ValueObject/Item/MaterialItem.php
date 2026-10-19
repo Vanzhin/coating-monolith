@@ -14,7 +14,7 @@ use App\Compliance\Domain\ValueObject\Quantity;
  * Режим ({@see MaterialMode}) различает инвентарную (ведётся остаток, подлежит списанию)
  * и расходную (контроль по дате, без учёта остатка) — по умолчанию инвентарная.
  */
-final readonly class MaterialItem extends AbstractRequirementItem
+final readonly class MaterialItem extends AbstractRequirementItem implements QuantifiedItem
 {
     public function __construct(
         string $id,
