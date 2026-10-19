@@ -308,6 +308,36 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('01.06.2026', $html, 'дата последней выдачи (прошёл инструктаж) всё равно видна');
     }
 
+    /**
+     * Task 4b (регрессия): периодический расходник (крем) — выдача стала типом `periodic` (раньше был
+     * `material`) и потеряла поле «Кол-во»/«Ед.» на /issue (гейт был `o.type == 'material'`); без поля
+     * выдать с количеством нельзя → held=0 → вечный Missing. Поле должно вернуться, единица — зафиксирована
+     * нормой (disabled select + hidden input), как у материала.
+     */
+    public function test_periodic_consumable_shows_amount_input_for_issuance(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->periodicConsumableRequirement();
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+
+        self::assertGreaterThan(0, $crawler->filter('input[name="items[0][amount]"]')->count(), 'периодический расходник: поле количества есть');
+        $unitInput = $crawler->filter('input[name="items[0][unit]"]')->first();
+        self::assertSame('ml', $unitInput->attr('value'), 'единица зафиксирована нормой требования (ml), скрытым полем');
+        self::assertGreaterThan(0, $crawler->filter('select[disabled][aria-label="Единица измерения"]')->count(), 'выбор единицы недоступен — она из нормы, не вводится руками');
+    }
+
+    /** Task 4b: инструктаж (периодическая, норма 1 шт) поля количества не несёт вовсе — только статус/даты. */
+    public function test_periodic_instruction_has_no_amount_input(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->periodicInstructionRequirement();
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+
+        self::assertSame(0, $crawler->filter('input[name="items[0][amount]"]')->count(), 'инструктаж: поля количества нет');
+    }
+
     /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
     private function periodicConsumableRequirement(): array
     {

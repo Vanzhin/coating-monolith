@@ -12,6 +12,7 @@ use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
+use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Unit;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -139,6 +140,9 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         $issueRow->unitTitle = null !== $row->quantityUnit ? Unit::from($row->quantityUnit)->title() : null;
         $issueRow->origin = $row->origin; // personal (вне нормы) → в форме можно удалить из черновика
         $issueRow->hideQuantity = $row->hideQuantity;
+        // Поле «Кол-во»/«Ед.» нужно материалу и периодическому расходнику, но не инструктажу (который тоже
+        // periodic) — оба предиката уже готовы (не пересчитываем условие isInstructionLike второй раз).
+        $issueRow->showAmountInput = ComplianceType::from($row->type)->requiresQuantity() && !$row->hideQuantity;
         // Предзаполнение количества выдачи — дефицитом (норма минус то, что уже на руках, но не ниже 0);
         // при полной норме дефицит = 0, поле остаётся редактируемым (замена сверх нормы).
         $issueRow->deficitValue = null !== $row->quantityValue ? AmountFormatter::trimmed(max(0.0, (float) $row->quantityValue - $held)) : null;

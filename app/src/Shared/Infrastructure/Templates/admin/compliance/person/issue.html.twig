@@ -12,8 +12,13 @@
 {% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
-   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
+   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — для материала и периодического
+   расходника, не для инструктажа. #}
 {% macro personal_row(prefix, row, requirementType, units, instructionGroups) %}
+    {# Персональная позиция не привязана к строке проекции (нет готового o.showAmountInput) — признак тот же:
+       требование несёт количество (material/periodic) и это не инструктаж. Инструктаж вне нормы распознаём
+       по той же схеме журнала, что и ниже (instructionGroups непуст только у periodic-с-JournalKind). #}
+    {% set showAmountInput = requirementType in ['material', 'periodic'] and instructionGroups|default([]) is empty %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
         <div class="row g-2">
             <div class="col-12 col-md-5">
@@ -25,6 +30,8 @@
                     <label class="form-label small mb-1">Модель / марка / артикул</label>
                     <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
                 </div>
+            {% endif %}
+            {% if showAmountInput %}
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Кол-во</label>
                     <input type="number" min="0" step="any" inputmode="decimal" name="{{ prefix }}[amount]" value="{{ row.amount|default('') }}" class="form-control">
@@ -196,7 +203,7 @@
                                                data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
                                         <div class="form-text">След. выдача: <span data-next-due>—</span></div>
                                     </div>
-                                    {% if o.type == 'material' %}
+                                    {% if o.showAmountInput %}
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">Кол-во</label>
                                             <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
@@ -218,6 +225,8 @@
                                                 </select>
                                             {% endif %}
                                         </div>
+                                    {% endif %}
+                                    {% if o.type == 'material' %}
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">% износа</label>
                                             <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default(o.savedWear) }}" placeholder="0">
