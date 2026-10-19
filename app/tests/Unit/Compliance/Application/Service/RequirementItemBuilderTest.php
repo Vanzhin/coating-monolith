@@ -8,6 +8,8 @@ use App\Compliance\Application\Service\RequirementItemBuilder;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
+use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
 final class RequirementItemBuilderTest extends TestCase
@@ -54,5 +56,19 @@ final class RequirementItemBuilderTest extends TestCase
 
         self::assertInstanceOf(MaterialItem::class, $items[0]);
         self::assertSame(MaterialMode::Inventoried, $items[0]->mode());
+    }
+
+    public function test_builds_periodic_item_with_quantity(): void
+    {
+        $items = (new RequirementItemBuilder())->build(ComplianceType::Periodic, [$this->row()]);
+
+        self::assertInstanceOf(PeriodicItem::class, $items[0]);
+        self::assertSame(10.0, $items[0]->quantity()->amount);
+    }
+
+    public function test_periodic_without_quantity_raises_app_exception(): void
+    {
+        $this->expectException(AppException::class);
+        (new RequirementItemBuilder())->build(ComplianceType::Periodic, [$this->row(['amount' => ''])]);
     }
 }

@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Compliance\Domain\Type;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
 use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use PHPUnit\Framework\TestCase;
 
 final class ComplianceTypeTest extends TestCase
@@ -15,6 +16,14 @@ final class ComplianceTypeTest extends TestCase
     {
         self::assertSame('Выдача', ComplianceType::Material->title());
         self::assertSame('Процедура', ComplianceType::NonMaterial->title());
+        self::assertSame('Периодическая', ComplianceType::Periodic->title());
+    }
+
+    public function test_requires_quantity(): void
+    {
+        self::assertTrue(ComplianceType::Material->requiresQuantity());
+        self::assertTrue(ComplianceType::Periodic->requiresQuantity());
+        self::assertFalse(ComplianceType::NonMaterial->requiresQuantity());
     }
 
     public function test_material_makes_material_item_with_quantity(): void
@@ -41,5 +50,19 @@ final class ComplianceTypeTest extends TestCase
 
         self::assertInstanceOf(NonMaterialItem::class, $item);
         self::assertSame(ComplianceType::NonMaterial, $item->type());
+    }
+
+    public function test_periodic_makes_periodic_item_with_quantity(): void
+    {
+        $item = ComplianceType::Periodic->makeItem([
+            'label' => 'Проверка знаний по электробезопасности',
+            'cadence' => ['kind' => 'periodic', 'number' => 1, 'unit' => 'year'],
+            'basis' => 'п.6 Правил',
+            'quantity' => ['amount' => 1.0, 'unit' => 'pcs'],
+        ]);
+
+        self::assertInstanceOf(PeriodicItem::class, $item);
+        self::assertSame(ComplianceType::Periodic, $item->type());
+        self::assertSame(1.0, $item->quantity()->amount);
     }
 }
