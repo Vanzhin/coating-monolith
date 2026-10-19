@@ -83,7 +83,7 @@ final readonly class ComplianceObligationProjector
 
     /**
      * Пересборка строк одного профиля (опц. среза требований): desired-vs-facts (норменные позиции
-     * `Requirement::getItems()` + персональные {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\PersonalObligation})
+     * `Requirement::activeItems()` (без мягко удалённых) + персональные {@see \App\Compliance\Domain\Aggregate\ProfileCompliance\PersonalObligation})
      * против журнала фактов, запись — upsert + orphan-delete.
      *
      * $onlyRequirementIds null → полная пересборка профиля
@@ -133,7 +133,7 @@ final readonly class ComplianceObligationProjector
         foreach ($requirements as $requirement) {
             $requirementNames[$requirement->getId()] = $requirement->getName();
             $requirementTypes[$requirement->getId()] = $requirement->getType();
-            foreach ($requirement->getItems() as $item) {
+            foreach ($requirement->activeItems() as $item) {
                 $key = ObligationKey::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
                     continue;

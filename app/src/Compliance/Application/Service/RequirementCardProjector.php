@@ -91,7 +91,7 @@ final readonly class RequirementCardProjector
     private function normItems(Requirement $requirement): array
     {
         $rows = [];
-        foreach ($requirement->getItems() as $item) {
+        foreach ($requirement->activeItems() as $item) {
             // Печатная карточка — норма ВСЕГО перечня, количество показываем для любой количественной позиции
             // (инвентарь и периодическая — сиблинги по {@see QuantifiedItem}); экранный hide-предикат
             // инструктажа (1 шт) на печать нормы не распространяется.

@@ -26,7 +26,7 @@ class RequirementDTOTransformer
             static fn (string $id): PositionRefDTO => new PositionRefDTO($id, $positionTitles[$id] ?? ''),
             $requirement->getPositionIds()->getList(),
         );
-        $dto->items = array_map($this->itemDto(...), $requirement->getItems());
+        $dto->items = array_map($this->itemDto(...), $requirement->activeItems());
 
         return $dto;
     }
