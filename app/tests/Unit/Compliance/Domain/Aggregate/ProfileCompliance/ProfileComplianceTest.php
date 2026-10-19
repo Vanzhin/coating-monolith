@@ -40,6 +40,7 @@ final class ProfileComplianceTest extends TestCase
     private string $glovesItemId = 'item-gloves';
     private string $fireSafetyItemId = 'item-fire';
     private string $creamItemId = 'item-cream';
+    private string $soapItemId = 'item-soap';
     private string $helmetItemId = 'item-helmet';
 
     protected function setUp(): void
@@ -91,6 +92,23 @@ final class ProfileComplianceTest extends TestCase
     private function creamKeyOnPeriodicRequirement(): string
     {
         return ObligationKey::keyOf($this->periodicReqId, $this->creamItemId);
+    }
+
+    /**
+     * Периодический расходник (НЕ инструктаж) с нормой в «мл» — для Finding 2+4: единицу теперь сверяем и у
+     * периодической, недовыдача остаётся допустимой (не блокирует assertIssuable).
+     */
+    private function periodicSoapRequirement(float $norm = 1200.0): Requirement
+    {
+        return new Requirement(
+            Uuid::fromString($this->periodicReqId), 'ДСИЗ', ComplianceType::Periodic, new StringCollection(),
+            new PeriodicItem($this->soapItemId, 'Мыло', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.7', new Quantity($norm, Unit::Milliliter)),
+        );
+    }
+
+    private function soapKeyOnPeriodicRequirement(): string
+    {
+        return ObligationKey::keyOf($this->periodicReqId, $this->soapItemId);
     }
 
     /** То же требование + Каска (инвентарная). */
@@ -247,6 +265,35 @@ final class ProfileComplianceTest extends TestCase
         $pc = $this->pcWithGloves();
         $this->expectException(AppException::class); // «шт.» вместо «пар» — единица обязана совпадать с нормой
         $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->glovesKey(), $this->now, new Quantity(10.0, Unit::Piece))]);
+    }
+
+    /**
+     * Finding 2+4: единицу теперь сверяем и у периодической позиции (раньше проверка была material-only и
+     * пропускала периодическую молча) — норма «мл», выдача «шт.» не проходит.
+     */
+    public function test_periodic_issue_with_unit_other_than_norm_throws(): void
+    {
+        $requirement = $this->periodicSoapRequirement(); // норма 1200 мл
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+
+        $this->expectException(AppException::class);
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->soapKeyOnPeriodicRequirement(), $this->now, new Quantity(200.0, Unit::Piece))]);
+    }
+
+    /**
+     * Finding 2+4: недовыдача ниже нормы у периодической НЕ блокирует выдачу — остаток не ведётся, красный
+     * цвет на дашборде обеспечивает ComplianceBucketResolver, не отказ здесь (блок — только у инвентаря).
+     */
+    public function test_periodic_issue_under_norm_does_not_throw(): void
+    {
+        $requirement = $this->periodicSoapRequirement(); // норма 1200 мл
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->soapKeyOnPeriodicRequirement(), $this->now, new Quantity(200.0, Unit::Milliliter))]); // 200 < 1200 — не бросает
+
+        $this->addToAssertionCount(1);
     }
 
     public function test_assert_issuable_ignores_key_outside_requirement_and_personal(): void

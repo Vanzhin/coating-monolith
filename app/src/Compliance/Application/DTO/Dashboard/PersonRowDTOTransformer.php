@@ -84,10 +84,14 @@ final readonly class PersonRowDTOTransformer
         return $row;
     }
 
-    /** «5 пара · ежегодно» — норма (сумма+единица) + периодичность; нематериальная позиция — только периодичность. */
+    /**
+     * «5 пара · ежегодно» — норма (сумма+единица) + периодичность. Инструктаж (норма «1 шт.», количество
+     * технического смысла не несёт — {@see ObligationProjection::isInstructionLike()}) и прочие нематериальные
+     * позиции без нормы — только периодичность.
+     */
     private function spec(ObligationProjection $obligation): string
     {
-        $quantity = $this->quantityLabel($obligation);
+        $quantity = $obligation->isInstructionLike() ? null : $this->quantityLabel($obligation);
         $cadence = $obligation->cadence(); // уже готовый label-снимок, см. ObligationProjection::cadence()
 
         return null !== $quantity ? $quantity.' · '.$cadence : $cadence;

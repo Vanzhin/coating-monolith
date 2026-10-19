@@ -75,6 +75,11 @@ final class ComplianceBucketResolver
      * Периодическая (инструктаж/расходник раз в N) — срок первичен: просрочка бьёт даже держащую норму
      * позицию (доввыдача после срока не спасает), недовыдача проверяется МЕЖДУ Overdue и Soon — иначе
      * «недовыдано, но срок скоро» ошибочно читалось бы как Soon вместо Missing (Ruling 1).
+     *
+     * Инструктаж ({@see ObligationView::isInstructionLike()}) — ИСКЛЮЧЕНИЕ из ветки недовыдачи: у него количество
+     * не инвариант (норма «1 шт.» нужна только модели, форма выдачи его не запрашивает и шлёт held=0), контроль
+     * ЦЕЛИКОМ по дате (не выполнено / просрочено / скоро / в норме). Без этого исключения прошедший инструктаж
+     * читался бы как вечный Missing (held 0 < норма 1).
      */
     private function periodicBucketFor(ObligationView $obligation, \DateTimeImmutable $now): ComplianceBucket
     {
@@ -86,8 +91,8 @@ final class ComplianceBucketResolver
             return ComplianceBucket::Overdue; // просрочено — независимо от количества на руках
         }
         $norm = $obligation->normQuantity();
-        if (null !== $norm && $obligation->heldQuantity() < $norm - self::QUANTITY_EPSILON) {
-            return ComplianceBucket::Missing; // недовыдано по количеству, срок пока не прошёл
+        if (!$obligation->isInstructionLike() && null !== $norm && $obligation->heldQuantity() < $norm - self::QUANTITY_EPSILON) {
+            return ComplianceBucket::Missing; // недовыдано по количеству, срок пока не прошёл (инструктаж не проверяем — см. докблок)
         }
         if (null === $nextDueAt) {
             return ComplianceBucket::Ok;

@@ -356,6 +356,37 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('name="personalItems[__i__][amount]"', $html, 'периодическое требование без JournalKind: вне-нормовая позиция всё равно несёт ввод количества');
     }
 
+    /**
+     * Finding 1 (критический): инструктаж контролируется ПО ДАТЕ — после прохождения бакет обязан стать Ok, а
+     * не оставаться Missing навсегда. Баг: амаунт-поле у инструктажа на форме скрыто
+     * ({@see \App\Compliance\Application\UseCase\Query\GetIssuePage\GetIssuePageQueryHandler} `showAmountInput`
+     * false для isInstructionLike), поэтому реальный сабмит формы НЕ шлёт `amount` → проектор держит held=0
+     * ({@see \App\Compliance\Application\Service\ComplianceObligationProjector::computeFromFacts} — периодическая
+     * держит количество ПОСЛЕДНЕЙ выдачи) → старый резолвер читал это как недовыдачу для ЛЮБОЙ периодической →
+     * вечный Missing. Регрессия ловится только реальным POST формы — {@see self::issuePeriodic} (используемый
+     * другими тестами этого файла) шлёт amount ЯВНО через `RecordIssuanceCommand`, это бы баг не поймало.
+     */
+    public function test_submit_real_form_for_instruction_without_amount_becomes_ok_not_missing_forever(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->periodicInstructionRequirement();
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        self::assertSame(0, $crawler->filter('input[name="items[0][amount]"]')->count(), 'инструктаж: поля количества нет — форму сабмитим как есть, без amount');
+
+        // Дефицитная (ни разу не пройденная) позиция отмечена чекбоксом по умолчанию — сабмитим форму без правок,
+        // как реально делает браузер (нет JS, который мог бы что-то дописать).
+        $this->client->submit($crawler->filter('#issue-form')->form());
+        self::assertResponseRedirects();
+
+        $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('в норме', $html, 'инструктаж пройден (held=0 — количество для него не инвариант) — бакет Ok');
+        self::assertStringNotContainsString('не пройдено', $html, 'больше не красный Missing после прохождения');
+    }
+
     /** @return array{profileId: string, requirementId: string, key: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
     private function periodicConsumableRequirement(): array
     {

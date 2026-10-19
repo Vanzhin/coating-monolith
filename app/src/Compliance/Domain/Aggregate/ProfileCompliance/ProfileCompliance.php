@@ -10,6 +10,7 @@ use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\Aggregate;
@@ -185,7 +186,9 @@ class ProfileCompliance extends Aggregate
 
         foreach ($requirement->getItems() as $item) {
             if ($item->id() === $itemId) {
-                return [$item->label(), $item->type(), $item->cadence(), $item instanceof MaterialItem ? $item->quantity() : null];
+                // QuantifiedItem — обе количественные позиции (материальная/периодическая, сиблинги по
+                // RequirementItemInterface); MaterialItem тут ложно отрицателен для периодической нормы.
+                return [$item->label(), $item->type(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null];
             }
         }
         foreach ($this->personalObligations as $personal) {
@@ -198,9 +201,13 @@ class ProfileCompliance extends Aggregate
     }
 
     /**
-     * Инвариант выдачи: по материальным позициям «на руках + выдаётся» не меньше нормы (нельзя оставить ниже
-     * нормы). Норма позиции резолвится из `$requirement` (норменная) либо из персональной декларации. Без
-     * мутаций — можно звать до промоута скана.
+     * Инвариант выдачи. Единицу измерения сверяем для ОБОИХ количественных типов (материальная/периодическая) —
+     * нельзя выдать «10 шт.» против нормы «10 пар», ни там, ни там. «На руках + выдаётся не меньше нормы»
+     * (нельзя оставить ниже нормы) требуем ТОЛЬКО у инвентаря (Material): периодическая позиция остаток не
+     * ведёт, недовыдача для неё допустима — подсвечивается красным через
+     * {@see \App\Compliance\Domain\Service\ComplianceBucketResolver}, но саму выдачу не блокирует. Норма позиции
+     * резолвится из `$requirement` (норменная) либо из персональной декларации. Без мутаций — можно звать до
+     * промоута скана.
      *
      * @param IssuanceLine[] $lines
      */
@@ -216,14 +223,18 @@ class ProfileCompliance extends Aggregate
             if (CadenceKind::ByManufacturerDoc === $cadence->kind && null === $line->manualDueDate) {
                 throw new AppException(sprintf('Укажите срок окончания для позиции «%s».', $label));
             }
-            if (ComplianceType::Material !== $type || null === $norm) {
+            if (null === $norm) {
                 continue;
             }
             // Единица выдачи обязана совпадать с единицей обязанности (норма из требования / персональная позиция) —
             // нельзя выдать «10 шт.» против нормы «10 пар». Единицу норм-позиции на форме не меняют (это UX),
-            // но источник истины — здесь: прямой POST/API с чужой единицей упрётся в этот инвариант.
+            // но источник истины — здесь: прямой POST/API с чужой единицей упрётся в этот инвариант. Для ОБОИХ
+            // количественных типов — у периодической это та же защита (напр. мыло «мл» вместо «шт.»).
             if (null !== $line->quantity && $line->quantity->unit !== $norm->unit) {
                 throw new AppException(sprintf('Единица измерения по позиции «%s» должна быть «%s».', $label, $norm->unit->title()));
+            }
+            if (ComplianceType::Material !== $type) {
+                continue; // недовыдача периодической — не блокируется здесь (остаток не ведётся, см. докблок)
             }
             $issued = $line->quantity->amount ?? 0.0;
             if ($this->heldOf($line->obligationKey) + $issued < $norm->amount) {

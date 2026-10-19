@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
+use App\Compliance\Application\DTO\Dashboard\RequirementGroupDTO;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
@@ -175,6 +176,49 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
             $this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Missing)), $profileId),
             'и в список missing (есть невыданная позиция)',
         );
+    }
+
+    /**
+     * Finding 3: количество инструктажа («1 шт.») прячем в детали человека — спек строки нормы несёт норму +
+     * периодичность, спек инструктажа — только периодичность (та же строка, что ComplianceBucketResolver
+     * теперь не читает как недовыдачу, Finding 1).
+     */
+    public function test_instruction_spec_hides_quantity_but_consumable_shows_it(): void
+    {
+        ['profileId' => $profileId] = $this->enrollCompliance(); // материальное требование, Перчатки 10 пар
+
+        /** @var GetProfileQueryResult $pr */
+        $pr = $this->queryBus->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($pr->profile);
+
+        // Периодическая позиция-инструктаж (норма 1 шт) на той же должности.
+        $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'Журнал инструктажа', 'periodic', [$pr->profile->positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.6']],
+        ));
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
+        self::assertNotNull($row);
+
+        $materialGroup = $this->groupOfType($row, 'material');
+        $periodicGroup = $this->groupOfType($row, 'periodic');
+        self::assertNotNull($materialGroup);
+        self::assertNotNull($periodicGroup);
+
+        self::assertStringContainsString('пара', $materialGroup->rows[0]->spec, 'материальная позиция показывает норму (сумма+единица)');
+        self::assertStringNotContainsString('шт', $periodicGroup->rows[0]->spec, 'инструктаж количество («1 шт.») не показывает — только периодичность');
+    }
+
+    private function groupOfType(PersonRowDTO $row, string $type): ?RequirementGroupDTO
+    {
+        foreach ($row->groups as $group) {
+            if ($group->type === $type) {
+                return $group;
+            }
+        }
+
+        return null;
     }
 
     private function paged(ComplianceDashboardFilter $filter): GetPagedComplianceQueryResult
