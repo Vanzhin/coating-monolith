@@ -21,7 +21,7 @@ abstract readonly class AbstractRequirementItem implements RequirementItemInterf
     private string $label;
     private string $basis;
 
-    public function __construct(string $id, string $label, private Cadence $cadence, string $basis)
+    public function __construct(string $id, string $label, private Cadence $cadence, string $basis, private bool $removed = false)
     {
         $id = trim($id);
         if ('' === $id) {
@@ -65,19 +65,29 @@ abstract readonly class AbstractRequirementItem implements RequirementItemInterf
         return $this->basis;
     }
 
+    public function isRemoved(): bool
+    {
+        return $this->removed;
+    }
+
     /**
      * Общая часть сериализации; конкретный тип дополняет своими полями.
      *
-     * @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string}
+     * @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string, removed?: true}
      */
     protected function baseArray(): array
     {
-        return [
+        $base = [
             'id' => $this->id,
             'label' => $this->label,
             'cadence' => $this->cadence->jsonSerialize(),
             'basis' => $this->basis,
         ];
+        if ($this->removed) {
+            $base['removed'] = true;
+        }
+
+        return $base;
     }
 
     /**
@@ -91,5 +101,11 @@ abstract readonly class AbstractRequirementItem implements RequirementItemInterf
         $id = trim((string) ($data['id'] ?? ''));
 
         return '' !== $id ? $id : Uuid::v7()->toRfc4122();
+    }
+
+    /** @param array<string, mixed> $data */
+    protected static function readRemoved(array $data): bool
+    {
+        return true === ($data['removed'] ?? false);
     }
 }

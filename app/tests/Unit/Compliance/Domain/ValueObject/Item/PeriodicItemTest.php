@@ -84,4 +84,22 @@ final class PeriodicItemTest extends TestCase
         $this->expectException(AppException::class);
         new PeriodicItem('itm-x', 'Проверка знаний', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), '  ', new Quantity(1.0, Unit::Piece));
     }
+
+    public function test_removed_defaults_false_and_absent_from_json(): void
+    {
+        $item = PeriodicItem::fromArray(['id' => 'i1', 'label' => 'Инструктаж', 'cadence' => ['kind' => 'once'], 'basis' => 'п.1', 'quantity' => ['amount' => 1.0, 'unit' => 'pcs']]);
+        self::assertFalse($item->isRemoved());
+        self::assertArrayNotHasKey('removed', $item->jsonSerialize());
+    }
+
+    public function test_with_removed_marks_removed_and_round_trips(): void
+    {
+        $item = PeriodicItem::fromArray(['id' => 'i1', 'label' => 'Инструктаж', 'cadence' => ['kind' => 'once'], 'basis' => 'п.1', 'quantity' => ['amount' => 1.0, 'unit' => 'pcs']]);
+        $removed = $item->withRemoved();
+        self::assertTrue($removed->isRemoved());
+        self::assertSame('Инструктаж', $removed->label());
+        self::assertSame(1.0, $removed->quantity()->amount);
+        self::assertTrue($removed->jsonSerialize()['removed']);
+        self::assertTrue(PeriodicItem::fromArray($removed->jsonSerialize())->isRemoved());
+    }
 }

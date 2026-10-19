@@ -23,4 +23,8 @@ interface RequirementItemInterface extends \JsonSerializable
     public function cadence(): Cadence;
 
     public function basis(): string;
+
+    public function isRemoved(): bool;
+
+    public function withRemoved(): self;
 }
