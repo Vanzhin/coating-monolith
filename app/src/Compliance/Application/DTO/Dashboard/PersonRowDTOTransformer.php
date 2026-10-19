@@ -64,8 +64,11 @@ final readonly class PersonRowDTOTransformer
         $group = new RequirementGroupDTO();
         $group->requirementId = $obligation->requirementId();
         $group->name = $obligation->requirementName() ?? '';
-        $group->type = $obligation->type()->value;
-        $group->typeLabel = $obligation->type()->title();
+        // Контейнерный тип ТРЕБОВАНИЯ, не тип позиции ({@see ObligationProjection::type()}): «Выдача» полиморфна
+        // (инвентарь+расходник в одной карточке) — бейдж карточки группы обязан читать контейнер, иначе
+        // смешанная «Выдача» могла бы показать «Периодическая» по случайно первой встреченной позиции.
+        $group->type = $obligation->requirementType()->value;
+        $group->typeLabel = $obligation->requirementType()->title();
         $group->counts = new BucketCountsDTO();
 
         return $group;

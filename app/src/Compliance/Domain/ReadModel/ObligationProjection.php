@@ -37,6 +37,8 @@ class ObligationProjection implements ObligationView
     // @phpstan-ignore-next-line property.onlyRead
     private string $type;
     // @phpstan-ignore-next-line property.onlyRead
+    private ?string $requirementType;
+    // @phpstan-ignore-next-line property.onlyRead
     private string $cadence;
     // @phpstan-ignore-next-line property.onlyRead
     private ?Cadence $cadenceStruct;
@@ -90,6 +92,18 @@ class ObligationProjection implements ObligationView
     public function type(): ComplianceType
     {
         return ComplianceType::from($this->type);
+    }
+
+    /**
+     * Контейнерный тип ТРЕБОВАНИЯ (Выдача/Периодическая) — не тип позиции ({@see self::type()}). Нужен бейджу
+     * карточки требования на дашборде: «Выдача» полиморфна (держит инвентарь и расходник вместе), контейнер
+     * по типу первой попавшейся позиции не определить. NULL — строка материализована до заполнения колонки
+     * ({@see \App\Compliance\Application\Service\ComplianceObligationProjector}, бэкафилл —
+     * `app:compliance:rebuild-projection`) — на этот переходный период падаем на тип позиции.
+     */
+    public function requirementType(): ComplianceType
+    {
+        return null !== $this->requirementType ? ComplianceType::from($this->requirementType) : $this->type();
     }
 
     /** Готовый label-снимок периодичности («ежегодно») — для отображения (дашборд/карточка), без похода в структуру. */

@@ -64,6 +64,11 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
             ->from(ObligationProjection::class, 'o')
             ->where('o.profileId IN (:profileIds)')
             ->setParameter('profileIds', $profileIds->getList())
+            // Детерминизм порядка (защитно — строка бейджа теперь читает ХРАНИМЫЙ контейнерный тип
+            // {@see ObligationProjection::requirementType()}, от порядка строк больше не зависит; но
+            // стабильная сортировка полезна сама по себе — читатели не должны ловить произвольный порядок БД).
+            ->orderBy('o.requirementId', 'ASC')
+            ->addOrderBy('o.itemId', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -74,17 +79,18 @@ final class ObligationProjectionRepository implements ObligationProjectionReposi
             $this->conn->executeStatement(
                 <<<'SQL'
                     INSERT INTO compliance_obligation_projection
-                        (id, profile_id, requirement_id, item_id, requirement_name, label, type, cadence,
-                         cadence_struct, quantity, quantity_unit, department_id, last_fulfilled_at, next_due_at,
+                        (id, profile_id, requirement_id, item_id, requirement_name, label, type, requirement_type,
+                         cadence, cadence_struct, quantity, quantity_unit, department_id, last_fulfilled_at, next_due_at,
                          held_quantity, active, origin, mode)
                     VALUES
-                        (:id, :profile_id, :requirement_id, :item_id, :requirement_name, :label, :type, :cadence,
-                         :cadence_struct, :quantity, :quantity_unit, :department_id, :last_fulfilled_at, :next_due_at,
+                        (:id, :profile_id, :requirement_id, :item_id, :requirement_name, :label, :type, :requirement_type,
+                         :cadence, :cadence_struct, :quantity, :quantity_unit, :department_id, :last_fulfilled_at, :next_due_at,
                          :held_quantity, :active, :origin, :mode)
                     ON CONFLICT (profile_id, requirement_id, item_id) DO UPDATE
                     SET requirement_name  = EXCLUDED.requirement_name,
                         label             = EXCLUDED.label,
                         type              = EXCLUDED.type,
+                        requirement_type  = EXCLUDED.requirement_type,
                         cadence           = EXCLUDED.cadence,
                         cadence_struct    = EXCLUDED.cadence_struct,
                         quantity          = EXCLUDED.quantity,

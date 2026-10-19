@@ -124,10 +124,15 @@ final readonly class ComplianceObligationProjector
         $keptItemIds = [];
         /** @var array<string, string> $requirementNames requirementId => name (норменные уже загружены; для персональных — лениво) */
         $requirementNames = [];
+        /** @var array<string, ComplianceType> $requirementTypes requirementId => КОНТЕЙНЕРНЫЙ тип требования
+         *  (Выдача/Периодическая) — не тип позиции; норменные уже загружены, для персональных — лениво,
+         *  тем же походом в репозиторий, что и за именем (см. цикл 2 ниже). */
+        $requirementTypes = [];
 
         // 1. Норменные строки живой нормы.
         foreach ($requirements as $requirement) {
             $requirementNames[$requirement->getId()] = $requirement->getName();
+            $requirementTypes[$requirement->getId()] = $requirement->getType();
             foreach ($requirement->getItems() as $item) {
                 $key = ObligationKey::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
@@ -135,7 +140,7 @@ final readonly class ComplianceObligationProjector
                 }
                 $rows[$key] = $this->buildRow(
                     $profileId, $requirement->getId(), $item->id(), $requirement->getName(), $item->label(),
-                    $item->type(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null,
+                    $item->type(), $requirement->getType(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null,
                     $departmentId, ObligationOrigin::Norm->value,
                     $records, $key,
                 );
@@ -152,11 +157,19 @@ final readonly class ComplianceObligationProjector
             if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds->getList())) {
                 continue; // точечная пересборка чужие требования не трогает
             }
-            $requirementName = $requirementNames[$personal->requirementId]
-                ??= $this->requirements->findOneById($personal->requirementId)?->getName() ?? '';
+            if (!isset($requirementNames[$personal->requirementId])) {
+                // Ленивый поход ОДИН раз на requirementId — результат сразу кормит оба кэша (имя + контейнерный
+                // тип), второй отдельный запрос за типом не нужен. Требование могло уже уйти из нормы (личная
+                // декларация вне нормы живёт и без него) — тогда тип берём с самой декларации (см. докблок
+                // materializePersonalItems в RecordIssuanceCommandHandler: персональная позиция ВСЕГДА мономорфна
+                // с требованием-актом на момент создания, поэтому это не приближение, а точное значение).
+                $lookedUp = $this->requirements->findOneById($personal->requirementId);
+                $requirementNames[$personal->requirementId] = $lookedUp?->getName() ?? '';
+                $requirementTypes[$personal->requirementId] = $lookedUp?->getType() ?? $personal->type;
+            }
             $rows[$key] = $this->buildRow(
-                $profileId, $personal->requirementId, $personal->itemId, $requirementName,
-                $personal->label, $personal->type, $personal->cadence, $personal->quantity,
+                $profileId, $personal->requirementId, $personal->itemId, $requirementNames[$personal->requirementId],
+                $personal->label, $personal->type, $requirementTypes[$personal->requirementId], $personal->cadence, $personal->quantity,
                 $departmentId, ObligationOrigin::Personal->value, $records, $key,
             );
             $keptItemIds[$personal->requirementId][] = $personal->itemId;
@@ -192,6 +205,7 @@ final readonly class ComplianceObligationProjector
         string $requirementName,
         string $label,
         ComplianceType $type,
+        ComplianceType $requirementType,
         Cadence $cadence,
         ?Quantity $quantity,
         string $departmentId,
@@ -209,6 +223,10 @@ final readonly class ComplianceObligationProjector
             'requirement_name' => $requirementName,
             'label' => $label,
             'type' => $type->value,
+            // Контейнерный тип ТРЕБОВАНИЯ (Выдача/Периодическая) — отдельно от типа позиции выше: «Выдача»
+            // полиморфна (инвентарь+расходник в одной карточке), бейдж дашборда обязан читать контейнер
+            // ({@see \App\Compliance\Domain\ReadModel\ObligationProjection::requirementType()}).
+            'requirement_type' => $requirementType->value,
             'cadence' => $cadence->label(),
             // Структурная периодичность (kind+число+единица) — JSONB
             // ({@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}). Нужна форме выдачи для

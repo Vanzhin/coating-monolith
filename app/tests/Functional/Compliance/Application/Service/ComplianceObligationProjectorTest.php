@@ -19,6 +19,7 @@ use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceBucket;
+use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
@@ -86,7 +87,7 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
     }
 
     /**
-     * Периодическая ({@see \App\Compliance\Domain\Type\ComplianceType::Periodic}): held = количество ПОСЛЕДНЕЙ
+     * Периодическая ({@see ComplianceType::Periodic}): held = количество ПОСЛЕДНЕЙ
      * выдачи, не Σ за всё время — доввыдача после недостачи не копится с прежней (Task 2, ДОП. КОНТЕКСТ).
      */
     public function test_periodic_held_is_last_issuance_not_cumulative(): void
@@ -126,6 +127,54 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
             (new ComplianceBucketResolver())->bucketFor($row, new \DateTimeImmutable('2026-06-02')),
             'недовыдано (200 из 1200), срок не подошёл — бакет обязан быть Missing, не Ok/Soon',
         );
+    }
+
+    /**
+     * Финальный разбор: бейдж группы на дашборде брал тип ПЕРВОЙ строки проекции (order-dependent, у
+     * `findForProfiles` не было ORDER BY) — смешанное «Выдача»-требование (инвентарь+расходник) могло
+     * показать «Периодическая», если первой лежала расходная позиция. Фикс — на каждой строке хранится
+     * КОНТЕЙНЕРНЫЙ тип требования ({@see ObligationProjection::requirementType()}), отдельно от типа позиции
+     * ({@see ObligationProjection::type()}). Проверяем: у смешанного material-требования ОБЕ строки несут
+     * requirement_type=material, хотя их item-type различается (material/periodic).
+     */
+    public function test_mixed_material_requirement_rows_carry_container_type_not_item_type(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $gloveKey] = $this->enrollCompliance(
+            'Перчатки',
+            extraItems: [
+                ['label' => 'Респиратор (расходник)', 'type' => 'periodic', 'cadenceKind' => 'periodic', 'cadenceNumber' => '3', 'cadenceUnit' => 'month', 'amount' => '6', 'unit' => 'pcs', 'basis' => 'п.11'],
+            ],
+        );
+        $consumableKey = $this->obligationKeyFor($r, 'Респиратор (расходник)');
+
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $rows = $this->projectionRepo->findForProfiles(new StringCollection($p));
+        $gloveRow = $this->rowFor($rows, $gloveKey);
+        $consumableRow = $this->rowFor($rows, $consumableKey);
+
+        self::assertSame(ComplianceType::Material, $gloveRow->type(), 'позиция «Перчатки» — инвентарь');
+        self::assertSame(ComplianceType::Periodic, $consumableRow->type(), 'позиция «Респиратор» — расходник (периодическая)');
+
+        self::assertSame(ComplianceType::Material, $gloveRow->requirementType(), 'контейнер требования — «Выдача»');
+        self::assertSame(
+            ComplianceType::Material,
+            $consumableRow->requirementType(),
+            'расходник лежит в material-требовании — бейдж обязан читать контейнер, а не тип своей позиции',
+        );
+    }
+
+    /** «Периодическая» требование однородно — контейнерный тип совпадает с типом единственной позиции. */
+    public function test_periodic_requirement_row_carries_periodic_container_type(): void
+    {
+        ['profileId' => $p, 'key' => $k] = $this->periodicSolventRequirement();
+
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(ComplianceType::Periodic, $row->requirementType());
     }
 
     public function test_sign_writeoff_updates_projection_for_all_people_in_one_tx(): void

@@ -210,6 +210,32 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertStringNotContainsString('шт', $periodicGroup->rows[0]->spec, 'инструктаж количество («1 шт.») не показывает — только периодичность');
     }
 
+    /**
+     * Финальный разбор: бейдж группы брался с типа ПЕРВОЙ строки проекции встреченной в обходе — у смешанного
+     * «Выдача»-требования (инвентарь+расходник) бейдж мог ошибочно читаться как «Периодическая». Группа одна
+     * на requirementId ({@see PersonRowDTOTransformer::fromRows}), поэтому у смешанного требования бакеты
+     * по-прежнему разъезжаются по material/nonMaterial (per-item), а вот `typeLabel` группы обязан быть
+     * «Выдача» (контейнер), не зависеть от того, какая позиция легла в проекцию первой.
+     */
+    public function test_mixed_material_requirement_group_badge_reads_container_type_not_first_item(): void
+    {
+        ['profileId' => $profileId] = $this->enrollCompliance(
+            'Перчатки',
+            extraItems: [
+                ['label' => 'Респиратор (расходник)', 'type' => 'periodic', 'cadenceKind' => 'periodic', 'cadenceNumber' => '3', 'cadenceUnit' => 'month', 'amount' => '6', 'unit' => 'pcs', 'basis' => 'п.11'],
+            ],
+        );
+
+        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
+        self::assertNotNull($row);
+        self::assertCount(1, $row->groups, 'инвентарь и расходник — ОДНА карточка требования (одна группа)');
+        self::assertSame('Выдача', $row->groups[0]->typeLabel, 'бейдж карточки — контейнер («Выдача»), не тип первой встреченной позиции');
+
+        // Бакеты при этом по-прежнему считаются per-item: расходник ушёл в nonMaterial, инвентарь — в material.
+        self::assertSame(1, $row->material->total(), 'инвентарная позиция (Перчатки) — в бакете material');
+        self::assertSame(1, $row->nonMaterial->total(), 'расходник (периодическая позиция) — в бакете nonMaterial');
+    }
+
     private function groupOfType(PersonRowDTO $row, string $type): ?RequirementGroupDTO
     {
         foreach ($row->groups as $group) {

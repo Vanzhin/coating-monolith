@@ -160,6 +160,7 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'requirement_name' => 'Тестовое требование',
             'label' => 'Тестовая позиция',
             'type' => ComplianceType::Material->value,
+            'requirement_type' => ComplianceType::Material->value,
             'cadence' => 'periodic',
             'cadence_struct' => json_encode($cadenceStruct->jsonSerialize(), JSON_THROW_ON_ERROR),
             'quantity' => 1.0,
