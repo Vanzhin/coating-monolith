@@ -159,6 +159,26 @@ self::assertSame(1000.0, $this->row($ctx)->heldQuantity());       // после�
 
 ---
 
+## Task 4b: `/issue` — ввод количества для периодического расходника (закрыть регрессию)
+
+**Контекст (добавлено по ходу, с заказчиком):** на `/issue` поле ввода «Кол-во»/«Ед.» (`issue.html.twig:199-225`) и в макросе `personal_row` (строка ~23-30) обёрнуто `{% if o.type == 'material' %}` / `{% if requirementType == 'material' %}`. Раньше расходник был `material` → поле было; после смены типа на `periodic` поле пропало → периодический расходник (крем 1200 мл) нельзя выдать с количеством → held=0 → вечно Missing (регрессия). Инструктаж (periodic, 1 шт) ввода количества не требует.
+
+**Files:**
+- Modify: `app/src/Shared/Infrastructure/Templates/admin/compliance/person/issue.html.twig` (norm-строки + макрос `personal_row`), `app/src/Compliance/Application/UseCase/Query/GetIssuePage/GetIssuePageQueryHandler.php` / `IssueRowDTO` (+ флаг `showAmountInput`).
+- Test: `IssueActionTest` — рендер `/issue` периодического расходника содержит поле `name="items[i][amount]"` + единицу нормы; инструктаж — не содержит; материал — как было.
+
+**Interfaces:**
+- Consumes: `ObligationProjection::isInstructionLike()` (Task 4), тип/единица/норма строки проекции.
+- Produces: `IssueRowDTO::$showAmountInput` (bool) = `(type===material ИЛИ type===periodic) И НЕ isInstructionLike` (материал и периодический-расходник — да; инструктаж — нет; нематериальное — нет). Единица — фиксирована нормой (disabled select + hidden input), как у материала.
+
+- [ ] **Step 1: Failing functional** — GET `/issue` для периодического расходника (крем, норма 1200 мл): HTML содержит `name="items[0][amount]"` и hidden `items[0][unit]` = норменная единица; для инструктажа (1 шт) — `amount`-инпута НЕТ; материал — без регресса.
+- [ ] **Step 2: Прогнать — FAIL.**
+- [ ] **Step 3:** Ввести `IssueRowDTO::$showAmountInput` (в ОДНОМ месте — `GetIssuePageQueryHandler`, предикат по типу+isInstructionLike). В twig: блок «Кол-во»/«Ед.» гейтить на `o.showAmountInput` (вместо `o.type=='material'`); «% износа» ОСТАВИТЬ под `o.type=='material'` (у расходника износа нет); единица — существующая ветка «норма задала единицу» (disabled select + hidden `unit`). Тот же гейт в макросе `personal_row` (по строке: `row.showAmountInput`/передать флаг). Инструктажная ветка (`type != 'material' and instructionGroups`) остаётся для periodic-с-журналом.
+- [ ] **Step 4: Прогнать — PASS**; `cd app && yarn dev`; `./run check`.
+- [ ] **Step 5: Commit** — `git commit -m "Compliance периодическая: на /issue вернули ввод количества для расходника (регрессия после смены типа), единица по норме"`
+
+---
+
 ## Task 5: Миграция данных jsonb + пред-проверка смешанных
 
 **Files:**
