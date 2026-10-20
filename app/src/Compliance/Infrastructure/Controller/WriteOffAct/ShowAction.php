@@ -55,16 +55,16 @@ final class ShowAction extends AbstractController
             /** @var list<array{recordId: string, quantity: float, reason: string}> $lines */
             $lines = array_values((array) ($input['portions'] ?? []));
             $commissionRows = array_values((array) ($input['commission'] ?? []));
-            $actNumber = (string) ($input['actNumber'] ?? '');
             $actDate = (string) ($input['actDate'] ?? '');
             $orderNumber = (string) ($input['orderNumber'] ?? '');
             $orderDate = (string) ($input['orderDate'] ?? '');
             $representativePosition = (string) ($input['representativePosition'] ?? '');
             $representativeFio = (string) ($input['representativeFio'] ?? '');
             try {
-                // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (№/дата/приказ/представитель/комиссия) на черновик.
+                // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (дата/приказ/представитель/комиссия) на
+                // черновик. Номер акта тут не задаётся — он сквозной, присваивается при оформлении.
                 $this->commandBus->execute(new SaveWriteOffActCommand(
-                    $actId, $lines, $actNumber, $actDate, $commissionRows,
+                    $actId, $lines, $actDate, $commissionRows,
                     $orderNumber, $orderDate, $representativePosition, $representativeFio,
                 ));
                 if ('save' === ($input['op'] ?? 'sign')) {
@@ -75,7 +75,6 @@ final class ShowAction extends AbstractController
                 $this->commandBus->execute(new SignWriteOffActCommand(
                     $actId,
                     $commissionRows,
-                    $actNumber,
                     $actDate,
                     ((string) ($input['stagedFileId'] ?? '')) ?: null,
                 ));

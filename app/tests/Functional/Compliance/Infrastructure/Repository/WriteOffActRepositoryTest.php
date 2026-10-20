@@ -51,7 +51,7 @@ final class WriteOffActRepositoryTest extends KernelTestCase
         $act = new WriteOffAct(Uuid::v7(), $reqId, $orgId, new \DateTimeImmutable('2026-10-20'));
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-10-20'), 'scan-1', new \DateTimeImmutable('2026-10-20'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-10-20'), 'scan-1', new \DateTimeImmutable('2026-10-20'));
         $this->repo->add($act);
         $this->clear();
 

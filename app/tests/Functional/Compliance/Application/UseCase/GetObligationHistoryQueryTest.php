@@ -97,7 +97,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
             $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
         ));
         $this->commandBus->execute(new SignWriteOffActCommand(
-            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-08-10', $this->stageComplianceScan(),
         ));
         $this->reload();
 
@@ -108,7 +108,7 @@ final class GetObligationHistoryQueryTest extends KernelTestCase
         $writeOff = $result->events[0];
         self::assertSame(ObligationHistoryEventDTO::TYPE_WRITE_OFF, $writeOff->type);
         self::assertSame('2026-08-10', $writeOff->date);
-        self::assertSame('39', $writeOff->actNumber);
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $writeOff->actNumber, 'событие несёт сквозной авто-номер акта');
         self::assertSame(ObligationHistoryEventDTO::TYPE_ISSUED, $result->events[1]->type);
         self::assertSame('2026-06-01', $result->events[1]->date);
     }

@@ -227,8 +227,8 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($act);
         $actId = $act->getId();
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Проектор напрямую (независимо от шаблона): стр. 1 = норма, стр. 2 = факт этого акта + возврат.
@@ -257,7 +257,7 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('12', $row['issue_qty'], 'стр. 2 количество = выданное (12), а не норма');
         self::assertSame('3', $row['return_qty'], 'возвращено = сумма подписанного списания');
         self::assertSame('01.07.2026', $row['return_date']);
-        self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
+        self::assertMatchesRegularExpression('/№ \d+/', (string) $row['writeoff_act'], 'в ленте факта — сквозной авто-номер акта');
 
         // № карточки — свойство журнала, закреплено первой выдачей. Ответственный — реквизит акта-документа,
         // журнал пишется прямой записью без него, поэтому плейсхолдер пустой.
@@ -315,8 +315,8 @@ final class CardDownloadControllerTest extends WebTestCase
             }
         }
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($actId, $portions, 'А-1', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-1', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, $portions, '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Пересчёт проекции (held) после списания идёт async-событием WriteOffActSigned, в тестах не обрабатывается —
@@ -459,11 +459,12 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($pc);
         $recordId = $pc->recordsForRequirement($r)[0]->getId();
 
-        // Сохранить черновик акта списания (op=save): состав + № + комиссия, без скана/подписи.
+        // Сохранить черновик акта списания (op=save): состав + комиссия, без скана/подписи. Номер акта на черновике
+        // не задаётся — он сквозной, присваивается при оформлении.
         $bus->execute(new SaveWriteOffActCommand(
             $actId,
             [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
-            'А-5', '2026-03-01',
+            '2026-03-01',
             [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-03-01']],
         ));
 
@@ -471,7 +472,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $saved = $writeOffRepo->findById($actId);
         self::assertNotNull($saved);
         self::assertTrue($saved->isDraft(), 'осталось черновиком (без подписи)');
-        self::assertSame('А-5', $saved->actNumber(), '№ акта сохранён на черновике');
+        self::assertNull($saved->actNumber(), 'черновик — без номера (номер сквозной, присваивается при оформлении)');
         self::assertNotNull($saved->commission());
         self::assertCount(1, $saved->commission()->members);
         self::assertSame('Сидоров С. С.', $saved->commission()->members[0]->fio);
@@ -481,7 +482,6 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $text = $this->docxText((string) $this->client->getResponse()->getContent());
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены (нет битых скобок)');
-        self::assertStringContainsString('А-5', $text, '№ акта в документе');
         self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
     }
 

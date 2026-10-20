@@ -35,6 +35,12 @@ class WriteOffActRepository extends ServiceEntityRepository implements WriteOffA
         $this->getEntityManager()->flush();
     }
 
+    public function nextActNumber(): int
+    {
+        return (int) $this->getEntityManager()->getConnection()
+            ->fetchOne("SELECT nextval('compliance_writeoff_act_number_seq')");
+    }
+
     public function findOpenDraft(string $requirementId, string $organizationId): ?WriteOffAct
     {
         // Fetch-join строк в том же запросе (readonly-id строки + to-one обратно на акт — иначе LAZY-прокси крэш).

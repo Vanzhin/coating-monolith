@@ -86,7 +86,7 @@ final class ObligationHistoryActionTest extends WebTestCase
             $actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']], actDate: '2026-08-10',
         ));
         $bus->execute(new SignWriteOffActCommand(
-            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan(),
+            $actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-08-10', $this->stageComplianceScan(),
         ));
         $em->clear();
 
@@ -98,7 +98,7 @@ final class ObligationHistoryActionTest extends WebTestCase
         self::assertStringContainsString('01.06.2026', $html);
         self::assertStringContainsString('Списано', $html);
         self::assertStringContainsString('Физический износ', $html);
-        self::assertStringContainsString('39', $html, 'номер акта виден в ленте');
+        self::assertMatchesRegularExpression('/акт № \d+/u', $html, 'сквозной номер акта виден в ленте');
     }
 
     /**

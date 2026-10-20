@@ -72,7 +72,8 @@ final class WriteOffActListActionTest extends WebTestCase
 
         $act = new WriteOffAct(Uuid::v7(), $requirementId, $organizationId, new \DateTimeImmutable());
         $act->addLinesForProfile($profileId, [['recordId' => 'r-'.uniqid('', true), 'labelSnapshot' => 'Позиция', 'quantity' => 1.0]]);
-        $act->saveDetails($actNumber, new \DateTimeImmutable(), Commission::fromRows([]), '', null, '', '', new \DateTimeImmutable());
+        $act->saveDetails(new \DateTimeImmutable(), Commission::fromRows([]), '', null, '', '', new \DateTimeImmutable());
+        $act->assignNumber($actNumber); // список фильтруется по номеру — проставляем явно (как сделала бы миграция/подпись)
         $repo->add($act);
         $container->get(EntityManagerInterface::class)->clear();
 
