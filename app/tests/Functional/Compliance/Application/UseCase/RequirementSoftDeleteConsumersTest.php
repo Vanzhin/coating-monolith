@@ -8,6 +8,7 @@ use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQuery;
 use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQueryResult;
+use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
@@ -20,8 +21,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Развод потребителей soft-delete позиции нормы (см. {@see \App\Compliance\Domain\Aggregate\Requirement\Requirement::activeItems()}/
- * {@see \App\Compliance\Domain\Aggregate\Requirement\Requirement::mergeItems()}): убранная из формы позиция
+ * Развод потребителей soft-delete позиции нормы (см. {@see Requirement::activeItems()}/
+ * {@see Requirement::mergeItems()}): убранная из формы позиция
  * перестаёт быть активной обязанностью (дашборд/проекция её не держат), но держится в составе как надгробие —
  * уже выданный на руки факт остаётся списываемым и резолвится по имени, а не по сырому ключу.
  */
@@ -88,6 +89,63 @@ final class RequirementSoftDeleteConsumersTest extends KernelTestCase
         // Ботинки остались в норме активной позицией — вытеснение затронуло только «Перчатки».
         $activeLabels = array_map(static fn ($i) => $i->label(), $requirement->activeItems());
         self::assertSame(['Ботинки'], $activeLabels);
+    }
+
+    /**
+     * T6 (редактор требования — «Восстановить»): позицию мягко убрали (надгробие), затем форма пере-сохранена
+     * с этой же позицией (тот же id, снова среди присланных) — ровно то, что делает JS req-rows#restore,
+     * снимая disabled с её полей. mergeItems обновляет её на месте как обычную присланную позицию — никакого
+     * доменного изменения это не требует (см. {@see Requirement::mergeItems}).
+     */
+    public function test_removed_item_resubmitted_by_id_is_restored_active(): void
+    {
+        ['requirementId' => $r] = $this->enrollCompliance(
+            'Перчатки',
+            extraItems: [['label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pair', 'basis' => 'п.9']],
+        );
+
+        // убрали «Ботинки» из нормы — становится надгробием
+        $this->saveRequirementWithoutItem($r, 'Ботинки');
+        $requirement = $this->requirementRepository->findOneById($r);
+        self::assertNotNull($requirement);
+        $bootsId = null;
+        foreach ($requirement->getItems() as $item) {
+            if ('Ботинки' === $item->label()) {
+                $bootsId = $item->id();
+            }
+        }
+        self::assertNotNull($bootsId, 'надгробие «Ботинки» сохранено в составе');
+        $removedBoots = array_values(array_filter($requirement->getItems(), static fn ($i) => $i->id() === $bootsId))[0];
+        self::assertTrue($removedBoots->isRemoved());
+
+        // «Восстановить»: пере-сохраняем требование, снова неся «Ботинки» с тем же id среди активных позиций
+        $this->commandBus->execute(new SaveRequirementCommand(
+            $r, $requirement->getName(), $requirement->getType()->value, $requirement->getPositionIds()->getList(),
+            [
+                ['id' => $this->itemIdByLabel($requirement, 'Перчатки'), 'label' => 'Перчатки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ['id' => $bootsId, 'label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pair', 'basis' => 'п.9'],
+            ],
+        ));
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $reloaded = $this->requirementRepository->findOneById($r);
+        self::assertNotNull($reloaded);
+        $activeLabels = array_map(static fn ($i) => $i->label(), $reloaded->activeItems());
+        self::assertContains('Ботинки', $activeLabels, 'восстановленная позиция снова среди активных');
+        $bootsAfterRestore = array_values(array_filter($reloaded->getItems(), static fn ($i) => $i->id() === $bootsId))[0];
+        self::assertFalse($bootsAfterRestore->isRemoved(), 'isRemoved() снят — восстановление без доменных изменений, через обычный mergeItems');
+    }
+
+    /** id позиции по её наименованию — вспомогательное для restore-теста (форма несёт id, не наименование). */
+    private function itemIdByLabel(Requirement $requirement, string $label): string
+    {
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $label) {
+                return $item->id();
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Позиция «%s» не найдена.', $label));
     }
 
     /** Пере-сохранить требование без позиции с $removedLabel: активные позиции формы минус удаляемая, id сохранён (round-trip). */

@@ -9,6 +9,9 @@ namespace App\Compliance\Application\DTO\Requirement;
  * отличаться от типа требования (инвентарь+расходник в одной карточке), у «Периодической» всегда совпадает.
  * cadenceNumber/amount/unit — для полей ввода; *Label — для показа. Количество заполнено у обоих видов
  * позиции (requiresQuantity()). id — стабильный идентификатор позиции, нужен форме для round-trip правки.
+ * removed — позиция мягко убрана из нормы ({@see \App\Compliance\Domain\ValueObject\Item\AbstractRequirementItem::isRemoved()}):
+ * редактор требования рисует её greyed+lock с «Восстановить» (единственное место восстановления — норма);
+ * списочная страница требований её игнорирует (см. {@see \App\Compliance\Application\UseCase\Query\ListRequirements\ListRequirementsQueryHandler}).
  */
 final class RequirementItemDTO
 {
@@ -23,4 +26,5 @@ final class RequirementItemDTO
     public ?string $unit = null;
     public string $quantityLabel = '';
     public string $basis;
+    public bool $removed = false;
 }

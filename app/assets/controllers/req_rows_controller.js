@@ -6,6 +6,12 @@ import { Controller } from '@hotwired/stimulus';
  * уникальны, но не обязательно последовательны — сервер сжимает через array_values. Строки без
  * `__i__` (напр. positionIds[]) клонируются как есть. Вложенные Stimulus-контроллеры (typeahead)
  * подхватываются автоматически после вставки в живой DOM.
+ *
+ * `restore` — позиция нормы, мягко убранная ранее (надгробие, рисуется disabled+замком, см.
+ * admin/compliance/requirements/_macros.html.twig item_row): снимает disabled с её полей, чтобы на
+ * сохранении форма прислала её id вместе с данными — Requirement::mergeItems сам вернёт позицию в
+ * активные (это и есть восстановление, доменных изменений не требует). Трэш-кнопку назад не ставим
+ * (дубль разметки с сервером) — после сохранения/перезагрузки позиция рендерится обычной активной строкой.
  */
 export default class extends Controller {
     static targets = ['rows', 'template'];
@@ -30,5 +36,17 @@ export default class extends Controller {
     confirmRemove() {
         this._pendingRow?.remove();
         this._pendingRow = null;
+    }
+
+    restore(event) {
+        const row = event.target.closest('[data-req-rows-target="row"]');
+        if (!row) {
+            return;
+        }
+        row.querySelectorAll('[disabled]').forEach((el) => el.removeAttribute('disabled'));
+        row.classList.remove('opacity-75');
+        row.removeAttribute('data-removed');
+        row.querySelector('[data-removed-marker]')?.remove();
+        event.target.closest('button')?.remove();
     }
 }

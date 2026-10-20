@@ -163,21 +163,33 @@
 
                     {% for o in rows %}
                         {% if o.writeOffOnly %}
-                            {# Позиция мягко убрана из нормы требования, но держит held>0 — норм-контролю не
-                               подчиняется (бейджа/полей выдачи нет), участвует только в выборе для списания:
-                               чекбокс joins «Списать выбранные»/уже открытый черновик акта ({@see AddToWriteOffAction}),
-                               исключена из «Выдать выбранные» (issue_selection_controller.js по data-writeoff-only). #}
+                            {# /issue — экран ТОЛЬКО действий (выдать/списать): позиция мягко убрана из нормы
+                               требования, но держит held>0 — рендерится ПОЛНОЙ карточкой, как активная (имя,
+                               периодичность/норма/последняя выдача, «на руках»), но ЗАМОРОЖЕННОЙ — замок вместо
+                               статус-бейджа, без раскрытия полей выдачи/истории (нечего выдавать). Чекбокс выбора
+                               остаётся: joins «Списать выбранные»/уже открытый черновик акта ({@see AddToWriteOffAction}),
+                               исключена из «Выдать выбранные» (issue_selection_controller.js по data-writeoff-only).
+                               «Восстановить» тут НЕТ — это действие нормы, доступно только в редакторе требования. #}
+                            <div class="opacity-75" data-frozen-item>
                             {% embed 'admin/compliance/_item_card.html.twig' with {
                                 name: o.label,
                                 select_name: 'woItems[' ~ loop.index0 ~ '][selected]',
                                 select_checked: false,
                                 select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle" data-writeoff-only="1" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '" data-held="' ~ o.held ~ '" data-unit-title="' ~ (o.unitTitle ?? '')|e('html_attr') ~ '"',
                             } %}
-                                {% block meta %}<div class="text-body-secondary small">удалено из нормы</div>{% endblock %}
+                                {% block meta %}
+                                    <div class="text-body-secondary small">
+                                        <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}
+                                    </div>
+                                {% endblock %}
                                 {% block control %}
-                                    <span class="badge text-bg-secondary fw-normal flex-shrink-0">на руках {{ o.held }} {{ o.unitTitle }}</span>
+                                    <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                        <span class="badge text-bg-secondary fw-normal"><i class="bi bi-lock me-1"></i>удалено из нормы</span>
+                                        <span class="badge text-bg-{{ o.heldTone }} fw-normal">на руках {{ o.held }}{% if o.quantityValue %} / {{ o.quantityValue }}{% endif %} {{ o.unitTitle }}</span>
+                                    </div>
                                 {% endblock %}
                             {% endembed %}
+                            </div>
                         {% else %}
                         {# Единая карточка позиции: EAGER-бейдж/норма/на руках/сроки (control) + EAGER-форма
                            выдачи и LAZY-история (footer) — см. IssueAction PHPDoc. #}

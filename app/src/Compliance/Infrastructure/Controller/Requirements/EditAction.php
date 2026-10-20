@@ -138,6 +138,7 @@ final class EditAction extends AbstractController
                     'amount' => $i->amount,
                     'unit' => $i->unit,
                     'basis' => $i->basis,
+                    'removed' => $i->removed,
                 ],
                 $requirement->items,
             ),

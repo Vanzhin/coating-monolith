@@ -186,20 +186,29 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
 
     /**
      * Строка «только списать» для позиции, удалённой из нормы требования, но держащей held>0: норм-контролю не
-     * подчиняется (нет бейджа срочности/полей выдачи), участвует ТОЛЬКО в выборе для списания. Имя — резолв из
-     * агрегата ({@see ProfileCompliance::obligationLabelOf}), не сырой ключ обязанности. Тип зафиксирован
-     * материальным константой — списанию (writeOffEligibleFactsForRequirement) структурно подлежит только
-     * инвентарь, резолвить его отдельно не нужно.
+     * подчиняется (нет бейджа срочности/полей выдачи), участвует ТОЛЬКО в выборе для списания. `/issue` —
+     * экран ТОЛЬКО действий (выдать/списать): строка рендерится ПОЛНОЙ карточкой, как активные (имя,
+     * периодичность/норма/последняя выдача, «на руках»), заморожена шаблоном замком — не минимальной строкой.
+     * Имя/периодичность/норма — спек из агрегата ({@see ProfileCompliance::obligationSpecOf}, резолвит и
+     * removed-надгробие: `Requirement::getItems()` держит его, не только активные), «последняя выдача» — дата
+     * самого факта. Тип зафиксирован материальным константой — списанию (writeOffEligibleFactsForRequirement)
+     * структурно подлежит только инвентарь, резолвить его отдельно не нужно.
      */
     private function writeOffOnlyRow(ProfileCompliance $profileCompliance, Requirement $requirement, FulfillmentRecord $fact): IssueRowDTO
     {
         $row = new IssueRowDTO();
         $row->key = $fact->obligationKey();
-        $row->label = $profileCompliance->obligationLabelOf($requirement, $row->key);
+        $spec = $profileCompliance->obligationSpecOf($requirement, $row->key);
+        $cadence = $spec[2] ?? null;
+        $norm = $spec[3] ?? null;
+        $row->label = $spec[0] ?? $row->key;
         $row->type = ComplianceType::Material->value;
-        $row->cadenceKind = '';
-        $row->cadenceLabel = '';
-        $row->quantityLabel = '';
+        $row->cadenceKind = $cadence?->kind->value ?? '';
+        $row->cadenceNumber = $cadence?->number;
+        $row->cadenceUnit = $cadence?->unit?->value;
+        $row->cadenceLabel = $cadence?->label() ?? '';
+        $row->quantityLabel = $norm?->label() ?? '';
+        $row->quantityValue = null !== $norm ? AmountFormatter::trimmed($norm->amount) : null;
         $row->origin = 'norm';
         $row->bucket = '';
         $row->bucketLabel = '';
@@ -207,6 +216,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         $row->held = AmountFormatter::trimmed($fact->heldAmount());
         $row->quantityUnit = $fact->quantity()?->unit->value;
         $row->unitTitle = $fact->quantity()?->unit->title();
+        $row->lastFulfilledAt = $fact->fulfilledAt()->format('d.m.Y');
         $row->writeOffOnly = true;
 
         return $row;

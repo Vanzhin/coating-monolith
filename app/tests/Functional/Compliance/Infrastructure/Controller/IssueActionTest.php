@@ -265,6 +265,38 @@ final class IssueActionTest extends WebTestCase
     }
 
     /**
+     * T6: /issue — экран ТОЛЬКО действий (выдать/списать). Позиция, мягко убранная из нормы, но держащая held>0,
+     * обязана рендериться ТОЙ ЖЕ ПОЛНОЙ карточкой, что активные (периодичность/норма/последняя выдача, «на руках»),
+     * просто ЗАМОРОЖЕННОЙ: замок вместо статус-бейджа, без «Восстановить» (это действие нормы — только в редакторе
+     * требования, см. RequirementsControllerTest). Регрессия §40-43: раньше это была минимальная строка-заглушка.
+     */
+    public function test_removed_but_held_position_renders_as_full_frozen_card_not_a_stub(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $glovesKey] = $this->enrollCompliance('Перчатки', extraItems: [
+            ['label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '2', 'unit' => 'pair', 'basis' => 'п.5'],
+        ]);
+        $bootsKey = $this->obligationKeyFor($r, 'Ботинки');
+        $this->issueCard($p, $r, $glovesKey);
+        $this->issueCard($p, $r, $bootsKey, '2');
+        $this->softRemoveItemKeepingOthers($p, $r, 'Перчатки');
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+
+        $checkbox = $crawler->filter('input[data-writeoff-only="1"]');
+        self::assertGreaterThan(0, $checkbox->count());
+        $card = $checkbox->first()->closest('.bg-body');
+        self::assertNotNull($card);
+
+        self::assertStringContainsString('bi-lock', $card->outerHtml(), 'замок вместо статус-бейджа');
+        self::assertStringContainsString('ежегодно', $card->text(), 'периодичность — как у активной позиции (full card, не заглушка)');
+        self::assertStringContainsString('на руках 2 / 2 пара', $card->text(), '«на руках» несёт норму, как у активной позиции');
+        self::assertStringNotContainsString('Восстановить', $card->text(), '«Восстановить» на /issue нет — это действие нормы (редактор требования)');
+        self::assertSame(0, $card->filter('input[type="number"]')->count(), 'поля выдачи отсутствуют — заморожена');
+        self::assertSame(0, $card->filter('[data-bs-toggle="collapse"]')->count(), 'раскрытия полей выдачи нет вовсе');
+    }
+
+    /**
      * Пере-сохраняет требование, оставляя в форме РОВНО одну позицию ($keepLabel, с её текущим id — чтобы merge
      * обновил её на месте) — остальные позиции отсутствуют среди присланных и становятся removed-надгробиями
      * ({@see \App\Compliance\Domain\Aggregate\Requirement\Requirement::mergeItems}).

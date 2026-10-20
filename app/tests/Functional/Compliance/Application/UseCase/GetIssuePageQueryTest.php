@@ -108,6 +108,13 @@ final class GetIssuePageQueryTest extends KernelTestCase
         self::assertSame('Ботинки', $bootsRow->label, 'имя резолвится из агрегата (obligationLabelOf), не сырой ключ обязанности');
         self::assertSame('2', $bootsRow->held, 'held — из факта журнала (heldAmount)');
         self::assertFalse($bootsRow->showAmountInput, 'строка «только списать» полей выдачи не несёт');
+
+        // T6: /issue — экран только действий, строка «только списать» рендерится ПОЛНОЙ карточкой (замороженной),
+        // не минимальной строкой — периодичность/норма/последняя выдача обязаны резолвиться из обязательства
+        // (obligationSpecOf), а не быть пустыми, как было у §40-43.
+        self::assertSame('ежегодно', $bootsRow->cadenceLabel, 'периодичность резолвится из обязательства даже после мягкого удаления');
+        self::assertSame('2 пара', $bootsRow->quantityLabel, 'норма резолвится из обязательства');
+        self::assertSame('01.06.2026', $bootsRow->lastFulfilledAt, 'последняя выдача — дата факта журнала');
     }
 
     private function issuePage(string $profileId, string $requirementId): IssuePageDTO

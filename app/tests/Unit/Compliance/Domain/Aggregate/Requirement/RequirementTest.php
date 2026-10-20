@@ -214,6 +214,37 @@ final class RequirementTest extends TestCase
         self::assertTrue($bootsNow->isRemoved());
     }
 
+    /**
+     * T6: редактор требования восстанавливает надгробие БЕЗ домена — «Восстановить» просто снова шлёт её
+     * в submitted (с тем же id), mergeItems update'ит её на месте как любую обновлённую позицию.
+     */
+    public function test_merge_restores_tombstone_when_resubmitted_by_same_id(): void
+    {
+        $gloves = $this->materialItem('g1', 'Перчатки');
+        $boots = $this->materialItem('b1', 'Ботинки');
+        $req = new Requirement(Uuid::v7(), 'Карточка', ComplianceType::Material, new StringCollection('pos1'), $gloves, $boots);
+
+        $req->mergeItems($this->materialItem('g1', 'Перчатки'));                    // убрали ботинки → надгробие
+        self::assertTrue($this->itemById($req, 'b1')->isRemoved());
+
+        $req->mergeItems($this->materialItem('g1', 'Перчатки'), $this->materialItem('b1', 'Ботинки')); // «Восстановить»: прислали снова
+
+        self::assertCount(2, $req->getItems(), 'дубля не возникло — update на месте по id');
+        self::assertFalse($this->itemById($req, 'b1')->isRemoved(), 'позиция вернулась активной');
+        self::assertCount(2, $req->activeItems());
+    }
+
+    private function itemById(Requirement $req, string $id): RequirementItemInterface
+    {
+        foreach ($req->getItems() as $item) {
+            if ($item->id() === $id) {
+                return $item;
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Позиция с id «%s» не найдена.', $id));
+    }
+
     public function test_merge_allows_new_active_item_with_same_label_as_removed_tombstone(): void
     {
         $socks = $this->materialItem('s1', 'Носки');
