@@ -458,8 +458,8 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($pc);
         $recordId = $pc->recordsForRequirement($r)[0]->getId();
 
-        // Сохранить черновик акта списания (op=save): состав + комиссия, без скана/подписи. Номер акта на черновике
-        // не задаётся — он сквозной, присваивается при оформлении.
+        // Сохранить черновик акта списания (op=save): состав + комиссия, без скана/подписи. Номер уже присвоен при
+        // создании черновика (readonly) — Save его не трогает.
         $bus->execute(new SaveWriteOffActCommand(
             $actId,
             [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
@@ -471,7 +471,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $saved = $writeOffRepo->findById($actId);
         self::assertNotNull($saved);
         self::assertTrue($saved->isDraft(), 'осталось черновиком (без подписи)');
-        self::assertNull($saved->actNumber(), 'черновик — без номера (номер сквозной, присваивается при оформлении)');
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $saved->actNumber(), 'номер присвоен при создании черновика (readonly), Save не трогает');
         self::assertNotNull($saved->commission());
         self::assertCount(1, $saved->commission()->members);
         self::assertSame('Сидоров С. С.', $saved->commission()->members[0]->fio);

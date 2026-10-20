@@ -58,9 +58,7 @@ final readonly class SignWriteOffActCommandHandler implements CommandHandlerInte
         $fileId = $this->storage->promote($staged, RequirementScanPurpose::WriteOffActScan, $act->getId())->id();
 
         try {
-            $act->sign($commission, $actDate, $fileId, $now);
-            // Сквозной номер — ПОСЛЕ успешной подписи: провал валидации выше не жжёт значение счётчика.
-            $act->assignNumber((string) $this->writeOffActRepository->nextActNumber());
+            $act->sign($commission, $actDate, $fileId, $now); // номер уже присвоен при создании черновика (readonly)
 
             foreach ($act->linesByProfile() as $profileId => $lines) {
                 $profileCompliance = $this->profileComplianceRepository->findByProfile((string) $profileId)

@@ -182,7 +182,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-03-01', null));
     }
 
-    public function test_draft_has_no_number_signed_act_gets_auto_number(): void
+    public function test_draft_gets_auto_number_at_creation_and_keeps_it_after_signing(): void
     {
         ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
         $this->issueCard($p, $r, $k);
@@ -193,36 +193,32 @@ final class WriteOffFlowTest extends KernelTestCase
 
         $draft = $this->writeOffActRepo->findById($actId);
         self::assertNotNull($draft);
-        self::assertNull($draft->actNumber(), 'черновик — без номера, номер сквозной');
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $draft->actNumber(), 'номер присвоен уже на черновике (при создании) — чтобы печатать акт до подписи');
+        $numberOnDraft = $draft->actNumber();
 
         $this->signWriteOff($actId, $r, [$p]);
         $this->reload();
 
         $signed = $this->writeOffActRepo->findById($actId);
         self::assertNotNull($signed);
-        self::assertMatchesRegularExpression('/^\d+$/', (string) $signed->actNumber(), 'подписанный — сквозной числовой авто-номер');
+        self::assertSame($numberOnDraft, $signed->actNumber(), 'подпись номер не меняет — он readonly с момента создания');
     }
 
-    public function test_act_number_is_sequential_and_failed_sign_does_not_burn_a_number(): void
+    public function test_act_numbers_are_sequential_across_drafts(): void
     {
-        // Сквозной счётчик монотонен; провальная подпись (нет скана) номер НЕ берёт — аллокация в хендлере идёт
-        // ПОСЛЕ успешной валидации sign(). Значения относительные: sequence в Postgres не откатывается (в т.ч. DAMA).
-        $before = $this->writeOffActRepo->nextActNumber();
+        // Два разных черновика (разные требования×организации) получают последовательные сквозные номера ПРИ СОЗДАНИИ.
+        // Значения относительные: sequence в Postgres не откатывается (в т.ч. под DAMA).
+        ['profileId' => $p1, 'requirementId' => $r1, 'key' => $k1] = $this->enrollCompliance();
+        $this->issueCard($p1, $r1, $k1);
+        $act1 = $this->writeOffActRepo->findById($this->startWriteOff($p1, $r1));
 
-        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
-        $this->issueCard($p, $r, $k);
-        $recordId = $this->firstRecordId($p);
-        $actId = $this->startWriteOff($p, $r);
-        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
-        try {
-            $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-03-01', null));
-            self::fail('подпись без скана должна была упасть — номер не должен выделяться');
-        } catch (AppException) {
-            // ожидаемо: нет скана → sign() кидает ДО аллокации номера
-        }
-        $after = $this->writeOffActRepo->nextActNumber();
+        ['profileId' => $p2, 'requirementId' => $r2, 'key' => $k2] = $this->enrollCompliance();
+        $this->issueCard($p2, $r2, $k2);
+        $act2 = $this->writeOffActRepo->findById($this->startWriteOff($p2, $r2));
 
-        self::assertSame($before + 1, $after, 'между двумя nextActNumber счётчик вырос ровно на один — провальная подпись номер не сожгла');
+        self::assertNotNull($act1);
+        self::assertNotNull($act2);
+        self::assertSame((int) $act1->actNumber() + 1, (int) $act2->actNumber(), 'номера черновиков идут подряд — сквозной счётчик при создании');
     }
 
     public function test_save_portion_exceeding_held_throws(): void

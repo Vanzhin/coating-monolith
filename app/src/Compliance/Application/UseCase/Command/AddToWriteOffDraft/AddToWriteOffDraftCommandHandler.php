@@ -56,6 +56,11 @@ final readonly class AddToWriteOffDraftCommandHandler implements CommandHandlerI
             return; // добавить нечего, открытого черновика нет — пустой акт не плодим
         }
         $act = $existingAct ?? new WriteOffAct(Uuid::v7(), $command->requirementId, $organizationId, new \DateTimeImmutable());
+        if (null === $existingAct) {
+            // Номер присваиваем при СОЗДАНИИ акта (не при подписи): документ сразу печатается с номером, затем к нему
+            // прикладывают скан и оформляют. Сквозной из счётчика, закрепляется один раз (readonly).
+            $act->assignNumber((string) $this->writeOffActRepository->nextActNumber());
+        }
 
         $lines = array_map(
             static fn (FulfillmentRecord $fact): array => [
