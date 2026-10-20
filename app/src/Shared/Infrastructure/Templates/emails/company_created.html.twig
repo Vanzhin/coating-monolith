@@ -1,4 +1,5 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Регистрация компании на {{ app_name }}{% endblock %}
 
@@ -7,5 +8,5 @@
     <p>
         Добро пожаловать в {{ app_name }}. Это письмо отправлено автоматически на почту администратора компании.
     </p>
-    <p><a class="btn" href="{{ loginLink }}">Войти</a></p>
+    {{ ui.button(loginLink, 'Войти') }}
 {% endblock %}

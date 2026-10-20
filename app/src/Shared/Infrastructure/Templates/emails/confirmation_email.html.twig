@@ -1,16 +1,15 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Подтверждение почты — {{ app_name }}{% endblock %}
 
 {% block body %}
     <p>Здравствуйте, <strong>{{ user.name }}</strong>!</p>
     <p>Подтвердите ваш email, перейдя по ссылке ниже:</p>
-    <p><a class="btn" href="{{ signedUrl|raw }}">Подтвердить email</a></p>
+    {{ ui.button(signedUrl, 'Подтвердить email') }}
     <p class="muted">
         Ссылка действительна {{ expiresAtMessageKey|trans(expiresAtMessageData, 'VerifyEmailBundle') }}.
     </p>
-    <p>
-        <a class="btn btn-secondary" href="{{ url('app_homepage') }}">На сайт</a>
-        <a class="btn btn-secondary" href="{{ url('app_account') }}">Мой профиль</a>
-    </p>
+    {{ ui.button(url('app_homepage'), 'На сайт', true) }}
+    {{ ui.button(url('app_account'), 'Мой профиль', true) }}
 {% endblock %}

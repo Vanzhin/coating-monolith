@@ -1,4 +1,5 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Регистрация в {{ app_name }}{% endblock %}
 
@@ -18,8 +19,6 @@
 
     <p class="warning">Не передавайте логин и пароль третьим лицам.</p>
 
-    <p>
-        <a class="btn" href="{{ path }}">Перейти в личный кабинет</a>
-        <a class="btn btn-secondary" href="https://t.me/AmuletTest_support_bot" target="_blank">Техподдержка</a>
-    </p>
+    {{ ui.button(path, 'Перейти в личный кабинет') }}
+    {{ ui.button('https://t.me/AmuletTest_support_bot', 'Техподдержка', true, true) }}
 {% endblock %}

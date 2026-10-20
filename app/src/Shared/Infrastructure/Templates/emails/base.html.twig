@@ -3,25 +3,44 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ app_name }}{% endblock %}</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <a class="brand" href="{{ app.request.server.get('CORS_ALLOW_ORIGIN') }}">{{ app_name }}</a>
-        </div>
-
-        <div class="body">
-            {% block body %}{% endblock %}
-        </div>
-
-        <div class="footer">
-            {% block footer %}
-                © {{ 'now'|date('Y') }} {{ app_name }} · Автоматическое письмо, не отвечайте на него.
-            {% endblock %}
-        </div>
-    </div>
+{# Table-вёрстка (bulletproof email): Outlook/Word игнорирует max-width/padding/фон на <div>,
+   поэтому каркас на таблицах — ширину держит width-атрибут, отступы — padding на <td>. #}
+<body style="margin:0;padding:0;">
+    <table role="presentation" class="email-bg" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td class="email-bg-cell" align="center">
+                <table role="presentation" class="container" width="560" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td class="card">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td class="header" align="center">
+                                        <a class="brand" href="{{ url('app_homepage') }}">{{ app_name }}</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="body">
+                                        {% block body %}{% endblock %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="footer" align="center">
+                                        {% block footer %}
+                                            © {{ 'now'|date('Y') }} {{ app_name }} · Автоматическое письмо, не отвечайте на него.
+                                        {% endblock %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 {% endapply %}

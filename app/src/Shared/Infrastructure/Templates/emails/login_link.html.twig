@@ -1,10 +1,11 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Ссылка для входа в {{ app_name }}{% endblock %}
 
 {% block body %}
     <p>Здравствуйте!</p>
     <p>Это письмо содержит ссылку для входа в {{ app_name }}. Ссылка активна несколько минут — используйте её сейчас.</p>
-    <p><a class="btn" href="{{ uri }}">Войти</a></p>
+    {{ ui.button(uri, 'Войти') }}
     <p class="muted">Если вы не запрашивали вход, просто проигнорируйте это письмо.</p>
 {% endblock %}

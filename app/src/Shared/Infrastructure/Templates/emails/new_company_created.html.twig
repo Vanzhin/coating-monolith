@@ -1,4 +1,5 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Новая компания на {{ app_name }}: {{ company.title }}{% endblock %}
 
@@ -7,5 +8,5 @@
     <p>
         Зарегистрирована новая компания <strong>{{ company.title }}</strong>. Это письмо отправлено автоматически на почту администратора портала {{ app_name }}.
     </p>
-    <p><a class="btn" href="{{ companyViewPath }}">Посмотреть</a></p>
+    {{ ui.button(companyViewPath, 'Посмотреть') }}
 {% endblock %}
