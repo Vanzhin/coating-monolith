@@ -293,7 +293,9 @@ final class IssueActionTest extends WebTestCase
         self::assertStringContainsString('на руках 2 / 2 пара', $card->text(), '«на руках» несёт норму, как у активной позиции');
         self::assertStringNotContainsString('Восстановить', $card->text(), '«Восстановить» на /issue нет — это действие нормы (редактор требования)');
         self::assertSame(0, $card->filter('input[type="number"]')->count(), 'поля выдачи отсутствуют — заморожена');
-        self::assertSame(0, $card->filter('[data-bs-toggle="collapse"]')->count(), 'раскрытия полей выдачи нет вовсе');
+        self::assertSame(0, $card->filter('[data-issue-fields]')->count(), 'раскрытия полей выдачи нет — выдавать удалённую нельзя');
+        self::assertStringContainsString('История', $card->text(), 'ленивая история позиции остаётся — по журналу решают, что списывать');
+        self::assertGreaterThan(0, $card->filter('[data-controller="obligation-history"]')->count(), 'тоггл истории позиции присутствует и у замороженной карточки');
     }
 
     /**
