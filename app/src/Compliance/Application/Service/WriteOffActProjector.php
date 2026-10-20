@@ -7,6 +7,7 @@ namespace App\Compliance\Application\Service;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffAct;
 use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Templating\RenderData;
 use App\Shared\Domain\Templating\RepeatValue;
@@ -82,7 +83,7 @@ final readonly class WriteOffActProjector
         $unit = $fact?->quantity()?->unit->title() ?? '';
 
         return [
-            'name' => $line->labelSnapshot(),
+            'name' => ObligationKey::humanLabelOf($line->labelSnapshot()), // orphan-ключ переименованной позиции → имя, не сырой reqId|label
             'qty' => '' !== $unit ? $this->number($line->quantity()).' '.$unit : $this->number($line->quantity()),
             'issue_date' => $fact?->fulfilledAt()->format('d.m.Y') ?? '',
             'reason' => $line->reason()?->title() ?? '',
