@@ -35,6 +35,16 @@ final class IBeamSectionTest extends TestCase
         self::assertSame(688.0, (new IBeamSection(200, 100, 6, 8))->heatedPerimeter(HeatingScheme::threeSided()));
     }
 
+    public function test_perimeter_subtracts_web_flange_fillets(): void
+    {
+        // 10Б1 (ГОСТ Р 57837): H100 b55 s4.1 t5.7 R7. Прямой контур 411.8 минус 4 скругления
+        // 2·2·R·(π/2−2) → 399.782, ПТМ 2.582 — как эталон Ptm-Calculator / offire.
+        $beam = new IBeamSection(100, 55, 4.1, 5.7, 7);
+        $perimeter = $beam->heatedPerimeter(HeatingScheme::allSides());
+        self::assertEqualsWithDelta(399.782, $perimeter, 0.01);
+        self::assertEqualsWithDelta(2.582, $beam->crossSectionArea() / $perimeter, 0.001);
+    }
+
     public function test_rejects_flange_thickness_that_exceeds_height(): void
     {
         $this->expectException(AppException::class);

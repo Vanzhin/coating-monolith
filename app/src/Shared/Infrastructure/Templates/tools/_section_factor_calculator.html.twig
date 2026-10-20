@@ -61,14 +61,20 @@
 
                 <div class="sf-stage" data-type="angle" hidden>
                     <svg viewBox="0 0 230 210" role="img" aria-label="Сечение уголка">
-                        <text class="sf-diag-label" x="40" y="105">b₁</text><text class="sf-diag-label" x="125" y="195">b₂</text>
-                        <polygon class="sf-steel" points="60,40 80,40 80,150 180,150 180,170 60,170"/>
-                        <path class="sf-face" data-face="top" d="M80,40 L80,150"/>
-                        <path class="sf-face" data-face="left" d="M80,150 L180,150"/>
-                        <rect class="sf-hit" data-face="top" x="0" y="0" width="120" height="150" data-action="click->section-factor-calculator#faceClick"/>
-                        <rect class="sf-hit" data-face="left" x="0" y="150" width="230" height="60" data-action="click->section-factor-calculator#faceClick"/>
+                        <text class="sf-diag-label" x="112" y="28">b₂</text><text class="sf-diag-label" x="34" y="120">b₁</text>
+                        {# Каркас уголка: пятка слева-вверху, горизонтальная полка (b₂) сверху, вертикальная (b₁) слева;
+                           носки полок и внутренняя пятка скруглены (r/R). #}
+                        <path class="sf-steel" d="M60,40 L173,40 Q180,40 180,47 L180,53 Q180,60 173,60 L90,60 Q80,60 80,70 L80,163 Q80,170 73,170 L67,170 Q60,170 60,163 L60,40 Z"/>
+                        {# Три переключаемые грани: внутренний контур (вогнутая грань + скруглённые носки),
+                           наружная полка b₂ (верх), наружная полка b₁ (слева). #}
+                        <path class="sf-face" data-face="right" d="M173,40 Q180,40 180,47 L180,53 Q180,60 173,60 L90,60 Q80,60 80,70 L80,163 Q80,170 73,170 L67,170 Q60,170 60,163"/>
+                        <path class="sf-face" data-face="top" d="M60,40 L173,40"/>
+                        <path class="sf-face" data-face="left" d="M60,40 L60,163"/>
+                        <rect class="sf-hit" data-face="top" x="55" y="0" width="175" height="48" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="left" x="0" y="50" width="78" height="160" data-action="click->section-factor-calculator#faceClick"/>
+                        <rect class="sf-hit" data-face="right" x="88" y="66" width="137" height="140" data-action="click->section-factor-calculator#faceClick"/>
                     </svg>
-                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">полки</b> · кликните по грани</p>
+                    <p class="sf-stage-cap">Обогрев: <b class="sf-cap-val">контур</b> · кликните по грани</p>
                 </div>
 
                 <div class="sf-stage" data-type="pipe" hidden>

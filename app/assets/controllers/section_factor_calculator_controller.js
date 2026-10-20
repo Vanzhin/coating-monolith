@@ -1,80 +1,27 @@
 import { Controller } from '@hotwired/stimulus';
+import { compute } from '../section_factor_geometry.mjs';
 
-// Формулы — зеркало доменных SectionFactor\* на бэке (источник истины). Дублируем ради офлайна.
-// ПТМ = площадь сечения / обогреваемый периметр (НПБ 236-97), периметр — развёрнутый контур.
-const STEEL_DENSITY = 7.85;
-const rad2deg = (r) => (r * 180) / Math.PI;
-const deg2rad = (d) => (d * Math.PI) / 180;
+// Калькулятор приведённой толщины металла. Формулы (площадь/периметр/ПТМ) вынесены в чистый модуль
+// section_factor_geometry.mjs — единое зеркало домена, прибитое тестом паритета PHP↔JS. Здесь — только UI:
+// выбор типа/сортамента, схема обогрева, подсветка граней, вывод результатов.
 
-// Геометрия по типу профиля: dims (объект размеров) → площадь и периметр по схеме обогрева.
-const GEO = {
-    i_beam: {
-        area: (d) => (d.height - 2 * d.flangeThickness) * d.webThickness
-            + 2 * d.flangeWidth * d.flangeThickness
-            + 4 * (d.filletRadius || 0) ** 2 * (1 - Math.PI / 4),
-        perimeter: (d, s) => {
-            const side = d.height + d.flangeWidth - d.webThickness;
-            return (s.top ? d.flangeWidth : 0) + (s.bottom ? d.flangeWidth : 0) + (s.left ? side : 0) + (s.right ? side : 0);
-        },
-    },
-    channel: {
-        area: (d) => {
-            const a = Math.atan(d.slope || 0);
-            const corr = (x) => x * x / Math.tan(deg2rad((90 + rad2deg(a)) / 2)) - x * x * Math.PI * (90 - rad2deg(a)) / 360;
-            return d.height * d.webThickness + 2 * (d.flangeWidth - d.webThickness) * d.flangeThickness
-                + 2 * corr(d.innerRadius || 0) - 2 * corr(d.outerRadius || 0);
-        },
-        perimeter: (d, s) => {
-            const a = Math.atan(d.slope || 0);
-            const halfDeg = 90 - (90 + rad2deg(a)) / 2;
-            const corr = (x) => 2 * x * Math.PI * 2 * halfDeg / 360 - 2 * x * Math.tan(deg2rad(halfDeg));
-            let p = (s.top ? d.flangeWidth : 0) + (s.bottom ? d.flangeWidth : 0) + (s.left ? d.height : 0);
-            if (s.right) {
-                p += d.height + 2 * (d.flangeWidth - d.webThickness) * (1 / Math.cos(a) - (d.slope || 0))
-                    + 2 * corr(d.innerRadius || 0) + 2 * corr(d.outerRadius || 0);
-            }
-            return p;
-        },
-    },
-    angle: {
-        area: (d) => (d.legA + d.legB - d.thickness) * d.thickness
-            + (d.outerRadius || 0) ** 2 * (1 - Math.PI / 4) - 2 * (d.innerRadius || 0) ** 2 * (1 - Math.PI / 4),
-        perimeter: (d, s) => {
-            const c = Math.PI / 2 - 2;
-            return (d.legA + d.legB) + (d.outerRadius || 0) * c + 2 * (d.innerRadius || 0) * c
-                + (s.top ? d.legB : 0) + (s.left ? d.legA : 0);
-        },
-    },
-    pipe: {
-        area: (d) => Math.PI / 4 * (d.outerDiameter ** 2 - (d.outerDiameter - 2 * d.wallThickness) ** 2),
-        perimeter: (d) => Math.PI * d.outerDiameter,
-    },
-    round_bar: {
-        area: (d) => Math.PI * d.diameter ** 2 / 4,
-        perimeter: (d) => Math.PI * d.diameter,
-    },
-    rect_hollow: {
-        area: (d) => {
-            const base = 2 * d.wallThickness * (d.height + d.width - 2 * d.wallThickness);
-            if (!d.outerRadius) return base;
-            const ri = Math.max(d.outerRadius - d.wallThickness, 0);
-            return base - (4 - Math.PI) * (d.outerRadius ** 2 - ri ** 2);
-        },
-        perimeter: (d, s) => (s.top ? d.width : 0) + (s.bottom ? d.width : 0) + (s.left ? d.height : 0) + (s.right ? d.height : 0),
-    },
-    sheet: {
-        area: (d) => d.thickness * 1000,
-        perimeter: (d, s) => ((s.top ? 1 : 0) + (s.bottom ? 1 : 0)) * 1000,
-    },
-};
+// Подписи граней по умолчанию (коробчатые профили). Кастомные подписи типа перекрывают их,
+// но при смене типа подпись ВСЕГДА возвращается сюда — иначе «Наружная полка» уголка залипает
+// на швеллере/двутавре.
+const DEFAULT_FACE_LABELS = { top: 'Сверху', bottom: 'Снизу', left: 'Слева', right: 'Справа' };
 
 // Какие грани показывать в схеме обогрева и есть ли пресеты 4/3-стороннее.
+// Уголок — не коробка: три независимые грани (две наружные полки + внутренний контур); прижата
+// полка к стене → снять её грань, уголок зашит в сечение → снять внутренний контур. Пресетов нет.
 const FACE_UI = {
     i_beam: { faces: ['top', 'bottom', 'left', 'right'], presets: true },
     channel: { faces: ['top', 'bottom', 'left', 'right'], presets: true },
     rect_hollow: { faces: ['top', 'bottom', 'left', 'right'], presets: true },
-    angle: { faces: ['top', 'left'], presets: false, labels: { top: 'Полка 1', left: 'Полка 2' } },
-    sheet: { faces: ['top', 'bottom'], presets: false, labels: { top: 'Сверху', bottom: 'Снизу' } },
+    angle: {
+        faces: ['top', 'left', 'right'], presets: false,
+        labels: { top: 'Наружная полка b₂', left: 'Наружная полка b₁', right: 'Внутренний контур' },
+    },
+    sheet: { faces: ['top', 'bottom'], presets: false },
     pipe: { faces: [], presets: false, note: 'Обогрев по всему контуру' },
     round_bar: { faces: [], presets: false, note: 'Обогрев по всему контуру' },
 };
@@ -112,8 +59,8 @@ export default class extends Controller {
             const face = chk.dataset.face;
             const shown = ui.faces.includes(face);
             chk.hidden = !shown;
-            if (shown && ui.labels && ui.labels[face]) {
-                chk.querySelector('.sf-facechk-lbl').textContent = ui.labels[face];
+            if (shown) {
+                chk.querySelector('.sf-facechk-lbl').textContent = (ui.labels && ui.labels[face]) || DEFAULT_FACE_LABELS[face];
             }
         });
         const facesBox = this.element.querySelector('.sf-faces');
@@ -298,8 +245,16 @@ export default class extends Controller {
         if (stage) stage.querySelectorAll('.sf-face').forEach((f) => f.classList.toggle('is-hot', !!this.scheme[f.dataset.face]));
         const cap = stage?.querySelector('.sf-cap-val');
         if (cap) {
-            const n = ['top', 'bottom', 'left', 'right'].filter((f) => this.scheme[f]).length;
-            cap.textContent = FACE_UI[this.type].faces.length === 0 ? 'по контуру' : (n === 4 ? '4 стороны' : n === 3 ? '3 стороны' : n + ' стор.');
+            if (this.type === 'angle') {
+                // три независимые грани: две наружные полки + внутренний контур
+                const total = (this.scheme.top ? 1 : 0) + (this.scheme.left ? 1 : 0) + (this.scheme.right ? 1 : 0);
+                cap.textContent = total === 3 ? 'контур' : total + (total === 1 ? ' сторона' : ' стороны');
+            } else if (FACE_UI[this.type].faces.length === 0) {
+                cap.textContent = 'по контуру';
+            } else {
+                const n = ['top', 'bottom', 'left', 'right'].filter((f) => this.scheme[f]).length;
+                cap.textContent = n === 4 ? '4 стороны' : n === 3 ? '3 стороны' : n + ' стор.';
+            }
         }
     }
 
@@ -325,23 +280,17 @@ export default class extends Controller {
 
     // --- расчёт ---
     recompute() {
-        const dims = this.currentDims();
         const out = (k, v) => { const el = this.element.querySelector(`[data-sf-out="${k}"]`); if (el) el.textContent = v; };
         const dash = () => ['ptm', 'perimeter', 'spm', 'spt', 'mass'].forEach((k) => out(k, '—'));
-
-        if (!dims) return dash();
         try {
-            const geo = GEO[this.type];
-            const area = geo.area(dims);
-            const perimeter = geo.perimeter(dims, this.scheme);
-            if (!(area > 0) || !(perimeter > 0)) return dash();
-
-            const massPerMeter = area / 1000 * STEEL_DENSITY;
-            out('ptm', this.fmt(area / perimeter, 2));
-            out('perimeter', this.fmt(perimeter, 0));
-            out('spm', this.fmt(perimeter / 1000, 3));
-            out('mass', this.fmt(massPerMeter, 1));
-            out('spt', this.fmt(1000 / massPerMeter * (perimeter / 1000), 1));
+            const r = compute(this.type, this.currentDims(), this.scheme);
+            if (!r) return dash();
+            // всё до 3 знаков после запятой (как эталон)
+            out('ptm', this.fmt(r.ptm, 3));
+            out('perimeter', this.fmt(r.perimeter, 3));
+            out('spm', this.fmt(r.spm, 3));
+            out('mass', this.fmt(r.mass, 3));
+            out('spt', this.fmt(r.spt, 3));
         } catch (e) {
             dash();
         }
