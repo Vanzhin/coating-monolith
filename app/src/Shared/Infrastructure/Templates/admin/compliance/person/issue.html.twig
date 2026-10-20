@@ -162,6 +162,23 @@
                     {% endif %}
 
                     {% for o in rows %}
+                        {% if o.writeOffOnly %}
+                            {# Позиция мягко убрана из нормы требования, но держит held>0 — норм-контролю не
+                               подчиняется (бейджа/полей выдачи нет), участвует только в выборе для списания:
+                               чекбокс joins «Списать выбранные»/уже открытый черновик акта ({@see AddToWriteOffAction}),
+                               исключена из «Выдать выбранные» (issue_selection_controller.js по data-writeoff-only). #}
+                            {% embed 'admin/compliance/_item_card.html.twig' with {
+                                name: o.label,
+                                select_name: 'woItems[' ~ loop.index0 ~ '][selected]',
+                                select_checked: false,
+                                select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle" data-writeoff-only="1" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '" data-held="' ~ o.held ~ '" data-unit-title="' ~ (o.unitTitle ?? '')|e('html_attr') ~ '"',
+                            } %}
+                                {% block meta %}<div class="text-body-secondary small">удалено из нормы</div>{% endblock %}
+                                {% block control %}
+                                    <span class="badge text-bg-secondary fw-normal flex-shrink-0">на руках {{ o.held }} {{ o.unitTitle }}</span>
+                                {% endblock %}
+                            {% endembed %}
+                        {% else %}
                         {# Единая карточка позиции: EAGER-бейдж/норма/на руках/сроки (control) + EAGER-форма
                            выдачи и LAZY-история (footer) — см. IssueAction PHPDoc. #}
                         {% embed 'admin/compliance/_item_card.html.twig' with {
@@ -303,6 +320,7 @@
                                 </div>
                             {% endblock %}
                         {% endembed %}
+                        {% endif %}
                     {% endfor %}
 
                     {% import 'admin/compliance/person/issue.html.twig' as personal %}
@@ -365,10 +383,12 @@
 
         {% block savebar_extra %}
             {# Групповое действие над отмеченными позициями. type=submit form=issue-form — без JS сабмитит форму
-               напрямую (бэк пишет только отмеченные). С JS контроллер перехватывает и сперва показывает подтверждение. #}
+               напрямую (бэк пишет только отмеченные). С JS контроллер перехватывает и сперва показывает подтверждение.
+               Счётчик — ОТДЕЛЬНЫЙ target (issueCount): строки «только списать» (data-writeoff-only) выбираются
+               тем же чекбоксом, что и обычные, но в выдачу не идут — общий count их бы завысил. #}
             <button type="submit" form="issue-form" class="btn btn-soft-success"
                     data-action="click->issue-selection#confirmIssue">
-                <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="count">0</span>)
+                <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="issueCount">0</span>)
             </button>
             {% if canWriteOff %}
                 {# Списание выбранных — наполнение корзины (черновик акта). JS-улучшение: без JS списание доступно

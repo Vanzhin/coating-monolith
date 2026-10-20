@@ -53,4 +53,12 @@ final class IssueRowDTO
     public string $heldTone;
     public ?string $lastFulfilledAt = null;
     public ?string $nextDueAt = null;
+    /**
+     * Строка «только списать»: позиция мягко убрана из нормы требования ({@see \App\Compliance\Domain\ValueObject\Item\AbstractRequirementItem::isRemoved()}),
+     * норм-контролю не подчиняется (бейдж/сроки/поля выдачи не несёт), но держит held>0 — остаётся списываемой
+     * ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::writeOffEligibleFactsForRequirement}).
+     * Участвует ТОЛЬКО в выборе для списания (чекбокс → «Списать выбранные»/уже открытый черновик акта),
+     * исключена из «Выдать выбранные» — см. {@see GetIssuePageQueryHandler}.
+     */
+    public bool $writeOffOnly = false;
 }

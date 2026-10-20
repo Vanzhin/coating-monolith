@@ -7,7 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * а «Выдать выбранные» сперва показывает подтверждение со списком.
  */
 export default class extends Controller {
-    static targets = ['check', 'all', 'count', 'modal', 'list'];
+    static targets = ['check', 'all', 'count', 'issueCount', 'modal', 'list'];
 
     connect() {
         this._recount();
@@ -32,10 +32,12 @@ export default class extends Controller {
         this._recount();
     }
 
-    // «Выдать выбранные»: с JS — подтверждение; без JS сюда не попадаем (нативный сабмит формы)
+    // «Выдать выбранные»: с JS — подтверждение; без JS сюда не попадаем (нативный сабмит формы). Строки
+    // «только списать» (data-writeoff-only) исключены — тот же чекбокс служит и выбору для списания, но в
+    // выдачу эта позиция не идёт (полей выдачи у неё нет вовсе).
     confirmIssue(event) {
         event.preventDefault();
-        const items = this._selectedItems();
+        const items = this._selectedItems('amount', 'issue');
         if (items.length === 0) {
             return;
         }
@@ -44,10 +46,11 @@ export default class extends Controller {
         this._modal().show();
     }
 
-    // «Списать выбранные»: подтверждение со списком (количество = на руках); только JS (без JS — «Списать» ниже)
+    // «Списать выбранные»: подтверждение со списком (количество = на руках); только JS (без JS — «Списать» ниже).
+    // Включает и обычные позиции, и строки «только списать» — списать можно и то, и то.
     confirmWriteoff(event) {
         event.preventDefault();
-        const items = this._selectedItems('held');
+        const items = this._selectedItems('held', 'all');
         if (items.length === 0) {
             return;
         }
@@ -65,14 +68,15 @@ export default class extends Controller {
         }
     }
 
-    // кладём ключи выбранных позиций в скрытую форму списания и сабмитим (наполнение корзины-акта)
+    // кладём ключи выбранных позиций в скрытую форму списания и сабмитим (наполнение корзины-акта); включает
+    // и обычные позиции, и строки «только списать» — списать можно и то, и то.
     _submitWriteoff() {
         const form = document.getElementById('writeoff-add-form');
         if (!form) {
             return;
         }
         form.querySelectorAll('input[name="keys[]"]').forEach((el) => el.remove());
-        this._selected().forEach((cb) => {
+        this._selected('all').forEach((cb) => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'keys[]';
@@ -82,14 +86,18 @@ export default class extends Controller {
         form.requestSubmit();
     }
 
-    _selected() {
-        return this.checkTargets.filter((cb) => cb.checked);
+    // scope 'all' — все отмеченные чекбоксы (списание доступно и обычным позициям, и строкам «только списать»);
+    // 'issue' — исключая data-writeoff-only (у такой строки полей выдачи нет вовсе, в «Выдать выбранные» не идёт).
+    _selected(scope = 'all') {
+        const checked = this.checkTargets.filter((cb) => cb.checked);
+
+        return 'issue' === scope ? checked.filter((cb) => cb.dataset.writeoffOnly !== '1') : checked;
     }
 
     // отмеченные позиции с количеством для списка в модалке: source 'amount' — из поля «Кол-во» (выдача),
-    // 'held' — на руках из data-атрибута (списание). Единица — с чекбокса.
-    _selectedItems(source = 'amount') {
-        return this._selected().map((cb) => {
+    // 'held' — на руках из data-атрибута (списание). Единица — с чекбокса. scope — см. _selected().
+    _selectedItems(source = 'amount', scope = 'all') {
+        return this._selected(scope).map((cb) => {
             const unit = cb.dataset.unitTitle || '';
             let value = '';
             if (source === 'held') {
@@ -109,10 +117,15 @@ export default class extends Controller {
         }
     }
 
+    // count — все отмеченные (списание); issueCount — отмеченные БЕЗ строк «только списать» (выдача).
     _recount() {
-        const n = this._selected().length;
+        const n = this._selected('all').length;
+        const issueN = this._selected('issue').length;
         this.countTargets.forEach((el) => {
             el.textContent = String(n);
+        });
+        this.issueCountTargets.forEach((el) => {
+            el.textContent = String(issueN);
         });
         if (this.hasAllTarget) {
             const total = this.checkTargets.length;

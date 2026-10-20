@@ -9,6 +9,8 @@ use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCo
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Query\GetIssuePage\GetIssuePageQuery;
 use App\Compliance\Application\UseCase\Query\GetIssuePage\IssuePageDTO;
+use App\Compliance\Application\UseCase\Query\GetIssuePage\IssueRowDTO;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
@@ -74,12 +76,84 @@ final class GetIssuePageQueryTest extends KernelTestCase
         self::assertFalse($page->requirementAllowsMixed, '«Периодическая» держит только позиции своего вида');
     }
 
+    /**
+     * Compliance soft-delete §40-43: позиция, мягко убранная из нормы требования (жива в jsonb как «надгробие»,
+     * {@see \App\Compliance\Domain\ValueObject\Item\AbstractRequirementItem::isRemoved()}), но УЖЕ выданная
+     * (held>0) — норм-контроль/проекция её больше не держат активной обязанностью, но держать ЕЁ оказывается
+     * списываемой ({@see \App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance::writeOffEligibleFactsForRequirement}
+     * резолвит по ВСЕМ позициям требования). Без строки на /issue её нельзя было бы выбрать для «Списать
+     * выбранные»/добрать в уже открытый черновик акта — страница обязана добрать для неё строку «только списать».
+     */
+    public function test_removed_but_held_material_item_appears_as_writeoff_only_row(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $glovesKey] = $this->enrollCompliance('Перчатки', extraItems: [
+            ['label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '2', 'unit' => 'pair', 'basis' => 'п.5'],
+        ]);
+        $bootsKey = $this->obligationKeyFor($r, 'Ботинки');
+        $this->issueCard($p, $r, $glovesKey);
+        $this->issueCard($p, $r, $bootsKey, '2');
+
+        // Пере-сохраняем требование, несём «Перчатки» тем же id (merge обновляет её в месте) и не несём
+        // «Ботинки» вовсе — mergeItems помечает отсутствующую позицию removed (надгробие), не выкидывает.
+        $this->softRemoveItemKeepingOthers($p, $r, 'Перчатки');
+
+        $page = $this->issuePage($p, $r);
+
+        $glovesRow = $this->rowByKey($page, $glovesKey);
+        self::assertFalse($glovesRow->writeOffOnly, 'активная позиция остаётся обычной строкой выдачи');
+        self::assertTrue($glovesRow->showAmountInput, 'у активной позиции поля выдачи на месте');
+
+        $bootsRow = $this->rowByKey($page, $bootsKey);
+        self::assertTrue($bootsRow->writeOffOnly, 'удалённая-но-выданная позиция — строка «только списать»');
+        self::assertSame('Ботинки', $bootsRow->label, 'имя резолвится из агрегата (obligationLabelOf), не сырой ключ обязанности');
+        self::assertSame('2', $bootsRow->held, 'held — из факта журнала (heldAmount)');
+        self::assertFalse($bootsRow->showAmountInput, 'строка «только списать» полей выдачи не несёт');
+    }
+
     private function issuePage(string $profileId, string $requirementId): IssuePageDTO
     {
         $result = $this->queryBus->execute(new GetIssuePageQuery($profileId, $requirementId));
         self::assertInstanceOf(IssuePageDTO::class, $result);
 
         return $result;
+    }
+
+    private function rowByKey(IssuePageDTO $page, string $key): IssueRowDTO
+    {
+        foreach ($page->rows as $row) {
+            if ($row->key === $key) {
+                return $row;
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Строка «%s» не найдена на странице выдачи.', $key));
+    }
+
+    /**
+     * Пере-сохраняет требование, оставляя в форме РОВНО одну позицию ($keepLabel, с её текущим id — чтобы
+     * merge обновил её на месте, а не завёл дубль с новым id) — все остальные позиции требования отсутствуют
+     * среди присланных и становятся removed-надгробиями ({@see \App\Compliance\Domain\Aggregate\Requirement\Requirement::mergeItems}).
+     * Должности требования переносим как есть (replacePositions на обновлении — не трогаем состав).
+     */
+    private function softRemoveItemKeepingOthers(string $profileId, string $requirementId, string $keepLabel): void
+    {
+        $requirement = static::getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $keepId = null;
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $keepLabel) {
+                $keepId = $item->id();
+            }
+        }
+        self::assertNotNull($keepId, sprintf('Позиция «%s» не найдена в требовании.', $keepLabel));
+
+        $result = $this->commandBus->execute(new SaveRequirementCommand(
+            $requirementId, 'Личная карточка учёта выдачи СИЗ', 'material', $requirement->getPositionIds()->getList(),
+            [['id' => $keepId, 'label' => $keepLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5']],
+        ));
+        \assert($result instanceof SaveRequirementCommandResult);
+
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
     }
 
     /** @return array{profileId: string, requirementId: string} Периодическое требование, одна позиция-инструктаж. */
