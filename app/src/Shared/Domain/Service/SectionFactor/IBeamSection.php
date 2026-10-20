@@ -10,10 +10,15 @@ use App\Shared\Infrastructure\Exception\AppException;
  * Двутавр. На входе — полная высота H (аудит: репозиторный вход «ширина стенки» = h−2t неоднозначен,
  * ввод полной H тихо ломал результат; здесь высоту стенки считаем сами). Развёрнутый контур:
  * верх/низ — по ширине полки b, каждая боковая сторона — H + b − s (кромки полок + низы полок + стенка).
- * Закругления R учитываем в площади (сортамент); в периметре — прямой контур (влияние R < 1 %).
+ * Закругления R (сопряжение стенка–полка) учитываем и в площади, и в периметре: каждая боковая сторона
+ * несёт 2 скругления и сокращается на 2·R·(π/2−2) — порт getPerimeter из Ptm-Calculator (параллельные
+ * полки, u=0). Уклон полок и наружный радиус (ГОСТ 8239/19425) не моделируем — в сортаменте только R.
  */
 final readonly class IBeamSection implements ProfileSection
 {
+    /** Поправка длины дуги скругления против прямого угла (<0), как у уголка. */
+    private const FILLET_PERIMETER = M_PI / 2 - 2;
+
     public function __construct(
         private float $height,
         private float $flangeWidth,
@@ -45,7 +50,9 @@ final readonly class IBeamSection implements ProfileSection
 
     public function heatedPerimeter(HeatingScheme $scheme): float
     {
-        $side = $this->height + $this->flangeWidth - $this->webThickness;
+        // Боковая сторона: стенка + низы полок + кромки минус 2 скругления стенка–полка (верх+низ).
+        $side = $this->height + $this->flangeWidth - $this->webThickness
+            + 2 * $this->filletRadius * self::FILLET_PERIMETER;
         $perimeter = 0.0;
         if ($scheme->top) {
             $perimeter += $this->flangeWidth;
