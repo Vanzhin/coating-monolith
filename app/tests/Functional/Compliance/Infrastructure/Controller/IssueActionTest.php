@@ -229,6 +229,103 @@ final class IssueActionTest extends WebTestCase
     }
 
     /**
+     * Compliance soft-delete §40-43: позицию мягко убрали из нормы требования, но она уже выдана (held>0) —
+     * на /issue она обязана остаться видимой строкой «только списать» (имя, не сырой ключ; чекбокс выбора,
+     * без полей выдачи), чтобы попасть в «Списать выбранные»/в уже открытый черновик акта. Активная позиция
+     * той же нормы рендерится как обычно (с полем количества выдачи).
+     */
+    public function test_removed_but_held_position_renders_as_writeoff_only_row_without_issuance_fields(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $glovesKey] = $this->enrollCompliance('Перчатки', extraItems: [
+            ['label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '2', 'unit' => 'pair', 'basis' => 'п.5'],
+        ]);
+        $bootsKey = $this->obligationKeyFor($r, 'Ботинки');
+        $this->issueCard($p, $r, $glovesKey);
+        $this->issueCard($p, $r, $bootsKey, '2');
+        $this->softRemoveItemKeepingOthers($p, $r, 'Перчатки');
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('Ботинки', $html, 'имя удалённой-но-выданной позиции видно на /issue');
+        self::assertStringContainsString('удалено из нормы', $html, 'маркер отличает её от активной нормы');
+
+        $checkbox = $crawler->filter('input[data-writeoff-only="1"]');
+        self::assertGreaterThan(0, $checkbox->count(), 'чекбокс выбора у строки «только списать» присутствует');
+        self::assertSame('2', $checkbox->first()->attr('data-held'), 'на руках — из факта журнала');
+
+        $card = $checkbox->first()->closest('.bg-body');
+        self::assertNotNull($card);
+        self::assertStringContainsString('Ботинки', $card->text());
+        self::assertSame(0, $card->filter('input[type="number"]')->count(), 'строка «только списать» не несёт полей выдачи');
+
+        // Активная позиция нормы («Перчатки») рендерится как обычно — с полем количества выдачи.
+        self::assertGreaterThan(0, $crawler->filter('input[name$="[amount]"]')->count(), 'активная позиция сохранила поле выдачи');
+    }
+
+    /**
+     * T6: /issue — экран ТОЛЬКО действий (выдать/списать). Позиция, мягко убранная из нормы, но держащая held>0,
+     * обязана рендериться ТОЙ ЖЕ ПОЛНОЙ карточкой, что активные (периодичность/норма/последняя выдача, «на руках»),
+     * просто ЗАМОРОЖЕННОЙ: замок вместо статус-бейджа, без «Восстановить» (это действие нормы — только в редакторе
+     * требования, см. RequirementsControllerTest). Регрессия §40-43: раньше это была минимальная строка-заглушка.
+     */
+    public function test_removed_but_held_position_renders_as_full_frozen_card_not_a_stub(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $glovesKey] = $this->enrollCompliance('Перчатки', extraItems: [
+            ['label' => 'Ботинки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '2', 'unit' => 'pair', 'basis' => 'п.5'],
+        ]);
+        $bootsKey = $this->obligationKeyFor($r, 'Ботинки');
+        $this->issueCard($p, $r, $glovesKey);
+        $this->issueCard($p, $r, $bootsKey, '2');
+        $this->softRemoveItemKeepingOthers($p, $r, 'Перчатки');
+
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        self::assertResponseIsSuccessful();
+
+        $checkbox = $crawler->filter('input[data-writeoff-only="1"]');
+        self::assertGreaterThan(0, $checkbox->count());
+        $card = $checkbox->first()->closest('.bg-body');
+        self::assertNotNull($card);
+
+        self::assertStringContainsString('bi-lock', $card->outerHtml(), 'замок вместо статус-бейджа');
+        self::assertStringContainsString('ежегодно', $card->text(), 'периодичность — как у активной позиции (full card, не заглушка)');
+        self::assertStringContainsString('на руках 2 / 2 пара', $card->text(), '«на руках» несёт норму, как у активной позиции');
+        self::assertStringNotContainsString('Восстановить', $card->text(), '«Восстановить» на /issue нет — это действие нормы (редактор требования)');
+        self::assertSame(0, $card->filter('input[type="number"]')->count(), 'поля выдачи отсутствуют — заморожена');
+        self::assertSame(0, $card->filter('[data-issue-fields]')->count(), 'раскрытия полей выдачи нет — выдавать удалённую нельзя');
+        self::assertStringContainsString('История', $card->text(), 'ленивая история позиции остаётся — по журналу решают, что списывать');
+        self::assertGreaterThan(0, $card->filter('[data-controller="obligation-history"]')->count(), 'тоггл истории позиции присутствует и у замороженной карточки');
+    }
+
+    /**
+     * Пере-сохраняет требование, оставляя в форме РОВНО одну позицию ($keepLabel, с её текущим id — чтобы merge
+     * обновил её на месте) — остальные позиции отсутствуют среди присланных и становятся removed-надгробиями
+     * ({@see \App\Compliance\Domain\Aggregate\Requirement\Requirement::mergeItems}).
+     */
+    private function softRemoveItemKeepingOthers(string $profileId, string $requirementId, string $keepLabel): void
+    {
+        $requirement = $this->client->getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $keepId = null;
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $keepLabel) {
+                $keepId = $item->id();
+            }
+        }
+        self::assertNotNull($keepId, sprintf('Позиция «%s» не найдена в требовании.', $keepLabel));
+
+        $result = $this->client->getContainer()->get(CommandBusInterface::class)->execute(new SaveRequirementCommand(
+            $requirementId, 'Личная карточка учёта выдачи СИЗ', 'material', $requirement->getPositionIds()->getList(),
+            [['id' => $keepId, 'label' => $keepLabel, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5']],
+        ));
+        \assert($result instanceof SaveRequirementCommandResult);
+
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+        $this->client->getContainer()->get(EntityManagerInterface::class)->clear();
+    }
+
+    /**
      * Task 6: /issue теперь читает read-модель через GetIssuePageQuery (view-builder в Application), не
      * собирает её прямо в контроллере. Три позиции одной нормы с разными датами выдачи → разные бакеты
      * (просрочено/скоро/в норме); сортировка по срочности — просроченная выше позиции со скорым сроком, та выше

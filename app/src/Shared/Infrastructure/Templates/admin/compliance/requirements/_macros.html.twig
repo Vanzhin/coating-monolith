@@ -22,28 +22,37 @@
     {# Вид ЭТОЙ позиции: у полиморфной «Выдачи» выбирается в форме (дефолт — инвентарь для новой строки);
        у «Периодической» селектор скрыт — все позиции периодические, поле шлётся, билдер и так подставил бы тип требования. #}
     {% set itemTypeValue = item.type|default(type == 'periodic' ? 'periodic' : 'material') %}
-    <div class="p-3 mb-2 rounded-3 bg-body" data-req-rows-target="row">
-        <input type="hidden" name="items[{{ i }}][id]" value="{{ item.id|default('') }}">
+    {# Позиция мягко убрана из нормы (надгробие) — рисуем greyed+lock, все поля disabled (не submit'ятся:
+       несохранённая форма шлёт её ПУСТОЙ набор полей → mergeItems держит надгробие как есть). «Восстановить»
+       (req-rows#restore) снимает disabled — следующий save пришлёт её как активную, mergeItems обновит на
+       месте по id. Трэш-кнопки/модалки удаления у надгробия нет — убирать то, что уже убрано, незачем. #}
+    {% set isRemoved = item.removed|default(false) %}
+    {% set dis = isRemoved ? 'disabled' : '' %}
+    <div class="p-3 mb-2 rounded-3 bg-body{{ isRemoved ? ' opacity-75' : '' }}" data-req-rows-target="row"{% if isRemoved %} data-removed="1"{% endif %}>
+        <input type="hidden" name="items[{{ i }}][id]" value="{{ item.id|default('') }}" {{ dis }}>
+        {% if isRemoved %}
+            <div class="small text-body-secondary mb-2" data-removed-marker><i class="bi bi-lock me-1"></i>удалено из нормы</div>
+        {% endif %}
         {# Строка 1 — наименование + вид + количество: количество всегда на своём месте, не зависит от периодичности. #}
         <div class="row g-2">
             <div class="col-md-5">
                 <label class="form-label small mb-1">Наименование <span class="text-danger">*</span></label>
-                <input type="text" name="items[{{ i }}][label]" value="{{ item.label|default('') }}" class="form-control" placeholder="Перчатки" maxlength="1000">
+                <input type="text" name="items[{{ i }}][label]" value="{{ item.label|default('') }}" class="form-control" placeholder="Перчатки" maxlength="1000" {{ dis }}>
             </div>
             <div class="col-md-2" data-item-type {{ allowsMixedMap[type]|default(false) ? '' : 'hidden' }}>
                 <label class="form-label small mb-1">Вид</label>
-                <select name="items[{{ i }}][type]" class="form-select">
+                <select name="items[{{ i }}][type]" class="form-select" {{ dis }}>
                     <option value="material" {{ itemTypeValue == 'material' ? 'selected' : '' }}>Инвентарь</option>
                     <option value="periodic" {{ itemTypeValue == 'periodic' ? 'selected' : '' }}>Расходник</option>
                 </select>
             </div>
             <div class="col-md-3" data-item-quantity>
                 <label class="form-label small mb-1">Кол-во <span class="text-danger">*</span></label>
-                <input type="text" inputmode="decimal" name="items[{{ i }}][amount]" value="{{ amountValue }}" class="form-control" placeholder="10">
+                <input type="text" inputmode="decimal" name="items[{{ i }}][amount]" value="{{ amountValue }}" class="form-control" placeholder="10" {{ dis }}>
             </div>
             <div class="col-md-2" data-item-quantity>
                 <label class="form-label small mb-1">Ед. <span class="text-danger">*</span></label>
-                <select name="items[{{ i }}][unit]" class="form-select">
+                <select name="items[{{ i }}][unit]" class="form-select" {{ dis }}>
                     {% for u in units %}<option value="{{ u.value }}" {{ unitValue == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
                 </select>
             </div>
@@ -52,17 +61,17 @@
         <div class="row g-2 mt-1">
             <div class="col-md-4">
                 <label class="form-label small mb-1">Периодичность <span class="text-danger">*</span></label>
-                <select name="items[{{ i }}][cadenceKind]" class="form-select" data-cadence-kind>
+                <select name="items[{{ i }}][cadenceKind]" class="form-select" data-cadence-kind {{ dis }}>
                     {% for k in cadenceKinds %}<option value="{{ k.value }}" {{ item.cadenceKind|default('') == k.value ? 'selected' : '' }}>{{ k.title }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-3" data-cadence-period {{ isCadencePeriodic ? '' : 'hidden' }}>
                 <label class="form-label small mb-1">Число <span class="text-danger">*</span></label>
-                <input type="number" min="1" step="1" name="items[{{ i }}][cadenceNumber]" value="{{ item.cadenceNumber|default('') }}" class="form-control" placeholder="2">
+                <input type="number" min="1" step="1" name="items[{{ i }}][cadenceNumber]" value="{{ item.cadenceNumber|default('') }}" class="form-control" placeholder="2" {{ dis }}>
             </div>
             <div class="col-md-5" data-cadence-period {{ isCadencePeriodic ? '' : 'hidden' }}>
                 <label class="form-label small mb-1">Единица периода <span class="text-danger">*</span></label>
-                <select name="items[{{ i }}][cadenceUnit]" class="form-select">
+                <select name="items[{{ i }}][cadenceUnit]" class="form-select" {{ dis }}>
                     {% for u in periodUnits %}<option value="{{ u.value }}" {{ item.cadenceUnit|default('') == u.value ? 'selected' : '' }}>{{ u.title }}</option>{% endfor %}
                 </select>
             </div>
@@ -71,9 +80,13 @@
         <div class="row g-2 mt-1">
             <div class="col-12">
                 <label class="form-label small mb-1">Основание <span class="text-danger">*</span></label>
-                <input type="text" name="items[{{ i }}][basis]" value="{{ item.basis|default('') }}" class="form-control" placeholder="п.5 Типовых норм / по результатам СОУТ">
+                <input type="text" name="items[{{ i }}][basis]" value="{{ item.basis|default('') }}" class="form-control" placeholder="п.5 Типовых норм / по результатам СОУТ" {{ dis }}>
             </div>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#remove" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
+        {% if isRemoved %}
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-action="req-rows#restore"><i class="bi bi-arrow-counterclockwise me-1"></i>Восстановить</button>
+        {% else %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#requestRemove" data-bs-toggle="modal" data-bs-target="#rm-item-modal" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
+        {% endif %}
     </div>
 {% endmacro %}

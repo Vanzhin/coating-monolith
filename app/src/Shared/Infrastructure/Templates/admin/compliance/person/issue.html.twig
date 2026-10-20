@@ -162,6 +162,58 @@
                     {% endif %}
 
                     {% for o in rows %}
+                        {% if o.writeOffOnly %}
+                            {# /issue — экран ТОЛЬКО действий (выдать/списать): позиция мягко убрана из нормы
+                               требования, но держит held>0 — рендерится ПОЛНОЙ карточкой, как активная (имя,
+                               периодичность/норма/последняя выдача, «на руках»), но ЗАМОРОЖЕННОЙ — замок вместо
+                               статус-бейджа, без раскрытия полей выдачи/истории (нечего выдавать). Чекбокс выбора
+                               остаётся: joins «Списать выбранные»/уже открытый черновик акта ({@see AddToWriteOffAction}),
+                               исключена из «Выдать выбранные» (issue_selection_controller.js по data-writeoff-only).
+                               «Восстановить» тут НЕТ — это действие нормы, доступно только в редакторе требования. #}
+                            <div class="opacity-75">
+                            {% embed 'admin/compliance/_item_card.html.twig' with {
+                                name: o.label,
+                                select_name: 'woItems[' ~ loop.index0 ~ '][selected]',
+                                select_checked: false,
+                                select_attrs: 'data-issue-selection-target="check" data-action="change->issue-selection#toggle" data-writeoff-only="1" data-key="' ~ o.key|e('html_attr') ~ '" data-label="' ~ o.label|e('html_attr') ~ '" data-held="' ~ o.held ~ '" data-unit-title="' ~ (o.unitTitle ?? '')|e('html_attr') ~ '"',
+                            } %}
+                                {% block meta %}
+                                    <div class="text-body-secondary small">
+                                        <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}
+                                    </div>
+                                {% endblock %}
+                                {% block control %}
+                                    <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                        <span class="badge text-bg-secondary fw-normal"><i class="bi bi-lock me-1"></i>удалено из нормы</span>
+                                        <span class="badge text-bg-{{ o.heldTone }} fw-normal">на руках {{ o.held }}{% if o.quantityValue %} / {{ o.quantityValue }}{% endif %} {{ o.unitTitle }}</span>
+                                    </div>
+                                {% endblock %}
+                                {% block footer %}
+                                    {# Замороженная позиция (удалена из нормы): полей выдачи нет — выдавать нельзя,
+                                       но ЛЕНИВАЯ история остаётся: по журналу выдач/списаний решают, что списать. Тот же
+                                       механизм, что у активной карточки (obligation_history_controller + /obligation/history),
+                                       ключ — o.key; эндпоинт фактовый, активность/удалённость позиции ему безразлична. #}
+                                    <div class="w-100">
+                                        <div class="small text-body-secondary d-inline-flex align-items-center gap-1 report-block-toggle" role="button"
+                                             data-bs-toggle="collapse" data-bs-target="#hist-{{ loop.index0 }}" aria-expanded="false" aria-controls="hist-{{ loop.index0 }}">
+                                            <i class="bi bi-clock-history"></i>История
+                                            <i class="bi bi-chevron-down report-block-chevron"></i>
+                                        </div>
+                                        <div class="collapse mt-2" id="hist-{{ loop.index0 }}"
+                                             data-controller="obligation-history"
+                                             data-obligation-history-url-value="{{ path('app_cabinet_compliance_obligation_history', {profileId: profileId, requirementId: requirementId, key: o.key}) }}"
+                                             data-action="show.bs.collapse->obligation-history#load">
+                                            <div data-obligation-history-target="body">
+                                                <div class="p-3 rounded-3 bg-body-tertiary text-center text-body-secondary small">
+                                                    <i class="bi bi-hourglass-split me-1"></i>Загрузка…
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endblock %}
+                            {% endembed %}
+                            </div>
+                        {% else %}
                         {# Единая карточка позиции: EAGER-бейдж/норма/на руках/сроки (control) + EAGER-форма
                            выдачи и LAZY-история (footer) — см. IssueAction PHPDoc. #}
                         {% embed 'admin/compliance/_item_card.html.twig' with {
@@ -303,6 +355,7 @@
                                 </div>
                             {% endblock %}
                         {% endembed %}
+                        {% endif %}
                     {% endfor %}
 
                     {% import 'admin/compliance/person/issue.html.twig' as personal %}
@@ -330,7 +383,7 @@
                         {% if canWriteOff %}
                             <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-up me-1"></i>Списать</button>
                             </form>
                         {% endif %}
                     </div>
@@ -365,10 +418,12 @@
 
         {% block savebar_extra %}
             {# Групповое действие над отмеченными позициями. type=submit form=issue-form — без JS сабмитит форму
-               напрямую (бэк пишет только отмеченные). С JS контроллер перехватывает и сперва показывает подтверждение. #}
+               напрямую (бэк пишет только отмеченные). С JS контроллер перехватывает и сперва показывает подтверждение.
+               Счётчик — ОТДЕЛЬНЫЙ target (issueCount): строки «только списать» (data-writeoff-only) выбираются
+               тем же чекбоксом, что и обычные, но в выдачу не идут — общий count их бы завысил. #}
             <button type="submit" form="issue-form" class="btn btn-soft-success"
                     data-action="click->issue-selection#confirmIssue">
-                <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="count">0</span>)
+                <i class="bi bi-box-arrow-in-down me-1"></i>Выдать выбранные (<span data-issue-selection-target="issueCount">0</span>)
             </button>
             {% if canWriteOff %}
                 {# Списание выбранных — наполнение корзины (черновик акта). JS-улучшение: без JS списание доступно

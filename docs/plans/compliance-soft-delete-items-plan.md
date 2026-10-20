@@ -355,6 +355,67 @@ git commit -m "Compliance soft-delete: норм-контроль по актив
 
 ---
 
+## Task 4: Удаление позиции требования на фронте — через модалку-подтверждение
+
+Контекст (добавлено пользователем 2026-10-19): удаление позиции из требования — осмысленное действие (мягкое; если позиция выдавалась, остаётся для учёта/списания). Убрать «молчаливое» удаление строки: мусорка на позиции открывает модалку-подтверждение, удаление строки — только по confirm (client-side; сам soft-delete — на сохранении формы через `mergeItems`). Только позиции (`item_row`), НЕ должности (`position_row`).
+
+**Files:**
+- Modify: `app/src/Shared/Infrastructure/Templates/admin/compliance/requirements/_macros.html.twig` (`item_row`, строка ~77 — кнопка-мусорка).
+- Modify: `app/src/Shared/Infrastructure/Templates/admin/compliance/requirements/form.html.twig` (секция `sec-items` с `data-controller="req-rows"` — вставить confirm-модалку ВНУТРЬ этого scope, чтобы контроллер её видел).
+- Modify: `app/assets/controllers/req_rows_controller.js` (добавить `requestRemove`/`confirmRemove`; `remove` оставить для должностей).
+- Test: `app/tests/Functional/Compliance/Infrastructure/Controller/Requirements/EditActionTest.php` (или где рендерят форму) — GET формы содержит модалку + у мусорки позиции `data-action="req-rows#requestRemove"`.
+
+**Interfaces:**
+- Consumes: существующий `req-rows` scope секции позиций; дизайн-паттерн центрированной confirm-модалки (как `components/delete_modal.html.twig`, но БЕЗ POST-формы — удаление client-side).
+- Produces: `req-rows#requestRemove(event)` (запоминает строку + открывает модалку), `req-rows#confirmRemove()` (удаляет запомненную строку). `position_row` остаётся на `req-rows#remove`.
+
+- [ ] **Step 1: JS — requestRemove/confirmRemove.** В `req_rows_controller.js` добавить:
+```js
+    requestRemove(event) {
+        this._pendingRow = event.target.closest('[data-req-rows-target="row"]');
+    }
+
+    confirmRemove() {
+        this._pendingRow?.remove();
+        this._pendingRow = null;
+    }
+```
+(`remove(event)` оставить как есть — им пользуются должности.)
+
+- [ ] **Step 2: Twig — мусорка позиции открывает модалку.** В `_macros.html.twig` `item_row` заменить кнопку (строка ~77):
+```twig
+        <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="req-rows#requestRemove" data-bs-toggle="modal" data-bs-target="#rm-item-modal" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
+```
+(position_row — НЕ трогать, остаётся `req-rows#remove`.)
+
+- [ ] **Step 3: Twig — модалка внутри sec-items.** В `form.html.twig`, ВНУТРЬ div секции позиций (`data-controller="req-rows ..."`, чтобы `confirmRemove` долетел до нужного инстанса), добавить центрированную confirm-модалку (стиль копировать с `delete_modal`: кружок-иконка `del-ic` + заголовок + подпояснение + [Отмена][Убрать]), БЕЗ POST-формы — confirm просто зовёт контроллер:
+```twig
+<div class="modal fade" id="rm-item-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-body text-center pt-4 pb-2">
+      <div class="del-ic"><i class="bi bi-trash3"></i></div>
+      <h5 class="modal-title mb-2">Убрать позицию из требования?</h5>
+      <p class="text-body-secondary small mb-0">Если позиция уже выдавалась — она останется для учёта и списания (мягкое удаление). Уберётся при сохранении требования.</p>
+    </div>
+    <div class="modal-footer border-0 pt-0 d-flex gap-2">
+      <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+      <button type="button" class="btn btn-danger flex-fill" data-action="req-rows#confirmRemove" data-bs-dismiss="modal"><i class="bi bi-trash3 me-1"></i>Убрать</button>
+    </div>
+  </div></div>
+</div>
+```
+(Если секция позиций рендерит строки через `req-rows-target="rows"`+`<template>` — модалку класть в тот же controller-div, но ВНЕ `rows`-контейнера/`<template>`, чтобы не клонировалась.)
+
+- [ ] **Step 4: Сборка + функц-тест.** `cd app && yarn dev` (собирается чисто). Функц-тест: GET формы правки требования с позициями → HTML содержит `id="rm-item-modal"` и у мусорки позиции `data-action="req-rows#requestRemove"`; (без JS удаление строки не делается — это UX-слой, серверный soft-delete уже покрыт T2/T3). `./run check` зелёный.
+
+- [ ] **Step 5: Commit**
+```bash
+git add app/assets/controllers/req_rows_controller.js app/src/Shared/Infrastructure/Templates/admin/compliance/requirements app/tests/Functional/Compliance
+git commit -m "Compliance soft-delete: удаление позиции требования на фронте через модалку-подтверждение (мягкое, строка уходит на сохранении)"
+```
+
+---
+
 ## Deploy / ops
 
 Миграции данных НЕТ (back-compat: отсутствие `removed` = false). Прод-деплой этого слоя дополнительных шагов не требует сверх общих (migrate кода + rebuild-projection по общим правилам контекста). Стек поверх `feat/compliance-periodic-item` — мержится после него.

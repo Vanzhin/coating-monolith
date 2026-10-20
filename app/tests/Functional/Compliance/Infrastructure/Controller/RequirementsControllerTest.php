@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Compliance\Infrastructure\Controller;
 
+use App\Compliance\Domain\Aggregate\Requirement\Requirement;
+use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Users\Domain\Service\UserPasswordHasherInterface;
@@ -131,6 +133,154 @@ final class RequirementsControllerTest extends WebTestCase
         $templateFileId = $container->get(EntityManagerInterface::class)->getConnection()
             ->fetchOne('SELECT template_file_id FROM compliance_requirement WHERE name = ?', [$name]);
         self::assertNotEmpty($templateFileId, 'у созданного требования проставлен шаблон');
+    }
+
+    public function test_edit_form_renders_remove_confirmation_modal_for_items(): void
+    {
+        $name = 'Выдача СИЗ для удаления позиции '.uniqid('', true);
+        $this->client->request(
+            'POST',
+            '/cabinet/compliance/requirements/create',
+            [
+                'name' => $name,
+                'type' => 'material',
+                'positionIds' => ['pos-rm-item-1'],
+                'items' => [[
+                    'label' => 'Перчатки',
+                    'cadenceKind' => 'once',
+                    'amount' => '2',
+                    'unit' => 'pcs',
+                    'basis' => 'Типовые нормы',
+                ]],
+            ],
+        );
+        self::assertResponseRedirects();
+
+        $container = $this->client->getContainer();
+        $id = $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT id FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertNotEmpty($id);
+
+        $this->client->request('GET', "/cabinet/compliance/requirements/{$id}/edit");
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#rm-item-modal');
+        self::assertSelectorExists('[data-req-rows-target="row"] button[data-action="req-rows#requestRemove"][data-bs-target="#rm-item-modal"]');
+    }
+
+    /**
+     * T6: редактор требования — единственное место «Восстановить». Позицию убрали из формы (становится
+     * надгробием, {@see Requirement::mergeItems}) — редактор
+     * обязан показать её greyed+lock, с disabled-полями (не submit'ятся — несохранённая позиция остаётся
+     * надгробием) и кнопкой «Восстановить» вместо трэша. Активная позиция той же нормы рендерится как обычно.
+     */
+    public function test_edit_form_marks_removed_item_disabled_with_restore_control(): void
+    {
+        $container = $this->client->getContainer();
+        $name = 'Выдача СИЗ T6 восстановление '.uniqid('', true);
+
+        $this->client->request('POST', '/cabinet/compliance/requirements/create', [
+            'name' => $name,
+            'type' => 'material',
+            'positionIds' => ['pos-t6-restore-1'],
+            'items' => [
+                ['label' => 'Перчатки', 'cadenceKind' => 'once', 'amount' => '2', 'unit' => 'pcs', 'basis' => 'Типовые нормы'],
+                ['label' => 'Ботинки', 'cadenceKind' => 'once', 'amount' => '1', 'unit' => 'pair', 'basis' => 'Типовые нормы'],
+            ],
+        ]);
+        self::assertResponseRedirects();
+        $id = (string) $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT id FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertNotEmpty($id);
+
+        $requirement = $container->get(RequirementRepositoryInterface::class)->findOneById($id);
+        self::assertNotNull($requirement);
+        $glovesId = $this->itemIdByLabel($requirement, 'Перчатки');
+
+        // Пере-сохраняем требование, неся только «Перчатки» (её id — update на месте) — «Ботинки» становятся надгробием.
+        $this->client->request('POST', "/cabinet/compliance/requirements/{$id}/edit", [
+            'name' => $name,
+            'type' => 'material',
+            'positionIds' => $requirement->getPositionIds()->getList(),
+            'items' => [
+                ['id' => $glovesId, 'label' => 'Перчатки', 'cadenceKind' => 'once', 'amount' => '2', 'unit' => 'pcs', 'basis' => 'Типовые нормы'],
+            ],
+        ]);
+        self::assertResponseRedirects();
+
+        $crawler = $this->client->request('GET', "/cabinet/compliance/requirements/{$id}/edit");
+        self::assertResponseIsSuccessful();
+
+        // Скоуп на реально отрисованные строки позиций ("#sec-items" + контейнер "rows", не <template>-клон
+        // новой строки — в нём тот же data-req-rows-target="row", но это не отдельная позиция формы).
+        $rowsScope = '#sec-items [data-req-rows-target="rows"]';
+        $rows = $crawler->filter($rowsScope.' [data-req-rows-target="row"]');
+        self::assertSame(2, $rows->count(), 'надгробие остаётся видимым в редакторе, не выкинуто');
+
+        // data-removed="1" (проставлен macro item_row только у надгробия) — надёжнее текстового поиска.
+        $removedRow = $crawler->filter($rowsScope.' [data-req-rows-target="row"][data-removed="1"]');
+        self::assertSame(1, $removedRow->count());
+        self::assertStringContainsString('удалено из нормы', $removedRow->text(), 'лок-маркер отличает надгробие');
+        self::assertGreaterThan(0, $removedRow->filter('input[disabled]')->count(), 'поля надгробия disabled — не submit\'ятся, пока не восстановили');
+        self::assertSame(0, $removedRow->filter('button[data-action="req-rows#requestRemove"]')->count(), 'трэш-кнопки/модалки удаления у надгробия нет');
+        self::assertGreaterThan(0, $removedRow->filter('button[data-action="req-rows#restore"]')->count(), 'кнопка «Восстановить» на месте');
+
+        $activeRow = $crawler->filter($rowsScope.' [data-req-rows-target="row"]:not([data-removed])');
+        self::assertSame(1, $activeRow->count());
+        self::assertSame('Перчатки', $activeRow->filter('input[name$="[label]"]')->attr('value'), 'это позиция «Перчатки» (значение — атрибут input, не текстовый узел)');
+        self::assertSame(0, $activeRow->filter('input[disabled]')->count(), 'активная позиция не disabled');
+        self::assertGreaterThan(0, $activeRow->filter('button[data-action="req-rows#requestRemove"]')->count(), 'активная позиция рендерится как обычно — трэш+модалка');
+    }
+
+    /** T6: список требований не раздувается надгробиями — считает только активные позиции. */
+    public function test_list_page_counts_only_active_items_not_removed_tombstones(): void
+    {
+        $container = $this->client->getContainer();
+        $name = 'Выдача СИЗ T6 список '.uniqid('', true);
+
+        $this->client->request('POST', '/cabinet/compliance/requirements/create', [
+            'name' => $name,
+            'type' => 'material',
+            'positionIds' => ['pos-t6-list-1'],
+            'items' => [
+                ['label' => 'Перчатки', 'cadenceKind' => 'once', 'amount' => '2', 'unit' => 'pcs', 'basis' => 'Типовые нормы'],
+                ['label' => 'Ботинки', 'cadenceKind' => 'once', 'amount' => '1', 'unit' => 'pair', 'basis' => 'Типовые нормы'],
+            ],
+        ]);
+        self::assertResponseRedirects();
+        $id = (string) $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT id FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertNotEmpty($id);
+
+        $requirement = $container->get(RequirementRepositoryInterface::class)->findOneById($id);
+        self::assertNotNull($requirement);
+        $glovesId = $this->itemIdByLabel($requirement, 'Перчатки');
+
+        $this->client->request('POST', "/cabinet/compliance/requirements/{$id}/edit", [
+            'name' => $name,
+            'type' => 'material',
+            'positionIds' => $requirement->getPositionIds()->getList(),
+            'items' => [
+                ['id' => $glovesId, 'label' => 'Перчатки', 'cadenceKind' => 'once', 'amount' => '2', 'unit' => 'pcs', 'basis' => 'Типовые нормы'],
+            ],
+        ]);
+        self::assertResponseRedirects();
+
+        $crawler = $this->client->request('GET', '/cabinet/compliance/requirements');
+        self::assertResponseIsSuccessful();
+
+        $card = $crawler->filter('.ecard')->reduce(static fn ($node): bool => str_contains($node->text(), $name))->first();
+        self::assertStringContainsString('Позиций: 1', $card->text(), 'надгробие («Ботинки») не входит в счёт — считает только активную «Перчатки»');
+    }
+
+    private function itemIdByLabel(Requirement $requirement, string $label): string
+    {
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $label) {
+                return $item->id();
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Позиция «%s» не найдена.', $label));
     }
 
     private function docxUpload(string $projectDir): UploadedFile

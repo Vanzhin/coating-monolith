@@ -53,7 +53,8 @@
                             {% endif %}
                         </div>
                         <div class="ecard-meta">
-                            <span>Позиций: {{ requirement.items|length }}</span>
+                            {# Позиции DTO теперь несут и removed-надгробия (нужны редактору) — список считает только активные. #}
+                            <span>Позиций: {{ requirement.items|filter(i => not i.removed)|length }}</span>
                         </div>
                     </div>
                 </div>

@@ -8,6 +8,9 @@ use App\Compliance\Application\DTO\ProfileCompliance\ObligationRowDTO;
 use App\Compliance\Application\Service\AmountFormatter;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQuery;
 use App\Compliance\Application\UseCase\Query\GetProfileCompliance\GetProfileComplianceQueryResult;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
+use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
+use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
@@ -80,6 +83,23 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         // ошибке (ничего не сохранилось → бакеты те же → порядок тот же).
         $bucketOrder = ['overdue' => 0, 'missing' => 0, 'soon' => 1, 'ok' => 2];
         usort($page->rows, static fn (IssueRowDTO $a, IssueRowDTO $b): int => ($bucketOrder[$a->bucket] ?? 9) <=> ($bucketOrder[$b->bucket] ?? 9));
+
+        // Удалённая-но-выданная позиция (мягкое удаление позиций требования): норм-контроль/проекция её больше
+        // не держат активной обязанностью (строки в $page->rows выше нет), но held по ней остаётся списываемым —
+        // writeOffEligibleFactsForRequirement резолвит по ВСЕМ позициям требования, не только активным (иначе
+        // человек, которому её выдали, не смог бы её списать с этой страницы). Добираем для неё строку «только
+        // списать»: имя + «на руках» + чекбокс выбора (joins «Списать выбранные»/уже открытый черновик акта),
+        // БЕЗ полей выдачи — добавляется в самый конец, после срочности активных строк.
+        if (null !== $profileCompliance && null !== $requirement) {
+            $renderedKeys = array_fill_keys(array_map(static fn (IssueRowDTO $r): string => $r->key, $page->rows), true);
+            foreach ($profileCompliance->writeOffEligibleFactsForRequirement($requirement, null) as $fact) {
+                if (isset($renderedKeys[$fact->obligationKey()]) || $fact->heldAmount() <= 0.0) {
+                    continue; // уже отрисована активной нормой, либо нечего списывать
+                }
+                $renderedKeys[$fact->obligationKey()] = true; // дедуп: несколько фактов одной позиции — одна строка
+                $page->rows[] = $this->writeOffOnlyRow($profileCompliance, $requirement, $fact);
+            }
+        }
 
         // Схема полей инструктажа (для не материального требования с видом журнала) — форма рисует поля по ней,
         // сгруппировав по FieldSpec::group (напр. «Теоретическая часть» / «Практическая часть»).
@@ -162,6 +182,44 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         $issueRow->nextDueAt = $this->formatDate($row->nextDueAt);
 
         return $issueRow;
+    }
+
+    /**
+     * Строка «только списать» для позиции, удалённой из нормы требования, но держащей held>0: норм-контролю не
+     * подчиняется (нет бейджа срочности/полей выдачи), участвует ТОЛЬКО в выборе для списания. `/issue` —
+     * экран ТОЛЬКО действий (выдать/списать): строка рендерится ПОЛНОЙ карточкой, как активные (имя,
+     * периодичность/норма/последняя выдача, «на руках»), заморожена шаблоном замком — не минимальной строкой.
+     * Имя/периодичность/норма — спек из агрегата ({@see ProfileCompliance::obligationSpecOf}, резолвит и
+     * removed-надгробие: `Requirement::getItems()` держит его, не только активные), «последняя выдача» — дата
+     * самого факта. Тип зафиксирован материальным константой — списанию (writeOffEligibleFactsForRequirement)
+     * структурно подлежит только инвентарь, резолвить его отдельно не нужно.
+     */
+    private function writeOffOnlyRow(ProfileCompliance $profileCompliance, Requirement $requirement, FulfillmentRecord $fact): IssueRowDTO
+    {
+        $row = new IssueRowDTO();
+        $row->key = $fact->obligationKey();
+        $spec = $profileCompliance->obligationSpecOf($requirement, $row->key);
+        $cadence = $spec[2] ?? null;
+        $norm = $spec[3] ?? null;
+        $row->label = $spec[0] ?? $row->key;
+        $row->type = ComplianceType::Material->value;
+        $row->cadenceKind = $cadence?->kind->value ?? '';
+        $row->cadenceNumber = $cadence?->number;
+        $row->cadenceUnit = $cadence?->unit?->value;
+        $row->cadenceLabel = $cadence?->label() ?? '';
+        $row->quantityLabel = $norm?->label() ?? '';
+        $row->quantityValue = null !== $norm ? AmountFormatter::trimmed($norm->amount) : null;
+        $row->origin = 'norm';
+        $row->bucket = '';
+        $row->bucketLabel = '';
+        $row->heldTone = 'secondary';
+        $row->held = AmountFormatter::trimmed($fact->heldAmount());
+        $row->quantityUnit = $fact->quantity()?->unit->value;
+        $row->unitTitle = $fact->quantity()?->unit->title();
+        $row->lastFulfilledAt = $fact->fulfilledAt()->format('d.m.Y');
+        $row->writeOffOnly = true;
+
+        return $row;
     }
 
     /**

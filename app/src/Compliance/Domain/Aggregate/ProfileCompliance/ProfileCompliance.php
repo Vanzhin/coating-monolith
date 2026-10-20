@@ -173,11 +173,14 @@ class ProfileCompliance extends Aggregate
     /**
      * Резолв обязанности по ключу из ЖИВОЙ нормы требования (itemId — суффикс ключа после `|`) либо, если
      * нормой не покрыта, из персональных деклараций. Ни там, ни там — обязанности не существует (чужой
-     * ключ/исключена/требование, из нормы которого позиция уже убрана).
+     * ключ/исключена/требование, из нормы которого позиция уже убрана). `getItems()` держит и removed-надгробия
+     * (не только активные) — поэтому спек резолвится и для мягко удалённой-но-выданной позиции: нужен для
+     * фронта (строка «только списать» на /issue — периодичность/норма/имя замороженной карточки), не только
+     * для write-инвариантов этого агрегата.
      *
      * @return array{string, ComplianceType, Cadence, ?Quantity}|null [label, type, cadence, норма]
      */
-    private function obligationSpecOf(Requirement $requirement, string $key): ?array
+    public function obligationSpecOf(Requirement $requirement, string $key): ?array
     {
         if (!ObligationKey::keyBelongsToRequirement($key, $requirement->getId())) {
             return null;

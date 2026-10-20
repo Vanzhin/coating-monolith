@@ -21,8 +21,9 @@ final readonly class MaterialItem extends AbstractRequirementItem implements Qua
         Cadence $cadence,
         string $basis,
         private Quantity $quantity,
+        bool $removed = false,
     ) {
-        parent::__construct($id, $label, $cadence, $basis);
+        parent::__construct($id, $label, $cadence, $basis, $removed);
     }
 
     public function type(): ComplianceType
@@ -35,7 +36,12 @@ final readonly class MaterialItem extends AbstractRequirementItem implements Qua
         return $this->quantity;
     }
 
-    /** @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string, quantity: array{amount: float, unit: string}} */
+    public function withRemoved(): self
+    {
+        return new self($this->id(), $this->label(), $this->cadence(), $this->basis(), $this->quantity, true);
+    }
+
+    /** @return array{id: string, label: string, cadence: array{kind: string, number: int|null}, basis: string, removed?: true, quantity: array{amount: float, unit: string}} */
     public function jsonSerialize(): array
     {
         return [...$this->baseArray(), 'quantity' => $this->quantity->jsonSerialize()];
@@ -50,6 +56,7 @@ final readonly class MaterialItem extends AbstractRequirementItem implements Qua
             Cadence::fromArray(is_array($data['cadence'] ?? null) ? $data['cadence'] : []),
             (string) ($data['basis'] ?? ''),
             Quantity::fromArray(is_array($data['quantity'] ?? null) ? $data['quantity'] : []),
+            self::readRemoved($data),
         );
     }
 }

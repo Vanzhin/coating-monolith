@@ -172,8 +172,12 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertNotEmpty($id);
     }
 
-    public function test_update_replaces_items(): void
+    public function test_update_merges_items_and_soft_removes_absent(): void
     {
+        // Сохранение формы без id исходной позиции — она пропадает из состава и помечается removed
+        // (мягкое удаление, см. Requirement::mergeItems), а не исчезает: getItems() отдаёт все 3.
+        // T6: редактор требования теперь показывает ВСЕ позиции (включая removed-надгробие, greyed+lock,
+        // «Восстановить») — DTO несёт все 3 с флагом removed, не только activeItems().
         $posId = $this->createPosition('Электрик');
         $id = $this->save(null, 'СИЗ', 'material', [$posId], [$this->materialItem()]);
         $this->save($id, 'СИЗ', 'material', [$posId], [$this->materialItem('Каска'), $this->materialItem('Ботинки')]);
@@ -181,7 +185,14 @@ final class RequirementUseCasesTest extends KernelTestCase
         $result = $this->queryBus->execute(new GetRequirementQuery($id));
         \assert($result instanceof GetRequirementQueryResult);
         self::assertNotNull($result->requirement);
-        self::assertCount(2, $result->requirement->items);
+        self::assertCount(3, $result->requirement->items, 'редактор требования рисует и removed-надгробие (restore только тут)');
+        $removedCount = count(array_filter($result->requirement->items, static fn ($i): bool => $i->removed));
+        self::assertSame(1, $removedCount, 'ровно одна позиция («СИЗ» дефолтного materialItem()) помечена removed');
+
+        $requirement = $this->repo->findOneById($id);
+        self::assertNotNull($requirement);
+        self::assertCount(2, $requirement->activeItems());
+        self::assertCount(3, $requirement->getItems(), 'getItems() отдаёт все, включая мягко удалённую — для факт-лога/резолва/списания');
     }
 
     public function test_type_change_on_update_rejected(): void

@@ -79,4 +79,22 @@ final class MaterialItemTest extends TestCase
     {
         self::assertArrayNotHasKey('mode', $this->item()->jsonSerialize());
     }
+
+    public function test_removed_defaults_false_and_absent_from_json(): void
+    {
+        $item = MaterialItem::fromArray(['id' => 'i1', 'label' => 'Каска', 'cadence' => ['kind' => 'once'], 'basis' => 'п.1', 'quantity' => ['amount' => 1.0, 'unit' => 'pcs']]);
+        self::assertFalse($item->isRemoved());
+        self::assertArrayNotHasKey('removed', $item->jsonSerialize());
+    }
+
+    public function test_with_removed_marks_removed_and_round_trips(): void
+    {
+        $item = MaterialItem::fromArray(['id' => 'i1', 'label' => 'Каска', 'cadence' => ['kind' => 'once'], 'basis' => 'п.1', 'quantity' => ['amount' => 1.0, 'unit' => 'pcs']]);
+        $removed = $item->withRemoved();
+        self::assertTrue($removed->isRemoved());
+        self::assertSame('Каска', $removed->label());
+        self::assertSame(1.0, $removed->quantity()->amount);
+        self::assertTrue($removed->jsonSerialize()['removed']);
+        self::assertTrue(MaterialItem::fromArray($removed->jsonSerialize())->isRemoved());
+    }
 }

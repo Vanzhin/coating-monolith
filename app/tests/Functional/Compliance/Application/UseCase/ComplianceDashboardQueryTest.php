@@ -143,19 +143,19 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         /** @var GetProfileQueryResult $pr */
         $pr = $this->queryBus->execute(new GetProfileQuery($profileId));
         self::assertNotNull($pr->profile);
-        // То же требование → две позиции: Перчатки (как в enroll) + Каска.
+        // Round-trip id «Перчаток» — иначе mergeItems() увидит в форме «новую» позицию под тем же названием,
+        // мягко удалит исходную (её ключ осиротеет) и заведёт дубль с другим id (см. Requirement::mergeItems).
+        $originalGlovesId = $this->itemIdByLabel($reqId, 'Перчатки');
+
+        // То же требование → две позиции: Перчатки (как в enroll, id сохранён) + Каска (новая).
         $this->commandBus->execute(new SaveRequirementCommand(
             $reqId, 'Личная карточка учёта выдачи СИЗ', 'material', [$pr->profile->positionId],
             [
-                ['label' => 'Перчатки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
+                ['id' => $originalGlovesId, 'label' => 'Перчатки', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '10', 'unit' => 'pair', 'basis' => 'п.5'],
                 ['label' => 'Каска', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.7'],
             ],
         ));
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
-
-        // Re-save выше без round-trip id пересоздал id позиций → ключ «Перчаток» теперь другой; берём актуальный
-        // (в проде форма правки возвращает id, здесь команда собрана руками без него).
-        $glovesKey = $this->obligationKeyFor($reqId, 'Перчатки');
 
         // Выдаём ТОЛЬКО Перчатки, задним числом (2020 → срок 2021 < now) → Overdue; Каска остаётся Missing.
         $this->issueCard($profileId, $reqId, $glovesKey, '10', '2020-01-01');
@@ -272,5 +272,19 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         }
 
         return null;
+    }
+
+    /** Стабильный id позиции требования по названию — для round-trip правки формы (см. Requirement::mergeItems). */
+    private function itemIdByLabel(string $requirementId, string $label): string
+    {
+        $requirement = static::getContainer()->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        foreach ($requirement->getItems() as $item) {
+            if ($item->label() === $label) {
+                return $item->id();
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Позиция «%s» не найдена в требовании %s.', $label, $requirementId));
     }
 }

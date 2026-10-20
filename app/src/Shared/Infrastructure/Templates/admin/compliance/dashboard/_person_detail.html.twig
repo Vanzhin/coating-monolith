@@ -25,7 +25,7 @@
                     {% if hasRecords %}
                         <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: person.profileId, requirementId: g.requirementId}) }}">
                             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-up me-1"></i>Списать</button>
                         </form>
                     {% endif %}
                 </div>

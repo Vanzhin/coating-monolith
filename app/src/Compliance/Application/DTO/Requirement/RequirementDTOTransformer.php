@@ -26,6 +26,9 @@ class RequirementDTOTransformer
             static fn (string $id): PositionRefDTO => new PositionRefDTO($id, $positionTitles[$id] ?? ''),
             $requirement->getPositionIds()->getList(),
         );
+        // ВСЕ позиции (не только activeItems()) — редактор требования должен показать removed-надгробия
+        // (greyed+lock, «Восстановить»); потребители, которым removed мешает (список требований), фильтруют
+        // сами — см. ListRequirementsQueryHandler.
         $dto->items = array_map($this->itemDto(...), $requirement->getItems());
 
         return $dto;
@@ -42,6 +45,7 @@ class RequirementDTOTransformer
         $dto->cadenceUnit = $item->cadence()->unit?->value;
         $dto->cadenceLabel = $item->cadence()->label();
         $dto->basis = $item->basis();
+        $dto->removed = $item->isRemoved();
 
         if ($item instanceof QuantifiedItem) {
             $dto->amount = $item->quantity()->amount;
