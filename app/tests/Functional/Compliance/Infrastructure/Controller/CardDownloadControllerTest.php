@@ -227,8 +227,8 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($act);
         $actId = $act->getId();
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], 'А-5', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-5', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']], '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Проектор напрямую (независимо от шаблона): стр. 1 = норма, стр. 2 = факт этого акта + возврат.
@@ -257,7 +257,7 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertSame('12', $row['issue_qty'], 'стр. 2 количество = выданное (12), а не норма');
         self::assertSame('3', $row['return_qty'], 'возвращено = сумма подписанного списания');
         self::assertSame('01.07.2026', $row['return_date']);
-        self::assertStringContainsString('№ А-5', (string) $row['writeoff_act']);
+        self::assertMatchesRegularExpression('/№ \d+/', (string) $row['writeoff_act'], 'в ленте факта — сквозной авто-номер акта');
 
         // № карточки — свойство журнала, закреплено первой выдачей. Ответственный — реквизит акта-документа,
         // журнал пишется прямой записью без него, поэтому плейсхолдер пустой.
@@ -315,8 +315,8 @@ final class CardDownloadControllerTest extends WebTestCase
             }
         }
         $commission = [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-07-01']];
-        $bus->execute(new SaveWriteOffActCommand($actId, $portions, 'А-1', '2026-07-01', $commission));
-        $bus->execute(new SignWriteOffActCommand($actId, $commission, 'А-1', '2026-07-01', $this->stageComplianceScan()));
+        $bus->execute(new SaveWriteOffActCommand($actId, $portions, '2026-07-01', $commission));
+        $bus->execute(new SignWriteOffActCommand($actId, $commission, '2026-07-01', $this->stageComplianceScan()));
         $em->clear();
 
         // Пересчёт проекции (held) после списания идёт async-событием WriteOffActSigned, в тестах не обрабатывается —
@@ -369,12 +369,11 @@ final class CardDownloadControllerTest extends WebTestCase
         ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
         $this->issueCard($profileId, $requirementId, $key); // действующая карточка → режим списания
 
-        // Акт выдачи (режим списания) — только кнопка «Перейти к акту списания».
+        // Действующая карточка: списание — через «Списать выбранные»/вход «Оформить». Корзину для теста сидируем
+        // прямым POST write-off/open («списать всё по сотруднику»); токен берём из формы страницы.
         $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();
-        $openForm = $crawler->filter('form[action$="/write-off/open"]');
-        self::assertGreaterThan(0, $openForm->count(), 'на действующей карточке есть кнопка «Перейти к акту списания»');
-        $token = $openForm->filter('input[name="_csrf_token"]')->attr('value');
+        $token = (string) $crawler->filter('input[name="_csrf_token"]')->first()->attr('value');
 
         $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/write-off/open', $profileId, $requirementId), [
             '_csrf_token' => $token,
@@ -459,11 +458,12 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertNotNull($pc);
         $recordId = $pc->recordsForRequirement($r)[0]->getId();
 
-        // Сохранить черновик акта списания (op=save): состав + № + комиссия, без скана/подписи.
+        // Сохранить черновик акта списания (op=save): состав + комиссия, без скана/подписи. Номер уже присвоен при
+        // создании черновика (readonly) — Save его не трогает.
         $bus->execute(new SaveWriteOffActCommand(
             $actId,
             [['recordId' => $recordId, 'quantity' => 3.0, 'reason' => 'physical_wear']],
-            'А-5', '2026-03-01',
+            '2026-03-01',
             [['fio' => 'Сидоров С. С.', 'organization' => 'ООО Тест', 'position' => 'Инженер', 'date' => '2026-03-01']],
         ));
 
@@ -471,7 +471,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $saved = $writeOffRepo->findById($actId);
         self::assertNotNull($saved);
         self::assertTrue($saved->isDraft(), 'осталось черновиком (без подписи)');
-        self::assertSame('А-5', $saved->actNumber(), '№ акта сохранён на черновике');
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $saved->actNumber(), 'номер присвоен при создании черновика (readonly), Save не трогает');
         self::assertNotNull($saved->commission());
         self::assertCount(1, $saved->commission()->members);
         self::assertSame('Сидоров С. С.', $saved->commission()->members[0]->fio);
@@ -481,8 +481,33 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $text = $this->docxText((string) $this->client->getResponse()->getContent());
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены (нет битых скобок)');
-        self::assertStringContainsString('А-5', $text, '№ акта в документе');
         self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
+        self::assertStringContainsString('Иванов', $text, 'ФИО сотрудника в строке позиции — построчно ({{items.employee_fio}}), не склейка всех людей акта');
+    }
+
+    /**
+     * Регрессия: скачивание docx черновика, у которого ещё не заполнены обязательные реквизиты шаблона (комиссия) —
+     * НЕ отдаёт пользователю сырой 422 «Невалидные данные», а логирует и возвращает на страницу акта с человекочитаемым
+     * сообщением (DownloadAction ловит AppException рендера).
+     */
+    public function test_download_draft_without_commission_redirects_with_human_error_not_422(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $container = $this->client->getContainer();
+        // Черновик без реквизитов: комиссия не задана → строгий блок {{commission}} шаблона не заполнится.
+        $container->get(CommandBusInterface::class)->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $container->get(WriteOffActRepositoryInterface::class)->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/writeoff/%s/download', $act->getId()));
+
+        self::assertResponseRedirects(); // 3xx на страницу акта, а НЕ 422-страница «Невалидные данные»
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('body', 'Не удалось сформировать документ');
     }
 
     private function setPrivate(object $object, string $property, mixed $value): void

@@ -11,6 +11,7 @@ final class IssueWriteOffActSummaryDTO
         public string $id,
         public bool $signed,
         public int $itemCount,
+        public ?string $actNumber = null,
     ) {
     }
 }

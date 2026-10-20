@@ -148,7 +148,7 @@ final class WriteOffFlowTest extends KernelTestCase
         $act = $this->writeOffActRepo->findById($actId);
         self::assertNotNull($act);
         self::assertTrue($act->isSigned());
-        self::assertSame('39', $act->actNumber());
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $act->actNumber(), 'номер акта — сквозной авто-инкремент, присвоен при подписании');
         self::assertNotNull($act->commission());
         self::assertEqualsWithDelta(0.0, $this->repo->findByProfile($p)?->heldOf($k), 1e-9, 'списали всё → на руках 0 (дефицит виден в журнале)');
     }
@@ -179,7 +179,40 @@ final class WriteOffFlowTest extends KernelTestCase
         $this->reload();
 
         $this->expectException(AppException::class); // оформление акта списания без скана — инвариант домена, не тихое сохранение
-        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], 'А-1', '2026-03-01', null));
+        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-03-01', null));
+    }
+
+    public function test_draft_gets_auto_number_at_creation_and_keeps_it_after_signing(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $recordId = $this->firstRecordId($p);
+        $actId = $this->startWriteOff($p, $r);
+        $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 1.0, 'reason' => 'physical_wear']]));
+        $this->reload();
+
+        $draft = $this->writeOffActRepo->findById($actId);
+        self::assertNotNull($draft);
+        self::assertMatchesRegularExpression('/^\d+$/', (string) $draft->actNumber(), 'номер присвоен уже на черновике (при создании) — чтобы печатать акт до подписи');
+        $numberOnDraft = $draft->actNumber();
+
+        $this->signWriteOff($actId, $r, [$p]);
+        $this->reload();
+
+        $signed = $this->writeOffActRepo->findById($actId);
+        self::assertNotNull($signed);
+        self::assertSame($numberOnDraft, $signed->actNumber(), 'подпись номер не меняет — он readonly с момента создания');
+    }
+
+    public function test_act_number_counter_is_per_organization(): void
+    {
+        // Счётчик в пределах организации: у каждой свой ряд с 1. Таблица-счётчик транзакционна → значения точные.
+        $orgA = 'org-a-'.uniqid('', true);
+        $orgB = 'org-b-'.uniqid('', true);
+
+        self::assertSame(1, $this->writeOffActRepo->nextActNumber($orgA), 'первый акт организации A — 1');
+        self::assertSame(2, $this->writeOffActRepo->nextActNumber($orgA), 'второй акт той же организации — 2');
+        self::assertSame(1, $this->writeOffActRepo->nextActNumber($orgB), 'у другой организации своя нумерация с 1');
     }
 
     public function test_save_portion_exceeding_held_throws(): void
@@ -263,7 +296,7 @@ final class WriteOffFlowTest extends KernelTestCase
      */
     private function signWriteOff(string $actId, string $requirementId, array $profileIds): void
     {
-        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']], '2026-08-10', $this->stageComplianceScan()));
         $this->reload();
         (static::getContainer()->get(RecomputeOnWriteOffActSignedHandler::class))(new WriteOffActSigned($requirementId, $profileIds));
         $this->reload();

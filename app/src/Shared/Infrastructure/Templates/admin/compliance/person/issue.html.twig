@@ -6,7 +6,6 @@
    есть открытый черновик акта (корзина) — его единственного тут и показываем; оформленные акты доступны ссылкой
    из истории позиции, списком их больше не дублируем. #}
 {% set draftAct = (writeOffActs|default([]))|filter(a => not a.signed)|first %}
-{% set woPresent = canWriteOff|default(false) or draftAct is not null %}
 {# Статус-бейдж карточки позиции — тот же бакет/резолвер, что у дашборда (admin/compliance/dashboard/_person_detail.html.twig). #}
 {% set bucketBadge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
 {% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
@@ -92,7 +91,7 @@
 
 {% block content %}
     {% set anchors = [{id: 'sec-doc', label: 'Документ'}, {id: 'sec-items', label: 'Позиции'}] %}
-    {% if woPresent %}{% set anchors = anchors|merge([{id: 'sec-writeoff', label: 'Списание'}]) %}{% endif %}
+    {% if draftAct %}{% set anchors = anchors|merge([{id: 'sec-writeoff', label: 'Списание'}]) %}{% endif %}
     {% embed 'components/form_page.html.twig' with {
         title: 'Выдача — ' ~ requirementName,
         back_url: backUrl,
@@ -245,7 +244,12 @@
                             {% block footer %}
                                 <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
                                 {% if o.origin == 'personal' %}
-                                    <button type="button" class="btn btn-sm btn-outline-danger mb-2" data-action="norm-fill#removeRow" title="Убрать позицию вне нормы из черновика">
+                                    {# Убрать личную (off-norm) позицию из учёта человека через общую модалку подтверждения
+                                       (#deleteModal): ключ — query-параметр в data-bs-url, подтверждение шлёт POST с CSRF. #}
+                                    <button type="button" class="btn btn-sm btn-outline-danger mb-2"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            data-bs-title="позицию «{{ o.label|e('html_attr') }}» из учёта"
+                                            data-bs-url="{{ path('app_cabinet_compliance_obligation_exclude', {profileId: profileId, requirementId: requirementId, obligationKey: o.key}) }}">
                                         <i class="bi bi-trash me-1"></i>Убрать позицию
                                     </button>
                                 {% endif %}
@@ -373,38 +377,31 @@
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             </form>
 
-            {# Списание — параллельный вход на той же странице. Показываем, когда есть что списывать/акты уже есть.
-               Разбивка по позициям (что на руках, когда выдано) — в единой карточке выше + её истории; тут
-               только точка входа «Списать» (по требованию, позицию выбирают на странице акта) + список актов. #}
-            {% if woPresent %}
+            {# Списание — вход на той же странице. Списать позиции: отметить их и «Списать выбранные» в савбаре — они
+               уходят в общий кросс-персон черновик акта. Эта секция показывается ТОЛЬКО когда открытый черновик уже
+               есть — как вход «Оформить». Черновик org-wide (один на требование×организацию), может держать позиции
+               других сотрудников — помечаем его ОБЩИМ, чтобы «позиций: N» не читалось как позиции этого человека.
+               Оформленные акты — из истории позиции. #}
+            {% if draftAct %}
                 <div id="sec-writeoff" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                        <h2 class="h6 mb-0">Списание</h2>
-                        {% if canWriteOff %}
-                            <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
-                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-up me-1"></i>Списать</button>
-                            </form>
-                        {% endif %}
+                    <h2 class="h6 mb-3">Списание</h2>
+                    <div class="d-flex flex-wrap align-items-center gap-2 p-3 rounded-3 bg-body">
+                        <span class="badge text-bg-secondary"><i class="bi bi-people me-1"></i>Общий черновик акта{% if draftAct.actNumber %} № {{ draftAct.actNumber }}{% endif %} (по организации)</span>
+                        <span class="text-body-secondary small">позиций всего: {{ draftAct.itemCount }} — могут быть и других сотрудников</span>
+                        <a class="btn btn-soft-success btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_show', {actId: draftAct.id}) }}">
+                            <i class="bi bi-pencil-square me-1"></i>Оформить
+                        </a>
                     </div>
-                    <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — оформленные акты списания видны в истории позиции</div>
-
-                    {# Только открытый черновик (корзина) — ссылка на оформление; оформленные акты — из истории позиции. #}
-                    {% if draftAct %}
-                        <div class="d-flex flex-wrap align-items-center gap-2 p-3 rounded-3 bg-body">
-                            <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик акта списания</span>
-                            <span class="text-body-secondary small">позиций: {{ draftAct.itemCount }}</span>
-                            <a class="btn btn-soft-success btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_show', {actId: draftAct.id}) }}">
-                                <i class="bi bi-pencil-square me-1"></i>Оформить
-                            </a>
-                        </div>
-                    {% endif %}
                 </div>
             {% endif %}
 
             {# Подтверждение группового действия (выдача/списание): список выбранных позиций + кнопка. Один компонент
                (как delete_modal), наполняется контроллером issue-selection. #}
             {% include 'components/selection_confirm_modal.html.twig' %}
+
+            {# «Убрать позицию» (личная, вне нормы) — общая модалка подтверждения #deleteModal; URL исключения (ключ
+               позиции в query) приходит с триггер-кнопки строки через data-bs-url. #}
+            {% include 'components/delete_modal.html.twig' %}
 
             {% if canWriteOff %}
                 {# Скрытая форма «Списать выбранные»: контроллер issue-selection кладёт сюда keys[] выбранных позиций

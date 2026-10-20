@@ -35,6 +35,18 @@ class WriteOffActRepository extends ServiceEntityRepository implements WriteOffA
         $this->getEntityManager()->flush();
     }
 
+    public function nextActNumber(string $organizationId): int
+    {
+        // Пер-организационный счётчик: атомарно инкрементим (или заводим с 1) ряд организации и возвращаем номер.
+        // ON CONFLICT DO UPDATE берёт блокировку строки — параллельные создания одной организации не дадут дубль.
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'INSERT INTO compliance_writeoff_act_counter (organization_id, last_number) VALUES (:org, 1)
+             ON CONFLICT (organization_id) DO UPDATE SET last_number = compliance_writeoff_act_counter.last_number + 1
+             RETURNING last_number',
+            ['org' => $organizationId],
+        );
+    }
+
     public function findOpenDraft(string $requirementId, string $organizationId): ?WriteOffAct
     {
         // Fetch-join строк в том же запросе (readonly-id строки + to-one обратно на акт — иначе LAZY-прокси крэш).

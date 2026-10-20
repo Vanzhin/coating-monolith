@@ -206,7 +206,6 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         $this->commandBus->execute(new SignWriteOffActCommand(
             $actId,
             [['name' => 'Алиханова Н.И.', 'position' => 'рук. ОТиПБ']],
-            '39',
             '2026-08-10',
             $this->stageComplianceScan(),
         ));

@@ -45,4 +45,21 @@ final class ObligationKeyTest extends TestCase
         // "req-1" не должен матчить требование "req-" (строгая граница — только через '|').
         self::assertFalse(ObligationKey::keyBelongsToRequirement('req-1|item-1', 'req'));
     }
+
+    public function test_human_label_of_strips_requirement_id_prefix_from_raw_key(): void
+    {
+        $key = ObligationKey::keyOf('01a10a82-2b28-7e31-afa6-683613bf9efd', 'костюм (комбинезон)');
+        self::assertSame('костюм (комбинезон)', ObligationKey::humanLabelOf($key));
+    }
+
+    public function test_human_label_of_returns_plain_label_unchanged(): void
+    {
+        self::assertSame('Перчатки', ObligationKey::humanLabelOf('Перчатки'));
+    }
+
+    public function test_human_label_of_leaves_non_uuid_prefix_untouched(): void
+    {
+        // Метка со своим '|', но без Uuid-префикса — это не ключ, не трогаем.
+        self::assertSame('класс защиты 1|2', ObligationKey::humanLabelOf('класс защиты 1|2'));
+    }
 }

@@ -1,5 +1,6 @@
-{# Деталь человека: группы требований + таблица позиций. По каждому требованию — два всегда-доступных действия:
-   «Выдать» (форма выдачи) и «Списать» (акт списания, когда есть что списывать). Кнопки под ROLE_ADMIN — это
+{# Деталь человека: группы требований + таблица позиций. По каждому требованию — один вход «Подробнее» на карточку
+   (/issue), где выдача/списание/журнал в одном месте. Отдельных действий (выдать/списать) на дашборде нет: списание
+   через карточку, а прямая кнопка вела в общий (org-wide) черновик акта без контекста. Кнопка под ROLE_ADMIN — это
    только UX-видимость, авторизацию держит хендлер. Только Bootstrap. #}
 {% set canEdit = is_granted('ROLE_ADMIN') %}
 {% set badge = {ok: 'text-bg-success', soon: 'text-bg-warning', overdue: 'text-bg-danger', missing: 'text-bg-danger'} %}
@@ -18,17 +19,9 @@
             {% endif %}
 
             {% if canEdit %}
-                <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                    <a class="btn btn-soft-success btn-sm" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
-                        <i class="bi bi-box-arrow-in-down me-1"></i>Выдать
-                    </a>
-                    {% if hasRecords %}
-                        <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: person.profileId, requirementId: g.requirementId}) }}">
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-up me-1"></i>Списать</button>
-                        </form>
-                    {% endif %}
-                </div>
+                <a class="btn btn-soft-success btn-sm ms-auto" href="{{ path('app_cabinet_compliance_issue', {profileId: person.profileId, requirementId: g.requirementId}) }}">
+                    <i class="bi bi-arrow-right me-1"></i>Подробнее
+                </a>
             {% endif %}
         </div>
 

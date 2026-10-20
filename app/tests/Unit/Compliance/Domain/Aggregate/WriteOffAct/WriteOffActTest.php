@@ -60,7 +60,7 @@ final class WriteOffActTest extends TestCase
         $act = $this->act();
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
 
         $this->expectException(AppException::class);
         $act->addLinesForProfile('p2', [['recordId' => 'r2', 'labelSnapshot' => 'Каска', 'quantity' => 1.0]]);
@@ -72,7 +72,7 @@ final class WriteOffActTest extends TestCase
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
 
         $this->expectException(AppException::class);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
     }
 
     public function test_sign_requires_non_empty_commission(): void
@@ -82,7 +82,7 @@ final class WriteOffActTest extends TestCase
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
 
         $this->expectException(AppException::class);
-        $act->sign(new Commission(), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(new Commission(), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
     }
 
     public function test_sign_requires_non_empty_scan(): void
@@ -92,7 +92,7 @@ final class WriteOffActTest extends TestCase
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
 
         $this->expectException(AppException::class);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), '', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), '', new \DateTimeImmutable('2026-08-01'));
     }
 
     public function test_replace_portions_preserves_profile_and_label_snapshot(): void
@@ -146,7 +146,7 @@ final class WriteOffActTest extends TestCase
         $act = $this->act();
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
 
         $this->expectException(AppException::class); // подписанный акт заморожен — строки не снимаем даже каскадом
         $act->removeLinesByRecordIds(['r1']);
@@ -157,7 +157,7 @@ final class WriteOffActTest extends TestCase
         $act = $this->act();
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
 
         $this->expectException(AppException::class);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 5.0, 'reason' => WriteOffReason::TermExpired]]);
@@ -168,11 +168,10 @@ final class WriteOffActTest extends TestCase
         $act = $this->act();
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
 
         $this->expectException(AppException::class);
         $act->saveDetails(
-            '40',
             new \DateTimeImmutable('2026-08-02'),
             Commission::fromRows([['fio' => 'Иванов']]),
             '',
@@ -188,11 +187,49 @@ final class WriteOffActTest extends TestCase
         $act = $this->act();
         $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
         $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
-        $act->sign(Commission::fromRows([['fio' => 'Петров']]), '39', new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
 
         self::assertTrue($act->isSigned());
 
         $this->expectException(AppException::class);
         $act->addLinesForProfile('p2', [['recordId' => 'r2', 'labelSnapshot' => 'Каска', 'quantity' => 1.0]]); // Signed → assertMutable throws
+    }
+
+    public function test_sign_does_not_set_number_it_is_assigned_separately(): void
+    {
+        $act = $this->signedAct();
+
+        self::assertTrue($act->isSigned());
+        self::assertNull($act->actNumber(), 'подпись номер не ставит — он сквозной, присваивается assignNumber ПОСЛЕ подписи');
+    }
+
+    public function test_assign_number_sets_once_and_is_immutable(): void
+    {
+        $act = $this->signedAct();
+
+        $act->assignNumber('42');
+        self::assertSame('42', $act->actNumber());
+
+        $act->assignNumber('99');
+        self::assertSame('42', $act->actNumber(), 'номер неизменяем — повторная установка игнорируется');
+    }
+
+    public function test_assign_number_ignores_empty_value(): void
+    {
+        $act = $this->signedAct();
+
+        $act->assignNumber('');
+        $act->assignNumber('   ');
+        self::assertNull($act->actNumber(), 'пустой номер не закрепляется');
+    }
+
+    private function signedAct(): WriteOffAct
+    {
+        $act = $this->act();
+        $act->addLinesForProfile('p1', [['recordId' => 'r1', 'labelSnapshot' => 'Перчатки', 'quantity' => 10.0]]);
+        $act->replacePortions([['recordId' => 'r1', 'quantity' => 10.0, 'reason' => WriteOffReason::PhysicalWear]]);
+        $act->sign(Commission::fromRows([['fio' => 'Петров']]), new \DateTimeImmutable('2026-08-01'), 'scan-1', new \DateTimeImmutable('2026-08-01'));
+
+        return $act;
     }
 }

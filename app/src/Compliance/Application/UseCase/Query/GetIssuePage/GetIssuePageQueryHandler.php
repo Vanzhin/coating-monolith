@@ -141,7 +141,7 @@ final readonly class GetIssuePageQueryHandler implements QueryHandlerInterface
         // доступны ссылкой из истории позиции). Достаточно id/флага/числа строк, без резолва меток.
         $draft = $this->writeOffActRepository->findOpenDraft($query->requirementId, $profileResult->profile->organizationId);
         if (null !== $draft) {
-            $page->writeOffActs[] = new IssueWriteOffActSummaryDTO($draft->getId(), false, count($draft->lines()));
+            $page->writeOffActs[] = new IssueWriteOffActSummaryDTO($draft->getId(), false, count($draft->lines()), $draft->actNumber());
         }
 
         return $page;

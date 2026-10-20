@@ -13,7 +13,6 @@ readonly class SignWriteOffActCommand extends Command
     public function __construct(
         public string $writeOffActId,
         public array $members,
-        public string $actNumber,
         public string $actDate,
         public ?string $stagedFileId = null,
     ) {

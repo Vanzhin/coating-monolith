@@ -272,7 +272,6 @@ final class MigrateWriteOffCrossPersonCommand extends Command
         $commission = $this->commissionOf($primary['commission']);
         $actDate = null !== $primary['actDate'] ? new \DateTimeImmutable($primary['actDate']) : null;
         $act->saveDetails(
-            $primary['actNumber'] ?? '',
             $actDate,
             $commission,
             $primary['orderNumber'] ?? '',
@@ -286,11 +285,15 @@ final class MigrateWriteOffCrossPersonCommand extends Command
             $signedAt = new \DateTimeImmutable($primary['signedAt'] ?? $primary['updatedAt']);
             $act->sign(
                 $commission,
-                $primary['actNumber'] ?? '',
                 $actDate ?? $signedAt,
                 $primary['scanFileId'] ?? '',
                 $signedAt, // переносим момент подписи, а не время прогона команды
             );
+        }
+
+        // Легаси-номер (строка, бывает нечисловой) сохраняем как был — миграция не перенумеровывает исторические акты.
+        if ('' !== trim((string) ($primary['actNumber'] ?? ''))) {
+            $act->assignNumber((string) $primary['actNumber']);
         }
 
         $this->writeOffActRepository->add($act);

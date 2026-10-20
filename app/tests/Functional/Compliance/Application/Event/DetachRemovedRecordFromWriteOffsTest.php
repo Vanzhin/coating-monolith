@@ -116,7 +116,7 @@ final class DetachRemovedRecordFromWriteOffsTest extends KernelTestCase
 
         $this->commandBus->execute(new SaveWriteOffActCommand($actId, [['recordId' => $recordId, 'quantity' => 10.0, 'reason' => 'physical_wear']]));
         $this->reload();
-        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '39', '2026-08-10', $this->stageComplianceScan()));
+        $this->commandBus->execute(new SignWriteOffActCommand($actId, [['name' => 'Петров П. П.', 'position' => 'Инженер']], '2026-08-10', $this->stageComplianceScan()));
         $this->reload();
 
         $signedAct = $this->writeOffActRepo->findById($actId);

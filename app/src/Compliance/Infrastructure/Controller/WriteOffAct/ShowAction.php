@@ -13,6 +13,7 @@ use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\WriteOffReason;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -55,16 +56,16 @@ final class ShowAction extends AbstractController
             /** @var list<array{recordId: string, quantity: float, reason: string}> $lines */
             $lines = array_values((array) ($input['portions'] ?? []));
             $commissionRows = array_values((array) ($input['commission'] ?? []));
-            $actNumber = (string) ($input['actNumber'] ?? '');
             $actDate = (string) ($input['actDate'] ?? '');
             $orderNumber = (string) ($input['orderNumber'] ?? '');
             $orderDate = (string) ($input['orderDate'] ?? '');
             $representativePosition = (string) ($input['representativePosition'] ?? '');
             $representativeFio = (string) ($input['representativeFio'] ?? '');
             try {
-                // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (№/дата/приказ/представитель/комиссия) на черновик.
+                // И «Сохранить», и «Оформить» сперва пишут состав + реквизиты (дата/приказ/представитель/комиссия) на
+                // черновик. Номер акта тут не задаётся — он сквозной, присваивается при оформлении.
                 $this->commandBus->execute(new SaveWriteOffActCommand(
-                    $actId, $lines, $actNumber, $actDate, $commissionRows,
+                    $actId, $lines, $actDate, $commissionRows,
                     $orderNumber, $orderDate, $representativePosition, $representativeFio,
                 ));
                 if ('save' === ($input['op'] ?? 'sign')) {
@@ -75,7 +76,6 @@ final class ShowAction extends AbstractController
                 $this->commandBus->execute(new SignWriteOffActCommand(
                     $actId,
                     $commissionRows,
-                    $actNumber,
                     $actDate,
                     ((string) ($input['stagedFileId'] ?? '')) ?: null,
                 ));
@@ -228,7 +228,7 @@ final class ShowAction extends AbstractController
 
         return [
             'recordId' => $line->recordId(),
-            'label' => $line->labelSnapshot(),
+            'label' => ObligationKey::humanLabelOf($line->labelSnapshot()),
             'meta' => trim('на руках '.$heldStr.' '.$unit.$issued),
             'held' => $heldStr,
             'unit' => $unit,
@@ -250,7 +250,7 @@ final class ShowAction extends AbstractController
         $unit = $fact?->quantity()?->unit->title() ?? '';
 
         return [
-            'label' => $line->labelSnapshot(),
+            'label' => ObligationKey::humanLabelOf($line->labelSnapshot()),
             'meta' => null !== $fact ? 'выдано '.$fact->fulfilledAt()->format('d.m.Y') : '',
             'quantityLabel' => AmountFormatter::trimmed($line->quantity()).('' !== $unit ? ' '.$unit : ''),
             'reason' => $line->reason()?->title(),

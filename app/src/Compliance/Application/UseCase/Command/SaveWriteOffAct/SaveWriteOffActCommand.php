@@ -19,7 +19,6 @@ readonly class SaveWriteOffActCommand extends Command
     public function __construct(
         public string $writeOffActId,
         public array $lines,
-        public string $actNumber = '',
         public string $actDate = '',
         public array $members = [],
         public string $orderNumber = '',

@@ -224,8 +224,8 @@ final class IssueActionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
 
-        self::assertStringContainsString('write-off/open', $html, 'вход «Списать» доступен на той же странице, что и выдача');
-        self::assertStringContainsString('Списать', $html);
+        self::assertStringContainsString('write-off/add', $html, 'вход списания («Списать выбранные») доступен на той же странице, что и выдача');
+        self::assertStringContainsString('Списать выбранные', $html);
     }
 
     /**
@@ -488,7 +488,7 @@ final class IssueActionTest extends WebTestCase
         $html = (string) $this->client->getResponse()->getContent();
 
         self::assertStringContainsString('в норме', $html, 'инструктаж пройден (held=0 — количество для него не инвариант) — бакет Ok');
-        self::assertStringNotContainsString('не пройдено', $html, 'больше не красный Missing после прохождения');
+        self::assertStringNotContainsString('не выполнено', $html, 'больше не красный Missing после прохождения');
     }
 
     /**
@@ -535,6 +535,48 @@ final class IssueActionTest extends WebTestCase
 
         $row = $this->obligationRowFor($p, $r, $key);
         self::assertSame('material', $row->type, 'тип не прислан — дефолт тип требования (material)');
+    }
+
+    /**
+     * «Убрать позицию» (личная, вне нормы): POST exclude-эндпоинта исключает позицию из учёта человека — строка
+     * уходит из проекции (/issue и дашборд её не покажут), но факт выдачи остаётся в журнале (история сохраняется).
+     */
+    public function test_exclude_removes_personal_position_from_projection_keeping_history(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
+        $this->submitAdHocPersonalItem($p, $r, 'Ботинки вне нормы', 'material', '1', 'pcs');
+        $key = $this->personalObligationKeyFor($p, $r, 'Ботинки вне нормы');
+        self::assertContains($key, $this->obligationKeys($p), 'личная позиция в проекции до исключения');
+
+        // Подтверждение — общая модалка #deleteModal: ключ в query (data-bs-url), CSRF-интеншн 'delete' в теле.
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        $token = (string) $crawler->filter('#deleteModal input[name="_token"]')->attr('value');
+        $url = sprintf('/cabinet/compliance/person/%s/requirement/%s/obligation/exclude?obligationKey=%s', $p, $r, urlencode($key));
+        $this->client->request('POST', $url, ['_token' => $token]);
+        self::assertResponseRedirects();
+
+        self::assertNotContains($key, $this->obligationKeys($p), 'исключённая позиция ушла из проекции');
+
+        $pc = static::getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        self::assertNotNull($pc);
+        $hasFact = false;
+        foreach ($pc->getRecords() as $record) {
+            if ($record->obligationKey() === $key) {
+                $hasFact = true;
+                break;
+            }
+        }
+        self::assertTrue($hasFact, 'факт выдачи остался в журнале — исключение не трогает историю');
+    }
+
+    /** @return list<string> ключи строк проекции профиля */
+    private function obligationKeys(string $profileId): array
+    {
+        /** @var GetProfileComplianceQueryResult $result */
+        $result = static::getContainer()->get(QueryBusInterface::class)->execute(new GetProfileComplianceQuery($profileId));
+        self::assertNotNull($result->compliance);
+
+        return array_map(static fn (ObligationRowDTO $row): string => $row->key, $result->compliance->obligations);
     }
 
     /**

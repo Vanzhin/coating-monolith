@@ -145,11 +145,11 @@ class WriteOffAct
     }
 
     /**
-     * Сохранить реквизиты черновика (№/дата акта, приказ, представитель, комиссия), пока не подписан. Пустые
-     * допустимы — это черновик, не финал.
+     * Сохранить реквизиты черновика (дата акта, приказ, представитель, комиссия), пока не подписан. Пустые
+     * допустимы — это черновик, не финал. Номер акта тут НЕ задаётся: он сквозной и присваивается только при
+     * подписании ({@see assignNumber}).
      */
     public function saveDetails(
-        string $actNumber,
         ?\DateTimeImmutable $actDate,
         Commission $commission,
         string $orderNumber,
@@ -159,7 +159,6 @@ class WriteOffAct
         \DateTimeImmutable $now,
     ): void {
         $this->assertMutable();
-        $this->actNumber = '' === trim($actNumber) ? null : trim($actNumber);
         $this->actDate = $actDate;
         $this->commission = $commission->isEmpty() ? null : $commission;
         $this->orderNumber = '' === trim($orderNumber) ? null : trim($orderNumber);
@@ -169,8 +168,12 @@ class WriteOffAct
         $this->updatedAt = $now;
     }
 
-    /** Подписать акт: причины на всех строках, непустая комиссия, приложен скан. НЕ применяет списание к фактам. */
-    public function sign(Commission $commission, string $actNumber, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now): void
+    /**
+     * Подписать акт: причины на всех строках, непустая комиссия, приложен скан. НЕ применяет списание к фактам.
+     * Номер НЕ задаётся здесь — он сквозной и закрепляется отдельно ({@see assignNumber}) ПОСЛЕ успешной подписи,
+     * чтобы провал валидации (нет скана/причин/комиссии) не жёг номер счётчика.
+     */
+    public function sign(Commission $commission, \DateTimeImmutable $actDate, string $scanFileId, \DateTimeImmutable $now): void
     {
         $this->assertMutable();
         $this->assertReasonsComplete();
@@ -181,12 +184,24 @@ class WriteOffAct
             throw new AppException('Приложите скан подписанного акта списания.');
         }
         $this->commission = $commission;
-        $this->actNumber = trim($actNumber);
         $this->actDate = $actDate;
         $this->scanFileId = $scanFileId;
         $this->status = DocumentStatus::Signed;
         $this->signedAt = $now;
         $this->updatedAt = $now;
+    }
+
+    /**
+     * Закрепить номер акта один раз. Нормальный поток зовёт его ПОСЛЕ успешного {@see sign} со значением из
+     * сквозного счётчика ({@see \App\Compliance\Domain\Repository\WriteOffActRepositoryInterface::nextActNumber});
+     * миграция кросс-персон — с легаси-строкой. Повторная установка и пустое значение игнорируются (номер неизменяем).
+     */
+    public function assignNumber(string $number): void
+    {
+        if (null !== $this->actNumber || '' === trim($number)) {
+            return;
+        }
+        $this->actNumber = trim($number);
     }
 
     /** @return array<string, list<WriteOffActLine>> Строки, сгруппированные по профилю (порядок первого появления). */

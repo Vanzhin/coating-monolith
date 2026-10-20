@@ -64,10 +64,11 @@
 
                     <div id="sec-commission" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                         <h2 class="h6 mb-3">Комиссия и реквизиты</h2>
+                        {# № акта — сквозной, присваивается при СОЗДАНИИ акта; readonly (не вводится и не меняется), показываем plaintext. #}
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">№ акта</label>
-                                <input type="text" name="actNumber" class="form-control" value="{{ actNumber|default('') }}">
+                                <div class="form-control-plaintext py-0">{{ actNumber|default('—') }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">Дата акта</label>

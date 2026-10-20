@@ -62,7 +62,7 @@ final readonly class SaveWriteOffActCommandHandler implements CommandHandlerInte
 
         $act->replacePortions($lines);
         $act->saveDetails(
-            $command->actNumber, $actDate, Commission::fromRows($command->members),
+            $actDate, Commission::fromRows($command->members),
             $command->orderNumber, $orderDate, $command->representativePosition, $command->representativeFio,
             new \DateTimeImmutable(),
         );

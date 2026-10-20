@@ -373,7 +373,7 @@ class ProfileCompliance extends Aggregate
      */
     public function obligationLabelOf(Requirement $requirement, string $key): string
     {
-        return $this->obligationSpecOf($requirement, $key)[0] ?? $key;
+        return $this->obligationSpecOf($requirement, $key)[0] ?? ObligationKey::humanLabelOf($key);
     }
 
     public function getExcludedKeys(): StringCollection
