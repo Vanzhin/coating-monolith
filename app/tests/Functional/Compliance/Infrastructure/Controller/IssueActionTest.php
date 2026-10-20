@@ -224,8 +224,8 @@ final class IssueActionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $this->client->getResponse()->getContent();
 
-        self::assertStringContainsString('write-off/open', $html, 'вход «Списать» доступен на той же странице, что и выдача');
-        self::assertStringContainsString('Списать', $html);
+        self::assertStringContainsString('write-off/add', $html, 'вход списания («Списать выбранные») доступен на той же странице, что и выдача');
+        self::assertStringContainsString('Списать выбранные', $html);
     }
 
     /**

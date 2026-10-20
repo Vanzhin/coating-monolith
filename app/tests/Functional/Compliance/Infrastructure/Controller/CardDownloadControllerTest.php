@@ -369,12 +369,11 @@ final class CardDownloadControllerTest extends WebTestCase
         ['profileId' => $profileId, 'requirementId' => $requirementId, 'key' => $key] = $this->enrollCompliance();
         $this->issueCard($profileId, $requirementId, $key); // действующая карточка → режим списания
 
-        // Акт выдачи (режим списания) — только кнопка «Перейти к акту списания».
+        // Действующая карточка: списание — через «Списать выбранные»/вход «Оформить». Корзину для теста сидируем
+        // прямым POST write-off/open («списать всё по сотруднику»); токен берём из формы страницы.
         $crawler = $this->client->request('GET', sprintf('/cabinet/compliance/person/%s/requirement/%s/issue', $profileId, $requirementId));
         self::assertResponseIsSuccessful();
-        $openForm = $crawler->filter('form[action$="/write-off/open"]');
-        self::assertGreaterThan(0, $openForm->count(), 'на действующей карточке есть кнопка «Перейти к акту списания»');
-        $token = $openForm->filter('input[name="_csrf_token"]')->attr('value');
+        $token = (string) $crawler->filter('input[name="_csrf_token"]')->first()->attr('value');
 
         $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/write-off/open', $profileId, $requirementId), [
             '_csrf_token' => $token,
