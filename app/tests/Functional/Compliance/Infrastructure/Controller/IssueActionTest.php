@@ -488,7 +488,7 @@ final class IssueActionTest extends WebTestCase
         $html = (string) $this->client->getResponse()->getContent();
 
         self::assertStringContainsString('в норме', $html, 'инструктаж пройден (held=0 — количество для него не инвариант) — бакет Ok');
-        self::assertStringNotContainsString('не пройдено', $html, 'больше не красный Missing после прохождения');
+        self::assertStringNotContainsString('не выполнено', $html, 'больше не красный Missing после прохождения');
     }
 
     /**

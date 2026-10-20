@@ -26,7 +26,7 @@ enum ComplianceBucket: string
             self::Ok => 'в норме',
             self::Soon => 'подходит срок',
             self::Overdue => 'просрочено',
-            self::Missing => ComplianceType::Material === $type ? 'не выдано' : 'не пройдено',
+            self::Missing => ComplianceType::Material === $type ? 'не выдано' : 'не выполнено',
         };
     }
 
