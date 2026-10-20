@@ -170,7 +170,7 @@
                                остаётся: joins «Списать выбранные»/уже открытый черновик акта ({@see AddToWriteOffAction}),
                                исключена из «Выдать выбранные» (issue_selection_controller.js по data-writeoff-only).
                                «Восстановить» тут НЕТ — это действие нормы, доступно только в редакторе требования. #}
-                            <div class="opacity-75" data-frozen-item>
+                            <div class="opacity-75">
                             {% embed 'admin/compliance/_item_card.html.twig' with {
                                 name: o.label,
                                 select_name: 'woItems[' ~ loop.index0 ~ '][selected]',
@@ -360,7 +360,7 @@
                         {% if canWriteOff %}
                             <form method="post" action="{{ path('app_cabinet_compliance_writeoff_open', {profileId: profileId, requirementId: requirementId}) }}">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Списать</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-up me-1"></i>Списать</button>
                             </form>
                         {% endif %}
                     </div>
