@@ -1,12 +1,11 @@
 {% extends 'emails/base.html.twig' %}
+{% import 'emails/_macros.html.twig' as ui %}
 
 {% block title %}Добро пожаловать в {{ app_name }}{% endblock %}
 
 {% block body %}
     <p>Здравствуйте, <strong>{{ user.name }}</strong>!</p>
     <p>Регистрация в {{ app_name }} прошла успешно.</p>
-    <p>
-        <a class="btn" href="{{ url('app_homepage') }}">На сайт</a>
-        <a class="btn btn-secondary" href="{{ url('app_account') }}">Мой профиль</a>
-    </p>
+    {{ ui.button(url('app_homepage'), 'На сайт') }}
+    {{ ui.button(url('app_account'), 'Мой профиль', true) }}
 {% endblock %}

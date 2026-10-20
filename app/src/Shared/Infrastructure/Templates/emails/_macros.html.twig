@@ -1,0 +1,15 @@
+{#
+  Прямоугольная кнопка для писем (bulletproof, без VML).
+  Padding на <td> и bgcolor-атрибут Outlook/Word уважает (в отличие от padding/фона на <a>/<div>).
+  border-radius скругляет кнопку в обычных клиентах, Outlook рисует прямоугольник.
+  Несколько кнопок подряд: в обычных клиентах встают в ряд (inline-block), в Outlook — столбиком.
+#}
+{% macro button(href, label, secondary = false, blank = false) %}
+    <table role="presentation" class="btn-wrap" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td class="btn-cell{{ secondary ? ' btn-cell-secondary' }}" bgcolor="{{ secondary ? '#edf2f7' : '#2b6cb0' }}" align="center">
+                <a href="{{ href }}" class="btn-link{{ secondary ? ' btn-link-secondary' }}"{% if blank %} target="_blank" rel="noopener"{% endif %}>{{ label }}</a>
+            </td>
+        </tr>
+    </table>
+{% endmacro %}
