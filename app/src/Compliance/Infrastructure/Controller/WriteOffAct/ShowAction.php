@@ -13,6 +13,7 @@ use App\Compliance\Domain\Aggregate\WriteOffAct\WriteOffActLine;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\Type\WriteOffReason;
+use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
@@ -227,7 +228,7 @@ final class ShowAction extends AbstractController
 
         return [
             'recordId' => $line->recordId(),
-            'label' => $line->labelSnapshot(),
+            'label' => ObligationKey::humanLabelOf($line->labelSnapshot()),
             'meta' => trim('на руках '.$heldStr.' '.$unit.$issued),
             'held' => $heldStr,
             'unit' => $unit,
@@ -249,7 +250,7 @@ final class ShowAction extends AbstractController
         $unit = $fact?->quantity()?->unit->title() ?? '';
 
         return [
-            'label' => $line->labelSnapshot(),
+            'label' => ObligationKey::humanLabelOf($line->labelSnapshot()),
             'meta' => null !== $fact ? 'выдано '.$fact->fulfilledAt()->format('d.m.Y') : '',
             'quantityLabel' => AmountFormatter::trimmed($line->quantity()).('' !== $unit ? ' '.$unit : ''),
             'reason' => $line->reason()?->title(),

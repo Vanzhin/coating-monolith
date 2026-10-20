@@ -576,12 +576,13 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame('Очки', $pc->obligationLabelOf($requirement, $key));
     }
 
-    public function test_obligation_label_of_falls_back_to_key_when_unresolved(): void
+    public function test_obligation_label_of_falls_back_to_label_part_not_raw_key_when_unresolved(): void
     {
         $requirement = $this->glovesRequirement(2.0);
         $pc = $this->pcWithGloves();
         $unknownKey = ObligationKey::keyOf($this->reqId, 'нет-такой-позиции');
 
-        self::assertSame($unknownKey, $pc->obligationLabelOf($requirement, $unknownKey));
+        // orphan-ключ (позиция переименована/убрана) не резолвится → человекочитаемая часть после `|`, не сырой ключ с reqId.
+        self::assertSame('нет-такой-позиции', $pc->obligationLabelOf($requirement, $unknownKey));
     }
 }
