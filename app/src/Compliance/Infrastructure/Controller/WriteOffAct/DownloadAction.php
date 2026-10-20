@@ -12,8 +12,10 @@ use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Templating\TemplateFile;
+use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Shared\Infrastructure\Service\TemplateRendering;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +37,7 @@ final class DownloadAction extends AbstractController
         private readonly TemplateRendering $rendering,
         private readonly ComplianceAccessControl $access,
         private readonly string $writeOffTemplatePath,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -62,7 +65,19 @@ final class DownloadAction extends AbstractController
             }
         }
 
-        $doc = $this->rendering->render(new TemplateFile($this->writeOffTemplatePath), $this->projector->project($act, $profilesById, $recordsById));
+        try {
+            $doc = $this->rendering->render(new TemplateFile($this->writeOffTemplatePath), $this->projector->project($act, $profilesById, $recordsById));
+        } catch (AppException $e) {
+            // Сбой формирования документа (незаполненные обязательные реквизиты шаблона или проблема самого шаблона):
+            // не отдаём пользователю сырой 422 «Невалидные данные», а логируем детали и возвращаем на страницу акта
+            // с человекочитаемым сообщением.
+            // warning, не error: это восстановимая пользователем ситуация (незаполненные реквизиты), не системный
+            // инцидент — пишем в лог для диагностики, но не поднимаем error-алерт (FingersCrossed→Telegram на error).
+            $this->logger->warning('Не удалось сформировать документ акта списания: '.$e->getMessage(), ['actId' => $actId]);
+            $this->addFlash('danger', 'Не удалось сформировать документ: заполните обязательные реквизиты акта (комиссия, дата) и повторите.');
+
+            return $this->redirectToRoute('app_cabinet_compliance_writeoff_show', ['actId' => $actId]);
+        }
 
         $name = 'Акт-списания-'.($act->actNumber() ?? 'черновик').'.'.$doc->extension();
         $response = new Response($doc->content, Response::HTTP_OK, ['Content-Type' => $doc->mimeType()]);

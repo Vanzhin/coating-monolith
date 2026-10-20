@@ -484,6 +484,31 @@ final class CardDownloadControllerTest extends WebTestCase
         self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
     }
 
+    /**
+     * Регрессия: скачивание docx черновика, у которого ещё не заполнены обязательные реквизиты шаблона (комиссия) —
+     * НЕ отдаёт пользователю сырой 422 «Невалидные данные», а логирует и возвращает на страницу акта с человекочитаемым
+     * сообщением (DownloadAction ловит AppException рендера).
+     */
+    public function test_download_draft_without_commission_redirects_with_human_error_not_422(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->enrollCompliance();
+        $this->issueCard($p, $r, $k);
+        $container = $this->client->getContainer();
+        // Черновик без реквизитов: комиссия не задана → строгий блок {{commission}} шаблона не заполнится.
+        $container->get(CommandBusInterface::class)->execute(new AddToWriteOffDraftCommand($p, $r, null));
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($p));
+        self::assertNotNull($profileResult->profile);
+        $act = $container->get(WriteOffActRepositoryInterface::class)->findOpenDraft($r, $profileResult->profile->organizationId);
+        self::assertNotNull($act);
+
+        $this->client->request('GET', sprintf('/cabinet/compliance/writeoff/%s/download', $act->getId()));
+
+        self::assertResponseRedirects(); // 3xx на страницу акта, а НЕ 422-страница «Невалидные данные»
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('body', 'Не удалось сформировать документ');
+    }
+
     private function setPrivate(object $object, string $property, mixed $value): void
     {
         $reflection = new \ReflectionProperty($object, $property);
