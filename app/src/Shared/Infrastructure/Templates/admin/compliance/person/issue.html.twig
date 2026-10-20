@@ -394,11 +394,13 @@
                     </div>
                     <div class="text-body-secondary small mb-3">{{ fio }} · {{ profile.positionTitle }} — оформленные акты списания видны в истории позиции</div>
 
-                    {# Только открытый черновик (корзина) — ссылка на оформление; оформленные акты — из истории позиции. #}
+                    {# Только открытый черновик (корзина) — ссылка на оформление; оформленные акты — из истории позиции.
+                       Черновик кросс-персон (один на требование×организацию): может держать позиции других сотрудников,
+                       поэтому помечаем его как ОБЩИЙ, чтобы «позиций: N» не читалось как позиции этого человека. #}
                     {% if draftAct %}
                         <div class="d-flex flex-wrap align-items-center gap-2 p-3 rounded-3 bg-body">
-                            <span class="badge text-bg-secondary"><i class="bi bi-file-earmark-text me-1"></i>Черновик акта списания</span>
-                            <span class="text-body-secondary small">позиций: {{ draftAct.itemCount }}</span>
+                            <span class="badge text-bg-secondary"><i class="bi bi-people me-1"></i>Общий черновик акта (по организации)</span>
+                            <span class="text-body-secondary small">позиций всего: {{ draftAct.itemCount }} — могут быть и других сотрудников</span>
                             <a class="btn btn-soft-success btn-sm ms-auto" href="{{ path('app_cabinet_compliance_writeoff_show', {actId: draftAct.id}) }}">
                                 <i class="bi bi-pencil-square me-1"></i>Оформить
                             </a>
