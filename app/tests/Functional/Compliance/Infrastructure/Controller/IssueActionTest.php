@@ -548,7 +548,11 @@ final class IssueActionTest extends WebTestCase
         $key = $this->personalObligationKeyFor($p, $r, 'Ботинки вне нормы');
         self::assertContains($key, $this->obligationKeys($p), 'личная позиция в проекции до исключения');
 
-        $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/obligation/exclude', $p, $r), ['obligationKey' => $key]);
+        // Подтверждение — общая модалка #deleteModal: ключ в query (data-bs-url), CSRF-интеншн 'delete' в теле.
+        $crawler = $this->client->request('GET', $this->issueUrl($p, $r));
+        $token = (string) $crawler->filter('#deleteModal input[name="_token"]')->attr('value');
+        $url = sprintf('/cabinet/compliance/person/%s/requirement/%s/obligation/exclude?obligationKey=%s', $p, $r, urlencode($key));
+        $this->client->request('POST', $url, ['_token' => $token]);
         self::assertResponseRedirects();
 
         self::assertNotContains($key, $this->obligationKeys($p), 'исключённая позиция ушла из проекции');
