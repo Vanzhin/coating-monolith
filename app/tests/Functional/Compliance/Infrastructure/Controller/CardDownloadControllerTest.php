@@ -482,6 +482,7 @@ final class CardDownloadControllerTest extends WebTestCase
         $text = $this->docxText((string) $this->client->getResponse()->getContent());
         self::assertStringNotContainsString('{{', $text, 'все плейсхолдеры подставлены (нет битых скобок)');
         self::assertStringContainsString('Сидоров', $text, 'член комиссии подставлен (блок commission)');
+        self::assertStringContainsString('Иванов', $text, 'ФИО сотрудника в строке позиции — построчно ({{items.employee_fio}}), не склейка всех людей акта');
     }
 
     /**
