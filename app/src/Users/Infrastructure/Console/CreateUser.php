@@ -13,7 +13,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Validator\Constraints\Email;
-use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Validation;
 
 #[AsCommand(name: 'app:user:create-user', description: 'create user')]
@@ -40,28 +39,14 @@ final class CreateUser extends Command
                 return $input;
             }
         );
-        $password = $io->askHidden('password',
-            function (?string $input) use ($validator) {
-                $violations = $validator->validate($input, [new NotBlank(['allowNull' => true])]);
-                if (0 !== $violations->count()) {
-                    throw new \Exception($violations->get(0)->getMessage());
-                }
+        $password = $io->askHidden('password (leave empty to create a user without a password)');
+        $password = '' === (string) $password ? null : $password;
 
-                return $input;
+        if (null !== $password) {
+            $repeat = $io->askHidden('re-enter password');
+            if ($repeat !== $password) {
+                throw new \Exception('Password is not equal to re-enter password .');
             }
-        );
-        $repeat = $io->askHidden('re-enter password',
-            function (?string $input) use ($validator) {
-                $violations = $validator->validate($input, [new NotBlank(['allowNull' => true])]);
-                if (0 !== $violations->count()) {
-                    throw new \Exception($violations->get(0)->getMessage());
-                }
-
-                return $input;
-            }
-        );
-        if ($repeat !== $password) {
-            throw new \Exception('Password is not equal to re-enter password .');
         }
 
         try {
