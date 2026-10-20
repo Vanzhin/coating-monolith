@@ -15,6 +15,8 @@ final class FakeObligationView implements ObligationView
         private readonly ?\DateTimeImmutable $nextDueAt,
         private readonly ?float $norm,
         private readonly float $held,
+        private readonly bool $periodic,
+        private readonly bool $instructionLike = false,
     ) {
     }
 
@@ -26,7 +28,31 @@ final class FakeObligationView implements ObligationView
         float $held,
         ?\DateTimeImmutable $lastFulfilledAt = new \DateTimeImmutable('2020-01-01'),
     ): self {
-        return new self($active, $lastFulfilledAt, $nextDueAt, $norm, $held);
+        return new self($active, $lastFulfilledAt, $nextDueAt, $norm, $held, false);
+    }
+
+    /** Периодическая обязанность (НЕ инструктаж) — {@see ObligationView::isPeriodic()} true, резолвер считает её ладдером «срок первичен». */
+    public static function periodic(
+        bool $active,
+        ?\DateTimeImmutable $lastFulfilledAt,
+        ?\DateTimeImmutable $nextDueAt,
+        ?float $norm,
+        float $held,
+    ): self {
+        return new self($active, $lastFulfilledAt, $nextDueAt, $norm, $held, true);
+    }
+
+    /**
+     * Инструктаж ({@see ObligationView::isInstructionLike()} true) — норма «1 шт.» фиксирована, held по умолчанию
+     * 0 (форма выдачи для инструктажа количество не запрашивает).
+     */
+    public static function instruction(
+        bool $active,
+        ?\DateTimeImmutable $lastFulfilledAt,
+        ?\DateTimeImmutable $nextDueAt,
+        float $held = 0.0,
+    ): self {
+        return new self($active, $lastFulfilledAt, $nextDueAt, 1.0, $held, true, true);
     }
 
     public function isActive(): bool
@@ -52,5 +78,15 @@ final class FakeObligationView implements ObligationView
     public function heldQuantity(): float
     {
         return $this->held;
+    }
+
+    public function isPeriodic(): bool
+    {
+        return $this->periodic;
+    }
+
+    public function isInstructionLike(): bool
+    {
+        return $this->instructionLike;
     }
 }

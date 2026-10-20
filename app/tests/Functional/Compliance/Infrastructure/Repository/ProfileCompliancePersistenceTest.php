@@ -90,7 +90,7 @@ final class ProfileCompliancePersistenceTest extends KernelTestCase
         $reqId = 'req-'.uniqid('', true);
         $pc = new ProfileCompliance(Uuid::v7(), $profileId);
         $pc->addPersonalObligation(
-            'item-2', $reqId, 'Инструктаж вне нормы', ComplianceType::NonMaterial,
+            'item-2', $reqId, 'Инструктаж вне нормы', ComplianceType::Periodic,
             new Cadence(CadenceKind::ByManufacturerDoc), null,
         );
         $this->repo->add($pc);

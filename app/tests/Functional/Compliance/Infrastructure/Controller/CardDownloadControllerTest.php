@@ -8,6 +8,8 @@ use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\Service\RequirementCardProjector;
 use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
 use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
+use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
 use App\Compliance\Application\UseCase\Command\SignWriteOffAct\SignWriteOffActCommand;
 use App\Compliance\Domain\File\RequirementTemplatePurpose;
@@ -16,12 +18,21 @@ use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
+use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
+use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommandResult;
+use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
+use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommandResult;
+use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommand;
+use App\Personnel\Application\UseCase\Command\CreateProfile\CreateProfileCommandResult;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQueryResult;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommand;
+use App\Reports\Application\UseCase\Command\CreateCounterparty\CreateCounterpartyCommandResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\File\FileStorage;
+use App\Shared\Domain\Service\UuidService;
 use App\Shared\Domain\Templating\RepeatValue;
 use App\Shared\Domain\Templating\TextValue;
 use App\Tests\Support\AuthenticatesActorTrait;
@@ -116,6 +127,65 @@ final class CardDownloadControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('.docx', (string) $this->client->getResponse()->headers->get('Content-Disposition'), 'битый шаблон → дефолтная docx-карточка');
+    }
+
+    /**
+     * Task 4: печатная карточка (.docx) периодической позиции (расходник, крем 1200 мл) печатает НОРМУ-количество —
+     * фикс {@see RequirementCardProjector} (гейт `instanceof MaterialItem` → `instanceof QuantifiedItem`, иначе
+     * `PeriodicItem` молча получал количество null). Экранный hide-предикат инструктажа на печать нормы не
+     * распространяется — здесь позиция расходная (не инструктаж), количество обязано быть видно в любом случае.
+     */
+    public function test_periodic_requirement_card_prints_norm_quantity(): void
+    {
+        $container = $this->client->getContainer();
+        ['profileId' => $profileId, 'requirementId' => $requirementId] = $this->periodicConsumableRequirement();
+
+        /** @var GetProfileQueryResult $profileResult */
+        $profileResult = $container->get(QueryBusInterface::class)->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($profileResult->profile);
+        $requirement = $container->get(RequirementRepositoryInterface::class)->findOneById($requirementId);
+        self::assertNotNull($requirement);
+        $pc = $container->get(ProfileComplianceRepositoryInterface::class)->findByProfile($profileId);
+        self::assertNotNull($pc);
+
+        $data = $container->get(RequirementCardProjector::class)->project($pc, $profileResult->profile, $requirement, new \DateTimeImmutable('2026-07-02'));
+
+        $items = $data->get('items');
+        self::assertInstanceOf(RepeatValue::class, $items);
+        self::assertCount(1, $items->rows);
+        self::assertSame('Крем защитный', $items->rows[0]['label']);
+        self::assertSame('1200', $items->rows[0]['quantity'], 'норма периодической (расходник) печатается — без фикса PeriodicItem молча давал пустое количество');
+        self::assertSame('мл', $items->rows[0]['unit']);
+    }
+
+    /** @return array{profileId: string, requirementId: string} Периодическое требование: крем, норма 1200 мл, 1 раз в год. */
+    private function periodicConsumableRequirement(): array
+    {
+        $bus = $this->client->getContainer()->get(CommandBusInterface::class);
+
+        $pos = $bus->execute(new CreatePositionCommand('Маляр '.uniqid('', true)));
+        \assert($pos instanceof CreatePositionCommandResult);
+        $org = $bus->execute(new CreateCounterpartyCommand('ООО Тест '.uniqid('', true), $this->randomTin()));
+        \assert($org instanceof CreateCounterpartyCommandResult);
+        $dept = $bus->execute(new CreateDepartmentCommand($org->id, 'Цех '.uniqid('', true)));
+        \assert($dept instanceof CreateDepartmentCommandResult);
+        $profile = $bus->execute(new CreateProfileCommand(
+            userUlid: UuidService::generateUlid(),
+            lastName: 'Крем', firstName: 'Крем', middleName: null,
+            positionId: $pos->id, organizationId: $org->id, departmentId: $dept->id,
+            personnelNumber: 'PN-'.uniqid('', true), hiredAt: new \DateTimeImmutable('2024-01-15'),
+            clothing: null, shoes: null, headgear: null, respirator: null, gloves: null, height: null, gender: null,
+        ));
+        \assert($profile instanceof CreateProfileCommandResult);
+
+        $req = $bus->execute(new SaveRequirementCommand(
+            null, 'Периодическая выдача', 'periodic', [$pos->id],
+            [['label' => 'Крем защитный', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1200', 'unit' => 'ml', 'basis' => 'п.9']],
+        ));
+        \assert($req instanceof SaveRequirementCommandResult);
+        $this->client->getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profile->id));
+
+        return ['profileId' => $profile->id, 'requirementId' => $req->id];
     }
 
     private function xlsxUpload(string $projectDir): UploadedFile

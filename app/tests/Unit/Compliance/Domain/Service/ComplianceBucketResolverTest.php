@@ -153,4 +153,123 @@ final class ComplianceBucketResolverTest extends TestCase
         self::assertSame(ComplianceBucket::Ok, $this->r->bucketFor($withinEpsilon, $this->now));
         self::assertSame(ComplianceBucket::Missing, $this->r->bucketFor($outsideEpsilon, $this->now));
     }
+
+    /** Периодическая: срок первичен — держит норму, но срок прошёл → Overdue (бьёт даже held>=норма). */
+    public function test_periodic_overdue_beats_held_at_norm(): void
+    {
+        $row = FakeObligationView::periodic(
+            active: true,
+            lastFulfilledAt: new \DateTimeImmutable('2025-01-01'),
+            nextDueAt: new \DateTimeImmutable('2026-01-01'),
+            norm: 1200.0,
+            held: 1200.0,
+        );
+        self::assertSame(ComplianceBucket::Overdue, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /** Периодическая: недовыдача в пределах срока → Missing. */
+    public function test_periodic_under_issued_in_date_is_missing(): void
+    {
+        $row = FakeObligationView::periodic(
+            true,
+            new \DateTimeImmutable('2026-06-01'),
+            new \DateTimeImmutable('2027-06-01'),
+            1200.0,
+            200.0,
+        );
+        self::assertSame(ComplianceBucket::Missing, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /** Периодическая: инструктаж 1 шт пройден, срок далеко → Ok. */
+    public function test_periodic_fulfilled_in_date_is_ok(): void
+    {
+        $row = FakeObligationView::periodic(
+            true,
+            new \DateTimeImmutable('2026-06-01'),
+            new \DateTimeImmutable('2027-06-01'),
+            1.0,
+            1.0,
+        );
+        self::assertSame(ComplianceBucket::Ok, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /**
+     * Ruling 1: недовыдача И срок-скоро одновременно → Missing, НЕ Soon — недовыдача бьёт Soon, лестница
+     * проверяет её МЕЖДУ Overdue и Soon.
+     */
+    public function test_periodic_under_issued_and_due_soon_is_missing_not_soon(): void
+    {
+        $row = FakeObligationView::periodic(
+            true,
+            new \DateTimeImmutable('2026-10-01'),
+            new \DateTimeImmutable('2026-11-15'),
+            1200.0,
+            200.0,
+        );
+        self::assertSame(ComplianceBucket::Missing, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /**
+     * Не из брифа, но нужно для реальной проверки Ruling 1: недовыдача И срок УЖЕ прошёл одновременно — тут
+     * порядок проверок различим (инвентарный ладдер отдал бы Missing первым, периодический — Overdue).
+     */
+    public function test_periodic_overdue_beats_under_issued_when_both_true(): void
+    {
+        $row = FakeObligationView::periodic(
+            true,
+            new \DateTimeImmutable('2025-01-01'),
+            new \DateTimeImmutable('2026-01-01'), // срок уже прошёл к now
+            1200.0,
+            200.0, // и недовыдано
+        );
+        self::assertSame(ComplianceBucket::Overdue, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /**
+     * Finding 1: инструктаж (isInstructionLike) пройден, срок далеко, НО held=0 (форма выдачи не шлёт
+     * количество для инструктажа) — ветка недовыдачи по количеству для него выключена, бакет Ok, не Missing.
+     */
+    public function test_instruction_like_fulfilled_in_date_is_ok_despite_zero_held(): void
+    {
+        $row = FakeObligationView::instruction(
+            active: true,
+            lastFulfilledAt: new \DateTimeImmutable('2026-06-01'),
+            nextDueAt: new \DateTimeImmutable('2027-06-01'),
+        );
+        self::assertSame(ComplianceBucket::Ok, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /** Инструктаж контролируется ПО ДАТЕ: просрочка бьёт даже при held=0 (количество тут не инвариант вовсе). */
+    public function test_instruction_like_overdue_by_date_despite_zero_held(): void
+    {
+        $row = FakeObligationView::instruction(
+            active: true,
+            lastFulfilledAt: new \DateTimeImmutable('2025-01-01'),
+            nextDueAt: new \DateTimeImmutable('2026-01-01'),
+        );
+        self::assertSame(ComplianceBucket::Overdue, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /** Регрессия: инструктаж, ни разу не пройденный — Missing (как и любая обязанность), несмотря на предикат. */
+    public function test_instruction_like_never_fulfilled_is_missing(): void
+    {
+        $row = FakeObligationView::instruction(active: true, lastFulfilledAt: null, nextDueAt: null);
+        self::assertSame(ComplianceBucket::Missing, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
+
+    /**
+     * Регрессия (не инструктаж): периодический расходник (isInstructionLike=false) недовыдан в пределах срока —
+     * остаётся Missing, как и раньше (undersupply у него по-прежнему блокирующий).
+     */
+    public function test_periodic_consumable_under_issued_stays_missing_not_affected_by_instruction_exception(): void
+    {
+        $row = FakeObligationView::periodic(
+            true,
+            new \DateTimeImmutable('2026-06-01'),
+            new \DateTimeImmutable('2027-06-01'),
+            1200.0,
+            200.0,
+        );
+        self::assertSame(ComplianceBucket::Missing, $this->r->bucketFor($row, new \DateTimeImmutable('2026-10-20')));
+    }
 }

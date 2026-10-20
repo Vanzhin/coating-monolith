@@ -24,6 +24,15 @@ final class IssueRowDTO
     public ?string $quantityUnit = null;
     public ?string $unitTitle = null;
     public string $origin; // norm | personal — персональную (вне нормы) можно убрать из черновика
+    /** Прятать количество/«на руках» — инструктаж (периодическая, норма 1 шт). Источник — {@see \App\Compliance\Application\DTO\ProfileCompliance\ObligationRowDTO::$hideQuantity}, не пересчитывается. */
+    public bool $hideQuantity = false;
+    /**
+     * Показывать поле «Кол-во»/«Ед.» выдачи — строка несёт вводимое количество (материал или периодический
+     * расходник) и не инструктаж. Вычислено ОДНИМ местом в {@see GetIssuePageQueryHandler::issueRow()} из
+     * {@see \App\Compliance\Domain\Type\ComplianceType::requiresQuantity()} и {@see self::$hideQuantity} — твиг
+     * предикат не пересчитывает.
+     */
+    public bool $showAmountInput = false;
     /** Предзаполнение количества выдачи — дефицитом (норма минус held, не ниже 0); null у позиций без нормы. */
     public ?string $deficitValue = null;
     // Черновика больше нет (прямая запись в журнал) — эти поля всегда null, форма падает на fallback

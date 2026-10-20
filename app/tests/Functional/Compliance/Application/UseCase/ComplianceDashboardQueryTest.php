@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Compliance\Application\UseCase;
 
 use App\Compliance\Application\DTO\Dashboard\PersonRowDTO;
+use App\Compliance\Application\DTO\Dashboard\RequirementGroupDTO;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
@@ -76,8 +77,8 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
 
         // 2-е требование на ту же должность → у человека ДВА требования, оба не исполнены (не подписаны).
         $req2 = $this->commandBus->execute(new SaveRequirementCommand(
-            null, 'Журнал инструктажа', 'non_material', [$pr->profile->positionId],
-            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'basis' => 'п.6']],
+            null, 'Журнал инструктажа', 'periodic', [$pr->profile->positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.6']],
         ));
         \assert($req2 instanceof SaveRequirementCommandResult);
         static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
@@ -124,12 +125,12 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
         self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Ok)), $profileId));
     }
 
-    public function test_type_filter_nonmaterial_excludes_material_person(): void
+    public function test_type_filter_periodic_excludes_material_person(): void
     {
         ['profileId' => $profileId] = $this->enrollCompliance();
 
-        // у человека только материальное требование → фильтр по процедурам его убирает
-        self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(type: ComplianceType::NonMaterial)), $profileId));
+        // у человека только материальное требование → фильтр по периодическим его убирает
+        self::assertNull($this->rowOf($this->paged(new ComplianceDashboardFilter(type: ComplianceType::Periodic)), $profileId));
     }
 
     public function test_overdue_counted_and_listed_even_when_hidden_behind_missing_in_same_requirement(): void
@@ -175,6 +176,75 @@ final class ComplianceDashboardQueryTest extends KernelTestCase
             $this->rowOf($this->paged(new ComplianceDashboardFilter(statusBucket: ComplianceBucket::Missing)), $profileId),
             'и в список missing (есть невыданная позиция)',
         );
+    }
+
+    /**
+     * Finding 3: количество инструктажа («1 шт.») прячем в детали человека — спек строки нормы несёт норму +
+     * периодичность, спек инструктажа — только периодичность (та же строка, что ComplianceBucketResolver
+     * теперь не читает как недовыдачу, Finding 1).
+     */
+    public function test_instruction_spec_hides_quantity_but_consumable_shows_it(): void
+    {
+        ['profileId' => $profileId] = $this->enrollCompliance(); // материальное требование, Перчатки 10 пар
+
+        /** @var GetProfileQueryResult $pr */
+        $pr = $this->queryBus->execute(new GetProfileQuery($profileId));
+        self::assertNotNull($pr->profile);
+
+        // Периодическая позиция-инструктаж (норма 1 шт) на той же должности.
+        $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'Журнал инструктажа', 'periodic', [$pr->profile->positionId],
+            [['label' => 'Инструктаж', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'п.6']],
+        ));
+        static::getContainer()->get(ComplianceProjectionRebuilder::class)->rebuild(profileIds: new StringCollection($profileId));
+
+        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
+        self::assertNotNull($row);
+
+        $materialGroup = $this->groupOfType($row, 'material');
+        $periodicGroup = $this->groupOfType($row, 'periodic');
+        self::assertNotNull($materialGroup);
+        self::assertNotNull($periodicGroup);
+
+        self::assertStringContainsString('пара', $materialGroup->rows[0]->spec, 'материальная позиция показывает норму (сумма+единица)');
+        self::assertStringNotContainsString('шт', $periodicGroup->rows[0]->spec, 'инструктаж количество («1 шт.») не показывает — только периодичность');
+    }
+
+    /**
+     * Финальный разбор: бейдж группы брался с типа ПЕРВОЙ строки проекции встреченной в обходе — у смешанного
+     * «Выдача»-требования (инвентарь+расходник) бейдж мог ошибочно читаться как «Периодическая». Группа одна
+     * на requirementId ({@see PersonRowDTOTransformer::fromRows}), поэтому у смешанного требования бакеты
+     * по-прежнему разъезжаются по material/nonMaterial (per-item), а вот `typeLabel` группы обязан быть
+     * «Выдача» (контейнер), не зависеть от того, какая позиция легла в проекцию первой.
+     */
+    public function test_mixed_material_requirement_group_badge_reads_container_type_not_first_item(): void
+    {
+        ['profileId' => $profileId] = $this->enrollCompliance(
+            'Перчатки',
+            extraItems: [
+                ['label' => 'Респиратор (расходник)', 'type' => 'periodic', 'cadenceKind' => 'periodic', 'cadenceNumber' => '3', 'cadenceUnit' => 'month', 'amount' => '6', 'unit' => 'pcs', 'basis' => 'п.11'],
+            ],
+        );
+
+        $row = $this->rowOf($this->paged(new ComplianceDashboardFilter()), $profileId);
+        self::assertNotNull($row);
+        self::assertCount(1, $row->groups, 'инвентарь и расходник — ОДНА карточка требования (одна группа)');
+        self::assertSame('Выдача', $row->groups[0]->typeLabel, 'бейдж карточки — контейнер («Выдача»), не тип первой встреченной позиции');
+
+        // Бакеты при этом по-прежнему считаются per-item: расходник ушёл в nonMaterial, инвентарь — в material.
+        self::assertSame(1, $row->material->total(), 'инвентарная позиция (Перчатки) — в бакете material');
+        self::assertSame(1, $row->nonMaterial->total(), 'расходник (периодическая позиция) — в бакете nonMaterial');
+    }
+
+    private function groupOfType(PersonRowDTO $row, string $type): ?RequirementGroupDTO
+    {
+        foreach ($row->groups as $group) {
+            if ($group->type === $type) {
+                return $group;
+            }
+        }
+
+        return null;
     }
 
     private function paged(ComplianceDashboardFilter $filter): GetPagedComplianceQueryResult

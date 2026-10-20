@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Compliance\Application\Service;
 use App\Compliance\Application\Service\ComplianceObligationProjector;
 use App\Compliance\Application\Service\ComplianceProjectionRebuilder;
 use App\Compliance\Application\UseCase\Command\AddToWriteOffDraft\AddToWriteOffDraftCommand;
+use App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommand;
 use App\Compliance\Application\UseCase\Command\SaveRequirement\SaveRequirementCommandResult;
 use App\Compliance\Application\UseCase\Command\SaveWriteOffAct\SaveWriteOffActCommand;
@@ -15,7 +16,10 @@ use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\CadenceKind;
+use App\Compliance\Domain\Type\ComplianceBucket;
+use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Personnel\Application\UseCase\Command\CreateDepartment\CreateDepartmentCommand;
@@ -82,6 +86,97 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         self::assertEquals(new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), $row->cadenceStruct());
     }
 
+    /**
+     * Периодическая ({@see ComplianceType::Periodic}): held = количество ПОСЛЕДНЕЙ
+     * выдачи, не Σ за всё время — доввыдача после недостачи не копится с прежней (Task 2, ДОП. КОНТЕКСТ).
+     */
+    public function test_periodic_held_is_last_issuance_not_cumulative(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->periodicSolventRequirement();
+
+        $this->issuePeriodic($p, $r, $k, '200', '2026-06-01');
+        $this->projector->projectProfile($p);
+        $this->reload();
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(200.0, $row->heldQuantity(), 'единственная выдача — 200');
+
+        $this->issuePeriodic($p, $r, $k, '1000', '2026-09-01');
+        $this->projector->projectProfile($p);
+        $this->reload();
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(1000.0, $row->heldQuantity(), 'доввыдача НЕ копится: held = последняя (1000), не сумма 1200');
+    }
+
+    /**
+     * Норменная ПЕРИОДИЧЕСКАЯ позиция (не персональная): норма должна попасть в строку проекции
+     * ({@see ObligationProjection::normQuantity()}), иначе лестница резолвера (held<norm→Missing) мёртвая —
+     * недовыдача по норме не ловится, бакет ошибочно читается по одной дате.
+     */
+    public function test_periodic_norm_item_under_issued_and_in_date_is_missing(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $k] = $this->periodicSolventRequirement();
+
+        $this->issuePeriodic($p, $r, $k, '200', '2026-06-01'); // недостаточно (норма 1200), срок далеко (2027-06-01)
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(1200.0, $row->normQuantity(), 'норма периодической НОРМЕННОЙ позиции должна попасть в проекцию');
+        self::assertSame(
+            ComplianceBucket::Missing,
+            (new ComplianceBucketResolver())->bucketFor($row, new \DateTimeImmutable('2026-06-02')),
+            'недовыдано (200 из 1200), срок не подошёл — бакет обязан быть Missing, не Ok/Soon',
+        );
+    }
+
+    /**
+     * Финальный разбор: бейдж группы на дашборде брал тип ПЕРВОЙ строки проекции (order-dependent, у
+     * `findForProfiles` не было ORDER BY) — смешанное «Выдача»-требование (инвентарь+расходник) могло
+     * показать «Периодическая», если первой лежала расходная позиция. Фикс — на каждой строке хранится
+     * КОНТЕЙНЕРНЫЙ тип требования ({@see ObligationProjection::requirementType()}), отдельно от типа позиции
+     * ({@see ObligationProjection::type()}). Проверяем: у смешанного material-требования ОБЕ строки несут
+     * requirement_type=material, хотя их item-type различается (material/periodic).
+     */
+    public function test_mixed_material_requirement_rows_carry_container_type_not_item_type(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r, 'key' => $gloveKey] = $this->enrollCompliance(
+            'Перчатки',
+            extraItems: [
+                ['label' => 'Респиратор (расходник)', 'type' => 'periodic', 'cadenceKind' => 'periodic', 'cadenceNumber' => '3', 'cadenceUnit' => 'month', 'amount' => '6', 'unit' => 'pcs', 'basis' => 'п.11'],
+            ],
+        );
+        $consumableKey = $this->obligationKeyFor($r, 'Респиратор (расходник)');
+
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $rows = $this->projectionRepo->findForProfiles(new StringCollection($p));
+        $gloveRow = $this->rowFor($rows, $gloveKey);
+        $consumableRow = $this->rowFor($rows, $consumableKey);
+
+        self::assertSame(ComplianceType::Material, $gloveRow->type(), 'позиция «Перчатки» — инвентарь');
+        self::assertSame(ComplianceType::Periodic, $consumableRow->type(), 'позиция «Респиратор» — расходник (периодическая)');
+
+        self::assertSame(ComplianceType::Material, $gloveRow->requirementType(), 'контейнер требования — «Выдача»');
+        self::assertSame(
+            ComplianceType::Material,
+            $consumableRow->requirementType(),
+            'расходник лежит в material-требовании — бейдж обязан читать контейнер, а не тип своей позиции',
+        );
+    }
+
+    /** «Периодическая» требование однородно — контейнерный тип совпадает с типом единственной позиции. */
+    public function test_periodic_requirement_row_carries_periodic_container_type(): void
+    {
+        ['profileId' => $p, 'key' => $k] = $this->periodicSolventRequirement();
+
+        $this->projector->projectProfile($p);
+        $this->reload();
+
+        $row = $this->rowFor($this->projectionRepo->findForProfiles(new StringCollection($p)), $k);
+        self::assertSame(ComplianceType::Periodic, $row->requirementType());
+    }
+
     public function test_sign_writeoff_updates_projection_for_all_people_in_one_tx(): void
     {
         ['positionId' => $pos, 'requirementId' => $r, 'key' => $k] = $this->sharedGlovesRequirement();
@@ -146,6 +241,35 @@ final class ComplianceObligationProjectorTest extends KernelTestCase
         \assert($req instanceof SaveRequirementCommandResult);
 
         return ['positionId' => $pos->id, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, 'Перчатки')];
+    }
+
+    /**
+     * @return array{profileId: string, requirementId: string, key: string} периодическое требование (растворитель
+     *                                                                      раз в год, норма 1200 мл) — для проверки held=последняя выдача, не Σ
+     */
+    private function periodicSolventRequirement(): array
+    {
+        $pos = $this->commandBus->execute(new CreatePositionCommand('Маляр '.uniqid('', true)));
+        \assert($pos instanceof CreatePositionCommandResult);
+        $req = $this->commandBus->execute(new SaveRequirementCommand(
+            null, 'Периодическая выдача растворителя', 'periodic', [$pos->id],
+            [['label' => 'Растворитель', 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1200', 'unit' => 'ml', 'basis' => 'п.9']],
+        ));
+        \assert($req instanceof SaveRequirementCommandResult);
+        ['profileId' => $profileId] = $this->enrollProfileForPosition($pos->id);
+
+        return ['profileId' => $profileId, 'requirementId' => $req->id, 'key' => $this->obligationKeyFor($req->id, 'Растворитель')];
+    }
+
+    /** Прямая запись факта в журнал по периодическому требованию — как {@see EnrollsComplianceTrait::issueCard} у материального. */
+    private function issuePeriodic(string $profileId, string $requirementId, string $key, string $amount, string $date): void
+    {
+        $this->commandBus->execute(new RecordIssuanceCommand(
+            $profileId, $requirementId, $date,
+            [['obligationKey' => $key, 'amount' => $amount, 'unit' => 'ml']],
+            cardNumber: 'CARD-PERIODIC',
+        ));
+        $this->reload();
     }
 
     /**

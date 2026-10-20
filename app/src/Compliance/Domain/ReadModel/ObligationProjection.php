@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Compliance\Domain\ReadModel;
 
+use App\Compliance\Domain\Service\ComplianceBucketResolver;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\ObligationView;
 use App\Compliance\Domain\ValueObject\Unit;
@@ -37,6 +37,8 @@ class ObligationProjection implements ObligationView
     // @phpstan-ignore-next-line property.onlyRead
     private string $type;
     // @phpstan-ignore-next-line property.onlyRead
+    private ?string $requirementType;
+    // @phpstan-ignore-next-line property.onlyRead
     private string $cadence;
     // @phpstan-ignore-next-line property.onlyRead
     private ?Cadence $cadenceStruct;
@@ -56,8 +58,6 @@ class ObligationProjection implements ObligationView
     private bool $active;
     // @phpstan-ignore-next-line property.onlyRead
     private string $origin;
-    // @phpstan-ignore-next-line property.onlyRead
-    private ?string $mode;
 
     public function id(): string
     {
@@ -92,6 +92,18 @@ class ObligationProjection implements ObligationView
     public function type(): ComplianceType
     {
         return ComplianceType::from($this->type);
+    }
+
+    /**
+     * Контейнерный тип ТРЕБОВАНИЯ (Выдача/Периодическая) — не тип позиции ({@see self::type()}). Нужен бейджу
+     * карточки требования на дашборде: «Выдача» полиморфна (держит инвентарь и расходник вместе), контейнер
+     * по типу первой попавшейся позиции не определить. NULL — строка материализована до заполнения колонки
+     * ({@see \App\Compliance\Application\Service\ComplianceObligationProjector}, бэкафилл —
+     * `app:compliance:rebuild-projection`) — на этот переходный период падаем на тип позиции.
+     */
+    public function requirementType(): ComplianceType
+    {
+        return null !== $this->requirementType ? ComplianceType::from($this->requirementType) : $this->type();
     }
 
     /** Готовый label-снимок периодичности («ежегодно») — для отображения (дашборд/карточка), без похода в структуру. */
@@ -152,15 +164,30 @@ class ObligationProjection implements ObligationView
         return $this->active;
     }
 
+    /** {@see ObligationView}: периодическая — по своей колонке `type`, без похода в отдельный класс позиции. */
+    public function isPeriodic(): bool
+    {
+        return ComplianceType::Periodic->value === $this->type;
+    }
+
     /** {@see \App\Compliance\Domain\Type\ObligationOrigin} — строкой (`->value`), без завязки на enum в интерфейсе. */
     public function origin(): string
     {
         return $this->origin;
     }
 
-    public function mode(): ?MaterialMode
+    /**
+     * Инструктаж — периодическая позиция с нормой «1 шт.»: количество технического смысла не несёт
+     * («прошёл/не прошёл»), поэтому экраны выдачи/карточки его не показывают. ЕДИНСТВЕННОЕ место предиката —
+     * читатели (DTO-трансформеры) переносят результат дальше готовым булем, не пересчитывают условие сами.
+     * Не используется резолвером/бакетом — там количество полноценный инвариант недовыдачи для любой нормы.
+     */
+    public function isInstructionLike(): bool
     {
-        return null !== $this->mode ? MaterialMode::from($this->mode) : null;
+        return $this->isPeriodic()
+            && Unit::Piece === $this->quantityUnit()
+            && null !== $this->quantity()
+            && abs($this->quantity() - 1.0) < ComplianceBucketResolver::QUANTITY_EPSILON;
     }
 
     /** Идентичность строки — `requirementId|itemId`, формат как у {@see \App\Compliance\Domain\ValueObject\ObligationKey::keyOf}. */

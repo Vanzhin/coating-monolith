@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Compliance\Application\Service;
 
+use App\Compliance\Domain\Aggregate\ProfileCompliance\FulfillmentRecord;
 use App\Compliance\Domain\Aggregate\ProfileCompliance\ProfileCompliance;
 use App\Compliance\Domain\Aggregate\Requirement\Requirement;
 use App\Compliance\Domain\ReadModel\ObligationProjection;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\WriteOffActRepositoryInterface;
-use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Personnel\Application\DTO\Profile\ProfileDTO;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Templating\RenderData;
@@ -91,7 +92,10 @@ final readonly class RequirementCardProjector
     {
         $rows = [];
         foreach ($requirement->getItems() as $item) {
-            $quantity = $item instanceof MaterialItem ? $item->quantity() : null;
+            // Печатная карточка — норма ВСЕГО перечня, количество показываем для любой количественной позиции
+            // (инвентарь и периодическая — сиблинги по {@see QuantifiedItem}); экранный hide-предикат
+            // инструктажа (1 шт) на печать нормы не распространяется.
+            $quantity = $item instanceof QuantifiedItem ? $item->quantity() : null;
             $unit = $quantity?->unit->title() ?? '';
             $cadence = $item->cadence()->label();
             $rows[] = [
@@ -133,8 +137,8 @@ final readonly class RequirementCardProjector
     }
 
     /**
-     * Стр. 2 — ВЕСЬ журнал фактов требования как строки факт-таблицы + возвраты/списания по recordId. Сортировка
-     * по наименованию.
+     * Стр. 2 — ВЕСЬ журнал фактов требования как строки факт-таблицы + возвраты/списания по recordId. Порядок —
+     * по добавлению факта (хронология, id = Uuid v7), без сортировки по наименованию.
      *
      * @param array<string, ObligationProjection> $obligationByKey
      *
@@ -144,8 +148,14 @@ final readonly class RequirementCardProjector
     {
         $returnsByRecord = $this->returnsByRecord($profileCompliance, $requirement->getId());
 
+        // Карточка ведётся в порядке ДОБАВЛЕНИЯ фактов (как бумажный журнал): каждая новая выдача — в конец,
+        // без сортировки по наименованию. id факта — Uuid v7 (время создания в префиксе), поэтому сортировка
+        // по id по возрастанию = хронология добавления.
+        $records = $profileCompliance->recordsForRequirement($requirement->getId());
+        usort($records, static fn (FulfillmentRecord $a, FulfillmentRecord $b): int => $a->getId() <=> $b->getId());
+
         $rows = [];
-        foreach ($profileCompliance->recordsForRequirement($requirement->getId()) as $record) {
+        foreach ($records as $record) {
             $obligation = $obligationByKey[$record->obligationKey()] ?? null;
             $label = null !== $obligation ? $obligation->label() : $profileCompliance->obligationLabelOf($requirement, $record->obligationKey());
             $quantity = $record->quantity();
@@ -178,8 +188,6 @@ final readonly class RequirementCardProjector
             }
             $rows[] = $row;
         }
-
-        usort($rows, static fn (array $a, array $b): int => strnatcasecmp($a['name'], $b['name']));
 
         return $rows;
     }

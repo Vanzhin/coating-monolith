@@ -107,7 +107,7 @@
                         <div class="text-body-secondary small mt-1" data-staged-file-target="name"></div>
                     </div>
 
-                    <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section"
+                    <div id="sec-items" class="mb-3 fsec" data-form-scrollspy-target="section"
                          data-controller="writeoff-fill">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <h2 class="h6 mb-0">Позиции к списанию</h2>
@@ -121,18 +121,29 @@
                             <div class="p-4 rounded-3 bg-body text-center text-body-secondary">Нет действующих позиций для списания.</div>
                         {% endif %}
                         {% for g in personGroups %}
-                            <div class="text-body-secondary small fw-semibold mb-2{{ not loop.first ? ' mt-3' : '' }}">{{ g.fio }}{% if g.position %} · {{ g.position }}{% endif %} · позиций: {{ g.count }}</div>
+                            <div class="p-3 mb-3 rounded-3 bg-body-tertiary" data-writeoff-group>
+                            <div class="d-flex flex-wrap align-items-center gap-2 report-block-toggle" role="button"
+                                 data-bs-toggle="collapse" data-bs-target="#wo-grp-d-{{ loop.index }}" aria-expanded="false" aria-controls="wo-grp-d-{{ loop.index }}">
+                                <span class="fw-semibold">{{ g.fio }}</span>
+                                {% if g.position %}<span class="text-body-secondary small">{{ g.position }}</span>{% endif %}
+                                <span class="badge text-bg-light" data-writeoff-count>позиций: {{ g.count }}</span>
+                                <i class="bi bi-chevron-down report-block-chevron ms-auto"></i>
+                            </div>
+                            <div class="collapse mt-2" id="wo-grp-d-{{ loop.index }}">
                             {% for p in g.positions %}
-                                {% embed 'admin/compliance/_item_card.html.twig' with {name: p.label, meta: p.meta, p: p, i: p.index, reasons: reasons} %}
+                                {% embed 'admin/compliance/_item_card.html.twig' with {name: p.label, meta: p.meta, p: p, i: p.index, reasons: reasons, attrs: 'data-writeoff-row'} %}
                                     {% block control %}
-                                        <div class="text-end" style="width: 8rem;">
-                                            <label class="form-label small mb-1">Списать</label>
-                                            <div class="d-flex align-items-baseline gap-1 justify-content-end">
-                                                <input type="number" min="0" max="{{ p.held }}" step="any" inputmode="decimal" class="form-control form-control-sm"
-                                                       name="portions[{{ i }}][quantity]" value="{{ p.quantity }}" placeholder="0"
-                                                       data-writeoff-fill-target="qty">
-                                                <span class="text-body-secondary small">{{ p.unit }}</span>
+                                        <div class="d-flex align-items-end gap-2">
+                                            <div class="text-end" style="width: 8rem;">
+                                                <label class="form-label small mb-1">Списать</label>
+                                                <div class="d-flex align-items-baseline gap-1 justify-content-end">
+                                                    <input type="number" min="0" max="{{ p.held }}" step="any" inputmode="decimal" class="form-control form-control-sm"
+                                                           name="portions[{{ i }}][quantity]" value="{{ p.quantity }}" placeholder="0"
+                                                           data-writeoff-fill-target="qty">
+                                                    <span class="text-body-secondary small">{{ p.unit }}</span>
+                                                </div>
                                             </div>
+                                            <button type="button" class="btn btn-outline-danger btn-sm flex-shrink-0" data-action="writeoff-fill#remove" aria-label="Убрать позицию"><i class="bi bi-trash"></i></button>
                                         </div>
                                     {% endblock %}
                                     {% block footer %}
@@ -147,6 +158,8 @@
                                     {% endblock %}
                                 {% endembed %}
                             {% endfor %}
+                            </div>
+                            </div>
                         {% endfor %}
                     </div>
 
@@ -155,10 +168,18 @@
 
                 {% include 'components/delete_modal.html.twig' %}
             {% else %}
-                <div id="sec-items" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                <div id="sec-items" class="mb-3 fsec" data-form-scrollspy-target="section">
                     <h2 class="h6 mb-3">Списано{% if actDate %} · {{ actDate }}{% endif %}</h2>
                     {% for g in signedGroups %}
-                        <div class="text-body-secondary small fw-semibold mb-2{{ not loop.first ? ' mt-3' : '' }}">{{ g.fio }}{% if g.position %} · {{ g.position }}{% endif %} · позиций: {{ g.count }}</div>
+                        <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                        <div class="d-flex flex-wrap align-items-center gap-2 report-block-toggle" role="button"
+                             data-bs-toggle="collapse" data-bs-target="#wo-grp-s-{{ loop.index }}" aria-expanded="false" aria-controls="wo-grp-s-{{ loop.index }}">
+                            <span class="fw-semibold">{{ g.fio }}</span>
+                            {% if g.position %}<span class="text-body-secondary small">{{ g.position }}</span>{% endif %}
+                            <span class="badge text-bg-light">позиций: {{ g.count }}</span>
+                            <i class="bi bi-chevron-down report-block-chevron ms-auto"></i>
+                        </div>
+                        <div class="collapse mt-2" id="wo-grp-s-{{ loop.index }}">
                         {% for it in g.positions %}
                             {% embed 'admin/compliance/_item_card.html.twig' with {name: it.label, meta: it.meta, it: it} %}
                                 {% block control %}
@@ -172,6 +193,8 @@
                                 {% endblock %}
                             {% endembed %}
                         {% endfor %}
+                        </div>
+                        </div>
                     {% endfor %}
                 </div>
 

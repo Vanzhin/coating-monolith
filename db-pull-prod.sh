@@ -95,7 +95,7 @@ restore_dump() {
   [[ -s "$file" ]] || { echo "!! Файл дампа не найден/пустой: $file" >&2; exit 1; }
 
   if [[ "$ASSUME_YES" -ne 1 ]]; then
-    read -r -p "Локальная БД будет ПЕРЕЗАПИСАНА из $file. Продолжить? [y/N] " ans
+    read -r -p "Локальная схема public будет ПОЛНОСТЬЮ пересоздана (DROP SCHEMA) и залита из $file. Продолжить? [y/N] " ans
     [[ "$ans" =~ ^[yY]$ ]] || { echo "Отменено."; exit 0; }
   fi
 
@@ -105,6 +105,18 @@ restore_dump() {
     docker compose exec -T "$DB_SERVICE" sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null 2>&1 && break
     sleep 1
   done
+
+  # Полный снос локальной схемы ПЕРЕД заливкой. pg_dump --clean дропает только таблицы, которые ЕСТЬ в
+  # дампе (= на проде). Таблицы, заведённые локально миграциями, но ещё НЕ раскатанные на прод (новые
+  # таблицы незамёрженного деплоя), в дампе отсутствуют — их --clean не трогает, и локальные тест-данные в
+  # них переживают раскат, смешиваясь со свежим продом. Дропаем public целиком, чтобы локаль была ТОЧНОЙ
+  # копией прода, без осиротевших пост-прод таблиц. ON_ERROR_STOP=1 — если снос не удался, раскат отменяем.
+  echo ">> Чищу локальную схему (DROP SCHEMA public CASCADE) ..." >&2
+  # client_min_messages=warning глушит простыню NOTICE «drop cascades to ...» (десятки объектов) —
+  # на экране остаются только реальные ошибки (ON_ERROR_STOP=1 всё равно оборвёт при сбое).
+  docker compose exec -T "$DB_SERVICE" \
+    sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SET client_min_messages=warning; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"' \
+    || { echo "!! Не удалось очистить локальную схему — раскат отменён." >&2; exit 1; }
 
   # болтовню psql (NOTICE от DROP ... IF EXISTS и т.п.) уводим в лог, на экране — только индикатор
   local log="$DUMP_DIR/restore-$(date +%Y%m%d-%H%M%S).log"

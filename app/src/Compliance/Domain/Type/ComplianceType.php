@@ -5,33 +5,62 @@ declare(strict_types=1);
 namespace App\Compliance\Domain\Type;
 
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 
 /**
- * Тип требования — единственный источник истины о том, чем требование является. Два глобальных вида:
- * материальное (выдаётся в количестве — СИЗ) и нематериальное (событие без количества — инструктаж/медосмотр).
+ * Тип требования — единственный источник истины о том, чем требование является. Виды: материальное
+ * (инвентарь, выдаётся в количестве, учитывается остаток — СИЗ) и периодическое (событие, которое всегда
+ * в количестве, но остаток не ведётся — проходится/выдаётся раз в N: инструктаж, медосмотр, расходник).
  * Позиция типа не хранит: свой класс она заявляет через {@see RequirementItemInterface::type()}, а тип требования
- * решает, какой класс позиции собрать из хранилища ({@see self::makeItem()}) и какую позицию принять.
+ * решает, какой класс позиции собрать из хранилища ({@see self::makeItem()}). Какие виды позиций требование
+ * принимает в одной карточке — решает {@see self::allowsMixedItems()}: «Выдача» держит инвентарь и расходник
+ * вместе (личная карточка СИЗ), «Периодическая» — только позиции своего вида (см. {@see
+ * \App\Compliance\Domain\Aggregate\Requirement\Requirement::supports()}).
  * Новый вид = новый case + своя ветка в makeItem + свой класс позиции; ядро (Requirement) не трогаем.
  */
 enum ComplianceType: string
 {
     case Material = 'material';
-    case NonMaterial = 'non_material';
+    case Periodic = 'periodic';
 
     public function title(): string
     {
         return match ($this) {
             self::Material => 'Выдача',
-            self::NonMaterial => 'Процедура',
+            self::Periodic => 'Периодическая',
         };
     }
 
-    /** Материальное требование выдаётся в количестве (СИЗ); нематериальное — событие без количества. */
+    /**
+     * Оба вида требования выдаются/проходятся в количестве (различает их учёт остатка — только у материального).
+     * Метод — именованная точка расширения: появится вид без количества, здесь будет match по кейсам
+     * (сейчас `true` для обоих — phpstan иначе бьёт «always true» на exhaustive-сравнении с 2 кейсами).
+     */
     public function requiresQuantity(): bool
     {
-        return self::Material === $this;
+        return true;
+    }
+
+    /**
+     * Журнал (инструктаж/процедура) — атрибут периодического требования, не выдачи СИЗ. Match вместо простого
+     * bool, чтобы новый кейс был вынужден явно решить, несёт ли он журнал.
+     */
+    public function carriesJournal(): bool
+    {
+        return match ($this) {
+            self::Material => false,
+            self::Periodic => true,
+        };
+    }
+
+    /** «Выдача» (личная карточка СИЗ) держит и инвентарь, и расходник; «Периодическая» — только периодические. */
+    public function allowsMixedItems(): bool
+    {
+        return match ($this) {
+            self::Material => true,
+            self::Periodic => false,
+        };
     }
 
     /**
@@ -44,7 +73,7 @@ enum ComplianceType: string
     {
         return match ($this) {
             self::Material => MaterialItem::fromArray($data),
-            self::NonMaterial => NonMaterialItem::fromArray($data),
+            self::Periodic => PeriodicItem::fromArray($data),
         };
     }
 }

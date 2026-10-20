@@ -16,7 +16,7 @@ use App\Shared\Application\Query\QueryHandlerInterface;
 
 /**
  * Лента истории ОДНОЙ позиции (obligationKey): факты выдачи журнала + порции списания, ссылающиеся на них,
- * хронологически (от старых к новым). Выдачи — из агрегата {@see ProfileCompliance::recordsForRequirement};
+ * по дате от свежих к старым. Выдачи — из агрегата {@see ProfileCompliance::recordsForRequirement};
  * списания — из самостоятельного кросс-персон агрегата {@see WriteOffAct} (подписанные акты требования,
  * содержащие строки этого профиля — {@see WriteOffActRepositoryInterface::findSignedForProfileRequirement}),
  * сматченные с выдачами по recordId.
@@ -63,9 +63,10 @@ final readonly class GetObligationHistoryQueryHandler implements QueryHandlerInt
             }
         }
 
-        // usort стабилен (PHP 8+): при равенстве дат выдачи остаются раньше списаний той же даты — порядок
-        // добавления ($events собран «сперва все выдачи, затем все списания») это гарантирует.
-        usort($events, static fn (ObligationHistoryEventDTO $a, ObligationHistoryEventDTO $b): int => $a->date <=> $b->date);
+        // Лента — от свежих к старым (по дате, убывание). usort стабилен (PHP 8+): при равенстве дат выдачи
+        // остаются раньше списаний той же даты — порядок добавления ($events собран «сперва все выдачи, затем
+        // все списания») это гарантирует.
+        usort($events, static fn (ObligationHistoryEventDTO $a, ObligationHistoryEventDTO $b): int => $b->date <=> $a->date);
 
         return new GetObligationHistoryQueryResult($events);
     }

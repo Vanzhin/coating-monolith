@@ -32,10 +32,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Прохождение не материального требования (журнал ОТ) журнальной записью ({@see RecordIssuanceCommand} →
+ * Прохождение периодического требования-инструктажа журнальной записью ({@see RecordIssuanceCommand} →
  * `recordInstruction`): поля `InstructionDetails` захватываются прямо на неизменяемый факт журнала, без акта-
- * документа. Инвариант полноты обязательных полей — в домене, проверен в {@see RecordIssuanceTest}; здесь же —
- * печать журнала поверх прямой записи: {@see RequirementCardProjector} больше не привязан к акту-документу,
+ * документа — независимо от JournalKind (периодическая позиция его структурно не несёт, см.
+ * `ProfileComplianceTest::test_record_instruction_accepts_incomplete_fields_since_periodic_has_no_journal_kind`).
+ * Печать журнала поверх прямой записи: {@see RequirementCardProjector} больше не привязан к акту-документу,
  * его лог — весь журнал фактов требования, включая записи без документа.
  */
 final class InstructionIssuanceTest extends KernelTestCase
@@ -47,7 +48,7 @@ final class InstructionIssuanceTest extends KernelTestCase
 
     public function test_recorded_instruction_carries_details_to_journal_fact(): void
     {
-        [$bus, $repo, $em, $profileId, $key] = $this->setupNonMaterial();
+        [$bus, $repo, $em, $profileId, $key] = $this->setupPeriodicInstruction();
 
         $bus->execute(new RecordIssuanceCommand(
             $profileId, $this->requirementId, '2026-08-05',
@@ -94,7 +95,7 @@ final class InstructionIssuanceTest extends KernelTestCase
     /**
      * @return array{0: CommandBusInterface, 1: ProfileComplianceRepositoryInterface, 2: EntityManagerInterface, 3: string, 4: string}
      */
-    private function setupNonMaterial(): array
+    private function setupPeriodicInstruction(): array
     {
         self::bootKernel();
         $this->authenticateAsSystem();
@@ -118,10 +119,11 @@ final class InstructionIssuanceTest extends KernelTestCase
         ));
         \assert($profile instanceof CreateProfileCommandResult);
 
+        // JournalKind структурно недостижим для периодической (requiresQuantity) — не передаём, поля
+        // инструктажа захватываются прямо на факт независимо от него (см. докблок класса).
         $req = $bus->execute(new SaveRequirementCommand(
-            null, 'Журнал инструктажа на рабочем месте', 'non_material', [$pos->id],
-            [['label' => self::LABEL, 'cadenceKind' => 'periodic', 'cadenceNumber' => '6', 'cadenceUnit' => 'month', 'basis' => 'ГОСТ 12.0.004']],
-            journalKind: 'workplace_ot',
+            null, 'Журнал инструктажа на рабочем месте', 'periodic', [$pos->id],
+            [['label' => self::LABEL, 'cadenceKind' => 'periodic', 'cadenceNumber' => '6', 'cadenceUnit' => 'month', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'ГОСТ 12.0.004']],
         ));
         \assert($req instanceof SaveRequirementCommandResult);
         $this->requirementId = $req->id;

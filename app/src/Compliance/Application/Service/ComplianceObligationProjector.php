@@ -9,10 +9,9 @@ use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Repository\ProfileComplianceRepositoryInterface;
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\ValueObject\Cadence;
-use App\Compliance\Domain\ValueObject\Item\MaterialItem;
+use App\Compliance\Domain\ValueObject\Item\QuantifiedItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Personnel\Application\UseCase\Query\GetProfile\GetProfileQuery;
@@ -125,10 +124,15 @@ final readonly class ComplianceObligationProjector
         $keptItemIds = [];
         /** @var array<string, string> $requirementNames requirementId => name (норменные уже загружены; для персональных — лениво) */
         $requirementNames = [];
+        /** @var array<string, ComplianceType> $requirementTypes requirementId => КОНТЕЙНЕРНЫЙ тип требования
+         *  (Выдача/Периодическая) — не тип позиции; норменные уже загружены, для персональных — лениво,
+         *  тем же походом в репозиторий, что и за именем (см. цикл 2 ниже). */
+        $requirementTypes = [];
 
         // 1. Норменные строки живой нормы.
         foreach ($requirements as $requirement) {
             $requirementNames[$requirement->getId()] = $requirement->getName();
+            $requirementTypes[$requirement->getId()] = $requirement->getType();
             foreach ($requirement->getItems() as $item) {
                 $key = ObligationKey::keyOf($requirement->getId(), $item->id());
                 if (in_array($key, $excluded, true)) {
@@ -136,8 +140,8 @@ final readonly class ComplianceObligationProjector
                 }
                 $rows[$key] = $this->buildRow(
                     $profileId, $requirement->getId(), $item->id(), $requirement->getName(), $item->label(),
-                    $item->type(), $item->cadence(), $item instanceof MaterialItem ? $item->quantity() : null,
-                    $departmentId, ObligationOrigin::Norm->value, $item instanceof MaterialItem ? $item->mode() : null,
+                    $item->type(), $requirement->getType(), $item->cadence(), $item instanceof QuantifiedItem ? $item->quantity() : null,
+                    $departmentId, ObligationOrigin::Norm->value,
                     $records, $key,
                 );
                 $keptItemIds[$requirement->getId()][] = $item->id();
@@ -153,12 +157,23 @@ final readonly class ComplianceObligationProjector
             if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds->getList())) {
                 continue; // точечная пересборка чужие требования не трогает
             }
-            $requirementName = $requirementNames[$personal->requirementId]
-                ??= $this->requirements->findOneById($personal->requirementId)?->getName() ?? '';
+            if (!isset($requirementNames[$personal->requirementId])) {
+                // Ленивый поход ОДИН раз на requirementId — результат сразу кормит оба кэша (имя + контейнерный
+                // тип), второй отдельный запрос за типом не нужен. Требование могло уже уйти из нормы (личная
+                // декларация вне нормы живёт и без него) — тогда контейнерный тип неизвестен, берём тип САМОЙ
+                // декларации как приближение (на смешанной «Выдаче» позиция вне нормы может быть расходником,
+                // см. {@see \App\Compliance\Application\UseCase\Command\RecordIssuance\RecordIssuanceCommandHandler::materializePersonalItems}
+                // — декларация больше НЕ обязана совпадать типом с контейнером). Влияет только на поле
+                // `requirement_type` отображения ушедшего из нормы требования, не на `held`/списание — те
+                // считаются по типу самой позиции (`$personal->type`), переданному ниже отдельно.
+                $lookedUp = $this->requirements->findOneById($personal->requirementId);
+                $requirementNames[$personal->requirementId] = $lookedUp?->getName() ?? '';
+                $requirementTypes[$personal->requirementId] = $lookedUp?->getType() ?? $personal->type;
+            }
             $rows[$key] = $this->buildRow(
-                $profileId, $personal->requirementId, $personal->itemId, $requirementName,
-                $personal->label, $personal->type, $personal->cadence, $personal->quantity,
-                $departmentId, ObligationOrigin::Personal->value, null, $records, $key,
+                $profileId, $personal->requirementId, $personal->itemId, $requirementNames[$personal->requirementId],
+                $personal->label, $personal->type, $requirementTypes[$personal->requirementId], $personal->cadence, $personal->quantity,
+                $departmentId, ObligationOrigin::Personal->value, $records, $key,
             );
             $keptItemIds[$personal->requirementId][] = $personal->itemId;
         }
@@ -193,15 +208,15 @@ final readonly class ComplianceObligationProjector
         string $requirementName,
         string $label,
         ComplianceType $type,
+        ComplianceType $requirementType,
         Cadence $cadence,
         ?Quantity $quantity,
         string $departmentId,
         string $origin,
-        ?MaterialMode $mode,
         array $records,
         string $key,
     ): array {
-        [$lastFulfilledAt, $nextDueAt, $held, $active] = $this->computeFromFacts($records, $key, $cadence);
+        [$lastFulfilledAt, $nextDueAt, $held, $active] = $this->computeFromFacts($records, $key, $cadence, $type);
 
         return [
             'id' => (string) Uuid::v7(), // на ON CONFLICT существующий id сохраняется (в SET не входит)
@@ -211,6 +226,10 @@ final readonly class ComplianceObligationProjector
             'requirement_name' => $requirementName,
             'label' => $label,
             'type' => $type->value,
+            // Контейнерный тип ТРЕБОВАНИЯ (Выдача/Периодическая) — отдельно от типа позиции выше: «Выдача»
+            // полиморфна (инвентарь+расходник в одной карточке), бейдж дашборда обязан читать контейнер
+            // ({@see \App\Compliance\Domain\ReadModel\ObligationProjection::requirementType()}).
+            'requirement_type' => $requirementType->value,
             'cadence' => $cadence->label(),
             // Структурная периодичность (kind+число+единица) — JSONB
             // ({@see \App\Compliance\Infrastructure\Database\DBAL\CadenceType}). Нужна форме выдачи для
@@ -224,20 +243,24 @@ final readonly class ComplianceObligationProjector
             'held_quantity' => $held,
             'active' => $active,
             'origin' => $origin,
-            'mode' => $mode?->value,
+            // Режим снят вместе с MaterialMode (расходники теперь периодические, не материальные) — колонка
+            // остаётся nullable для обратной совместимости схемы, физический дроп — отдельной миграцией.
+            'mode' => null,
         ];
     }
 
     /**
-     * Время-независимые поля из журнала фактов позиции: held = Σ на руках по фактам, lastFulfilledAt = дата
-     * последнего НЕ истощённого факта, nextDueAt — через {@see ObligationDueCalculator}, active = есть хотя бы
-     * один факт по позиции (любая запись журнала выдана).
+     * Время-независимые поля из журнала фактов позиции: lastFulfilledAt = дата последнего НЕ истощённого факта,
+     * nextDueAt — через {@see ObligationDueCalculator}, active = есть хотя бы один факт по позиции (любая запись
+     * журнала выдана). `held` зависит от типа обязанности: инвентарь (материальная) — Σ на руках по всем фактам
+     * (накопительно, списания уменьшают); периодическая — количество ТОЛЬКО самой свежей выдачи (доввыдача не
+     * копится, старые факты не складываются с новыми — "последняя выдача", а не "сумма за всё время").
      *
      * @param FulfillmentRecord[] $records
      *
      * @return array{0: ?\DateTimeImmutable, 1: ?\DateTimeImmutable, 2: float, 3: bool}
      */
-    private function computeFromFacts(array $records, string $key, Cadence $cadence): array
+    private function computeFromFacts(array $records, string $key, Cadence $cadence, ComplianceType $type): array
     {
         $latest = null;
         $held = 0.0;
@@ -252,6 +275,11 @@ final readonly class ComplianceObligationProjector
             if ($isCurrent && (null === $latest || $record->fulfilledAt() > $latest->fulfilledAt())) {
                 $latest = $record;
             }
+        }
+
+        if (ComplianceType::Periodic === $type) {
+            // Периодическая не накапливает: held = количество самой свежей (по fulfilledAt) выдачи, не сумма.
+            $held = $latest?->quantity()->amount ?? 0.0;
         }
 
         $lastFulfilledAt = $latest?->fulfilledAt();

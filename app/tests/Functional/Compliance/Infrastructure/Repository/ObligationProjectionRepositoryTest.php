@@ -8,7 +8,6 @@ use App\Compliance\Domain\Repository\ObligationProjectionFilter;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\ObligationOrigin;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
@@ -161,6 +160,7 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'requirement_name' => 'Тестовое требование',
             'label' => 'Тестовая позиция',
             'type' => ComplianceType::Material->value,
+            'requirement_type' => ComplianceType::Material->value,
             'cadence' => 'periodic',
             'cadence_struct' => json_encode($cadenceStruct->jsonSerialize(), JSON_THROW_ON_ERROR),
             'quantity' => 1.0,
@@ -171,7 +171,8 @@ final class ObligationProjectionRepositoryTest extends KernelTestCase
             'held_quantity' => $held,
             'active' => $active,
             'origin' => ObligationOrigin::Norm->value,
-            'mode' => MaterialMode::Inventoried->value,
+            // MaterialMode снят — колонка остаётся nullable, проектор всегда пишет NULL (не ORM-маппится).
+            'mode' => null,
         ];
     }
 }

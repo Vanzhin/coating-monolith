@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Compliance\Application\DTO\Requirement;
 
 /**
- * Позиция требования для формы/показа. Типа не несёт — он на требовании. cadenceNumber/amount/unit — для
- * полей ввода; *Label — для показа. Количество и mode заполнены только у материального требования
- * (mode='' у нематериального). id — стабильный идентификатор позиции, нужен форме для round-trip правки.
+ * Позиция требования для формы/показа. type — вид ЭТОЙ позиции (material/periodic): у «Выдачи» они могут
+ * отличаться от типа требования (инвентарь+расходник в одной карточке), у «Периодической» всегда совпадает.
+ * cadenceNumber/amount/unit — для полей ввода; *Label — для показа. Количество заполнено у обоих видов
+ * позиции (requiresQuantity()). id — стабильный идентификатор позиции, нужен форме для round-trip правки.
  */
 final class RequirementItemDTO
 {
     public string $id;
     public string $label;
+    public string $type;
     public string $cadenceKind;
     public ?int $cadenceNumber = null;
     public ?string $cadenceUnit = null;
@@ -21,5 +23,4 @@ final class RequirementItemDTO
     public ?string $unit = null;
     public string $quantityLabel = '';
     public string $basis;
-    public string $mode = '';
 }

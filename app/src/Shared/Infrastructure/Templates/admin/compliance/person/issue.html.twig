@@ -12,8 +12,10 @@
 {% set bucketIcon = {ok: 'bi-check-circle', soon: 'bi-clock', overdue: 'bi-exclamation-triangle', missing: 'bi-x-circle'} %}
 
 {# Строка добавляемой персональной позиции (вне нормы). Один макрос на server-render существующих строк и на
-   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — только для материального акта. #}
-{% macro personal_row(prefix, row, requirementType, units, instructionGroups) %}
+   <template> новой — чтобы не дублировать разметку. Поля кол-ва/ед. — под требованием, несущим количество
+   (material/periodic); админ заполнит их или оставит пустыми — ad-hoc позиция не привязана к норме/проекции,
+   поэтому точного «это инструктаж» тут не определить (это признак КОНКРЕТНОЙ позиции нормы, не требования). #}
+{% macro personal_row(prefix, row, requirementType, units, instructionGroups, requirementRequiresQuantity, requirementAllowsMixed) %}
     <div class="p-3 mb-2 rounded-3 bg-body" data-report-list-rows-target="row">
         <div class="row g-2">
             <div class="col-12 col-md-5">
@@ -25,6 +27,8 @@
                     <label class="form-label small mb-1">Модель / марка / артикул</label>
                     <input type="text" name="{{ prefix }}[note]" value="{{ row.note|default('') }}" class="form-control" placeholder="Модель, марка, артикул, класс защиты">
                 </div>
+            {% endif %}
+            {% if requirementRequiresQuantity %}
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Кол-во</label>
                     <input type="number" min="0" step="any" inputmode="decimal" name="{{ prefix }}[amount]" value="{{ row.amount|default('') }}" class="form-control">
@@ -33,6 +37,18 @@
                     <label class="form-label small mb-1">Ед.</label>
                     <select name="{{ prefix }}[unit]" class="form-select">
                         {% for u in units %}<option value="{{ u.value }}"{{ row.unit|default('') == u.value ? ' selected' : '' }}>{{ u.title }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% if requirementAllowsMixed %}
+                {# Вне нормы позиция на смешанной «Выдаче» может быть и инвентарём, и расходником (см.
+                   admin/compliance/requirements/_macros.html.twig item_row — тот же выбор у норменной позиции):
+                   дефолт — инвентарь, домен хендлера подставит его же, если поле не придёт вовсе. #}
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Вид</label>
+                    <select name="{{ prefix }}[type]" class="form-select">
+                        <option value="material"{{ row.type|default('material') == 'material' ? ' selected' : '' }}>Инвентарь</option>
+                        <option value="periodic"{{ row.type|default('material') == 'periodic' ? ' selected' : '' }}>Расходник</option>
                     </select>
                 </div>
             {% endif %}
@@ -162,13 +178,14 @@
                         } %}
                             {% block meta %}
                                 <div class="text-body-secondary small">
-                                    <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}{% if o.nextDueAt %} · <i class="bi bi-arrow-repeat me-1" title="Следующая выдача"></i>{{ o.nextDueAt }}{% endif %}
+                                    <i class="bi bi-clock-history me-1" title="Периодичность"></i>{{ o.cadenceLabel }}{% if o.quantityLabel and not o.hideQuantity %} · <i class="bi bi-box-seam me-1" title="Норма"></i>{{ o.quantityLabel }}{% endif %}{% if o.lastFulfilledAt %} · <i class="bi bi-calendar-check me-1" title="Последняя выдача"></i>{{ o.lastFulfilledAt }}{% endif %}{% if o.nextDueAt %} · <i class="bi bi-arrow-repeat me-1" title="Следующая выдача"></i>{{ o.nextDueAt }}{% endif %}
                                 </div>
                             {% endblock %}
                             {% block control %}
                                 <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
                                     <span class="badge {{ bucketBadge[o.bucket] }} fw-normal"><i class="bi {{ bucketIcon[o.bucket] }} me-1"></i>{{ o.bucketLabel }}</span>
-                                    {% if o.type == 'material' %}
+                                    {# Инструктаж (периодическая, норма 1 шт) — количество не несёт смысла, прячем «на руках». #}
+                                    {% if o.quantityValue and not o.hideQuantity %}
                                         <span class="badge text-bg-{{ o.heldTone }} fw-normal">на руках {{ o.held }}{% if o.quantityValue %} / {{ o.quantityValue }}{% endif %} {{ o.unitTitle }}</span>
                                     {% endif %}
                                 </div>
@@ -195,7 +212,7 @@
                                                data-cadence-kind="{{ o.cadenceKind }}" data-cadence-number="{{ o.cadenceNumber }}" data-cadence-unit="{{ o.cadenceUnit }}">
                                         <div class="form-text">След. выдача: <span data-next-due>—</span></div>
                                     </div>
-                                    {% if o.type == 'material' %}
+                                    {% if o.showAmountInput %}
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">Кол-во</label>
                                             <input type="number" min="0" step="any" inputmode="decimal" name="items[{{ i }}][amount]" class="form-control"
@@ -217,6 +234,8 @@
                                                 </select>
                                             {% endif %}
                                         </div>
+                                    {% endif %}
+                                    {% if o.type == 'material' %}
                                         <div class="col-6 col-md-2">
                                             <label class="form-label small mb-1">% износа</label>
                                             <input type="number" min="0" max="100" step="any" inputmode="decimal" name="items[{{ i }}][wearPercent]" class="form-control" value="{{ s.wearPercent|default(o.savedWear) }}" placeholder="0">
@@ -291,9 +310,9 @@
                         <label class="form-label fw-semibold">Добавить позицию (вне нормы)</label>
                         <div class="form-text mb-2">Персональная позиция сотрудника. Срок окончания обязателен.</div>
                         <div data-report-list-rows-target="rows">
-                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([])) }}{% endfor %}
+                            {% for row in inputData.personalItems|default([]) %}{{ personal.personal_row('personalItems[' ~ loop.index0 ~ ']', row, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity, requirementAllowsMixed|default(false)) }}{% endfor %}
                         </div>
-                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([])) }}</template>
+                        <template data-report-list-rows-target="template">{{ personal.personal_row('personalItems[__i__]', {}, requirementType, units, instructionGroups|default([]), requirementRequiresQuantity, requirementAllowsMixed|default(false)) }}</template>
                         <button type="button" class="btn btn-soft-success btn-sm mt-1" data-action="report-list-rows#add"><i class="bi bi-plus-lg me-1"></i>Добавить позицию</button>
                     </div>
                 </div>

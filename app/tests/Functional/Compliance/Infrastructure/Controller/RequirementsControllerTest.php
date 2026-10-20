@@ -68,6 +68,48 @@ final class RequirementsControllerTest extends WebTestCase
         self::assertSelectorExists('input[type="file"][name="template"]');
     }
 
+    public function test_create_editor_offers_periodic_type_and_quantity_without_mode_choice(): void
+    {
+        $this->client->request('GET', '/cabinet/compliance/requirements/create');
+        self::assertResponseIsSuccessful();
+        // Тип: инвентарь/периодическая — без спец-фильтра.
+        self::assertSelectorExists('input[name="type"][value="periodic"]');
+        self::assertSelectorExists('input[name="type"][value="material"]');
+        // Количество — на месте (материал/период.), а выбор режима (инвентарь/расходник) из формы убран.
+        self::assertSelectorExists('[data-item-quantity] input[name^="items["][name$="][amount]"]');
+        self::assertSelectorNotExists('select[name^="items["][name$="][mode]"]');
+    }
+
+    public function test_create_with_periodic_requirement_saves(): void
+    {
+        $name = 'Противопожарный инструктаж (периодическая) '.uniqid('', true);
+
+        $this->client->request(
+            'POST',
+            '/cabinet/compliance/requirements/create',
+            [
+                'name' => $name,
+                'type' => 'periodic',
+                'positionIds' => ['pos-periodic-1'],
+                'items' => [[
+                    'label' => 'Противопожарный инструктаж',
+                    'cadenceKind' => 'periodic',
+                    'cadenceNumber' => '1',
+                    'cadenceUnit' => 'year',
+                    'amount' => '1',
+                    'unit' => 'pcs',
+                    'basis' => 'ГОСТ 12.0.004',
+                ]],
+            ],
+        );
+
+        self::assertResponseRedirects();
+        $container = $this->client->getContainer();
+        $type = $container->get(EntityManagerInterface::class)->getConnection()
+            ->fetchOne('SELECT type FROM compliance_requirement WHERE name = ?', [$name]);
+        self::assertSame('periodic', $type);
+    }
+
     public function test_create_with_template_upload_stores_it(): void
     {
         $name = 'Противопожарный инструктаж '.uniqid('', true);
@@ -78,9 +120,9 @@ final class RequirementsControllerTest extends WebTestCase
             '/cabinet/compliance/requirements/create',
             [
                 'name' => $name,
-                'type' => 'non_material',
+                'type' => 'periodic',
                 'positionIds' => ['pos-1'],
-                'items' => [['label' => 'Повторный инструктаж', 'cadenceKind' => 'once', 'basis' => 'ГОСТ 12.0.004']],
+                'items' => [['label' => 'Повторный инструктаж', 'cadenceKind' => 'once', 'amount' => '1', 'unit' => 'pcs', 'basis' => 'ГОСТ 12.0.004']],
             ],
             ['template' => $this->docxUpload($container->getParameter('kernel.project_dir'))],
         );

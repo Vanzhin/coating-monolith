@@ -23,4 +23,18 @@ interface ObligationView
 
     /** Количество на руках (для материальных обязательств; у нематериальных не используется резолвером). */
     public function heldQuantity(): float;
+
+    /**
+     * Периодическая обязанность ({@see \App\Compliance\Domain\Type\ComplianceType::Periodic}) — резолвер считает
+     * её отдельным ладдером (срок первичен: просрочка бьёт держащую норму, недовыдача — между Overdue и Soon).
+     */
+    public function isPeriodic(): bool;
+
+    /**
+     * Инструктаж — периодическая обязанность с нормой «1 шт.» ({@see \App\Compliance\Domain\ReadModel\ObligationProjection::isInstructionLike()}):
+     * количество технического смысла не несёт («прошёл/не прошёл»), контроль только по дате. Резолвер по этому
+     * предикату выключает для неё ветку недовыдачи по количеству — иначе held=0 (форма не шлёт amount для
+     * инструктажа) читался бы как вечная недостача.
+     */
+    public function isInstructionLike(): bool;
 }

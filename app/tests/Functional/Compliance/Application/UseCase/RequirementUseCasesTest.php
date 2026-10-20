@@ -11,7 +11,7 @@ use App\Compliance\Application\UseCase\Query\GetRequirement\GetRequirementQueryR
 use App\Compliance\Domain\Repository\RequirementRepositoryInterface;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommand;
 use App\Personnel\Application\UseCase\Command\CreatePosition\CreatePositionCommandResult;
 use App\Personnel\Application\UseCase\Command\DeletePosition\DeletePositionCommand;
@@ -75,9 +75,9 @@ final class RequirementUseCasesTest extends KernelTestCase
      * @param list<string>               $positionIds
      * @param list<array<string, mixed>> $items
      */
-    private function save(?string $id, string $name, string $type, array $positionIds, array $items): string
+    private function save(?string $id, string $name, string $type, array $positionIds, array $items, ?string $journalKind = null): string
     {
-        $result = $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items));
+        $result = $this->commandBus->execute(new SaveRequirementCommand($id, $name, $type, $positionIds, $items, journalKind: $journalKind));
         \assert($result instanceof SaveRequirementCommandResult);
         $this->createdIds[] = $result->id;
 
@@ -91,9 +91,9 @@ final class RequirementUseCasesTest extends KernelTestCase
     }
 
     /** @return array<string, mixed> */
-    private function briefingItem(string $label = 'Инструктаж', string $basis = 'ГОСТ 12.0.004'): array
+    private function periodicItem(string $label = 'Противопожарный инструктаж', string $basis = 'ГОСТ 12.0.004'): array
     {
-        return ['label' => $label, 'cadenceKind' => 'once', 'cadenceNumber' => '', 'basis' => $basis];
+        return ['label' => $label, 'cadenceKind' => 'periodic', 'cadenceNumber' => '1', 'cadenceUnit' => 'year', 'amount' => '1', 'unit' => 'pcs', 'basis' => $basis];
     }
 
     public function test_save_and_read_material_requirement(): void
@@ -130,16 +130,29 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertSame(10.0, $items[0]->quantity()->amount);
     }
 
-    public function test_non_material_requirement_has_no_quantity(): void
+    public function test_material_requirement_holds_mixed_inventory_and_consumable_items(): void
     {
-        $posId = $this->createPosition('Стропальщик');
-        $id = $this->save(null, 'Журнал инструктажей', 'non_material', [$posId], [$this->briefingItem()]);
+        $posId = $this->createPosition('Маляр СИЗ');
+        $id = $this->save(null, 'Личная карточка учёта выдачи СИЗ', 'material', [$posId], [
+            ['type' => 'material'] + $this->materialItem('Каска'),
+            ['type' => 'periodic', 'amount' => '1200', 'unit' => 'ml'] + $this->periodicItem('Мыло жидкое', 'п.9 Типовых норм'),
+        ]);
 
         static::getContainer()->get(EntityManagerInterface::class)->clear();
 
         $requirement = $this->repo->findOneById($id);
         self::assertNotNull($requirement);
-        self::assertInstanceOf(NonMaterialItem::class, $requirement->getItems()[0]);
+        self::assertSame(ComplianceType::Material, $requirement->getType(), 'требование остаётся «Выдачей»');
+        $items = $requirement->getItems();
+        self::assertCount(2, $items);
+        self::assertInstanceOf(MaterialItem::class, $items[0]);
+        self::assertInstanceOf(PeriodicItem::class, $items[1]);
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertSame('material', $result->requirement->items[0]->type);
+        self::assertSame('periodic', $result->requirement->items[1]->type);
     }
 
     public function test_empty_basis_rejected(): void
@@ -177,15 +190,13 @@ final class RequirementUseCasesTest extends KernelTestCase
         $id = $this->save(null, 'СИЗ', 'material', [$posId], [$this->materialItem()]);
 
         $this->expectException(AppException::class);
-        $this->save($id, 'СИЗ', 'non_material', [$posId], [$this->briefingItem()]);
+        $this->save($id, 'СИЗ', 'periodic', [$posId], [$this->periodicItem()]);
     }
 
-    public function test_material_item_persists_mode_and_stable_id_across_edit(): void
+    public function test_material_item_persists_stable_id_across_edit(): void
     {
         $posId = $this->createPosition('Кладовщик');
-        $id = $this->save(null, 'Нормы расходников', 'material', [$posId], [
-            $this->materialItem('Мыло') + ['mode' => 'consumable'],
-        ]);
+        $id = $this->save(null, 'Нормы СИЗ', 'material', [$posId], [$this->materialItem('Мыло')]);
 
         $result = $this->queryBus->execute(new GetRequirementQuery($id));
         \assert($result instanceof GetRequirementQueryResult);
@@ -193,11 +204,10 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertCount(1, $result->requirement->items);
         $originalItemId = $result->requirement->items[0]->id;
         self::assertNotSame('', $originalItemId);
-        self::assertSame('consumable', $result->requirement->items[0]->mode);
 
         // правка: наименование меняем, id в форме возвращаем — id обязан сохраниться
-        $this->save($id, 'Нормы расходников', 'material', [$posId], [
-            $this->materialItem('Мыло жидкое') + ['id' => $originalItemId, 'mode' => 'consumable'],
+        $this->save($id, 'Нормы СИЗ', 'material', [$posId], [
+            $this->materialItem('Мыло жидкое') + ['id' => $originalItemId],
         ]);
 
         static::getContainer()->get(EntityManagerInterface::class)->clear();
@@ -206,6 +216,66 @@ final class RequirementUseCasesTest extends KernelTestCase
         self::assertNotNull($reloaded->requirement);
         self::assertSame($originalItemId, $reloaded->requirement->items[0]->id);
         self::assertSame('Мыло жидкое', $reloaded->requirement->items[0]->label);
-        self::assertSame('consumable', $reloaded->requirement->items[0]->mode);
+    }
+
+    public function test_save_and_read_periodic_requirement(): void
+    {
+        $posId = $this->createPosition('Пожарный инструктор');
+        $id = $this->save(null, 'Противопожарный инструктаж', 'periodic', [$posId], [$this->periodicItem()]);
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertSame('periodic', $result->requirement->type);
+        self::assertCount(1, $result->requirement->items);
+        self::assertSame('Противопожарный инструктаж', $result->requirement->items[0]->label);
+        // Round-trip DTO: количество периодической позиции обязано попадать в форму так же, как у материальной.
+        self::assertSame('1 шт.', $result->requirement->items[0]->quantityLabel);
+    }
+
+    public function test_persists_and_hydrates_periodic_item(): void
+    {
+        $posId = $this->createPosition('Инструктор по ОТ');
+        $id = $this->save(null, 'Инструктаж по ОТ', 'periodic', [$posId], [$this->periodicItem()]);
+
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        $requirement = $this->repo->findOneById($id);
+        self::assertNotNull($requirement);
+        self::assertSame(ComplianceType::Periodic, $requirement->getType());
+        $items = $requirement->getItems();
+        self::assertCount(1, $items);
+        self::assertInstanceOf(PeriodicItem::class, $items[0]);
+        self::assertSame(1.0, $items[0]->quantity()->amount);
+    }
+
+    public function test_periodic_item_without_quantity_rejected(): void
+    {
+        $posId = $this->createPosition('Инструктор без количества');
+        $itemWithoutQuantity = ['amount' => ''] + $this->periodicItem();
+        $this->expectException(AppException::class);
+        $this->save(null, 'Инструктаж без количества', 'periodic', [$posId], [$itemWithoutQuantity]);
+    }
+
+    public function test_periodic_requirement_persists_journal_kind(): void
+    {
+        $posId = $this->createPosition('Инструктор по ПБ');
+        $id = $this->save(null, 'Журнал ПБ', 'periodic', [$posId], [$this->periodicItem()], journalKind: 'fire_safety');
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertSame('fire_safety', $result->requirement->journalKind);
+    }
+
+    public function test_material_requirement_never_persists_journal_kind(): void
+    {
+        $posId = $this->createPosition('Кладовщик СИЗ');
+        $id = $this->save(null, 'СИЗ с журналом', 'material', [$posId], [$this->materialItem()], journalKind: 'fire_safety');
+
+        $result = $this->queryBus->execute(new GetRequirementQuery($id));
+        \assert($result instanceof GetRequirementQueryResult);
+        self::assertNotNull($result->requirement);
+        self::assertNull($result->requirement->journalKind);
     }
 }

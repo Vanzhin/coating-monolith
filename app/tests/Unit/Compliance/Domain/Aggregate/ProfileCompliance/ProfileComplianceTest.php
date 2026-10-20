@@ -12,12 +12,11 @@ use App\Compliance\Domain\Event\FulfillmentRecordRemoved;
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
 use App\Compliance\Domain\Type\JournalKind;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Cadence;
 use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Item\MaterialItem;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
 use App\Compliance\Domain\ValueObject\ObligationKey;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Compliance\Domain\ValueObject\Unit;
@@ -37,15 +36,18 @@ final class ProfileComplianceTest extends TestCase
 {
     private \DateTimeImmutable $now;
     private string $reqId;
+    private string $periodicReqId;
     private string $glovesItemId = 'item-gloves';
     private string $fireSafetyItemId = 'item-fire';
     private string $creamItemId = 'item-cream';
+    private string $soapItemId = 'item-soap';
     private string $helmetItemId = 'item-helmet';
 
     protected function setUp(): void
     {
         $this->now = new \DateTimeImmutable('2026-06-01');
         $this->reqId = (string) Uuid::v4();
+        $this->periodicReqId = (string) Uuid::v4();
     }
 
     /** № карточки по умолчанию уже закреплён — большинству тестов нужна рабочая выдача, не сам инвариант номера. */
@@ -73,14 +75,40 @@ final class ProfileComplianceTest extends TestCase
         );
     }
 
-    /** То же требование + Крем защитный (расходная ДСИЗ). */
-    private function glovesAndConsumableCreamRequirement(float $glovesNorm = 10.0): Requirement
+    /**
+     * Периодическое требование (бывш. расходная ДСИЗ, теперь PeriodicItem — остаток не ведётся, списанию не
+     * подлежит). Требования мономорфны (Requirement::supports — однотипные позиции), поэтому после снятия
+     * MaterialMode инвентарная и периодическая позиция больше не могут жить в ОДНОМ требовании — отдельный
+     * Requirement, свой reqId.
+     */
+    private function periodicCreamRequirement(): Requirement
     {
         return new Requirement(
-            Uuid::fromString($this->reqId), 'СИЗ основные', ComplianceType::Material, new StringCollection(),
-            new MaterialItem($this->glovesItemId, 'Перчатки', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.5', new Quantity($glovesNorm, Unit::Pair)),
-            new MaterialItem($this->creamItemId, 'Крем защитный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.7', new Quantity(3.0, Unit::Pair), MaterialMode::Consumable),
+            Uuid::fromString($this->periodicReqId), 'ДСИЗ', ComplianceType::Periodic, new StringCollection(),
+            new PeriodicItem($this->creamItemId, 'Крем защитный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.7', new Quantity(3.0, Unit::Pair)),
         );
+    }
+
+    private function creamKeyOnPeriodicRequirement(): string
+    {
+        return ObligationKey::keyOf($this->periodicReqId, $this->creamItemId);
+    }
+
+    /**
+     * Периодический расходник (НЕ инструктаж) с нормой в «мл» — для Finding 2+4: единицу теперь сверяем и у
+     * периодической, недовыдача остаётся допустимой (не блокирует assertIssuable).
+     */
+    private function periodicSoapRequirement(float $norm = 1200.0): Requirement
+    {
+        return new Requirement(
+            Uuid::fromString($this->periodicReqId), 'ДСИЗ', ComplianceType::Periodic, new StringCollection(),
+            new PeriodicItem($this->soapItemId, 'Мыло', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.7', new Quantity($norm, Unit::Milliliter)),
+        );
+    }
+
+    private function soapKeyOnPeriodicRequirement(): string
+    {
+        return ObligationKey::keyOf($this->periodicReqId, $this->soapItemId);
     }
 
     /** То же требование + Каска (инвентарная). */
@@ -96,8 +124,8 @@ final class ProfileComplianceTest extends TestCase
     private function fireSafetyRequirement(): Requirement
     {
         return new Requirement(
-            Uuid::fromString($this->reqId), 'Пожарная безопасность', ComplianceType::NonMaterial, new StringCollection(),
-            new NonMaterialItem($this->fireSafetyItemId, 'Пожарный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.1'),
+            Uuid::fromString($this->reqId), 'Пожарная безопасность', ComplianceType::Periodic, new StringCollection(),
+            new PeriodicItem($this->fireSafetyItemId, 'Пожарный', new Cadence(CadenceKind::Periodic, 1, PeriodUnit::Year), 'п.1', new Quantity(1.0, Unit::Piece)),
         );
     }
 
@@ -110,11 +138,6 @@ final class ProfileComplianceTest extends TestCase
     private function issuedGloves(ProfileCompliance $pc, Requirement $requirement, \DateTimeImmutable $at, float $amount = 10.0): void
     {
         $pc->recordIssuance($requirement, $this->glovesLine($amount, $at->format('Y-m-d')));
-    }
-
-    private function creamKey(): string
-    {
-        return ObligationKey::keyOf($this->reqId, $this->creamItemId);
     }
 
     private function helmetKey(): string
@@ -244,6 +267,35 @@ final class ProfileComplianceTest extends TestCase
         $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->glovesKey(), $this->now, new Quantity(10.0, Unit::Piece))]);
     }
 
+    /**
+     * Finding 2+4: единицу теперь сверяем и у периодической позиции (раньше проверка была material-only и
+     * пропускала периодическую молча) — норма «мл», выдача «шт.» не проходит.
+     */
+    public function test_periodic_issue_with_unit_other_than_norm_throws(): void
+    {
+        $requirement = $this->periodicSoapRequirement(); // норма 1200 мл
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+
+        $this->expectException(AppException::class);
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->soapKeyOnPeriodicRequirement(), $this->now, new Quantity(200.0, Unit::Piece))]);
+    }
+
+    /**
+     * Finding 2+4: недовыдача ниже нормы у периодической НЕ блокирует выдачу — остаток не ведётся, красный
+     * цвет на дашборде обеспечивает ComplianceBucketResolver, не отказ здесь (блок — только у инвентаря).
+     */
+    public function test_periodic_issue_under_norm_does_not_throw(): void
+    {
+        $requirement = $this->periodicSoapRequirement(); // норма 1200 мл
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+
+        $pc->assertIssuable($requirement, [new IssuanceLine(Uuid::v4(), $this->soapKeyOnPeriodicRequirement(), $this->now, new Quantity(200.0, Unit::Milliliter))]); // 200 < 1200 — не бросает
+
+        $this->addToAssertionCount(1);
+    }
+
     public function test_assert_issuable_ignores_key_outside_requirement_and_personal(): void
     {
         $requirement = $this->glovesRequirement(2.0);
@@ -306,6 +358,10 @@ final class ProfileComplianceTest extends TestCase
         $pc->recordIssuance($requirement, $this->glovesLine(1.0)); // 1 < нормы
     }
 
+    /**
+     * JournalKind восстановлен для периодического требования ({@see ComplianceType::carriesJournal}) —
+     * recordInstruction снова делегирует проверку полноты полей инструктажа в JournalKind::assertDetailsComplete.
+     */
     public function test_record_instruction_requires_complete_fields(): void
     {
         $requirement = $this->fireSafetyRequirement();
@@ -422,41 +478,44 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
     }
 
-    public function test_write_off_eligible_facts_excludes_consumable_position_when_selecting_all(): void
+    /**
+     * CRITICAL guard (hidden write-off leak): периодическая позиция (бывш. расходная ДСИЗ) с held>0 НЕ
+     * попадает в «Списать всё» — списание структурно только инвентарь (MaterialItem), не по режиму (режима
+     * больше нет).
+     */
+    public function test_write_off_eligible_facts_excludes_periodic_held_position(): void
     {
-        $requirement = $this->glovesAndConsumableCreamRequirement(10.0);
-        $pc = $this->pcWithGloves();
-        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
-        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
+        $requirement = $this->periodicCreamRequirement();
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKeyOnPeriodicRequirement(), $this->now, new Quantity(3.0, Unit::Pair)));
 
         $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
-        self::assertCount(1, $eligible, '«Списать всё» не берёт расходную (ДСИЗ) позицию');
-        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+        self::assertSame([], $eligible, '«Списать всё» не берёт периодическую (бывш. расходную) позицию, хотя held>0');
     }
 
-    public function test_write_off_eligible_facts_ignores_explicit_consumable_key(): void
+    public function test_write_off_eligible_facts_ignores_explicit_periodic_key(): void
     {
-        $requirement = $this->glovesAndConsumableCreamRequirement(10.0);
-        $pc = $this->pcWithGloves();
-        $this->issuedGloves($pc, $requirement, $this->now, 10.0);
-        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKey(), $this->now, new Quantity(3.0, Unit::Pair)));
+        $requirement = $this->periodicCreamRequirement();
+        $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
+        $pc->assignCardNumber('CARD-001');
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $this->creamKeyOnPeriodicRequirement(), $this->now, new Quantity(3.0, Unit::Pair)));
 
-        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, [$this->glovesKey(), $this->creamKey()]);
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, [$this->creamKeyOnPeriodicRequirement()]);
 
-        self::assertCount(1, $eligible, 'явный выбор расходной позиции всё равно отфильтрован — бэк источник истины');
-        self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
+        self::assertSame([], $eligible, 'явный выбор периодической позиции всё равно отфильтрован — бэк источник истины');
     }
 
-    public function test_write_off_eligible_facts_excludes_non_material_fact(): void
+    public function test_write_off_eligible_facts_excludes_fact_without_quantity(): void
     {
         $requirement = $this->fireSafetyRequirement();
         $pc = new ProfileCompliance(Uuid::v4(), 'prof-1');
-        $pc->recordFulfillment(Uuid::v4(), $this->fireSafetyKey(), $this->now); // нематериальный факт, quantity нет
+        $pc->recordFulfillment(Uuid::v4(), $this->fireSafetyKey(), $this->now); // факт без количества — held=0
 
         $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
-        self::assertSame([], $eligible, 'нематериальный факт отсекается own held=0, списанию не подлежит');
+        self::assertSame([], $eligible, 'факт без количества даёт held=0, списанию не подлежит независимо от типа позиции');
     }
 
     public function test_write_off_eligible_facts_filters_by_explicit_keys(): void
@@ -472,7 +531,8 @@ final class ProfileComplianceTest extends TestCase
         self::assertSame($this->glovesKey(), $eligible[0]->obligationKey());
     }
 
-    public function test_write_off_eligible_facts_includes_personal_obligation_with_null_mode(): void
+    /** Персональная (off-norm) декларация материального типа — физически те же СИЗ на руках, списывается наравне с нормой. */
+    public function test_write_off_eligible_facts_includes_personal_material_obligation(): void
     {
         $requirement = $this->glovesRequirement(2.0);
         $pc = $this->pcWithGloves();
@@ -482,7 +542,21 @@ final class ProfileComplianceTest extends TestCase
         $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
 
         $keys = array_map(static fn (FulfillmentRecord $f): string => $f->obligationKey(), $eligible);
-        self::assertContains($key, $keys, 'персональная позиция без режима (mode=null) трактуется как инвентарь');
+        self::assertContains($key, $keys, 'персональная декларация материального типа — списанию подлежит наравне с нормой');
+    }
+
+    /** Персональная (off-norm) декларация периодического типа — списанию НЕ подлежит (структурно только инвентарь). */
+    public function test_write_off_eligible_facts_excludes_personal_periodic_obligation(): void
+    {
+        $requirement = $this->glovesRequirement(2.0);
+        $pc = $this->pcWithGloves();
+        $key = $pc->addPersonalObligation(Uuid::v4()->toRfc4122(), $this->reqId, 'Доп. инструктаж', ComplianceType::Periodic, new Cadence(CadenceKind::ByManufacturerDoc), new Quantity(1.0, Unit::Piece));
+        $pc->recordIssuance($requirement, new IssuanceLine(Uuid::v4(), $key, $this->now, new Quantity(1.0, Unit::Piece), manualDueDate: new \DateTimeImmutable('2027-06-01')));
+
+        $eligible = $pc->writeOffEligibleFactsForRequirement($requirement, null);
+
+        $keys = array_map(static fn (FulfillmentRecord $f): string => $f->obligationKey(), $eligible);
+        self::assertNotContains($key, $keys, 'персональная декларация периодического типа списанию не подлежит');
     }
 
     public function test_obligation_label_of_resolves_norm_item_label(): void

@@ -6,7 +6,9 @@ namespace App\Tests\Unit\Compliance\Domain\ValueObject\Item;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\ValueObject\Cadence;
-use App\Compliance\Domain\ValueObject\Item\NonMaterialItem;
+use App\Compliance\Domain\ValueObject\Item\PeriodicItem;
+use App\Compliance\Domain\ValueObject\Quantity;
+use App\Compliance\Domain\ValueObject\Unit;
 use App\Shared\Infrastructure\Exception\AppException;
 use PHPUnit\Framework\TestCase;
 
@@ -19,13 +21,13 @@ final class RequirementItemLabelLengthTest extends TestCase
     public function test_label_up_to_1000_chars_is_accepted(): void
     {
         $label = str_repeat('а', 1000);
-        $item = new NonMaterialItem('itm-x', $label, new Cadence(CadenceKind::Once), 'основание');
+        $item = new PeriodicItem('itm-x', $label, new Cadence(CadenceKind::Once), 'основание', new Quantity(1.0, Unit::Piece));
         self::assertSame($label, $item->label());
     }
 
     public function test_label_longer_than_1000_chars_rejected(): void
     {
         $this->expectException(AppException::class);
-        new NonMaterialItem('itm-x', str_repeat('а', 1001), new Cadence(CadenceKind::Once), 'основание');
+        new PeriodicItem('itm-x', str_repeat('а', 1001), new Cadence(CadenceKind::Once), 'основание', new Quantity(1.0, Unit::Piece));
     }
 }

@@ -6,7 +6,6 @@ namespace App\Compliance\Application\Service;
 
 use App\Compliance\Domain\Type\CadenceKind;
 use App\Compliance\Domain\Type\ComplianceType;
-use App\Compliance\Domain\Type\MaterialMode;
 use App\Compliance\Domain\Type\PeriodUnit;
 use App\Compliance\Domain\ValueObject\Item\RequirementItemInterface;
 use App\Compliance\Domain\ValueObject\Unit;
@@ -15,9 +14,14 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Собирает `RequirementItemInterface[]` из плоского ввода формы (shape → массив → {@see ComplianceType::makeItem()}).
- * Тип решает, какой класс позиции собрать: материальному нужно количество, нематериальному — нет. Правила
- * (положительность, основание, допустимость числа периодичности) — в самих VO; здесь только парсинг shape и
- * понятная ошибка на неизвестном enum-значении. Полностью пустые строки (без наименования) пропускаем.
+ * Тип позиции решается ПОРЯДКОВО (`items[i][type]`), не берётся огулом с требования: «Выдача» — полиморфная
+ * карточка, в одной форме соседствуют инвентарь и расходник. Если строка типа не прислала (старая форма,
+ * «Периодическая» — у неё все позиции периодические) — берём тип требования по умолчанию. Тип решает, какой
+ * класс позиции собрать: обоим (материальному и периодическому) нужно количество. Правила (положительность,
+ * основание, допустимость числа периодичности) — в самих VO; здесь только парсинг shape и понятная ошибка на
+ * неизвестном enum-значении. Полностью пустые строки (без наименования) пропускаем. Контейнмент (можно ли
+ * этой позиции в этом требовании вообще быть) билдер не проверяет — это решает {@see
+ * \App\Compliance\Domain\Aggregate\Requirement\Requirement::supports()} на вставке.
  */
 final readonly class RequirementItemBuilder
 {
@@ -34,6 +38,8 @@ final readonly class RequirementItemBuilder
                 continue;
             }
 
+            $itemType = ComplianceType::tryFrom((string) ($row['type'] ?? '')) ?? $type;
+
             $id = trim((string) ($row['id'] ?? ''));
             $data = [
                 'id' => '' !== $id ? $id : Uuid::v7()->toRfc4122(),
@@ -41,12 +47,11 @@ final readonly class RequirementItemBuilder
                 'cadence' => $this->cadence($row),
                 'basis' => (string) ($row['basis'] ?? ''),
             ];
-            if ($type->requiresQuantity()) {
+            if ($itemType->requiresQuantity()) {
                 $data['quantity'] = $this->quantity($row);
-                $data['mode'] = (MaterialMode::tryFrom((string) ($row['mode'] ?? '')) ?? MaterialMode::Inventoried)->value;
             }
 
-            $items[] = $type->makeItem($data);
+            $items[] = $itemType->makeItem($data);
         }
 
         return $items;

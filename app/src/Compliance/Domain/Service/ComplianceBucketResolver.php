@@ -41,6 +41,15 @@ final class ComplianceBucketResolver
         if (!$obligation->isActive()) {
             return ComplianceBucket::Missing; // документ не подписан — не исполнено
         }
+
+        return $obligation->isPeriodic()
+            ? $this->periodicBucketFor($obligation, $now)
+            : $this->inventoriedBucketFor($obligation, $now);
+    }
+
+    /** Инвентарь (СИЗ) — недовыдача по количеству первична, срок считается только у обеспеченной позиции. */
+    private function inventoriedBucketFor(ObligationView $obligation, \DateTimeImmutable $now): ComplianceBucket
+    {
         $norm = $obligation->normQuantity();
         if (null !== $norm && $obligation->heldQuantity() < $norm - self::QUANTITY_EPSILON) {
             return ComplianceBucket::Missing; // недовыдано по количеству — требует выдачи
@@ -54,6 +63,39 @@ final class ComplianceBucketResolver
         }
         if ($nextDueAt < $now) {
             return ComplianceBucket::Overdue; // просрочено
+        }
+        if ($nextDueAt <= $now->modify('+'.self::DUE_SOON_DAYS.' days')) {
+            return ComplianceBucket::Soon; // подходит срок
+        }
+
+        return ComplianceBucket::Ok;
+    }
+
+    /**
+     * Периодическая (инструктаж/расходник раз в N) — срок первичен: просрочка бьёт даже держащую норму
+     * позицию (доввыдача после срока не спасает), недовыдача проверяется МЕЖДУ Overdue и Soon — иначе
+     * «недовыдано, но срок скоро» ошибочно читалось бы как Soon вместо Missing (Ruling 1).
+     *
+     * Инструктаж ({@see ObligationView::isInstructionLike()}) — ИСКЛЮЧЕНИЕ из ветки недовыдачи: у него количество
+     * не инвариант (норма «1 шт.» нужна только модели, форма выдачи его не запрашивает и шлёт held=0), контроль
+     * ЦЕЛИКОМ по дате (не выполнено / просрочено / скоро / в норме). Без этого исключения прошедший инструктаж
+     * читался бы как вечный Missing (held 0 < норма 1).
+     */
+    private function periodicBucketFor(ObligationView $obligation, \DateTimeImmutable $now): ComplianceBucket
+    {
+        if (null === $obligation->lastFulfilledAt()) {
+            return ComplianceBucket::Missing; // требуется, ни разу не выполнено
+        }
+        $nextDueAt = $obligation->nextDueAt();
+        if (null !== $nextDueAt && $nextDueAt < $now) {
+            return ComplianceBucket::Overdue; // просрочено — независимо от количества на руках
+        }
+        $norm = $obligation->normQuantity();
+        if (!$obligation->isInstructionLike() && null !== $norm && $obligation->heldQuantity() < $norm - self::QUANTITY_EPSILON) {
+            return ComplianceBucket::Missing; // недовыдано по количеству, срок пока не прошёл (инструктаж не проверяем — см. докблок)
+        }
+        if (null === $nextDueAt) {
+            return ComplianceBucket::Ok;
         }
         if ($nextDueAt <= $now->modify('+'.self::DUE_SOON_DAYS.' days')) {
             return ComplianceBucket::Soon; // подходит срок
