@@ -7,6 +7,7 @@ namespace App\Compliance\Domain\Aggregate\ProfileCompliance;
 use App\Compliance\Domain\ValueObject\Instruction\InstructionDetails;
 use App\Compliance\Domain\ValueObject\Quantity;
 use App\Shared\Domain\Aggregate\ValueObject\Percent;
+use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -43,6 +44,11 @@ class FulfillmentRecord
         ?string $documentId = null,
         ?InstructionDetails $instructionDetails = null,
     ) {
+        // Срок годности по документам не может истекать раньше самой выдачи — выдать уже просроченное нельзя.
+        if (null !== $manualDueDate && $manualDueDate < $fulfilledAt) {
+            throw new AppException(sprintf('Срок годности по документам (%s) не может быть раньше даты выдачи (%s).', $manualDueDate->format('d.m.Y'), $fulfilledAt->format('d.m.Y')));
+        }
+
         $this->id = $id;
         $this->profileCompliance = $profileCompliance;
         $this->obligationKey = $obligationKey;
