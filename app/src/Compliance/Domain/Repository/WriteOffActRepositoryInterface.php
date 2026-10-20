@@ -37,6 +37,6 @@ interface WriteOffActRepositoryInterface
     /** Единый поиск/список актов списания через фильтр с пагинацией (кросс-организационный, для админа). */
     public function findByFilter(WriteOffActFilter $filter): PaginationResult;
 
-    /** Следующий сквозной номер акта из БД-sequence (потокобезопасно, nextval). Дыры допустимы, как у PK. */
-    public function nextActNumber(): int;
+    /** Следующий номер акта В ПРЕДЕЛАХ ОРГАНИЗАЦИИ (свой ряд 1,2,3… у каждой). Потокобезопасно, атомарная выдача. */
+    public function nextActNumber(string $organizationId): int;
 }

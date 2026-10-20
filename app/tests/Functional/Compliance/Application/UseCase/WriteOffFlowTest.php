@@ -204,21 +204,15 @@ final class WriteOffFlowTest extends KernelTestCase
         self::assertSame($numberOnDraft, $signed->actNumber(), 'подпись номер не меняет — он readonly с момента создания');
     }
 
-    public function test_act_numbers_are_sequential_across_drafts(): void
+    public function test_act_number_counter_is_per_organization(): void
     {
-        // Два разных черновика (разные требования×организации) получают последовательные сквозные номера ПРИ СОЗДАНИИ.
-        // Значения относительные: sequence в Postgres не откатывается (в т.ч. под DAMA).
-        ['profileId' => $p1, 'requirementId' => $r1, 'key' => $k1] = $this->enrollCompliance();
-        $this->issueCard($p1, $r1, $k1);
-        $act1 = $this->writeOffActRepo->findById($this->startWriteOff($p1, $r1));
+        // Счётчик в пределах организации: у каждой свой ряд с 1. Таблица-счётчик транзакционна → значения точные.
+        $orgA = 'org-a-'.uniqid('', true);
+        $orgB = 'org-b-'.uniqid('', true);
 
-        ['profileId' => $p2, 'requirementId' => $r2, 'key' => $k2] = $this->enrollCompliance();
-        $this->issueCard($p2, $r2, $k2);
-        $act2 = $this->writeOffActRepo->findById($this->startWriteOff($p2, $r2));
-
-        self::assertNotNull($act1);
-        self::assertNotNull($act2);
-        self::assertSame((int) $act1->actNumber() + 1, (int) $act2->actNumber(), 'номера черновиков идут подряд — сквозной счётчик при создании');
+        self::assertSame(1, $this->writeOffActRepo->nextActNumber($orgA), 'первый акт организации A — 1');
+        self::assertSame(2, $this->writeOffActRepo->nextActNumber($orgA), 'второй акт той же организации — 2');
+        self::assertSame(1, $this->writeOffActRepo->nextActNumber($orgB), 'у другой организации своя нумерация с 1');
     }
 
     public function test_save_portion_exceeding_held_throws(): void
