@@ -8,9 +8,15 @@ use App\Shared\Infrastructure\Exception\AppException;
 
 /**
  * Уголок (равно- и неравнополочный). Площадь — прямоугольная часть (b1+b2−t)·t плюс поправки на
- * наружное закругление (добавляет металл) и два внутренних (убавляют). Периметр: наружные грани
- * полок считаются всегда, грань «верх» добавляет полку b2, «лево» — полку b1 (открытые поверхности).
- * Формулы портированы из Ptm-Calculator.
+ * наружное закругление (добавляет металл) и два внутренних (убавляют).
+ *
+ * Периметр — три независимые обогреваемые поверхности: наружная полка b1 (left), наружная полка b2
+ * (top) и внутренний контур (right) — вогнутая грань со скруглёнными носками (r) и пяткой (R).
+ * Все три включены = полный контур 2·(b1+b2). Прижата полка к стене → снять её грань; уголок зашит
+ * в составное сечение → снять внутренний контур. Скругления R/r несёт внутренний контур.
+ *
+ * Базовые формулы портированы из Ptm-Calculator; в оригинале внутренний контур считался всегда —
+ * здесь он вынесен в отдельную переключаемую грань (режим «все включены» даёт тот же результат).
  */
 final readonly class AngleSection implements ProfileSection
 {
@@ -44,14 +50,17 @@ final readonly class AngleSection implements ProfileSection
 
     public function heatedPerimeter(HeatingScheme $scheme): float
     {
-        $perimeter = ($this->legA + $this->legB)
-            + $this->outerRadius * self::CORNER_PERIMETER
-            + 2 * $this->innerRadius * self::CORNER_PERIMETER;
-        if ($scheme->top) {
+        $perimeter = 0.0;
+        if ($scheme->left) {                 // наружная полка b1
+            $perimeter += $this->legA;
+        }
+        if ($scheme->top) {                  // наружная полка b2
             $perimeter += $this->legB;
         }
-        if ($scheme->left) {
-            $perimeter += $this->legA;
+        if ($scheme->right) {                // внутренний контур + скругления носков (r) и пятки (R)
+            $perimeter += $this->legA + $this->legB
+                + $this->outerRadius * self::CORNER_PERIMETER
+                + 2 * $this->innerRadius * self::CORNER_PERIMETER;
         }
 
         return $perimeter;
