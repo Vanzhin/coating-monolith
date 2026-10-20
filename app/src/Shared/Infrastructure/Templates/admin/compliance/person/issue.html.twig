@@ -245,7 +245,12 @@
                             {% block footer %}
                                 <input type="hidden" name="items[{{ i }}][obligationKey]" value="{{ o.key }}">
                                 {% if o.origin == 'personal' %}
-                                    <button type="button" class="btn btn-sm btn-outline-danger mb-2" data-action="norm-fill#removeRow" title="Убрать позицию вне нормы из черновика">
+                                    {# Убрать личную (off-norm) позицию из учёта человека: без JS — нативный сабмит скрытой формы
+                                       exclude-obligation-form (name=obligationKey); с JS — подтверждение модалкой (issue-selection). #}
+                                    <button type="submit" form="exclude-obligation-form" name="obligationKey" value="{{ o.key }}"
+                                            class="btn btn-sm btn-outline-danger mb-2"
+                                            data-action="issue-selection#requestExclude" data-key="{{ o.key|e('html_attr') }}" data-label="{{ o.label|e('html_attr') }}"
+                                            title="Убрать позицию из учёта этого человека (история сохранится)">
                                         <i class="bi bi-trash me-1"></i>Убрать позицию
                                     </button>
                                 {% endif %}
@@ -405,6 +410,33 @@
             {# Подтверждение группового действия (выдача/списание): список выбранных позиций + кнопка. Один компонент
                (как delete_modal), наполняется контроллером issue-selection. #}
             {% include 'components/selection_confirm_modal.html.twig' %}
+
+            {# «Убрать позицию» (личная, вне нормы): скрытая форма POST в exclude-эндпоинт + модалка подтверждения.
+               Без JS кнопка строки сабмитит форму напрямую (name=obligationKey), с JS — сперва подтверждение. #}
+            <form id="exclude-obligation-form" method="post" class="d-none"
+                  action="{{ path('app_cabinet_compliance_obligation_exclude', {profileId: profileId, requirementId: requirementId}) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            </form>
+            <div class="modal fade" id="exclude-obligation-modal" tabindex="-1" aria-hidden="true"
+                 data-issue-selection-target="excludeModal">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body pt-4 pb-2">
+                            <h5 class="modal-title mb-1">Убрать позицию из учёта</h5>
+                            <p class="text-body-secondary small mb-0">
+                                Убрать «<span class="fw-semibold" data-issue-selection-target="excludeLabel"></span>» из учёта этого человека?
+                                Выдачи и списания останутся в истории, позиция уйдёт из списков и контроля.
+                            </p>
+                        </div>
+                        <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                            <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-outline-danger flex-fill" data-action="issue-selection#confirmExclude">
+                                <i class="bi bi-trash me-1"></i>Убрать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {% if canWriteOff %}
                 {# Скрытая форма «Списать выбранные»: контроллер issue-selection кладёт сюда keys[] выбранных позиций

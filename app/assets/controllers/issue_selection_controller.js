@@ -7,7 +7,7 @@ import { Controller } from '@hotwired/stimulus';
  * а «Выдать выбранные» сперва показывает подтверждение со списком.
  */
 export default class extends Controller {
-    static targets = ['check', 'all', 'count', 'issueCount', 'modal', 'list'];
+    static targets = ['check', 'all', 'count', 'issueCount', 'modal', 'list', 'excludeModal', 'excludeLabel'];
 
     connect() {
         this._recount();
@@ -159,5 +159,37 @@ export default class extends Controller {
 
     _modal() {
         return window.bootstrap.Modal.getOrCreateInstance(this.modalTarget);
+    }
+
+    // «Убрать позицию» (личная, вне нормы): с JS — подтверждение модалкой, затем POST скрытой exclude-формы
+    // (исключает из учёта, история фактов сохраняется). Без JS сюда не попадаем — кнопка нативно сабмитит форму
+    // (name=obligationKey), только без подтверждения.
+    requestExclude(event) {
+        event.preventDefault();
+        this._excludeKey = event.currentTarget.dataset.key || '';
+        this.excludeLabelTarget.textContent = event.currentTarget.dataset.label || '';
+        this._excludeModalInstance().show();
+    }
+
+    confirmExclude() {
+        this._excludeModalInstance().hide();
+        const form = document.getElementById('exclude-obligation-form');
+        if (!form) {
+            return;
+        }
+        // requestSubmit() без сабмиттера не несёт name/value кнопки — кладём ключ явным скрытым полем.
+        let input = form.querySelector('input[name="obligationKey"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'obligationKey';
+            form.appendChild(input);
+        }
+        input.value = this._excludeKey || '';
+        form.requestSubmit();
+    }
+
+    _excludeModalInstance() {
+        return window.bootstrap.Modal.getOrCreateInstance(this.excludeModalTarget);
     }
 }

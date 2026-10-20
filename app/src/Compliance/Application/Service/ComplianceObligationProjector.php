@@ -154,6 +154,9 @@ final readonly class ComplianceObligationProjector
             if (isset($rows[$key])) {
                 continue; // уже покрыта живой нормой (не должно происходить, но защитно)
             }
+            if (in_array($key, $excluded, true)) {
+                continue; // позиция исключена из учёта этого человека ({@see ProfileCompliance::excludeObligation})
+            }
             if (null !== $onlyRequirementIds && !$this->keyInAnyRequirement($key, $onlyRequirementIds->getList())) {
                 continue; // точечная пересборка чужие требования не трогает
             }

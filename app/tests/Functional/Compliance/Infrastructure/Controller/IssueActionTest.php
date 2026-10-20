@@ -538,6 +538,44 @@ final class IssueActionTest extends WebTestCase
     }
 
     /**
+     * «Убрать позицию» (личная, вне нормы): POST exclude-эндпоинта исключает позицию из учёта человека — строка
+     * уходит из проекции (/issue и дашборд её не покажут), но факт выдачи остаётся в журнале (история сохраняется).
+     */
+    public function test_exclude_removes_personal_position_from_projection_keeping_history(): void
+    {
+        ['profileId' => $p, 'requirementId' => $r] = $this->enrollCompliance();
+        $this->submitAdHocPersonalItem($p, $r, 'Ботинки вне нормы', 'material', '1', 'pcs');
+        $key = $this->personalObligationKeyFor($p, $r, 'Ботинки вне нормы');
+        self::assertContains($key, $this->obligationKeys($p), 'личная позиция в проекции до исключения');
+
+        $this->client->request('POST', sprintf('/cabinet/compliance/person/%s/requirement/%s/obligation/exclude', $p, $r), ['obligationKey' => $key]);
+        self::assertResponseRedirects();
+
+        self::assertNotContains($key, $this->obligationKeys($p), 'исключённая позиция ушла из проекции');
+
+        $pc = static::getContainer()->get(ProfileComplianceRepositoryInterface::class)->findByProfile($p);
+        self::assertNotNull($pc);
+        $hasFact = false;
+        foreach ($pc->getRecords() as $record) {
+            if ($record->obligationKey() === $key) {
+                $hasFact = true;
+                break;
+            }
+        }
+        self::assertTrue($hasFact, 'факт выдачи остался в журнале — исключение не трогает историю');
+    }
+
+    /** @return list<string> ключи строк проекции профиля */
+    private function obligationKeys(string $profileId): array
+    {
+        /** @var GetProfileComplianceQueryResult $result */
+        $result = static::getContainer()->get(QueryBusInterface::class)->execute(new GetProfileComplianceQuery($profileId));
+        self::assertNotNull($result->compliance);
+
+        return array_map(static fn (ObligationRowDTO $row): string => $row->key, $result->compliance->obligations);
+    }
+
+    /**
      * Сабмит реальной формы `/issue` ровно с одной позицией «вне нормы» (норменные позиции не отмечаем —
      * проверяем только материализацию ad-hoc позиции). `$type` — значение поля `personalItems[0][type]`,
      * null → поле не отправляем вовсе (хендлер дефолтит в тип требования).
