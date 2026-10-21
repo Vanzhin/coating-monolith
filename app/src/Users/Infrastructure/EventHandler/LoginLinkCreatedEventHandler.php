@@ -25,9 +25,18 @@ readonly class LoginLinkCreatedEventHandler implements EventHandlerInterface
     public function __invoke(LoginLinkCreatedEvent $event): void
     {
         $user = $this->userRepository->getByUlid($event->userId);
-        if ($user) {
-            $hash = bin2hex(random_bytes(10));
-            $this->redisService->add($hash, ['userUlid' => $user->getUlid()], 60 * 5);
+        if (null === $user) {
+            return;
+        }
+
+        $hash = bin2hex(random_bytes(10));
+        $this->redisService->add($hash, ['userUlid' => $user->getUlid()], 60 * 5);
+
+        // Ограничиваем ожидание SMTP: без этого коннект к недоступному хосту висит до
+        // default_socket_timeout (60 c). 5 c — потолок на отправку. Исключение пробрасываем,
+        // чтобы контроллер синхронно показал пользователю понятную ошибку.
+        $previousTimeout = ini_set('default_socket_timeout', '5');
+        try {
             $this->mailer->sendLoginLinkEmail(
                 new Address($user->getEmail()->getValue(), 'Пользователь'),
                 $this->urlGenerator->generate(
@@ -36,6 +45,10 @@ readonly class LoginLinkCreatedEventHandler implements EventHandlerInterface
                     UrlGeneratorInterface::ABSOLUTE_URL
                 )
             );
+        } finally {
+            if (false !== $previousTimeout) {
+                ini_set('default_socket_timeout', $previousTimeout);
+            }
         }
     }
 }
