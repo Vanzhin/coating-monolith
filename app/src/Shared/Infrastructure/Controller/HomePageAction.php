@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Controller;
 
 use App\Shared\Infrastructure\Security\AuthUserFetcher;
+use App\Users\Infrastructure\Form\RegistrationFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -23,6 +24,12 @@ class HomePageAction extends AbstractController
             return $this->redirectToRoute('app_cabinet');
         }
 
-        return $this->render('home/index.html.twig');
+        // Форма регистрации встроена в лендинг (свап-панель) — отдаём её FormView.
+        // Обработку сабмита делает RegistrationController (POST /sign-up).
+        $registrationForm = $this->createForm(RegistrationFormType::class);
+
+        return $this->render('home/index.html.twig', [
+            'registrationForm' => $registrationForm->createView(),
+        ]);
     }
 }

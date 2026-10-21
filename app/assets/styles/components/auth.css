@@ -23,7 +23,9 @@
     place-items: center;
     font-weight: 800;
     box-shadow: 0 12px 30px color-mix(in srgb, var(--bs-primary) 40%, transparent);
+    text-decoration: none;
 }
+a.auth-logo-mark:hover { color: #fff; filter: brightness(1.04); }
 .auth-logo-mark.lg { width: 66px; height: 66px; font-size: 34px; }
 .auth-logo-mark.md { width: 52px; height: 52px; font-size: 26px; border-radius: 15px; }
 
@@ -43,8 +45,10 @@
 
 /* ===== Лендинг ===== */
 .land-hero { position: relative; z-index: 1; padding: 8px 4px; }
-.land-title { font-size: 34px; font-weight: 850; letter-spacing: -.03em; line-height: 1.05; margin: 20px 0 10px; }
-.land-sub { font-size: 15px; color: var(--bs-secondary-color); line-height: 1.5; margin-bottom: 24px; max-width: 320px; }
+/* Брендинг героя (лого, заголовок, подзаголовок) — по центру; фичи остаются левым блоком. */
+.land-hero .auth-logo-mark { margin-inline: auto; }
+.land-title { font-size: 34px; font-weight: 850; letter-spacing: -.03em; line-height: 1.05; margin: 20px 0 10px; text-align: center; }
+.land-sub { font-size: 15px; color: var(--bs-secondary-color); line-height: 1.5; margin: 0 auto 24px; max-width: 320px; text-align: center; }
 .land-feats { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
 .land-feat { display: flex; align-items: center; gap: 12px; }
 .land-feat .fi {
@@ -55,17 +59,16 @@
 .land-feat .ft { font-size: 13.5px; line-height: 1.25; }
 .land-feat .ft b { font-weight: 700; }
 .land-feat .ft span { color: var(--bs-secondary-color); display: block; font-size: 12px; }
-/* Публичный вход в раздел «Инструменты» — та же вёрстка, что .land-feat, но выделен как
-   кликабельная карточка (акцентный фон, primary-плитка, стрелка, hover). Вне .land-cta —
-   виден и на десктопе. */
-.land-feat-link { text-decoration: none; color: var(--bs-body-color); background: var(--accent-subtle); border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; transition: transform .12s var(--ease-emph), box-shadow .12s var(--ease-emph); }
-.land-feat-link:hover { color: var(--bs-body-color); transform: translateY(-1px); box-shadow: 0 6px 16px color-mix(in srgb, var(--bs-primary) 18%, transparent); }
-.land-feat-link .fi { background: var(--bs-primary); border-color: transparent; color: #fff; }
+/* Публичный вход в раздел «Инструменты» — та же вёрстка, что .land-feat. Кликабельность —
+   стрелка-шеврон у правого края, акцентная подпись и подсветка строки на ховере (без
+   акцентной подложки, плитка иконки нейтральная, как у остальных фич). */
+.land-feat-link { text-decoration: none; color: var(--bs-body-color); border-radius: 12px; padding: 8px 10px; margin: 0 -10px 20px; transition: background .12s var(--ease-emph); }
+.land-feat-link:hover { color: var(--bs-body-color); background: var(--sunken); }
 .land-feat-link .ft b { color: var(--bs-primary); }
 .land-feat-arrow { margin-left: auto; color: var(--bs-primary); font-size: 14px; }
-.land-cta { display: flex; flex-direction: column; gap: 10px; max-width: 340px; }
-.install-hint { margin-top: 14px; font-size: 12px; color: var(--auth-faint); }
-.install-hint .btn { --bs-btn-color: var(--auth-faint); }
+.install-hint { margin-top: 14px; font-size: 12px; color: var(--auth-faint); text-align: center; }
+.install-hint .btn { --bs-btn-color: var(--auth-faint); border-color: transparent; background: transparent; }
+.install-hint .btn:hover { background: var(--sunken); }
 
 /* Кнопки auth (высокие, крупный радиус). */
 .auth-btn {
@@ -76,8 +79,8 @@
 .auth-btn i { font-size: 17px; }
 .auth-btn-primary { background: var(--bs-primary); color: #fff; box-shadow: 0 8px 20px color-mix(in srgb, var(--bs-primary) 35%, transparent); }
 .auth-btn-primary:hover { color: #fff; filter: brightness(1.05); }
-.auth-btn-ghost { background: var(--surface); color: var(--bs-body-color); border-color: var(--bs-border-color); }
-.auth-btn-ghost:hover { color: var(--bs-body-color); background: var(--sunken); }
+.auth-btn-ghost { background: var(--accent-subtle); color: var(--bs-primary); border-color: transparent; }
+.auth-btn-ghost:hover { color: var(--bs-primary); background: color-mix(in srgb, var(--bs-primary) 16%, transparent); }
 
 /* ===== Карточка входа/регистрации ===== */
 .auth-wrap { position: relative; z-index: 1; width: 100%; max-width: 420px; margin: 0 auto; }
@@ -98,7 +101,7 @@
 .auth-field { position: relative; margin-bottom: 12px; }
 .auth-field > input {
     width: 100%; height: 54px; border-radius: 12px;
-    border: 1.5px solid var(--bs-border-color); background: var(--surface);
+    border: 1.5px solid transparent; background: var(--sunken);
     padding: 20px 14px 6px; font-size: 15px; color: var(--bs-body-color); font-family: inherit;
 }
 .auth-field > input:focus { outline: none; border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
@@ -122,15 +125,15 @@
 .auth-sent .em { font-weight: 750; color: var(--bs-body-color); }
 
 /* Кнопка «назад» над карточкой. */
-.auth-back { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--bs-border-color); background: var(--surface); color: var(--bs-body-color); display: inline-grid; place-items: center; text-decoration: none; margin-bottom: 12px; }
-.auth-back:hover { color: var(--bs-body-color); background: var(--sunken); }
+.auth-back { width: 38px; height: 38px; border-radius: 10px; border: 0; background: var(--accent-subtle); color: var(--bs-primary); display: inline-grid; place-items: center; text-decoration: none; margin-bottom: 12px; cursor: pointer; }
+.auth-back:hover { color: var(--bs-primary); background: color-mix(in srgb, var(--bs-primary) 16%, transparent); }
 
 /* ===== Десктоп-сплит лендинга: герой + карточка входа ===== */
 .land-split {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
-    max-width: 960px;
+    max-width: 920px;
     margin-inline: auto;
     background: var(--bs-body-bg);
     border: 1px solid var(--bs-border-color);
@@ -140,18 +143,40 @@
     position: relative;
     z-index: 1;
 }
-.land-split .ls-left { padding: 44px 40px; position: relative; overflow: hidden; }
-.land-split .ls-right { display: none; }
+.land-split .ls-left { padding: 40px 36px 8px; position: relative; overflow: hidden; }
+/* Узкий экран: правая половина (кнопки/формы входа) становится вторым рядом под героем. */
+.land-split .ls-right { padding: 20px 36px 40px; display: flex; align-items: center; justify-content: center; }
 @media (min-width: 992px) {
-    .land-split { grid-template-columns: 1.1fr .9fr; }
-    .land-split .ls-left { padding: 56px 48px; }
+    .land-split { grid-template-columns: 1.05fr .95fr; }
+    /* Герой-блок по центру по вертикали, чтобы не висел вверху. */
+    .land-split .ls-left { padding: 52px 48px; display: flex; flex-direction: column; justify-content: center; }
     .land-split .ls-left .land-title { font-size: 40px; }
     .land-split .ls-left .land-sub { font-size: 16px; max-width: 380px; }
-    .land-split .ls-right { display: flex; align-items: center; justify-content: center; padding: 40px; background: var(--surface); border-left: 1px solid var(--bs-border-color); }
-    .land-split .ls-right .auth-card { width: 100%; max-width: 330px; border: 0; box-shadow: none; padding: 8px; }
-    /* На десктопе мобильные CTA-кнопки прячем — вход в правой карточке. */
-    .land-split .ls-left .land-cta { display: none; }
+    /* Без вертикальной черты; surface = body-bg → половины сливаются. */
+    .land-split .ls-right { padding: 44px; background: var(--surface); }
 }
+
+/* ===== Свап вход/регистрация/по-ссылке на лендинге (CSS-radio, без JS) =====
+   Панели лежат друг на друге в контейнере фикс-высоты, активную показывает :checked
+   соответствующего radio; переключение — плавный кросс-фейд. Без JS всё работает:
+   формы в DOM, radio переключает, каждая форма постит на свой роут. */
+.auth-swap { position: relative; width: 100%; max-width: 300px; margin-inline: auto; height: 300px; }
+.auth-swap > input { position: absolute; opacity: 0; pointer-events: none; }
+.auth-swap .auth-panel {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; gap: 12px;
+    opacity: 0; visibility: hidden; transform: translateY(5px);
+    transition: opacity .4s var(--ease-emph), transform .4s var(--ease-emph);
+}
+#auth-buttons:checked ~ .panel-buttons,
+#auth-login:checked ~ .panel-login,
+#auth-register:checked ~ .panel-register,
+#auth-link:checked ~ .panel-link { opacity: 1; visibility: visible; transform: none; }
+.auth-swap .panel-buttons { justify-content: center; }
+.auth-swap .auth-panel .auth-back { position: absolute; top: 0; left: 0; margin: 0; z-index: 2; }
+.cta-prompt { font-size: 13px; color: var(--bs-secondary-color); text-align: center; margin-bottom: 2px; }
+.auth-mini-swap { text-align: center; font-size: 12.5px; color: var(--bs-secondary-color); cursor: pointer; }
+.auth-mini-swap:hover { color: var(--bs-primary); }
 
 /* Honeypot-ловушка на форме регистрации: уводим за экран, но оставляем в DOM и доступной
    для автозаполнения бота. Не display:none — часть ботов пропускает невидимое. Человек
