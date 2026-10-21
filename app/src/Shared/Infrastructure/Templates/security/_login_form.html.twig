@@ -5,7 +5,7 @@
    Альт-ссылки (регистрация / вход по ссылке) живут в вызывающем шаблоне: на /login — это
    переходы, на лендинге — переключатели свап-панели. autofocus не ставим: на лендинге
    форма — одна из трёх в DOM. #}
-<form method="post" action="{{ path('app_login') }}">
+<form method="post" action="{{ path('app_login') }}" data-action="submit->inline-auth#submit">
     {% if error is defined and error %}
         <div class="auth-alert">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
     {% endif %}
@@ -25,7 +25,7 @@
     {# Куда вернуть после входа — исходная страница, если пришли по ссылке «Войти» с _target_path. #}
     <input type="hidden" name="_target_path" value="{{ app.request.query.get('_target_path') }}">
 
-    <button class="auth-btn auth-btn-primary" type="submit">
+    <button class="auth-btn auth-btn-primary" type="submit" data-loading="Входим…">
         <i class="bi bi-box-arrow-in-right"></i> Войти
     </button>
 </form>

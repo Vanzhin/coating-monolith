@@ -2,11 +2,13 @@
 
 namespace App\Shared\Application\Security;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\AbstractLoginFormAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\RememberMeBadge;
@@ -15,6 +17,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordC
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements AuthenticationEntryPointInterface
 {
@@ -22,8 +25,10 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
 
     public const LOGIN_ROUTE = 'app_login';
 
-    public function __construct(private UrlGeneratorInterface $urlGenerator)
-    {
+    public function __construct(
+        private UrlGeneratorInterface $urlGenerator,
+        private TranslatorInterface $translator,
+    ) {
     }
 
     public function authenticate(Request $request): Passport
@@ -46,23 +51,51 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // Явный _target_path из формы: ссылка «Войти» с любой публичной страницы несёт свой URL
-        // (напр. калькулятор в /tools) — после входа возвращаемся туда. Пускаем только локальный
-        // путь; Symfony сам _target_path не валидирует, поэтому open-redirect guard здесь.
-        $targetPath = $request->request->get('_target_path');
-        if (is_string($targetPath) && $this->isLocalPath($targetPath)) {
-            return new RedirectResponse($targetPath);
+        $url = $this->resolveTargetUrl($request, $firewallName);
+
+        // Инлайн-форма лендинга (AJAX) не умеет следовать 302 — отдаём URL в JSON,
+        // навигацию делает фронт (inline-auth). Обычный POST — как раньше, редирект.
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse(['redirect' => $url]);
         }
 
-        // Иначе — сохранённый в сессии путь (аноним упёрся в защищённую страницу), затем кабинет.
+        return new RedirectResponse($url);
+    }
+
+    // Куда отправить после входа. Явный _target_path из формы (ссылка «Войти» с публичной
+    // страницы, напр. калькулятора) имеет приоритет — но только локальный путь (open-redirect
+    // guard, Symfony сам _target_path не валидирует). Иначе — сохранённый в сессии путь
+    // (аноним упёрся в защищённую страницу), затем кабинет.
+    private function resolveTargetUrl(Request $request, string $firewallName): string
+    {
+        $targetPath = $request->request->get('_target_path');
+        if (is_string($targetPath) && $this->isLocalPath($targetPath)) {
+            return $targetPath;
+        }
+
         $session = $request->getSession();
         if ($sessionTarget = $this->getTargetPath($session, $firewallName)) {
             $this->removeTargetPath($session, $firewallName);
 
-            return new RedirectResponse($sessionTarget);
+            return $sessionTarget;
         }
 
-        return new RedirectResponse($this->urlGenerator->generate('app_cabinet'));
+        return $this->urlGenerator->generate('app_cabinet');
+    }
+
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
+    {
+        // AJAX (инлайн-форма лендинга) — отдаём сообщение JSON'ом; ResponseListener завернёт
+        // его в стандартный конверт {result:error, message}, фронт покажет тостом (как
+        // остальные ошибки приложения). Форма и введённое остаются. Обычный POST — штатный
+        // редирект на /login (ошибка в сессии).
+        if ($request->isXmlHttpRequest()) {
+            $message = $this->translator->trans($exception->getMessageKey(), $exception->getMessageData(), 'security');
+
+            return new JsonResponse(['message' => $message], Response::HTTP_UNAUTHORIZED);
+        }
+
+        return parent::onAuthenticationFailure($request, $exception);
     }
 
     /**
@@ -84,7 +117,7 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator implements A
     /**
      * Сохраняет исходный URL в сессии перед перенаправлением на страницу логина.
      */
-    public function start(Request $request, ?\Symfony\Component\Security\Core\Exception\AuthenticationException $authException = null): Response
+    public function start(Request $request, ?AuthenticationException $authException = null): Response
     {
         // Сохраняем исходный путь запроса в сессию
         // Используем полный URI для надежности

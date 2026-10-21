@@ -62,25 +62,37 @@
                         </div>
                     </div>
 
-                    <div class="auth-panel panel-login">
+                    {# Вход — inline (inline-auth): успех → JSON-редирект в кабинет, провал →
+                       форма с ошибкой в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-login" data-controller="inline-auth">
                         <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
-                        <div class="auth-h">Вход</div>
-                        {% include 'security/_login_form.html.twig' %}
-                        <label for="auth-link" class="auth-mini-swap">Вход по ссылке без пароля</label>
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Вход</div>
+                            {% include 'security/_login_form.html.twig' %}
+                            <label for="auth-link" class="auth-mini-swap">Вход по ссылке без пароля</label>
+                        </div>
                     </div>
 
-                    <div class="auth-panel panel-register">
+                    {# Регистрация — inline (inline-auth): успех → аутентификация + JSON-редирект,
+                       провал → форма с ошибками полей в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-register" data-controller="inline-auth">
                         <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
-                        <div class="auth-h">Регистрация</div>
-                        {% include 'security/_register_form.html.twig' %}
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Регистрация</div>
+                            {% include 'security/_register_form.html.twig' %}
+                        </div>
                     </div>
 
-                    <div class="auth-panel panel-link">
+                    {# Вход по ссылке — отправка inline (inline-auth): остаёмся на лендинге,
+                       результат (успех/ошибка) рендерится в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-link" data-controller="inline-auth">
                         <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
-                        <div class="auth-h">Вход по ссылке</div>
-                        <p class="auth-s">Пришлём ссылку для одноразового входа. Пароль не нужен.</p>
-                        {% include 'security/_login_link_form.html.twig' %}
-                        <label for="auth-login" class="auth-mini-swap">← Ко входу с паролем</label>
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Вход по ссылке</div>
+                            <p class="auth-s">Пришлём ссылку для одноразового входа. Пароль не нужен.</p>
+                            {% include 'security/_login_link_form.html.twig' %}
+                            <label for="auth-login" class="auth-mini-swap">← Ко входу с паролем</label>
+                        </div>
                     </div>
                 </div>
             </div>

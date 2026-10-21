@@ -3,7 +3,7 @@
    пишем руками, беря name/id/value/errors из FormView (registrationForm). Анти-бот
    (honeypot website + подписанная метка ts) — решение на бэке (RegistrationBotGuard).
    autofocus не ставим: на лендинге форма — одна из трёх в DOM. #}
-<form method="post" action="{{ path('app_sign_up') }}">
+<form method="post" action="{{ path('app_sign_up') }}" data-action="submit->inline-auth#submit">
     <div class="auth-field">
         <input type="email"
                id="{{ registrationForm.email.vars.id }}"
@@ -40,7 +40,7 @@
 
     {{ form_widget(registrationForm._token) }}
 
-    <button class="auth-btn auth-btn-primary" type="submit">
+    <button class="auth-btn auth-btn-primary" type="submit" data-loading="Регистрируем…">
         <i class="bi bi-person-plus"></i> Зарегистрироваться
     </button>
 </form>
