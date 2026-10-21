@@ -1,0 +1,16 @@
+{# Форма входа по одноразовой ссылке (email). Переиспользуется на /login-link и на
+   лендинге (свап). Переменная email (опц.) — предзаполнение. id отдельный (llEmail),
+   чтобы не конфликтовать с формой входа по паролю на лендинге. #}
+<form method="post" action="{{ path('app_login_link') }}">
+    <div class="auth-field">
+        <input type="email" name="email" id="llEmail" value="{{ email|default('') }}"
+               autocomplete="email" required placeholder="you@example.com">
+        <label for="llEmail">Email</label>
+    </div>
+
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('login_link') }}">
+
+    <button class="auth-btn auth-btn-primary" type="submit">
+        <i class="bi bi-send"></i> Отправить ссылку
+    </button>
+</form>

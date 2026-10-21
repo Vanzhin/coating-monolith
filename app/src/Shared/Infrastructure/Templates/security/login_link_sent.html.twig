@@ -8,7 +8,7 @@
 {% block body %}
     <div class="authshell">
         <div class="auth-wrap">
-            <div class="auth-logo-mark md auth-logo-center">{{ app_name|first }}</div>
+            <a href="{{ path('app_homepage') }}" class="auth-logo-mark md auth-logo-center" title="На главную">{{ app_name|first }}</a>
 
             <div class="auth-card auth-sent">
                 <div class="ok-ic"><i class="bi bi-envelope-check"></i></div>

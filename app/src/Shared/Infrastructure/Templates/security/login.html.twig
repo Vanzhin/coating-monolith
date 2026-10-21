@@ -16,12 +16,15 @@
                 </div>
             {% endif %}
 
-            <div class="auth-logo-mark md auth-logo-center">{{ app_name|first }}</div>
+            <a href="{{ path('app_homepage') }}" class="auth-logo-mark md auth-logo-center" title="На главную">{{ app_name|first }}</a>
 
             <div class="auth-card">
                 <h1 class="auth-h">Вход</h1>
                 <p class="auth-s">Введите email и пароль от аккаунта.</p>
                 {% include 'security/_login_form.html.twig' %}
+
+                <div class="auth-alt">Нет аккаунта? <a href="{{ path('app_sign_up') }}">Зарегистрироваться</a></div>
+                <div class="auth-mini"><a href="{{ path('app_login_link') }}">Вход по ссылке без пароля</a></div>
             </div>
         </div>
     </div>
