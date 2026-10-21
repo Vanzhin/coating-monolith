@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="1helper">
 
-    <title>{% block title %}{{ app_name }} | {% endblock %}</title>
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
 
     {# FOUC-safe theme init — ставим data-bs-theme на <html> ДО того как браузер
        начнёт применять Bootstrap CSS, чтобы не «моргнуть» светлой темой при

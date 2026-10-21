@@ -31,42 +31,57 @@ class LoginLinkAction extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $email = null;
         if ($this->getUser()) {
             return $this->redirectToRoute('app_cabinet');
         }
-        if ($request->isMethod('POST')) {
-            $email = $request->getPayload()->get('email');
 
-            // IP-лимит применяется всегда — защита от bot'ов, тайминг-атак,
-            // энумерации. Превышение — рендерим ту же форму с alert'ом, чтобы
-            // пользователь не видел техническую 429-страницу.
-            $ipLimit = $this->loginLinkPerIpLimiter->create($request->getClientIp() ?? 'unknown')->consume();
-            if (!$ipLimit->isAccepted()) {
-                return $this->render('security/login_link.html.twig', [
-                    'email' => $email,
-                    'error' => sprintf(
-                        'Слишком много попыток. Попробуйте через %d мин.',
-                        max(1, (int) ceil(($ipLimit->getRetryAfter()->getTimestamp() - time()) / 60)),
-                    ),
-                ]);
-            }
-
-            // Anti-enumeration: не сообщаем, зарегистрирован такой email или нет.
-            // Плюс per-email лимит — не даём флудить конкретный ящик, даже если
-            // атакующий меняет IP. При превышении молча пропускаем отправку —
-            // одинаковый ответ независимо от того, лимит это или отсутствие юзера.
-            $user = is_string($email) ? $this->userRepository->getByEmail($email) : null;
-            if (null !== $user) {
-                $emailLimit = $this->loginLinkPerEmailLimiter->create(mb_strtolower($email))->consume();
-                if ($emailLimit->isAccepted()) {
-                    $this->eventBus->execute(new LoginLinkCreatedEvent($user->getUlid()));
-                }
-            }
-
-            return $this->render('security/login_link_sent.html.twig', compact('email'));
+        if (!$request->isMethod('POST')) {
+            return $this->render('security/login_link.html.twig', ['email' => null]);
         }
 
-        return $this->render('security/login_link.html.twig', compact('email'));
+        $emailRaw = $request->getPayload()->get('email');
+        $email = is_string($emailRaw) ? $emailRaw : null;
+
+        // IP-лимит применяется всегда — защита от bot'ов, тайминг-атак, энумерации.
+        // Превышение — та же форма с alert'ом, без технической 429-страницы.
+        $ipLimit = $this->loginLinkPerIpLimiter->create($request->getClientIp() ?? 'unknown')->consume();
+        if (!$ipLimit->isAccepted()) {
+            $retryMinutes = max(1, (int) ceil(($ipLimit->getRetryAfter()->getTimestamp() - time()) / 60));
+
+            return $this->renderOutcome($request, $email, sprintf('Слишком много попыток. Попробуйте через %d мин.', $retryMinutes));
+        }
+
+        // Anti-enumeration: не сообщаем, зарегистрирован такой email или нет. Отправляем
+        // только существующему и не исчерпавшему per-email лимит; при превышении молча
+        // пропускаем отправку — ответ одинаков. При сбое SMTP — generic-ошибка (без намёка
+        // на существование адреса сверх самого факта сбоя).
+        $user = null !== $email ? $this->userRepository->getByEmail($email) : null;
+        if (null !== $user && $this->loginLinkPerEmailLimiter->create(mb_strtolower($email))->consume()->isAccepted()) {
+            try {
+                $this->eventBus->execute(new LoginLinkCreatedEvent($user->getUlid()));
+            } catch (\Throwable) {
+                // Письмо шлётся синхронно в обработчике; messenger заворачивает сбой в
+                // HandlerFailedException. Показываем понятное, пользователь остаётся на месте.
+                return $this->renderOutcome($request, $email, 'Не удалось отправить письмо. Попробуйте ещё раз через пару минут.');
+            }
+        }
+
+        return $this->renderOutcome($request, $email, null);
+    }
+
+    // Один рендер для обоих каналов: AJAX (свап-панель лендинга) — фрагмент; обычный
+    // запрос — полная страница. И успех, и ошибка — терминальное сообщение без формы
+    // (error задан → текст ошибки, иначе → «проверьте почту»), чтобы не спамили отправку.
+    private function renderOutcome(Request $request, ?string $email, ?string $error): Response
+    {
+        // И успех, и ошибка — терминальное сообщение без формы: не даём долбить отправку.
+        if ($request->isXmlHttpRequest()) {
+            return $this->render('security/_login_link_result.html.twig', [
+                'email' => $email,
+                'error' => $error,
+            ]);
+        }
+
+        return $this->render('security/login_link_sent.html.twig', ['email' => $email, 'error' => $error]);
     }
 }

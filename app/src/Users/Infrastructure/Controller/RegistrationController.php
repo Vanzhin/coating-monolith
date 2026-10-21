@@ -15,6 +15,7 @@ use App\Users\Infrastructure\Security\RegistrationBotGuard;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -53,26 +54,26 @@ class RegistrationController extends AbstractController
         // Считаем любую отправку; при исчерпании — нейтральный ответ.
         if ($form->isSubmitted()
             && !$this->registrationPerIpLimiter->create($request->getClientIp() ?? 'unknown')->consume()->isAccepted()) {
-            return $this->renderRegisterFailure($form, self::AUTOMATED_SUBMISSION_MESSAGE);
+            return $this->renderRegisterFailure($request, $form, self::AUTOMATED_SUBMISSION_MESSAGE);
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
             // Анти-бот: honeypot заполнен / форма отправлена слишком быстро / метка подделана.
             if ($this->botGuard->looksAutomated($form->get('website')->getData(), $form->get('ts')->getData())) {
-                return $this->renderRegisterFailure($form, self::AUTOMATED_SUBMISSION_MESSAGE);
+                return $this->renderRegisterFailure($request, $form, self::AUTOMATED_SUBMISSION_MESSAGE);
             }
 
             $password = $form->get('plainPassword')->getData();
             $email = $form->get('email')->getData();
             // посторонних не пускаем
             if (!$this->emailListValidator->isValid($email)) {
-                return $this->renderRegisterFailure($form, sprintf('С почтой `%s` зарегистрироваться невозможно.', $email));
+                return $this->renderRegisterFailure($request, $form, sprintf('С почтой `%s` зарегистрироваться невозможно.', $email));
             }
 
             try {
                 $result = $this->commandBus->execute(new CreateUserCommand($email, $password));
             } catch (AppException $e) {
-                return $this->renderRegisterFailure($form, $e->getMessage());
+                return $this->renderRegisterFailure($request, $form, $e->getMessage());
             }
 
             $user = $this->userRepository->getByUlid((string) $result->ulid);
@@ -86,17 +87,43 @@ class RegistrationController extends AbstractController
             );
         }
 
+        // Форма отправлена, но невалидна (ошибки полей — напр. правила пароля).
+        if ($request->isXmlHttpRequest()) {
+            return $this->jsonFormErrors($form);
+        }
+
         return $this->render('security/register.html.twig', [
             'registrationForm' => $form->createView(),
         ]);
     }
 
-    private function renderRegisterFailure(FormInterface $form, string $message): Response
+    private function renderRegisterFailure(Request $request, FormInterface $form, string $message): Response
     {
+        // AJAX (инлайн-форма лендинга) — сообщение JSON'ом; ResponseListener завернёт в конверт
+        // {result:error, message}, фронт покажет тостом. Форма и введённое остаются. Обычный
+        // POST — flash + полная страница.
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse(['message' => $message], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $this->addFlash('register_failure', $message);
 
         return $this->render('security/register.html.twig', [
             'registrationForm' => $form->createView(),
         ]);
+    }
+
+    // Ошибки валидации формы (все уровни) → одно сообщение (по строке на ошибку) для тоста.
+    private function jsonFormErrors(FormInterface $form): JsonResponse
+    {
+        $messages = [];
+        foreach ($form->getErrors(true) as $error) {
+            $messages[] = $error->getMessage();
+        }
+        $message = [] === $messages
+            ? 'Проверьте правильность заполнения формы.'
+            : implode("\n", $messages);
+
+        return new JsonResponse(['message' => $message], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 }

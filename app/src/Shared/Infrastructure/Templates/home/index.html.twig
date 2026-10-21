@@ -9,10 +9,11 @@
 {% block body %}
     <div class="authshell">
         <div class="land-split">
+            {# Левая половина (на узком экране — верх): герой. Не меняется при переключении форм. #}
             <div class="ls-left">
                 <div class="auth-glow"></div>
                 <div class="land-hero">
-                    <div class="auth-logo-mark lg">{{ app_name|first }}</div>
+                    <a href="{{ path('app_homepage') }}" class="auth-logo-mark lg" title="На главную">{{ app_name|first }}</a>
                     <div class="land-title">{{ app_name }}</div>
                     <div class="land-sub">Каталог, подбор и сравнение — в одном приложении. Работает и как сайт, и как установленное приложение.</div>
 
@@ -36,24 +37,63 @@
                         <div class="ft"><b>Инструменты</b><span>калькуляторы без входа</span></div>
                         <i class="bi bi-chevron-right land-feat-arrow"></i>
                     </a>
+                </div>
+            </div>
 
-                    <div class="land-cta">
-                        <a href="{{ path('app_login') }}" class="auth-btn auth-btn-primary">
+            {# Правая половина (на узком экране — низ): свап вход/регистрация/по-ссылке.
+               Переключение — на CSS (radio + :checked), без JS. Каждая форма постит на свой
+               роут, так что без JS всё работает. #}
+            <div class="ls-right">
+                <div class="auth-swap">
+                    <input type="radio" name="auth_mode" id="auth-buttons" checked>
+                    <input type="radio" name="auth_mode" id="auth-login">
+                    <input type="radio" name="auth_mode" id="auth-register">
+                    <input type="radio" name="auth_mode" id="auth-link">
+
+                    <div class="auth-panel panel-buttons">
+                        <div class="cta-prompt">Начните работу</div>
+                        <label for="auth-login" class="auth-btn auth-btn-primary">
                             <i class="bi bi-box-arrow-in-right"></i> Войти
-                        </a>
-                        <a href="{{ path('app_sign_up') }}" class="auth-btn auth-btn-ghost">Регистрация</a>
+                        </label>
+                        <label for="auth-register" class="auth-btn auth-btn-ghost">Регистрация</label>
+                        <label for="auth-link" class="auth-mini-swap">Вход по ссылке без пароля</label>
                         <div class="install-hint">
                             {% include '_shell/_install_button.html.twig' with { class: 'btn-sm' } %}
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {# Десктоп: вход прямо в сплите (на мобиле скрыт — там кнопки CTA выше). #}
-            <div class="ls-right">
-                <div class="auth-card">
-                    <h1 class="auth-h">Вход</h1>
-                    {% include 'security/_login_form.html.twig' %}
+                    {# Вход — inline (inline-auth): успех → JSON-редирект в кабинет, провал →
+                       форма с ошибкой в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-login" data-controller="inline-auth">
+                        <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Вход</div>
+                            {% include 'security/_login_form.html.twig' %}
+                            <label for="auth-link" class="auth-mini-swap">Вход по ссылке без пароля</label>
+                        </div>
+                    </div>
+
+                    {# Регистрация — inline (inline-auth): успех → аутентификация + JSON-редирект,
+                       провал → форма с ошибками полей в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-register" data-controller="inline-auth">
+                        <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Регистрация</div>
+                            {% include 'security/_register_form.html.twig' %}
+                        </div>
+                    </div>
+
+                    {# Вход по ссылке — отправка inline (inline-auth): остаёмся на лендинге,
+                       результат (успех/ошибка) рендерится в слоте. Без JS — обычный POST. #}
+                    <div class="auth-panel panel-link" data-controller="inline-auth">
+                        <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
+                        <div class="swap-slot" data-inline-auth-target="slot">
+                            <div class="auth-h">Вход по ссылке</div>
+                            <p class="auth-s">Пришлём ссылку для одноразового входа. Пароль не нужен.</p>
+                            {% include 'security/_login_link_form.html.twig' %}
+                            <label for="auth-login" class="auth-mini-swap">← Ко входу с паролем</label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,46 @@
+{# Форма регистрации (email + пароль). Переиспользуется на /sign-up и на лендинге (свап).
+   Symfony Form: name="registration_form[...]" + свой CSRF. Стиль — свой, поэтому inputs
+   пишем руками, беря name/id/value/errors из FormView (registrationForm). Анти-бот
+   (honeypot website + подписанная метка ts) — решение на бэке (RegistrationBotGuard).
+   autofocus не ставим: на лендинге форма — одна из трёх в DOM. #}
+<form method="post" action="{{ path('app_sign_up') }}" data-action="submit->inline-auth#submit">
+    <div class="auth-field">
+        <input type="email"
+               id="{{ registrationForm.email.vars.id }}"
+               name="{{ registrationForm.email.vars.full_name }}"
+               value="{{ registrationForm.email.vars.value }}"
+               class="{% if not registrationForm.email.vars.valid %}is-invalid{% endif %}"
+               autocomplete="email" required placeholder="you@example.com">
+        <label for="{{ registrationForm.email.vars.id }}">Email</label>
+        {{ form_errors(registrationForm.email) }}
+    </div>
+
+    <div class="auth-field">
+        <input type="password"
+               id="{{ registrationForm.plainPassword.vars.id }}"
+               name="{{ registrationForm.plainPassword.vars.full_name }}"
+               class="{% if not registrationForm.plainPassword.vars.valid %}is-invalid{% endif %}"
+               autocomplete="new-password" required placeholder="Пароль">
+        <label for="{{ registrationForm.plainPassword.vars.id }}">Пароль</label>
+        {{ form_errors(registrationForm.plainPassword) }}
+    </div>
+
+    {# honeypot: человек не видит (.hp-guard), бот заполнит → отказ. ts: подписанная метка. #}
+    <div class="hp-guard" aria-hidden="true">
+        <label for="{{ registrationForm.website.vars.id }}">Не заполняйте это поле</label>
+        <input type="text"
+               id="{{ registrationForm.website.vars.id }}"
+               name="{{ registrationForm.website.vars.full_name }}"
+               value="{{ registrationForm.website.vars.value }}"
+               tabindex="-1" autocomplete="off">
+    </div>
+    <input type="hidden"
+           name="{{ registrationForm.ts.vars.full_name }}"
+           value="{{ registrationForm.ts.vars.value }}">
+
+    {{ form_widget(registrationForm._token) }}
+
+    <button class="auth-btn auth-btn-primary" type="submit" data-loading="Регистрируем…">
+        <i class="bi bi-person-plus"></i> Зарегистрироваться
+    </button>
+</form>

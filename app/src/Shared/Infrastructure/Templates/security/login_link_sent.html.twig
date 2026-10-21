@@ -8,17 +8,24 @@
 {% block body %}
     <div class="authshell">
         <div class="auth-wrap">
-            <div class="auth-logo-mark md auth-logo-center">{{ app_name|first }}</div>
+            <a href="{{ path('app_homepage') }}" class="auth-logo-mark md auth-logo-center" title="На главную">{{ app_name|first }}</a>
 
             <div class="auth-card auth-sent">
-                <div class="ok-ic"><i class="bi bi-envelope-check"></i></div>
-                <h1 class="auth-h">Проверьте почту</h1>
-                <p class="auth-s">
-                    Если <span class="em">{{ email }}</span> зарегистрирован в системе, мы отправили на него ссылку для входа. Ссылка активна несколько минут.
-                </p>
-                <div class="auth-mini">
-                    <a href="{{ path('app_login_link', {'email': email}) }}">Отправить ещё раз</a>
-                </div>
+                {% if error is defined and error %}
+                    {# Терминальная ошибка без формы — не даём спамить отправку (no-JS фолбэк). #}
+                    <div class="ok-ic err"><i class="bi bi-exclamation-triangle"></i></div>
+                    <h1 class="auth-h">Не удалось</h1>
+                    <p class="auth-s">{{ error }}</p>
+                {% else %}
+                    <div class="ok-ic"><i class="bi bi-envelope-check"></i></div>
+                    <h1 class="auth-h">Проверьте почту</h1>
+                    <p class="auth-s">
+                        Если <span class="em">{{ email }}</span> зарегистрирован в системе, мы отправили на него ссылку для входа. Ссылка активна несколько минут.
+                    </p>
+                    <div class="auth-mini">
+                        <a href="{{ path('app_login_link', {'email': email}) }}">Отправить ещё раз</a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
