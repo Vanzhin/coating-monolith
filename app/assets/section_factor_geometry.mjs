@@ -68,7 +68,12 @@ export const GEO = {
             const ri = Math.max(d.outerRadius - d.wallThickness, 0);
             return base - (4 - Math.PI) * (d.outerRadius ** 2 - ri ** 2);
         },
-        perimeter: (d, s) => (s.top ? d.width : 0) + (s.bottom ? d.width : 0) + (s.left ? d.height : 0) + (s.right ? d.height : 0),
+        // каждая обогреваемая сторона несёт скруглённый угол: +R·(π/2−2) (зеркало RectHollowSection)
+        perimeter: (d, s) => {
+            const corner = (d.outerRadius || 0) * (Math.PI / 2 - 2);
+            return (s.top ? d.width + corner : 0) + (s.bottom ? d.width + corner : 0)
+                + (s.left ? d.height + corner : 0) + (s.right ? d.height + corner : 0);
+        },
     },
     sheet: {
         area: (d) => d.thickness * 1000,

@@ -29,6 +29,13 @@ final class RectHollowSectionTest extends TestCase
         self::assertSame(300.0, (new RectHollowSection(100, 100, 5))->heatedPerimeter(HeatingScheme::threeSided()));
     }
 
+    public function test_perimeter_subtracts_corner_radius(): void
+    {
+        // ГОСТ 30245 100×100×5 R10: 2(H+W) минус 4 скругления 4·R·(2−π/2) → 382.832 (как эталон)
+        $profile = new RectHollowSection(100, 100, 5, 10);
+        self::assertEqualsWithDelta(382.832, $profile->heatedPerimeter(HeatingScheme::allSides()), 0.01);
+    }
+
     public function test_rejects_wall_too_thick(): void
     {
         $this->expectException(AppException::class);
