@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { showToast } from '../flash_toast.js';
+import { submitInlineForm } from '../inline_form.js';
 
 /**
  * Верификация канала: отправка кода (AJAX) с кулдауном (sticky в localStorage),
@@ -41,17 +42,38 @@ export default class extends Controller {
         this.submitTarget.disabled = this.tokenTarget.value.length !== 6;
     }
 
-    onSubmit(event) {
+    async onSubmit(event) {
+        event.preventDefault();
+        if (!this.channelTarget.value) {
+            showToast('Выберите канал для верификации', 'warning');
+            return;
+        }
         if (this.tokenTarget.value.length !== 6) {
-            event.preventDefault();
             showToast('Введите 6-значный код', 'warning');
             this.tokenTarget.focus();
             return;
         }
-        if (!this.channelTarget.value) {
-            event.preventDefault();
-            showToast('Выберите канал для верификации', 'warning');
+
+        // Инлайн как на входе/регистрации: не уходим со страницы, успех → редирект в кабинет,
+        // ошибка (неверный/истёкший код, рейт-лимит) → тост из сообщения сервера.
+        this.submitTarget.disabled = true;
+        const original = this.submitTarget.innerHTML;
+        this.submitTarget.textContent = 'Проверяем…';
+        try {
+            const result = await submitInlineForm(event.target);
+            if (result.redirect) {
+                window.location.assign(result.redirect);
+                return;
+            }
+            if (result.message) {
+                showToast(result.message, 'danger');
+            }
+        } catch (e) {
+            showToast('Не удалось отправить. Попробуйте ещё раз.', 'danger');
         }
+        this.submitTarget.disabled = false;
+        this.submitTarget.innerHTML = original;
+        this._syncSubmit();
     }
 
     async send() {
@@ -81,12 +103,12 @@ export default class extends Controller {
                 showToast('Код отправлен. Проверьте канал связи.', 'success');
                 this.tokenTarget.focus();
             } else {
-                showToast(payload.message || 'Ошибка при отправке кода', 'error');
+                showToast(payload.message || 'Ошибка при отправке кода', 'danger');
                 this.sendBtnTarget.disabled = false;
                 this.sendTextTarget.textContent = original;
             }
         } catch {
-            showToast('Ошибка при отправке кода. Попробуйте позже.', 'error');
+            showToast('Ошибка при отправке кода. Попробуйте позже.', 'danger');
             this.sendBtnTarget.disabled = false;
             this.sendTextTarget.textContent = original;
         }

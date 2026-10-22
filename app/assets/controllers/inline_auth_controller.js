@@ -1,14 +1,13 @@
 import { Controller } from '@hotwired/stimulus';
 import { showToast } from '../flash_toast.js';
+import { submitInlineForm } from '../inline_form.js';
 
 /*
  * Инлайн-отправка форм входа / регистрации / входа-по-ссылке в свап-панели лендинга.
- * Не уводим со страницы: шлём fetch (X-Requested-With), сервер отвечает одним из:
- * ResponseListener оборачивает JSON в конверт { result, status, data, message }:
- *   - result:success, data.redirect — успех входа/регистрации → уводим в кабинет;
- *   - result:error,  message        — провал → показываем тостом (как остальные ошибки
- *     приложения), форма и введённое остаются на месте для исправления;
- *   - HTML-фрагмент (вход по ссылке) — терминальный результат: подменяем слот.
+ * Не уводим со страницы: разбор ответа — общий хелпер submitInlineForm (конверт ResponseListener):
+ *   - redirect — успех входа/регистрации → уводим в кабинет;
+ *   - message  — провал → показываем тостом (как остальные ошибки приложения), форма остаётся;
+ *   - html     — HTML-фрагмент (вход по ссылке): терминальный результат, подменяем слот.
  * Пока ждём — кнопка в состоянии data-loading. Без JS формы постят обычным способом.
  */
 export default class extends Controller {
@@ -32,31 +31,21 @@ export default class extends Controller {
         }
 
         try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
+            const result = await submitInlineForm(form);
+            if (result.redirect) {
+                window.location.assign(result.redirect);
 
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-                const data = await response.json();
-                if (data.result === 'success' && data.data && data.data.redirect) {
-                    window.location.assign(data.data.redirect);
-                    return;
-                }
-                if (data.message) {
-                    showToast(data.message, 'danger');
-                }
-                restore();
                 return;
             }
+            if (undefined !== result.html) {
+                this.slotTarget.innerHTML = result.html; // терминальный результат (вход по ссылке)
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                return;
             }
-            // HTML-фрагмент (вход по ссылке): терминальный результат в слоте.
-            this.slotTarget.innerHTML = await response.text();
+            if (result.message) {
+                showToast(result.message, 'danger');
+            }
+            restore();
         } catch (e) {
             restore();
             showToast('Не удалось отправить. Проверьте соединение и попробуйте ещё раз.', 'danger');

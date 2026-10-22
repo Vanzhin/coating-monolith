@@ -99,15 +99,29 @@ a.auth-logo-mark:hover { color: #fff; filter: brightness(1.04); }
 
 /* Поле с постоянной мелкой подписью сверху. */
 .auth-field { position: relative; margin-bottom: 12px; }
-.auth-field > input {
+.auth-field > input,
+.auth-field > select {
     width: 100%; height: 54px; border-radius: 12px;
     border: 1.5px solid transparent; background: var(--sunken);
     padding: 20px 14px 6px; font-size: 15px; color: var(--bs-body-color); font-family: inherit;
+    appearance: none; -webkit-appearance: none; box-sizing: border-box;
 }
-.auth-field > input:focus { outline: none; border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
+/* Селект канала — та же коробка, что у input, плюс свой шеврон (appearance сброшен выше). */
+.auth-field > select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+}
+.auth-field > input:focus,
+.auth-field > select:focus { outline: none; border-color: var(--bs-primary); box-shadow: 0 0 0 3px var(--accent-subtle); }
 .auth-field > input.is-invalid { border-color: var(--danger-strong); }
 .auth-field > label { position: absolute; left: 14px; top: 8px; font-size: 11px; font-weight: 600; color: var(--auth-faint); }
 .auth-field .invalid-feedback { display: block; font-size: 12px; color: var(--danger-strong); margin-top: 4px; }
+/* Поле ввода OTP — крупные разреженные цифры по центру. */
+.auth-field.code > input { text-align: center; letter-spacing: .4em; font-size: 22px; font-weight: 700; padding-right: 14px; }
+
+/* Карточка-форма верификации канала: вертикальная колонка полей/кнопок поверх .auth-card.
+   Без рамки — по дизайн-языку проекта карточки различаем тенью/оттенком (border у .auth-card гасим). */
+.verify-panel { display: flex; flex-direction: column; gap: 12px; border: 0; }
 
 .auth-alt { text-align: center; font-size: 13px; color: var(--bs-secondary-color); margin-top: 16px; }
 .auth-alt a { color: var(--bs-primary); font-weight: 650; text-decoration: none; }
