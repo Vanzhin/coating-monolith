@@ -1,7 +1,14 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
-    #csrf_protection: true
+    # CSRF входа/регистрации/входа-по-ссылке — STATELESS (проверка Origin/Sec-Fetch-Site + double-submit
+    # cookie), НЕ через сессию. Раньше токен логина жил в Redis-сессии: при её потере (истёк TTL, рестарт
+    # Redis) пользователь не мог войти — «Недействительный токен CSRF», залипал на форме и ловил
+    # login_throttling. Для этих id валидация идёт по признаку same-origin запроса, без сессии, поэтому
+    # вход работает даже когда сессии нет. Остальные токены (формы правок и пр.) делегируются прежнему
+    # сессионному менеджеру без изменений (SameOriginCsrfTokenManager рулит только перечисленными id).
+    csrf_protection:
+        stateless_token_ids: ['authenticate', 'login_link', 'registration']
     form:
         csrf_protection:
             enabled: true
