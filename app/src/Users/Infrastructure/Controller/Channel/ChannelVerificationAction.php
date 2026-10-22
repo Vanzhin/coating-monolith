@@ -17,6 +17,8 @@ use App\Users\Domain\Repository\ChannelRepositoryInterface;
 use App\Users\Infrastructure\Form\ChannelVerificationFormType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -68,15 +70,24 @@ class ChannelVerificationAction extends AbstractController
         ]);
         $form->handleRequest($request);
 
+        // Форма шлётся inline (channel-verify), как вход/регистрация: на XHR отдаём JSON-конверт
+        // (ResponseListener превратит его в { result, data, message }) — успех редиректит, ошибка
+        // всплывает тостом. Без JS — прежнее поведение: flash + redirect/render (flash тоже тост).
+        $isXhr = $request->isXmlHttpRequest();
+
         if ($form->isSubmitted() && $form->isValid()) {
             // Rate-limit перебора OTP: 5 попыток/15мин на юзера (см. framework.yaml). Считаем каждую
             // отправку валидной формы; исчерпан — не выполняем команду, показываем ошибку.
             $limit = $this->channelVerifyPerUserLimiter->create($user->getId())->consume();
             if (!$limit->isAccepted()) {
-                $this->addFlash('error', sprintf(
+                $message = sprintf(
                     'Слишком много попыток верификации. Попробуйте через %d мин.',
                     max(1, (int) ceil(($limit->getRetryAfter()->getTimestamp() - time()) / 60)),
-                ));
+                );
+                if ($isXhr) {
+                    return new JsonResponse(['message' => $message], Response::HTTP_TOO_MANY_REQUESTS);
+                }
+                $this->addFlash('error', $message);
             } else {
                 // Узкий try: ловим доменный AppException ровно над verify-командой.
                 // Прочее (loadUser, createChannel выше) — не ловим: пусть Symfony отдаёт нормальный 500/4xx
@@ -89,23 +100,44 @@ class ChannelVerificationAction extends AbstractController
                         new VerifyChannelCommand(channelId: $channel->getId(), tokenString: $token)
                     );
 
+                    if ($isXhr) {
+                        return new JsonResponse(['redirect' => $this->generateUrl('app_cabinet')]);
+                    }
+
                     $this->addFlash('success', 'Канал успешно верифицирован!');
                     $this->addFlash('success', 'Аккаунт успешно активирован!');
 
                     return $this->redirectToRoute('app_cabinet');
                 } catch (AppException $e) {
-                    // Доменную ошибку (истёк/неверный код) показываем как есть и падаем в render
-                    // формы с flash. Техническое НЕ ловим — его подхватит MutationErrorListener:
-                    // залогирует с ref-кодом и покажет generic-тост, не утекая внутренностями.
+                    // Доменную ошибку (истёк/неверный код) показываем как есть. Техническое НЕ ловим —
+                    // его подхватит MutationErrorListener: залогирует с ref-кодом и покажет generic-тост.
+                    if ($isXhr) {
+                        return new JsonResponse(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+                    }
                     $this->addFlash('error', $e->getMessage());
                 }
             }
+        } elseif ($form->isSubmitted() && $isXhr) {
+            // Структурно невалидная форма при XHR (клиент обошёл проверку) — первую ошибку тостом.
+            return new JsonResponse(
+                ['message' => $this->firstFormError($form) ?? 'Проверьте правильность заполнения формы.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
         }
 
         return $this->render('user/channel/verify.html.twig', [
             'verificationForm' => $form->createView(),
             'user' => $user,
         ]);
+    }
+
+    private function firstFormError(FormInterface $form): ?string
+    {
+        foreach ($form->getErrors(true) as $error) {
+            return $error->getMessage();
+        }
+
+        return null;
     }
 
     private function createChannel(User $user): void

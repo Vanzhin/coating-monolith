@@ -1,73 +1,68 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ parent() }} | Верификация канала{% endblock %}
+{% block title %}{{ parent() }} · Подтверждение канала{% endblock %}
 
+{# Отдельная страница кабинета (навигация на месте): обслуживает и гейт первого канала, и
+   подтверждение доп-канала активным юзером. Форма шлётся inline (channel-verify): успех → редирект,
+   ошибка → тост. Серверный flash тоже рендерится тостом (base.html.twig), поэтому инлайн-партиал
+   сообщений в карточке не нужен. #}
 {% block body %}
-    <div class="container py-3">
+    <div class="container py-4">
         <div class="row justify-content-center">
-            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
-                <div class="p-4 rounded-3 bg-body-tertiary"
-                     data-controller="channel-verify"
-                     data-channel-verify-send-url-value="{{ path('app_user_channel_verification_send_token') }}">
+            <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+                {{ form_start(verificationForm, {
+                    'attr': {
+                        'novalidate': true,
+                        'class': 'auth-card verify-panel',
+                        'data-controller': 'channel-verify',
+                        'data-channel-verify-send-url-value': path('app_user_channel_verification_send_token'),
+                        'data-action': 'submit->channel-verify#onSubmit'
+                    },
+                    'action': path('app_user_channel_verification')
+                }) }}
+                    <div class="auth-h">Подтверждение канала</div>
+                    <p class="auth-s">Отправим код на выбранный канал — введите его, чтобы подтвердить.</p>
 
-                    {% include 'user/channel/_messages.html.twig' with { form: verificationForm } only %}
-
-                    <div class="text-center mb-4">
-                        <h1 class="h4 fw-semibold mb-1">Верификация аккаунта</h1>
-                        <p class="text-body-secondary mb-0">Подтвердите ваш канал связи</p>
-                    </div>
-
-                    {{ form_start(verificationForm, {
-                        'attr': {
-                            'novalidate': true,
-                            'id': 'verification-form',
-                            'data-action': 'submit->channel-verify#onSubmit'
-                        },
-                        'action': path('app_user_channel_verification')
-                    }) }}
-
-                    <div class="form-floating mb-3">
+                    <div class="auth-field">
                         {{ form_widget(verificationForm.channel, {
                             'attr': {
-                                'class': 'form-select' ~ (verificationForm.channel.vars.errors|length > 0 ? ' is-invalid' : ''),
                                 'data-channel-verify-target': 'channel',
                                 'data-action': 'change->channel-verify#onChannelChange'
                             }
                         }) }}
-                        {{ form_label(verificationForm.channel) }}
+                        {# Лейбл вручную: глобальная тема форм — horizontal, её form_label навесил бы
+                           col-классы, ломающие абсолютный лейбл .auth-field. #}
+                        <label for="{{ verificationForm.channel.vars.id }}">{{ verificationForm.channel.vars.label }}</label>
                     </div>
 
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-outline-primary w-100"
-                                data-channel-verify-target="sendBtn"
-                                data-action="click->channel-verify#send">
-                            <span data-channel-verify-target="sendText">Отправить код верификации</span>
-                            <span data-channel-verify-target="timer" class="ms-1"></span>
-                        </button>
-                    </div>
+                    <button type="button" class="auth-btn auth-btn-ghost"
+                            data-channel-verify-target="sendBtn"
+                            data-action="click->channel-verify#send">
+                        <i class="bi bi-send"></i>
+                        <span data-channel-verify-target="sendText">Отправить код</span>
+                        <span data-channel-verify-target="timer"></span>
+                    </button>
 
-                    <div class="form-floating mb-4">
+                    <div class="auth-field code">
                         {{ form_widget(verificationForm.token, {
                             'attr': {
-                                'class': 'form-control channel-code-input' ~ (verificationForm.token.vars.errors|length > 0 ? ' is-invalid' : ''),
                                 'data-channel-verify-target': 'token',
                                 'data-action': 'input->channel-verify#onTokenInput',
-                                'placeholder': 'Введите код',
+                                'placeholder': '______',
                                 'inputmode': 'numeric',
-                                'maxlength': 6
+                                'maxlength': 6,
+                                'autocomplete': 'one-time-code'
                             }
                         }) }}
-                        {{ form_label(verificationForm.token) }}
+                        <label for="{{ verificationForm.token.vars.id }}">{{ verificationForm.token.vars.label }}</label>
                     </div>
 
                     {{ form_rest(verificationForm) }}
 
-                    <button class="btn btn-primary w-100" type="submit" data-channel-verify-target="submit">
-                        Подтвердить код
+                    <button class="auth-btn auth-btn-primary" type="submit" data-channel-verify-target="submit">
+                        <i class="bi bi-check2"></i> Подтвердить
                     </button>
-
-                    {{ form_end(verificationForm) }}
-                </div>
+                {{ form_end(verificationForm, { render_rest: false }) }}
             </div>
         </div>
     </div>
