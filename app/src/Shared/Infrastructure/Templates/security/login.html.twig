@@ -12,7 +12,7 @@
 
             {% if app.user %}
                 <div class="auth-alert ok">
-                    Вы вошли как <strong>{{ app.user.userIdentifier }}</strong>. <a href="{{ path('app_logout') }}">Выйти</a>
+                    Вы вошли как <strong>{{ app.user.userIdentifier }}</strong>. <a href="{{ path('app_logout') }}" data-controller="logout" data-action="click->logout#run">Выйти</a>
                 </div>
             {% endif %}
 
