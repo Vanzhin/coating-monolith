@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { subscribe, unsubscribe } from '../push_subscription';
+import { subscribe, unsubscribe, currentSubscription } from '../push_subscription';
 
 /**
  * Свитч web-push (PWA). Состояние свитча = есть ли активная подписка этого устройства. Вкл → subscribe(),
@@ -18,8 +18,7 @@ export default class extends Controller {
 
             return;
         }
-        const registration = await navigator.serviceWorker.ready;
-        this.switchTarget.checked = Boolean(await registration.pushManager.getSubscription());
+        this.switchTarget.checked = Boolean(await currentSubscription());
     }
 
     async toggle() {

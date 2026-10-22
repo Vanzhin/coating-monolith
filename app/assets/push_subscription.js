@@ -6,10 +6,16 @@
 
 const SUPPORTED = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-async function currentSubscription() {
-    const registration = await navigator.serviceWorker.ready;
+// Экспортируется для свитча (connect), чтобы не дублировать лукап. getRegistration() резолвится
+// сразу — в отличие от navigator.serviceWorker.ready, который ВИСИТ, пока нет активного воркера
+// (нет регистрации / Safari private). Иначе логаут впустую ждал бы весь таймаут, когда подписки нет.
+export async function currentSubscription() {
+    if (!SUPPORTED) {
+        return null;
+    }
+    const registration = await navigator.serviceWorker.getRegistration();
 
-    return registration.pushManager.getSubscription();
+    return registration ? registration.pushManager.getSubscription() : null;
 }
 
 /** VAPID public key (base64url) → Uint8Array для applicationServerKey. */
@@ -93,5 +99,9 @@ export async function unsubscribe() {
     } catch (e) {
         // не критично — см. комментарий выше
     }
-    await existing.unsubscribe();
+    try {
+        await existing.unsubscribe();
+    } catch (_) {
+        // best-effort: даже если браузер не снял подписку, канал уйдёт лениво по 410
+    }
 }
