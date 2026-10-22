@@ -4,5 +4,6 @@
 
 {% block body %}
     <p><strong>Здравствуйте!</strong></p>
-    <div>{{ message|notification_text }}</div>
+    {# absolute: письму нужен абсолютный URL (почта не резолвит относительный путь); в приложении путь остаётся относительным #}
+    <div>{{ message|notification_text(true) }}</div>
 {% endblock %}
