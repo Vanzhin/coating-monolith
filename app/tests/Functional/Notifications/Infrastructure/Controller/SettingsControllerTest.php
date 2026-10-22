@@ -32,7 +32,7 @@ final class SettingsControllerTest extends WebTestCase
 
         $html = (string) $client->request('GET', '/cabinet/notifications/settings')->html();
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('СИЗ: подходит срок', $html, 'настраиваемый тип показан');
+        self::assertStringContainsString('Контроль обязанностей сотрудников', $html, 'настраиваемый тип показан');
         self::assertStringNotContainsString('Новый пользователь', $html, 'системный тип скрыт');
         self::assertStringNotContainsString('channels[web_push]', $html, 'push больше не канал подписки');
 
@@ -59,7 +59,7 @@ final class SettingsControllerTest extends WebTestCase
 
         $html = (string) $client->request('GET', '/cabinet/notifications/settings')->html();
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('СИЗ: подходит срок', $html, 'сотрудник видит тип и может подписаться на свой срок');
+        self::assertStringContainsString('Контроль обязанностей сотрудников', $html, 'сотрудник видит тип и может подписаться на свой срок');
 
         $client->request('POST', '/cabinet/notifications/settings', [
             'type' => 'compliance.due_soon',

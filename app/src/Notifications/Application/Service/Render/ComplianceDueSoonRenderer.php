@@ -40,49 +40,59 @@ final readonly class ComplianceDueSoonRenderer implements MessageRendererInterfa
             throw new AppException('Событие compliance.due_soon не несёт нужных данных.');
         }
 
-        [$soon, $overdue] = $this->count($event->items());
-        $link = $this->urls->generate(self::DASHBOARD_ROUTE, ['profile' => $event->subjectProfileId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        [$soon, $overdue, $missing] = $this->count($event->items());
+        $link = $this->urls->generate(self::DASHBOARD_ROUTE, ['profile' => $event->subjectProfileId()], UrlGeneratorInterface::ABSOLUTE_PATH);
 
-        return sprintf("%s — %s.\n%s", $event->employeeFio(), $this->phrase($soon, $overdue), $link);
+        return sprintf("%s\n%s — %s.\n%s", $this->heading(), $event->employeeFio(), $this->phrase($soon, $overdue, $missing), $link);
     }
 
     public function renderSummary(NotifiableEvent ...$events): string
     {
         $soon = 0;
         $overdue = 0;
+        $missing = 0;
         foreach ($events as $event) {
             if (!$event instanceof ComplianceDueSoonData) {
                 throw new AppException('Событие compliance.due_soon не несёт нужных данных.');
             }
-            [$s, $o] = $this->count($event->items());
+            [$s, $o, $m] = $this->count($event->items());
             $soon += $s;
             $overdue += $o;
+            $missing += $m;
         }
-        $link = $this->urls->generate(self::DASHBOARD_ROUTE, $this->summaryParams($soon, $overdue), UrlGeneratorInterface::ABSOLUTE_URL);
+        $link = $this->urls->generate(self::DASHBOARD_ROUTE, $this->summaryParams($soon, $overdue, $missing), UrlGeneratorInterface::ABSOLUTE_PATH);
 
-        return sprintf("Сотрудников: %d — %s.\n%s", \count($events), $this->phrase($soon, $overdue), $link);
+        return sprintf("%s\nСотрудников: %d — %s.\n%s", $this->heading(), \count($events), $this->phrase($soon, $overdue, $missing), $link);
+    }
+
+    /** Общий заголовок первой строкой (и в приложении, и в письме) — что это за уведомление; из каталога типов. */
+    private function heading(): string
+    {
+        return $this->type()->label();
     }
 
     /**
      * @param list<ComplianceDueItem> $items
      *
-     * @return array{0: int, 1: int} [soon, overdue]
+     * @return array{0: int, 1: int, 2: int} [soon, overdue, missing]
      */
     private function count(array $items): array
     {
         $soon = 0;
         $overdue = 0;
+        $missing = 0;
         foreach ($items as $item) {
             match ($item->kind) {
                 DueKind::Soon => ++$soon,
                 DueKind::Overdue => ++$overdue,
+                DueKind::Missing => ++$missing,
             };
         }
 
-        return [$soon, $overdue];
+        return [$soon, $overdue, $missing];
     }
 
-    private function phrase(int $soon, int $overdue): string
+    private function phrase(int $soon, int $overdue, int $missing): string
     {
         $parts = [];
         if ($soon > 0) {
@@ -91,20 +101,27 @@ final readonly class ComplianceDueSoonRenderer implements MessageRendererInterfa
         if ($overdue > 0) {
             $parts[] = 'просрочено: '.$overdue;
         }
+        if ($missing > 0) {
+            $parts[] = 'не выполнено: '.$missing;
+        }
 
         return implode(', ', $parts);
     }
 
-    /** @return array<string, string> фильтр дашборда под состав сводки */
-    private function summaryParams(int $soon, int $overdue): array
+    /**
+     * Фильтр дашборда под состав сводки: ровно одно состояние — фильтруем по нему (дашборд принимает
+     * status=soon|overdue|missing); смешанный состав — без фильтра (отдельного «несколько состояний» нет).
+     *
+     * @return array<string, string>
+     */
+    private function summaryParams(int $soon, int $overdue, int $missing): array
     {
-        if ($soon > 0 && $overdue > 0) {
-            return []; // отдельного фильтра «soon+overdue» у дашборда нет — без фильтра состояния
-        }
-        if ($overdue > 0) {
-            return ['status' => 'overdue'];
-        }
+        $present = array_filter([
+            'soon' => $soon,
+            'overdue' => $overdue,
+            'missing' => $missing,
+        ], static fn (int $n): bool => $n > 0);
 
-        return ['status' => 'soon'];
+        return 1 === \count($present) ? ['status' => array_key_first($present)] : [];
     }
 }

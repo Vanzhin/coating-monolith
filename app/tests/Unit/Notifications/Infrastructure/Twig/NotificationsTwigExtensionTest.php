@@ -59,6 +59,45 @@ final class NotificationsTwigExtensionTest extends TestCase
         self::assertStringContainsString('<a href="https://app.example.com/x">https://app.example.com/x</a>', $out);
     }
 
+    public function test_relative_path_linkified_and_stays_relative_in_app(): void
+    {
+        $out = $this->ext()->notificationText(
+            "Контроль обязанностей сотрудников\nИванов Иван — срок подходит у позиций: 1.\n/cabinet/compliance/dashboard?profile=p1",
+        );
+
+        self::assertStringContainsString(
+            '<a href="/cabinet/compliance/dashboard?profile=p1">/cabinet/compliance/dashboard?profile=p1</a>',
+            $out,
+        );
+        self::assertStringNotContainsString('https://', $out, 'в приложении хост не подставляем — путь относительный');
+    }
+
+    public function test_relative_path_absolutized_for_email(): void
+    {
+        $out = $this->ext()->notificationText(
+            "Контроль обязанностей сотрудников\n/cabinet/compliance/dashboard?status=missing",
+            absolute: true,
+        );
+
+        self::assertStringContainsString(
+            '<a href="https://app.example.com/cabinet/compliance/dashboard?status=missing">',
+            $out,
+        );
+    }
+
+    public function test_path_query_ampersand_escaped_in_href_for_email(): void
+    {
+        $out = $this->ext()->notificationText(
+            "x\n/cabinet/compliance/dashboard?status=overdue&only=1",
+            absolute: true,
+        );
+
+        self::assertStringContainsString(
+            'href="https://app.example.com/cabinet/compliance/dashboard?status=overdue&amp;only=1"',
+            $out,
+        );
+    }
+
     private function ext(string $baseUrl = 'https://app.example.com'): NotificationsTwigExtension
     {
         return new NotificationsTwigExtension(

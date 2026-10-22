@@ -32,7 +32,7 @@ enum NotificationType: string
     public function label(): string
     {
         return match ($this) {
-            self::ComplianceDueSoon => 'СИЗ: подходит срок выдачи',
+            self::ComplianceDueSoon => 'Контроль обязанностей сотрудников',
             self::UserActivated => 'Новый пользователь',
         };
     }
