@@ -1,14 +1,24 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
-    # CSRF входа/регистрации/входа-по-ссылке — STATELESS (проверка Origin/Sec-Fetch-Site + double-submit
-    # cookie), НЕ через сессию. Раньше токен логина жил в Redis-сессии: при её потере (истёк TTL, рестарт
-    # Redis) пользователь не мог войти — «Недействительный токен CSRF», залипал на форме и ловил
-    # login_throttling. Для этих id валидация идёт по признаку same-origin запроса, без сессии, поэтому
-    # вход работает даже когда сессии нет. Остальные токены (формы правок и пр.) делегируются прежнему
-    # сессионному менеджеру без изменений (SameOriginCsrfTokenManager рулит только перечисленными id).
+
+    # За обратным прокси (Caddy в докер-сети, приватные IP). Без доверия X-Forwarded-* Symfony видит
+    # схему http, а браузерный Origin — https → stateless-CSRF Origin/Referer-fallback в проде всегда
+    # мимо (остаётся только Sec-Fetch-Site, которого нет у Safari <16.4 и части прокси → вход падает).
+    # ВАЖНО: внешний TLS-терминатор должен слать X-Forwarded-Proto: https, а Caddy — пробрасывать его.
+    trusted_proxies: 'private_ranges'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']
+
+    # CSRF входа и регистрации — STATELESS (проверка Origin/Sec-Fetch-Site + double-submit cookie), НЕ
+    # через сессию. Раньше токен логина жил в Redis-сессии: при её потере (истёк TTL, рестарт Redis)
+    # пользователь не мог войти — «Недействительный токен CSRF», залипал на форме и ловил login_throttling.
+    # Для этих id валидация идёт по признаку same-origin запроса, без сессии, поэтому вход работает даже
+    # когда сессии нет. Остальные токены (формы правок и пр.) делегируются прежнему сессионному менеджеру
+    # без изменений (SameOriginCsrfTokenManager рулит только перечисленными id).
+    # login_link НЕ включаем: LoginLinkAction его токен не валидирует вовсе (прикрыт rate-limit), он
+    # декоративный — в stateless-списке только вводил бы в заблуждение.
     csrf_protection:
-        stateless_token_ids: ['authenticate', 'login_link', 'registration']
+        stateless_token_ids: ['authenticate', 'registration']
     form:
         csrf_protection:
             enabled: true
