@@ -5,6 +5,11 @@
 # `docker compose exec`, а поток SQL по SSH льётся сюда и заливается в локальный
 # контейнер `manager_db`. На прод только читаем (pg_dump), пишем только в локаль.
 #
+# После раската гасятся push- и telegram-каналы (user_channel) — это хэндлы конкретных
+# устройств/чатов реальных людей, для локальных тестов бесполезны и опасны. Email-каналы
+# оставляем (нужны для локальных email-флоу); от случайной рассылки писем живым людям
+# защищает dev-овый MAILER_DSN (null/mailpit в app/.env), а не вычистка данных.
+#
 # Запускать вручную (нужен настроенный SSH-доступ deploy-юзера):
 #   ./db-pull-prod.sh                      # снять дамп с прода и раскатать локально
 #   ./db-pull-prod.sh --fetch-only         # только снять дамп в файл, не раскатывать
@@ -140,6 +145,26 @@ restore_dump() {
   else
     echo ">> Готово, ошибок нет." >&2
     rm -f "$log"
+  fi
+
+  scrub_delivery_channels
+}
+
+# Гасит push- и telegram-каналы в локальной копии. Прод-дамп несёт живые endpoint'ы push
+# и telegram-чаты реальных людей; локаль с совпадающими кредами способна разослать им
+# настоящие уведомления. Эти хэндлы для локальной разработки бесполезны — сносим, свои
+# dev-подписки заводятся заново. Email-каналы НЕ трогаем: они нужны для локальных email-флоу
+# и не ломают гейт верификации (is_active — хранимый флаг, удалением каналов не гасится);
+# от случайной отправки писем защищает dev-овый MAILER_DSN.
+scrub_delivery_channels() {
+  echo ">> Гашу push/telegram-каналы в локальной БД (user_channel) ..." >&2
+  if docker compose exec -T "$DB_SERVICE" \
+       sh -c 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DELETE FROM user_channel WHERE type IN ('"'"'web_push'"'"', '"'"'telegram'"'"');"' \
+       >/dev/null 2>&1; then
+    echo ">> Push/telegram-каналы очищены — локаль не достучится до прод-устройств и чатов." >&2
+  else
+    echo "!! НЕ удалось очистить каналы — почисти вручную, иначе локаль может слать реальные push/telegram:" >&2
+    echo "!!   ./run console dbal:run-sql \"DELETE FROM user_channel WHERE type IN ('web_push','telegram')\"" >&2
   fi
 }
 
