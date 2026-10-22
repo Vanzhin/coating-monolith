@@ -8,6 +8,7 @@ use App\Compliance\Application\Service\DueSoonScanner;
 use App\Compliance\Domain\Event\ComplianceDueSoon;
 use App\Compliance\Domain\Repository\ObligationProjectionRepositoryInterface;
 use App\Compliance\Domain\Service\ComplianceBucketResolver;
+use App\Compliance\Domain\Type\ComplianceBucket;
 use App\Notifications\Domain\Event\DueKind;
 use App\Notifications\Domain\Event\NotificationBatch;
 use App\Shared\Application\Event\EventBusInterface;
@@ -54,7 +55,7 @@ final class DueSoonScannerTest extends KernelTestCase
         self::assertSame(DueKind::Overdue, $digest->items()[0]->kind);
     }
 
-    /** Срок за горизонтом DUE_SOON_DAYS (60 дней) не должен попасть в скан — пин фильтра dueBefore на новой таблице. */
+    /** Срок за горизонтом DUE_SOON_DAYS (60 дней) не шлётся — bucketFor даёт Ok, а Ok не в списке рассылки. */
     public function test_excludes_items_due_far_beyond_threshold(): void
     {
         self::bootKernel();
@@ -70,17 +71,37 @@ final class DueSoonScannerTest extends KernelTestCase
         self::assertSame([], $bus->published);
     }
 
-    public function test_publishes_nothing_when_no_due_items(): void
+    /** По умолчанию (без сужающих флагов) Missing «не выдано/не выполнено» уходит в проход наравне со сроками. */
+    public function test_includes_missing_by_default(): void
     {
         self::bootKernel();
         $this->authenticateAsSystem();
-        $this->enrollCompliance(); // не подписано → Missing (не Soon/Overdue) → не в дайджесте
+        ['profileId' => $profileId] = $this->enrollCompliance(); // не выдано → Missing
 
         $bus = $this->capturingBus();
         $count = $this->scannerWith($bus)->scan(new \DateTimeImmutable());
 
-        self::assertSame(0, $count);
-        self::assertSame([], $bus->published, 'пустая пачка не публикуется');
+        self::assertGreaterThanOrEqual(1, $count);
+        self::assertInstanceOf(NotificationBatch::class, $bus->published[0]);
+        $digest = $bus->published[0]->events()[0];
+        self::assertInstanceOf(ComplianceDueSoon::class, $digest);
+        self::assertSame($profileId, $digest->subjectProfileId());
+        self::assertSame('Перчатки', $digest->items()[0]->label);
+        self::assertSame(DueKind::Missing, $digest->items()[0]->kind);
+    }
+
+    /** Флаг сужает прогон до подмножества бакетов: только Overdue → Missing-позиция не попадает, пачки нет. */
+    public function test_bucket_flag_narrows_run_to_subset(): void
+    {
+        self::bootKernel();
+        $this->authenticateAsSystem();
+        $this->enrollCompliance(); // не выдано → Missing
+
+        $bus = $this->capturingBus();
+        $count = $this->scannerWith($bus)->scan(new \DateTimeImmutable(), [ComplianceBucket::Overdue]);
+
+        self::assertSame(0, $count, 'прогон сужен до Overdue — Missing-позиция отфильтрована');
+        self::assertSame([], $bus->published);
     }
 
     private function scannerWith(EventBusInterface $bus): DueSoonScanner
