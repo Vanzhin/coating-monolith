@@ -60,5 +60,11 @@ class RegistrationFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
+        // Явный csrf_token_id, совпадающий со stateless_token_ids в framework.yaml:
+        // токен регистрации валидируется по origin (без сессии), иначе потеря сессии
+        // ломала бы регистрацию так же, как ломала вход.
+        $resolver->setDefaults([
+            'csrf_token_id' => 'registration',
+        ]);
     }
 }
