@@ -67,6 +67,13 @@
                     <i class="bi bi-check2"></i> Подтвердить
                 </button>
             {{ form_end(verificationForm, { render_rest: false }) }}
+
+            {# Прямой выход: через навигацию неактивный юзер выйти не может — профиль под гейтом
+               верификации (отбросит обратно сюда), в whitelist гейта только app_logout. Контроллер
+               logout заодно снимает push-подписку устройства (как на прочих ссылках выхода). #}
+            <div class="auth-mini">
+                <a href="{{ path('app_logout') }}" data-controller="logout" data-action="click->logout#run">Выйти из аккаунта</a>
+            </div>
         </div>
     </div>
 {% endblock %}
