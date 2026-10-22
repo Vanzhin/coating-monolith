@@ -1,9 +1,10 @@
 import { Controller } from '@hotwired/stimulus';
+import { subscribe, unsubscribe } from '../push_subscription';
 
 /**
- * Тоггл web-push (PWA). Состояние свитча = есть ли активная подписка. Вкл → запрос разрешения →
- * pushManager.subscribe → POST на бэк (создаёт WEB_PUSH-канал). Выкл → unsubscribe. Если бэк не
- * принял (или разрешение не дали) — откатываем локальную подписку и сам свитч. Браузер без push
+ * Свитч web-push (PWA). Состояние свитча = есть ли активная подписка этого устройства. Вкл → subscribe(),
+ * выкл → unsubscribe() (оба — общий модуль push_subscription, тот же unsubscribe зовёт и чистка логаута).
+ * Если бэк не принял или разрешение не дали — свитч возвращается в фактическое состояние. Браузер без push
  * или с отклонённым разрешением — свитч прячем. Требует https/localhost + SW.
  */
 export default class extends Controller {
@@ -17,7 +18,8 @@ export default class extends Controller {
 
             return;
         }
-        this.switchTarget.checked = Boolean(await this.currentSubscription());
+        const registration = await navigator.serviceWorker.ready;
+        this.switchTarget.checked = Boolean(await registration.pushManager.getSubscription());
     }
 
     async toggle() {
@@ -28,89 +30,13 @@ export default class extends Controller {
         this.switchTarget.disabled = true;
         try {
             if (wantOn) {
-                await this.enable();
+                this.switchTarget.checked = await subscribe(this.keyValue);
             } else {
-                await this.disable();
+                await unsubscribe();
+                this.switchTarget.checked = false;
             }
         } finally {
             this.switchTarget.disabled = false;
         }
-    }
-
-    async enable() {
-        if (await this.currentSubscription()) {
-            return; // уже включено
-        }
-        if ('granted' !== await Notification.requestPermission()) {
-            this.switchTarget.checked = false; // разрешение не дали — откат тумблера
-
-            return;
-        }
-        let subscription = null;
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: this.urlBase64ToUint8Array(this.keyValue),
-            });
-            const res = await fetch('/cabinet/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify(subscription),
-            });
-            if (!res.ok || res.redirected) {
-                throw new Error('subscribe rejected');
-            }
-        } catch (e) {
-            // subscribe() упал или бэк не принял — откатываем локальную подписку и тумблер, чтобы
-            // браузер и сервер не разъезжались, а промис не улетал необработанным.
-            if (subscription) {
-                try {
-                    await subscription.unsubscribe();
-                } catch (_) {
-                    // best-effort
-                }
-            }
-            this.switchTarget.checked = false;
-        }
-    }
-
-    async disable() {
-        // Выключение = выкл только этого устройства: шлём бэку endpoint текущей подписки, он удаляет
-        // ровно её канал (подписки других устройств живут). Порядок: берём endpoint ДО отписки в
-        // браузере, затем сервер, затем браузер — всё best-effort, чтобы не разъезжались.
-        const existing = await this.currentSubscription();
-        const endpoint = existing ? existing.endpoint : '';
-        try {
-            await fetch('/cabinet/push/unsubscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ endpoint }),
-            });
-        } catch (e) {
-            // не критично — попробуем ещё раз при следующем выключении
-        }
-        if (existing) {
-            await existing.unsubscribe();
-        }
-    }
-
-    async currentSubscription() {
-        const registration = await navigator.serviceWorker.ready;
-
-        return registration.pushManager.getSubscription();
-    }
-
-    /** VAPID public key (base64url) → Uint8Array для applicationServerKey. */
-    urlBase64ToUint8Array(base64) {
-        const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-        const normalized = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = atob(normalized);
-        const out = new Uint8Array(raw.length);
-        for (let i = 0; i < raw.length; i++) {
-            out[i] = raw.charCodeAt(i);
-        }
-
-        return out;
     }
 }

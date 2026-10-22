@@ -36,6 +36,7 @@
 
                 {# Выход — отдельный блок внизу (перенесён из сайдбара и шторки «Ещё»). #}
                 <a href="{{ path('app_logout') }}"
+                   data-controller="logout" data-action="click->logout#run"
                    class="p-3 rounded-3 bg-body-tertiary d-flex align-items-center gap-3 text-decoration-none text-danger">
                     <i class="bi bi-box-arrow-right fs-4"></i>
                     <span class="fw-medium">Выйти из аккаунта</span>
