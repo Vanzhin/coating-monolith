@@ -143,7 +143,7 @@ export default class extends Controller {
         clearInterval(this._interval);
         this._left = 0;
         this.sendBtnTarget.disabled = false;
-        this.sendTextTarget.textContent = 'Отправить код верификации';
+        this.sendTextTarget.textContent = 'Отправить код';
         this.timerTarget.textContent = '';
         try { window.localStorage.removeItem(this.cooldownKeyValue); } catch { /* ignore */ }
     }

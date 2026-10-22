@@ -3,67 +3,70 @@
 {% block title %}{{ parent() }} · Подтверждение канала{% endblock %}
 
 {# Отдельная страница кабинета (навигация на месте): обслуживает и гейт первого канала, и
-   подтверждение доп-канала активным юзером. Форма шлётся inline (channel-verify): успех → редирект,
-   ошибка → тост. Серверный flash тоже рендерится тостом (base.html.twig), поэтому инлайн-партиал
-   сообщений в карточке не нужен. #}
+   подтверждение доп-канала активным юзером. Рама authshell/auth-wrap нужна ради токенов карточки
+   (--auth-shadow-lg/--auth-faint заданы под .authshell): без неё у .auth-card нет тени и в светлой
+   теме карточка сливается с фоном. Форма шлётся inline (channel-verify): успех → редирект, ошибка →
+   тост. Серверный flash тоже рендерится тостом (base.html.twig). Ошибки полей дублируем под полем —
+   чтобы без JS (полная перезагрузка) структурная валидация была видна (правило #2). #}
 {% block body %}
-    <div class="container py-4">
-        <div class="row justify-content-center">
-            <div class="col-12 col-sm-10 col-md-7 col-lg-5">
-                {{ form_start(verificationForm, {
-                    'attr': {
-                        'novalidate': true,
-                        'class': 'auth-card verify-panel',
-                        'data-controller': 'channel-verify',
-                        'data-channel-verify-send-url-value': path('app_user_channel_verification_send_token'),
-                        'data-action': 'submit->channel-verify#onSubmit'
-                    },
-                    'action': path('app_user_channel_verification')
-                }) }}
-                    <div class="auth-h">Подтверждение канала</div>
-                    <p class="auth-s">Отправим код на выбранный канал — введите его, чтобы подтвердить.</p>
+    <div class="authshell">
+        <div class="auth-wrap">
+            {{ form_start(verificationForm, {
+                'attr': {
+                    'novalidate': true,
+                    'class': 'auth-card verify-panel',
+                    'data-controller': 'channel-verify',
+                    'data-channel-verify-send-url-value': path('app_user_channel_verification_send_token'),
+                    'data-action': 'submit->channel-verify#onSubmit'
+                },
+                'action': path('app_user_channel_verification')
+            }) }}
+                <div class="auth-h">Подтверждение канала</div>
+                <p class="auth-s">Отправим код на выбранный канал — введите его, чтобы подтвердить.</p>
 
-                    <div class="auth-field">
-                        {{ form_widget(verificationForm.channel, {
-                            'attr': {
-                                'data-channel-verify-target': 'channel',
-                                'data-action': 'change->channel-verify#onChannelChange'
-                            }
-                        }) }}
-                        {# Лейбл вручную: глобальная тема форм — horizontal, её form_label навесил бы
-                           col-классы, ломающие абсолютный лейбл .auth-field. #}
-                        <label for="{{ verificationForm.channel.vars.id }}">{{ verificationForm.channel.vars.label }}</label>
-                    </div>
+                <div class="auth-field">
+                    {{ form_widget(verificationForm.channel, {
+                        'attr': {
+                            'data-channel-verify-target': 'channel',
+                            'data-action': 'change->channel-verify#onChannelChange'
+                        }
+                    }) }}
+                    {# Лейбл вручную: глобальная тема форм — horizontal, её form_label навесил бы
+                       col-классы, ломающие абсолютный лейбл .auth-field. #}
+                    <label for="{{ verificationForm.channel.vars.id }}">{{ verificationForm.channel.vars.label }}</label>
+                    {# Без JS inline-тоста нет — структурную ошибку поля показываем прямо здесь. #}
+                    {% for error in verificationForm.channel.vars.errors %}<div class="invalid-feedback">{{ error.message }}</div>{% endfor %}
+                </div>
 
-                    <button type="button" class="auth-btn auth-btn-ghost"
-                            data-channel-verify-target="sendBtn"
-                            data-action="click->channel-verify#send">
-                        <i class="bi bi-send"></i>
-                        <span data-channel-verify-target="sendText">Отправить код</span>
-                        <span data-channel-verify-target="timer"></span>
-                    </button>
+                <button type="button" class="auth-btn auth-btn-ghost"
+                        data-channel-verify-target="sendBtn"
+                        data-action="click->channel-verify#send">
+                    <i class="bi bi-send"></i>
+                    <span data-channel-verify-target="sendText">Отправить код</span>
+                    <span data-channel-verify-target="timer"></span>
+                </button>
 
-                    <div class="auth-field code">
-                        {{ form_widget(verificationForm.token, {
-                            'attr': {
-                                'data-channel-verify-target': 'token',
-                                'data-action': 'input->channel-verify#onTokenInput',
-                                'placeholder': '______',
-                                'inputmode': 'numeric',
-                                'maxlength': 6,
-                                'autocomplete': 'one-time-code'
-                            }
-                        }) }}
-                        <label for="{{ verificationForm.token.vars.id }}">{{ verificationForm.token.vars.label }}</label>
-                    </div>
+                <div class="auth-field code">
+                    {{ form_widget(verificationForm.token, {
+                        'attr': {
+                            'data-channel-verify-target': 'token',
+                            'data-action': 'input->channel-verify#onTokenInput',
+                            'placeholder': '______',
+                            'inputmode': 'numeric',
+                            'maxlength': 6,
+                            'autocomplete': 'one-time-code'
+                        }
+                    }) }}
+                    <label for="{{ verificationForm.token.vars.id }}">{{ verificationForm.token.vars.label }}</label>
+                    {% for error in verificationForm.token.vars.errors %}<div class="invalid-feedback">{{ error.message }}</div>{% endfor %}
+                </div>
 
-                    {{ form_rest(verificationForm) }}
+                {{ form_rest(verificationForm) }}
 
-                    <button class="auth-btn auth-btn-primary" type="submit" data-channel-verify-target="submit">
-                        <i class="bi bi-check2"></i> Подтвердить
-                    </button>
-                {{ form_end(verificationForm, { render_rest: false }) }}
-            </div>
+                <button class="auth-btn auth-btn-primary" type="submit" data-channel-verify-target="submit">
+                    <i class="bi bi-check2"></i> Подтвердить
+                </button>
+            {{ form_end(verificationForm, { render_rest: false }) }}
         </div>
     </div>
 {% endblock %}
