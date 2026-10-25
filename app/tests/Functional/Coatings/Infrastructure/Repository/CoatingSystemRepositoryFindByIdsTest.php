@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Coatings\Infrastructure\Repository;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Tests\Functional\Coatings\Fixture\SurfaceTreatmentFixtureTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,7 +29,7 @@ final class CoatingSystemRepositoryFindByIdsTest extends KernelTestCase
         self::bootKernel();
         $container = static::getContainer();
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->repo = new CoatingSystemRepository($this->em);
+        $this->repo = new CoatingSystemRepository($this->em, $container->get(CoatingSystemFinder::class));
     }
 
     protected function tearDown(): void

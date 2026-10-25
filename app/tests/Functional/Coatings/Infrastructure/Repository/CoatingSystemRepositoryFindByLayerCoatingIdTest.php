@@ -17,6 +17,7 @@ use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -43,7 +44,7 @@ final class CoatingSystemRepositoryFindByLayerCoatingIdTest extends KernelTestCa
         self::bootKernel();
         $container = static::getContainer();
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->repo = new CoatingSystemRepository($this->em);
+        $this->repo = new CoatingSystemRepository($this->em, $container->get(CoatingSystemFinder::class));
     }
 
     protected function tearDown(): void

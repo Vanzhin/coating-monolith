@@ -18,6 +18,7 @@ use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -101,7 +102,7 @@ trait CoatingSystemLayerTestFixtureTrait
         );
         $system->appendLayer($coating, 80, $color);
 
-        $repo = new CoatingSystemRepository($em);
+        $repo = new CoatingSystemRepository($em, $container->get(CoatingSystemFinder::class));
         $repo->save($system);
         $this->systemId = $systemId;
     }

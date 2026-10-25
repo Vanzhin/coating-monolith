@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use Symfony\Component\Uid\Uuid;
 
 interface CoatingSystemRepositoryInterface
@@ -39,4 +40,6 @@ interface CoatingSystemRepositoryInterface
      * @return list<CoatingSystem>
      */
     public function findByIds(StringCollection $ids): array;
+
+    public function findByFilter(CoatingSystemsFilter $filter): PaginationResult;
 }

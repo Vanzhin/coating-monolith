@@ -6,15 +6,20 @@ namespace App\Coatings\Infrastructure\Repository;
 
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
+use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly CoatingSystemFinder $finder,
+    ) {
     }
 
     public function save(CoatingSystem $system): void
@@ -132,5 +137,13 @@ final class CoatingSystemRepository implements CoatingSystemRepositoryInterface
         }
 
         return $ordered;
+    }
+
+    public function findByFilter(CoatingSystemsFilter $filter): PaginationResult
+    {
+        $result = $this->finder->find($filter);
+        $systems = $this->findByIds($result->ids);
+
+        return new PaginationResult($systems, $result->total);
     }
 }
