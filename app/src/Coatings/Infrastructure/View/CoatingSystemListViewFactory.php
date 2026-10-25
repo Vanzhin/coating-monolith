@@ -54,6 +54,11 @@ final class CoatingSystemListViewFactory
             'coatingIds',
             static fn (string $id): bool => Uuid::isValid($id),
         );
+        $substanceIds = $this->query->stringCollection(
+            $request,
+            'substanceIds',
+            static fn (string $id): bool => Uuid::isValid($id),
+        );
 
         $applicationMinTemp = $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo');
         $minAppTime = $this->query->intRange($request, 'minApplicationTimeAt20From', 'minApplicationTimeAt20To', self::MINUTES_PER_HOUR);
@@ -62,13 +67,17 @@ final class CoatingSystemListViewFactory
 
         $facets = null !== $standard ? $this->facetsRegistry->facetsFor($standard) : null;
 
+        // Параметр переименован в `search`; `q` — fallback для старых закладок/ссылок
+        // (зеркалит CoatingSystemListRequestMapper::filterFromRequest).
+        $searchRaw = $request->query->get('search') ?? $request->query->get('q', '');
+
         return [
             'complianceFacets' => $facets,
             'categoryTitle' => self::optionTitle($facets?->primaryOptions() ?? [], $category),
             'durabilityTitle' => self::optionTitle($facets?->secondaryOptions() ?? [], $durability),
             'items' => $result->items,
             'total' => $result->total,
-            'q' => trim((string) $request->query->get('q', '')),
+            'q' => trim((string) $searchRaw),
             'substrates' => $substrates,
             'environment' => $environment,
             'standard' => $standard,
@@ -79,6 +88,8 @@ final class CoatingSystemListViewFactory
             'durabilityAxisEnabled' => null === $category || null === $facets || $facets->hasSecondaryAxis($category),
             'tagIds' => $tagIds->getList(),
             'coatingIds' => $coatingIds->getList(),
+            'substanceIds' => $substanceIds->getList(),
+            'substanceTemperature' => $this->query->nullableInt($request, 'substanceTemp'),
             'applicationMinTemp' => $applicationMinTemp,
             'minApplicationTimeAt20Hours' => $this->rangeToHours($minAppTime),
             'sort' => CoatingSystemSort::tryFrom((string) $request->query->get('sort', '')) ?? CoatingSystemSort::DEFAULT,

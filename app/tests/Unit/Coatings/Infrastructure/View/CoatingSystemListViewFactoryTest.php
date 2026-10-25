@@ -30,12 +30,45 @@ final class CoatingSystemListViewFactoryTest extends TestCase
 
         foreach ([
             'items', 'total', 'q', 'substrates', 'environment', 'standard', 'category', 'durability',
-            'tagIds', 'coatingIds', 'applicationMinTemp', 'minApplicationTimeAt20Hours',
+            'tagIds', 'coatingIds', 'substanceIds', 'substanceTemperature', 'applicationMinTemp', 'minApplicationTimeAt20Hours',
             'sort', 'page', 'perPage', 'sortOptions', 'substrateOptions', 'environmentOptions', 'standardOptions',
         ] as $key) {
             self::assertArrayHasKey($key, $payload);
         }
         self::assertSame('abc', $payload['q']);
         self::assertSame(['from' => 2, 'to' => 0], $payload['minApplicationTimeAt20Hours']);
+    }
+
+    public function test_substance_facet_echoed_for_chip_and_field_hydration(): void
+    {
+        $factory = new CoatingSystemListViewFactory(
+            new QueryParams(),
+            new ComplianceFacetsRegistry([new Iso12944Evaluator(), new Sp28Evaluator()]),
+        );
+        $result = new SearchCoatingSystemsQueryResult([], 0);
+
+        $payload = $factory->build(
+            Request::create('/', 'GET', [
+                'substanceIds' => ['11111111-1111-1111-8111-111111111111', 'garbage'],
+                'substanceTemp' => '60',
+            ]),
+            $result,
+        );
+
+        self::assertSame(['11111111-1111-1111-8111-111111111111'], $payload['substanceIds']);
+        self::assertSame(60, $payload['substanceTemperature']);
+    }
+
+    public function test_search_param_echoed_with_q_fallback(): void
+    {
+        $factory = new CoatingSystemListViewFactory(
+            new QueryParams(),
+            new ComplianceFacetsRegistry([new Iso12944Evaluator(), new Sp28Evaluator()]),
+        );
+        $result = new SearchCoatingSystemsQueryResult([], 0);
+
+        $payload = $factory->build(Request::create('/', 'GET', ['q' => 'эпокси']), $result);
+
+        self::assertSame('эпокси', $payload['q']);
     }
 }
