@@ -71,6 +71,13 @@ final class CoatingSystemFinder
         return new SearchResult(new StringCollection(...$ids), $total);
     }
 
+    /**
+     * FTS матчит по стеммингу/префиксу слова; ILIKE-инфикс добирает хиты, которые FTS
+     * принципиально не видит — подстрока внутри слова (не с начала) и дефис/цифра-токены,
+     * которые токенизатор режет иначе, чем ожидает пользователь. :fts_lang/:fts_tsquery
+     * всегда биндим (даже при пустом tsquery) — applySort безусловно на них ссылается
+     * при CoatingSystemSort::DEFAULT.
+     */
     private function applyFts(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null === $filter->search) {
@@ -78,15 +85,19 @@ final class CoatingSystemFinder
         }
 
         $tsquery = $this->tsQueryBuilder->build($filter->search->value, PrefixTsQueryBuilder::CONJUNCTION_AND);
+        $qb->setParameter('fts_lang', self::FTS_LANG)
+            ->setParameter('fts_tsquery', $tsquery)
+            ->setParameter('fts_like', '%'.$filter->search->value.'%');
+
         if ('' === $tsquery) {
-            $qb->andWhere('1 = 0');
+            // Запрос целиком из спецсимволов/разделителей (напр. «---») — tsquery пуст,
+            // остаётся только инфикс-поиск по названию вместо прежнего «1 = 0».
+            $qb->andWhere('cs.title ILIKE :fts_like');
 
             return;
         }
 
-        $qb->andWhere('css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery)')
-            ->setParameter('fts_lang', self::FTS_LANG)
-            ->setParameter('fts_tsquery', $tsquery);
+        $qb->andWhere('(css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery) OR cs.title ILIKE :fts_like)');
     }
 
     private function applySubstrates(QueryBuilder $qb, CoatingSystemsFilter $filter): void
