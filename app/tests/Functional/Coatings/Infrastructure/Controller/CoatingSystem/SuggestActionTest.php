@@ -39,6 +39,7 @@ final class SuggestActionTest extends WebTestCase
     private EntityManagerInterface $em;
     private string $userEmail;
     private string $systemId;
+    private string $systemTitle;
     private string $coatingId;
     private string $manufacturerId;
 
@@ -105,7 +106,8 @@ final class SuggestActionTest extends WebTestCase
         $temperatureCalculator = $container->get(CoatingSystemOperatingTemperatureCalculator::class);
 
         $systemUuid = Uuid::v7();
-        $system = new CoatingSystem($systemUuid, 'SuggestCSTitle '.$suffix, 'Описание', Substrate::STEEL_CARBON, $treatment);
+        $this->systemTitle = 'SuggestCSTitle '.$suffix;
+        $system = new CoatingSystem($systemUuid, $this->systemTitle, 'Описание', Substrate::STEEL_CARBON, $treatment);
         $system->appendLayer($coating, 80, $color);
         $repo->save($system);
         $this->em->clear();
@@ -198,5 +200,30 @@ final class SuggestActionTest extends WebTestCase
         $first = $items[0];
         self::assertArrayHasKey('id', $first);
         self::assertArrayHasKey('title', $first);
+    }
+
+    /**
+     * Регресс-гард (Review Focus): инфикс внутри слова названия — FTS-префиксный стемминг
+     * его не матчит (не с начала слова), а старый ILIKE-хендлер матчил. После консолидации
+     * suggest идёт через findByFilter → applyFts, где инфикс-ILIKE встроен в сам FTS-условие
+     * (Task 6) — хит должен остаться, иначе удаление дублирующего хендлера сузило suggest.
+     */
+    public function test_suggest_still_matches_infix_title(): void
+    {
+        // Название вида "SuggestCSTitle <suffix>" — возьмём инфикс из середины "CSTitle"
+        // слова "SuggestCSTitle", не совпадающий с его началом.
+        $infix = 'estCSTit';
+        self::assertStringContainsString($infix, $this->systemTitle);
+
+        $this->client->request('GET', '/cabinet/coating/coating-system/suggest', [
+            'q' => $infix,
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $items = $response['data']['items'] ?? $response['items'] ?? [];
+        $ids = array_column($items, 'id');
+        self::assertContains($this->systemId, $ids, 'Инфикс-хит должен матчиться через applyFts/ILIKE после консолидации suggest.');
     }
 }
