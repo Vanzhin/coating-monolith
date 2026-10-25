@@ -153,6 +153,11 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
      * Фаза 2: точный ILIKE ничего не нашёл — ищем по триграммной похожести
      * названия (опечатки типа «этонол» → «Этанол»). Порог и подход — как в
      * CoatingFinder::fuzzyTitle.
+     *
+     * GIN trgm-индекс ix_substance_canonical_trgm (Version20261120000001) тут
+     * НЕ помогает: WORD_SIMILARITY(...) — вызов функции, а не `%`/`<%`-оператор
+     * или ILIKE, поэтому индекс не используется и Postgres идёт полным сканом.
+     * Индекс ускоряет только инфиксный ILIKE фазы 1 в findByFilter() выше.
      */
     private function findByFuzzyName(SubstancesFilter $filter): PaginationResult
     {

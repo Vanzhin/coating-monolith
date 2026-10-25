@@ -9,16 +9,17 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Триграммный GIN-индекс на chemical_resistance_substance.canonical_name — ускоряет
- * fuzzy fallback (WORD_SIMILARITY) в SubstanceRepository::findByFilter, когда точный
- * ILIKE ничего не нашёл (опечатки типа «этонол» → «Этанол»). Сам WORD_SIMILARITY
- * работает и без индекса (pg_trgm уже используется для Coatings), индекс — только
- * про скорость на больших справочниках.
+ * фазу 1 поиска в SubstanceRepository::findByFilter, инфиксный `canonical_name ILIKE
+ * '%…%'`: только этот оператор (и `%`/`<%`) способен использовать GIN gin_trgm_ops.
+ * Фазу 2 — fuzzy fallback через функцию WORD_SIMILARITY(...) — индекс НЕ ускоряет:
+ * вызов функции не индекс-eligible, Postgres всегда идёт полным сканом; сам
+ * WORD_SIMILARITY работает и без индекса (pg_trgm уже используется для Coatings).
  */
 final class Version20261120000001 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'chemical_resistance_substance: GIN trgm-индекс на canonical_name для fuzzy-поиска';
+        return 'chemical_resistance_substance: GIN trgm-индекс на canonical_name для ILIKE-поиска';
     }
 
     public function up(Schema $schema): void

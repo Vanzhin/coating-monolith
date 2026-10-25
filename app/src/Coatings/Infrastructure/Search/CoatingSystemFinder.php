@@ -263,6 +263,8 @@ final class CoatingSystemFinder
                           WHERE a.coating_id = csl.coating_id
                             AND a.substance_id = :{$param}
                             AND chemical_resistance_is_suitable_grade(a.grade)
+                            -- ::numeric обязателен: Postgres не выводит тип параметра, используемого
+                            -- только в «IS NULL OR <сравнение>» (42P18 indeterminate datatype) — не убирать при рефакторинге
                             AND (:subst_temp::numeric IS NULL OR a.max_temperature_celsius >= :subst_temp::numeric)
                       )
                 )"
