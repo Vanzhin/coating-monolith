@@ -139,6 +139,26 @@ final class CoatingSystemFinderFtsTest extends KernelTestCase
         self::assertNotContains($sysOther->getId(), $result->ids);
     }
 
+    /**
+     * Запрос «---» целиком состоит из разделителей — PrefixTsQueryBuilder::build() сводит
+     * его к пустой строке (слова не остаются после split по /[\s\-.,;]+/u). Раньше это была
+     * ветка `andWhere('1 = 0')` — всегда пусто. Теперь должен остаться ILIKE-инфикс по title,
+     * и сортировка DEFAULT (TS_RANK_CD с :fts_lang/:fts_tsquery) не должна падать на unbound-
+     * параметре — это единственный сценарий, где find() целиком проходит через пустую ветку.
+     */
+    public function test_empty_tsquery_falls_back_to_title_ilike_infix(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $sysWithDashes = $this->buildAndSaveSystem('ЭП---тест '.$suffix, Substrate::STEEL_CARBON);
+        $sysOther = $this->buildAndSaveSystem('Полиуретановая обычная '.$suffix, Substrate::STEEL_CARBON);
+
+        $filter = new CoatingSystemsFilter(search: SearchQuery::tryFromString('---'));
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysWithDashes->getId(), $result->ids);
+        self::assertNotContains($sysOther->getId(), $result->ids);
+    }
+
     private function buildAndSaveSystem(string $title, Substrate $substrate): CoatingSystem
     {
         $mfr = $this->persistManufacturer();
