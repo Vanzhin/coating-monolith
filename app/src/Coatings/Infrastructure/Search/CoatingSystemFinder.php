@@ -56,6 +56,7 @@ final class CoatingSystemFinder
         $this->applyHasDocuments($qb, $filter);
         $this->applyRanges($qb, $filter);
         $this->applyThermalExposureFacet($qb, $filter);
+        $this->applySubstanceResistance($qb, $filter);
 
         $countQb = clone $qb;
         $countQb->select('COUNT(DISTINCT cs.id) AS cnt');
@@ -70,6 +71,13 @@ final class CoatingSystemFinder
         return new SearchResult(new StringCollection(...$ids), $total);
     }
 
+    /**
+     * FTS матчит по стеммингу/префиксу слова; ILIKE-инфикс добирает хиты, которые FTS
+     * принципиально не видит — подстрока внутри слова (не с начала) и дефис/цифра-токены,
+     * которые токенизатор режет иначе, чем ожидает пользователь. :fts_lang/:fts_tsquery
+     * всегда биндим (даже при пустом tsquery) — applySort безусловно на них ссылается
+     * при CoatingSystemSort::DEFAULT.
+     */
     private function applyFts(QueryBuilder $qb, CoatingSystemsFilter $filter): void
     {
         if (null === $filter->search) {
@@ -77,15 +85,19 @@ final class CoatingSystemFinder
         }
 
         $tsquery = $this->tsQueryBuilder->build($filter->search->value, PrefixTsQueryBuilder::CONJUNCTION_AND);
+        $qb->setParameter('fts_lang', self::FTS_LANG)
+            ->setParameter('fts_tsquery', $tsquery)
+            ->setParameter('fts_like', '%'.$filter->search->value.'%');
+
         if ('' === $tsquery) {
-            $qb->andWhere('1 = 0');
+            // Запрос целиком из спецсимволов/разделителей (напр. «---») — tsquery пуст,
+            // остаётся только инфикс-поиск по названию вместо прежнего «1 = 0».
+            $qb->andWhere('cs.title ILIKE :fts_like');
 
             return;
         }
 
-        $qb->andWhere('css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery)')
-            ->setParameter('fts_lang', self::FTS_LANG)
-            ->setParameter('fts_tsquery', $tsquery);
+        $qb->andWhere('(css.search_tsvector @@ TO_TSQUERY(:fts_lang, :fts_tsquery) OR cs.title ILIKE :fts_like)');
     }
 
     private function applySubstrates(QueryBuilder $qb, CoatingSystemsFilter $filter): void
@@ -223,6 +235,41 @@ final class CoatingSystemFinder
 
         $qb->andWhere("$column IS NOT NULL AND $column >= :therm_temp")
             ->setParameter('therm_temp', $filter->thermalTemperature);
+    }
+
+    /**
+     * Фасет химстойкости: система проходит, только если непуста и у неё НЕТ ни одного слоя,
+     * у которого отсутствует suitable-оценка (R/LR) по КАЖДОМУ выбранному веществу (AND по
+     * веществам); опционально — ещё и с max_temperature_celsius не ниже заданной температуры
+     * испытания. Температура — одно значение, применяется к каждому веществу одинаково.
+     */
+    private function applySubstanceResistance(QueryBuilder $qb, CoatingSystemsFilter $filter): void
+    {
+        if (0 === $filter->substanceIds->count()) {
+            return;
+        }
+
+        $qb->andWhere('EXISTS (SELECT 1 FROM coating_system_layer gl WHERE gl.system_id = cs.id)')
+            ->setParameter('subst_temp', $filter->substanceTemperature?->value());
+
+        foreach ($filter->substanceIds->getList() as $i => $substanceId) {
+            $param = "subst_{$i}";
+            $qb->andWhere(
+                "NOT EXISTS (
+                    SELECT 1 FROM coating_system_layer csl
+                    WHERE csl.system_id = cs.id
+                      AND NOT EXISTS (
+                          SELECT 1 FROM chemical_resistance_assessment a
+                          WHERE a.coating_id = csl.coating_id
+                            AND a.substance_id = :{$param}
+                            AND chemical_resistance_is_suitable_grade(a.grade)
+                            -- ::numeric обязателен: Postgres не выводит тип параметра, используемого
+                            -- только в «IS NULL OR <сравнение>» (42P18 indeterminate datatype) — не убирать при рефакторинге
+                            AND (:subst_temp::numeric IS NULL OR a.max_temperature_celsius >= :subst_temp::numeric)
+                      )
+                )"
+            )->setParameter($param, $substanceId);
+        }
     }
 
     private function applySort(QueryBuilder $qb, CoatingSystemsFilter $filter): void

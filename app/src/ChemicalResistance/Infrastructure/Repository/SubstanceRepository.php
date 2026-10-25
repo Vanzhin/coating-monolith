@@ -16,6 +16,18 @@ use Doctrine\Persistence\ManagerRegistry;
 
 class SubstanceRepository extends ServiceEntityRepository implements SubstanceRepositoryInterface
 {
+    // Порог триграммной похожести для fuzzy fallback — тот же приём, что в
+    // CoatingFinder::fuzzyTitle, но НЕ тот же порог. CoatingFinder держит 0.6
+    // на длинных английских заголовках покрытий; названия веществ короче и
+    // часто кириллические — у них меньше триграмм, поэтому даже однобуквенная
+    // опечатка в середине короткого слова («этонол» вместо «этанол», 6 букв)
+    // даёт лишь WORD_SIMILARITY ≈ 0.4 — порог 0.6 отсёк бы её целиком.
+    // Проверено на полном каталоге веществ (1762 канонических названия из
+    // сид-данных ChemicalResistance): у мусорного запроса максимум ≈0.25,
+    // у «этонол» лишь 2 кандидата проходят отметку 0.3 («Этанол» 0.4,
+    // «2-Этоксиэтилацетат» 0.43) — шума от занижения порога не возникает.
+    private const FUZZY_SIMILARITY_THRESHOLD = 0.35;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Substance::class);
@@ -130,13 +142,67 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
 
         $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
 
-        $items = array_map(fn (array $r) => new SubstanceDTO(
+        if (0 === $total && null !== $filter->search && '' !== trim($filter->search) && null === $filter->cas) {
+            return $this->findByFuzzyName($filter);
+        }
+
+        return new PaginationResult($this->mapRows($rows), $total);
+    }
+
+    /**
+     * Фаза 2: точный ILIKE ничего не нашёл — ищем по триграммной похожести
+     * названия (опечатки типа «этонол» → «Этанол»). Порог и подход — как в
+     * CoatingFinder::fuzzyTitle.
+     *
+     * GIN trgm-индекс ix_substance_canonical_trgm (Version20261120000001) тут
+     * НЕ помогает: WORD_SIMILARITY(...) — вызов функции, а не `%`/`<%`-оператор
+     * или ILIKE, поэтому индекс не используется и Postgres идёт полным сканом.
+     * Индекс ускоряет только инфиксный ILIKE фазы 1 в findByFilter() выше.
+     */
+    private function findByFuzzyName(SubstancesFilter $filter): PaginationResult
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $search = trim((string) $filter->search);
+
+        $params = ['search' => $search, 'threshold' => self::FUZZY_SIMILARITY_THRESHOLD];
+        $types = [];
+
+        $total = (int) $conn->fetchOne(
+            'SELECT COUNT(*) FROM chemical_resistance_substance s WHERE WORD_SIMILARITY(:search, s.canonical_name) > :threshold',
+            $params,
+            $types,
+        );
+
+        $dataSql = 'SELECT s.id::text AS id, s.canonical_name, s.cas, s.aliases::text AS aliases
+                    FROM chemical_resistance_substance s
+                    WHERE WORD_SIMILARITY(:search, s.canonical_name) > :threshold
+                    ORDER BY WORD_SIMILARITY(:search, s.canonical_name) DESC';
+
+        if (null !== $filter->pager) {
+            $dataSql .= ' LIMIT :lim OFFSET :off';
+            $params['lim'] = $filter->pager->getLimit();
+            $params['off'] = $filter->pager->getOffset();
+            $types['lim'] = ParameterType::INTEGER;
+            $types['off'] = ParameterType::INTEGER;
+        }
+
+        $rows = $conn->fetchAllAssociative($dataSql, $params, $types);
+
+        return new PaginationResult($this->mapRows($rows), $total);
+    }
+
+    /**
+     * @param list<array{id: string, canonical_name: string, cas: ?string, aliases: string}> $rows
+     *
+     * @return list<SubstanceDTO>
+     */
+    private function mapRows(array $rows): array
+    {
+        return array_map(fn (array $r) => new SubstanceDTO(
             id: $r['id'],
             canonicalName: $r['canonical_name'],
             cas: $r['cas'],
             aliases: json_decode($r['aliases'], true) ?: [],
         ), $rows);
-
-        return new PaginationResult($items, $total);
     }
 }

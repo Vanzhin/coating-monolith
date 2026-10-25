@@ -9,6 +9,7 @@ use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 
@@ -35,6 +36,8 @@ final readonly class CoatingSystemsFilter
         public StringCollection $tagIds = new StringCollection(),
         // Покрытия в составе системы (OR: хотя бы одно из выбранных).
         public StringCollection $coatingIds = new StringCollection(),
+        // Вещества, допустимые в системе (для фасета химстойкости).
+        public StringCollection $substanceIds = new StringCollection(),
         public ?RangeFilter $applicationMinTemp = null,
         public ?RangeFilter $minApplicationTimeAt20 = null,
         public CoatingSystemSort $sort = CoatingSystemSort::DEFAULT,
@@ -46,6 +49,8 @@ final readonly class CoatingSystemsFilter
         public ?int $thermalTemperature = null,
         public ?ThermalEnvironment $thermalEnvironment = null,
         public bool $thermalIncludingPeak = false,
+        // Фасет химстойкости: опциональная температура испытания вещества.
+        public ?PositiveNumber $substanceTemperature = null,
     ) {
         ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
 

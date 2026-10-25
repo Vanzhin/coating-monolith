@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Controller\CoatingSystem;
 
-use App\Coatings\Application\UseCase\Query\SearchCoatingSystemsForSuggest\SearchCoatingSystemsForSuggestQuery;
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemTitleDTO;
+use App\Coatings\Application\UseCase\Query\SuggestCoatingSystems\SuggestCoatingSystemsQuery;
+use App\Coatings\Application\UseCase\Query\SuggestCoatingSystems\SuggestCoatingSystemsQueryResult;
+use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Application\Query\QueryBusInterface;
+use App\Shared\Domain\Repository\Pager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,9 +40,17 @@ final class SuggestAction extends AbstractController
             return new JsonResponse(['items' => []]);
         }
 
-        /** @var \App\Coatings\Application\UseCase\Query\SearchCoatingSystemsForSuggest\SearchCoatingSystemsForSuggestQueryResult $result */
-        $result = $this->queryBus->execute(new SearchCoatingSystemsForSuggestQuery($q, $limit));
+        /** @var SuggestCoatingSystemsQueryResult $result */
+        $result = $this->queryBus->execute(new SuggestCoatingSystemsQuery(new CoatingSystemsFilter(
+            search: SearchQuery::tryFromString($q),
+            pager: Pager::fromPage(1, $limit),
+        )));
 
-        return new JsonResponse(['items' => $result->items]);
+        $items = array_map(
+            static fn (CoatingSystemTitleDTO $system): array => ['id' => $system->id, 'title' => $system->title],
+            $result->items,
+        );
+
+        return new JsonResponse(['items' => $items]);
     }
 }

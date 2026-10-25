@@ -12,6 +12,7 @@ use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\ThermalEnvironment;
 use App\Shared\Domain\Aggregate\ValueObject\Duration;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Infrastructure\Helper\QueryParams;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,8 @@ final class CoatingSystemListRequestMapper
 
     public function filterFromRequest(Request $request): CoatingSystemsFilter
     {
-        $q = trim((string) $request->query->get('q', ''));
+        // Параметр переименован в `search`; `q` — fallback для старых закладок/ссылок.
+        $searchRaw = $request->query->get('search') ?? $request->query->get('q');
         $standard = ComplianceStandard::tryFrom((string) $request->query->get('standard', ''));
 
         $substrates = array_values(array_filter(array_map(
@@ -43,8 +45,15 @@ final class CoatingSystemListRequestMapper
 
         $thermEnvRaw = $request->query->get('thermEnv');
 
+        // Температура испытания вещества: 0/отрицательное/пустое/нечисловое — не фильтр, а не
+        // ошибка (поисковая форма не должна падать в 422 на мусорном вводе).
+        $substanceTemp = $this->query->nullableInt($request, 'substanceTemp');
+        $substanceTemperature = null !== $substanceTemp && $substanceTemp > 0
+            ? new PositiveNumber($substanceTemp)
+            : null;
+
         return new CoatingSystemsFilter(
-            search: '' !== $q ? SearchQuery::tryFromString($q) : null,
+            search: SearchQuery::tryFromString(null !== $searchRaw ? (string) $searchRaw : null),
             substrates: $substrates,
             environment: EnvironmentType::tryFrom((string) $request->query->get('environment', '')),
             standard: $standard,
@@ -56,6 +65,11 @@ final class CoatingSystemListRequestMapper
             coatingIds: $this->query->stringCollection(
                 $request,
                 'coatingIds',
+                static fn (string $id): bool => Uuid::isValid($id),
+            ),
+            substanceIds: $this->query->stringCollection(
+                $request,
+                'substanceIds',
                 static fn (string $id): bool => Uuid::isValid($id),
             ),
             applicationMinTemp: $this->query->intRange($request, 'applicationMinTempFrom', 'applicationMinTempTo'),
@@ -76,6 +90,7 @@ final class CoatingSystemListRequestMapper
             thermalTemperature: $this->query->nullableInt($request, 'thermTemp'),
             thermalEnvironment: is_string($thermEnvRaw) ? ThermalEnvironment::tryFrom($thermEnvRaw) : null,
             thermalIncludingPeak: (bool) $request->query->get('thermPeak'),
+            substanceTemperature: $substanceTemperature,
         );
     }
 }

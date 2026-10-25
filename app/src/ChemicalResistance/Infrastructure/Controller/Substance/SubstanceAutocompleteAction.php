@@ -31,7 +31,7 @@ final class SubstanceAutocompleteAction extends AbstractController
         ));
 
         return new JsonResponse(array_map(
-            fn ($d) => ['id' => $d->id, 'canonicalName' => $d->canonicalName, 'cas' => $d->cas],
+            fn ($d) => ['id' => $d->id, 'canonicalName' => $d->canonicalName, 'cas' => $d->cas, 'title' => $d->canonicalName],
             $dtos,
         ));
     }

@@ -9,6 +9,7 @@ use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Infrastructure\Mapper\CoatingSystemListRequestMapper;
 use App\Shared\Infrastructure\Helper\QueryParams;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -104,5 +105,59 @@ final class CoatingSystemListRequestMapperTest extends TestCase
         $filter = $this->mapper->filterFromRequest($request);
 
         self::assertSame(['11111111-1111-1111-8111-111111111111'], $filter->coatingIds->getList());
+    }
+
+    public function test_substance_ids_filtered_by_uuid(): void
+    {
+        $request = Request::create('/', 'GET', [
+            'substanceIds' => ['11111111-1111-1111-8111-111111111111', 'garbage'],
+        ]);
+
+        $filter = $this->mapper->filterFromRequest($request);
+
+        self::assertSame(['11111111-1111-1111-8111-111111111111'], $filter->substanceIds->getList());
+    }
+
+    #[DataProvider('provideNonPositiveSubstanceTemperatures')]
+    public function test_substance_temperature_zero_or_blank_or_nonnumeric_becomes_null(string $raw): void
+    {
+        $request = Request::create('/', 'GET', ['substanceTemp' => $raw]);
+
+        // НЕ 422: мусорный/нулевой/отрицательный ввод в поисковой форме тихо даёт null,
+        // а не AppException из PositiveNumber.
+        self::assertNull($this->mapper->filterFromRequest($request)->substanceTemperature);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function provideNonPositiveSubstanceTemperatures(): iterable
+    {
+        yield 'blank' => [''];
+        yield 'zero' => ['0'];
+        yield 'negative' => ['-5'];
+        yield 'non-numeric' => ['abc'];
+    }
+
+    public function test_positive_substance_temperature_becomes_positive_number(): void
+    {
+        $request = Request::create('/', 'GET', ['substanceTemp' => '60']);
+
+        $filter = $this->mapper->filterFromRequest($request);
+
+        self::assertNotNull($filter->substanceTemperature);
+        self::assertSame(60, $filter->substanceTemperature->value());
+    }
+
+    public function test_q_fallback_feeds_search_when_search_param_missing(): void
+    {
+        $request = Request::create('/', 'GET', ['q' => 'эпокси']);
+
+        self::assertSame('эпокси', $this->mapper->filterFromRequest($request)->search->value);
+    }
+
+    public function test_search_param_takes_precedence_over_q(): void
+    {
+        $request = Request::create('/', 'GET', ['search' => 'грунтовка', 'q' => 'эмаль']);
+
+        self::assertSame('грунтовка', $this->mapper->filterFromRequest($request)->search->value);
     }
 }

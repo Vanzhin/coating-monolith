@@ -100,6 +100,11 @@ final class RemoveSurfaceTreatmentCommandHandlerTest extends TestCase
             {
                 return [];
             }
+
+            public function findByFilter(\App\Coatings\Domain\Repository\CoatingSystemsFilter $filter): \App\Shared\Domain\Repository\PaginationResult
+            {
+                return new \App\Shared\Domain\Repository\PaginationResult([], 0);
+            }
         };
 
         // Авторизация проходит (админ/система) — проверяем доменное правило, а не гейт.

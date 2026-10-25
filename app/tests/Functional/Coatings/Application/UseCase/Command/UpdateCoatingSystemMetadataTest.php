@@ -23,6 +23,7 @@ use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Infrastructure\Repository\CoatingSystemRepository;
+use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
@@ -56,7 +57,7 @@ final class UpdateCoatingSystemMetadataTest extends KernelTestCase
         $container = static::getContainer();
         $this->handler = $container->get(UpdateCoatingSystemMetadataCommandHandler::class);
         $this->em = $container->get(EntityManagerInterface::class);
-        $this->repo = new CoatingSystemRepository($this->em);
+        $this->repo = new CoatingSystemRepository($this->em, $container->get(CoatingSystemFinder::class));
 
         $this->authenticateAsSystem();
     }
