@@ -11,6 +11,7 @@ use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 use PHPUnit\Framework\TestCase;
@@ -89,5 +90,22 @@ final class CoatingSystemsFilterTest extends TestCase
 
         self::assertSame('C4', $filter->category);
         self::assertSame('HIGH', $filter->durability);
+    }
+
+    public function test_defaults_are_empty_substances_and_null_temperature(): void
+    {
+        $f = new CoatingSystemsFilter();
+        self::assertSame(0, $f->substanceIds->count());
+        self::assertNull($f->substanceTemperature);
+    }
+
+    public function test_carries_substances_and_temperature(): void
+    {
+        $f = new CoatingSystemsFilter(
+            substanceIds: new StringCollection('a', 'b'),
+            substanceTemperature: new PositiveNumber(60),
+        );
+        self::assertSame(['a', 'b'], $f->substanceIds->getList());
+        self::assertSame(60, $f->substanceTemperature->value());
     }
 }
