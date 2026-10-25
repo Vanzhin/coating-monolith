@@ -29,13 +29,13 @@ final class CoatingSystemListViewFactoryTest extends TestCase
         );
 
         foreach ([
-            'items', 'total', 'q', 'substrates', 'environment', 'standard', 'category', 'durability',
+            'items', 'total', 'search', 'substrates', 'environment', 'standard', 'category', 'durability',
             'tagIds', 'coatingIds', 'substanceIds', 'substanceTemperature', 'applicationMinTemp', 'minApplicationTimeAt20Hours',
             'sort', 'page', 'perPage', 'sortOptions', 'substrateOptions', 'environmentOptions', 'standardOptions',
         ] as $key) {
             self::assertArrayHasKey($key, $payload);
         }
-        self::assertSame('abc', $payload['q']);
+        self::assertSame('abc', $payload['search']);
         self::assertSame(['from' => 2, 'to' => 0], $payload['minApplicationTimeAt20Hours']);
     }
 
@@ -69,6 +69,6 @@ final class CoatingSystemListViewFactoryTest extends TestCase
 
         $payload = $factory->build(Request::create('/', 'GET', ['q' => 'эпокси']), $result);
 
-        self::assertSame('эпокси', $payload['q']);
+        self::assertSame('эпокси', $payload['search']);
     }
 }

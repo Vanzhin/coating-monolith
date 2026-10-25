@@ -23,6 +23,7 @@
     {% set durabilityAxisShown = categoryActive and durabilityAxisEnabled %}
     {% set tagsActive = tagIds|length > 0 %}
     {% set coatingsActive = coatingIds|length > 0 %}
+    {% set substancesActive = substanceIds|length > 0 %}
     {% set appMinTempActive = applicationMinTemp is not null %}
     {% set appTimeActive = minApplicationTimeAt20Hours is not null %}
     {% set thermalActive = thermTemp is not null and thermEnv %}
@@ -34,6 +35,7 @@
         + (durabilityActive ? 1 : 0)
         + tagIds|length
         + coatingIds|length
+        + substanceIds|length
         + (appMinTempActive ? 1 : 0)
         + (appTimeActive ? 1 : 0)
         + (thermalActive ? 1 : 0)
@@ -87,8 +89,8 @@
         {% embed 'components/entity_search.html.twig' with {
             list_route: 'app_cabinet_coating_system_list',
             form_id: 'systemListForm',
-            search_name: 'q',
-            search_value: q,
+            search_name: 'search',
+            search_value: search,
             search_placeholder: 'По названию системы (от 3 символов)',
             search_typeahead: path('app_cabinet_coating_system_suggest'),
             sort_options: sortOptions|map(o => {value: o.value, label: o.title()}),
@@ -495,6 +497,23 @@
                                placeholder="Начните вводить покрытие...">
                     </div>
 
+                    {# === Секция: Стойкость к веществу === #}
+                    <div id="facet-substances" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Стойкость к веществу</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_chemical_resistance_substance_autocomplete') }}"
+                               data-coating-tags-hidden-input-name-value="substanceIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               data-coating-tags-preselected-ids-value="{{ substanceIds|json_encode }}"
+                               data-coating-tags-resolve-url-value="{{ path('app_cabinet_chemical_resistance_substance_by_ids') }}"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить вещество...">
+                        <input type="number" min="1" name="substanceTemp"
+                               value="{{ substanceTemperature > 0 ? substanceTemperature : '' }}"
+                               class="form-control form-control-sm mt-2" placeholder="Температура, °C (опц.)">
+                    </div>
+
                     {# === Секция: Теги === #}
                     <div id="facet-tags" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
                         <h6 class="fw-semibold mb-2">Теги</h6>
@@ -548,7 +567,7 @@
         <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
             <i class="bi bi-layers fs-1 d-block mb-2 text-body-secondary"></i>
             <h5 class="fw-semibold mb-2">Системы покрытий не найдены</h5>
-            {% if q or substratesActive or standardActive or tagsActive or coatingsActive or appMinTempActive or appTimeActive or thermalActive %}
+            {% if search or substratesActive or standardActive or tagsActive or coatingsActive or substancesActive or appMinTempActive or appTimeActive or thermalActive %}
                 <p class="text-body-secondary mb-0">
                     По запросу с заданными фильтрами совпадений нет. Попробуйте изменить параметры поиска.
                 </p>

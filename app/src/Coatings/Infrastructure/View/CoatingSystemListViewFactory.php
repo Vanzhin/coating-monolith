@@ -77,7 +77,7 @@ final class CoatingSystemListViewFactory
             'durabilityTitle' => self::optionTitle($facets?->secondaryOptions() ?? [], $durability),
             'items' => $result->items,
             'total' => $result->total,
-            'q' => trim((string) $searchRaw),
+            'search' => trim((string) $searchRaw),
             'substrates' => $substrates,
             'environment' => $environment,
             'standard' => $standard,
