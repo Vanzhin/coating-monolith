@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Coatings\Application\UseCase\Query;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Specification\AssessmentSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpecification;
+use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
+use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
+use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
@@ -17,6 +24,7 @@ use App\Coatings\Domain\Aggregate\Coating\RecoatingIntervalTree;
 use App\Coatings\Domain\Aggregate\Coating\Specification\CoatingSpecification;
 use App\Coatings\Domain\Aggregate\Coating\TimeAtTemperature;
 use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystem;
+use App\Coatings\Domain\Aggregate\CoatingSystem\CoatingSystemLayer;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
 use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
@@ -25,6 +33,7 @@ use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
@@ -51,6 +60,10 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
     private array $colorIds = [];
     /** @var list<Uuid> */
     private array $manufacturerIds = [];
+    /** @var list<Uuid> */
+    private array $assessmentIds = [];
+    /** @var list<Uuid> */
+    private array $substanceIds = [];
 
     protected function setUp(): void
     {
@@ -68,6 +81,20 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         try {
+            foreach ($this->assessmentIds as $id) {
+                $a = $em->find(Assessment::class, $id);
+                if (null !== $a) {
+                    $em->remove($a);
+                }
+            }
+            $em->flush();
+            foreach ($this->substanceIds as $id) {
+                $s = $em->find(Substance::class, $id);
+                if (null !== $s) {
+                    $em->remove($s);
+                }
+            }
+            $em->flush();
             foreach ($this->systemIds as $id) {
                 $s = $em->find(CoatingSystem::class, $id);
                 if (null !== $s) {
@@ -135,6 +162,57 @@ final class SearchCoatingSystemsQueryHandlerTest extends KernelTestCase
         foreach ($result->items as $item) {
             self::assertInstanceOf(CoatingSystemDTO::class, $item);
         }
+    }
+
+    /**
+     * Связка Task 5↔8: фасет химстойкости (CoatingSystemsFilter::substanceIds) доходит через
+     * findByFilter до хендлера листинга — система со стойким слоем попадает в выдачу, система
+     * без оценки по веществу (слой нестоек/неизвестен) — нет.
+     */
+    public function test_substance_filter_narrows_results(): void
+    {
+        $container = static::getContainer();
+        $substanceRepo = $container->get(SubstanceRepository::class);
+        $assessmentRepo = $container->get(AssessmentRepository::class);
+
+        $substanceId = Uuid::v4();
+        $substance = new Substance(
+            $substanceId,
+            'Этанол-'.bin2hex(random_bytes(4)),
+            null,
+            new StringCollection(),
+            $container->get(SubstanceSpecification::class),
+        );
+        $substanceRepo->add($substance);
+        $this->substanceIds[] = $substanceId;
+
+        $resistantSystem = $this->persistSystem('Стойкая-'.bin2hex(random_bytes(3)));
+        $resistantLayer = $resistantSystem->getLayers()->first();
+        \assert($resistantLayer instanceof CoatingSystemLayer);
+        $resistantCoatingId = $resistantLayer->getCoating()->getId();
+
+        $assessmentId = Uuid::v4();
+        $assessment = new Assessment(
+            $assessmentId,
+            Uuid::fromString($resistantCoatingId),
+            $substanceId,
+            Grade::R,
+            null,
+            new StringCollection(),
+            $container->get(AssessmentSpecification::class),
+        );
+        $assessmentRepo->add($assessment);
+        $this->assessmentIds[] = $assessmentId;
+
+        // Система без какой-либо оценки по веществу — не матчится фасетом (не вакуумно).
+        $notResistantSystem = $this->persistSystem('БезОценки-'.bin2hex(random_bytes(3)));
+
+        $filter = new CoatingSystemsFilter(substanceIds: new StringCollection($substanceId->toRfc4122()));
+        $result = ($this->handler)(new SearchCoatingSystemsQuery($filter));
+
+        $ids = array_map(static fn (CoatingSystemDTO $dto) => $dto->id, $result->items);
+        self::assertContains($resistantSystem->getId(), $ids);
+        self::assertNotContains($notResistantSystem->getId(), $ids);
     }
 
     /**

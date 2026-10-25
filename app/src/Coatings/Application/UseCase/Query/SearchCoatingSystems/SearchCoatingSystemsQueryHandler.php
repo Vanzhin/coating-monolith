@@ -8,13 +8,12 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTOTransformer;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Service\SystemCertificatesGateway;
 use App\Coatings\Infrastructure\Cache\CoatingSystemComplianceCacheRepository;
-use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
 use App\Shared\Application\Query\QueryHandlerInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 
 final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private CoatingSystemFinder $finder,
         private CoatingSystemRepositoryInterface $repo,
         private CoatingSystemComplianceCacheRepository $complianceCache,
         private CoatingSystemDTOTransformer $transformer,
@@ -24,11 +23,12 @@ final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInt
 
     public function __invoke(SearchCoatingSystemsQuery $q): SearchCoatingSystemsQueryResult
     {
-        $searchResult = $this->finder->find($q->filter);
-        $systems = $this->repo->findByIds($searchResult->ids);
-        $complianceBySystem = $this->complianceCache->findBySystemIds($searchResult->ids->getList());
-        $documentCounts = $this->certificates->countBySystemIds($searchResult->ids);
-        $downloadUrls = $this->certificates->downloadUrlsBySystemIds($searchResult->ids);
+        $page = $this->repo->findByFilter($q->filter);
+        $systems = $page->items;
+        $ids = new StringCollection(...array_map(static fn ($s): string => (string) $s->getId(), $systems));
+        $complianceBySystem = $this->complianceCache->findBySystemIds($ids->getList());
+        $documentCounts = $this->certificates->countBySystemIds($ids);
+        $downloadUrls = $this->certificates->downloadUrlsBySystemIds($ids);
         $items = array_map(
             fn ($s) => $this->transformer->fromEntity(
                 $s,
@@ -39,6 +39,6 @@ final readonly class SearchCoatingSystemsQueryHandler implements QueryHandlerInt
             $systems,
         );
 
-        return new SearchCoatingSystemsQueryResult($items, $searchResult->total);
+        return new SearchCoatingSystemsQueryResult($items, $page->total);
     }
 }
