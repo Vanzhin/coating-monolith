@@ -137,19 +137,21 @@ final class CoatingSystemFinder
         $sub = 'SELECT 1 FROM coating_system_compliance csc WHERE csc.system_id = cs.id AND csc.standard = :csc_standard';
         $qb->setParameter('csc_standard', $filter->standard->value);
 
-        // Кеш хранит только сильнейшие пары (strongestOnly); фильтр раскрываем самоописанием
-        // стандарта: ISO — категория той же семьи ≥ и долговечность ≥; СП — степень ≥, условия точно.
+        // Проекция хранит только потолочные пары системы (ISO strongestOnly; СП — сильнейшая
+        // достижимая степень на условие). Матч точный по обеим осям → в выдаче только минимально
+        // достаточные системы: переспек (более жёсткая категория/степень или бо́льшая
+        // долговечность) под запрос не лезет.
         if (null !== $filter->category) {
-            $sub .= ' AND csc.category IN (:csc_category_list)';
-            $qb->setParameter('csc_category_list', $facets->expandPrimary($filter->category), ArrayParameterType::STRING);
+            $sub .= ' AND csc.category = :csc_category';
+            $qb->setParameter('csc_category', $filter->category);
         }
 
-        // Долговечность применяем только если у выбранной категории есть вторая ось
-        // (у CX/Im4 её нет — игнорируем даже залипший в URL параметр).
+        // Вторую ось применяем только если она есть у выбранного значения первой оси
+        // (у ISO CX/Im4 долговечности нет — игнорируем даже залипший в URL параметр).
         if (null !== $filter->durability
             && (null === $filter->category || $facets->hasSecondaryAxis($filter->category))) {
-            $sub .= ' AND csc.durability IN (:csc_durability_list)';
-            $qb->setParameter('csc_durability_list', $facets->expandSecondary($filter->durability), ArrayParameterType::STRING);
+            $sub .= ' AND csc.durability = :csc_durability';
+            $qb->setParameter('csc_durability', $filter->durability);
         }
 
         $qb->andWhere("EXISTS ($sub)");
