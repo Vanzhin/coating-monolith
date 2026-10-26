@@ -20,7 +20,9 @@
     {% set categoryActive = standardActive and category is not null %}
     {# У CX/Im4 нет оси долговечности (durabilityAxisEnabled=false) — блок скрыт, значение не применяется #}
     {% set durabilityActive = standardActive and durability is not null and durabilityAxisEnabled %}
-    {% set durabilityAxisShown = categoryActive and durabilityAxisEnabled %}
+    {# Обе оси открываются сразу после выбора стандарта (не водопадом через категорию);
+       долговечность прячется только у CX/Im4, где этой оси нет. #}
+    {% set durabilityAxisShown = standardActive and durabilityAxisEnabled %}
     {% set tagsActive = tagIds|length > 0 %}
     {% set coatingsActive = coatingIds|length > 0 %}
     {% set substancesActive = substanceIds|length > 0 %}
@@ -388,7 +390,6 @@
                     {% if standardActive %}
                         <div id="facet-category" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                             <h6 class="fw-semibold mb-2">{{ complianceFacets.primaryLabel }}</h6>
-                            <input type="hidden" name="standard" value="{{ standard.value }}">
                             <div class="d-flex flex-wrap gap-1">
                                 {% for opt in complianceFacets.primaryOptions %}
                                     <label class="facet-pill">
@@ -406,7 +407,6 @@
                         {% if durabilityAxisShown %}
                             <div id="facet-durability" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
                                 <h6 class="fw-semibold mb-2">{{ complianceFacets.secondaryLabel }}</h6>
-                                <input type="hidden" name="category" value="{{ category }}">
                                 <div class="d-flex flex-wrap gap-1">
                                     {% for opt in complianceFacets.secondaryOptions %}
                                         <label class="facet-pill">
