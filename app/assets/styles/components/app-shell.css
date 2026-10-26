@@ -54,17 +54,36 @@
 /* ===== Десктоп-сайдбар ===== */
 .app-sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; width: 240px; z-index: 1035;
-    flex-direction: column; padding: 1rem .75rem;
-    background: var(--bs-body-bg); border-right: 1px solid var(--bs-border-color);
+    flex-direction: column; padding: .75rem .75rem 1rem;
+    background: var(--bs-body-bg);
+    transition: width .32s var(--ease-emph, ease);
+}
+/* Шапка с брендом (и стрелкой-свёрткой — см. Task 2) — не скроллится. */
+.app-sidebar-head {
+    flex: 0 0 auto; display: flex; align-items: center; gap: .5rem; padding: .25rem .25rem .6rem;
 }
 .app-brand {
-    font-weight: 700; font-size: 1.15rem; letter-spacing: -.02em;
-    color: var(--bs-body-color); text-decoration: none; padding: .25rem .5rem 1rem;
+    flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .5rem;
+    font-weight: 700; font-size: 1.15rem; letter-spacing: -.02em; white-space: nowrap; overflow: hidden;
+    color: var(--bs-body-color); text-decoration: none;
 }
-.app-sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
-.app-sidebar-foot {
-    margin-top: auto; display: flex; flex-direction: column; gap: 2px;
-    padding-top: .75rem; border-top: 1px solid var(--bs-border-color);
+/* Единая скролл-область: список секций и «Профиль» скроллятся вместе. */
+.app-sidebar-scroll {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    display: flex; flex-direction: column; gap: .6rem;
+}
+/* gap .6rem между блоками — тот же, что .app-sidebar-scroll даёт до блока «Профиль»:
+   расстояние между всеми блоками одинаковое. */
+.app-sidebar-nav { display: flex; flex-direction: column; gap: .6rem; }
+.app-sidebar-foot { display: flex; flex-direction: column; gap: .6rem; }
+/* Секции — блоки-карточки (как мобильная «Ещё»): тонированный фон, заголовок внутри. */
+.menu-block {
+    padding: .65rem .75rem; border-radius: var(--bs-border-radius-lg);
+    background: var(--bs-tertiary-bg); display: flex; flex-direction: column; gap: 2px;
+}
+.block-title {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--bs-secondary-color); opacity: .75; padding: .1rem .4rem .35rem;
 }
 .app-nav-item {
     display: flex; align-items: center; gap: .7rem; padding: .5rem .65rem; border-radius: .625rem;
@@ -75,15 +94,37 @@
 .app-nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-nav-item:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
 .app-nav-item.active { background: var(--accent-subtle); color: var(--bs-primary); font-weight: 650; }
-.app-nav-sep {
-    font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-    color: var(--bs-secondary-color); opacity: .7; padding: 1rem .65rem .35rem;
-}
 
-/* Смещение контента под сайдбар на lg+; шапку-карточку прячем (навигация — в сайдбаре). */
+/* Кнопка-стрелка свёртки в шапке сайдбара. Иконочная, без рамки, оттенок на ховер. */
+.app-sidebar-toggle {
+    flex: 0 0 auto; margin-left: auto; width: 30px; height: 30px; padding: 0;
+    display: grid; place-items: center; border: 0; border-radius: .5rem;
+    background: none; color: var(--bs-secondary-color); cursor: pointer;
+}
+.app-sidebar-toggle:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+.app-sidebar-toggle i { font-size: 1rem; transition: transform .32s var(--ease-emph, ease); }
+
+/* ===== Свёрнутый рельс (класс sidebar-collapsed на <html>: ставит FOUC-init + контроллер) ===== */
+html.sidebar-collapsed .app-sidebar { width: 64px; padding-left: .5rem; padding-right: .5rem; }
+html.sidebar-collapsed .app-sidebar-head { justify-content: center; }
+html.sidebar-collapsed .app-brand,
+html.sidebar-collapsed .block-title,
+html.sidebar-collapsed .app-nav-item span,
+html.sidebar-collapsed .app-nav-item .badge { display: none; }
+html.sidebar-collapsed .app-sidebar-toggle { margin-left: 0; }
+html.sidebar-collapsed .app-sidebar-toggle i { transform: rotate(180deg); }   /* стрелка перевёрнута */
+html.sidebar-collapsed .menu-block { padding: .4rem .25rem; }
+html.sidebar-collapsed .app-nav-item { justify-content: center; padding: .5rem 0; gap: 0; }
+
+/* Смещение контента под сайдбар на lg+; шапку-карточку прячем (навигация — в сайдбаре).
+   В свёрнутом виде — сдвиг под рельс 64px (только на десктопе, где сайдбар виден). */
 @media (min-width: 992px) {
-    body.has-app-shell .app-content { margin-left: 240px; }
+    body.has-app-shell .app-content { margin-left: 240px; transition: margin-left .32s var(--ease-emph, ease); }
     body.has-app-shell .app-header-mobile { display: none; }
+    html.sidebar-collapsed body.has-app-shell .app-content { margin-left: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .app-sidebar, .app-sidebar-toggle i, body.has-app-shell .app-content { transition: none; }
 }
 
 /* ===== Native-переходы между страницами (View Transitions API) ===== */

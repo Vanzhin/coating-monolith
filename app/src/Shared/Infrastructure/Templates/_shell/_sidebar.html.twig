@@ -1,37 +1,64 @@
 {# Десктоп-сайдбар (d-none d-lg-flex). Пункты — из `nav_items` (задан в base);
-   ниже — группа «Администрирование» (только ROLE_ADMIN) и аккаунт/тема/выход.
-   Включается в base только для авторизованных. #}
-<aside class="app-sidebar d-none d-lg-flex">
-    <a class="app-brand" href="{{ path('app_homepage') }}">{{ app_name }}</a>
-    <nav class="app-sidebar-nav" aria-label="Основная навигация">
-        {% for item in nav_items %}
-            <a href="{{ path(item.route) }}" class="app-nav-item{{ item.active ? ' active' : '' }}"
-               {% if item.active %}aria-current="page"{% endif %}>
-                <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
-            </a>
-        {% endfor %}
-        <a href="{{ path('app_cabinet_report_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_report_' ? ' active' : '' }}"
-           {% if current_route starts with 'app_cabinet_report_' %}aria-current="page"{% endif %}>
-            <i class="bi bi-clipboard-data"></i><span>Отчёты</span>
-        </a>
-        <a href="{{ path('app_tools_index') }}" class="app-nav-item{{ current_route starts with 'app_tools' ? ' active' : '' }}"
-           {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
-            <i class="bi bi-calculator"></i><span>Инструменты</span>
-        </a>
-        {% if is_granted('ROLE_ADMIN') %}
-            <div class="app-nav-sep">Администрирование</div>
-            <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item"><i class="bi bi-chevron-bar-contract"></i><span>Подготовка поверхности</span></a>
-            <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="app-nav-item"><i class="bi bi-building"></i><span>Производители</span></a>
-            <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="app-nav-item"><i class="bi bi-eyedropper"></i><span>Вещества</span></a>
-            <div class="app-nav-sep">Персонал</div>
-            <a href="{{ path('app_cabinet_personnel_profile_list') }}" class="app-nav-item"><i class="bi bi-people"></i><span>Персонал</span></a>
-            <a href="{{ path('app_cabinet_compliance_requirements_list') }}" class="app-nav-item"><i class="bi bi-card-checklist"></i><span>Нормы</span></a>
-            <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="app-nav-item"><i class="bi bi-shield-check"></i><span>Соответствие</span></a>
-        {% endif %}
-    </nav>
-    <div class="app-sidebar-foot">
-        <a href="{{ path('app_cabinet_profile') }}" class="app-nav-item"><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span>
-            {% include '_shell/_notifications_badge.html.twig' with {class: 'ms-auto'} %}
-        </a>
+   секции обёрнуты в блоки-карточки .menu-block, заголовок — внутри блока. Список
+   и «Профиль» живут в единой скролл-области .app-sidebar-scroll и скроллятся вместе.
+   Шапка .app-sidebar-head (бренд + стрелка-свёртка) не скроллится. Стрелка сворачивает
+   сайдбар в рельс из иконок (sidebar-collapse контроллер, класс на <html>, персист в
+   localStorage); title на пунктах — нативный тултип в свёрнутом виде. Включается в base
+   только для авторизованных. #}
+<aside class="app-sidebar d-none d-lg-flex" data-controller="sidebar-collapse">
+    <div class="app-sidebar-head">
+        <a class="app-brand" href="{{ path('app_homepage') }}">{{ app_name }}</a>
+        <button type="button" class="app-sidebar-toggle" data-action="sidebar-collapse#toggle"
+                data-sidebar-collapse-target="toggle" aria-label="Свернуть меню" title="Свернуть меню">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+    </div>
+    <div class="app-sidebar-scroll">
+        <nav class="app-sidebar-nav" aria-label="Основная навигация">
+            <div class="menu-block">
+                {% for item in nav_items %}
+                    <a href="{{ path(item.route) }}" class="app-nav-item{{ item.active ? ' active' : '' }}" title="{{ item.label }}"
+                       {% if item.active %}aria-current="page"{% endif %}>
+                        <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
+                    </a>
+                {% endfor %}
+                <a href="{{ path('app_cabinet_report_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_report_' ? ' active' : '' }}" title="Отчёты"
+                   {% if current_route starts with 'app_cabinet_report_' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-clipboard-data"></i><span>Отчёты</span>
+                </a>
+                <a href="{{ path('app_tools_index') }}" class="app-nav-item{{ current_route starts with 'app_tools' ? ' active' : '' }}" title="Инструменты"
+                   {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-calculator"></i><span>Инструменты</span>
+                </a>
+            </div>
+            {% if is_granted('ROLE_ADMIN') %}
+                <div class="menu-block">
+                    <div class="block-title">Администрирование</div>
+                    <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_surface_treatment' ? ' active' : '' }}" title="Подготовка поверхности"
+                       {% if current_route starts with 'app_cabinet_surface_treatment' %}aria-current="page"{% endif %}><i class="bi bi-chevron-bar-contract"></i><span>Подготовка поверхности</span></a>
+                    <a href="{{ path('app_cabinet_coating_manufacturer_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_coating_manufacturer' ? ' active' : '' }}" title="Производители"
+                       {% if current_route starts with 'app_cabinet_coating_manufacturer' %}aria-current="page"{% endif %}><i class="bi bi-building"></i><span>Производители</span></a>
+                    <a href="{{ path('app_cabinet_chemical_resistance_substance_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_chemical_resistance_substance' ? ' active' : '' }}" title="Вещества"
+                       {% if current_route starts with 'app_cabinet_chemical_resistance_substance' %}aria-current="page"{% endif %}><i class="bi bi-eyedropper"></i><span>Вещества</span></a>
+                </div>
+                <div class="menu-block">
+                    <div class="block-title">Персонал</div>
+                    <a href="{{ path('app_cabinet_personnel_profile_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_personnel_profile' ? ' active' : '' }}" title="Персонал"
+                       {% if current_route starts with 'app_cabinet_personnel_profile' %}aria-current="page"{% endif %}><i class="bi bi-people"></i><span>Персонал</span></a>
+                    <a href="{{ path('app_cabinet_compliance_requirements_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_compliance_requirements' ? ' active' : '' }}" title="Нормы"
+                       {% if current_route starts with 'app_cabinet_compliance_requirements' %}aria-current="page"{% endif %}><i class="bi bi-card-checklist"></i><span>Нормы</span></a>
+                    <a href="{{ path('app_cabinet_compliance_dashboard') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_compliance_dashboard' ? ' active' : '' }}" title="Соответствие"
+                       {% if current_route starts with 'app_cabinet_compliance_dashboard' %}aria-current="page"{% endif %}><i class="bi bi-shield-check"></i><span>Соответствие</span></a>
+                </div>
+            {% endif %}
+        </nav>
+        <div class="app-sidebar-foot">
+            <div class="menu-block">
+                <a href="{{ path('app_cabinet_profile') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_profile' ? ' active' : '' }}" title="{{ app.user.email }}"
+                   {% if current_route starts with 'app_cabinet_profile' %}aria-current="page"{% endif %}><i class="bi bi-person-circle"></i><span>{{ app.user.email }}</span>
+                    {% include '_shell/_notifications_badge.html.twig' with {class: 'ms-auto'} %}
+                </a>
+            </div>
+        </div>
     </div>
 </aside>

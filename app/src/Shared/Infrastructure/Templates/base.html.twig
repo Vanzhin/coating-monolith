@@ -26,6 +26,8 @@
                 var stored = localStorage.getItem('theme');
                 var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 document.documentElement.setAttribute('data-bs-theme', theme);
+                // Свёрнутость десктоп-сайдбара — до первой отрисовки, чтобы не моргнуть 240px→64px.
+                if (localStorage.getItem('sidebarCollapsed') === '1') { document.documentElement.classList.add('sidebar-collapsed'); }
             } catch (e) { /* localStorage может быть заблокирован — оставляем дефолт */ }
             // Офлайн-онли элементы (кнопка «Войти» в кэш-странице) гасим без вспышки: ставим
             // класс до первой отрисовки. Дальше состояние держит offline_indicator_controller.
