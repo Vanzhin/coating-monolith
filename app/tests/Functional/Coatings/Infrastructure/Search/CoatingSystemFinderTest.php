@@ -363,8 +363,8 @@ final class CoatingSystemFinderTest extends KernelTestCase
         );
 
         // Залипший в URL durability=VERY_HIGH не должен отсеять CX-строку: у CX оси долговечности
-        // нет, фильтр по ней не применяется. Иначе expandSecondary(VERY_HIGH)=[VERY_HIGH] выкинул бы
-        // HIGH-строку (VERY_HIGH берём именно потому, что её «≥»-раскрытие не покрывает HIGH).
+        // нет (hasSecondaryAxis=false), фильтр по ней не применяется. Иначе точный матч по
+        // durability выкинул бы CX-строку (у неё durability=HIGH), а она обязана остаться.
         $filter = new CoatingSystemsFilter(
             standard: ComplianceStandard::ISO_12944,
             category: 'CX',

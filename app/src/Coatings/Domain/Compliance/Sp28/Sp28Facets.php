@@ -9,8 +9,8 @@ use App\Coatings\Domain\Compliance\Facet\FacetOption;
 use App\Coatings\Domain\Compliance\Facet\StandardFacets;
 
 /**
- * Самоописание СП 28.13330: ось «среда» (степень агрессивности, порядковая «≥») и «условия
- * эксплуатации» (номинальная, точное совпадение). NON_AGGRESSIVE наружу не выводится.
+ * Самоописание СП 28.13330: оси «среда» (степень агрессивности) и «условия эксплуатации» —
+ * подписи и варианты для UI. Матч в поиске точный. NON_AGGRESSIVE наружу не выводится.
  */
 final readonly class Sp28Facets implements StandardFacets
 {
@@ -57,16 +57,5 @@ final readonly class Sp28Facets implements StandardFacets
     public function hasSecondaryAxis(string $primary): bool
     {
         return true; // у СП условия эксплуатации есть для любой степени агрессивности
-    }
-
-    public function expandPrimary(string $value): array
-    {
-        return SpAggressivity::tryFrom($value)?->atOrAbove() ?? [$value];
-    }
-
-    public function expandSecondary(string $value): array
-    {
-        // Условия эксплуатации — номинальная ось: точное совпадение.
-        return [$value];
     }
 }
