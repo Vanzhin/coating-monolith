@@ -9,7 +9,8 @@ use App\Coatings\Domain\Compliance\Facet\FacetOption;
 use App\Coatings\Domain\Compliance\Facet\StandardFacets;
 
 /**
- * Самоописание ISO 12944: ось «категория коррозивности» (семейная «≥») и «долговечность» (порядковая «≥»).
+ * Самоописание ISO 12944: оси «категория коррозивности» (по семьям) и «долговечность» — подписи,
+ * варианты и признак второй оси для UI. Матч в поиске точный, раскрытия значений тут нет.
  */
 final readonly class Iso12944Facets implements StandardFacets
 {
@@ -59,15 +60,5 @@ final readonly class Iso12944Facets implements StandardFacets
             [IsoCorrosivityCategory::CX, IsoCorrosivityCategory::IM4],
             true,
         );
-    }
-
-    public function expandPrimary(string $value): array
-    {
-        return IsoCorrosivityCategory::tryFrom($value)?->atOrAboveInFamily() ?? [$value];
-    }
-
-    public function expandSecondary(string $value): array
-    {
-        return IsoDurability::tryFrom($value)?->atOrAbove() ?? [$value];
     }
 }

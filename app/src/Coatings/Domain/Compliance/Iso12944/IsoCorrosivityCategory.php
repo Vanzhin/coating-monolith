@@ -61,23 +61,4 @@ enum IsoCorrosivityCategory: string
             self::IM4 => 4,
         };
     }
-
-    /**
-     * Значения категорий той же семьи (атмосферные vs погружные), равные или большие
-     * текущей, в порядке возрастания. Используется для фильтра поиска «≥ выбранного»:
-     * система с максимумом C5 подходит и под фильтр C3.
-     *
-     * @return list<string>
-     */
-    public function atOrAboveInFamily(): array
-    {
-        $result = [];
-        foreach (self::cases() as $case) {
-            if ($case->family() === $this->family() && $case->rank() >= $this->rank()) {
-                $result[] = $case->value;
-            }
-        }
-
-        return $result;
-    }
 }

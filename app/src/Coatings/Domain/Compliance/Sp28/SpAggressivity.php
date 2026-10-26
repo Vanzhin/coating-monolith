@@ -47,21 +47,4 @@ enum SpAggressivity: string
             self::STRONG => 3,
         };
     }
-
-    /**
-     * Значения степеней не ниже текущей (для фильтра «≥ выбранной»).
-     *
-     * @return list<string>
-     */
-    public function atOrAbove(): array
-    {
-        $out = [];
-        foreach (self::cases() as $case) {
-            if ($case->rank() >= $this->rank()) {
-                $out[] = $case->value;
-            }
-        }
-
-        return $out;
-    }
 }

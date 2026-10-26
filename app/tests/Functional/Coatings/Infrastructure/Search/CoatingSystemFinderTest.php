@@ -22,6 +22,8 @@ use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
 use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Compliance\ComplianceStandard;
+use App\Coatings\Domain\Compliance\Sp28\SpAggressivity;
+use App\Coatings\Domain\Compliance\Sp28\SpExploitation;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemSort;
@@ -249,22 +251,34 @@ final class CoatingSystemFinderTest extends KernelTestCase
         self::assertNotContains($sysWrongCat->getId(), $result->ids);
     }
 
-    public function test_compliance_filter_matches_stronger_categories_and_durabilities(): void
+    public function test_compliance_filter_matches_only_exact_category_and_durability(): void
     {
         $suffix = bin2hex(random_bytes(4));
-        // Система с максимумом C5-VERY_HIGH должна попадать под фильтр C3-HIGH.
-        $sysStrong = $this->buildAndSaveSystem('C5 VH '.$suffix, Substrate::STEEL_CARBON);
+        // Точный минимум C3-HIGH — попадает.
+        $sysExact = $this->buildAndSaveSystem('C3 HIGH '.$suffix, Substrate::STEEL_CARBON);
         $this->em->getConnection()->executeStatement(
             'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
-            ['id' => $sysStrong->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C5', 'dur' => 'VERY_HIGH'],
+            ['id' => $sysExact->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C3', 'dur' => 'HIGH'],
         );
-        // Слабая система с C2-LOW не должна попадать под фильтр C3-HIGH.
+        // Переспек по категории C4-HIGH — не попадает.
+        $sysHigherCat = $this->buildAndSaveSystem('C4 HIGH '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysHigherCat->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C4', 'dur' => 'HIGH'],
+        );
+        // Переспек по долговечности C3-VERY_HIGH — не попадает.
+        $sysHigherDur = $this->buildAndSaveSystem('C3 VH '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysHigherDur->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C3', 'dur' => 'VERY_HIGH'],
+        );
+        // Слабее C2-LOW — не попадает.
         $sysWeak = $this->buildAndSaveSystem('C2 LOW '.$suffix, Substrate::STEEL_CARBON);
         $this->em->getConnection()->executeStatement(
             'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
             ['id' => $sysWeak->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C2', 'dur' => 'LOW'],
         );
-        // Погружная категория Im2-VH не должна попадать под атмосферный фильтр C3.
+        // Другая семья Im2-VERY_HIGH — не попадает.
         $sysImmersion = $this->buildAndSaveSystem('Im2 VH '.$suffix, Substrate::STEEL_CARBON);
         $this->em->getConnection()->executeStatement(
             'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
@@ -278,9 +292,64 @@ final class CoatingSystemFinderTest extends KernelTestCase
         );
         $result = $this->finder->find($filter);
 
-        self::assertContains($sysStrong->getId(), $result->ids);
+        self::assertContains($sysExact->getId(), $result->ids);
+        self::assertNotContains($sysHigherCat->getId(), $result->ids);
+        self::assertNotContains($sysHigherDur->getId(), $result->ids);
         self::assertNotContains($sysWeak->getId(), $result->ids);
         self::assertNotContains($sysImmersion->getId(), $result->ids);
+    }
+
+    public function test_compliance_sp28_filter_matches_only_exact_degree(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        // СП: одно и то же условие эксплуатации, разная степень агрессивности.
+        // Точная степень MEDIUM — попадает.
+        $sysMedium = $this->buildAndSaveSystem('SP medium '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysMedium->getId(), 'std' => ComplianceStandard::SP_28->value, 'cat' => SpAggressivity::MEDIUM->value, 'dur' => SpExploitation::OUTDOOR->value],
+        );
+        // Переспек по степени STRONG — не попадает под запрос MEDIUM.
+        $sysStrong = $this->buildAndSaveSystem('SP strong '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysStrong->getId(), 'std' => ComplianceStandard::SP_28->value, 'cat' => SpAggressivity::STRONG->value, 'dur' => SpExploitation::OUTDOOR->value],
+        );
+
+        $filter = new CoatingSystemsFilter(
+            standard: ComplianceStandard::SP_28,
+            category: SpAggressivity::MEDIUM->value,
+            durability: SpExploitation::OUTDOOR->value,
+        );
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysMedium->getId(), $result->ids);
+        self::assertNotContains($sysStrong->getId(), $result->ids);
+    }
+
+    public function test_compliance_filter_category_only_matches_any_durability(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        // Фильтр только по категории (без долговечности) — точная категория, любая долговечность.
+        $sysHigh = $this->buildAndSaveSystem('C3 any HIGH '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysHigh->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C3', 'dur' => 'HIGH'],
+        );
+        $sysLow = $this->buildAndSaveSystem('C3 any LOW '.$suffix, Substrate::STEEL_CARBON);
+        $this->em->getConnection()->executeStatement(
+            'INSERT INTO coating_system_compliance (system_id, standard, category, durability) VALUES (:id, :std, :cat, :dur)',
+            ['id' => $sysLow->getId(), 'std' => ComplianceStandard::ISO_12944->value, 'cat' => 'C3', 'dur' => 'LOW'],
+        );
+
+        $filter = new CoatingSystemsFilter(
+            standard: ComplianceStandard::ISO_12944,
+            category: 'C3',
+        );
+        $result = $this->finder->find($filter);
+
+        self::assertContains($sysHigh->getId(), $result->ids);
+        self::assertContains($sysLow->getId(), $result->ids);
     }
 
     public function test_compliance_cx_filter_ignores_durability_axis(): void
@@ -294,8 +363,8 @@ final class CoatingSystemFinderTest extends KernelTestCase
         );
 
         // Залипший в URL durability=VERY_HIGH не должен отсеять CX-строку: у CX оси долговечности
-        // нет, фильтр по ней не применяется. Иначе expandSecondary(VERY_HIGH)=[VERY_HIGH] выкинул бы
-        // HIGH-строку (VERY_HIGH берём именно потому, что её «≥»-раскрытие не покрывает HIGH).
+        // нет (hasSecondaryAxis=false), фильтр по ней не применяется. Иначе точный матч по
+        // durability выкинул бы CX-строку (у неё durability=HIGH), а она обязана остаться.
         $filter = new CoatingSystemsFilter(
             standard: ComplianceStandard::ISO_12944,
             category: 'CX',
