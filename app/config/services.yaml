@@ -375,3 +375,22 @@ services:
   App\Shared\Domain\FileText\FileTextExtractor:
     alias: App\Shared\Infrastructure\FileText\FormatFileTextExtractor
     public: true
+
+  # Аудируемый HTTP-клиент NetAngels: scoped-клиент netangels, обёрнутый ретраем+аудитом.
+  app.http_client.netangels:
+    class: Symfony\Contracts\HttpClient\HttpClientInterface
+    factory: ['@App\Shared\Infrastructure\Http\AuditedHttpClientFactory', 'wrap']
+    arguments:
+      $base: '@netangels'
+      $scope: 'netangels'
+
+  # Экстрактор параметров через NetAngels (порт InquiryParametersExtractor).
+  App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor:
+    arguments:
+      $netangelsClient: '@app.http_client.netangels'
+      $model: '%env(NETANGELS_MODEL)%'
+
+  # Публичный: потребитель (движок) появится в плане 3, иначе контейнер выкинул бы и не валидировал.
+  App\Inquiries\Application\Port\InquiryParametersExtractor:
+    alias: App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor
+    public: true
