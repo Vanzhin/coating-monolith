@@ -8,9 +8,22 @@ parameters:
     app.http.audit_body_max_bytes: 16384   # лимит тела в аудите (UTF-8-safe обрезка)
     app.http.audit_enabled: true       # рубильник аудита исходящих запросов
 
+    # NetAngels AI Studio (OpenAI-совместимый). Дефолты — чтобы контейнер поднимался без
+    # реальных кредов (CI/test); боевые значения — в окружении деплоя.
+    env(NETANGELS_BASE_URL): 'https://ai.netangels.cloud/v1'
+    env(NETANGELS_API_KEY): ''
+    env(NETANGELS_MODEL): 'qwen3.8-flash'
+
 framework:
     http_client:
         default_options:
             timeout: '%app.http.timeout%'
-        # scoped_clients конкретных интеграций (base_uri, заголовки, свой timeout)
-        # добавляет контекст-владелец и оборачивает через AuditedHttpClientFactory::wrap().
+        scoped_clients:
+            # Сырой scoped-клиент NetAngels (base_uri/авторизация). Оборачивается в аудируемый
+            # (ретрай+аудит) через AuditedHttpClientFactory::wrap в services.yaml → app.http_client.netangels.
+            netangels:
+                base_uri: '%env(NETANGELS_BASE_URL)%'
+                headers:
+                    Authorization: 'Bearer %env(NETANGELS_API_KEY)%'
+                    Content-Type: 'application/json'
+                timeout: 30   # NetAngels медленный/флапающий — свой таймаут выше общих 15
