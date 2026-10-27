@@ -341,3 +341,16 @@ services:
       $blacklistPatterns: [ ]
       $whitelistEnabled: false
       $blacklistEnabled: false
+
+  # Аудит исходящих HTTP: сток пишет в Postgres (позже — ClickHouse подменой этого алиаса)
+  App\Shared\Infrastructure\Http\Audit\HttpAuditSink:
+    alias: App\Shared\Infrastructure\Http\Audit\PostgresHttpAuditSink
+
+  # Фабрика аудируемого HTTP-клиента: числа ретрая/аудита — из config/packages/http_client.yaml
+  App\Shared\Infrastructure\Http\AuditedHttpClientFactory:
+    arguments:
+      $maxRetries: '%app.http.max_retries%'
+      $retryDelayMs: '%app.http.retry_delay_ms%'
+      $retryMultiplier: '%app.http.retry_multiplier%'
+      $bodyMaxBytes: '%app.http.audit_body_max_bytes%'
+      $auditEnabled: '%app.http.audit_enabled%'

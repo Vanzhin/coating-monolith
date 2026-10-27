@@ -40,6 +40,8 @@ framework:
         routing:
             # Route your messages to the transports
             'App\Shared\Domain\Message\ChannelVerificationMessage': async
+            # Аудит исходящего HTTP: запись в БД в воркере, чтобы не блокировать реальный вызов.
+            'App\Shared\Infrastructure\Http\Audit\HttpAuditMessage': async
             # Активация пользователя → уведомление админу: async (в воркере). Хендлер публикует
             # уведомляющее событие UserActivatedNotification, которое диспетчер доставляет по каналам.
             'App\Users\Domain\Event\UserActivatedEvent': async
