@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete;
 
-final readonly class SubstanceAutocompleteQuery
+use App\Shared\Application\Query\Query;
+
+final readonly class SubstanceAutocompleteQuery extends Query
 {
     public function __construct(
         public string $q,
