@@ -1,0 +1,16 @@
+# Общий HTTP-клиент приложения + аудит исходящих запросов.
+# Все ключевые настройки — строками здесь, в коде не зашиты (читаются через bind в services.yaml).
+parameters:
+    app.http.timeout: 15               # таймаут одной попытки, сек
+    app.http.max_retries: 2            # => 3 попытки всего (0 ретраев = 1 попытка)
+    app.http.retry_delay_ms: 1000      # базовая задержка перед ретраем
+    app.http.retry_multiplier: 2.0     # экспоненциальный множитель задержки
+    app.http.audit_body_max_bytes: 16384   # лимит тела в аудите (UTF-8-safe обрезка)
+    app.http.audit_enabled: true       # рубильник аудита исходящих запросов
+
+framework:
+    http_client:
+        default_options:
+            timeout: '%app.http.timeout%'
+        # scoped_clients конкретных интеграций (base_uri, заголовки, свой timeout)
+        # добавляет контекст-владелец и оборачивает через AuditedHttpClientFactory::wrap().
