@@ -1,0 +1,6 @@
+# Ограничители сервиса извлечения текста из файла — строками, в коде не зашиты.
+parameters:
+    app.file_text.max_file_bytes: 25000000       # 25 МБ — больше не парсим (ERROR)
+    app.file_text.max_text_chars: 200000         # safety-cap выходного текста (+ флаг truncated)
+    app.file_text.extraction_timeout_sec: 20     # таймаут процесса извлечения (pdftotext)
+    app.file_text.scan_min_chars: 16             # непробельных символов меньше → считаем сканом

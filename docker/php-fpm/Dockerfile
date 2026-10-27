@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
         librabbitmq-dev \
         libssh-dev \
         libpng-dev \
+        poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Расширения ставим через install-php-extensions (как в alpine-образах проекта): он знает, какие

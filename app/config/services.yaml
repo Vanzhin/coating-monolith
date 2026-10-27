@@ -75,6 +75,9 @@ services:
     App\Notifications\Domain\Service\MessageRendererInterface:
       tags: ['app.notification_renderer']
 
+    App\Shared\Infrastructure\FileText\FormatTextExtractor:
+      tags: ['app.file_text_extractor']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -354,3 +357,21 @@ services:
       $retryMultiplier: '%app.http.retry_multiplier%'
       $bodyMaxBytes: '%app.http.audit_body_max_bytes%'
       $auditEnabled: '%app.http.audit_enabled%'
+
+  # Извлечение текста из файла (Shared): числа из config/packages/file_text.yaml
+  App\Shared\Infrastructure\FileText\PdfTextExtractor:
+    arguments:
+      $timeoutSec: '%app.file_text.extraction_timeout_sec%'
+
+  App\Shared\Infrastructure\FileText\FormatFileTextExtractor:
+    arguments:
+      $extractors: !tagged_iterator app.file_text_extractor
+      $maxFileBytes: '%app.file_text.max_file_bytes%'
+      $maxTextChars: '%app.file_text.max_text_chars%'
+      $scanMinChars: '%app.file_text.scan_min_chars%'
+
+  # Публичный: пока нет потребителя (придёт в адаптере подбора), иначе контейнер
+  # выкинул бы неиспользуемый сервис и проводка не валидировалась бы.
+  App\Shared\Domain\FileText\FileTextExtractor:
+    alias: App\Shared\Infrastructure\FileText\FormatFileTextExtractor
+    public: true
