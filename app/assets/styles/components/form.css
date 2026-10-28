@@ -121,7 +121,10 @@
 }
 
 @media (min-width: 992px) {
-    .form-layout {
+    /* Две колонки только когда есть оглавление. Без TOC (форма без anchors —
+       напр. вещество/производитель) единственный .form-main иначе падал бы в
+       220px-колонку и форму сплющивало. */
+    .form-layout:has(.form-toc) {
         display: grid;
         grid-template-columns: 220px minmax(0, 1fr);
         gap: 1.25rem;
