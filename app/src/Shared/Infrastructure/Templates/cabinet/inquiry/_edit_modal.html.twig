@@ -110,7 +110,7 @@
                     </div>
 
                     {# --- Стойкость к веществу (как в фильтре систем) --- #}
-                    <div class="mt-3">
+                    <div class="mt-3" data-coating-tags-group>
                         <label class="form-label small mb-1">Стойкость к веществу</label>
                         <input type="text"
                                data-controller="coating-tags"
@@ -121,7 +121,7 @@
                                data-coating-tags-resolve-url-value="{{ path('app_cabinet_chemical_resistance_substance_by_ids') }}"
                                class="form-control form-control-sm"
                                placeholder="Начните вводить вещество...">
-                        <input type="number" min="1" name="substanceTemp" value="{{ p.substanceTemperature ?: '' }}"
+                        <input type="number" min="1" name="substanceTemp" value="{{ p.substanceTemperature is not null ? p.substanceTemperature : '' }}"
                                class="form-control form-control-sm mt-2" placeholder="Температура у вещества, °C (опц.)">
                     </div>
 
@@ -129,7 +129,7 @@
                     <div class="row g-3 mt-0">
                         <div class="col-md-4">
                             <label class="form-label small mb-1">Тепловая нагрузка, °C</label>
-                            <input type="number" name="thermalTemperature" value="{{ p.thermalTemperature ?: '' }}" class="form-control form-control-sm" placeholder="напр. 120">
+                            <input type="number" name="thermalTemperature" value="{{ p.thermalTemperature is not null ? p.thermalTemperature : '' }}" class="form-control form-control-sm" placeholder="напр. 120">
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small mb-1">Среда нагрева</label>

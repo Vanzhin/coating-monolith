@@ -109,6 +109,10 @@ class Inquiry extends Aggregate
         } else {
             $this->updatedAt = $now;
         }
+        // Чистый лист: конвейер прогонится заново (recognize перезапишет), а Received не должен
+        // нести ни ответа, ни прошлых параметров/провенанса, ни причины отказа.
+        $this->recognizedParameters = null;
+        $this->parameterSource = null;
         $this->answer = null;
         $this->failureReason = null;
         $this->raise(new InquirySubmitted($this->getId()));

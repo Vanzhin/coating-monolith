@@ -167,6 +167,8 @@ final class InquiryTest extends TestCase
         self::assertSame(InquiryStatus::Received, $inquiry->getStatus());
         self::assertNull($inquiry->getFailureReason());
         self::assertNull($inquiry->getAnswer());
+        self::assertNull($inquiry->getRecognizedParameters());
+        self::assertNull($inquiry->getParameterSource());
 
         $events = $inquiry->pullEvents();
         self::assertCount(1, $events);
