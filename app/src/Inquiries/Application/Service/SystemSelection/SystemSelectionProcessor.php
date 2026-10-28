@@ -68,7 +68,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
                 throw new ParameterExtractionFailedException($e);
             }
             $mapped = $this->mapper->map($extraction->parameters);
-            $warnings = [...$warnings, ...$mapped->warnings];
+            $warnings = [...$warnings, ...$mapped->warnings, ...$extraction->conflicts];
             if ([] !== $extraction->droppedValues) {
                 $warnings[] = 'Отброшены значения вне справочника: '.implode(', ', $extraction->droppedValues);
             }

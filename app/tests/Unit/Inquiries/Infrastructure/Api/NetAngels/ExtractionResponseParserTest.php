@@ -91,6 +91,31 @@ final class ExtractionResponseParserTest extends TestCase
         self::assertNotEmpty($dropped);
     }
 
+    public function test_parses_conflicts_notes(): void
+    {
+        ['conflicts' => $conflicts] = (new ExtractionResponseParser())->parse(json_encode([
+            'conflicts' => ['температура: в теле 90, во вложении 80 — взял 80 (приоритет вложения)', '  '],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertSame(['температура: в теле 90, во вложении 80 — взял 80 (приоритет вложения)'], $conflicts);
+    }
+
+    public function test_conflicts_default_empty(): void
+    {
+        ['conflicts' => $conflicts] = (new ExtractionResponseParser())->parse(json_encode([
+            'substrates' => ['steel_carbon'],
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertSame([], $conflicts);
+    }
+
+    public function test_invalid_json_yields_empty_conflicts(): void
+    {
+        ['conflicts' => $conflicts] = (new ExtractionResponseParser())->parse('not a json');
+
+        self::assertSame([], $conflicts);
+    }
+
     public function test_partial_application_range_kept(): void
     {
         ['parameters' => $p] = (new ExtractionResponseParser())->parse(json_encode([

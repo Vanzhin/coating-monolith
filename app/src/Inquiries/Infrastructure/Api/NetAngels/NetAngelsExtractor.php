@@ -48,7 +48,7 @@ final readonly class NetAngelsExtractor implements InquiryParametersExtractor
         $usage = \is_array($data['usage'] ?? null) ? $data['usage'] : [];
         $durationMs = (int) round((microtime(true) - $start) * 1000);
 
-        ['parameters' => $parameters, 'dropped' => $dropped] = $this->parser->parse($content);
+        ['parameters' => $parameters, 'dropped' => $dropped, 'conflicts' => $conflicts] = $this->parser->parse($content);
 
         return new ExtractionResult(
             parameters: $parameters,
@@ -62,6 +62,7 @@ final readonly class NetAngelsExtractor implements InquiryParametersExtractor
                 durationMs: $durationMs,
             ),
             droppedValues: $dropped,
+            conflicts: $conflicts,
         );
     }
 }

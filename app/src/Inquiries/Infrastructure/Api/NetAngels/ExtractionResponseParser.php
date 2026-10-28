@@ -18,6 +18,7 @@ use App\Inquiries\Application\DTO\ThermalParams;
 /**
  * Сырой JSON модели → ExtractedParameters. Одна схема для всех провайдеров. Значения вне
  * enum проекта отбрасываются в null/[] и фиксируются в списке dropped (для показа инженеру).
+ * Поле conflicts (заметки модели о расхождениях источников) пробрасывается как есть.
  * Температуры проверяются по границам ThermalExposureLimits (-200..1000).
  */
 final class ExtractionResponseParser
@@ -25,14 +26,14 @@ final class ExtractionResponseParser
     private const TEMP_MIN = -200;
     private const TEMP_MAX = 1000;
 
-    /** @return array{parameters: ExtractedParameters, dropped: list<string>} */
+    /** @return array{parameters: ExtractedParameters, dropped: list<string>, conflicts: list<string>} */
     public function parse(string $json): array
     {
         $data = json_decode($json, true);
         $dropped = [];
 
         if (!\is_array($data)) {
-            return ['parameters' => $this->empty(), 'dropped' => ['ответ модели — невалидный JSON']];
+            return ['parameters' => $this->empty(), 'dropped' => ['ответ модели — невалидный JSON'], 'conflicts' => []];
         }
 
         $chem = \is_array($data['chemicalResistance'] ?? null) ? $data['chemicalResistance'] : [];
@@ -60,7 +61,7 @@ final class ExtractionResponseParser
             minApplicationTimeAt20: $this->range($data['minApplicationTimeAt20'] ?? null),
         );
 
-        return ['parameters' => $parameters, 'dropped' => $dropped];
+        return ['parameters' => $parameters, 'dropped' => $dropped, 'conflicts' => $this->names($data['conflicts'] ?? null)];
     }
 
     private function empty(): ExtractedParameters

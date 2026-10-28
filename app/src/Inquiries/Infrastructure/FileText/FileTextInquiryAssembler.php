@@ -18,6 +18,11 @@ use App\Shared\Domain\FileText\FileTextStatus;
  */
 final readonly class FileTextInquiryAssembler implements InquiryTextAssembler
 {
+    /** Маркеры источника в склейке. Должны совпадать с тем, что описано в system-prompt.v3.txt
+     *  (блок «ИСТОЧНИКИ В ТЕКСТЕ»), иначе модель перестанет распознавать источник — страж в тесте. */
+    public const BODY_MARKER = '=== Тело письма ===';
+    public const ATTACHMENT_MARKER_PREFIX = '=== Вложение:';
+
     public function __construct(private FileStorage $storage, private FileTextExtractor $extractor)
     {
     }
@@ -29,7 +34,7 @@ final readonly class FileTextInquiryAssembler implements InquiryTextAssembler
 
         $body = trim($inquiry->getRawText());
         if ('' !== $body) {
-            $parts[] = $body;
+            $parts[] = self::BODY_MARKER."\n".$body;
         }
 
         foreach ($inquiry->getAttachmentFileIds()->getList() as $fileId) {
@@ -58,7 +63,7 @@ final readonly class FileTextInquiryAssembler implements InquiryTextAssembler
             }
 
             if ($fileText->isExtracted()) {
-                $parts[] = $fileText->text;
+                $parts[] = self::ATTACHMENT_MARKER_PREFIX." {$name} ===\n".$fileText->text;
                 if ($fileText->truncated) {
                     $warnings[] = sprintf('Файл «%s» обрезан по лимиту длины — учтён частично.', $name);
                 }

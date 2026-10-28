@@ -56,6 +56,7 @@ final class SystemSelectionProcessorTest extends TestCase
         self::assertContains('Файл «спека.pdf» — скан', $warnings);
         self::assertTrue($this->anyContains($warnings, 'уайт-спирит'));
         self::assertTrue($this->anyContains($warnings, 'Отброшены'));
+        self::assertTrue($this->anyContains($warnings, 'приоритет вложения'));
     }
 
     public function test_cache_hit_skips_model_and_marks_cache(): void
@@ -212,7 +213,13 @@ final class SystemSelectionProcessorTest extends TestCase
             minApplicationTimeAt20: new IntRangeDto(120, null),
         );
 
-        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v2', 1200, 300, 2600), ['непонятное']);
+        return new ExtractionResult(
+            $params,
+            '{}',
+            new ExtractionMetadata('llm:netangels', 'qwen', 'v2', 1200, 300, 2600),
+            ['непонятное'],
+            ['температура: в теле 90, во вложении 80 — взял 80 (приоритет вложения)'],
+        );
     }
 
     /** @param list<string> $warnings */
