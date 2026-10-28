@@ -15,6 +15,10 @@ use App\Inquiries\Application\DTO\ExtractionResult;
 use App\Inquiries\Application\DTO\InquiryText;
 use App\Inquiries\Application\DTO\IntRangeDto;
 use App\Inquiries\Application\DTO\ThermalParams;
+use App\Inquiries\Application\Exception\CoatingSearchFailedException;
+use App\Inquiries\Application\Exception\EmptyInquiryTextException;
+use App\Inquiries\Application\Exception\ParameterExtractionFailedException;
+use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
 use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
@@ -97,6 +101,30 @@ final class SystemSelectionProcessorTest extends TestCase
         self::assertTrue($this->anyContains($inquiry->getWarnings(), 'не дал ни одной'));
     }
 
+    public function test_empty_text_throws_typed_error(): void
+    {
+        $this->expectException(EmptyInquiryTextException::class);
+        $this->processor(assemblerText: '  ')->process($this->inquiry());
+    }
+
+    public function test_extractor_failure_wraps_as_typed_error(): void
+    {
+        $this->expectException(ParameterExtractionFailedException::class);
+        $this->processor(extractorError: true)->process($this->inquiry());
+    }
+
+    public function test_empty_parameters_throw_not_recognized(): void
+    {
+        $this->expectException(ParametersNotRecognizedException::class);
+        $this->processor(emptyExtraction: true)->process($this->inquiry());
+    }
+
+    public function test_search_failure_wraps_as_typed_error(): void
+    {
+        $this->expectException(CoatingSearchFailedException::class);
+        $this->processor(searchError: true)->process($this->inquiry());
+    }
+
     private function inquiry(): Inquiry
     {
         return new Inquiry(
@@ -110,17 +138,25 @@ final class SystemSelectionProcessorTest extends TestCase
     }
 
     /** @param list<string> $assemblerWarnings */
-    private function processor(?CacheHit $hit, array $assemblerWarnings, int $total, bool $failIfExtractorCalled = false): SystemSelectionProcessor
-    {
-        $assembler = new class($assemblerWarnings) implements InquiryTextAssembler {
+    private function processor(
+        ?CacheHit $hit = null,
+        array $assemblerWarnings = [],
+        int $total = 2,
+        bool $failIfExtractorCalled = false,
+        string $assemblerText = 'собранный текст',
+        bool $extractorError = false,
+        bool $emptyExtraction = false,
+        bool $searchError = false,
+    ): SystemSelectionProcessor {
+        $assembler = new class($assemblerWarnings, $assemblerText) implements InquiryTextAssembler {
             /** @param list<string> $warnings */
-            public function __construct(private readonly array $warnings)
+            public function __construct(private readonly array $warnings, private readonly string $text)
             {
             }
 
             public function assemble(Inquiry $inquiry): AssembledText
             {
-                return new AssembledText('собранный текст', $this->warnings);
+                return new AssembledText($this->text, $this->warnings);
             }
         };
 
@@ -139,15 +175,22 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        $extractor = new class($this->extraction(), $failIfExtractorCalled) implements InquiryParametersExtractor {
-            public function __construct(private readonly ExtractionResult $result, private readonly bool $fail)
-            {
+        $extraction = $emptyExtraction ? $this->emptyExtraction() : $this->extraction();
+        $extractor = new class($extraction, $failIfExtractorCalled, $extractorError) implements InquiryParametersExtractor {
+            public function __construct(
+                private readonly ExtractionResult $result,
+                private readonly bool $fail,
+                private readonly bool $error,
+            ) {
             }
 
             public function extract(InquiryText $text): ExtractionResult
             {
                 if ($this->fail) {
                     throw new \LogicException('модель не должна вызываться при попадании в кэш');
+                }
+                if ($this->error) {
+                    throw new \RuntimeException('Idle timeout reached');
                 }
 
                 return $this->result;
@@ -161,18 +204,41 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        $queryBus = new class($this->searchResult($total)) implements QueryBusInterface {
-            public function __construct(private readonly SearchCoatingSystemsQueryResult $result)
+        $queryBus = new class($this->searchResult($total), $searchError) implements QueryBusInterface {
+            public function __construct(private readonly SearchCoatingSystemsQueryResult $result, private readonly bool $error)
             {
             }
 
             public function execute(QueryInterface $query): mixed
             {
+                if ($this->error) {
+                    throw new \RuntimeException('поиск упал');
+                }
+
                 return $this->result;
             }
         };
 
         return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), $queryBus);
+    }
+
+    private function emptyExtraction(): ExtractionResult
+    {
+        $params = new ExtractedParameters(
+            substrates: [],
+            environment: null,
+            specifiedCoatings: [],
+            search: null,
+            chemicalResistance: new ChemicalResistanceParams([], null, null),
+            thermal: new ThermalParams(null, null, null),
+            standard: null,
+            category: null,
+            durability: null,
+            applicationMinTemp: null,
+            minApplicationTimeAt20: null,
+        );
+
+        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v1', 10, 5, 400), []);
     }
 
     private function extraction(): ExtractionResult

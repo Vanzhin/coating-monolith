@@ -107,6 +107,32 @@ final readonly class CoatingSystemsFilterInput
         );
     }
 
+    /**
+     * Есть ли хоть одна ОСЬ подбора (не пагинация/сортировка). Пусто → фильтр-no-op, который
+     * вернул бы весь каталог: внешним потребителям (Inquiries) это сигнал «распознать не удалось».
+     * thermalIncludingPeak — модификатор колонки, сам по себе ось не задаёт.
+     */
+    public function hasAnyConstraint(): bool
+    {
+        return null !== $this->search
+            || [] !== $this->substrates
+            || null !== $this->environment
+            || null !== $this->standard
+            || null !== $this->category
+            || null !== $this->durability
+            || [] !== $this->tagIds
+            || [] !== $this->coatingIds
+            || [] !== $this->substanceIds
+            || null !== $this->applicationMinTempFrom
+            || null !== $this->applicationMinTempTo
+            || null !== $this->minApplicationTimeFromMinutes
+            || null !== $this->minApplicationTimeToMinutes
+            || null !== $this->thermalTemperature
+            || null !== $this->thermalEnvironment
+            || null !== $this->substanceTemperature
+            || null !== $this->hasDocuments;
+    }
+
     /** @param array<string, mixed> $d */
     private static function asString(array $d, string $key): ?string
     {

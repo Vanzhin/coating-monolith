@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Application\Event;
 
+use App\Inquiries\Application\Exception\InquiryProcessingException;
 use App\Inquiries\Application\Service\InquiryProcessor;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
@@ -52,6 +53,10 @@ final readonly class ProcessInquiryHandler implements EventHandlerInterface
 
         try {
             $processor->process($inquiry);
+        } catch (InquiryProcessingException $e) {
+            // Ожидаемый категоризированный отказ шага (пусто/не распознано/модель/поиск) — не системный сбой.
+            $this->logger->warning('Запрос не обработан: '.$e->getMessage(), ['id' => $inquiry->getId(), 'exception' => $e]);
+            $inquiry->fail($e->getMessage(), new \DateTimeImmutable());
         } catch (\Throwable $e) {
             $this->logger->error('Обработка запроса провалилась', ['id' => $inquiry->getId(), 'exception' => $e]);
             $inquiry->fail($e instanceof AppException ? $e->getMessage() : 'Внутренняя ошибка обработки.', new \DateTimeImmutable());

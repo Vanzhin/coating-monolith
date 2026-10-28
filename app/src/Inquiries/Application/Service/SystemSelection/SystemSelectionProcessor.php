@@ -9,6 +9,10 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
 use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Inquiries\Application\DTO\InquiryText;
+use App\Inquiries\Application\Exception\CoatingSearchFailedException;
+use App\Inquiries\Application\Exception\EmptyInquiryTextException;
+use App\Inquiries\Application\Exception\ParameterExtractionFailedException;
+use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
 use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
@@ -51,12 +55,26 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         $assembled = $this->assembler->assemble($inquiry);
         $warnings = $assembled->warnings;
 
+        // Гейт 1: сборка дала пустоту (тела нет, вложения не прочитались) — извлекать нечего,
+        // модель не зовём. Отказ типизирован, чтобы по Failed было видно причину.
+        if ('' === trim($assembled->text)) {
+            $inquiry->noteWarnings(...$warnings);
+
+            throw new EmptyInquiryTextException();
+        }
+
         $hit = $this->cache->lookup(InquiryType::SystemSelection, $assembled->text);
         if (null !== $hit) {
             $parameters = $hit->parameters;
             $source = new ParameterSource(ParameterStrategy::Cache, array_filter(['sourceInquiryId' => $hit->sourceInquiryId]));
         } else {
-            $extraction = $this->extractor->extract(new InquiryText($assembled->text));
+            try {
+                $extraction = $this->extractor->extract(new InquiryText($assembled->text));
+            } catch (\Throwable $e) {
+                $inquiry->noteWarnings(...$warnings);
+
+                throw new ParameterExtractionFailedException($e);
+            }
             $mapped = $this->mapper->map($extraction->parameters);
             $warnings = [...$warnings, ...$mapped->warnings];
             if ([] !== $extraction->droppedValues) {
@@ -75,9 +93,23 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
 
         $inquiry->recognize($parameters, $source, $now);
 
-        $searchResult = $this->queryBus->execute(
-            SearchCoatingSystemsQuery::fromParameters(CoatingSystemsFilterInput::fromArray($parameters->toArray())),
-        );
+        $input = CoatingSystemsFilterInput::fromArray($parameters->toArray());
+
+        // Гейт 2: ни одной оси фильтра — поиск вернул бы весь каталог, это не подбор. В Failed,
+        // инженер вбивает параметры вручную (Failed → Recognized) и переподбирает.
+        if (!$input->hasAnyConstraint()) {
+            $inquiry->noteWarnings(...$warnings);
+
+            throw new ParametersNotRecognizedException();
+        }
+
+        try {
+            $searchResult = $this->queryBus->execute(SearchCoatingSystemsQuery::fromParameters($input));
+        } catch (\Throwable $e) {
+            $inquiry->noteWarnings(...$warnings);
+
+            throw new CoatingSearchFailedException($e);
+        }
         \assert($searchResult instanceof SearchCoatingSystemsQueryResult);
 
         $systems = array_map(
