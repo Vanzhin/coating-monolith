@@ -8,6 +8,7 @@ use App\Shared\Domain\FileText\FileTextStatus;
 use App\Shared\Infrastructure\FileText\FormatFileTextExtractor;
 use App\Shared\Infrastructure\FileText\FormatTextExtractor;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 final class FormatFileTextExtractorTest extends TestCase
 {
@@ -94,7 +95,7 @@ final class FormatFileTextExtractorTest extends TestCase
         int $maxTextChars = 200000,
         int $scanMinChars = 16,
     ): FormatFileTextExtractor {
-        return new FormatFileTextExtractor([$fake], $maxFileBytes, $maxTextChars, $scanMinChars);
+        return new FormatFileTextExtractor([$fake], $maxFileBytes, $maxTextChars, $scanMinChars, new NullLogger());
     }
 
     private function fake(string $ext, string $returns = 'text', bool $emptyScan = false, bool $throws = false): FormatTextExtractor

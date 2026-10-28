@@ -78,6 +78,9 @@ services:
     App\Shared\Infrastructure\FileText\FormatTextExtractor:
       tags: ['app.file_text_extractor']
 
+    App\Inquiries\Application\Service\InquiryProcessor:
+      tags: ['app.inquiry_processor']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -210,6 +213,9 @@ services:
 
   App\Coatings\Domain\Repository\SurfaceTreatmentRepositoryInterface:
     alias: App\Coatings\Infrastructure\Repository\SurfaceTreatmentRepository
+
+  App\Inquiries\Domain\Repository\InquiryRepositoryInterface:
+    alias: App\Inquiries\Infrastructure\Repository\InquiryRepository
 
   App\Reports\Domain\Repository\CounterpartyRepositoryInterface:
     alias: App\Reports\Infrastructure\Repository\CounterpartyRepository
@@ -395,7 +401,20 @@ services:
     alias: App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor
     public: true
 
-  # Резолв вещества имя→id через ChemicalResistance. Публичный: потребитель (движок) — в плане 3.
+  # Резолв вещества имя→id через ChemicalResistance.
   App\Inquiries\Application\Port\SubstanceResolver:
     alias: App\Inquiries\Infrastructure\Resolver\ChemicalResistanceSubstanceResolver
     public: true
+
+  # Сборка текста запроса из тела + вложений (Shared FileTextExtractor).
+  App\Inquiries\Application\Port\InquiryTextAssembler:
+    alias: App\Inquiries\Infrastructure\FileText\FileTextInquiryAssembler
+
+  # Кэш одобренных параметров. Пока заглушка (всегда промах); настоящий — задачей кэша.
+  App\Inquiries\Application\Port\ApprovedParameterCache:
+    alias: App\Inquiries\Infrastructure\Cache\NoopApprovedParameterCache
+
+  # Диспетчер обработки получает все процессоры по тегу и выбирает по типу запроса.
+  App\Inquiries\Application\Event\ProcessInquiryHandler:
+    arguments:
+      $processors: !tagged_iterator app.inquiry_processor

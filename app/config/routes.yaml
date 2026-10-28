@@ -38,6 +38,10 @@ chem_resistance:
   resource: ../src/ChemicalResistance/Infrastructure/Controller
   type: attribute
 
+inquiries:
+  resource: ../src/Inquiries/Infrastructure/Controller
+  type: attribute
+
 certificates:
   resource: ../src/Certificates/Infrastructure/Controller
   type: attribute

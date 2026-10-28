@@ -1,0 +1,144 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Запрос на подбор{% endblock %}
+
+{% block content %}
+    {% set statusBadge = {received: 'secondary', recognized: 'secondary', matched: 'primary', approved: 'success', failed: 'danger'} %}
+    {% set processing = inquiry.statusValue in ['received', 'recognized'] %}
+
+    <div class="container-fluid py-3">
+        <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+            <a href="{{ path('app_cabinet_inquiry_new') }}" class="btn btn-sm btn-light" title="К форме"><i class="bi bi-arrow-left"></i></a>
+            <h1 class="h5 mb-0">{{ inquiry.typeLabel }}</h1>
+            <span class="badge rounded-pill text-bg-{{ statusBadge[inquiry.statusValue] ?? 'secondary' }}">{{ inquiry.statusLabel }}</span>
+            {% if inquiry.sourceStrategyLabel %}
+                <span class="badge rounded-pill text-bg-light fw-normal text-body-secondary">Параметры: {{ inquiry.sourceStrategyLabel }}</span>
+            {% endif %}
+
+            <span class="ms-auto d-flex gap-2">
+                {% if processing %}
+                    <a href="{{ path('app_cabinet_inquiry_show', {id: inquiry.id}) }}" class="btn btn-sm btn-primary"><i class="bi bi-arrow-clockwise me-1"></i>Обновить</a>
+                {% endif %}
+                {% if canEdit and inquiry.statusValue == 'failed' %}
+                    <form method="post" action="{{ path('app_cabinet_inquiry_retry', {id: inquiry.id}) }}" class="m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('retry') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Повторить обработку</button>
+                    </form>
+                {% endif %}
+                {% if canEdit and inquiry.statusValue == 'matched' %}
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveModal"><i class="bi bi-check2 me-1"></i>Одобрить</button>
+                {% endif %}
+                {% if canEdit %}
+                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                            data-bs-title="запрос" data-bs-url="{{ path('app_cabinet_inquiry_delete', {id: inquiry.id}) }}"><i class="bi bi-trash3 me-1"></i>Удалить</button>
+                {% endif %}
+            </span>
+        </div>
+
+        {% if inquiry.statusValue == 'failed' %}
+            <div class="alert alert-danger d-flex gap-2"><i class="bi bi-x-octagon mt-1"></i><div>{{ inquiry.failureReason }}</div></div>
+        {% elseif processing %}
+            <div class="alert alert-secondary d-flex gap-2"><i class="bi bi-arrow-clockwise mt-1"></i><div>
+                <strong>Запрос принят, идёт подбор.</strong>
+                <div class="small">Текст извлекается, модель распознаёт параметры, выполняется поиск. Обновите страницу через несколько секунд.</div>
+                {% if canEdit %}
+                    <form method="post" action="{{ path('app_cabinet_inquiry_retry', {id: inquiry.id}) }}" class="m-0 mt-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('retry') }}">
+                        <button type="submit" class="btn btn-sm btn-link p-0 text-decoration-none text-body-secondary"><i class="bi bi-arrow-repeat me-1"></i>Обработка зависла? Запустить заново</button>
+                    </form>
+                {% endif %}
+            </div></div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                    <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Что на входе</div>
+                    {% if inquiry.rawText|trim %}
+                        <div class="p-2 rounded-3 bg-body-tertiary small text-body-secondary mb-2" style="white-space:pre-wrap; max-height:140px; overflow:auto">{{ inquiry.rawText }}</div>
+                    {% endif %}
+                    {% for a in inquiry.attachments %}
+                        <a href="{{ path('app_cabinet_inquiry_attachment', {id: inquiry.id, fileId: a.id}) }}" target="_blank" rel="noopener"
+                           class="d-flex align-items-center gap-2 p-2 rounded-3 bg-body-tertiary mb-1 text-decoration-none text-body">
+                            <i class="bi bi-paperclip"></i><span class="text-truncate">{{ a.name }}</span>
+                            <i class="bi bi-box-arrow-up-right ms-auto small text-body-secondary"></i>
+                        </a>
+                    {% else %}
+                        {% if not inquiry.rawText|trim %}<div class="text-body-secondary small fst-italic">Пусто.</div>{% endif %}
+                    {% endfor %}
+                    {% if inquiry.warnings %}
+                        <div class="mt-2 d-flex flex-column gap-1">
+                            {% for w in inquiry.warnings %}
+                                <div class="small text-warning-emphasis d-flex gap-2"><i class="bi bi-exclamation-triangle mt-1"></i><span>{{ w }}</span></div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if inquiry.rawText|trim or inquiry.attachments %}
+                        <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none mt-2"
+                                data-controller="inquiry-text-modal"
+                                data-inquiry-text-modal-endpoint-value="{{ path('app_cabinet_inquiry_text', {id: inquiry.id}) }}"
+                                data-action="inquiry-text-modal#open">
+                            <i class="bi bi-body-text me-1"></i>Посмотреть текст целиком
+                        </button>
+                    {% endif %}
+                </div></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                    <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Что извлечено</div>
+                    {% if inquiry.paramRows is empty %}
+                        <div class="text-body-secondary small fst-italic">{{ processing ? 'Ещё не распознаны.' : 'Параметры не распознаны.' }}</div>
+                    {% else %}
+                        <dl class="row mb-0 small">
+                            {% for row in inquiry.paramRows %}
+                                <dt class="col-5 text-body-secondary fw-normal">{{ row.label }}</dt>
+                                <dd class="col-7 text-end mb-1">{{ row.value }}</dd>
+                            {% endfor %}
+                        </dl>
+                    {% endif %}
+                    {% if canEdit and inquiry.statusValue in ['matched', 'failed'] %}
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                data-controller="inquiry-edit-modal"
+                                data-inquiry-edit-modal-endpoint-value="{{ path('app_cabinet_inquiry_edit', {id: inquiry.id}) }}"
+                                data-action="inquiry-edit-modal#open">
+                            <i class="bi bi-sliders me-1"></i>Исправить параметры
+                        </button>
+                    {% endif %}
+                </div></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                    <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Подобрано{% if inquiry.answerTotal is not null %} · {{ inquiry.answerTotal }}{% endif %}</div>
+                    {% for s in inquiry.systems %}
+                        <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-body-tertiary mb-1"><span class="fw-semibold text-truncate">{{ s.label }}</span></div>
+                    {% else %}
+                        <div class="text-body-secondary small fst-italic">{{ processing ? 'Идёт подбор…' : 'Систем нет.' }}</div>
+                    {% endfor %}
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/delete_modal.html.twig' %}
+
+    {% if canEdit %}
+        <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <div class="modal-body text-center pt-4 pb-2">
+                    <div class="del-ic" style="color: var(--bs-success)"><i class="bi bi-check2-circle"></i></div>
+                    <h5 class="modal-title mb-2" id="approveModalLabel">Одобрить подбор?</h5>
+                    <p class="text-body-secondary small mb-0">Запрос замораживается; параметры станут топливом для автоподбора похожих.</p>
+                </div>
+                <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                    <form method="post" action="{{ path('app_cabinet_inquiry_approve', {id: inquiry.id}) }}" class="flex-fill m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('approve') }}">
+                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-check2 me-1"></i>Одобрить</button>
+                    </form>
+                </div>
+            </div></div>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -7,9 +7,10 @@ namespace App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete
 use App\ChemicalResistance\Application\DTO\SubstanceDTO;
 use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\ChemicalResistance\Domain\Repository\SubstancesFilter;
+use App\Shared\Application\Query\QueryHandlerInterface;
 use App\Shared\Domain\Repository\Pager;
 
-final class SubstanceAutocompleteQueryHandler
+final class SubstanceAutocompleteQueryHandler implements QueryHandlerInterface
 {
     public function __construct(private SubstanceRepositoryInterface $substances)
     {

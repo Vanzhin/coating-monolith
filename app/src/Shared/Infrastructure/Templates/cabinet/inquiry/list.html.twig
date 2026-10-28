@@ -1,0 +1,129 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Запросы{% endblock %}
+
+{% block content %}
+    {% set canEdit = is_granted('ROLE_ADMIN') %}
+    {% set totalPages = (result.total / result.perPage)|round(0, 'ceil') %}
+    {% set baseQuery = app.request.query.all|filter((v, k) => v is not null and k != 'page' and k != 'partial') %}
+    {% set defaultSort = constant('App\\Inquiries\\Domain\\Repository\\InquiriesSort::DEFAULT') %}
+    {% set activeCount = authorIds|length + (status ? 1 : 0) %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Запросы на подбор',
+        create_route: 'app_cabinet_inquiry_new',
+        can_edit: canEdit,
+        is_empty: result.items is empty,
+    } %}
+        {% block above_list %}
+            {% embed 'components/entity_search.html.twig' with {
+                list_route: 'app_cabinet_inquiry_list',
+                form_id: 'inquiryListForm',
+                search_name: 'search',
+                search_value: search,
+                search_placeholder: 'Поиск по тексту запроса',
+                search_minlength: 2,
+                search_maxlength: 100,
+                sort_options: sortOptions|map(o => {value: o.value, label: o.label}),
+                sort_current: sort.value,
+                sort_default: defaultSort.value,
+                active_count: activeCount,
+                drawer_id: 'allInquiryFiltersOffcanvas',
+                drawer_form_id: 'allInquiryFiltersForm',
+            } %}
+                {% block chips %}
+                    {# --- Статус --- #}
+                    {% if status %}
+                        {% set statusLabel = (statuses|filter(s => s.value == status)|first).label %}
+                        {% set statusReset = path('app_cabinet_inquiry_list', app.request.query.all|merge({status: null, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ statusReset }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать фильтр статуса">
+                            {{ statusLabel }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="click->facet-jump#jump" data-facet-jump-facet-param="status">
+                            Статус
+                        </button>
+                    {% endif %}
+
+                    {# --- Автор (мультивыбор) --- #}
+                    {% for author in result.authors %}
+                        {% set rest = authorIds|filter(id => id != author.id) %}
+                        {% set removeUrl = path('app_cabinet_inquiry_list', app.request.query.all|merge({authorIds: rest, page: null})|filter(v => v is not null)) %}
+                        <a href="{{ removeUrl }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" title="Убрать автора «{{ author.label }}»">
+                            {{ author.label }} <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endfor %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="click->facet-jump#jump" data-facet-jump-facet-param="author">
+                        Автор
+                    </button>
+                {% endblock %}
+
+                {# Сортировка — ссылками в chip-row; пробрасываем hidden, чтобы «Показать» её не сбросил. #}
+                {% block drawer_hidden %}
+                    {% if sort.value != defaultSort.value %}<input type="hidden" name="sort" value="{{ sort.value }}">{% endif %}
+                {% endblock %}
+
+                {% block drawer %}
+                    {# === Статус === #}
+                    <div id="facet-status" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary">
+                        <h6 class="fw-semibold mb-2">Статус</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for s in statuses %}
+                                <label class="facet-pill">
+                                    <input type="radio" name="status" value="{{ s.value }}" {% if status == s.value %}checked{% endif %}>{{ s.label }}
+                                </label>
+                            {% endfor %}
+                            <label class="facet-pill facet-pill--muted">
+                                <input type="radio" name="status" value="" {% if not status %}checked{% endif %}>Все
+                            </label>
+                        </div>
+                    </div>
+
+                    {# === Автор === #}
+                    <div id="facet-author" class="facet-block p-3 mb-2 rounded-3 bg-body-tertiary" data-coating-tags-group>
+                        <h6 class="fw-semibold mb-2">Автор</h6>
+                        <input type="text"
+                               data-controller="coating-tags"
+                               data-coating-tags-existing-value="[]"
+                               data-coating-tags-suggest-url-value="{{ path('app_cabinet_users_suggest') }}"
+                               data-coating-tags-create-url-value=""
+                               data-coating-tags-hidden-input-name-value="authorIds[]"
+                               data-coating-tags-allow-create-value="false"
+                               data-coating-tags-preselected-ids-value="{{ authorIds|json_encode }}"
+                               data-coating-tags-resolve-url-value="{{ path('app_cabinet_users_by_ids') }}"
+                               class="form-control form-control-sm"
+                               placeholder="Начните вводить email автора...">
+                    </div>
+                {% endblock %}
+            {% endembed %}
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="d-inline-block p-2 px-3 mb-3 rounded-3 bg-body-tertiary small">
+                Найдено: <strong>{{ result.total }}</strong>
+            </div>
+
+            {% include 'components/infinite_list.html.twig' with {
+                items_template: 'cabinet/inquiry/_inquiry_cards_batch.html.twig',
+                items_params: { items: result.items, canEdit: canEdit },
+                total_pages: totalPages,
+                base_url: path('app_cabinet_inquiry_list', baseQuery),
+                wrapper_class: 'ecard-grid',
+            } only %}
+
+            {% if canEdit %}
+                {% include 'components/delete_modal.html.twig' %}
+            {% endif %}
+        {% endblock %}
+
+        {% block empty_state %}
+            <div class="p-4 mt-3 rounded-3 bg-body-tertiary text-center" role="status">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-body-secondary"></i>
+                <h5 class="fw-semibold mb-2">Запросов нет</h5>
+                <p class="text-body-secondary mb-0">
+                    {{ activeCount > 0 or search ? 'По фильтрам совпадений нет — измените параметры.' : 'Создайте первый запрос на подбор системы.' }}
+                </p>
+            </div>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

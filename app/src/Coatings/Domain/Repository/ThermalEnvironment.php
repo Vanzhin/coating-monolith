@@ -12,4 +12,12 @@ enum ThermalEnvironment: string
 {
     case DRY_HEAT = 'dry_heat';
     case IMMERSION = 'immersion';
+
+    public function title(): string
+    {
+        return match ($this) {
+            self::DRY_HEAT => 'Сухой нагрев',
+            self::IMMERSION => 'Погружение',
+        };
+    }
 }

@@ -1,0 +1,53 @@
+{# Пачка карточек очереди запросов (единая entity-карточка). Используется list.html.twig для первой
+   страницы и ListInquiriesAction в режиме ?partial=1 для догрузки. Кебаб: Перезапустить (POST,
+   received/failed) + Удалить (через общий #deleteModal, data-bs-url). #}
+{% set canEdit = canEdit|default(false) %}
+{% set statusBadge = {received: 'secondary', recognized: 'secondary', matched: 'primary', approved: 'success', failed: 'danger'} %}
+
+{% for item in items %}
+    <div class="ecard">
+        <a href="{{ path('app_cabinet_inquiry_show', {id: item.id}) }}"
+           class="ecard-media text-decoration-none{{ item.statusValue == 'approved' ? ' is-ok' : '' }}"
+           aria-label="Открыть запрос">
+            <i class="bi bi-inbox"></i>
+        </a>
+        <div class="ecard-body">
+            <div class="ecard-head">
+                <a href="{{ path('app_cabinet_inquiry_show', {id: item.id}) }}"
+                   class="ecard-title text-decoration-none text-body">{{ item.summary }}</a>
+                {% if canEdit %}
+                    <div class="ecard-kebab dropdown" data-controller="dropdown-portal">
+                        <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if item.statusValue in ['received', 'failed'] %}
+                                <li>
+                                    <form method="post" action="{{ path('app_cabinet_inquiry_retry', {id: item.id}) }}" class="m-0">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('retry') }}">
+                                        <button type="submit" class="dropdown-item"><i class="bi bi-arrow-repeat me-2"></i>Перезапустить</button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                            <li{% if item.statusValue in ['received', 'failed'] %} class="mt-1"{% endif %}>
+                                <a class="dropdown-item text-danger"
+                                   href="{{ path('app_cabinet_inquiry_delete', {id: item.id}) }}"
+                                   data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                   data-bs-title="запрос" data-bs-url="{{ path('app_cabinet_inquiry_delete', {id: item.id}) }}">
+                                    <i class="bi bi-trash3 me-2"></i>Удалить
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="ecard-meta">
+                <span class="badge rounded-pill text-bg-{{ statusBadge[item.statusValue] ?? 'secondary' }}">{{ item.statusLabel }}</span>
+                <span>{{ item.typeLabel }}</span>
+                <span>· {{ item.createdAt|date('d.m.Y H:i') }}</span>
+                {% if item.answerTotal is not null %}<span>· подобрано {{ item.answerTotal }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+{% endfor %}

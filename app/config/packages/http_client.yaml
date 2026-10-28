@@ -10,7 +10,8 @@ parameters:
 
     # NetAngels AI Studio (OpenAI-совместимый). Дефолты — чтобы контейнер поднимался без
     # реальных кредов (CI/test); боевые значения — в окружении деплоя.
-    env(NETANGELS_BASE_URL): 'https://ai.netangels.cloud/v1'
+    # Хвостовой слэш ОБЯЗАТЕЛЕН: base_uri без него по RFC 3986 роняет /v1 при склейке с 'chat/completions'.
+    env(NETANGELS_BASE_URL): 'https://ai.netangels.cloud/v1/'
     env(NETANGELS_API_KEY): ''
     env(NETANGELS_MODEL): 'qwen3.8-flash'
 
@@ -26,4 +27,8 @@ framework:
                 headers:
                     Authorization: 'Bearer %env(NETANGELS_API_KEY)%'
                     Content-Type: 'application/json'
-                timeout: 30   # NetAngels медленный/флапающий — свой таймаут выше общих 15
+                # timeout = idle (простой между чанками). Запрос нестримовый: модель молчит пока
+                # считает весь ответ, поэтому idle должен покрывать ПОЛНОЕ время размышления на
+                # большом промпте (опросник ~60-120с). max_duration — жёсткий потолок на попытку.
+                timeout: 180
+                max_duration: 200

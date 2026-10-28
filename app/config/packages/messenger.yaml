@@ -58,6 +58,8 @@ framework:
             'App\Compliance\Domain\Event\ComplianceDueSoon': async
             # Пачка уведомлений от прохода → раскладка по получателям (одно сводное на надзор), в воркере.
             'App\Notifications\Domain\Event\NotificationBatch': async
+            # Запрос создан → конвейер подбора (сборка текста, модель/кэш, поиск) в воркере.
+            'App\Inquiries\Domain\Event\InquirySubmitted': async
             # Одна отправка (получатель × канал) → доставка; независимый ретрай на канал.
             'App\Notifications\Domain\Event\NotificationDeliveryRequested': async
 

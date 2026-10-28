@@ -73,6 +73,9 @@ services:
 
   App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler:
     public: true
+    # public гасит автоконфиг → тег query.bus добавляем явно (в проде навешивает _instanceof).
+    tags:
+      - { name: messenger.message_handler, bus: query.bus }
 
   App\ChemicalResistance\Application\UseCase\Query\MatchSubstancesForSearch\MatchSubstancesForSearchQueryHandler:
     public: true
