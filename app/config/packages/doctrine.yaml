@@ -29,6 +29,10 @@ doctrine:
             compliance_quantity: App\Compliance\Infrastructure\Database\DBAL\QuantityType
             compliance_writeoff_commission: App\Compliance\Infrastructure\Database\DBAL\WriteOffCommissionType
             compliance_instruction_details: App\Compliance\Infrastructure\Database\DBAL\InstructionDetailsType
+            inquiry_recognized_parameters: App\Inquiries\Infrastructure\Database\DBAL\RecognizedParametersType
+            inquiry_parameter_source: App\Inquiries\Infrastructure\Database\DBAL\ParameterSourceType
+            inquiry_answer_snapshot: App\Inquiries\Infrastructure\Database\DBAL\AnswerSnapshotType
+            inquiry_verification: App\Inquiries\Infrastructure\Database\DBAL\VerificationType
         mapping_types:
             jsonb: json
     orm:
@@ -129,6 +133,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Compliance/Infrastructure/Database/ORM/ReadModel'
                 prefix: 'App\Compliance\Domain\ReadModel'
                 alias: ComplianceReadModel
+            Inquiries:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Inquiries/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Inquiries\Domain\Aggregate'
+                alias: Inquiries
 
 
 #            App:

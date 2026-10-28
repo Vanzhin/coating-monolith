@@ -127,10 +127,27 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
             $types,
         );
 
+        // Релевантность: точное совпадение имени/алиаса → префикс → прочая подстрока, потом алфавит.
+        // Без этого «этанол» отдавал «Диэтаноламин» (подстрока + алфавит «Д»<«Э») вместо «Этанола».
+        // Параметры ранжирования добавляем ПОСЛЕ COUNT — он их не использует.
+        $order = 's.canonical_name ASC';
+        if (null !== $filter->search && '' !== trim($filter->search)) {
+            $term = trim($filter->search);
+            $params['term'] = $term;
+            $params['termPrefix'] = $term.'%';
+            $order = 'CASE
+                        WHEN LOWER(s.canonical_name) = LOWER(:term) THEN 0
+                        WHEN EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE LOWER(v) = LOWER(:term)) THEN 1
+                        WHEN s.canonical_name ILIKE :termPrefix THEN 2
+                        WHEN EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :termPrefix) THEN 3
+                        ELSE 4
+                      END, s.canonical_name ASC';
+        }
+
         $dataSql = "SELECT s.id::text AS id, s.canonical_name, s.cas, s.aliases::text AS aliases
                     FROM chemical_resistance_substance s
                     WHERE {$where}
-                    ORDER BY s.canonical_name ASC";
+                    ORDER BY {$order}";
 
         if (null !== $filter->pager) {
             $dataSql .= ' LIMIT :lim OFFSET :off';

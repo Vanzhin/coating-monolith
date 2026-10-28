@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Inquiries\Domain\Aggregate\Inquiry\Inquiry" table="inquiry">
+        <id name="id" type="uuid" column="id">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="type" type="string" length="30" column="type"
+               enum-type="App\Inquiries\Domain\Aggregate\Inquiry\InquiryType"/>
+        <field name="ownerId" type="string" length="26" column="owner_id"/>
+        <field name="rawText" type="text" column="raw_text"/>
+        <field name="attachmentFileIds" type="string_collection" column="attachment_file_ids"/>
+        <field name="status" type="string" length="20" column="status"
+               enum-type="App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus"/>
+        <field name="recognizedParameters" type="inquiry_recognized_parameters" column="recognized_parameters" nullable="true"/>
+        <field name="parameterSource" type="inquiry_parameter_source" column="parameter_source" nullable="true"/>
+        <field name="answer" type="inquiry_answer_snapshot" column="answer" nullable="true"/>
+        <field name="verification" type="inquiry_verification" column="verification" nullable="true"/>
+        <field name="failureReason" type="text" column="failure_reason" nullable="true"/>
+        <field name="warnings" type="json" column="warnings"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
+        <field name="version" type="integer" column="version" version="true"/>
+    </entity>
+
+</doctrine-mapping>

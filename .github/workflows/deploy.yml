@@ -182,6 +182,10 @@ jobs:
             VAPID_SUBJECT=${{ vars.VAPID_SUBJECT }}
             VAPID_PUBLIC_KEY=${{ vars.VAPID_PUBLIC_KEY }}
             VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
+
+            # NetAngels AI (извлечение параметров запроса, Inquiries). Адрес/модель — дефолты
+            # в http_client.yaml; боевой ключ — secret. Пусто → извлечение отключено.
+            NETANGELS_API_KEY=${{ secrets.NETANGELS_API_KEY }}
             EOF
 
             # Webpack assets — собираем в одноразовом node:22-alpine контейнере.

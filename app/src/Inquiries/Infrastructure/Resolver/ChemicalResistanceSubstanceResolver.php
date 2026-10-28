@@ -6,17 +6,17 @@ namespace App\Inquiries\Infrastructure\Resolver;
 
 use App\ChemicalResistance\Application\DTO\SubstanceDTO;
 use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQuery;
-use App\ChemicalResistance\Application\UseCase\Query\SubstanceAutocomplete\SubstanceAutocompleteQueryHandler;
 use App\Inquiries\Application\Port\SubstanceResolver;
+use App\Shared\Application\Query\QueryBusInterface;
 
 /**
- * Резолвит вещество через published Application-запрос ChemicalResistance (autocomplete:
- * fuzzy по canonical_name/cas/aliases). Берёт лучший (первый) матч. Это единственное место
- * стыка Inquiries с ChemicalResistance — только через его запрос + DTO, без домена.
+ * Резолвит вещество через published-запрос ChemicalResistance (autocomplete: fuzzy по
+ * canonical_name/cas/aliases), берёт лучший (первый) матч. Стык только через query-шину + DTO —
+ * без доменного и без конкретного класса хендлера ChemicalResistance.
  */
 final readonly class ChemicalResistanceSubstanceResolver implements SubstanceResolver
 {
-    public function __construct(private SubstanceAutocompleteQueryHandler $autocomplete)
+    public function __construct(private QueryBusInterface $queryBus)
     {
     }
 
@@ -28,7 +28,7 @@ final readonly class ChemicalResistanceSubstanceResolver implements SubstanceRes
         }
 
         /** @var list<SubstanceDTO> $matches */
-        $matches = ($this->autocomplete)(new SubstanceAutocompleteQuery($name, 1));
+        $matches = $this->queryBus->execute(new SubstanceAutocompleteQuery($name, 1));
 
         return $matches[0]->id ?? null;
     }
