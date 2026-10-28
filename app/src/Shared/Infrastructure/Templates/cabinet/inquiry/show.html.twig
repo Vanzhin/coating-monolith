@@ -102,9 +102,19 @@
                         <dl class="row mb-0 small">
                             {% for row in inquiry.paramRows %}
                                 <dt class="col-5 text-body-secondary fw-normal">{{ row.label }}</dt>
-                                <dd class="col-7 text-end mb-1">{{ row.value }}</dd>
+                                <dd class="col-7 text-end mb-1">
+                                    {% if row.byHuman %}
+                                        <i class="bi bi-person text-primary me-1" title="Установил человек"></i>
+                                    {% else %}
+                                        <i class="bi bi-robot text-body-secondary me-1" title="Распознала модель"></i>
+                                    {% endif %}{{ row.value }}
+                                </dd>
                             {% endfor %}
                         </dl>
+                        <div class="small text-body-secondary mt-2 d-flex gap-3">
+                            <span><i class="bi bi-robot me-1"></i>модель</span>
+                            <span><i class="bi bi-person text-primary me-1"></i>человек</span>
+                        </div>
                     {% endif %}
                     {% if canEdit and inquiry.statusValue in ['recognized', 'failed'] %}
                         <button type="button" class="btn btn-sm btn-outline-primary mt-2"

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Inquiries\Domain\Aggregate\Inquiry;
 
 /**
- * Провенанс распознанных параметров: стратегия + непрозрачные детали. Для Model — модель/версия
- * промпта/токены/время; для Cache — sourceInquiryId/similarity; для Manual — пусто или заметка.
- * Домен детали не трактует. Хранится jsonb.
+ * Провенанс РАСПОЗНАВАНИЯ в целом: базовая стратегия + непрозрачные детали. Для Model — модель/версия
+ * промпта/токены/время; Cache — sourceInquiryId/similarity; Manual — ввод с нуля. Пер-полевой провенанс
+ * (что поправил инженер) живёт в RecognizedParameters (origin у каждого значения). Детали домен не
+ * трактует. Хранится jsonb.
  */
 final readonly class ParameterSource implements \JsonSerializable
 {

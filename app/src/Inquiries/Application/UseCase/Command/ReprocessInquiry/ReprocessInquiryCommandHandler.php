@@ -6,9 +6,6 @@ namespace App\Inquiries\Application\UseCase\Command\ReprocessInquiry;
 
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Inquiries\Application\Service\AccessControl\InquiryAccessControl;
-use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
-use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
-use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -16,7 +13,8 @@ use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Инженер поправил параметры руками → перераспознавание (strategy Manual). Поиск систем тут НЕ гоняем:
+ * Инженер поправил параметры руками → перераспознавание с пер-полевым провенансом (изменённые оси →
+ * Manual, прочие сохраняют модель/кэш; считает домен). Поиск систем тут НЕ гоняем:
  * подобранные системы — живой результат этих параметров, пересчитывается на показе. Проверяем лишь, что
  * задана хотя бы одна ось (иначе подбор-по-всему). Инвариант перехода статуса — в домене.
  */
@@ -44,11 +42,9 @@ final readonly class ReprocessInquiryCommandHandler implements CommandHandlerInt
             throw new AppException('Укажите хотя бы один параметр подбора.');
         }
 
-        $inquiry->recognize(
-            new RecognizedParameters($input->toArray()),
-            new ParameterSource(ParameterStrategy::Manual),
-            new \DateTimeImmutable(),
-        );
+        // editParameters сам считает пер-полевой провенанс (изменённые оси → Manual), базовую
+        // стратегию модели/кэша не затирает. Передаём плоские значения (канон фильтра).
+        $inquiry->editParameters($input->toArray(), new \DateTimeImmutable());
         $this->repository->add($inquiry);
     }
 }

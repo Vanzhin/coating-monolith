@@ -16,11 +16,28 @@ use PHPUnit\Framework\TestCase;
  */
 final class ValueObjectRoundTripTest extends TestCase
 {
-    public function test_recognized_parameters(): void
+    public function test_recognized_parameters_round_trip_preserves_values_and_origin(): void
     {
-        $vo = new RecognizedParameters(['environment' => 'immersion', 'substanceIds' => ['s1', 's2'], 'thermalTemperature' => 40]);
+        $vo = new RecognizedParameters(
+            ['environment' => 'immersion', 'substanceIds' => ['s1', 's2'], 'thermalTemperature' => 40],
+            ['environment' => ParameterStrategy::Manual],
+        );
 
-        self::assertSame($vo->jsonSerialize(), RecognizedParameters::fromArray($vo->jsonSerialize())->toArray());
+        $restored = RecognizedParameters::fromArray($vo->jsonSerialize());
+
+        self::assertSame($vo->toArray(), $restored->toArray()); // плоские значения — канон фильтра — целы
+        self::assertSame(ParameterStrategy::Manual, $restored->originOf('environment')); // провенанс цел
+        self::assertSame(ParameterStrategy::Model, $restored->originOf('thermalTemperature')); // дефолт — Model
+        self::assertSame($vo->jsonSerialize(), $restored->jsonSerialize()); // структурный round-trip без потерь
+    }
+
+    public function test_recognized_parameters_tolerates_legacy_flat(): void
+    {
+        // старые строки (до провенанса) хранят плоско ключ→значение → читаем, origin по умолчанию Model
+        $vo = RecognizedParameters::fromArray(['environment' => 'immersion', 'substanceIds' => ['s1']]);
+
+        self::assertSame(['environment' => 'immersion', 'substanceIds' => ['s1']], $vo->toArray());
+        self::assertSame(ParameterStrategy::Model, $vo->originOf('environment'));
     }
 
     public function test_parameter_source(): void
