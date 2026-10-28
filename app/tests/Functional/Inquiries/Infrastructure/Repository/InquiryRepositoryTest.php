@@ -12,10 +12,13 @@ use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
 use App\Inquiries\Domain\Factory\InquiryFactory;
+use App\Inquiries\Domain\Repository\InquiriesFilter;
+use App\Inquiries\Domain\Repository\InquiriesSort;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Ulid;
 
 final class InquiryRepositoryTest extends KernelTestCase
 {
@@ -92,5 +95,41 @@ final class InquiryRepositoryTest extends KernelTestCase
         \assert($repo instanceof InquiryRepositoryInterface);
 
         self::assertNull($repo->findOneById('not-a-uuid'));
+    }
+
+    public function test_find_by_filter_search_author_and_sort(): void
+    {
+        self::bootKernel();
+        $container = static::getContainer();
+        $repo = $container->get(InquiryRepositoryInterface::class);
+        $factory = $container->get(InquiryFactory::class);
+        \assert($repo instanceof InquiryRepositoryInterface);
+        \assert($factory instanceof InquiryFactory);
+
+        $authorA = (string) new Ulid();
+        $authorB = (string) new Ulid();
+
+        // A (старейший, автор A), B (автор B), C (новейший, автор A)
+        $repo->add($factory->create(InquiryType::SystemSelection, $authorA, 'нужна система для ЭТАНОЛА, погружение', new StringCollection(), new \DateTimeImmutable('2026-01-01 10:00:00')));
+        $repo->add($factory->create(InquiryType::SystemSelection, $authorB, 'антикор для морской воды', new StringCollection(), new \DateTimeImmutable('2026-01-02 10:00:00')));
+        $repo->add($factory->create(InquiryType::SystemSelection, $authorA, 'грунт по бетону', new StringCollection(), new \DateTimeImmutable('2026-01-03 10:00:00')));
+
+        // ILIKE по телу — регистронезависимо
+        $bySearch = $repo->findByFilter(new InquiriesFilter(search: 'этанол'));
+        self::assertSame(1, $bySearch->total);
+        self::assertStringContainsString('ЭТАНОЛА', $bySearch->items[0]->getRawText());
+
+        // автор — OR внутри (здесь один): только A
+        $byAuthor = $repo->findByFilter(new InquiriesFilter(authorIds: new StringCollection($authorA)));
+        self::assertSame(2, $byAuthor->total);
+        foreach ($byAuthor->items as $i) {
+            self::assertSame($authorA, $i->getOwnerId());
+        }
+
+        // сортировка по дате
+        $desc = $repo->findByFilter(new InquiriesFilter(sort: InquiriesSort::DEFAULT));
+        self::assertSame('грунт по бетону', $desc->items[0]->getRawText());
+        $asc = $repo->findByFilter(new InquiriesFilter(sort: InquiriesSort::CREATED_ASC));
+        self::assertStringContainsString('ЭТАНОЛА', $asc->items[0]->getRawText());
     }
 }

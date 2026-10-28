@@ -6,6 +6,7 @@ namespace App\Inquiries\Infrastructure\Repository;
 
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
+use App\Inquiries\Domain\Repository\InquiriesSort;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Domain\Repository\PaginationResult;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -52,7 +53,17 @@ class InquiryRepository extends ServiceEntityRepository implements InquiryReposi
             $qb->andWhere('i.status = :status')->setParameter('status', $filter->status->value);
         }
 
-        $qb->orderBy('i.createdAt', 'DESC');
+        if ($filter->authorIds->count() > 0) {
+            $qb->andWhere('i.ownerId IN (:authorIds)')->setParameter('authorIds', $filter->authorIds->getList());
+        }
+
+        if (null !== $filter->search && '' !== trim($filter->search)) {
+            // ILIKE по телу запроса (вложения не храним — тут не ищем); регистронезависимо через LOWER.
+            $qb->andWhere('LOWER(i.rawText) LIKE :search')
+                ->setParameter('search', '%'.mb_strtolower(trim($filter->search)).'%');
+        }
+
+        $qb->orderBy('i.createdAt', InquiriesSort::CREATED_ASC === $filter->sort ? 'ASC' : 'DESC');
 
         if (null !== $filter->pager) {
             $qb->setMaxResults($filter->pager->getLimit())->setFirstResult($filter->pager->getOffset());
