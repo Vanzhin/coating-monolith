@@ -1,39 +1,44 @@
-# План: Inquiries — маппер JSON-параметров в CoatingSystemsFilter
+# План: Inquiries — подбор системы по параметрам (резолв веществ + запрос к Coatings)
 
-Деплой 2. Соседи: [1-экстрактор](inquiries-1-extractor-netangels.md), [3-движок](inquiries-3-engine-and-storage.md), [4-веб](inquiries-4-web.md). Контракт фильтра — в [podbor-po-pismu.md](podbor-po-pismu.md) (раздел «контракт фильтра»).
+Деплой 2. Шаг «подбор» процессора типа `подбор_системы` ([план 3](inquiries-3-engine-and-storage.md)). Соседи: [1-экстрактор](inquiries-1-extractor-netangels.md), [4-веб](inquiries-4-web.md).
 
 ## Идея
 
-Превратить `ExtractedParameters` (из [плана 1](inquiries-1-extractor-netangels.md)) в `CoatingSystemsFilter` для существующего `findByFilter` — плюс **резолв имён веществ в id** (через ChemicalResistance). Только shape + резолв, без бизнес-логики подбора: каскад (category/durability без standard) уже в конструкторе `CoatingSystemsFilter`.
+Из распознанных параметров (данные Inquiries) получить список систем — **НЕ строя доменный фильтр Coatings внутри Inquiries**. Граница (принцип: Inquiries не знает чужих доменов, пересекает только через Application-запросы соседей → DTO):
 
-Дополнительно собирает **отчёт маппинга**: что из имён веществ нашлось, что нет, какие значения отброшены — для показа инженеру («что извлечено vs что реально ушло в запрос»).
+- **Сборка `CoatingSystemsFilter` остаётся в Coatings.** Coatings публикует Application-запрос «подбор систем по параметрам»: принимает **примитивы** и ВНУТРИ строит свой фильтр + зовёт `findByFilter`, отдаёт **DTO систем**. Enum'ы и фильтр — только в Coatings.
+- **Резолв веществ имя→id — в ChemicalResistance**: его Application-запрос `SubstanceAutocompleteQuery` → `SubstanceDTO{id,name}`.
+- **Inquiries-процессор оркеструет**: берёт распознанные параметры (свои строки/числа) → резолвит вещества (ChemResistance query) → передаёт примитивы + resolved id в запрос Coatings → получает DTO систем = «ответ» для `Inquiry`. Ноль доменных типов Coatings/ChemicalResistance в Inquiries.
 
-## Решения
+## Contracts
 
-- **Маппер** `FilterFromParametersMapper` (Inquiries/Application/Service): `ExtractedParameters` → `CoatingSystemsFilter`. substrates/environment/standard/category/durability/thermal* кладём как есть (enum'ы уже валидны); каскад не дублируем.
-- **Резолв веществ**: имена `substances` → `substanceIds`. Через **публичный запрос ChemicalResistance** (`SubstancesFilter::search` / `MatchSubstancesForSearch`, fuzzy по russian-стеммеру — см. [[project_podbor_po_pismu_extraction]]), по одному имени → лучший матч. Кросс-контекст — только через Application-запрос ChemicalResistance, не лезем в его потроха.
-- **`specifiedCoatings` в фильтр НЕ идёт** — информационное поле (клиент уже задал покрытие), тащим в результат для показа, не в `findByFilter`.
-- **Единицы**: `minApplicationTimeAt20` домен хранит в минутах — маппер строит доменный фильтр в минутах; перевод в ЧАСЫ для URL-ссылки — в [плане 4](inquiries-4-web.md).
-- **Отчёт** `FilterMappingResult { CoatingSystemsFilter, resolvedSubstances: map<name,id>, unresolvedSubstances: list<name>, droppedValues: list<string> }`.
+- **Coatings (новый Application-запрос)** `SearchCoatingSystemsByParameters`:
+  - вход — нейтральные примитивы (Coatings-published input DTO или аргументы): `substrates: list<string>`, `environment: ?string`, `standard/category/durability: ?string`, `substanceIds: list<string>`, `substanceTemperature: ?int`, `thermalTemperature: ?int`, `thermalEnvironment: ?string`, `thermalIncludingPeak: bool`, `applicationMinTemp {from,to}`, `minApplicationTimeAt20 {from,to}`, `search: ?string`, пагинация;
+  - внутри — строит `CoatingSystemsFilter` (зеркало `CoatingSystemListRequestMapper`, но из DTO, а не HTTP-Request; невалидные значения глотает через `tryFrom`), `findByFilter`;
+  - выход — `list<CoatingSystemSuggestDTO>` (id + подпись) + метаданные пагинации.
+- **ChemicalResistance (есть)** `SubstanceAutocompleteQuery(q, limit)` → `list<SubstanceDTO{id, canonicalName}>`.
 
-## Границы
+## Сторона Inquiries (оркестрация, без доменов соседей)
 
-- Резолв веществ — единственная «умная» операция; всё остальное — прямой перенос. Если имя не нашлось в реестре — не падаем: кладём в `unresolvedSubstances`, ось химстойкости для него не активируем (инженер увидит «вещество X в базе не найдено»).
-- Вещество → `substanceIds` (AND по веществам в фильтре, как в текущем фасете).
+- **Порт** `SubstanceResolver` (Inquiries/Application) + адаптер `ChemicalResistanceSubstanceResolver` (Infrastructure) — оборачивает `SubstanceAutocompleteQueryHandler`, имя → первый `id` или null. Тестируемо фейком.
+- **Шаг подбора в процессоре**: распознанные параметры → примитивы запроса Coatings; `chemicalResistance.substances` → через `SubstanceResolver` в `substanceIds` (не найденные → в отчёт `unresolved`); `chemicalResistance.maxTemperature` (рабочая 40) → `substanceTemperature`; `thermal.*` → `thermalTemperature/thermalEnvironment` (+ `thermalIncludingPeak` = есть ли `thermal.peakTemperature`); пик химии пока информативно (у фильтра химстойкости пика нет).
+- `specifiedCoatings` в подбор НЕ идёт (информационное, в показ).
+- Результат шага: список систем (DTO Coatings) + отчёт резолва (resolved/unresolved вещества) → процессор кладёт в `Inquiry` как «ответ».
 
 ## Файлы
 
-- `Inquiries/Application/Service/FilterFromParametersMapper.php`
-- `Inquiries/Application/DTO/FilterMappingResult.php`
-- Резолвер: тонкий вызов существующего запроса ChemicalResistance (новый класс не плодим, если хватает `SubstanceRepository::findByFilter` с `SubstancesFilter(search:)`).
+- Coatings: `Application/UseCase/Query/SearchCoatingSystemsByParameters/{Query, Handler, Result}.php` (+ input DTO, если решим отдельным; reuse `CoatingSystemSuggestDTO`). Логику фильтра — из существующего `CoatingSystemListRequestMapper` (вынести общий билдер «примитивы → CoatingSystemsFilter», чтобы HTTP-маппер и этот запрос не дублировались).
+- Inquiries: `Application/Port/SubstanceResolver.php`, `Infrastructure/Resolver/ChemicalResistanceSubstanceResolver.php`, шаг подбора в процессоре (`Application/Service/...`).
 
 ## Тесты
 
-- Unit round-trip `ExtractedParameters` → `CoatingSystemsFilter`: поля на месте, каскад отрабатывает (category/durability без standard → null).
-- Functional резолв веществ на реальной БД: известное вещество → id; несуществующее → в `unresolvedSubstances`, фильтр валиден без него.
-- Unit: `specifiedCoatings` не попадает в фильтр, но есть в результате.
+- Coatings: functional `SearchCoatingSystemsByParameters` на реальной БД — примитивы → системы; каскад (category/durability без standard → null); невалидное значение проглочено.
+- Inquiries: functional `ChemicalResistanceSubstanceResolver` — известное вещество → id, несуществующее → null (сеять одно вещество, как в `SearchIntegrationTest`).
+- Inquiries: unit шага подбора с фейками (резолвер + запрос Coatings) — параметры → примитивы корректно, substanceTemperature из maxTemperature, unresolved в отчёт.
 
 ## Развилки
 
-- Порог уверенности fuzzy-матча вещества: брать топ-1 всегда, или требовать мин. похожесть (иначе «азот» матчит мусор)? Предлагаю порог + «не нашлось» при низком скоре.
-- Несколько кандидатов на одно имя — топ-1 + в отчёт альтернативы (на будущее для подсказки инженеру).
+- Вход запроса Coatings — отдельный **input DTO** vs аргументы-примитивы. Предлагаю input DTO (читаемо, расширяемо).
+- **Общий билдер «примитивы → CoatingSystemsFilter»** в Coatings, чтобы HTTP-маппер (`CoatingSystemListRequestMapper`) и новый запрос звали одно — не дублировать маппинг.
+- Порог fuzzy-матча вещества (топ-1 vs мин. похожесть) — чтобы «азот» не цеплял мусор.
+- Несколько кандидатов на имя — топ-1 + альтернативы в отчёт (подсказка инженеру).

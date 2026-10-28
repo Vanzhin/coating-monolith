@@ -394,3 +394,8 @@ services:
   App\Inquiries\Application\Port\InquiryParametersExtractor:
     alias: App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor
     public: true
+
+  # Резолв вещества имя→id через ChemicalResistance. Публичный: потребитель (движок) — в плане 3.
+  App\Inquiries\Application\Port\SubstanceResolver:
+    alias: App\Inquiries\Infrastructure\Resolver\ChemicalResistanceSubstanceResolver
+    public: true
