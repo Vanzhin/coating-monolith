@@ -6,6 +6,7 @@ namespace App\Shared\Infrastructure\FileText;
 
 use App\Shared\Domain\FileText\FileText;
 use App\Shared\Domain\FileText\FileTextExtractor;
+use Psr\Log\LoggerInterface;
 
 /**
  * Диспетчер: по расширению выбирает адаптер формата и применяет ограничители (размер
@@ -24,6 +25,7 @@ final readonly class FormatFileTextExtractor implements FileTextExtractor
         private int $maxFileBytes,
         private int $maxTextChars,
         private int $scanMinChars,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -39,6 +41,12 @@ final readonly class FormatFileTextExtractor implements FileTextExtractor
         }
 
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        // Безрасширенный путь (напр. временная копия из хранилища, tempnam без суффикса) —
+        // выводим формат из переданного mime. Без этого вложения, прочитанные через Shared/File,
+        // не диспетчеризовались бы вовсе.
+        if ('' === $extension && null !== $mimeType) {
+            $extension = self::extensionForMime($mimeType);
+        }
 
         if (\in_array($extension, self::IMAGE_EXTENSIONS, true)) {
             return FileText::scan();
@@ -52,7 +60,10 @@ final readonly class FormatFileTextExtractor implements FileTextExtractor
         try {
             $raw = $extractor->extract($path);
         } catch (\Throwable $e) {
-            return FileText::error('Не удалось прочитать файл: '.$e->getMessage());
+            // Техническую простыню (команда/exit/stderr) — в лог; инженеру — чистая категория.
+            $this->logger->error('Извлечение текста из файла не удалось', ['path' => $path, 'exception' => $e]);
+
+            return FileText::error('Не удалось прочитать файл');
         }
 
         $normalized = TextNormalizer::normalize($raw, $this->maxTextChars);
@@ -74,5 +85,24 @@ final readonly class FormatFileTextExtractor implements FileTextExtractor
         }
 
         return null;
+    }
+
+    /** Расширение по mime — для входов без расширения в пути (временные копии из хранилища). */
+    private static function extensionForMime(string $mimeType): string
+    {
+        return match ($mimeType) {
+            'application/pdf' => 'pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-excel' => 'xls',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/tiff' => 'tiff',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            'image/bmp' => 'bmp',
+            'image/heic' => 'heic',
+            default => '',
+        };
     }
 }
