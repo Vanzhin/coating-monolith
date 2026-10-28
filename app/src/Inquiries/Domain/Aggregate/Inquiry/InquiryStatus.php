@@ -35,7 +35,7 @@ enum InquiryStatus: string
             self::Received => [self::Recognized, self::Failed],
             self::Recognized => [self::Matched, self::Failed],
             self::Matched => [self::Approved, self::Recognized, self::Failed], // Recognized = инженер поправил параметры → переподбор
-            self::Failed => [self::Recognized],
+            self::Failed => [self::Recognized, self::Received], // Recognized = ручная правка, Received = повторный прогон конвейера
             self::Approved => [], // терминально, заморожен
         };
     }

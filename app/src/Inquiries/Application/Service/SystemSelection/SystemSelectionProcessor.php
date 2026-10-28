@@ -4,33 +4,26 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Application\Service\SystemSelection;
 
-use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
-use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
-use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Inquiries\Application\DTO\InquiryText;
-use App\Inquiries\Application\Exception\CoatingSearchFailedException;
 use App\Inquiries\Application\Exception\EmptyInquiryTextException;
+use App\Inquiries\Application\Exception\InquiryProcessingException;
 use App\Inquiries\Application\Exception\ParameterExtractionFailedException;
-use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
 use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Service\InquiryProcessor;
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
-use App\Inquiries\Domain\Aggregate\Inquiry\FoundSystem;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
-use App\Shared\Application\Query\QueryBusInterface;
 
 /**
- * Движок подбора систем. Только ОРКЕСТРАЦИЯ — ни HTTP, ни файлов, ни отпечатков, ни домена Coatings:
- * текст собирает ассемблер, параметры даёт кэш ИЛИ модель+маппер, поиск — query-шина Coatings. Одна
- * развилка: попали в кэш (модель молчит, strategy=Cache) или промах (модель, strategy=Model). Ответ
- * всегда свежий — ре-прогон поиска по параметрам. Мутирует агрегат; сохранение/отказ — на диспетчере.
+ * Движок подбора систем. Только ОРКЕСТРАЦИЯ: текст собирает ассемблер, параметры даёт кэш ИЛИ
+ * модель+маппер, поиск+снимок — общий SystemSelectionSearch (тот же путь, что у ручного переподбора).
+ * Гейты: пустой текст → не зовём модель; пустые параметры / ошибка поиска → типизированные ошибки
+ * из search. Мутирует агрегат; сохранение/отказ — на диспетчере.
  */
 final readonly class SystemSelectionProcessor implements InquiryProcessor
 {
@@ -39,7 +32,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         private ApprovedParameterCache $cache,
         private InquiryParametersExtractor $extractor,
         private SystemSelectionParameterMapper $mapper,
-        private QueryBusInterface $queryBus,
+        private SystemSelectionSearch $search,
     ) {
     }
 
@@ -55,8 +48,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         $assembled = $this->assembler->assemble($inquiry);
         $warnings = $assembled->warnings;
 
-        // Гейт 1: сборка дала пустоту (тела нет, вложения не прочитались) — извлекать нечего,
-        // модель не зовём. Отказ типизирован, чтобы по Failed было видно причину.
+        // Гейт 1: сборка дала пустоту (тела нет, вложения не прочитались) — модель не зовём.
         if ('' === trim($assembled->text)) {
             $inquiry->noteWarnings(...$warnings);
 
@@ -93,32 +85,17 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
 
         $inquiry->recognize($parameters, $source, $now);
 
-        $input = CoatingSystemsFilterInput::fromArray($parameters->toArray());
-
-        // Гейт 2: ни одной оси фильтра — поиск вернул бы весь каталог, это не подбор. В Failed,
-        // инженер вбивает параметры вручную (Failed → Recognized) и переподбирает.
-        if (!$input->hasAnyConstraint()) {
-            $inquiry->noteWarnings(...$warnings);
-
-            throw new ParametersNotRecognizedException();
-        }
-
         try {
-            $searchResult = $this->queryBus->execute(SearchCoatingSystemsQuery::fromParameters($input));
-        } catch (\Throwable $e) {
+            $answer = $this->search->search(CoatingSystemsFilterInput::fromArray($parameters->toArray()));
+        } catch (InquiryProcessingException $e) {
+            // Пустые параметры / сбой поиска — сохранить накопленные предупреждения перед отказом.
             $inquiry->noteWarnings(...$warnings);
 
-            throw new CoatingSearchFailedException($e);
+            throw $e;
         }
-        \assert($searchResult instanceof SearchCoatingSystemsQueryResult);
 
-        $systems = array_map(
-            static fn (CoatingSystemDTO $dto): FoundSystem => new FoundSystem($dto->id, $dto->title),
-            $searchResult->items,
-        );
-        $inquiry->match(new AnswerSnapshot($searchResult->total, ...$systems), $now);
-
-        if (0 === $searchResult->total) {
+        $inquiry->match($answer, $now);
+        if (0 === $answer->total) {
             $warnings[] = 'Подбор не дал ни одной системы — проверьте параметры.';
         }
         $inquiry->noteWarnings(...$warnings);

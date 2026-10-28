@@ -154,6 +154,52 @@ final class InquiryTest extends TestCase
         self::assertSame(['вещество «уайт-спирит» не в реестре', 'файл №2 — скан'], $inquiry->getWarnings());
     }
 
+    public function test_retry_from_failed_resets_to_received_and_clears(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->match(new AnswerSnapshot(2, new FoundSystem('id1', 'Система 1')), $this->now());
+        $inquiry->fail('timeout', $this->now());
+        $inquiry->pullEvents(); // слить событие создания
+
+        $inquiry->requestReprocessing($this->now());
+
+        self::assertSame(InquiryStatus::Received, $inquiry->getStatus());
+        self::assertNull($inquiry->getFailureReason());
+        self::assertNull($inquiry->getAnswer());
+
+        $events = $inquiry->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(InquirySubmitted::class, $events[0]);
+    }
+
+    public function test_retry_from_stuck_received_stays_received_and_reraises(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->pullEvents(); // слить событие создания
+
+        $inquiry->requestReprocessing($this->now());
+
+        self::assertSame(InquiryStatus::Received, $inquiry->getStatus());
+        self::assertCount(1, $inquiry->pullEvents());
+    }
+
+    public function test_retry_rejected_on_matched(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->match(new AnswerSnapshot(0), $this->now());
+
+        $this->expectException(AppException::class);
+        $inquiry->requestReprocessing($this->now());
+    }
+
+    public function test_retry_rejected_on_approved(): void
+    {
+        $this->expectException(AppException::class);
+        $this->approved()->requestReprocessing($this->now());
+    }
+
     private function received(): Inquiry
     {
         return new Inquiry(Uuid::v4(), InquiryType::SystemSelection, 'owner', 'нужна система для этанола', new StringCollection(), $this->now());

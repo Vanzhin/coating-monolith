@@ -94,6 +94,26 @@ class Inquiry extends Aggregate
         $this->verification = new Verification($verifiedBy, $now);
     }
 
+    /** Ручной повторный прогон всего конвейера. Два кейса: застрявший «Получен» (воркер/контейнер
+     *  упал — запись осталась «принят», событие не отработало) переигрываем на месте; «Ошибка» —
+     *  сперва Failed → Received. В обоих чистим прошлый ответ и причину отказа и заново поднимаем
+     *  InquirySubmitted — воркер отработает как при первичном приёме. Диспетчер идемпотентен (гоняет
+     *  только Received), так что зависшее исходное событие и наш повтор друг друга не задвоят. */
+    public function requestReprocessing(\DateTimeImmutable $now): void
+    {
+        if (InquiryStatus::Received !== $this->status && InquiryStatus::Failed !== $this->status) {
+            throw new AppException('Повторный запуск доступен только для принятых или проваленных запросов.');
+        }
+        if (InquiryStatus::Failed === $this->status) {
+            $this->transitionTo(InquiryStatus::Received, $now);
+        } else {
+            $this->updatedAt = $now;
+        }
+        $this->answer = null;
+        $this->failureReason = null;
+        $this->raise(new InquirySubmitted($this->getId()));
+    }
+
     /** Ошибка на любом шаге конвейера (извлечение текста, модель, поиск). */
     public function fail(string $reason, \DateTimeImmutable $now): void
     {

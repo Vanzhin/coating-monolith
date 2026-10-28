@@ -65,6 +65,26 @@ final class InquiryWebFlowTest extends WebTestCase
         self::assertSelectorTextNotContains('body', 'МАРКЕР-СПИСКА');
     }
 
+    public function test_edit_modal_renders_and_reprocess_redirects(): void
+    {
+        $client = $this->loggedInAdminClient();
+
+        $crawler = $client->request('GET', '/cabinet/inquiry/new');
+        $token = $crawler->filter('input[name="_token"]')->attr('value');
+        $client->request('POST', '/cabinet/inquiry', ['text' => 'правка-этанол', '_token' => $token]);
+        $location = (string) $client->getResponse()->headers->get('Location');
+
+        $crawler = $client->request('GET', $location.'/edit');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.modal-title', 'Исправить параметры');
+        $reToken = $crawler->filter('input[name="_token"]')->attr('value');
+
+        $client->request('POST', $location.'/reprocess', ['environment' => 'immersion', '_token' => $reToken]);
+        self::assertResponseStatusCodeSame(302);
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+    }
+
     private function loggedInAdminClient(): KernelBrowser
     {
         self::ensureKernelShutdown();

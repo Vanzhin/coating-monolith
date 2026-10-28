@@ -25,6 +25,7 @@ use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Port\SubstanceResolver;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionParameterMapper;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionProcessor;
+use App\Inquiries\Application\Service\SystemSelection\SystemSelectionSearch;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
@@ -219,7 +220,7 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), $queryBus);
+        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), new SystemSelectionSearch($queryBus));
     }
 
     private function emptyExtraction(): ExtractionResult
