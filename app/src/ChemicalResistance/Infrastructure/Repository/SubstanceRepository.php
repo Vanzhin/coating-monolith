@@ -108,10 +108,16 @@ class SubstanceRepository extends ServiceEntityRepository implements SubstanceRe
         $types = [];
 
         if (null !== $filter->search && '' !== trim($filter->search)) {
+            $term = trim($filter->search);
+            // Прямое: имя/алиас/CAS СОДЕРЖИТ запрос. Обратное: имя/алиас — слово ВНУТРИ запроса
+            // («вода» ⊂ «деаэрированная вода»); короче 3 символов не берём, чтобы не ловить шум.
             $whereParts[] = '(s.canonical_name ILIKE :search
                 OR s.cas ILIKE :search
-                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search))';
-            $params['search'] = '%'.trim($filter->search).'%';
+                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE v ILIKE :search)
+                OR (length(s.canonical_name) >= 3 AND :searchTerm ILIKE (\'%\' || s.canonical_name || \'%\'))
+                OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(s.aliases) v WHERE length(v) >= 3 AND :searchTerm ILIKE (\'%\' || v || \'%\')))';
+            $params['search'] = '%'.$term.'%';
+            $params['searchTerm'] = $term;
         }
 
         if (null !== $filter->cas && '' !== trim($filter->cas)) {

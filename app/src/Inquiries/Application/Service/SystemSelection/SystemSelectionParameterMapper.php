@@ -28,7 +28,12 @@ final readonly class SystemSelectionParameterMapper
         $warnings = [];
 
         $substanceIds = [];
-        foreach ($p->chemicalResistance->substances as $name) {
+        // Имена чистим от дублей (одно вещество разными формулировками), id — тоже: разные
+        // имена могут резолвиться в одно вещество. Иначе в фильтр уходят дубли.
+        foreach (array_unique(array_map('trim', $p->chemicalResistance->substances)) as $name) {
+            if ('' === $name) {
+                continue;
+            }
             $id = $this->substances->resolve($name);
             if (null === $id) {
                 $warnings[] = sprintf('Вещество «%s» не найдено в реестре — в подборе не учтено.', $name);
@@ -37,6 +42,7 @@ final readonly class SystemSelectionParameterMapper
             }
             $substanceIds[] = $id;
         }
+        $substanceIds = array_values(array_unique($substanceIds));
 
         // Покрытия, заданные заказчиком, — пока нет резолвера имён→id, показываем инженеру отдельно.
         foreach ($p->specifiedCoatings as $coating) {

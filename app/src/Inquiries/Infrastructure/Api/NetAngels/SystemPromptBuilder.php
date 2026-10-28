@@ -11,7 +11,7 @@ namespace App\Inquiries\Infrastructure\Api\NetAngels;
  */
 final class SystemPromptBuilder
 {
-    public const VERSION = 'v1';
+    public const VERSION = 'v2';
 
     public function build(): string
     {

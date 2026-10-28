@@ -77,6 +77,34 @@ final class SystemSelectionParameterMapperTest extends TestCase
         self::assertSame([], $mapped->warnings);
     }
 
+    public function test_deduplicates_substance_ids_and_names(): void
+    {
+        $resolver = new class implements SubstanceResolver {
+            public function resolve(string $name): ?string
+            {
+                // разные формулировки одного вещества + дубль имени → один id
+                return in_array($name, ['нефть', 'сырая нефть'], true) ? 'sub-oil' : null;
+            }
+        };
+        $params = new ExtractedParameters(
+            substrates: [],
+            environment: null,
+            specifiedCoatings: [],
+            search: null,
+            chemicalResistance: new ChemicalResistanceParams(['нефть', 'сырая нефть', 'нефть'], null, null),
+            thermal: new ThermalParams(null, null, null),
+            standard: null,
+            category: null,
+            durability: null,
+            applicationMinTemp: null,
+            minApplicationTimeAt20: null,
+        );
+
+        $mapped = (new SystemSelectionParameterMapper($resolver))->map($params);
+
+        self::assertSame(['sub-oil'], $mapped->input->substanceIds);
+    }
+
     public function test_mapped_input_builds_a_real_search_query(): void
     {
         // Непрозрачные параметры обязаны ре-прогоняться поиском: примитивы → фильтр Coatings без исключений.

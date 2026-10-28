@@ -55,4 +55,24 @@ final class ChemicalResistanceSubstanceResolverTest extends KernelTestCase
 
         self::assertSame($exactId->toRfc4122(), $resolver->resolve($root));
     }
+
+    public function test_qualified_phrase_resolves_to_base_substance(): void
+    {
+        self::bootKernel();
+        $container = static::getContainer();
+
+        $repo = $container->get(SubstanceRepositoryInterface::class);
+        $spec = $container->get(SubstanceSpecification::class);
+        $resolver = $container->get(SubstanceResolver::class);
+        \assert($repo instanceof SubstanceRepositoryInterface);
+        \assert($spec instanceof SubstanceSpecification);
+        \assert($resolver instanceof SubstanceResolver);
+
+        // «деаэрированная вода» → вода: имя вещества как слово ВНУТРИ запроса (обратное совпадение).
+        $base = 'Вода'.bin2hex(random_bytes(3));
+        $id = Uuid::v4();
+        $repo->add(new Substance($id, $base, null, new StringCollection(), $spec));
+
+        self::assertSame($id->toRfc4122(), $resolver->resolve('деаэрированная '.$base));
+    }
 }
