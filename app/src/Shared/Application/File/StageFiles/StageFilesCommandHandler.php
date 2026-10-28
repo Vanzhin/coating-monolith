@@ -18,8 +18,18 @@ final readonly class StageFilesCommandHandler implements CommandHandlerInterface
 {
     private const MAX_BYTES = 15 * 1024 * 1024;
     // Широкий allow-list tmp-зоны. Должен быть НАДмножеством mime всех двухфазных FilePurpose:
-    // что прошло stage, но не проходит purpose-констрейнты, отобьётся уже на promote.
-    private const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    // что прошло stage, но не проходит purpose-констрейнты, отобьётся уже на promote. docx/xlsx/xls —
+    // для запросов на подбор (письма/опросники часто в Word/Excel); текст умеют извлекать
+    // DocxTextExtractor / XlsxTextExtractor.
+    private const ALLOWED_MIME = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+    ];
 
     public function __construct(private FileStorage $storage)
     {
