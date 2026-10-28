@@ -24,16 +24,18 @@
 /* ===== Нижняя таб-панель (мобайл) ===== */
 .app-tabbar {
     position: fixed;
-    left: 0; right: 0; bottom: 0;
+    /* Плавающая панель: отрываем от краёв экрана, чтобы скругление было видно со всех сторон.
+       Нижний зазор — через --app-safe-bottom (на мобиле floor 2rem), чтобы панель не липла
+       к кромке экрана и по иконкам было удобно попадать пальцем. */
+    left: .5rem; right: .5rem; bottom: var(--app-safe-bottom);
     z-index: 1035;
     display: flex;
-    background: color-mix(in srgb, var(--bs-body-bg) 86%, transparent);
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 92%, transparent);
     backdrop-filter: saturate(180%) blur(16px);
     -webkit-backdrop-filter: saturate(180%) blur(16px);
-    border-top: 1px solid var(--bs-border-color);
-    /* Нижний зазор — через --app-safe-bottom (на мобиле floor 14px), чтобы иконки не липли
-       к кромке экрана и по ним было удобно попадать пальцем. */
-    padding: .5rem .25rem calc(.5rem + var(--app-safe-bottom));
+    border-radius: 1.25rem;
+    box-shadow: 0 6px 20px rgba(16, 24, 40, .12);
+    padding: .4rem .25rem;
 }
 .app-tab {
     flex: 1;

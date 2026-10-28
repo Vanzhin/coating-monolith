@@ -3,12 +3,23 @@
    только для авторизованных. #}
 <nav class="app-tabbar d-lg-none" aria-label="Основная навигация">
     {% for item in nav_items %}
-        <a href="{{ path(item.route) }}"
-           class="app-tab{{ item.active ? ' active' : '' }}"
-           {% if item.active %}aria-current="page"{% endif %}>
-            <i class="bi {{ item.icon }}"></i>
-            <span>{{ item.label }}</span>
-        </a>
+        {% if item.key == 'documents' and is_granted('ROLE_ADMIN') %}
+            {# На мобильной панели у админа слот «Документы» отдаём под «Запросы» — быстрый доступ к очереди подбора. #}
+            {% set inquiryActive = current_route starts with 'app_cabinet_inquiry' %}
+            <a href="{{ path('app_cabinet_inquiry_list') }}"
+               class="app-tab{{ inquiryActive ? ' active' : '' }}"
+               {% if inquiryActive %}aria-current="page"{% endif %}>
+                <i class="bi bi-inbox"></i>
+                <span>Запросы</span>
+            </a>
+        {% else %}
+            <a href="{{ path(item.route) }}"
+               class="app-tab{{ item.active ? ' active' : '' }}"
+               {% if item.active %}aria-current="page"{% endif %}>
+                <i class="bi {{ item.icon }}"></i>
+                <span>{{ item.label }}</span>
+            </a>
+        {% endif %}
     {% endfor %}
     <button type="button" class="app-tab" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-label="Ещё">
         <i class="bi bi-three-dots"></i>
