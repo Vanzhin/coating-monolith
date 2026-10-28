@@ -82,6 +82,24 @@ class Inquiry extends Aggregate
         $this->failureReason = null;
     }
 
+    /** Инженер поправил параметры вручную (плоский набор значений). Пер-полевой провенанс считает сам
+     *  RecognizedParameters: реально изменённые оси получают origin = Manual, остальные сохраняют прежний
+     *  (модель/кэш) — сигнал качества извлечения. Базовую стратегию распознавания (ParameterSource) не
+     *  затираем; если распознавания не было (ввод с нуля) — ставим Manual. Как recognize, чистит отказ.
+     *
+     * @param array<string, mixed> $values
+     */
+    public function editParameters(array $values, \DateTimeImmutable $now): void
+    {
+        $base = $this->recognizedParameters ?? new RecognizedParameters([]);
+        $this->recognizedParameters = $base->withManualEdits($values);
+        if (null === $this->parameterSource) {
+            $this->parameterSource = new ParameterSource(ParameterStrategy::Manual);
+        }
+        $this->transitionTo(InquiryStatus::Recognized, $now);
+        $this->failureReason = null;
+    }
+
     /** Инженер одобрил результат. Терминально, замораживает запрос. */
     public function approve(?string $verifiedBy, \DateTimeImmutable $now): void
     {

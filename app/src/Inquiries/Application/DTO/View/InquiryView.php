@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Application\DTO\View;
 
-use App\Coatings\Application\DTO\CoatingSystems\FilterFacetLabel;
-
 /**
- * Запрос для экрана-карточки: статус + вход + распознанные параметры человекочитаемыми подписями
- * (Coatings описывает фасеты, вещества резолвятся в имена) + предупреждения + провенанс. Подобранные
- * системы сюда НЕ входят — они живой результат параметров (InquiryResultsView), не состояние запроса.
+ * Запрос для экрана-карточки: статус + вход + распознанные параметры человекочитаемыми подписями с
+ * провенансом (robot/человек у каждого значения) + предупреждения. Подобранные системы сюда НЕ входят —
+ * они живой результат параметров (InquiryResultsView), не состояние запроса.
  */
 final readonly class InquiryView
 {
     /**
      * @param list<InquiryAttachmentView> $attachments
-     * @param list<FilterFacetLabel>      $paramRows
+     * @param list<InquiryParamRow>       $paramRows
      * @param list<string>                $warnings
      */
     public function __construct(

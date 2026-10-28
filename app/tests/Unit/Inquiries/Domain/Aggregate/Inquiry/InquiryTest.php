@@ -107,6 +107,40 @@ final class InquiryTest extends TestCase
         self::assertTrue($inquiry->isApproved());
     }
 
+    public function test_edit_parameters_marks_only_changed_fields_manual(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->recognize(
+            new RecognizedParameters(['environment' => 'immersion', 'standard' => 'iso12944']),
+            new ParameterSource(ParameterStrategy::Model, ['model' => 'qwen']),
+            $this->now(),
+        );
+
+        // инженер поправил только environment
+        $inquiry->editParameters(['environment' => 'special', 'standard' => 'iso12944'], $this->now());
+
+        $params = $inquiry->getRecognizedParameters();
+        self::assertNotNull($params);
+        self::assertSame('special', $params->toArray()['environment']);
+        self::assertSame(ParameterStrategy::Manual, $params->originOf('environment'));  // правлен человеком
+        self::assertSame(ParameterStrategy::Model, $params->originOf('standard'));       // не тронут — остался модельным
+        self::assertSame(['environment'], $params->manuallyEditedKeys());
+        self::assertSame(ParameterStrategy::Model, $inquiry->getParameterSource()?->strategy); // базовая стратегия не затёрта
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
+    }
+
+    public function test_edit_parameters_from_scratch_is_fully_manual(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->fail('не распознал', $this->now());
+
+        $inquiry->editParameters(['environment' => 'immersion'], $this->now());
+
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
+        self::assertSame(ParameterStrategy::Manual, $inquiry->getParameterSource()?->strategy);
+        self::assertSame(['environment'], $inquiry->getRecognizedParameters()?->manuallyEditedKeys());
+    }
+
     public function test_raises_submitted_event_on_creation(): void
     {
         $events = $this->received()->pullEvents();

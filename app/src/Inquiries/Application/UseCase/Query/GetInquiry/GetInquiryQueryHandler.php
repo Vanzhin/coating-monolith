@@ -9,8 +9,10 @@ use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Coatings\Application\DTO\CoatingSystems\FilterFacetLabel;
 use App\Coatings\Application\UseCase\Query\DescribeCoatingSystemsFilter\DescribeCoatingSystemsFilterQuery;
 use App\Inquiries\Application\DTO\View\InquiryAttachmentView;
+use App\Inquiries\Application\DTO\View\InquiryParamRow;
 use App\Inquiries\Application\DTO\View\InquiryView;
 use App\Inquiries\Application\Service\AccessControl\InquiryAccessControl;
+use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Application\Query\QueryHandlerInterface;
@@ -59,12 +61,36 @@ final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
             statusLabel: $inquiry->getStatus()->label(),
             rawText: $inquiry->getRawText(),
             attachments: $attachments,
-            paramRows: null !== $params ? $this->describe($params->toArray()) : [],
+            paramRows: $this->paramRows($params),
             warnings: $inquiry->getWarnings(),
             failureReason: $inquiry->getFailureReason(),
             comment: $inquiry->getComment(),
             sourceStrategyLabel: $inquiry->getParameterSource()?->strategy->label(),
             createdAt: $inquiry->getCreatedAt(),
+        );
+    }
+
+    /**
+     * Строки параметров для карточки с провенансом: подпись/значение (Coatings describe) + кто
+     * установил (robot/человек) — по origin исходных ключей строки. Правленые инженером поля помечаем.
+     *
+     * @return list<InquiryParamRow>
+     */
+    private function paramRows(?RecognizedParameters $params): array
+    {
+        if (null === $params) {
+            return [];
+        }
+
+        $edited = $params->manuallyEditedKeys();
+
+        return array_map(
+            static fn (FilterFacetLabel $row): InquiryParamRow => new InquiryParamRow(
+                $row->label,
+                $row->value,
+                [] !== array_intersect($row->keys, $edited),
+            ),
+            $this->describe($params->toArray()),
         );
     }
 
@@ -82,7 +108,7 @@ final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
             /** @var array<string, string> $names */
             $names = $this->queryBus->execute(new SubstanceNamesByIdsQuery($input->substanceIds));
             $labels = array_map(static fn (string $id): string => $names[$id] ?? $id, $input->substanceIds);
-            $rows[] = new FilterFacetLabel('Вещества', implode(', ', $labels));
+            $rows[] = new FilterFacetLabel('Вещества', implode(', ', $labels), ['substanceIds']);
         }
 
         /** @var list<FilterFacetLabel> $facets */
