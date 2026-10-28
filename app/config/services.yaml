@@ -75,6 +75,9 @@ services:
     App\Notifications\Domain\Service\MessageRendererInterface:
       tags: ['app.notification_renderer']
 
+    App\Shared\Infrastructure\FileText\FormatTextExtractor:
+      tags: ['app.file_text_extractor']
+
   App\*\Domain\Factory\:
     namespace: App\
     public: true
@@ -341,3 +344,53 @@ services:
       $blacklistPatterns: [ ]
       $whitelistEnabled: false
       $blacklistEnabled: false
+
+  # Аудит исходящих HTTP: сток пишет в Postgres (позже — ClickHouse подменой этого алиаса)
+  App\Shared\Infrastructure\Http\Audit\HttpAuditSink:
+    alias: App\Shared\Infrastructure\Http\Audit\PostgresHttpAuditSink
+
+  # Фабрика аудируемого HTTP-клиента: числа ретрая/аудита — из config/packages/http_client.yaml
+  App\Shared\Infrastructure\Http\AuditedHttpClientFactory:
+    arguments:
+      $maxRetries: '%app.http.max_retries%'
+      $retryDelayMs: '%app.http.retry_delay_ms%'
+      $retryMultiplier: '%app.http.retry_multiplier%'
+      $bodyMaxBytes: '%app.http.audit_body_max_bytes%'
+      $auditEnabled: '%app.http.audit_enabled%'
+
+  # Извлечение текста из файла (Shared): числа из config/packages/file_text.yaml
+  App\Shared\Infrastructure\FileText\PdfTextExtractor:
+    arguments:
+      $timeoutSec: '%app.file_text.extraction_timeout_sec%'
+
+  App\Shared\Infrastructure\FileText\FormatFileTextExtractor:
+    arguments:
+      $extractors: !tagged_iterator app.file_text_extractor
+      $maxFileBytes: '%app.file_text.max_file_bytes%'
+      $maxTextChars: '%app.file_text.max_text_chars%'
+      $scanMinChars: '%app.file_text.scan_min_chars%'
+
+  # Публичный: пока нет потребителя (придёт в адаптере подбора), иначе контейнер
+  # выкинул бы неиспользуемый сервис и проводка не валидировалась бы.
+  App\Shared\Domain\FileText\FileTextExtractor:
+    alias: App\Shared\Infrastructure\FileText\FormatFileTextExtractor
+    public: true
+
+  # Аудируемый HTTP-клиент NetAngels: scoped-клиент netangels, обёрнутый ретраем+аудитом.
+  app.http_client.netangels:
+    class: Symfony\Contracts\HttpClient\HttpClientInterface
+    factory: ['@App\Shared\Infrastructure\Http\AuditedHttpClientFactory', 'wrap']
+    arguments:
+      $base: '@netangels'
+      $scope: 'netangels'
+
+  # Экстрактор параметров через NetAngels (порт InquiryParametersExtractor).
+  App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor:
+    arguments:
+      $netangelsClient: '@app.http_client.netangels'
+      $model: '%env(NETANGELS_MODEL)%'
+
+  # Публичный: потребитель (движок) появится в плане 3, иначе контейнер выкинул бы и не валидировал.
+  App\Inquiries\Application\Port\InquiryParametersExtractor:
+    alias: App\Inquiries\Infrastructure\Api\NetAngels\NetAngelsExtractor
+    public: true

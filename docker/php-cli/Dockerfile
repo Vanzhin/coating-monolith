@@ -6,7 +6,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 # тот эндпоинт отдавал 504 и валил сборку. Бинарь в образе уже исполняемый — chmod не нужен.
 COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN apk add --update zip unzip grep wget bash git openssh
+RUN apk add --update zip unzip grep wget bash git openssh poppler-utils
 
 RUN install-php-extensions redis gd intl pcntl pdo_pgsql pdo_mysql sockets zip amqp opcache bz2 gmp @composer
 RUN rm  -rf /tmp/* /var/cache/apk/*
