@@ -35,10 +35,15 @@ final class ListAction extends AbstractController
             new SearchCoatingSystemsQuery($this->requestMapper->filterFromRequest($request)),
         );
 
-        $template = $request->query->getBoolean('partial')
-            ? 'cabinet/coating/coating_system/_list_cards.html.twig'
-            : 'cabinet/coating/coating_system/list.html.twig';
+        // partial (догрузка «Показать ещё») рендерит батч карточек напрямую — ему нужен canEdit,
+        // иначе кебаб на подгруженных карточках скрыт (на первой странице его даёт list.html.twig).
+        if ($request->query->getBoolean('partial')) {
+            return $this->render('cabinet/coating/coating_system/_list_cards.html.twig', [
+                'items' => $result->items,
+                'canEdit' => $this->isGranted('ROLE_ADMIN'),
+            ]);
+        }
 
-        return $this->render($template, $this->viewFactory->build($request, $result));
+        return $this->render('cabinet/coating/coating_system/list.html.twig', $this->viewFactory->build($request, $result));
     }
 }
