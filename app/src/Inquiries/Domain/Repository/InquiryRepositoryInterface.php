@@ -14,5 +14,7 @@ interface InquiryRepositoryInterface
 {
     public function add(Inquiry $inquiry): void;
 
+    public function remove(Inquiry $inquiry): void;
+
     public function findOneById(string $id): ?Inquiry;
 }

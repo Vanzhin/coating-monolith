@@ -25,6 +25,11 @@ final class InMemoryInquiryRepository implements InquiryRepositoryInterface
         ++$this->saveCount;
     }
 
+    public function remove(Inquiry $inquiry): void
+    {
+        $this->inquiry = null;
+    }
+
     public function findOneById(string $id): ?Inquiry
     {
         return $this->inquiry;

@@ -26,6 +26,12 @@ class InquiryRepository extends ServiceEntityRepository implements InquiryReposi
         $this->getEntityManager()->flush();
     }
 
+    public function remove(Inquiry $inquiry): void
+    {
+        $this->getEntityManager()->remove($inquiry);
+        $this->getEntityManager()->flush();
+    }
+
     public function findOneById(string $id): ?Inquiry
     {
         if (!Uuid::isValid($id)) {
