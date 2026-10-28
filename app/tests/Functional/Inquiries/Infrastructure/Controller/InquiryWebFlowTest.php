@@ -46,6 +46,25 @@ final class InquiryWebFlowTest extends WebTestCase
         self::assertSelectorTextContains('.modal-body', 'МАРКЕР-ПОЛНОГО-ТЕКСТА');
     }
 
+    public function test_list_shows_created_inquiry_and_filters_by_status(): void
+    {
+        $client = $this->loggedInAdminClient();
+
+        $crawler = $client->request('GET', '/cabinet/inquiry/new');
+        $token = $crawler->filter('input[name="_token"]')->attr('value');
+        $client->request('POST', '/cabinet/inquiry', ['text' => 'МАРКЕР-СПИСКА этанол', '_token' => $token]);
+
+        $client->request('GET', '/cabinet/inquiry');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Запросы на подбор');
+        self::assertSelectorTextContains('body', 'МАРКЕР-СПИСКА');
+
+        // фильтр по чужому статусу прячет свежий (Received) запрос
+        $client->request('GET', '/cabinet/inquiry?status=approved');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextNotContains('body', 'МАРКЕР-СПИСКА');
+    }
+
     private function loggedInAdminClient(): KernelBrowser
     {
         self::ensureKernelShutdown();

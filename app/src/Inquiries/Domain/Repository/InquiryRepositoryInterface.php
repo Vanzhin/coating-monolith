@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Inquiries\Domain\Repository;
 
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
+use App\Shared\Domain\Repository\PaginationResult;
 
 /**
- * Репозиторий запросов. Пока только запись и резолв по id (резолв ≠ поиск — отдельный метод по
- * конвенции). Листинг очереди инженера (findByFilter) добавится отдельной задачей (веб).
+ * Репозиторий запросов: запись, резолв по id (резолв ≠ поиск — отдельный метод) и очередь инженера
+ * через единый findByFilter (новые оси поиска — поле в InquiriesFilter, не новый метод).
  */
 interface InquiryRepositoryInterface
 {
@@ -17,4 +18,6 @@ interface InquiryRepositoryInterface
     public function remove(Inquiry $inquiry): void;
 
     public function findOneById(string $id): ?Inquiry;
+
+    public function findByFilter(InquiriesFilter $filter): PaginationResult;
 }

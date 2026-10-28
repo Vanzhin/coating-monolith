@@ -27,7 +27,7 @@
                     <i class="bi bi-clipboard-data"></i><span>Отчёты</span>
                 </a>
                 {% if is_granted('ROLE_ADMIN') %}
-                    <a href="{{ path('app_cabinet_inquiry_new') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_inquiry' ? ' active' : '' }}" title="Запросы на подбор"
+                    <a href="{{ path('app_cabinet_inquiry_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_inquiry' ? ' active' : '' }}" title="Запросы на подбор"
                        {% if current_route starts with 'app_cabinet_inquiry' %}aria-current="page"{% endif %}>
                         <i class="bi bi-inbox"></i><span>Запросы</span>
                     </a>

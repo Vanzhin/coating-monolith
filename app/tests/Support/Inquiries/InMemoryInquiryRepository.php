@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Support\Inquiries;
 
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
+use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
+use App\Shared\Domain\Repository\PaginationResult;
 
 /**
  * In-memory фейк репозитория запросов для юнит-тестов (без БД). Хранит один запрос, считает
@@ -33,5 +35,12 @@ final class InMemoryInquiryRepository implements InquiryRepositoryInterface
     public function findOneById(string $id): ?Inquiry
     {
         return $this->inquiry;
+    }
+
+    public function findByFilter(InquiriesFilter $filter): PaginationResult
+    {
+        $items = null !== $this->inquiry ? [$this->inquiry] : [];
+
+        return new PaginationResult($items, \count($items));
     }
 }
