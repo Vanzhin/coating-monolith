@@ -1,0 +1,34 @@
+{# Ленивый фрагмент (app_cabinet_inquiry_text) — модалка с полным текстом: тело + извлечённый
+   текст по вложениям. Всплывает через openFragmentModal (ищет .modal, кладёт в body). #}
+<div class="modal fade" id="inquiryTextModal" tabindex="-1" aria-labelledby="inquiryTextModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inquiryTextModalLabel">Текст запроса целиком</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                {% if text.body|trim %}
+                    <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Тело запроса</div>
+                    <pre class="p-3 rounded-3 bg-body-tertiary mb-3" style="white-space:pre-wrap; word-break:break-word">{{ text.body }}</pre>
+                {% endif %}
+
+                {% for f in text.files %}
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="text-body-secondary text-uppercase small fw-semibold" style="letter-spacing:.05em">{{ f.name }}</span>
+                        <span class="badge text-bg-light fw-normal text-body-secondary">{{ f.statusLabel }}</span>
+                    </div>
+                    {% if f.text|trim %}
+                        <pre class="p-3 rounded-3 bg-body-tertiary mb-3" style="white-space:pre-wrap; word-break:break-word">{{ f.text }}</pre>
+                    {% else %}
+                        <div class="text-body-secondary small fst-italic mb-3">—</div>
+                    {% endif %}
+                {% endfor %}
+
+                {% if not text.body|trim and text.files is empty %}
+                    <div class="text-body-secondary fst-italic">Пусто.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

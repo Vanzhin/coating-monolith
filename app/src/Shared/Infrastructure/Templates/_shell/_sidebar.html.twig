@@ -26,6 +26,12 @@
                    {% if current_route starts with 'app_cabinet_report_' %}aria-current="page"{% endif %}>
                     <i class="bi bi-clipboard-data"></i><span>Отчёты</span>
                 </a>
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('app_cabinet_inquiry_new') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_inquiry' ? ' active' : '' }}" title="Запросы на подбор"
+                       {% if current_route starts with 'app_cabinet_inquiry' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-inbox"></i><span>Запросы</span>
+                    </a>
+                {% endif %}
                 <a href="{{ path('app_tools_index') }}" class="app-nav-item{{ current_route starts with 'app_tools' ? ' active' : '' }}" title="Инструменты"
                    {% if current_route starts with 'app_tools' %}aria-current="page"{% endif %}>
                     <i class="bi bi-calculator"></i><span>Инструменты</span>
