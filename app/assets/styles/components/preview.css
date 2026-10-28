@@ -35,6 +35,18 @@
     box-shadow: 0 -7px 18px rgba(0, 0, 0, .35);
 }
 
+/* Форма, оборачивающая header/body/footer внутри скроллящейся модалки (modal-dialog-scrollable),
+   разрывает flex-цепочку Bootstrap: скролл он вешает на .modal-body, но промежуточная <form>
+   не тянется на высоту .modal-content, и тело не получает ограниченную высоту → не скроллится
+   (виден баг на правке параметров запроса). Делаем саму форму flex-колонкой во всю высоту. */
+.modal-dialog-scrollable .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* Key-value список характеристик (одна пара в строку) — для системного превью.
    Без рамок/разделителей — строки разделены отступом. */
 .kv { display: flex; flex-direction: column; gap: 8px; }
