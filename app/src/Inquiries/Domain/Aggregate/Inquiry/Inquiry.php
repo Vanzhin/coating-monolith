@@ -11,18 +11,20 @@ use App\Shared\Infrastructure\Exception\AppException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Запрос — корень домена Inquiries. Слепое типизированное хранилище: вход (текст + ссылки на файлы),
- * распознанные параметры (НЕПРОЗРАЧНЫЙ key-value), снимок ответа, проверка инженером. Домен не знает
- * ни Coatings, ни ChemicalResistance, ни модели — как получены параметры, говорит лишь провенанс
- * (ParameterSource). Статус СЛЕДУЕТ из действий (recognize/match/approve/fail), переход валидирует
- * приватный transitionTo по цепочке InquiryStatus; «Одобрен» — замороженный терминал.
+ * Запрос — корень домена Inquiries. Хранит вход (текст + ссылки на файлы), распознанные параметры
+ * (НЕПРОЗРАЧНЫЙ key-value), провенанс, проверку инженером. Подобранные системы — НЕ состояние
+ * запроса, а живой результат прогона распознанных параметров по каталогу Coatings (считается на
+ * показе через query-шину); домен Inquiries про Coatings НЕ знает вообще. Статус СЛЕДУЕТ из действий
+ * (recognize/approve/fail), переход валидирует приватный transitionTo по цепочке InquiryStatus;
+ * «Одобрен» — замороженный терминал.
  *
  * ownerId (ulid) — КТО инициировал запрос (аудит/адресат ответа), НЕ ключ доступа: доступ ко всему
- * контексту — только админ (InquiryAccessControl, capability). Отпечаток/эмбеддинг для кэша — НЕ поля
- * агрегата, а инфра-проекция (техника поиска, как tsvector): домен о кэше не знает.
+ * контексту — только админ (InquiryAccessControl, capability).
  */
 class Inquiry extends Aggregate
 {
+    private const MAX_COMMENT_LENGTH = 2000;
+
     private readonly Uuid $id;
     // Вход и тип — не меняются после создания (без сеттеров); readonly не ставим только ради
     // дружелюбия к Doctrine-гидрации, как в Report.
@@ -34,10 +36,12 @@ class Inquiry extends Aggregate
     private InquiryStatus $status;
     private ?RecognizedParameters $recognizedParameters = null;
     private ?ParameterSource $parameterSource = null;
-    private ?AnswerSnapshot $answer = null;
     private ?Verification $verification = null;
     private ?string $failureReason = null;
-    /** @var list<string> диагностика для инженера: нерезолв веществ, сканы, 0 результатов */
+    // Свободная заметка инженера по запросу (перезвонил, контекст). Редактируется в любой момент,
+    // к жизненному циклу/решению не относится — отдельно от параметров и провенанса.
+    private string $comment = '';
+    /** @var list<string> диагностика для инженера: нерезолв веществ, сканы */
     private array $warnings = [];
 
     private \DateTimeImmutable $createdAt;
@@ -66,25 +70,16 @@ class Inquiry extends Aggregate
         $this->raise(new InquirySubmitted($this->getId()));
     }
 
-    /** Параметры распознаны (моделью/из кэша/вручную инженером) вместе с провенансом. Повторный
-     *  вход в Recognized (правка инженером из Matched, ретрай из Failed) — чистый лист: старый снимок
-     *  ответа и прошлая причина отказа сбрасываются, чтобы не пережили переподбор (инвариант
-     *  «ответ ⟺ Matched/Approved», отсутствие фантомной ошибки на удачном результате). */
+    /** Параметры распознаны (моделью/из кэша/вручную инженером) вместе с провенансом. Повторный вход в
+     *  Recognized (правка инженером, ретрай из Failed) — чистый лист: прошлая причина отказа сбрасывается
+     *  (на удачном распознавании не должно висеть фантомной ошибки). Подобранные системы не храним —
+     *  они живой результат этих параметров. */
     public function recognize(RecognizedParameters $parameters, ParameterSource $source, \DateTimeImmutable $now): void
     {
         $this->transitionTo(InquiryStatus::Recognized, $now);
         $this->recognizedParameters = $parameters;
         $this->parameterSource = $source;
-        $this->answer = null;
         $this->failureReason = null;
-    }
-
-    /** Подбор выполнен — сохраняем снимок найденного. В Matched попадаем только из Recognized, так
-     *  что распознанные параметры к этому моменту уже есть (гарантирует transitionTo). */
-    public function match(AnswerSnapshot $answer, \DateTimeImmutable $now): void
-    {
-        $this->transitionTo(InquiryStatus::Matched, $now);
-        $this->answer = $answer;
     }
 
     /** Инженер одобрил результат. Терминально, замораживает запрос. */
@@ -96,9 +91,9 @@ class Inquiry extends Aggregate
 
     /** Ручной повторный прогон всего конвейера. Два кейса: застрявший «Получен» (воркер/контейнер
      *  упал — запись осталась «принят», событие не отработало) переигрываем на месте; «Ошибка» —
-     *  сперва Failed → Received. В обоих чистим прошлый ответ и причину отказа и заново поднимаем
-     *  InquirySubmitted — воркер отработает как при первичном приёме. Диспетчер идемпотентен (гоняет
-     *  только Received), так что зависшее исходное событие и наш повтор друг друга не задвоят. */
+     *  сперва Failed → Received. В обоих чистим прошлые параметры/провенанс/причину отказа (конвейер
+     *  распознает заново) и заново поднимаем InquirySubmitted. Диспетчер идемпотентен (гоняет только
+     *  Received), так что зависшее исходное событие и наш повтор друг друга не задвоят. */
     public function requestReprocessing(\DateTimeImmutable $now): void
     {
         if (InquiryStatus::Received !== $this->status && InquiryStatus::Failed !== $this->status) {
@@ -109,26 +104,35 @@ class Inquiry extends Aggregate
         } else {
             $this->updatedAt = $now;
         }
-        // Чистый лист: конвейер прогонится заново (recognize перезапишет), а Received не должен
-        // нести ни ответа, ни прошлых параметров/провенанса, ни причины отказа.
         $this->recognizedParameters = null;
         $this->parameterSource = null;
-        $this->answer = null;
         $this->failureReason = null;
         $this->raise(new InquirySubmitted($this->getId()));
     }
 
-    /** Ошибка на любом шаге конвейера (извлечение текста, модель, поиск). */
+    /** Ошибка на любом шаге конвейера (извлечение текста, модель, распознавание). */
     public function fail(string $reason, \DateTimeImmutable $now): void
     {
         $this->transitionTo(InquiryStatus::Failed, $now);
         $this->failureReason = $reason;
     }
 
-    /** Диагностика для инженера (нерезолв веществ, сканы, 0 результатов). Заменяет целиком. */
+    /** Диагностика для инженера (нерезолв веществ, сканы). Заменяет целиком. */
     public function noteWarnings(string ...$warnings): void
     {
         $this->warnings = array_values($warnings);
+    }
+
+    /** Заметка инженера. Редактируется в любой момент (в т.ч. на одобренном) — это не часть решения.
+     *  Длина — инвариант домена (бэк источник истины, не только maxlength формы). */
+    public function setComment(string $comment, \DateTimeImmutable $now): void
+    {
+        $comment = trim($comment);
+        if (mb_strlen($comment) > self::MAX_COMMENT_LENGTH) {
+            throw new AppException(sprintf('Комментарий слишком длинный (максимум %d символов).', self::MAX_COMMENT_LENGTH));
+        }
+        $this->comment = $comment;
+        $this->updatedAt = $now;
     }
 
     private function transitionTo(InquiryStatus $to, \DateTimeImmutable $now): void
@@ -185,11 +189,6 @@ class Inquiry extends Aggregate
         return $this->parameterSource;
     }
 
-    public function getAnswer(): ?AnswerSnapshot
-    {
-        return $this->answer;
-    }
-
     public function getVerification(): ?Verification
     {
         return $this->verification;
@@ -198,6 +197,11 @@ class Inquiry extends Aggregate
     public function getFailureReason(): ?string
     {
         return $this->failureReason;
+    }
+
+    public function getComment(): string
+    {
+        return $this->comment;
     }
 
     /** @return list<string> */

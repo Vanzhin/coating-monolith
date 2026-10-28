@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Inquiries\Domain\Aggregate\Inquiry;
 
 /**
- * Жизненный цикл запроса: получен → распознан → подобрано → одобрен | ошибка.
- * «Одобрен» — терминально-замороженное состояние. Правка инженером = возврат Подобрано → Распознан
- * (новые параметры → переподбор). Переход валидирует Inquiry::transitionTo.
+ * Жизненный цикл запроса: получен → распознан → одобрен | ошибка. Подобранные системы — НЕ состояние
+ * запроса, а живой результат прогона распознанных параметров по каталогу (считается на показе), поэтому
+ * отдельного «Подобрано» нет: как только параметры распознаны (Recognized), запрос готов к просмотру.
+ * «Одобрен» — терминально-замороженное состояние. Правка параметров инженером — повторный Recognized.
  */
 enum InquiryStatus: string
 {
-    case Received = 'received';     // есть вход
-    case Recognized = 'recognized'; // параметры получены (моделью/из кэша/вручную)
-    case Matched = 'matched';       // подбор выполнен, снимок ответа есть
+    case Received = 'received';     // есть вход, обрабатывается (сборка текста + распознавание)
+    case Recognized = 'recognized'; // параметры распознаны — готово к просмотру (живой подбор)
     case Approved = 'approved';     // инженер одобрил (заморозка)
     case Failed = 'failed';
 
@@ -22,7 +22,6 @@ enum InquiryStatus: string
         return match ($this) {
             self::Received => 'Получен',
             self::Recognized => 'Распознан',
-            self::Matched => 'Подобрано',
             self::Approved => 'Одобрен',
             self::Failed => 'Ошибка',
         };
@@ -33,9 +32,9 @@ enum InquiryStatus: string
     {
         return match ($this) {
             self::Received => [self::Recognized, self::Failed],
-            self::Recognized => [self::Matched, self::Failed],
-            self::Matched => [self::Approved, self::Recognized, self::Failed], // Recognized = инженер поправил параметры → переподбор
-            self::Failed => [self::Recognized, self::Received], // Recognized = ручная правка, Received = повторный прогон конвейера
+            // Recognized → Recognized: инженер правит параметры (перераспознавание с тем же статусом).
+            self::Recognized => [self::Recognized, self::Approved, self::Failed],
+            self::Failed => [self::Recognized, self::Received], // Recognized = ручная правка, Received = повторный прогон
             self::Approved => [], // терминально, заморожен
         };
     }
@@ -43,5 +42,11 @@ enum InquiryStatus: string
     public function canTransitionTo(self $to): bool
     {
         return in_array($to, $this->allowedTransitions(), true);
+    }
+
+    /** Запрос ещё в обработке (воркер собирает текст/распознаёт). Карточка поллит до завершения. */
+    public function isProcessing(): bool
+    {
+        return self::Received === $this;
     }
 }

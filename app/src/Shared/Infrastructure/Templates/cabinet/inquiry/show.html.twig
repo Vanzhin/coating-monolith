@@ -3,12 +3,13 @@
 {% block title %}{{ parent() }} | Запрос на подбор{% endblock %}
 
 {% block content %}
-    {% set statusBadge = {received: 'secondary', recognized: 'secondary', matched: 'primary', approved: 'success', failed: 'danger'} %}
-    {% set processing = inquiry.statusValue in ['received', 'recognized'] %}
+    {% set statusBadge = {received: 'secondary', recognized: 'primary', approved: 'success', failed: 'danger'} %}
+    {% set processing = inquiry.statusValue == 'received' %}
 
-    <div class="container-fluid py-3">
-        <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-            <a href="{{ path('app_cabinet_inquiry_new') }}" class="btn btn-sm btn-light" title="К форме"><i class="bi bi-arrow-left"></i></a>
+    <div class="p-2 p-md-3">
+        {# Шапка — отдельный блок (как в списках/формах приложения). #}
+        <div class="d-flex align-items-center gap-2 mb-3 p-3 rounded-3 bg-body-tertiary flex-wrap">
+            <a href="{{ path('app_cabinet_inquiry_list') }}" class="btn btn-sm btn-light" title="К списку"><i class="bi bi-arrow-left"></i></a>
             <h1 class="h5 mb-0">{{ inquiry.typeLabel }}</h1>
             <span class="badge rounded-pill text-bg-{{ statusBadge[inquiry.statusValue] ?? 'secondary' }}">{{ inquiry.statusLabel }}</span>
             {% if inquiry.sourceStrategyLabel %}
@@ -25,7 +26,7 @@
                         <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Повторить обработку</button>
                     </form>
                 {% endif %}
-                {% if canEdit and inquiry.statusValue == 'matched' %}
+                {% if canEdit and inquiry.statusValue == 'recognized' %}
                     <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveModal"><i class="bi bi-check2 me-1"></i>Одобрить</button>
                 {% endif %}
                 {% if canEdit %}
@@ -36,9 +37,15 @@
         </div>
 
         {% if inquiry.statusValue == 'failed' %}
-            <div class="alert alert-danger d-flex gap-2"><i class="bi bi-x-octagon mt-1"></i><div>{{ inquiry.failureReason }}</div></div>
+            <div class="d-flex gap-2 p-3 rounded-3 bg-danger-subtle text-danger-emphasis mb-3">
+                <i class="bi bi-x-octagon mt-1"></i>
+                <div><strong>Не удалось обработать запрос.</strong><div class="small">{{ inquiry.failureReason }}</div></div>
+            </div>
         {% elseif processing %}
-            <div class="alert alert-secondary d-flex gap-2"><i class="bi bi-arrow-clockwise mt-1"></i><div>
+            <div class="d-flex gap-2 p-3 rounded-3 bg-body-tertiary text-body-secondary mb-3"
+                 data-controller="inquiry-status-poll"
+                 data-inquiry-status-poll-endpoint-value="{{ path('app_cabinet_inquiry_status', {id: inquiry.id}) }}"
+                 data-inquiry-status-poll-interval-value="15000"><i class="bi bi-arrow-clockwise mt-1"></i><div>
                 <strong>Запрос принят, идёт подбор.</strong>
                 <div class="small">Текст извлекается, модель распознаёт параметры, выполняется поиск. Обновите страницу через несколько секунд.</div>
                 {% if canEdit %}
@@ -51,15 +58,16 @@
         {% endif %}
 
         <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            {# Что на входе #}
+            <div class="col-lg-6">
+                <div class="p-3 rounded-3 bg-body-tertiary h-100">
                     <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Что на входе</div>
                     {% if inquiry.rawText|trim %}
-                        <div class="p-2 rounded-3 bg-body-tertiary small text-body-secondary mb-2" style="white-space:pre-wrap; max-height:140px; overflow:auto">{{ inquiry.rawText }}</div>
+                        <div class="p-2 rounded-3 bg-body small text-body-secondary mb-2" style="white-space:pre-wrap; max-height:140px; overflow:auto">{{ inquiry.rawText }}</div>
                     {% endif %}
                     {% for a in inquiry.attachments %}
                         <a href="{{ path('app_cabinet_inquiry_attachment', {id: inquiry.id, fileId: a.id}) }}" target="_blank" rel="noopener"
-                           class="d-flex align-items-center gap-2 p-2 rounded-3 bg-body-tertiary mb-1 text-decoration-none text-body">
+                           class="d-flex align-items-center gap-2 p-2 rounded-3 bg-body mb-1 text-decoration-none text-body">
                             <i class="bi bi-paperclip"></i><span class="text-truncate">{{ a.name }}</span>
                             <i class="bi bi-box-arrow-up-right ms-auto small text-body-secondary"></i>
                         </a>
@@ -81,11 +89,12 @@
                             <i class="bi bi-body-text me-1"></i>Посмотреть текст целиком
                         </button>
                     {% endif %}
-                </div></div>
+                </div>
             </div>
 
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            {# Что извлечено #}
+            <div class="col-lg-6">
+                <div class="p-3 rounded-3 bg-body-tertiary h-100">
                     <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Что извлечено</div>
                     {% if inquiry.paramRows is empty %}
                         <div class="text-body-secondary small fst-italic">{{ processing ? 'Ещё не распознаны.' : 'Параметры не распознаны.' }}</div>
@@ -97,7 +106,7 @@
                             {% endfor %}
                         </dl>
                     {% endif %}
-                    {% if canEdit and inquiry.statusValue in ['matched', 'failed'] %}
+                    {% if canEdit and inquiry.statusValue in ['recognized', 'failed'] %}
                         <button type="button" class="btn btn-sm btn-outline-primary mt-2"
                                 data-controller="inquiry-edit-modal"
                                 data-inquiry-edit-modal-endpoint-value="{{ path('app_cabinet_inquiry_edit', {id: inquiry.id}) }}"
@@ -105,20 +114,45 @@
                             <i class="bi bi-sliders me-1"></i>Исправить параметры
                         </button>
                     {% endif %}
-                </div></div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                    <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Подобрано{% if inquiry.answerTotal is not null %} · {{ inquiry.answerTotal }}{% endif %}</div>
-                    {% for s in inquiry.systems %}
-                        <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-body-tertiary mb-1"><span class="fw-semibold text-truncate">{{ s.label }}</span></div>
-                    {% else %}
-                        <div class="text-body-secondary small fst-italic">{{ processing ? 'Идёт подбор…' : 'Систем нет.' }}</div>
-                    {% endfor %}
-                </div></div>
+                </div>
             </div>
         </div>
+
+        {# Комментарий инженера — свободная заметка, редактируется в любой момент. #}
+        {% if canEdit %}
+            <div class="mt-3 p-3 rounded-3 bg-body-tertiary">
+                <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Комментарий</div>
+                <form method="post" action="{{ path('app_cabinet_inquiry_comment', {id: inquiry.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('comment') }}">
+                    <textarea name="comment" class="form-control form-control-sm mb-2" rows="3" maxlength="2000"
+                              placeholder="Рабочая заметка по запросу (перезвонил, контекст, решение)…">{{ inquiry.comment }}</textarea>
+                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-save me-1"></i>Сохранить комментарий</button>
+                </form>
+            </div>
+        {% endif %}
+
+        {# Подобрано — ЖИВОЙ прогон распознанных параметров по каталогу (не снимок): полные карточки
+           систем как в списке (состав по слоям, соответствие, DFT), постранично «Показать ещё».
+           Клик по карточке/слою — ленивое превью (те же entity-preview + coating-preview-loader).
+           canEdit=false — без кебаба правок систем. results=null у принятого/проваленного. #}
+        {% if results and results.total > 0 %}
+            <div class="mt-3 p-3 rounded-3 bg-body-tertiary">
+                <div class="text-body-secondary text-uppercase small fw-semibold mb-2" style="letter-spacing:.05em">Подобрано · {{ results.total }}</div>
+                <div data-controller="entity-preview coating-preview-loader"
+                     data-entity-preview-endpoint-value="{{ path('app_cabinet_coating_system_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}"
+                     data-coating-preview-loader-endpoint-value="{{ path('app_cabinet_coating_coating_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
+                    {% include 'components/infinite_list.html.twig' with {
+                        items_template: 'cabinet/coating/coating_system/_list_cards.html.twig',
+                        items_params: {items: results.items, canEdit: false},
+                        total_pages: results.pages(),
+                        base_url: path('app_cabinet_inquiry_results', {id: inquiry.id}),
+                        wrapper_class: 'ecard-grid',
+                    } only %}
+                </div>
+            </div>
+        {% elseif results %}
+            <div class="mt-3 p-3 rounded-3 bg-body-tertiary text-body-secondary small fst-italic">Подбор не дал ни одной системы — уточните параметры.</div>
+        {% endif %}
     </div>
 
     {% include 'components/delete_modal.html.twig' %}

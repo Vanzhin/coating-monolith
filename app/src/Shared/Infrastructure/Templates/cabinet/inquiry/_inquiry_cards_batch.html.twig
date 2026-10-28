@@ -2,10 +2,10 @@
    страницы и ListInquiriesAction в режиме ?partial=1 для догрузки. Кебаб: Перезапустить (POST,
    received/failed) + Удалить (через общий #deleteModal, data-bs-url). #}
 {% set canEdit = canEdit|default(false) %}
-{% set statusBadge = {received: 'secondary', recognized: 'secondary', matched: 'primary', approved: 'success', failed: 'danger'} %}
+{% set statusBadge = {received: 'secondary', recognized: 'primary', approved: 'success', failed: 'danger'} %}
 
 {% for item in items %}
-    <div class="ecard">
+    <div class="ecard ecard--inquiry">
         <a href="{{ path('app_cabinet_inquiry_show', {id: item.id}) }}"
            class="ecard-media text-decoration-none{{ item.statusValue == 'approved' ? ' is-ok' : '' }}"
            aria-label="Открыть запрос">
@@ -46,7 +46,6 @@
                 <span class="badge rounded-pill text-bg-{{ statusBadge[item.statusValue] ?? 'secondary' }}">{{ item.statusLabel }}</span>
                 <span>{{ item.typeLabel }}</span>
                 <span>· {{ item.createdAt|date('d.m.Y H:i') }}</span>
-                {% if item.answerTotal is not null %}<span>· подобрано {{ item.answerTotal }}</span>{% endif %}
             </div>
         </div>
     </div>

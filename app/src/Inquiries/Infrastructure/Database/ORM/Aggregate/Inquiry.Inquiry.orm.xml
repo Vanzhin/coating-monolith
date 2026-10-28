@@ -17,9 +17,9 @@
                enum-type="App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus"/>
         <field name="recognizedParameters" type="inquiry_recognized_parameters" column="recognized_parameters" nullable="true"/>
         <field name="parameterSource" type="inquiry_parameter_source" column="parameter_source" nullable="true"/>
-        <field name="answer" type="inquiry_answer_snapshot" column="answer" nullable="true"/>
         <field name="verification" type="inquiry_verification" column="verification" nullable="true"/>
         <field name="failureReason" type="text" column="failure_reason" nullable="true"/>
+        <field name="comment" type="text" column="comment"/>
         <field name="warnings" type="json" column="warnings"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at"/>

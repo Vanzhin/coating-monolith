@@ -31,7 +31,6 @@ doctrine:
             compliance_instruction_details: App\Compliance\Infrastructure\Database\DBAL\InstructionDetailsType
             inquiry_recognized_parameters: App\Inquiries\Infrastructure\Database\DBAL\RecognizedParametersType
             inquiry_parameter_source: App\Inquiries\Infrastructure\Database\DBAL\ParameterSourceType
-            inquiry_answer_snapshot: App\Inquiries\Infrastructure\Database\DBAL\AnswerSnapshotType
             inquiry_verification: App\Inquiries\Infrastructure\Database\DBAL\VerificationType
         mapping_types:
             jsonb: json

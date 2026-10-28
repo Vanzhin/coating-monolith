@@ -85,6 +85,26 @@ final class InquiryWebFlowTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function test_status_endpoint_reports_processing(): void
+    {
+        $client = $this->loggedInAdminClient();
+
+        $crawler = $client->request('GET', '/cabinet/inquiry/new');
+        $token = $crawler->filter('input[name="_token"]')->attr('value');
+        $client->request('POST', '/cabinet/inquiry', ['text' => 'статус-поллинг', '_token' => $token]);
+        $location = (string) $client->getResponse()->headers->get('Location');
+
+        $client->request('GET', $location.'/status');
+        self::assertResponseIsSuccessful();
+        $body = json_decode((string) $client->getResponse()->getContent(), true);
+        $data = $body['data'] ?? $body; // общий JSON-конверт {result,status,data,message}
+        self::assertTrue($data['processing']);
+        self::assertSame('received', $data['status']);
+
+        $client->request('GET', '/cabinet/inquiry/'.\Symfony\Component\Uid\Uuid::v4()->toRfc4122().'/status');
+        self::assertResponseStatusCodeSame(404);
+    }
+
     private function loggedInAdminClient(): KernelBrowser
     {
         self::ensureKernelShutdown();

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Inquiries\Application\Service\SystemSelection;
 
-use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
-use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Inquiries\Application\DTO\AssembledText;
 use App\Inquiries\Application\DTO\CacheHit;
 use App\Inquiries\Application\DTO\ChemicalResistanceParams;
@@ -15,7 +13,6 @@ use App\Inquiries\Application\DTO\ExtractionResult;
 use App\Inquiries\Application\DTO\InquiryText;
 use App\Inquiries\Application\DTO\IntRangeDto;
 use App\Inquiries\Application\DTO\ThermalParams;
-use App\Inquiries\Application\Exception\CoatingSearchFailedException;
 use App\Inquiries\Application\Exception\EmptyInquiryTextException;
 use App\Inquiries\Application\Exception\ParameterExtractionFailedException;
 use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
@@ -25,28 +22,25 @@ use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Port\SubstanceResolver;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionParameterMapper;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionProcessor;
-use App\Inquiries\Application\Service\SystemSelection\SystemSelectionSearch;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
-use App\Shared\Application\Query\QueryBusInterface;
-use App\Shared\Application\Query\QueryInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 final class SystemSelectionProcessorTest extends TestCase
 {
-    public function test_cache_miss_runs_model_maps_and_matches(): void
+    public function test_cache_miss_runs_model_maps_and_recognizes(): void
     {
         $inquiry = $this->inquiry();
-        $processor = $this->processor(hit: null, assemblerWarnings: ['Файл «спека.pdf» — скан'], total: 2);
+        $processor = $this->processor(hit: null, assemblerWarnings: ['Файл «спека.pdf» — скан']);
 
         $processor->process($inquiry);
 
-        self::assertSame(InquiryStatus::Matched, $inquiry->getStatus());
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
 
         $source = $inquiry->getParameterSource();
         self::assertNotNull($source);
@@ -58,16 +52,9 @@ final class SystemSelectionProcessorTest extends TestCase
         self::assertSame(['sub-eth'], $params->toArray()['substanceIds']);
         self::assertSame(120, $params->toArray()['thermalTemperature']); // пик 120 → лимит выживания
 
-        $answer = $inquiry->getAnswer();
-        self::assertNotNull($answer);
-        self::assertSame(2, $answer->total);
-        self::assertCount(2, $answer->systems());
-        self::assertSame('sys-0', $answer->systems()[0]->id);
-
         $warnings = $inquiry->getWarnings();
         self::assertContains('Файл «спека.pdf» — скан', $warnings);
         self::assertTrue($this->anyContains($warnings, 'уайт-спирит'));
-        self::assertTrue($this->anyContains($warnings, 'Интергард'));
         self::assertTrue($this->anyContains($warnings, 'Отброшены'));
     }
 
@@ -75,11 +62,11 @@ final class SystemSelectionProcessorTest extends TestCase
     {
         $inquiry = $this->inquiry();
         $hit = new CacheHit(new RecognizedParameters(['search' => 'этанол', 'substanceIds' => ['sub-eth']]), 'src-123');
-        $processor = $this->processor(hit: $hit, assemblerWarnings: [], total: 1, failIfExtractorCalled: true);
+        $processor = $this->processor(hit: $hit, failIfExtractorCalled: true);
 
         $processor->process($inquiry);
 
-        self::assertSame(InquiryStatus::Matched, $inquiry->getStatus());
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
 
         $source = $inquiry->getParameterSource();
         self::assertNotNull($source);
@@ -90,16 +77,6 @@ final class SystemSelectionProcessorTest extends TestCase
             ['search' => 'этанол', 'substanceIds' => ['sub-eth']],
             $inquiry->getRecognizedParameters()?->toArray(),
         );
-    }
-
-    public function test_zero_results_adds_warning(): void
-    {
-        $inquiry = $this->inquiry();
-        $processor = $this->processor(hit: null, assemblerWarnings: [], total: 0);
-
-        $processor->process($inquiry);
-
-        self::assertTrue($this->anyContains($inquiry->getWarnings(), 'не дал ни одной'));
     }
 
     public function test_empty_text_throws_typed_error(): void
@@ -120,12 +97,6 @@ final class SystemSelectionProcessorTest extends TestCase
         $this->processor(emptyExtraction: true)->process($this->inquiry());
     }
 
-    public function test_search_failure_wraps_as_typed_error(): void
-    {
-        $this->expectException(CoatingSearchFailedException::class);
-        $this->processor(searchError: true)->process($this->inquiry());
-    }
-
     private function inquiry(): Inquiry
     {
         return new Inquiry(
@@ -142,12 +113,10 @@ final class SystemSelectionProcessorTest extends TestCase
     private function processor(
         ?CacheHit $hit = null,
         array $assemblerWarnings = [],
-        int $total = 2,
         bool $failIfExtractorCalled = false,
         string $assemblerText = 'собранный текст',
         bool $extractorError = false,
         bool $emptyExtraction = false,
-        bool $searchError = false,
     ): SystemSelectionProcessor {
         $assembler = new class($assemblerWarnings, $assemblerText) implements InquiryTextAssembler {
             /** @param list<string> $warnings */
@@ -205,22 +174,7 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        $queryBus = new class($this->searchResult($total), $searchError) implements QueryBusInterface {
-            public function __construct(private readonly SearchCoatingSystemsQueryResult $result, private readonly bool $error)
-            {
-            }
-
-            public function execute(QueryInterface $query): mixed
-            {
-                if ($this->error) {
-                    throw new \RuntimeException('поиск упал');
-                }
-
-                return $this->result;
-            }
-        };
-
-        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), new SystemSelectionSearch($queryBus));
+        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver));
     }
 
     private function emptyExtraction(): ExtractionResult
@@ -239,7 +193,7 @@ final class SystemSelectionProcessorTest extends TestCase
             minApplicationTimeAt20: null,
         );
 
-        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v1', 10, 5, 400), []);
+        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v2', 10, 5, 400), []);
     }
 
     private function extraction(): ExtractionResult
@@ -258,20 +212,7 @@ final class SystemSelectionProcessorTest extends TestCase
             minApplicationTimeAt20: new IntRangeDto(120, null),
         );
 
-        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v1', 1200, 300, 2600), ['непонятное']);
-    }
-
-    private function searchResult(int $total): SearchCoatingSystemsQueryResult
-    {
-        $items = [];
-        for ($i = 0; $i < $total; ++$i) {
-            $dto = new CoatingSystemDTO();
-            $dto->id = 'sys-'.$i;
-            $dto->title = 'Система '.$i;
-            $items[] = $dto;
-        }
-
-        return new SearchCoatingSystemsQueryResult($items, $total);
+        return new ExtractionResult($params, '{}', new ExtractionMetadata('llm:netangels', 'qwen', 'v2', 1200, 300, 2600), ['непонятное']);
     }
 
     /** @param list<string> $warnings */

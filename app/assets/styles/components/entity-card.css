@@ -94,6 +94,14 @@
 .ecard-grid--uniform .ecard-body { display: flex; flex-direction: column; }
 .ecard-grid--uniform .ecard-tags { margin-top: auto; }
 
+/* Карточка очереди запросов: детерминированная высота вне зависимости от длины заголовка —
+   заголовок максимум в 2 строки, мета (статус/тип/дата) прижата к низу. */
+.ecard--inquiry .ecard-body { display: flex; flex-direction: column; height: 100%; }
+.ecard--inquiry .ecard-title {
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ecard--inquiry .ecard-meta { margin-top: auto; }
+
 /* FAB создания (мобайл) — плавающая кнопка над таб-панелью. */
 .fab-create {
     position: fixed; right: 18px; bottom: calc(78px + var(--app-safe-bottom)); z-index: 1030;

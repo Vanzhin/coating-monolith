@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Infrastructure\Console;
 
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemDTO;
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
+use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQuery;
+use App\Coatings\Application\UseCase\Query\SearchCoatingSystems\SearchCoatingSystemsQueryResult;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionProcessor;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Factory\InquiryFactory;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\FileText\FileTextExtractor;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -33,6 +38,7 @@ final class ProcessInquirySmokeCommand extends Command
         private readonly InquiryFactory $factory,
         private readonly SystemSelectionProcessor $processor,
         private readonly FileTextExtractor $extractor,
+        private readonly QueryBusInterface $queryBus,
     ) {
         parent::__construct();
     }
@@ -69,14 +75,19 @@ final class ProcessInquirySmokeCommand extends Command
             $io->writeln((string) json_encode($source->details, \JSON_UNESCAPED_UNICODE));
         }
 
+        $params = $inquiry->getRecognizedParameters();
         $io->section('Распознанные параметры');
-        $io->writeln((string) json_encode($inquiry->getRecognizedParameters()?->toArray(), \JSON_UNESCAPED_UNICODE | \JSON_PRETTY_PRINT));
+        $io->writeln((string) json_encode($params?->toArray(), \JSON_UNESCAPED_UNICODE | \JSON_PRETTY_PRINT));
 
-        $answer = $inquiry->getAnswer();
-        $io->section(sprintf('Подобрано систем: %d', null !== $answer ? $answer->total : 0));
-        $systems = null !== $answer ? array_slice($answer->systems(), 0, 15) : [];
-        foreach ($systems as $system) {
-            $io->writeln(sprintf('  %s — %s', $system->id, $system->label));
+        // Подбор — живой прогон распознанных параметров по каталогу (не хранится в запросе).
+        if (null !== $params) {
+            /** @var SearchCoatingSystemsQueryResult $result */
+            $result = $this->queryBus->execute(SearchCoatingSystemsQuery::fromParameters(CoatingSystemsFilterInput::fromArray($params->toArray())));
+            $io->section(sprintf('Подобрано систем: %d', $result->total));
+            foreach (array_slice($result->items, 0, 15) as $system) {
+                \assert($system instanceof CoatingSystemDTO);
+                $io->writeln(sprintf('  %s — %s', $system->id, $system->title));
+            }
         }
 
         if ([] !== $inquiry->getWarnings()) {

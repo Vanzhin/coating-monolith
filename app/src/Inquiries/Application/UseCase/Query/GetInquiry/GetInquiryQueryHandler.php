@@ -20,7 +20,8 @@ use App\Shared\Infrastructure\Exception\ForbiddenException;
 /**
  * Карточка запроса для экрана. Доступ — только админ (capability). Имена вложений — из Shared/File;
  * параметры — человекочитаемыми подписями: Coatings описывает свои фасеты, вещества резолвятся в имена
- * через ChemicalResistance (всё через query-шину, домены чужие не трогаем). Текст вложений тут НЕ тянем.
+ * через ChemicalResistance (всё через query-шину, домены чужие не трогаем). Подобранные системы сюда
+ * НЕ входят — они живой результат параметров (GetInquiryResults), не состояние запроса.
  */
 final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
 {
@@ -50,7 +51,6 @@ final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
         }
 
         $params = $inquiry->getRecognizedParameters();
-        $answer = $inquiry->getAnswer();
 
         return new InquiryView(
             id: $inquiry->getId(),
@@ -60,10 +60,9 @@ final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
             rawText: $inquiry->getRawText(),
             attachments: $attachments,
             paramRows: null !== $params ? $this->describe($params->toArray()) : [],
-            answerTotal: $answer?->total,
-            systems: null !== $answer ? $answer->systems() : [],
             warnings: $inquiry->getWarnings(),
             failureReason: $inquiry->getFailureReason(),
+            comment: $inquiry->getComment(),
             sourceStrategyLabel: $inquiry->getParameterSource()?->strategy->label(),
             createdAt: $inquiry->getCreatedAt(),
         );

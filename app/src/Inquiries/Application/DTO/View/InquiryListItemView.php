@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Inquiries\Application\DTO\View;
 
 /**
- * Строка очереди запросов: статус + тип + краткое содержание (превью текста или число вложений) +
- * сколько подобрано + когда. Лёгкая — без распознанных параметров и снимка целиком.
+ * Строка очереди запросов: статус + тип + краткое содержание (превью текста или число вложений) + когда.
+ * Счётчик подобранного не держим — системы это живой результат параметров, не состояние запроса.
  */
 final readonly class InquiryListItemView
 {
@@ -16,7 +16,6 @@ final readonly class InquiryListItemView
         public string $statusValue,
         public string $statusLabel,
         public string $summary,
-        public ?int $answerTotal,
         public \DateTimeImmutable $createdAt,
     ) {
     }

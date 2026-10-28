@@ -6,6 +6,7 @@ namespace App\Inquiries\Infrastructure\Controller;
 
 use App\Inquiries\Application\DTO\View\InquiryView;
 use App\Inquiries\Application\UseCase\Query\GetInquiry\GetInquiryQuery;
+use App\Inquiries\Application\UseCase\Query\GetInquiryResults\GetInquiryResultsQuery;
 use App\Shared\Application\Query\QueryBusInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,8 +26,15 @@ final class ShowInquiryAction extends AbstractController
             throw $this->createNotFoundException('Запрос не найден.');
         }
 
+        // Первая страница подобранных систем — ЖИВОЙ прогон параметров. Только для распознанных/
+        // одобренных (у принятого параметров ещё нет, у проваленного — провал). Дальше догрузка — infinite_list.
+        $results = in_array($view->statusValue, ['recognized', 'approved'], true)
+            ? $this->queryBus->execute(new GetInquiryResultsQuery($id, 1))
+            : null;
+
         return $this->render('cabinet/inquiry/show.html.twig', [
             'inquiry' => $view,
+            'results' => $results,
             'canEdit' => $this->isGranted('ROLE_ADMIN'),
         ]);
     }

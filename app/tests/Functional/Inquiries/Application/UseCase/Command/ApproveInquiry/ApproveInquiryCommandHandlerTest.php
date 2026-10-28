@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Inquiries\Application\UseCase\Command\ApproveInquiry;
 
 use App\Inquiries\Application\UseCase\Command\ApproveInquiry\ApproveInquiryCommand;
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
@@ -42,7 +41,6 @@ final class ApproveInquiryCommandHandlerTest extends KernelTestCase
         $now = new \DateTimeImmutable();
         $inquiry = $factory->create(InquiryType::SystemSelection, 'owner', 'текст', new StringCollection(), $now);
         $inquiry->recognize(new RecognizedParameters(['search' => 'этанол']), new ParameterSource(ParameterStrategy::Model), $now);
-        $inquiry->match(new AnswerSnapshot(1), $now);
         $repo->add($inquiry);
         $id = $inquiry->getId();
 

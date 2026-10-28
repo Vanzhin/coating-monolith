@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Inquiries\Domain\Aggregate\Inquiry;
 
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
-use App\Inquiries\Domain\Aggregate\Inquiry\FoundSystem;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
@@ -44,7 +42,7 @@ final class InquiryTest extends TestCase
         self::assertSame($id->toRfc4122(), $inquiry->getId());
     }
 
-    public function test_happy_lifecycle_recognize_match_approve(): void
+    public function test_happy_lifecycle_recognize_approve(): void
     {
         $inquiry = $this->received();
 
@@ -56,21 +54,17 @@ final class InquiryTest extends TestCase
         self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
         self::assertSame(ParameterStrategy::Model, $inquiry->getParameterSource()?->strategy);
 
-        $inquiry->match(new AnswerSnapshot(2, new FoundSystem('id1', 'Система 1'), new FoundSystem('id2', 'Система 2')), $this->now());
-        self::assertSame(InquiryStatus::Matched, $inquiry->getStatus());
-        self::assertSame(2, $inquiry->getAnswer()?->total);
-
         $inquiry->approve('engineer-ulid', $this->now());
         self::assertTrue($inquiry->isApproved());
         self::assertSame('engineer-ulid', $inquiry->getVerification()?->verifiedBy);
     }
 
-    public function test_premature_match_rejected(): void
+    public function test_premature_approve_rejected(): void
     {
         $inquiry = $this->received();
 
         $this->expectException(AppException::class);
-        $inquiry->match(new AnswerSnapshot(0), $this->now());
+        $inquiry->approve('engineer', $this->now());
     }
 
     public function test_approved_is_frozen(): void
@@ -90,7 +84,7 @@ final class InquiryTest extends TestCase
         self::assertSame('Модель недоступна', $inquiry->getFailureReason());
     }
 
-    public function test_failed_can_be_retried(): void
+    public function test_failed_can_be_retried_by_recognizing(): void
     {
         $inquiry = $this->received();
         $inquiry->fail('timeout', $this->now());
@@ -103,14 +97,12 @@ final class InquiryTest extends TestCase
     {
         $inquiry = $this->received();
         $inquiry->recognize(new RecognizedParameters(['standard' => 'iso12944']), new ParameterSource(ParameterStrategy::Model), $this->now());
-        $inquiry->match(new AnswerSnapshot(5), $this->now());
 
-        // Инженер поправил параметры → Matched → Recognized (Manual) → переподбор → Matched.
+        // Инженер поправил параметры на распознанном → перераспознавание (Recognized → Recognized, Manual).
         $inquiry->recognize(new RecognizedParameters(['standard' => 'iso12944', 'environment' => 'immersion']), new ParameterSource(ParameterStrategy::Manual), $this->now());
         self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
         self::assertSame(ParameterStrategy::Manual, $inquiry->getParameterSource()?->strategy);
 
-        $inquiry->match(new AnswerSnapshot(1, new FoundSystem('id1', 'Система 1')), $this->now());
         $inquiry->approve(null, $this->now());
         self::assertTrue($inquiry->isApproved());
     }
@@ -133,16 +125,22 @@ final class InquiryTest extends TestCase
         self::assertNull($inquiry->getFailureReason());
     }
 
-    public function test_recognize_clears_prior_answer_on_edit(): void
+    public function test_set_comment_editable_even_when_approved(): void
+    {
+        $inquiry = $this->approved();
+        self::assertSame('', $inquiry->getComment());
+
+        $inquiry->setComment('  перезвонил клиенту, ждём ответа  ', $this->now());
+
+        self::assertSame('перезвонил клиенту, ждём ответа', $inquiry->getComment());
+    }
+
+    public function test_set_comment_rejects_over_limit(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
-        $inquiry->match(new AnswerSnapshot(3, new FoundSystem('id1', 'Система 1')), $this->now());
 
-        // инженер поправил параметры: Matched → Recognized — старый снимок ответа сброшен
-        $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Manual), $this->now());
-
-        self::assertNull($inquiry->getAnswer());
+        $this->expectException(AppException::class);
+        $inquiry->setComment(str_repeat('я', 2001), $this->now());
     }
 
     public function test_note_warnings_replaces(): void
@@ -158,7 +156,6 @@ final class InquiryTest extends TestCase
     {
         $inquiry = $this->received();
         $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
-        $inquiry->match(new AnswerSnapshot(2, new FoundSystem('id1', 'Система 1')), $this->now());
         $inquiry->fail('timeout', $this->now());
         $inquiry->pullEvents(); // слить событие создания
 
@@ -166,7 +163,6 @@ final class InquiryTest extends TestCase
 
         self::assertSame(InquiryStatus::Received, $inquiry->getStatus());
         self::assertNull($inquiry->getFailureReason());
-        self::assertNull($inquiry->getAnswer());
         self::assertNull($inquiry->getRecognizedParameters());
         self::assertNull($inquiry->getParameterSource());
 
@@ -186,11 +182,10 @@ final class InquiryTest extends TestCase
         self::assertCount(1, $inquiry->pullEvents());
     }
 
-    public function test_retry_rejected_on_matched(): void
+    public function test_retry_rejected_on_recognized(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
-        $inquiry->match(new AnswerSnapshot(0), $this->now());
+        $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
 
         $this->expectException(AppException::class);
         $inquiry->requestReprocessing($this->now());
@@ -211,7 +206,6 @@ final class InquiryTest extends TestCase
     {
         $inquiry = $this->received();
         $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
-        $inquiry->match(new AnswerSnapshot(0), $this->now());
         $inquiry->approve('engineer', $this->now());
 
         return $inquiry;

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Inquiries\Domain\Aggregate\Inquiry;
 
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
-use App\Inquiries\Domain\Aggregate\Inquiry\FoundSystem;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
@@ -37,15 +35,6 @@ final class ValueObjectRoundTripTest extends TestCase
         self::assertSame(ParameterStrategy::Model, ParameterSource::fromArray(['strategy' => 'nonsense'])->strategy);
     }
 
-    public function test_answer_snapshot(): void
-    {
-        $vo = new AnswerSnapshot(3, new FoundSystem('id1', 'Система 1'), new FoundSystem('id2', 'Система 2'));
-
-        $restored = AnswerSnapshot::fromArray($vo->jsonSerialize());
-        self::assertSame($vo->jsonSerialize(), $restored->jsonSerialize());
-        self::assertCount(2, $restored->systems());
-    }
-
     public function test_verification(): void
     {
         $vo = new Verification('engineer-ulid', new \DateTimeImmutable('2026-01-02 12:30:00'));
@@ -54,18 +43,6 @@ final class ValueObjectRoundTripTest extends TestCase
     }
 
     // --- defensive-ветки fromArray: битый/пустой jsonb деградирует, но НЕ роняет загрузку ---
-
-    public function test_answer_snapshot_tolerates_garbage(): void
-    {
-        $empty = AnswerSnapshot::fromArray([]);
-        self::assertSame(0, $empty->total);
-        self::assertSame([], $empty->systems());
-
-        // не-int total игнорируется, не-массивы в systems пропускаются
-        $garbage = AnswerSnapshot::fromArray(['total' => 'много', 'systems' => ['нет', ['id' => 'x', 'label' => 'y']]]);
-        self::assertSame(0, $garbage->total);
-        self::assertCount(1, $garbage->systems());
-    }
 
     public function test_parameter_source_tolerates_missing_keys(): void
     {

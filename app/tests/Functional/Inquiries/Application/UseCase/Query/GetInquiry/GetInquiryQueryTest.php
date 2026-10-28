@@ -10,7 +10,6 @@ use App\ChemicalResistance\Domain\Repository\SubstanceRepositoryInterface;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Inquiries\Application\DTO\View\InquiryView;
 use App\Inquiries\Application\UseCase\Query\GetInquiry\GetInquiryQuery;
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
@@ -55,7 +54,6 @@ final class GetInquiryQueryTest extends KernelTestCase
             substanceTemperature: 40,
         );
         $inquiry->recognize(new RecognizedParameters($input->toArray()), new ParameterSource(ParameterStrategy::Model), $now);
-        $inquiry->match(new AnswerSnapshot(0), $now);
         $repo->add($inquiry);
 
         $view = $bus->execute(new GetInquiryQuery($inquiry->getId()));

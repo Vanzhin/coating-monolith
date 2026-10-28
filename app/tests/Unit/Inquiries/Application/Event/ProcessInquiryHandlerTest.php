@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Inquiries\Application\Event;
 
 use App\Inquiries\Application\Event\ProcessInquiryHandler;
 use App\Inquiries\Application\Service\InquiryProcessor;
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
@@ -31,7 +30,7 @@ final class ProcessInquiryHandlerTest extends TestCase
 
         $this->handler([$this->successProcessor()], $repo)(new InquirySubmitted($inquiry->getId()));
 
-        self::assertSame(InquiryStatus::Matched, $inquiry->getStatus());
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
         self::assertSame(1, $repo->saveCount);
     }
 
@@ -84,15 +83,14 @@ final class ProcessInquiryHandlerTest extends TestCase
     public function test_already_processed_is_skipped(): void
     {
         $inquiry = $this->received();
-        $now = new \DateTimeImmutable();
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $now);
-        $inquiry->match(new AnswerSnapshot(0), $now);
+        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
         $repo = new InMemoryInquiryRepository($inquiry);
 
+        // Диспетчер гоняет только Received; распознанный уже обработан — процессор звать нельзя.
         // Процессор роняет тест, если его позвали, — доказываем, что обработка пропущена.
         $this->handler([$this->throwingProcessor()], $repo)(new InquirySubmitted($inquiry->getId()));
 
-        self::assertSame(InquiryStatus::Matched, $inquiry->getStatus());
+        self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
         self::assertSame(0, $repo->saveCount);
     }
 
@@ -126,9 +124,7 @@ final class ProcessInquiryHandlerTest extends TestCase
 
             public function process(Inquiry $inquiry): void
             {
-                $now = new \DateTimeImmutable();
-                $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $now);
-                $inquiry->match(new AnswerSnapshot(0), $now);
+                $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
             }
         };
     }

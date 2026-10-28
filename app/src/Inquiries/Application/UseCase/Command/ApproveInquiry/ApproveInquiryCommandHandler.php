@@ -13,7 +13,7 @@ use App\Shared\Infrastructure\Exception\ForbiddenException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Одобряет запрос (Matched → Approved, заморозка). После одобрения индексируем его как топливо кэша
+ * Одобряет запрос (Recognized → Approved, заморозка). После одобрения индексируем его как топливо кэша
  * (сейчас no-op; настоящая проекция — задачей кэша). Инвариант перехода статуса — в домене.
  */
 final readonly class ApproveInquiryCommandHandler implements CommandHandlerInterface

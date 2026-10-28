@@ -48,7 +48,7 @@ final class ReprocessInquiryCommandHandlerTest extends KernelTestCase
 
         $loaded = $repo->findOneById($id);
         self::assertNotNull($loaded);
-        self::assertSame(InquiryStatus::Matched, $loaded->getStatus());
+        self::assertSame(InquiryStatus::Recognized, $loaded->getStatus());
         self::assertSame(ParameterStrategy::Manual, $loaded->getParameterSource()?->strategy);
         self::assertSame('immersion', $loaded->getRecognizedParameters()?->toArray()['environment'] ?? null);
         self::assertNull($loaded->getFailureReason());

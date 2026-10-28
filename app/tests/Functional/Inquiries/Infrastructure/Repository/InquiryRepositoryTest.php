@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Inquiries\Infrastructure\Repository;
 
-use App\Inquiries\Domain\Aggregate\Inquiry\AnswerSnapshot;
-use App\Inquiries\Domain\Aggregate\Inquiry\FoundSystem;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
@@ -47,8 +45,8 @@ final class InquiryRepositoryTest extends KernelTestCase
             new ParameterSource(ParameterStrategy::Model, ['model' => 'qwen', 'tokensIn' => 1200]),
             $now,
         );
-        $inquiry->match(new AnswerSnapshot(2, new FoundSystem('id1', 'Система 1'), new FoundSystem('id2', 'Система 2')), $now);
         $inquiry->noteWarnings('вещество «уайт-спирит» не в реестре — в подборе не учтено');
+        $inquiry->setComment('перезвонил клиенту', $now);
         $inquiry->approve('engineer-ulid-9', $now);
 
         $id = $inquiry->getId();
@@ -75,17 +73,12 @@ final class InquiryRepositoryTest extends KernelTestCase
         self::assertSame(ParameterStrategy::Model, $source->strategy);
         self::assertSame('qwen', $source->details['model'] ?? null);
 
-        $answer = $loaded->getAnswer();
-        self::assertNotNull($answer);
-        self::assertSame(2, $answer->total);
-        self::assertCount(2, $answer->systems());
-        self::assertSame('id1', $answer->systems()[0]->id);
-
         $verification = $loaded->getVerification();
         self::assertNotNull($verification);
         self::assertSame('engineer-ulid-9', $verification->verifiedBy);
 
         self::assertSame(['вещество «уайт-спирит» не в реестре — в подборе не учтено'], $loaded->getWarnings());
+        self::assertSame('перезвонил клиенту', $loaded->getComment());
     }
 
     public function test_find_by_invalid_id_returns_null(): void

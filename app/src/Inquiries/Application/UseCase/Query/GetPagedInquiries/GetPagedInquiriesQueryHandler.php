@@ -96,7 +96,6 @@ final readonly class GetPagedInquiriesQueryHandler implements QueryHandlerInterf
             statusValue: $inquiry->getStatus()->value,
             statusLabel: $inquiry->getStatus()->label(),
             summary: $summary,
-            answerTotal: $inquiry->getAnswer()?->total,
             createdAt: $inquiry->getCreatedAt(),
         );
     }

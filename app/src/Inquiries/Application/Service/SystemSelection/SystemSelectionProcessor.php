@@ -7,8 +7,8 @@ namespace App\Inquiries\Application\Service\SystemSelection;
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Inquiries\Application\DTO\InquiryText;
 use App\Inquiries\Application\Exception\EmptyInquiryTextException;
-use App\Inquiries\Application\Exception\InquiryProcessingException;
 use App\Inquiries\Application\Exception\ParameterExtractionFailedException;
+use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
 use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
@@ -20,10 +20,11 @@ use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
 
 /**
- * Движок подбора систем. Только ОРКЕСТРАЦИЯ: текст собирает ассемблер, параметры даёт кэш ИЛИ
- * модель+маппер, поиск+снимок — общий SystemSelectionSearch (тот же путь, что у ручного переподбора).
- * Гейты: пустой текст → не зовём модель; пустые параметры / ошибка поиска → типизированные ошибки
- * из search. Мутирует агрегат; сохранение/отказ — на диспетчере.
+ * Движок РАСПОЗНАВАНИЯ параметров подбора. Только оркестрация: текст собирает ассемблер, параметры даёт
+ * кэш ИЛИ модель+маппер. Поиск систем тут НЕ гоняем — подобранные системы это живой результат прогона
+ * распознанных параметров по каталогу (считается на показе карточки), не состояние запроса. Гейты:
+ * пустой текст → не зовём модель; ошибка модели / пустые параметры (ни одной оси) → типизированные
+ * ошибки. Мутирует агрегат (recognize); сохранение/отказ — на диспетчере.
  */
 final readonly class SystemSelectionProcessor implements InquiryProcessor
 {
@@ -32,7 +33,6 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         private ApprovedParameterCache $cache,
         private InquiryParametersExtractor $extractor,
         private SystemSelectionParameterMapper $mapper,
-        private SystemSelectionSearch $search,
     ) {
     }
 
@@ -83,21 +83,15 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
             ]);
         }
 
-        $inquiry->recognize($parameters, $source, $now);
-
-        try {
-            $answer = $this->search->search(CoatingSystemsFilterInput::fromArray($parameters->toArray()));
-        } catch (InquiryProcessingException $e) {
-            // Пустые параметры / сбой поиска — сохранить накопленные предупреждения перед отказом.
+        // Гейт 2: распознали ли хоть одну ось фильтра? Пусто → подбор-по-всему вернул бы весь каталог —
+        // это не распознавание, а провал (инженер вбивает параметры вручную).
+        if (!CoatingSystemsFilterInput::fromArray($parameters->toArray())->hasAnyConstraint()) {
             $inquiry->noteWarnings(...$warnings);
 
-            throw $e;
+            throw new ParametersNotRecognizedException();
         }
 
-        $inquiry->match($answer, $now);
-        if (0 === $answer->total) {
-            $warnings[] = 'Подбор не дал ни одной системы — проверьте параметры.';
-        }
+        $inquiry->recognize($parameters, $source, $now);
         $inquiry->noteWarnings(...$warnings);
     }
 }
