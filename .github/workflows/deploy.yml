@@ -189,7 +189,7 @@ jobs:
 
             # Ящик приёма запросов на подбор (IMAP, Inquiries). Логин и пароль — secret.
             # host/port/encryption/folder НЕ пишем — у них боевые дефолты в services.yaml
-            # (mail.netangels.ru/143/tls/INBOX); пустой логин → ImapAccount::isConfigured()=false → проход молча выходит.
+            # (mail.netangels.ru/143/starttls/INBOX); пустой логин → ImapAccount::isConfigured()=false → проход молча выходит.
             INQUIRY_IMAP_USER=${{ secrets.INQUIRY_IMAP_USER }}
             INQUIRY_IMAP_PASSWORD=${{ secrets.INQUIRY_IMAP_PASSWORD }}
             EOF
