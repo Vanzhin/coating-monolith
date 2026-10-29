@@ -186,6 +186,12 @@ jobs:
             # NetAngels AI (извлечение параметров запроса, Inquiries). Адрес/модель — дефолты
             # в http_client.yaml; боевой ключ — secret. Пусто → извлечение отключено.
             NETANGELS_API_KEY=${{ secrets.NETANGELS_API_KEY }}
+
+            # Ящик приёма запросов на подбор (IMAP, Inquiries). Логин и пароль — secret.
+            # host/port/encryption/folder НЕ пишем — у них боевые дефолты в services.yaml
+            # (mail.netangels.ru/143/tls/INBOX); пустой логин → ImapAccount::isConfigured()=false → проход молча выходит.
+            INQUIRY_IMAP_USER=${{ secrets.INQUIRY_IMAP_USER }}
+            INQUIRY_IMAP_PASSWORD=${{ secrets.INQUIRY_IMAP_PASSWORD }}
             EOF
 
             # Webpack assets — собираем в одноразовом node:22-alpine контейнере.
