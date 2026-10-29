@@ -41,7 +41,7 @@ final class InquiryRepositoryTest extends KernelTestCase
             $now,
         );
         $inquiry->recognize(
-            new RecognizedParameters(['environment' => 'immersion', 'substanceIds' => ['s1'], 'thermalTemperature' => 40]),
+            RecognizedParameters::recognized(['environment' => 'immersion', 'substanceIds' => ['s1'], 'thermalTemperature' => 40]),
             new ParameterSource(ParameterStrategy::Model, ['model' => 'qwen', 'tokensIn' => 1200]),
             $now,
         );

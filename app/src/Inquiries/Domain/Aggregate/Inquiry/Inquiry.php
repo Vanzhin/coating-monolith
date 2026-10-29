@@ -91,7 +91,7 @@ class Inquiry extends Aggregate
      */
     public function editParameters(array $values, \DateTimeImmutable $now): void
     {
-        $base = $this->recognizedParameters ?? new RecognizedParameters([]);
+        $base = $this->recognizedParameters ?? RecognizedParameters::recognized([]);
         $this->recognizedParameters = $base->withManualEdits($values);
         if (null === $this->parameterSource) {
             $this->parameterSource = new ParameterSource(ParameterStrategy::Manual);

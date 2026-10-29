@@ -53,7 +53,7 @@ final class GetInquiryQueryTest extends KernelTestCase
             substanceIds: [$substanceId->toRfc4122()],
             substanceTemperature: 40,
         );
-        $inquiry->recognize(new RecognizedParameters($input->toArray()), new ParameterSource(ParameterStrategy::Model), $now);
+        $inquiry->recognize(RecognizedParameters::recognized($input->toArray()), new ParameterSource(ParameterStrategy::Model), $now);
         $repo->add($inquiry);
 
         $view = $bus->execute(new GetInquiryQuery($inquiry->getId()));

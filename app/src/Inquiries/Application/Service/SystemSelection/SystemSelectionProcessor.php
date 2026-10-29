@@ -72,7 +72,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
             if ([] !== $extraction->droppedValues) {
                 $warnings[] = 'Отброшены значения вне справочника: '.implode(', ', $extraction->droppedValues);
             }
-            $parameters = new RecognizedParameters($mapped->input->toArray());
+            $parameters = RecognizedParameters::recognized($mapped->input->toArray());
             $source = new ParameterSource(ParameterStrategy::Model, [
                 'extractor' => $extraction->metadata->strategy,
                 'model' => $extraction->metadata->model,

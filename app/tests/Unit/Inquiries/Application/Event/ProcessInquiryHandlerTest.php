@@ -83,7 +83,7 @@ final class ProcessInquiryHandlerTest extends TestCase
     public function test_already_processed_is_skipped(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
+        $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
         $repo = new InMemoryInquiryRepository($inquiry);
 
         // Диспетчер гоняет только Received; распознанный уже обработан — процессор звать нельзя.
@@ -124,7 +124,7 @@ final class ProcessInquiryHandlerTest extends TestCase
 
             public function process(Inquiry $inquiry): void
             {
-                $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
+                $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Model), new \DateTimeImmutable());
             }
         };
     }

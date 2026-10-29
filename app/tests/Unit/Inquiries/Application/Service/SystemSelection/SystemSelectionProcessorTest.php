@@ -62,7 +62,7 @@ final class SystemSelectionProcessorTest extends TestCase
     public function test_cache_hit_skips_model_and_marks_cache(): void
     {
         $inquiry = $this->inquiry();
-        $hit = new CacheHit(new RecognizedParameters(['search' => 'этанол', 'substanceIds' => ['sub-eth']]), 'src-123');
+        $hit = new CacheHit(RecognizedParameters::recognized(['search' => 'этанол', 'substanceIds' => ['sub-eth']]), 'src-123');
         $processor = $this->processor(hit: $hit, failIfExtractorCalled: true);
 
         $processor->process($inquiry);

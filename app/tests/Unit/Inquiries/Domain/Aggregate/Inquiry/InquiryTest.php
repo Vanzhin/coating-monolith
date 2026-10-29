@@ -47,7 +47,7 @@ final class InquiryTest extends TestCase
         $inquiry = $this->received();
 
         $inquiry->recognize(
-            new RecognizedParameters(['environment' => 'immersion', 'substanceIds' => ['s1']]),
+            RecognizedParameters::recognized(['environment' => 'immersion', 'substanceIds' => ['s1']]),
             new ParameterSource(ParameterStrategy::Model, ['model' => 'qwen']),
             $this->now(),
         );
@@ -72,7 +72,7 @@ final class InquiryTest extends TestCase
         $inquiry = $this->approved();
 
         $this->expectException(AppException::class);
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Manual), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Manual), $this->now());
     }
 
     public function test_fail_records_reason(): void
@@ -89,17 +89,17 @@ final class InquiryTest extends TestCase
         $inquiry = $this->received();
         $inquiry->fail('timeout', $this->now());
 
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Model), $this->now());
         self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
     }
 
     public function test_engineer_edit_loop_reparametrizes(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters(['standard' => 'iso12944']), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized(['standard' => 'iso12944']), new ParameterSource(ParameterStrategy::Model), $this->now());
 
         // Инженер поправил параметры на распознанном → перераспознавание (Recognized → Recognized, Manual).
-        $inquiry->recognize(new RecognizedParameters(['standard' => 'iso12944', 'environment' => 'immersion']), new ParameterSource(ParameterStrategy::Manual), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized(['standard' => 'iso12944', 'environment' => 'immersion']), new ParameterSource(ParameterStrategy::Manual), $this->now());
         self::assertSame(InquiryStatus::Recognized, $inquiry->getStatus());
         self::assertSame(ParameterStrategy::Manual, $inquiry->getParameterSource()?->strategy);
 
@@ -111,7 +111,7 @@ final class InquiryTest extends TestCase
     {
         $inquiry = $this->received();
         $inquiry->recognize(
-            new RecognizedParameters(['environment' => 'immersion', 'standard' => 'iso12944']),
+            RecognizedParameters::recognized(['environment' => 'immersion', 'standard' => 'iso12944']),
             new ParameterSource(ParameterStrategy::Model, ['model' => 'qwen']),
             $this->now(),
         );
@@ -154,7 +154,7 @@ final class InquiryTest extends TestCase
         $inquiry = $this->received();
         $inquiry->fail('модель недоступна', $this->now());
 
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Model), $this->now());
 
         self::assertNull($inquiry->getFailureReason());
     }
@@ -189,7 +189,7 @@ final class InquiryTest extends TestCase
     public function test_retry_from_failed_resets_to_received_and_clears(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
         $inquiry->fail('timeout', $this->now());
         $inquiry->pullEvents(); // слить событие создания
 
@@ -219,7 +219,7 @@ final class InquiryTest extends TestCase
     public function test_retry_rejected_on_recognized(): void
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
 
         $this->expectException(AppException::class);
         $inquiry->requestReprocessing($this->now());
@@ -239,7 +239,7 @@ final class InquiryTest extends TestCase
     private function approved(): Inquiry
     {
         $inquiry = $this->received();
-        $inquiry->recognize(new RecognizedParameters([]), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->recognize(RecognizedParameters::recognized([]), new ParameterSource(ParameterStrategy::Model), $this->now());
         $inquiry->approve('engineer', $this->now());
 
         return $inquiry;

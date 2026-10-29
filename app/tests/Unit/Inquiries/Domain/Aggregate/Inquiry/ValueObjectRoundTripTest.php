@@ -16,18 +16,18 @@ use PHPUnit\Framework\TestCase;
  */
 final class ValueObjectRoundTripTest extends TestCase
 {
-    public function test_recognized_parameters_round_trip_preserves_values_and_origin(): void
+    public function test_recognized_parameters_round_trip_preserves_values_origin_and_robot(): void
     {
-        $vo = new RecognizedParameters(
-            ['environment' => 'immersion', 'substanceIds' => ['s1', 's2'], 'thermalTemperature' => 40],
-            ['environment' => ParameterStrategy::Manual],
-        );
+        // робот дал environment=atmospheric, инженер поправил на immersion → ось Manual, оригинал робота сохранён
+        $vo = RecognizedParameters::recognized(['environment' => 'atmospheric', 'substanceIds' => ['s1', 's2'], 'thermalTemperature' => 40])
+            ->withManualEdits(['environment' => 'immersion', 'substanceIds' => ['s1', 's2'], 'thermalTemperature' => 40]);
 
         $restored = RecognizedParameters::fromArray($vo->jsonSerialize());
 
-        self::assertSame($vo->toArray(), $restored->toArray()); // плоские значения — канон фильтра — целы
+        self::assertSame($vo->toArray(), $restored->toArray()); // плоские эффективные значения — канон фильтра — целы
         self::assertSame(ParameterStrategy::Manual, $restored->originOf('environment')); // провенанс цел
         self::assertSame(ParameterStrategy::Model, $restored->originOf('thermalTemperature')); // дефолт — Model
+        self::assertSame(['environment' => ['robot' => 'atmospheric', 'human' => 'immersion']], $restored->corrections()); // оригинал робота пережил round-trip
         self::assertSame($vo->jsonSerialize(), $restored->jsonSerialize()); // структурный round-trip без потерь
     }
 

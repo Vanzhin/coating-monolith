@@ -40,7 +40,7 @@ final class ApproveInquiryCommandHandlerTest extends KernelTestCase
 
         $now = new \DateTimeImmutable();
         $inquiry = $factory->create(InquiryType::SystemSelection, 'owner', 'текст', new StringCollection(), $now);
-        $inquiry->recognize(new RecognizedParameters(['search' => 'этанол']), new ParameterSource(ParameterStrategy::Model), $now);
+        $inquiry->recognize(RecognizedParameters::recognized(['search' => 'этанол']), new ParameterSource(ParameterStrategy::Model), $now);
         $repo->add($inquiry);
         $id = $inquiry->getId();
 
