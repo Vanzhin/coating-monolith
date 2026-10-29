@@ -86,7 +86,7 @@
                     {# Вход по ссылке — отправка inline (inline-auth): остаёмся на лендинге,
                        результат (успех/ошибка) рендерится в слоте. Без JS — обычный POST. #}
                     <div class="auth-panel panel-link" data-controller="inline-auth">
-                        <label for="auth-buttons" class="auth-back" title="Назад"><i class="bi bi-arrow-left"></i></label>
+                        <label for="auth-buttons" class="auth-back" title="Назад" data-action="click->inline-auth#back"><i class="bi bi-arrow-left"></i></label>
                         <div class="swap-slot" data-inline-auth-target="slot">
                             <div class="auth-h">Вход по ссылке</div>
                             <p class="auth-s">Пришлём ссылку для одноразового входа. Пароль не нужен.</p>
