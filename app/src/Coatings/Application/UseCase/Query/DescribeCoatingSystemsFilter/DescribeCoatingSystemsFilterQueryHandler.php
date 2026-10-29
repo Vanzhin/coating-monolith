@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Coatings\Application\UseCase\Query\DescribeCoatingSystemsFilter;
 
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterAxis;
 use App\Coatings\Application\DTO\CoatingSystems\FilterFacetLabel;
 use App\Coatings\Domain\Aggregate\Coating\EnvironmentType;
 use App\Coatings\Domain\Aggregate\CoatingSystem\Substrate;
@@ -32,27 +33,27 @@ final readonly class DescribeCoatingSystemsFilterQueryHandler implements QueryHa
 
         if ([] !== $in->substrates) {
             $titles = array_map(static fn (string $v): string => Substrate::tryFrom($v)?->title() ?? $v, $in->substrates);
-            $rows[] = new FilterFacetLabel('Подложка', implode(', ', $titles), ['substrates']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Substrates->label(), implode(', ', $titles), ['substrates']);
         }
 
         if (null !== $in->environment) {
-            $rows[] = new FilterFacetLabel('Среда', EnvironmentType::tryFrom($in->environment)?->title() ?? $in->environment, ['environment']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Environment->label(), EnvironmentType::tryFrom($in->environment)?->title() ?? $in->environment, ['environment']);
         }
 
         $standard = null !== $in->standard ? ComplianceStandard::tryFrom($in->standard) : null;
         if (null !== $standard) {
-            $rows[] = new FilterFacetLabel('Стандарт', $standard->title(), ['standard']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Standard->label(), $standard->title(), ['standard']);
             $facets = $this->facetsRegistry->facetsFor($standard);
             if (null !== $in->category) {
-                $rows[] = new FilterFacetLabel('Категория коррозивности', $this->optionTitle($facets?->primaryOptions() ?? [], $in->category), ['category']);
+                $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Category->label(), $this->optionTitle($facets?->primaryOptions() ?? [], $in->category), ['category']);
             }
             if (null !== $in->durability) {
-                $rows[] = new FilterFacetLabel('Долговечность', $this->optionTitle($facets?->secondaryOptions() ?? [], $in->durability), ['durability']);
+                $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Durability->label(), $this->optionTitle($facets?->secondaryOptions() ?? [], $in->durability), ['durability']);
             }
         }
 
         if (null !== $in->substanceTemperature) {
-            $rows[] = new FilterFacetLabel('Температура у вещества', $in->substanceTemperature.' °C', ['substanceTemperature']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::SubstanceTemperature->label(), $in->substanceTemperature.' °C', ['substanceTemperature']);
         }
 
         if (null !== $in->thermalTemperature) {
@@ -64,23 +65,23 @@ final readonly class DescribeCoatingSystemsFilterQueryHandler implements QueryHa
             $value = $in->thermalTemperature.' °C'
                 .($in->thermalIncludingPeak ? ' (с пиком)' : '')
                 .(null !== $env ? ', '.$env : '');
-            $rows[] = new FilterFacetLabel('Тепловая нагрузка', $value, ['thermalTemperature', 'thermalEnvironment', 'thermalIncludingPeak']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::ThermalTemperature->label(), $value, ['thermalTemperature', 'thermalEnvironment', 'thermalIncludingPeak']);
         }
 
         if (null !== $in->applicationMinTempFrom || null !== $in->applicationMinTempTo) {
-            $rows[] = new FilterFacetLabel('Температура нанесения', $this->range($in->applicationMinTempFrom, $in->applicationMinTempTo, '°C'), ['applicationMinTempFrom', 'applicationMinTempTo']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::ApplicationMinTempFrom->label(), $this->range($in->applicationMinTempFrom, $in->applicationMinTempTo, '°C'), ['applicationMinTempFrom', 'applicationMinTempTo']);
         }
 
         if (null !== $in->minApplicationTimeFromMinutes || null !== $in->minApplicationTimeToMinutes) {
-            $rows[] = new FilterFacetLabel('Время сборки при 20 °C', $this->range($in->minApplicationTimeFromMinutes, $in->minApplicationTimeToMinutes, 'мин'), ['minApplicationTimeFromMinutes', 'minApplicationTimeToMinutes']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::MinApplicationTimeFromMinutes->label(), $this->range($in->minApplicationTimeFromMinutes, $in->minApplicationTimeToMinutes, 'мин'), ['minApplicationTimeFromMinutes', 'minApplicationTimeToMinutes']);
         }
 
         if (null !== $in->search && '' !== $in->search) {
-            $rows[] = new FilterFacetLabel('Поиск по тексту', $in->search, ['search']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::Search->label(), $in->search, ['search']);
         }
 
         if (true === $in->hasDocuments) {
-            $rows[] = new FilterFacetLabel('С документами', 'да', ['hasDocuments']);
+            $rows[] = new FilterFacetLabel(CoatingSystemsFilterAxis::HasDocuments->label(), 'да', ['hasDocuments']);
         }
 
         return $rows;
