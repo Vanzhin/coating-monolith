@@ -19,6 +19,15 @@ parameters:
   # Домен сайта для ссылок в уведомлениях (генерятся в воркере, вне HTTP) — та же переменная, что у Telegram-вебхука.
   # Дефолт — чтобы резолв env не падал в окружениях без DOMAIN (CI/test); реальное значение — в окружении деплоя (prod).
   env(DOMAIN): 'localhost'
+  # Ящик приёма запросов на подбор (IMAP, отдельный аккаунт). Дефолты пустые/безопасные — без них резолв env
+  # падал бы в CI/test; пустой host/user → ImapAccount::isConfigured() = false → поллер молча выходит. Реальные
+  # значения (в т.ч. пароль) — только в окружении деплоя, НЕ в git.
+  env(INQUIRY_IMAP_HOST): 'mail.netangels.ru'
+  env(INQUIRY_IMAP_PORT): '143'
+  env(INQUIRY_IMAP_ENCRYPTION): 'tls'
+  env(INQUIRY_IMAP_USER): ''
+  env(INQUIRY_IMAP_PASSWORD): ''
+  env(INQUIRY_IMAP_FOLDER): 'INBOX'
 
 services:
   # default configuration for services in *this* file
@@ -410,9 +419,24 @@ services:
   App\Inquiries\Application\Port\InquiryTextAssembler:
     alias: App\Inquiries\Infrastructure\FileText\FileTextInquiryAssembler
 
-  # Кэш одобренных параметров. Пока заглушка (всегда промах); настоящий — задачей кэша.
+  # Кэш параметров: точный дубликат по отпечатку входа (копия от распознанного близнеца, модель не зовём).
   App\Inquiries\Application\Port\ApprovedParameterCache:
-    alias: App\Inquiries\Infrastructure\Cache\NoopApprovedParameterCache
+    alias: App\Inquiries\Infrastructure\Cache\HashApprovedParameterCache
+
+  # Общий настраиваемый читатель ящиков (webklex). Аккаунт — параметр, адаптер обслуживает любой ящик.
+  App\Shared\Domain\Mail\MailboxReader:
+    alias: App\Shared\Infrastructure\Mail\WebklexMailboxReader
+
+  # Аккаунт ящика приёма запросов на подбор (отдельный IMAP-аккаунт prompter@). Другой ящик в будущем —
+  # отдельный такой сервис со своими env, адаптер (MailboxReader) тот же.
+  App\Shared\Domain\Mail\ImapAccount:
+    arguments:
+      $host: '%env(INQUIRY_IMAP_HOST)%'
+      $port: '%env(int:INQUIRY_IMAP_PORT)%'
+      $encryption: '%env(INQUIRY_IMAP_ENCRYPTION)%'
+      $username: '%env(INQUIRY_IMAP_USER)%'
+      $password: '%env(INQUIRY_IMAP_PASSWORD)%'
+      $folder: '%env(INQUIRY_IMAP_FOLDER)%'
 
   # Диспетчер обработки получает все процессоры по тегу и выбирает по типу запроса.
   App\Inquiries\Application\Event\ProcessInquiryHandler:

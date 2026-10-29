@@ -12,6 +12,7 @@ use App\Inquiries\Application\Exception\ParametersNotRecognizedException;
 use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
+use App\Inquiries\Application\Service\ContentFingerprinter;
 use App\Inquiries\Application\Service\InquiryProcessor;
 use App\Inquiries\Application\Service\TemperatureGroundingChecker;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
@@ -35,6 +36,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         private InquiryParametersExtractor $extractor,
         private SystemSelectionParameterMapper $mapper,
         private TemperatureGroundingChecker $grounding,
+        private ContentFingerprinter $fingerprinter,
     ) {
     }
 
@@ -95,6 +97,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         }
 
         $inquiry->recognize($parameters, $source, $now);
+        $inquiry->setContentHash($this->fingerprinter->hash($assembled->text)); // отпечаток для кэша точного дубликата
         $inquiry->noteWarnings(...$warnings);
     }
 }

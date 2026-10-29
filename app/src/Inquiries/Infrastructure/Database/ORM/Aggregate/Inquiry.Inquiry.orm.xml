@@ -21,6 +21,7 @@
         <field name="failureReason" type="text" column="failure_reason" nullable="true"/>
         <field name="comment" type="text" column="comment"/>
         <field name="warnings" type="json" column="warnings"/>
+        <field name="contentHash" type="string" length="64" column="content_hash" nullable="true"/>
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at"/>
         <field name="version" type="integer" column="version" version="true"/>

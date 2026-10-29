@@ -60,6 +60,9 @@ framework:
             'App\Notifications\Domain\Event\NotificationBatch': async
             # Запрос создан → конвейер подбора (сборка текста, модель/кэш, поиск) в воркере.
             'App\Inquiries\Domain\Event\InquirySubmitted': async
+            # Запрос обработан (распознан/провал) → уведомление владельцу через единый диспетчер, в воркере.
+            'App\Inquiries\Domain\Event\InquiryProcessed': async
+            'App\Notifications\Domain\Event\InquiryProcessedNotification': async
             # Одна отправка (получатель × канал) → доставка; независимый ретрай на канал.
             'App\Notifications\Domain\Event\NotificationDeliveryRequested': async
 

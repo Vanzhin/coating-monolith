@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Notifications\Domain\Type;
 
+use App\Notifications\Domain\Type\NotificationCategory;
 use App\Notifications\Domain\Type\NotificationChannel;
 use App\Notifications\Domain\Type\NotificationKind;
 use App\Notifications\Domain\Type\NotificationType;
@@ -22,6 +23,17 @@ final class NotificationTypeTest extends TestCase
         self::assertSame(ResolverKey::SubjectSupervisors, $t->resolver());
         self::assertContains(NotificationChannel::Inbox, $t->channels());
         self::assertContains(NotificationChannel::Email, $t->channels());
+        self::assertContains($t, NotificationType::configurable());
+    }
+
+    public function test_inquiry_processed_metadata(): void
+    {
+        $t = NotificationType::InquiryProcessed;
+        self::assertSame('inquiry.processed', $t->value);
+        self::assertSame(NotificationKind::Configurable, $t->kind());
+        self::assertSame(NotificationCategory::Inquiries, $t->category());
+        self::assertSame(ResolverKey::Owner, $t->resolver());
+        self::assertSame([NotificationChannel::Inbox, NotificationChannel::Email], $t->channels());
         self::assertContains($t, NotificationType::configurable());
     }
 

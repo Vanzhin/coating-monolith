@@ -10,6 +10,7 @@ enum NotificationCategory: string
     case Compliance = 'compliance';
     case Security = 'security';
     case System = 'system';
+    case Inquiries = 'inquiries';
 
     public function label(): string
     {
@@ -17,6 +18,7 @@ enum NotificationCategory: string
             self::Compliance => 'Учёт СИЗ',
             self::Security => 'Безопасность',
             self::System => 'Системные',
+            self::Inquiries => 'Запросы на подбор',
         };
     }
 }

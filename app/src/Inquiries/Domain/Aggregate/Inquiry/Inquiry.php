@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Domain\Aggregate\Inquiry;
 
+use App\Inquiries\Domain\Event\InquiryProcessed;
+use App\Inquiries\Domain\Event\InquiryProcessingOutcome;
 use App\Inquiries\Domain\Event\InquirySubmitted;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -43,6 +45,9 @@ class Inquiry extends Aggregate
     private string $comment = '';
     /** @var list<string> диагностика для инженера: нерезолв веществ, сканы */
     private array $warnings = [];
+    // Инфра-отпечаток собранного входа (тело+вложения) для кэша точного дубликата — непрозрачная строка,
+    // доменной логики не несёт. Ставит процессор при распознавании; по нему резолвится близнец.
+    private ?string $contentHash = null;
 
     private \DateTimeImmutable $createdAt;
     private \DateTimeImmutable $updatedAt;
@@ -80,6 +85,7 @@ class Inquiry extends Aggregate
         $this->recognizedParameters = $parameters;
         $this->parameterSource = $source;
         $this->failureReason = null;
+        $this->raise(new InquiryProcessed($this->getId(), $this->ownerId, InquiryProcessingOutcome::Recognized));
     }
 
     /** Инженер поправил параметры вручную (плоский набор значений). Пер-полевой провенанс считает сам
@@ -133,6 +139,7 @@ class Inquiry extends Aggregate
     {
         $this->transitionTo(InquiryStatus::Failed, $now);
         $this->failureReason = $reason;
+        $this->raise(new InquiryProcessed($this->getId(), $this->ownerId, InquiryProcessingOutcome::Failed, $reason));
     }
 
     /** Диагностика для инженера (нерезолв веществ, сканы). Заменяет целиком. */
@@ -151,6 +158,17 @@ class Inquiry extends Aggregate
         }
         $this->comment = $comment;
         $this->updatedAt = $now;
+    }
+
+    /** Инфра-отпечаток входа для кэша точного дубликата (ставит процессор при распознавании). */
+    public function setContentHash(string $hash): void
+    {
+        $this->contentHash = $hash;
+    }
+
+    public function getContentHash(): ?string
+    {
+        return $this->contentHash;
     }
 
     private function transitionTo(InquiryStatus $to, \DateTimeImmutable $now): void

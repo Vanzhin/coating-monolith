@@ -20,6 +20,7 @@ use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Port\SubstanceResolver;
+use App\Inquiries\Application\Service\ContentFingerprinter;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionParameterMapper;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionProcessor;
 use App\Inquiries\Application\Service\TemperatureGroundingChecker;
@@ -61,6 +62,8 @@ final class SystemSelectionProcessorTest extends TestCase
         // температур модели (40/90/60/120/5) нет в «собранный текст» → заземление пометило конкретные поля
         self::assertTrue($this->anyContains($warnings, '120 °C'));
         self::assertTrue($this->anyContains($warnings, '40 °C'));
+
+        self::assertNotNull($inquiry->getContentHash()); // отпечаток входа проставлен (семя кэша дубликатов)
     }
 
     public function test_cache_hit_skips_model_and_marks_cache(): void
@@ -179,7 +182,7 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), new TemperatureGroundingChecker());
+        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), new TemperatureGroundingChecker(), new ContentFingerprinter());
     }
 
     private function emptyExtraction(): ExtractionResult

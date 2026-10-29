@@ -8,6 +8,7 @@ use App\Inquiries\Application\DTO\View\ExtractionAccuracyView;
 use App\Inquiries\Application\UseCase\Query\GetExtractionAccuracy\GetExtractionAccuracyQuery;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
+use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Application\Query\QueryBusInterface;
@@ -95,6 +96,9 @@ final class InquiryExtractionAccuracyConsoleCommand extends Command
         $drill = [];
         foreach ($page->items as $inquiry) {
             \assert($inquiry instanceof Inquiry);
+            if (ParameterStrategy::Cache === $inquiry->getParameterSource()?->strategy) {
+                continue; // кэш-копия — не разбор точности модели
+            }
             $corrections = $inquiry->getRecognizedParameters()?->corrections() ?? [];
             if ([] !== $corrections) {
                 $drill[$inquiry->getId()] = $corrections;

@@ -12,6 +12,7 @@ use App\Inquiries\Application\Service\Eval\AxisAccuracy;
 use App\Inquiries\Application\Service\Eval\ExtractionEvalScorer;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
+use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
@@ -49,6 +50,9 @@ final readonly class GetExtractionAccuracyQueryHandler implements QueryHandlerIn
         $params = [];
         foreach ($page->items as $inquiry) {
             \assert($inquiry instanceof Inquiry);
+            if (ParameterStrategy::Cache === $inquiry->getParameterSource()?->strategy) {
+                continue; // кэш-копия чужих параметров — модель тут не работала, в выборку точности не берём (задвоила бы близнеца)
+            }
             $recognized = $inquiry->getRecognizedParameters();
             if ($recognized instanceof RecognizedParameters) {
                 $params[] = $recognized;

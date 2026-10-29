@@ -12,12 +12,13 @@ enum NotificationType: string
 {
     case ComplianceDueSoon = 'compliance.due_soon'; // настраиваемый пилот
     case UserActivated = 'user.activated';          // системный (новый пользователь → админу)
+    case InquiryProcessed = 'inquiry.processed';    // настраиваемый (запрос обработан → владельцу)
 
     public function kind(): NotificationKind
     {
         return match ($this) {
             self::UserActivated => NotificationKind::System,
-            self::ComplianceDueSoon => NotificationKind::Configurable,
+            self::ComplianceDueSoon, self::InquiryProcessed => NotificationKind::Configurable,
         };
     }
 
@@ -26,6 +27,7 @@ enum NotificationType: string
         return match ($this) {
             self::ComplianceDueSoon => NotificationCategory::Compliance,
             self::UserActivated => NotificationCategory::System,
+            self::InquiryProcessed => NotificationCategory::Inquiries,
         };
     }
 
@@ -34,6 +36,7 @@ enum NotificationType: string
         return match ($this) {
             self::ComplianceDueSoon => 'Контроль обязанностей сотрудников',
             self::UserActivated => 'Новый пользователь',
+            self::InquiryProcessed => 'Запрос на подбор обработан',
         };
     }
 
@@ -44,7 +47,7 @@ enum NotificationType: string
         // создание inbox-записи (см. NotificationDeliveryHandler). Enum-кейс WebPush оставлен для совместимости
         // с существующими строками подписок, но сюда не входит.
         return match ($this) {
-            self::ComplianceDueSoon => [NotificationChannel::Inbox, NotificationChannel::Email],
+            self::ComplianceDueSoon, self::InquiryProcessed => [NotificationChannel::Inbox, NotificationChannel::Email],
             self::UserActivated => [NotificationChannel::Inbox],
         };
     }
@@ -53,7 +56,7 @@ enum NotificationType: string
     {
         return match ($this) {
             self::ComplianceDueSoon => ResolverKey::SubjectSupervisors,
-            self::UserActivated => ResolverKey::Owner,
+            self::UserActivated, self::InquiryProcessed => ResolverKey::Owner,
         };
     }
 
@@ -64,7 +67,7 @@ enum NotificationType: string
     public function visibleToAdminOnly(): bool
     {
         return match ($this) {
-            self::ComplianceDueSoon => false,
+            self::ComplianceDueSoon, self::InquiryProcessed => false,
             self::UserActivated => true,
         };
     }

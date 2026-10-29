@@ -8,8 +8,9 @@ use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Shared\Application\Command\Command;
 
 /**
- * Завести запрос: тип, текст и ссылки на уже загруженные файлы (Shared/File). Владелец — текущий
- * актор (резолвит хендлер). Обработку запускает доменное событие InquirySubmitted, не эта команда.
+ * Завести запрос: тип, текст и ссылки на уже загруженные файлы (Shared/File). Владелец — переданный
+ * ownerId в приоритете (напр. почтовый адаптер резолвит отправителя), иначе текущий актор (веб/консоль).
+ * Обработку запускает доменное событие InquirySubmitted, не эта команда.
  */
 final readonly class CreateInquiryCommand extends Command
 {
@@ -18,6 +19,7 @@ final readonly class CreateInquiryCommand extends Command
         public InquiryType $type,
         public string $rawText,
         public array $attachmentFileIds = [],
+        public ?string $ownerId = null,
     ) {
     }
 }
