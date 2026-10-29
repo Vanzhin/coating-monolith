@@ -13,6 +13,7 @@ use App\Inquiries\Application\Port\ApprovedParameterCache;
 use App\Inquiries\Application\Port\InquiryParametersExtractor;
 use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Service\InquiryProcessor;
+use App\Inquiries\Application\Service\TemperatureGroundingChecker;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
@@ -33,6 +34,7 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
         private ApprovedParameterCache $cache,
         private InquiryParametersExtractor $extractor,
         private SystemSelectionParameterMapper $mapper,
+        private TemperatureGroundingChecker $grounding,
     ) {
     }
 
@@ -68,7 +70,8 @@ final readonly class SystemSelectionProcessor implements InquiryProcessor
                 throw new ParameterExtractionFailedException($e);
             }
             $mapped = $this->mapper->map($extraction->parameters);
-            $warnings = [...$warnings, ...$mapped->warnings, ...$extraction->conflicts];
+            $grounding = $this->grounding->check($extraction->parameters, $assembled->text);
+            $warnings = [...$warnings, ...$mapped->warnings, ...$extraction->conflicts, ...$grounding];
             if ([] !== $extraction->droppedValues) {
                 $warnings[] = 'Отброшены значения вне справочника: '.implode(', ', $extraction->droppedValues);
             }
