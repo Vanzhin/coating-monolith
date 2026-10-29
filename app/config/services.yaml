@@ -24,7 +24,9 @@ parameters:
   # значения (в т.ч. пароль) — только в окружении деплоя, НЕ в git.
   env(INQUIRY_IMAP_HOST): 'mail.netangels.ru'
   env(INQUIRY_IMAP_PORT): '143'
-  env(INQUIRY_IMAP_ENCRYPTION): 'tls'
+  # 143 = STARTTLS (плейнтекст → апгрейд), НЕ implicit-TLS. 'tls' на 143 даёт «wrong version number».
+  # Implicit-TLS — это порт 993 + 'ssl'. Значения webklex: ssl | tls | starttls.
+  env(INQUIRY_IMAP_ENCRYPTION): 'starttls'
   env(INQUIRY_IMAP_USER): ''
   env(INQUIRY_IMAP_PASSWORD): ''
   env(INQUIRY_IMAP_FOLDER): 'INBOX'
