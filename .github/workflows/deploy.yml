@@ -135,6 +135,11 @@ jobs:
             APP_SECRET=${{ secrets.APP_SECRET }}
             APP_NAME=${{ vars.APP_NAME }}
 
+            # Хост для абсолютных ссылок вне HTTP-запроса (письма, воркеры уведомлений):
+            # router.default_uri и appBaseUrl = https://${DOMAIN}. Без него Symfony берёт дефолт
+            # localhost (services.yaml) → ссылки в письмах ведут на https://localhost.
+            DOMAIN=${{ vars.DOMAIN }}
+
             # Database (Doctrine читает DATABASE_URL; placeholders резолвит Symfony Dotenv)
             DB_USER=${{ vars.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
