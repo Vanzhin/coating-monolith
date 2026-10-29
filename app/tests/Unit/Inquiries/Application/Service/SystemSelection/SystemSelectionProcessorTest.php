@@ -22,6 +22,7 @@ use App\Inquiries\Application\Port\InquiryTextAssembler;
 use App\Inquiries\Application\Port\SubstanceResolver;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionParameterMapper;
 use App\Inquiries\Application\Service\SystemSelection\SystemSelectionProcessor;
+use App\Inquiries\Application\Service\TemperatureGroundingChecker;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
@@ -57,6 +58,9 @@ final class SystemSelectionProcessorTest extends TestCase
         self::assertTrue($this->anyContains($warnings, 'уайт-спирит'));
         self::assertTrue($this->anyContains($warnings, 'Отброшены'));
         self::assertTrue($this->anyContains($warnings, 'приоритет вложения'));
+        // температур модели (40/90/60/120/5) нет в «собранный текст» → заземление пометило конкретные поля
+        self::assertTrue($this->anyContains($warnings, '120 °C'));
+        self::assertTrue($this->anyContains($warnings, '40 °C'));
     }
 
     public function test_cache_hit_skips_model_and_marks_cache(): void
@@ -175,7 +179,7 @@ final class SystemSelectionProcessorTest extends TestCase
             }
         };
 
-        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver));
+        return new SystemSelectionProcessor($assembler, $cache, $extractor, new SystemSelectionParameterMapper($resolver), new TemperatureGroundingChecker());
     }
 
     private function emptyExtraction(): ExtractionResult

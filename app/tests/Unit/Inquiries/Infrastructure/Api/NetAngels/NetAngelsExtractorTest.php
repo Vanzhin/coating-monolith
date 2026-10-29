@@ -43,6 +43,9 @@ final class NetAngelsExtractorTest extends TestCase
         self::assertStringEndsWith('/chat/completions', $captured['url']);
         self::assertSame('qwen3.8-flash', $captured['body']['model']);
         self::assertSame('json_object', $captured['body']['response_format']['type']);
+        self::assertSame(0, $captured['body']['temperature']);
+        self::assertArrayHasKey('seed', $captured['body']); // фикс. seed для повторяемости
+        self::assertIsInt($captured['body']['seed']);
         self::assertSame('system', $captured['body']['messages'][0]['role']);
         self::assertSame('резервуар хранения нафты', $captured['body']['messages'][1]['content']);
 

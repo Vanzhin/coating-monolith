@@ -76,8 +76,8 @@ final readonly class RecognizedParameters implements \JsonSerializable
             if (!$axis->wasEdited() || in_array($key, self::IGNORED_AXES, true)) {
                 continue;
             }
-            if ($this->isEmpty($axis->robotValue) && $this->isEmpty($axis->value)) {
-                continue; // пустое→пустое (легаси-запись Manual с null) — правкой по смыслу не является
+            if ($this->same($axis->robotValue, $axis->value)) {
+                continue; // нет фактического расхождения (откат к роботовому / легаси Manual с null) — не правка
             }
             $out[$key] = ['robot' => $axis->robotValue, 'human' => $axis->value];
         }
@@ -163,11 +163,6 @@ final readonly class RecognizedParameters implements \JsonSerializable
         }
 
         return new self($axes);
-    }
-
-    private function isEmpty(mixed $value): bool
-    {
-        return null === $value || [] === $value || '' === $value;
     }
 
     private function same(mixed $a, mixed $b): bool

@@ -19,6 +19,10 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final readonly class NetAngelsExtractor implements InquiryParametersExtractor
 {
+    /** Фиксированный seed: вместе с temperature:0 — near-повторяемость на поддерживающем бэкенде;
+     *  незнакомое поле OpenAI-совместимый шлюз игнорирует (хуже не будет). */
+    private const SEED = 7;
+
     public function __construct(
         private HttpClientInterface $netangelsClient,
         private SystemPromptBuilder $promptBuilder,
@@ -35,6 +39,7 @@ final readonly class NetAngelsExtractor implements InquiryParametersExtractor
             'json' => [
                 'model' => $this->model,
                 'temperature' => 0,
+                'seed' => self::SEED,
                 'response_format' => ['type' => 'json_object'],
                 'messages' => [
                     ['role' => 'system', 'content' => $this->promptBuilder->build()],
