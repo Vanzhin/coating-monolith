@@ -410,9 +410,9 @@ services:
   App\Inquiries\Application\Port\InquiryTextAssembler:
     alias: App\Inquiries\Infrastructure\FileText\FileTextInquiryAssembler
 
-  # Кэш одобренных параметров. Пока заглушка (всегда промах); настоящий — задачей кэша.
+  # Кэш параметров: точный дубликат по отпечатку входа (копия от распознанного близнеца, модель не зовём).
   App\Inquiries\Application\Port\ApprovedParameterCache:
-    alias: App\Inquiries\Infrastructure\Cache\NoopApprovedParameterCache
+    alias: App\Inquiries\Infrastructure\Cache\HashApprovedParameterCache
 
   # Диспетчер обработки получает все процессоры по тегу и выбирает по типу запроса.
   App\Inquiries\Application\Event\ProcessInquiryHandler:

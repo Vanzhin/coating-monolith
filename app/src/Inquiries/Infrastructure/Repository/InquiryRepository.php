@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Inquiries\Infrastructure\Repository;
 
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
+use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
+use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiriesSort;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
@@ -43,6 +45,19 @@ class InquiryRepository extends ServiceEntityRepository implements InquiryReposi
         }
 
         return $this->find(Uuid::fromString($id));
+    }
+
+    public function findRecognizedByContentHash(string $contentHash, InquiryType $type): ?Inquiry
+    {
+        return $this->createQueryBuilder('i')
+            ->andWhere('i.contentHash = :hash')->setParameter('hash', $contentHash)
+            ->andWhere('i.type = :type')->setParameter('type', $type->value)
+            ->andWhere('i.status IN (:statuses)')
+            ->setParameter('statuses', [InquiryStatus::Recognized->value, InquiryStatus::Approved->value])
+            ->orderBy('i.createdAt', 'DESC') // самый свежий распознанный близнец
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function findByFilter(InquiriesFilter $filter): PaginationResult

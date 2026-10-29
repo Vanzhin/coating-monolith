@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Support\Inquiries;
 
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
+use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
 use App\Shared\Domain\Repository\PaginationResult;
@@ -35,6 +36,11 @@ final class InMemoryInquiryRepository implements InquiryRepositoryInterface
     public function findOneById(string $id): ?Inquiry
     {
         return $this->inquiry;
+    }
+
+    public function findRecognizedByContentHash(string $contentHash, InquiryType $type): ?Inquiry
+    {
+        return null; // юнит-фейк: кэш-дубликаты проверяются функционально
     }
 
     public function findByFilter(InquiriesFilter $filter): PaginationResult
