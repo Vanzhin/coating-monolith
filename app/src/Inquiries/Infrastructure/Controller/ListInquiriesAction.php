@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Infrastructure\Controller;
 
+use App\Inquiries\Application\UseCase\Query\GetExtractionAccuracy\GetExtractionAccuracyQuery;
 use App\Inquiries\Application\UseCase\Query\GetPagedInquiries\GetPagedInquiriesQuery;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
@@ -58,6 +59,7 @@ final class ListInquiriesAction extends AbstractController
 
         return $this->render('cabinet/inquiry/list.html.twig', [
             'result' => $result,
+            'accuracy' => $this->queryBus->execute(new GetExtractionAccuracyQuery()),
             'search' => $search,
             'status' => $status?->value,
             'statuses' => InquiryStatus::cases(),
