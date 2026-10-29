@@ -32,7 +32,7 @@ final readonly class CreateInquiryCommandHandler implements CommandHandlerInterf
 
         $inquiry = $this->factory->create(
             $command->type,
-            $this->access->currentUserId(),
+            $command->ownerId ?? $this->access->currentUserId(), // переданный владелец (почта) приоритетнее актора
             $command->rawText,
             new StringCollection(...$command->attachmentFileIds),
             new \DateTimeImmutable(),

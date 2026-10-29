@@ -8,7 +8,7 @@
 
 ## Опора (крючок уже есть)
 
-- `SystemSelectionProcessor` ПЕРЕД вызовом модели зовёт `cache->lookup(type, assembledText)`; на попадании берёт параметры близнеца с `ParameterStrategy::Cache` и источником — модель НЕ зовёт. Сейчас `ApprovedParameterCache` = `NoopApprovedParameterCache` (всегда промах). Наполняем его по хешу.
+- `SystemSelectionProcessor` ПЕРЕД вызовом модели зовёт `cache->lookup(type, assembledText)`; на попадании берёт параметры близнеца с `ParameterStrategy::Cache` и источником — модель НЕ зовёт. Реализация порта — `HashApprovedParameterCache` (взамен прежнего Noop): точный отпечаток собранного текста.
 - `CacheHit{parameters: RecognizedParameters, sourceInquiryId}` — готовый контракт.
 - Ключ — **собранный текст** (`assembler->assemble()`: тело+вложения с метками, уже считается в процессоре). Это ИМЕННО вход распознавания → хеш от него = правильный ключ «тот же вход → тот же выход». Детерминирован (тело + механически извлечённый текст вложений стабильны для того же письма).
 
@@ -50,7 +50,7 @@
   - `index(inquiry)` → гарантирует, что content_hash запроса сохранён (или no-op, если пишем при обработке).
 - **Репозиторий:** узкий метод резолва `findRecognizedByContentHash(hash, type): ?Inquiry` (не пользовательский поиск — отдельный метод, как `findOneById`; НЕ ось в `InquiriesFilter`). `findEarlierInflightByContentHash` — только для ожидания ведущего, ОТЛОЖЕНО.
 - **`ProcessInquiry`-сообщение + DelayStamp** — только для ожидания ведущего, ОТЛОЖЕНО.
-- `ParameterSource` на копии — `Cache` + `sourceInquiryId` (провенанс уже поддержан, origin значений в `RecognizedParameters` станет `Cache`).
+- `ParameterSource` на копии — `Cache` + `sourceInquiryId`. Маркер кэша живёт на `ParameterSource` (стратегия распознавания), а НЕ на per-axis origin внутри `RecognizedParameters`: параметры близнеца копируются как есть, их per-axis origin остаётся родным (Model/Manual). Именно по `ParameterSource::strategy === Cache` градусник исключает кэш-копии из выборки точности (иначе задвоил бы близнеца).
 
 ## Развилки (решены / к решению)
 
@@ -67,7 +67,7 @@
 ## Тесты
 
 - `ApprovedParameterCache` (functional, нужна БД): два запроса с одинаковым собранным текстом — второй `lookup` возвращает параметры первого (Recognized); разный текст — промах; `Failed`-близнец не отдаётся; разный тип — промах.
-- `SystemSelectionProcessor` (unit): на попадании кэша модель НЕ зовётся, origin `Cache`, source выставлен (кейс уже частично есть — `test_cache_hit_skips_model`).
+- `SystemSelectionProcessor` (unit): на попадании кэша модель НЕ зовётся, `ParameterSource` = `Cache` + `sourceInquiryId` (кейс уже частично есть — `test_cache_hit_skips_model`).
 - Хеш (unit): нормализация (пробелы/трим) → один хеш; разный текст → разный.
 - Пачка (functional, опц.): N одинаковых → 1 распознан моделью, остальные Cache.
 - Ожидание ведущего (unit на решение): близнец `Received` с меньшим id + attempt<N → requeue с задержкой (модель не зовётся); B с наименьшим id → обрабатывает; attempt≥N → обрабатывает сам (ведущий завис).

@@ -22,9 +22,9 @@ parameters:
   # Ящик приёма запросов на подбор (IMAP, отдельный аккаунт). Дефолты пустые/безопасные — без них резолв env
   # падал бы в CI/test; пустой host/user → ImapAccount::isConfigured() = false → поллер молча выходит. Реальные
   # значения (в т.ч. пароль) — только в окружении деплоя, НЕ в git.
-  env(INQUIRY_IMAP_HOST): ''
-  env(INQUIRY_IMAP_PORT): '993'
-  env(INQUIRY_IMAP_ENCRYPTION): 'ssl'
+  env(INQUIRY_IMAP_HOST): 'mail.netangels.ru'
+  env(INQUIRY_IMAP_PORT): '143'
+  env(INQUIRY_IMAP_ENCRYPTION): 'tls'
   env(INQUIRY_IMAP_USER): ''
   env(INQUIRY_IMAP_PASSWORD): ''
   env(INQUIRY_IMAP_FOLDER): 'INBOX'

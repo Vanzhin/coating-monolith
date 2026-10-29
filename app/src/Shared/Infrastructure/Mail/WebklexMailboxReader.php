@@ -51,7 +51,9 @@ final class WebklexMailboxReader implements MailboxReader
         $client = $this->connect($account);
         try {
             $folder = $client->getFolder($account->folder);
-            $folder?->query()->leaveUnread()->getMessageByUid((int) $uid)?->setFlag('Seen');
+            // Только флипаем флаг — тело не парсим (вложения тянутся лениво из тела, так что и они не грузятся).
+            $query = $folder?->query()->leaveUnread()->setFetchBody(false);
+            $query?->getMessageByUid((int) $uid)?->setFlag('Seen');
         } finally {
             $client->disconnect();
         }

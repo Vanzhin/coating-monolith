@@ -5,28 +5,26 @@ declare(strict_types=1);
 namespace App\Inquiries\Application\UseCase\Command\IngestInquiryEmail;
 
 use App\Inquiries\Application\Service\AccessControl\InquiryAccessControl;
+use App\Inquiries\Application\UseCase\Command\CreateInquiry\CreateInquiryCommand;
+use App\Inquiries\Application\UseCase\Command\CreateInquiry\CreateInquiryCommandResult;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
-use App\Inquiries\Domain\Factory\InquiryFactory;
-use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
+use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Application\Query\QueryBusInterface;
-use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Users\Application\UseCase\Query\GetUserIdByEmail\GetUserIdByEmailQuery;
 
 /**
- * Заводит запрос из письма. Отправитель резолвится в пользователя через шину (кросс-контекст Users);
- * нет такого пользователя → не заводим (адаптер отобьёт письмом). Есть → запрос Received, владелец =
- * пользователь, дальше доменное событие InquirySubmitted запускает async-конвейер (как CreateInquiry).
- * Актор — система (CLI-поллер), проходит capability-гейт.
+ * Приём письма как запроса: единственная его забота — резолв отправителя в пользователя (через шину).
+ * Нашёл → делегирует создание общей CreateInquiryCommand с ownerId = отправитель (создание/гейт/событие
+ * конвейера — там, не дублируем). Не нашёл (не пользователь / нет прав) → skipped, молча, без ответа.
  */
 final readonly class IngestInquiryEmailCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private InquiryAccessControl $access,
         private QueryBusInterface $queryBus,
-        private InquiryFactory $factory,
-        private InquiryRepositoryInterface $repository,
+        private CommandBusInterface $commandBus,
     ) {
     }
 
@@ -41,16 +39,15 @@ final readonly class IngestInquiryEmailCommandHandler implements CommandHandlerI
             return IngestInquiryEmailResult::skipped(); // отправитель не пользователь — просто выходим, не отвечаем
         }
 
-        $inquiry = $this->factory->create(
+        $result = $this->commandBus->execute(new CreateInquiryCommand(
             InquiryType::SystemSelection,
-            $ownerUlid,
             $this->composeText($command->subject, $command->body),
-            new StringCollection(...$command->attachmentFileIds),
-            new \DateTimeImmutable(),
-        );
-        $this->repository->add($inquiry);
+            $command->attachmentFileIds,
+            $ownerUlid,
+        ));
+        \assert($result instanceof CreateInquiryCommandResult);
 
-        return IngestInquiryEmailResult::created($inquiry->getId());
+        return IngestInquiryEmailResult::created($result->id);
     }
 
     /** Тема + тело в один текст запроса; тема помогает распознаванию. */

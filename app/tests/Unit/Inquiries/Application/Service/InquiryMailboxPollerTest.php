@@ -9,7 +9,6 @@ use App\Inquiries\Application\UseCase\Command\IngestInquiryEmail\IngestInquiryEm
 use App\Inquiries\Application\UseCase\Command\IngestInquiryEmail\IngestInquiryEmailResult;
 use App\Shared\Application\Command\CommandBusInterface;
 use App\Shared\Application\Command\CommandInterface;
-use App\Shared\Domain\File\FileStorage;
 use App\Shared\Domain\Mail\ImapAccount;
 use App\Shared\Domain\Mail\IncomingMessage;
 use App\Tests\Support\Mail\RecordingMailboxReader;
@@ -21,7 +20,7 @@ final class InquiryMailboxPollerTest extends TestCase
     public function test_not_configured_is_noop(): void
     {
         $reader = $this->reader([]);
-        $poller = new InquiryMailboxPoller($reader, new ImapAccount('', 993, 'ssl', '', ''), $this->bus(static fn () => null), $this->createMock(FileStorage::class), new NullLogger());
+        $poller = new InquiryMailboxPoller($reader, new ImapAccount('', 993, 'ssl', '', ''), $this->bus(static fn () => null), new NullLogger());
 
         $summary = $poller->poll(10);
 
@@ -46,7 +45,7 @@ final class InquiryMailboxPollerTest extends TestCase
             };
         });
 
-        $poller = new InquiryMailboxPoller($reader, $this->account(), $bus, $this->createMock(FileStorage::class), new NullLogger());
+        $poller = new InquiryMailboxPoller($reader, $this->account(), $bus, new NullLogger());
 
         $summary = $poller->poll(10);
 

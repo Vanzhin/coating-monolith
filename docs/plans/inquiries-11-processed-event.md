@@ -17,15 +17,17 @@
 
 ## Что меняется
 
-БЕЗ шва-переходника (в отличие от `UserActivated`): там переходник РЕЗОЛВИТ админа-адресата, у нас адресат = владелец, он уже на агрегате — резолвить нечего. deptrac прямой путь разрешает (Domain→Domain), `NotificationDispatcher` ловит `NotifiableEvent` по интерфейсу, агрегатные события публикуются на flush. Поэтому событие — одно, раздаётся напрямую.
+СО швом-переходником (как `UserActivated` — решено при реализации: домен Inquiries НЕ должен зависеть от Notifications, это чужой модуль). Чистое доменное событие Inquiries поднимает агрегат; Infrastructure-переходник Inquiries ловит его и диспатчит уведомляющее событие Notifications. Так граница модулей держится: `NotifiableEvent`/`OwnedNotification`/`*Data`-контракты живут на стороне Notifications, домен Inquiries их не знает.
 
-- **Событие `InquiryProcessed`** (`Inquiries/Domain/Event`) `implements NotifiableEvent, OwnedNotification, InquiryProcessedData`: `inquiryId`, `ownerId`, `outcome` (enum `InquiryProcessingOutcome`: Recognized|Failed), опц. `failureReason`. `notificationType()` → `NotificationType::InquiryProcessed`; `ownerUlid()` → `ownerId`; геттеры исхода/повода — для рендера.
-- **`InquiryProcessedData`** (`Notifications/Domain/Event`) — контракт данных для рендера (как `UserActivatedData`): `outcome()`, `inquiryId()`, `failureReason()`. Реализует его само событие.
-- **Агрегат поднимает `InquiryProcessed`** (`$this->raise(...)`, публикуется на flush):
+- **Доменное событие `InquiryProcessed`** (`Inquiries/Domain/Event`, чистый `EventInterface`): `inquiryId`, `ownerId`, `outcome` (enum `InquiryProcessingOutcome`: Recognized|Failed), опц. `failureReason`. Никаких интерфейсов Notifications — только факт «запрос обработан».
+- **Переходник `InquiryProcessedNotifier`** (`Inquiries/Infrastructure/EventHandler`, `EventHandlerInterface`) — ловит доменное `InquiryProcessed`, конвертит исход и `eventBus->execute(new InquiryProcessedNotification(...))`.
+- **Уведомляющее событие `InquiryProcessedNotification`** (`Notifications/Domain/Event`) `implements NotifiableEvent, OwnedNotification, InquiryProcessedData`: `notificationType()` → `NotificationType::InquiryProcessed`, `ownerUlid()` → `ownerId`, геттеры исхода/повода для рендера. Образец — `UserActivatedNotification`.
+- **`InquiryProcessedData`** (`Notifications/Domain/Event`) — контракт данных для рендера (как `UserActivatedData`); реализует его уведомляющее событие.
+- **Агрегат поднимает доменное `InquiryProcessed`** (`$this->raise(...)`, публикуется на flush):
   - в `recognize()` → Recognized — АСИНХРОННЫЙ путь воркера (и кэш-хит).
   - в `fail()` → Failed.
   - НЕ в `editParameters()` (ручная правка идёт через `transitionTo` напрямую, не через `recognize()`) — иначе каждый твик слал бы «обработан». Развязка: уведомляем о МАШИННОЙ обработке.
-- Переходника и второго класса НЕТ.
+- Оба события маршрутизируются на `async` (messenger.yaml): доменное `InquiryProcessed` и уведомляющее `InquiryProcessedNotification`.
 - **`NotificationType::InquiryProcessed = 'inquiry.processed'`**: `kind` Configurable (opt-in), `category` — новый `NotificationCategory::Inquiries` (или ближайшая существующая — решить при реализации), `label` «Запрос на подбор обработан», `channels` [Inbox, Email], `resolver` Owner, `visibleToAdminOnly` false (владелец подписывается на свои).
 - **Рендер текста** (`MessageRenderer` для типа) — различает исход: «Запрос распознан — можно смотреть подбор» / «Запрос не удалось обработать: <повод>». Ссылка на карточку `app_cabinet_inquiry_show`.
 - Экран настроек подхватит тип автоматически (configurable).
@@ -51,7 +53,8 @@
 
 ## Порядок (один деплой; после или параллельно плану 10)
 
-1. Событие `InquiryProcessed` + подъём в `recognize()`/`fail()` + unit.
-2. `NotificationType` case + метаданные (+ `NotificationCategory` при нужде).
-3. Рендер текста + ссылка на карточку.
-4. Functional на доставку владельцу + гейты.
+1. Доменное событие `InquiryProcessed` + подъём в `recognize()`/`fail()` + unit.
+2. Переходник `InquiryProcessedNotifier` + уведомляющее `InquiryProcessedNotification` + `InquiryProcessedData` + роутинг обоих на `async`.
+3. `NotificationType` case + метаданные (+ `NotificationCategory` при нужде).
+4. Рендер текста + ссылка на карточку.
+5. Functional на доставку владельцу + гейты.
