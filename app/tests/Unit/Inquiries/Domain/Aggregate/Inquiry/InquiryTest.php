@@ -10,6 +10,8 @@ use App\Inquiries\Domain\Aggregate\Inquiry\InquiryType;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterSource;
 use App\Inquiries\Domain\Aggregate\Inquiry\ParameterStrategy;
 use App\Inquiries\Domain\Aggregate\Inquiry\RecognizedParameters;
+use App\Inquiries\Domain\Event\InquiryProcessed;
+use App\Inquiries\Domain\Event\InquiryProcessingOutcome;
 use App\Inquiries\Domain\Event\InquirySubmitted;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -229,6 +231,47 @@ final class InquiryTest extends TestCase
     {
         $this->expectException(AppException::class);
         $this->approved()->requestReprocessing($this->now());
+    }
+
+    public function test_recognize_raises_processed_recognized(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->pullEvents(); // слить InquirySubmitted
+
+        $inquiry->recognize(RecognizedParameters::recognized(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
+
+        $events = $inquiry->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(InquiryProcessed::class, $events[0]);
+        self::assertSame(InquiryProcessingOutcome::Recognized, $events[0]->outcome);
+        self::assertSame('owner', $events[0]->ownerId);
+        self::assertSame($inquiry->getId(), $events[0]->inquiryId);
+    }
+
+    public function test_fail_raises_processed_failed_with_reason(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->pullEvents();
+
+        $inquiry->fail('timeout', $this->now());
+
+        $events = $inquiry->pullEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(InquiryProcessed::class, $events[0]);
+        self::assertSame(InquiryProcessingOutcome::Failed, $events[0]->outcome);
+        self::assertSame('timeout', $events[0]->failureReason);
+    }
+
+    public function test_edit_parameters_does_not_raise_processed(): void
+    {
+        $inquiry = $this->received();
+        $inquiry->recognize(RecognizedParameters::recognized(['environment' => 'immersion']), new ParameterSource(ParameterStrategy::Model), $this->now());
+        $inquiry->pullEvents(); // слить submitted + processed(recognize)
+
+        // ручная правка инженера — машинной обработки не было, «обработан» не шлём
+        $inquiry->editParameters(['environment' => 'atmospheric'], $this->now());
+
+        self::assertCount(0, $inquiry->pullEvents());
     }
 
     private function received(): Inquiry

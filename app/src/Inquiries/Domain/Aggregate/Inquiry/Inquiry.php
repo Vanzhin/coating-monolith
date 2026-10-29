@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Domain\Aggregate\Inquiry;
 
+use App\Inquiries\Domain\Event\InquiryProcessed;
+use App\Inquiries\Domain\Event\InquiryProcessingOutcome;
 use App\Inquiries\Domain\Event\InquirySubmitted;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
@@ -80,6 +82,7 @@ class Inquiry extends Aggregate
         $this->recognizedParameters = $parameters;
         $this->parameterSource = $source;
         $this->failureReason = null;
+        $this->raise(new InquiryProcessed($this->getId(), $this->ownerId, InquiryProcessingOutcome::Recognized));
     }
 
     /** Инженер поправил параметры вручную (плоский набор значений). Пер-полевой провенанс считает сам
@@ -133,6 +136,7 @@ class Inquiry extends Aggregate
     {
         $this->transitionTo(InquiryStatus::Failed, $now);
         $this->failureReason = $reason;
+        $this->raise(new InquiryProcessed($this->getId(), $this->ownerId, InquiryProcessingOutcome::Failed, $reason));
     }
 
     /** Диагностика для инженера (нерезолв веществ, сканы). Заменяет целиком. */
