@@ -34,7 +34,7 @@ final class WebklexMailboxReader implements MailboxReader
                 $out[] = new IncomingMessage(
                     (string) $message->getUid(),
                     $this->fromEmail($message),
-                    trim((string) $message->getSubject()),
+                    $this->decodeSubject($message),
                     trim((string) $message->getTextBody()),
                     $this->attachments($message),
                 );
@@ -80,6 +80,15 @@ final class WebklexMailboxReader implements MailboxReader
         $first = $message->getFrom()[0] ?? null;
 
         return null !== $first ? (string) $first->mail : '';
+    }
+
+    /**
+     * Тема письма в UTF-8. Без ext-imap webklex часто отдаёт её сырым RFC 2047 encoded-word
+     * (=?koi8-r?B?..?=) — его раскодирует mb_decode_mimeheader; на уже-читаемой теме это no-op.
+     */
+    private function decodeSubject(Message $message): string
+    {
+        return trim(mb_decode_mimeheader((string) $message->getSubject()));
     }
 
     /** @return list<IncomingAttachment> */
