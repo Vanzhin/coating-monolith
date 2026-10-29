@@ -78,6 +78,46 @@ final class TemperatureGroundingCheckerTest extends TestCase
         self::assertStringContainsString('пиковая нагрева', $warnings[0]);
     }
 
+    public function test_decimal_in_text_does_not_ground_integer(): void
+    {
+        // «толщина 4,0 мм» НЕ должна заземлить выдуманную температуру 4
+        $warnings = (new TemperatureGroundingChecker())->check(
+            $this->params(thMax: 4),
+            'резервуар, толщина стенки 4,0 мм, антикоррозия',
+        );
+
+        self::assertCount(1, $warnings);
+        self::assertStringContainsString('4 °C', $warnings[0]);
+    }
+
+    public function test_sentence_period_still_grounds(): void
+    {
+        // точка в конце предложения (не десятичная) заземление не ломает
+        $warnings = (new TemperatureGroundingChecker())->check(
+            $this->params(chemMax: 90),
+            'рабочая температура продукта 90.',
+        );
+
+        self::assertSame([], $warnings);
+    }
+
+    public function test_chem_peak_and_application_to_fields(): void
+    {
+        $warnings = (new TemperatureGroundingChecker())->check(
+            $this->params(chemPeak: 120, appTo: 35),
+            'пиковая 120 °C, наносить до 35 °C',
+        );
+
+        self::assertSame([], $warnings);
+
+        $absent = (new TemperatureGroundingChecker())->check(
+            $this->params(chemPeak: 120, appTo: 35),
+            'пиковая 120 °C',
+        );
+        self::assertCount(1, $absent);
+        self::assertStringContainsString('нанесение, до', $absent[0]);
+    }
+
     public function test_null_fields_ignored(): void
     {
         $warnings = (new TemperatureGroundingChecker())->check($this->params(), 'без температур');

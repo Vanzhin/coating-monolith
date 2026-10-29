@@ -8,6 +8,7 @@ use App\ChemicalResistance\Application\UseCase\Query\SubstanceNamesByIds\Substan
 use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Coatings\Application\DTO\CoatingSystems\FilterFacetLabel;
 use App\Coatings\Application\UseCase\Query\DescribeCoatingSystemsFilter\DescribeCoatingSystemsFilterQuery;
+use App\Coatings\Application\UseCase\Query\GetCoatingSystemsFilterAxisLabels\GetCoatingSystemsFilterAxisLabelsQuery;
 use App\Inquiries\Application\DTO\View\InquiryAttachmentView;
 use App\Inquiries\Application\DTO\View\InquiryParamRow;
 use App\Inquiries\Application\DTO\View\InquiryView;
@@ -107,8 +108,10 @@ final readonly class GetInquiryQueryHandler implements QueryHandlerInterface
         if ([] !== $input->substanceIds) {
             /** @var array<string, string> $names */
             $names = $this->queryBus->execute(new SubstanceNamesByIdsQuery($input->substanceIds));
-            $labels = array_map(static fn (string $id): string => $names[$id] ?? $id, $input->substanceIds);
-            $rows[] = new FilterFacetLabel('Вещества', implode(', ', $labels), ['substanceIds']);
+            $names = array_map(static fn (string $id): string => $names[$id] ?? $id, $input->substanceIds);
+            /** @var array<string, string> $axisLabels */
+            $axisLabels = $this->queryBus->execute(new GetCoatingSystemsFilterAxisLabelsQuery());
+            $rows[] = new FilterFacetLabel($axisLabels['substanceIds'] ?? 'Вещества', implode(', ', $names), ['substanceIds']);
         }
 
         /** @var list<FilterFacetLabel> $facets */

@@ -79,6 +79,27 @@ final class RecognizedParametersTest extends TestCase
         ], $p->jsonSerialize());
     }
 
+    public function test_repeated_edits_keep_first_robot_value(): void
+    {
+        // два отдельных сабмита формы подряд: оригинал робота — от ПЕРВОЙ правки, не промежуточный
+        $p = RecognizedParameters::recognized(['substanceTemp' => 90])
+            ->withManualEdits(['substanceTemp' => 80])
+            ->withManualEdits(['substanceTemp' => 70]);
+
+        self::assertSame(70, $p->toArray()['substanceTemp']);
+        self::assertSame(['substanceTemp' => ['robot' => 90, 'human' => 70]], $p->corrections());
+    }
+
+    public function test_revert_to_robot_value_drops_from_corrections(): void
+    {
+        // инженер поправил и вернул обратно к роботовому — фактического расхождения нет
+        $p = RecognizedParameters::recognized(['substanceTemp' => 90])
+            ->withManualEdits(['substanceTemp' => 80])
+            ->withManualEdits(['substanceTemp' => 90]);
+
+        self::assertSame([], $p->corrections());
+    }
+
     public function test_corrections_skips_legacy_empty_manual(): void
     {
         // легаси-запись: ось помечена Manual со значением null и без robotValue — не правка по смыслу

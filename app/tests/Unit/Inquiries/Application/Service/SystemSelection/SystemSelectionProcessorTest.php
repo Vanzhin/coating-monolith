@@ -58,7 +58,9 @@ final class SystemSelectionProcessorTest extends TestCase
         self::assertTrue($this->anyContains($warnings, 'уайт-спирит'));
         self::assertTrue($this->anyContains($warnings, 'Отброшены'));
         self::assertTrue($this->anyContains($warnings, 'приоритет вложения'));
-        self::assertTrue($this->anyContains($warnings, 'не найдена')); // температуры 40/90/60/120 нет в «собранный текст» → заземление сработало
+        // температур модели (40/90/60/120/5) нет в «собранный текст» → заземление пометило конкретные поля
+        self::assertTrue($this->anyContains($warnings, '120 °C'));
+        self::assertTrue($this->anyContains($warnings, '40 °C'));
     }
 
     public function test_cache_hit_skips_model_and_marks_cache(): void

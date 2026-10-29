@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Inquiries\Infrastructure\Console;
 
-use App\Inquiries\Application\Service\Eval\ExtractionEvalScorer;
+use App\Inquiries\Application\DTO\View\ExtractionAccuracyView;
+use App\Inquiries\Application\UseCase\Query\GetExtractionAccuracy\GetExtractionAccuracyQuery;
 use App\Inquiries\Domain\Aggregate\Inquiry\Inquiry;
 use App\Inquiries\Domain\Aggregate\Inquiry\InquiryStatus;
 use App\Inquiries\Domain\Repository\InquiriesFilter;
 use App\Inquiries\Domain\Repository\InquiryRepositoryInterface;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Repository\Pager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,9 +20,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Градусник точности извлечения: прогоняет эталон (одобренные запросы) и печатает таблицу точности
- * по осям — где робот совпал с тем, что одобрил инженер, а где промахнулся. Модель НЕ зовёт
- * (читает сохранённого робота против эффективного значения), read-only. On-demand, не для CI.
+ * Градусник точности извлечения в консоли: таблица точности по осям (через GetExtractionAccuracyQuery —
+ * единый источник с веб-дашбордом: тот же эталон, скоринг и группировка по подписям) + опц. дамп правок
+ * робот→человек по запросам. Модель НЕ зовёт, read-only. On-demand, не для CI. Актор — система (CLI).
  */
 #[AsCommand(
     name: 'app:inquiry:extraction-accuracy',
@@ -29,8 +31,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class InquiryExtractionAccuracyConsoleCommand extends Command
 {
     public function __construct(
+        private readonly QueryBusInterface $queryBus,
         private readonly InquiryRepositoryInterface $inquiries,
-        private readonly ExtractionEvalScorer $scorer,
     ) {
         parent::__construct();
     }
@@ -47,55 +49,58 @@ final class InquiryExtractionAccuracyConsoleCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $limit = max(1, (int) $input->getOption('limit'));
 
-        $result = $this->inquiries->findByFilter(new InquiriesFilter(
-            pager: Pager::fromPage(1, $limit),
-            status: InquiryStatus::Approved,
-        ));
+        /** @var ExtractionAccuracyView $view */
+        $view = $this->queryBus->execute(new GetExtractionAccuracyQuery($limit));
 
-        /** @var list<Inquiry> $approved */
-        $approved = array_values(array_filter(
-            $result->items,
-            static fn (object $i): bool => $i instanceof Inquiry && null !== $i->getRecognizedParameters(),
-        ));
-
-        if ([] === $approved) {
+        if ([] === $view->rows) {
             $io->warning('Одобренных запросов с параметрами нет — эталон пуст.');
 
             return Command::SUCCESS;
         }
 
-        if ($result->total > count($result->items)) {
-            $io->note(sprintf('Учтено %d из %d одобренных (лимит %d). Поднимите --limit, чтобы охватить все.', count($result->items), $result->total, $limit));
-        }
-
-        $report = $this->scorer->score(array_map(static fn (Inquiry $i) => $i->getRecognizedParameters(), $approved));
-
-        $io->title(sprintf('Точность извлечения по осям (эталон: %d одобренных)', $report->inquiriesScored));
+        $io->title(sprintf('Точность извлечения по осям (эталон: %d одобренных)', $view->inquiriesScored));
         $io->table(
             ['Ось', 'Всего', 'Совпало', 'Пропустила', 'Лишнее', 'Разошлись', 'Точность'],
-            array_map(static fn ($a) => [
-                $a->axis,
-                $a->total,
-                $a->agreed,
-                $a->missed,
-                $a->extra,
-                $a->mismatch,
-                sprintf('%d%%', (int) round($a->accuracy() * 100)),
-            ], $report->axes),
+            array_map(static fn ($r) => [
+                $r->label,
+                $r->total,
+                $r->agreed,
+                $r->missed,
+                $r->extra,
+                $r->mismatch,
+                sprintf('%d%%', (int) round($r->accuracy() * 100)),
+            ], $view->rows),
         );
 
         if ($input->getOption('json')) {
-            $drill = [];
-            foreach ($approved as $inquiry) {
-                $corrections = $inquiry->getRecognizedParameters()?->corrections() ?? [];
-                if ([] !== $corrections) {
-                    $drill[$inquiry->getId()] = $corrections;
-                }
-            }
             $io->section('Правки инженера (робот → человек)');
-            $output->writeln((string) json_encode($drill, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            $output->writeln((string) json_encode($this->drill($limit), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Per-inquiry срез правок для разбора — у запроса есть id (в дашборд-view его нет).
+     *
+     * @return array<string, array<string, array{robot: mixed, human: mixed}>>
+     */
+    private function drill(int $limit): array
+    {
+        $page = $this->inquiries->findByFilter(new InquiriesFilter(
+            pager: Pager::fromPage(1, $limit),
+            status: InquiryStatus::Approved,
+        ));
+
+        $drill = [];
+        foreach ($page->items as $inquiry) {
+            \assert($inquiry instanceof Inquiry);
+            $corrections = $inquiry->getRecognizedParameters()?->corrections() ?? [];
+            if ([] !== $corrections) {
+                $drill[$inquiry->getId()] = $corrections;
+            }
+        }
+
+        return $drill;
     }
 }
