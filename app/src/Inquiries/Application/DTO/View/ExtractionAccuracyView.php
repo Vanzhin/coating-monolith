@@ -6,7 +6,7 @@ namespace App\Inquiries\Application\DTO\View;
 
 /**
  * Дашборд точности извлечения для очереди запросов: строки по осям (слабые сверху, с подписями)
- * + сколько одобренных запросов легло в эталон.
+ * + общее число одобренных запросов и сколько из них легло в эталон.
  */
 final readonly class ExtractionAccuracyView
 {
@@ -14,6 +14,7 @@ final readonly class ExtractionAccuracyView
     public function __construct(
         public array $rows,
         public int $inquiriesScored,
+        public int $inquiriesApproved,
     ) {
     }
 }
