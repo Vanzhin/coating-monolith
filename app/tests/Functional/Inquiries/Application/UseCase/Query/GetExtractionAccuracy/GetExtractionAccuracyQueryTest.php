@@ -44,10 +44,16 @@ final class GetExtractionAccuracyQueryTest extends KernelTestCase
         $inquiry->approve('tester', $now);
         $repo->add($inquiry);
 
+        $cachedInquiry = $factory->create(InquiryType::SystemSelection, 'owner', 'печь, нагрев', new StringCollection(), $now);
+        $cachedInquiry->recognize(RecognizedParameters::recognized($robot->toArray()), new ParameterSource(ParameterStrategy::Cache), $now);
+        $cachedInquiry->approve('tester', $now);
+        $repo->add($cachedInquiry);
+
         $view = $bus->execute(new GetExtractionAccuracyQuery());
         \assert($view instanceof ExtractionAccuracyView);
 
         self::assertSame(1, $view->inquiriesScored);
+        self::assertSame(2, $view->inquiriesApproved);
         // thermalTemperature/thermalEnvironment/thermalIncludingPeak схлопнуты в одну строку
         self::assertCount(1, $view->rows);
         $row = $view->rows[0];

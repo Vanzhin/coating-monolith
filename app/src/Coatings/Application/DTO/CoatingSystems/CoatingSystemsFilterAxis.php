@@ -38,7 +38,7 @@ enum CoatingSystemsFilterAxis: string
             self::Category => 'Категория коррозивности',
             self::Durability => 'Долговечность',
             self::SubstanceIds => 'Вещества',
-            self::SubstanceTemperature => 'Температура у вещества',
+            self::SubstanceTemperature => 'Температура вещества',
             self::ThermalTemperature, self::ThermalEnvironment, self::ThermalIncludingPeak => 'Тепловая нагрузка',
             self::ApplicationMinTempFrom, self::ApplicationMinTempTo => 'Температура нанесения',
             self::MinApplicationTimeFromMinutes, self::MinApplicationTimeToMinutes => 'Время сборки при 20 °C',

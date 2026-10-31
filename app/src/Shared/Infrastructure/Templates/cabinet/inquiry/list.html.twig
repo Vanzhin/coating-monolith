@@ -17,14 +17,18 @@
     } %}
         {% block above_list %}
             {% if accuracy is defined and accuracy.rows is not empty %}
+                {% set worstPct = ((accuracy.rows|first).accuracy * 100)|round %}
+                {% set worstTone = worstPct >= 90 ? 'text-success' : (worstPct >= 70 ? 'text-warning' : 'text-danger') %}
                 <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <button type="button" class="btn p-0 border-0 shadow-none w-100 d-flex align-items-center gap-2 fw-semibold text-start"
-                            data-bs-toggle="collapse" data-bs-target="#accuracyPanel" aria-expanded="true" aria-controls="accuracyPanel">
+                    <button type="button" class="btn p-0 border-0 shadow-none w-100 d-flex align-items-center gap-2 fw-semibold text-start collapsed"
+                            data-bs-toggle="collapse" data-bs-target="#accuracyPanel" aria-expanded="false" aria-controls="accuracyPanel">
                         Точность извлечения
-                        <span class="text-body-secondary fw-normal small">эталон: {{ accuracy.inquiriesScored }} одобренных</span>
+                        <span class="text-body-secondary fw-normal small">{{ accuracy.inquiriesApproved }} одобренных</span>
+                        <i class="bi bi-circle-fill {{ worstTone }}" aria-hidden="true"></i>
+                        <span class="visually-hidden">Худший показатель точности: {{ worstPct }}%</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse show" id="accuracyPanel">
+                    <div class="collapse" id="accuracyPanel">
                         <div class="mt-3 d-flex flex-column gap-2">
                             {% for r in accuracy.rows %}
                                 {% set pct = (r.accuracy * 100)|round %}
@@ -45,7 +49,7 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        <div class="text-body-secondary small mt-2">Слабые оси — сверху. Считается по сохранённым правкам инженера, без вызова модели.</div>
+                        <div class="text-body-secondary small mt-2">Слабые оси — сверху. Эталон: {{ accuracy.inquiriesScored }} одобренных. Считается по сохранённым правкам инженера, без вызова модели.</div>
                     </div>
                 </div>
             {% endif %}

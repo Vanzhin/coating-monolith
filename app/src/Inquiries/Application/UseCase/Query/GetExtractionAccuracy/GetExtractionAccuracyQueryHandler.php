@@ -64,7 +64,7 @@ final readonly class GetExtractionAccuracyQueryHandler implements QueryHandlerIn
         /** @var array<string, string> $labels */
         $labels = $this->queryBus->execute(new GetCoatingSystemsFilterAxisLabelsQuery());
 
-        return new ExtractionAccuracyView($this->groupByLabel($report->axes, $labels), $report->inquiriesScored);
+        return new ExtractionAccuracyView($this->groupByLabel($report->axes, $labels), $report->inquiriesScored, $page->total);
     }
 
     /**

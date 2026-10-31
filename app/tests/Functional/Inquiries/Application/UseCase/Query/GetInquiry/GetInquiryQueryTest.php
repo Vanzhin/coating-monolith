@@ -64,6 +64,6 @@ final class GetInquiryQueryTest extends KernelTestCase
         self::assertStringContainsString('Вещества: Сырая нефть-', $joined);
         self::assertStringContainsString('Подложка: Углеродистая сталь', $joined);
         self::assertStringContainsString('Среда:', $joined);
-        self::assertStringContainsString('Температура у вещества: 40 °C', $joined);
+        self::assertStringContainsString('Температура вещества: 40 °C', $joined);
     }
 }
