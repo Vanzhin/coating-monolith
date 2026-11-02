@@ -19,6 +19,7 @@ use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Domain\Repository\TagRepositoryInterface;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Repository\Pager;
@@ -41,6 +42,8 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
     private string $coatingId;
     private string $manufacturerId;
     private string $tagId;
+    /** @var list<Uuid> */
+    private array $extraCoatingIds = [];
 
     protected function setUp(): void
     {
@@ -100,6 +103,12 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         try {
+            foreach ($this->extraCoatingIds as $id) {
+                $extra = $em->find(Coating::class, $id);
+                if (null !== $extra) {
+                    $em->remove($extra);
+                }
+            }
             $coating = $em->find(Coating::class, Uuid::fromString($this->coatingId));
             if (null !== $coating) {
                 $em->remove($coating);
@@ -159,6 +168,64 @@ final class CoatingRepositoryFindByFilterTest extends KernelTestCase
 
         $ids = array_map(fn (Coating $c) => $c->getId(), $result->items);
         self::assertContains($this->coatingId, $ids, 'Single-word опечатка должна ловиться fuzzy fallback\'ом.');
+    }
+
+    public function test_fuzzy_results_are_paginated_within_ten_result_limit(): void
+    {
+        $manufacturer = $this->em->find(Manufacturer::class, Uuid::fromString($this->manufacturerId));
+        \assert($manufacturer instanceof Manufacturer);
+        for ($i = 0; $i < 12; ++$i) {
+            $coating = new Coating(
+                UuidService::generateUuid(),
+                sprintf('Антигрязепокрытие %02d', $i),
+                'Описание материала.',
+                50,
+                1.5,
+                CoatingBase::EP,
+                new DftRange(new PositiveNumberRange(80, 150), 100, ThicknessType::MIC),
+                5,
+                new DryingTimeSeries(new TimeAtTemperature(20, 60)),
+                new DryingTimeSeries(new TimeAtTemperature(20, 1440)),
+                new RecoatingIntervalTree(new DryingTimeSeries(new TimeAtTemperature(20, 240))),
+                null,
+                1.0,
+                null,
+                $manufacturer,
+                self::getContainer()->get(CoatingSpecification::class),
+            );
+            $this->repo->add($coating);
+            $this->extraCoatingIds[] = $coating->id;
+        }
+
+        $search = new SearchQuery('антигрязепокрытме');
+        $allIds = [];
+        foreach ([1, 2, 3, 4] as $page) {
+            $result = $this->repo->findByFilter(new CoatingsFilter(
+                search: $search,
+                manufacturerIds: new StringCollection($this->manufacturerId),
+                pager: Pager::fromPage($page, 3),
+            ));
+            self::assertSame(10, $result->total);
+            self::assertCount(4 === $page ? 1 : 3, $result->items);
+            array_push($allIds, ...array_map(static fn (Coating $c): string => $c->getId(), $result->items));
+        }
+        self::assertCount(10, array_unique($allIds));
+
+        $pastLimit = $this->repo->findByFilter(new CoatingsFilter(
+            search: $search,
+            manufacturerIds: new StringCollection($this->manufacturerId),
+            pager: Pager::fromPage(5, 3),
+        ));
+        self::assertSame(10, $pastLimit->total);
+        self::assertSame([], $pastLimit->items);
+
+        $selected = $this->repo->findByFilter(new CoatingsFilter(
+            search: $search,
+            pager: Pager::fromPage(1, 3),
+            coatingIds: new StringCollection($allIds[0], $allIds[1]),
+        ));
+        self::assertSame(2, $selected->total);
+        self::assertCount(2, $selected->items);
     }
 
     private function getTagTitle(): string

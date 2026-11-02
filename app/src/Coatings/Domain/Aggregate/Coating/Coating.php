@@ -357,17 +357,23 @@ class Coating extends Aggregate
     {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
+            $this->raise(new CoatingMutated($this->getId()));
         }
     }
 
     public function removeTag(Tag $tag): void
     {
-        $this->tags->removeElement($tag);
+        if ($this->tags->removeElement($tag)) {
+            $this->raise(new CoatingMutated($this->getId()));
+        }
     }
 
     /** @param list<Tag> $tags */
     public function replaceTags(array $tags): void
     {
+        if (!$this->tags->isEmpty()) {
+            $this->raise(new CoatingMutated($this->getId()));
+        }
         $this->tags->clear();
         foreach ($tags as $tag) {
             $this->addTag($tag);

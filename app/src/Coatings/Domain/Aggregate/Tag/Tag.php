@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Aggregate\Tag;
 
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Event\TagRenamed;
 use App\Shared\Domain\Aggregate\Aggregate;
 use App\Shared\Domain\Service\AssertService;
 use App\Shared\Domain\Service\UuidService;
@@ -34,7 +35,8 @@ class Tag extends Aggregate
         $this->id = UuidService::generate();
         $this->specification = $specification;
         $this->coatings = new ArrayCollection();
-        $this->setTitle($title);
+        AssertService::maxLength($title, 100);
+        $this->title = $title;
         $this->setType($type);
         $this->specification->titleAndTypeTagSpecification->satisfy($this);
     }
@@ -56,8 +58,12 @@ class Tag extends Aggregate
 
     public function setTitle(string $title): void
     {
+        AssertService::maxLength($title, 100);
+        $renamed = $this->title !== $title;
         $this->title = $title;
-        AssertService::maxLength($this->title, 100);
+        if ($renamed) {
+            $this->raise(new TagRenamed($this->id));
+        }
     }
 
     public function setType(?string $type): void

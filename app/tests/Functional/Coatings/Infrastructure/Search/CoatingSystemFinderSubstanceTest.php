@@ -12,7 +12,10 @@ use App\ChemicalResistance\Domain\Aggregate\Substance\Specification\SubstanceSpe
 use App\ChemicalResistance\Domain\Aggregate\Substance\Substance;
 use App\ChemicalResistance\Infrastructure\Repository\AssessmentRepository;
 use App\ChemicalResistance\Infrastructure\Repository\SubstanceRepository;
+use App\Coatings\Application\DTO\CoatingSystems\CoatingSystemsFilterInput;
 use App\Coatings\Application\Service\CoatingSystemOperatingTemperatureCalculator;
+use App\Coatings\Application\UseCase\Query\SearchSystemsAndCoatings\SearchSystemsAndCoatingsQuery;
+use App\Coatings\Application\UseCase\Query\SearchSystemsAndCoatings\SearchSystemsAndCoatingsQueryResult;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingBase;
 use App\Coatings\Domain\Aggregate\Coating\DftRange;
@@ -26,14 +29,19 @@ use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Repository\CoatingRepositoryInterface;
+use App\Coatings\Domain\Repository\CoatingsFilter;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
+use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
+use App\Shared\Application\Query\QueryBusInterface;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
+use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Service\UuidService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -244,6 +252,96 @@ final class CoatingSystemFinderSubstanceTest extends KernelTestCase
         $withoutFacet = $this->finder->find($this->filter(substanceIds: []));
 
         self::assertContains($sys->getId(), $withoutFacet->ids->getList());
+    }
+
+    public function test_coating_substance_filter_combines_grades_temperature_and_pagination(): void
+    {
+        $ethanol = $this->createSubstance('Этанол для покрытия');
+        $water = $this->createSubstance('Вода для покрытия');
+        $manufacturer = $this->persistManufacturer();
+        $resistant = $this->persistCoating($manufacturer);
+        $limited = $this->persistCoating($manufacturer);
+        $unsuitable = $this->persistCoating($manufacturer);
+        $missing = $this->persistCoating($manufacturer);
+        $this->createAssessment($resistant->getId(), $ethanol, Grade::R, 60);
+        $this->createAssessment($resistant->getId(), $water, Grade::LR, 60);
+        $this->createAssessment($limited->getId(), $ethanol, Grade::LR, 40);
+        $this->createAssessment($limited->getId(), $water, Grade::R, 40);
+        $this->createAssessment($unsuitable->getId(), $ethanol, Grade::NR, 60);
+        $this->createAssessment($unsuitable->getId(), $water, Grade::R, 60);
+        $this->createAssessment($missing->getId(), $ethanol, Grade::R, 60);
+
+        $repo = self::getContainer()->get(CoatingRepositoryInterface::class);
+        $both = new StringCollection($ethanol, $water);
+        $page = $repo->findByFilter(new CoatingsFilter(
+            pager: Pager::fromPage(1, 1),
+            substanceIds: $both,
+            substanceTemperature: new PositiveNumber(40),
+        ));
+        self::assertSame(2, $page->total);
+        self::assertCount(1, $page->items);
+
+        $nextPage = $repo->findByFilter(new CoatingsFilter(
+            pager: Pager::fromPage(2, 1),
+            substanceIds: $both,
+            substanceTemperature: new PositiveNumber(40),
+        ));
+        self::assertSame(2, $nextPage->total);
+        self::assertCount(1, $nextPage->items);
+        self::assertNotSame($page->items[0]->getId(), $nextPage->items[0]->getId());
+
+        $warmer = $repo->findByFilter(new CoatingsFilter(
+            pager: Pager::fromPage(1, 20),
+            substanceIds: $both,
+            substanceTemperature: new PositiveNumber(41),
+        ));
+        self::assertSame(1, $warmer->total);
+        self::assertSame($resistant->getId(), $warmer->items[0]->getId());
+
+        $selected = $repo->findByFilter(new CoatingsFilter(
+            pager: Pager::fromPage(1, 20),
+            coatingIds: new StringCollection($limited->getId()),
+            substanceIds: $both,
+            substanceTemperature: new PositiveNumber(40),
+        ));
+        self::assertSame(1, $selected->total);
+        self::assertSame($limited->getId(), $selected->items[0]->getId());
+
+        $text = $repo->findByFilter(new CoatingsFilter(
+            search: new SearchQuery($resistant->getTitle()),
+            pager: Pager::fromPage(1, 20),
+            substanceIds: $both,
+            substanceTemperature: new PositiveNumber(40),
+        ));
+        self::assertSame(1, $text->total);
+        self::assertSame($resistant->getId(), $text->items[0]->getId());
+    }
+
+    public function test_combined_search_returns_coatings_without_systems_and_flags_unchecked_conditions(): void
+    {
+        $ethanol = $this->createSubstance('Этанол для общего поиска');
+        $coating = $this->persistCoating($this->persistManufacturer());
+        $this->createAssessment($coating->getId(), $ethanol, Grade::R, 50);
+
+        $bus = self::getContainer()->get(QueryBusInterface::class);
+        $result = $bus->execute(new SearchSystemsAndCoatingsQuery(new CoatingSystemsFilterInput(
+            substrates: [Substrate::STEEL_CARBON->value],
+            substanceIds: [$ethanol],
+            substanceTemperature: 40,
+        )));
+        self::assertInstanceOf(SearchSystemsAndCoatingsQueryResult::class, $result);
+        self::assertSame(0, $result->systems->total);
+        self::assertNotNull($result->coatings);
+        self::assertSame(1, $result->coatings->pager->total_items);
+        self::assertArrayHasKey($coating->getId(), $result->coatings->coatings);
+        self::assertSame(['Подложка'], $result->uncheckedCoatingConditions);
+
+        $noApplicableConditions = $bus->execute(new SearchSystemsAndCoatingsQuery(new CoatingSystemsFilterInput(
+            substrates: [Substrate::STEEL_CARBON->value],
+        )));
+        self::assertInstanceOf(SearchSystemsAndCoatingsQueryResult::class, $noApplicableConditions);
+        self::assertNull($noApplicableConditions->coatings);
+        self::assertSame(['Подложка'], $noApplicableConditions->uncheckedCoatingConditions);
     }
 
     /**

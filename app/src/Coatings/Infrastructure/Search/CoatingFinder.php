@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Coatings\Infrastructure\Search;
 
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Assessment;
+use App\ChemicalResistance\Domain\Aggregate\Assessment\Grade;
 use App\Coatings\Domain\Aggregate\Coating\Coating;
 use App\Coatings\Domain\Aggregate\Coating\CoatingSearch;
 use App\Coatings\Domain\Repository\CoatingsFilter;
@@ -65,14 +67,21 @@ final class CoatingFinder
         $qb->andWhere($similarity.' > :threshold')
             ->addSelect($similarity.' AS HIDDEN sim')
             ->orderBy('sim', 'DESC')
-            ->setMaxResults(self::FUZZY_LIMIT)
             ->setParameter('search', $filter->search->value)
             ->setParameter('threshold', self::FUZZY_SIMILARITY_THRESHOLD);
 
         $this->applyFacets($qb, $filter);
         $this->applyUserSort($qb, $filter->sort);
+        $qb->addOrderBy('cc.title', 'ASC')->addOrderBy('cc.id', 'ASC');
 
-        return $this->paginate($qb);
+        $offset = $filter->pager?->getOffset() ?? 0;
+        $perPage = $filter->pager?->getLimit() ?? self::FUZZY_LIMIT;
+        $qb->setFirstResult($offset)
+            ->setMaxResults(max(0, min($perPage, self::FUZZY_LIMIT - $offset)));
+
+        $result = $this->paginate($qb);
+
+        return new PaginationResult($result->items, min($result->total, self::FUZZY_LIMIT));
     }
 
     /**
@@ -130,6 +139,51 @@ final class CoatingFinder
         $this->applyTagFacet($qb, $filter);
         $this->applyThermalExposureFacet($qb, $filter);
         $this->applyBaseFacet($qb, $filter);
+        $this->applyCoatingFacet($qb, $filter);
+        $this->applySubstanceResistanceFacet($qb, $filter);
+    }
+
+    private function applyCoatingFacet(QueryBuilder $qb, CoatingsFilter $filter): void
+    {
+        if (0 === $filter->coatingIds->count()) {
+            return;
+        }
+
+        $qb->andWhere('cc.id IN (:coatingIds)')
+            ->setParameter('coatingIds', $filter->coatingIds->getList());
+    }
+
+    private function applySubstanceResistanceFacet(QueryBuilder $qb, CoatingsFilter $filter): void
+    {
+        if (0 === $filter->substanceIds->count()) {
+            return;
+        }
+
+        $suitableGrades = array_map(
+            static fn (Grade $grade): string => $grade->value,
+            array_filter(Grade::cases(), static fn (Grade $grade): bool => $grade->isSuitable()),
+        );
+        $qb->setParameter('suitableGrades', $suitableGrades);
+
+        foreach ($filter->substanceIds->getList() as $i => $substanceId) {
+            $alias = 'assessment'.$i;
+            $param = 'substance'.$i;
+            $subquery = sprintf(
+                'SELECT %1$s.id FROM %2$s %1$s WHERE %1$s.coatingId = cc.id AND %1$s.substanceId = :%3$s AND %1$s.grade IN (:suitableGrades)',
+                $alias,
+                Assessment::class,
+                $param,
+            );
+            if (null !== $filter->substanceTemperature) {
+                $subquery .= sprintf(' AND %s.maxTemperatureCelsius >= :substanceTemperature', $alias);
+            }
+
+            $qb->andWhere('EXISTS ('.$subquery.')')->setParameter($param, $substanceId);
+        }
+
+        if (null !== $filter->substanceTemperature) {
+            $qb->setParameter('substanceTemperature', $filter->substanceTemperature->value());
+        }
     }
 
     /**

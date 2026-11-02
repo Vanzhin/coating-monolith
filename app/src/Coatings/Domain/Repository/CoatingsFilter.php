@@ -6,6 +6,7 @@ namespace App\Coatings\Domain\Repository;
 
 use App\Coatings\Domain\Aggregate\Coating\ThermalExposureLimits;
 use App\Shared\Domain\Aggregate\Collection\StringCollection;
+use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\Repository\Pager;
 use App\Shared\Domain\Repository\RangeFilter;
 
@@ -41,6 +42,9 @@ readonly class CoatingsFilter
         // (см. RECOATING_AT_20C DQL-функцию, зеркалит DryingTimeSeries::getPoint).
         public ?RangeFilter $minRecoating20 = null,
         public ?RangeFilter $maxRecoating20 = null,
+        public StringCollection $coatingIds = new StringCollection(),
+        public StringCollection $substanceIds = new StringCollection(),
+        public ?PositiveNumber $substanceTemperature = null,
     ) {
         ThermalExposureLimits::assertTemperatureInRange('фильтр', $thermalTemperature);
     }

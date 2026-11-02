@@ -40,12 +40,14 @@ final class PublishDomainEventsOnFlushListener
         }
 
         foreach ($unitOfWork->getScheduledCollectionDeletions() as $collection) {
+            $this->collectDomainEvents($collection->getOwner());
             foreach ($collection as $entity) {
                 $this->collectDomainEvents($entity);
             }
         }
 
         foreach ($unitOfWork->getScheduledCollectionUpdates() as $collection) {
+            $this->collectDomainEvents($collection->getOwner());
             foreach ($collection as $entity) {
                 $this->collectDomainEvents($entity);
             }
@@ -80,7 +82,7 @@ final class PublishDomainEventsOnFlushListener
         return $event::class.'#'.json_encode($props);
     }
 
-    private function collectDomainEvents(object $entity): void
+    private function collectDomainEvents(?object $entity): void
     {
         if ($entity instanceof Aggregate && !$entity->eventsEmpty()) {
             foreach ($entity->pullEvents() as $event) {

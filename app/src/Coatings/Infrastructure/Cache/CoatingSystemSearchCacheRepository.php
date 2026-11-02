@@ -61,6 +61,9 @@ final class CoatingSystemSearchCacheRepository
             $coating = $layer->getCoating();
             $parts[] = $coating->getManufacturer()->getTitle();
             $parts[] = $coating->getTitle();
+            foreach ($coating->getTags() as $tag) {
+                $parts[] = $tag->getTitle();
+            }
         }
         foreach ($system->getTags() as $tag) {
             $parts[] = $tag->getTitle();

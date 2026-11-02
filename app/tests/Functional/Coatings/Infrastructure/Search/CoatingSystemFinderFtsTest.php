@@ -18,15 +18,21 @@ use App\Coatings\Domain\Aggregate\Color\Color;
 use App\Coatings\Domain\Aggregate\Manufacturer\Manufacturer;
 use App\Coatings\Domain\Aggregate\Manufacturer\Specification\ManufacturerSpecification;
 use App\Coatings\Domain\Aggregate\SurfaceTreatment\SurfaceTreatment;
+use App\Coatings\Domain\Aggregate\Tag\Specification\TagSpecification;
+use App\Coatings\Domain\Aggregate\Tag\Tag;
 use App\Coatings\Domain\Repository\CoatingSystemRepositoryInterface;
 use App\Coatings\Domain\Repository\CoatingSystemsFilter;
 use App\Coatings\Domain\Repository\SearchQuery;
 use App\Coatings\Infrastructure\Cache\CoatingSystemSearchCacheRepository;
 use App\Coatings\Infrastructure\Search\CoatingSystemFinder;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Aggregate\Enum\ThicknessType;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumberRange;
 use App\Shared\Domain\Service\UuidService;
+use App\Shared\Infrastructure\Database\Migrations\Version20261120000007;
+use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,6 +60,8 @@ final class CoatingSystemFinderFtsTest extends KernelTestCase
     private array $mfrIds = [];
     /** @var list<Uuid> */
     private array $treatmentIds = [];
+    /** @var list<string> */
+    private array $tagIds = [];
 
     protected function setUp(): void
     {
@@ -84,6 +92,13 @@ final class CoatingSystemFinderFtsTest extends KernelTestCase
                 $c = $em->find(Coating::class, $id);
                 if (null !== $c) {
                     $em->remove($c);
+                }
+            }
+            $em->flush();
+            foreach ($this->tagIds as $id) {
+                $tag = $em->find(Tag::class, $id);
+                if (null !== $tag) {
+                    $em->remove($tag);
                 }
             }
             foreach ($this->mfrIds as $id) {
@@ -157,6 +172,89 @@ final class CoatingSystemFinderFtsTest extends KernelTestCase
 
         self::assertContains($sysWithDashes->getId(), $result->ids);
         self::assertNotContains($sysOther->getId(), $result->ids);
+    }
+
+    public function test_layer_tag_changes_update_search_but_not_system_tag_facet(): void
+    {
+        $system = $this->buildAndSaveSystem('Морская защита', Substrate::STEEL_CARBON);
+        $coating = $system->getLayers()->first()->getCoating();
+        $tag = $this->createTag('Ксилозостойкость');
+
+        $coating->addTag($tag);
+        $this->em->flush();
+
+        self::assertContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(
+            search: new SearchQuery('морская ксилозостойкость'),
+        ))->ids);
+        self::assertNotContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(
+            tagIds: new StringCollection($tag->getId()),
+        ))->ids);
+
+        $tag->setTitle('Бензолостойкость');
+        $this->em->flush();
+        self::assertContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('бензолостойкость')))->ids);
+        self::assertNotContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('ксилозостойкость')))->ids);
+
+        $coating->removeTag($tag);
+        $this->em->flush();
+        self::assertNotContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('бензолостойкость')))->ids);
+
+        $coating->replaceTags([$tag]);
+        $this->em->flush();
+        self::assertContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('бензолостойкость')))->ids);
+
+        $coating->replaceTags([]);
+        $this->em->flush();
+        self::assertNotContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('бензолостойкость')))->ids);
+    }
+
+    public function test_renaming_system_tag_updates_search(): void
+    {
+        $system = $this->buildAndSaveSystem('Защита от среды', Substrate::STEEL_CARBON);
+        $tag = $this->createTag('Старыймаркер');
+        $system->addTag($tag);
+        $this->repo->save($system);
+
+        $tag->setTitle('Новыймаркер');
+        $this->em->flush();
+
+        self::assertContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('новыймаркер')))->ids);
+        self::assertNotContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('старыймаркер')))->ids);
+    }
+
+    public function test_backfill_adds_layer_tags_and_is_idempotent(): void
+    {
+        $system = $this->buildAndSaveSystem('Морская грунтовка', Substrate::STEEL_CARBON);
+        $coating = $system->getLayers()->first()->getCoating();
+        $tag = $this->createTag('Фенолостойкость');
+        $coating->addTag($tag);
+        $this->em->flush();
+
+        $connection = $this->em->getConnection();
+        $connection->executeStatement(
+            "UPDATE coating_system_search SET search_tsvector = to_tsvector('russian', :title) WHERE system_id = :id",
+            ['title' => $system->getTitle(), 'id' => $system->getId()],
+        );
+        $migration = new Version20261120000007($connection, new NullLogger());
+        $migration->up(new Schema());
+        $sql = $migration->getSql()[0]->getStatement();
+        $connection->executeStatement($sql);
+        self::assertContains($system->getId(), $this->finder->find(new CoatingSystemsFilter(search: new SearchQuery('морская фенолостойкость')))->ids);
+
+        $before = $connection->fetchOne('SELECT search_tsvector::text FROM coating_system_search WHERE system_id = :id', ['id' => $system->getId()]);
+        $connection->executeStatement($sql);
+        $after = $connection->fetchOne('SELECT search_tsvector::text FROM coating_system_search WHERE system_id = :id', ['id' => $system->getId()]);
+        self::assertSame($before, $after);
+    }
+
+    private function createTag(string $title): Tag
+    {
+        $tag = new Tag($title.'-'.bin2hex(random_bytes(4)), self::getContainer()->get(TagSpecification::class), Tag::TYPE_GENERAL);
+        $this->em->persist($tag);
+        $this->em->flush();
+        $this->tagIds[] = $tag->getId();
+
+        return $tag;
     }
 
     private function buildAndSaveSystem(string $title, Substrate $substrate): CoatingSystem
