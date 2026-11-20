@@ -38,6 +38,17 @@
                 </a>
             </div>
             {% if is_granted('ROLE_ADMIN') %}
+            <div class="menu-block">
+                <div class="block-title">Авто</div>
+                <a href="{{ path('app_cabinet_waybill_sheet_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_waybill_sheet_' ? ' active' : '' }}" title="Путевые листы"
+                   {% if current_route starts with 'app_cabinet_waybill_sheet_' %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-spreadsheet"></i><span>Путевые листы</span></a>
+                <a href="{{ path('app_cabinet_waybills_profile') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_waybills_profile' ? ' active' : '' }}" title="Карточка водителя"
+                   {% if current_route starts with 'app_cabinet_waybills_profile' %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-person"></i><span>Карточка водителя</span></a>
+                <a href="{{ path('app_cabinet_waybill_vehicle_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_waybill_vehicle' ? ' active' : '' }}" title="Автомобили"
+                   {% if current_route starts with 'app_cabinet_waybill_vehicle' %}aria-current="page"{% endif %}><i class="bi bi-car-front"></i><span>Автомобили</span></a>
+            </div>
+            {% endif %}
+            {% if is_granted('ROLE_ADMIN') %}
                 <div class="menu-block">
                     <div class="block-title">Администрирование</div>
                     <a href="{{ path('app_cabinet_surface_treatment_list') }}" class="app-nav-item{{ current_route starts with 'app_cabinet_surface_treatment' ? ' active' : '' }}" title="Подготовка поверхности"

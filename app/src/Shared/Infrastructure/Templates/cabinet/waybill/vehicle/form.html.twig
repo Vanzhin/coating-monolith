@@ -1,0 +1,70 @@
+{% extends '/cabinet/index.html.twig' %}
+{% set pageTitle = id ? 'Редактирование автомобиля' : 'Добавление автомобиля' %}
+{% set submitLabel = id ? 'Сохранить' : 'Добавить' %}
+{% set actionUrl = id ? path('app_cabinet_waybill_vehicle_edit', {id: id}) : path('app_cabinet_waybill_vehicle_create') %}
+{% set anchors = [
+    {id: 'sec-main', label: 'Автомобиль'},
+    {id: 'sec-fuel', label: 'Топливо'},
+] %}
+{% if not id %}{% set anchors = anchors|merge([{id: 'sec-initial', label: 'Начальное состояние'}]) %}{% endif %}
+{% block title %}{{ parent() }} | {{ pageTitle }}{% endblock %}
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {title: pageTitle, back_url: path('app_cabinet_waybill_vehicle_list'), save_form_id: 'vehicle-form', save_label: submitLabel, anchors: anchors} %}
+        {% block sections %}
+            <form id="vehicle-form" method="post" action="{{ actionUrl }}" class="w-100" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token('vehicle_' ~ (id ?? 'new')) }}">
+                {% if error %}<div class="form-alert" role="alert"><i class="bi bi-exclamation-octagon"></i><div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div></div>{% endif %}
+                <div id="sec-main" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Основные данные</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label for="model" class="form-label">Марка и модель <span class="text-danger">*</span></label><input id="model" name="model" value="{{ input.model }}" class="form-control" required></div>
+                        <div class="col-md-6"><label for="registrationNumber" class="form-label">Госномер <span class="text-danger">*</span></label><input id="registrationNumber" name="registrationNumber" value="{{ input.registrationNumber }}" class="form-control" maxlength="9" placeholder="A123BC77" required><div class="form-text">Латинские A, B, E, K, M, H, O, P, C, T, Y, X; номер из трёх цифр, кроме 000, и регион из двух или трёх цифр.</div></div>
+                    </div>
+                </div>
+                    <div id="sec-fuel" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h6 class="fw-semibold mb-3">Топливо</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-label">Марки топлива</div>
+                                {% for fuelType in fuelTypes %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fuelTypes[]" value="{{ fuelType.value }}" id="fuelType{{ loop.index }}" {% if fuelType.value in selectedFuelTypes %}checked{% endif %}>
+                                        <label class="form-check-label" for="fuelType{{ loop.index }}">{{ fuelType.value }}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="defaultFuelType" class="form-label">Топливо по умолчанию</label>
+                                <select id="defaultFuelType" name="defaultFuelType" class="form-select">
+                                    {% for fuelType in fuelTypes %}
+                                        <option value="{{ fuelType.value }}" {% if fuelType.value == input.defaultFuelType %}selected{% endif %}>{{ fuelType.value }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Должно входить в выбранные марки топлива.</div>
+                            </div>
+                            <div class="col-md-6"><label for="consumptionRate" class="form-label">Норма расхода, л/100 км</label><input id="consumptionRate" name="consumptionRate" value="{{ input.consumptionRate }}" class="form-control" type="number" step="any" min="0"></div>
+                        </div>
+                    </div>
+                {% if not id %}
+                    <div id="sec-initial" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                        <h6 class="fw-semibold mb-3">Начальное состояние</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="initialAt" class="form-label">Дата и время начала истории <span class="text-danger">*</span></label>
+                                <input id="initialAt" name="initialAt" value="{{ input.initialAt }}" class="form-control" type="datetime-local" required>
+                                <div class="form-text">Часовой пояс: {{ timezone }}.</div>
+                            </div>
+                            <div class="col-md-6"><label for="initialOdometer" class="form-label">Показание одометра, км <span class="text-danger">*</span></label><input id="initialOdometer" name="initialOdometer" value="{{ input.initialOdometer }}" class="form-control" type="number" min="0" step="1" required></div>
+                            <div class="col-md-6"><label for="initialFuelRemaining" class="form-label">Остаток топлива, л <span class="text-danger">*</span></label><input id="initialFuelRemaining" name="initialFuelRemaining" value="{{ input.initialFuelRemaining }}" class="form-control" type="number" min="0" step="any" required></div>
+                            <div class="col-12"><div class="form-label">Начальная точка <span class="text-danger">*</span></div><div class="form-text">Укажите хотя бы одну часть адреса.</div></div>
+                            <div class="col-md-6"><label for="initialCountry" class="form-label">Страна</label><input id="initialCountry" name="initialCountry" value="{{ input.initialCountry }}" class="form-control"></div>
+                            <div class="col-md-6"><label for="initialCity" class="form-label">Город</label><input id="initialCity" name="initialCity" value="{{ input.initialCity }}" class="form-control"></div>
+                            <div class="col-md-6"><label for="initialStreet" class="form-label">Улица</label><input id="initialStreet" name="initialStreet" value="{{ input.initialStreet }}" class="form-control"></div>
+                            <div class="col-md-6"><label for="initialHouse" class="form-label">Дом</label><input id="initialHouse" name="initialHouse" value="{{ input.initialHouse }}" class="form-control"></div>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

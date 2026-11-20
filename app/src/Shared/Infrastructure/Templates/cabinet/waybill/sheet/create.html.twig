@@ -1,0 +1,13 @@
+{% extends '/cabinet/index.html.twig' %}
+{% block title %}{{ parent() }} | Новый путевой лист{% endblock %}
+{% block content %}
+    {% include 'cabinet/waybill/sheet/_form.html.twig' with {
+        creating: true,
+        formTitle: 'Новый путевой лист',
+        backUrl: path('app_cabinet_waybill_sheet_list', {vehicleId: vehicle.id}),
+        tokenId: 'waybill_new_' ~ vehicle.id,
+        startOdometer: input.initialOdometer,
+        startFuel: input.initialFuel,
+        availableFuelTypes: vehicle.fuelTypes,
+    } %}
+{% endblock %}

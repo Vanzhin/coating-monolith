@@ -1,0 +1,49 @@
+{% extends '/cabinet/index.html.twig' %}
+{% block title %}{{ parent() }} | Путевые листы{% endblock %}
+{% block content %}
+    {% set pagination %}
+        {% if page > 1 or page * perPage < total %}
+            <nav class="mt-3"><ul class="pagination pagination-sm justify-content-center">
+                {% if page > 1 %}<li class="page-item"><a class="page-link" href="{{ path('app_cabinet_waybill_sheet_list', {vehicleId: vehicleId, page: page - 1}) }}">Назад</a></li>{% endif %}
+                <li class="page-item active"><span class="page-link">{{ page }}</span></li>
+                {% if page * perPage < total %}<li class="page-item"><a class="page-link" href="{{ path('app_cabinet_waybill_sheet_list', {vehicleId: vehicleId, page: page + 1}) }}">Вперёд</a></li>{% endif %}
+            </ul></nav>
+        {% endif %}
+    {% endset %}
+
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Путевые листы',
+        create_route: 'app_cabinet_waybill_sheet_new',
+        can_edit: true,
+        is_empty: items is empty,
+    } %}
+        {% block above_list_container %}{% endblock %}
+
+        {% block empty_state %}
+            <div class="text-center text-muted">Путевые листы не найдены.</div>
+            {{ pagination }}
+        {% endblock %}
+
+        {% block list_content %}
+            <div class="ecard-grid">
+                {% for item in items %}
+                    <div class="ecard">
+                        <div class="ecard-media"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+                        <div class="ecard-body">
+                            <div class="ecard-head">
+                                <a href="{{ path('app_cabinet_waybill_sheet_show', {id: item.getId()}) }}" class="ecard-title stretched-link text-decoration-none text-body">Путевой лист №{{ item.getNumber() }}</a>
+                            </div>
+                            <div class="kv-grid mt-3">
+                                <div class="kvi"><span class="k">Автомобиль</span><span class="v">{{ item.vehicleModel() }}</span></div>
+                                <div class="kvi"><span class="k">Период</span><span class="v">{{ item.period().from().format('d.m.Y') }}–{{ item.period().to().format('d.m.Y') }}</span></div>
+                                <div class="kvi"><span class="k">Статус</span><span class="v">{{ item.isLocked() ? 'Утверждён' : 'Черновик' }}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block below_list %}{{ pagination }}{% endblock %}
+    {% endembed %}
+{% endblock %}

@@ -40,9 +40,11 @@
     </div>
 
     {# Group 2: search + chip-row + прочий above_list-контент. #}
-    <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
-        {% block above_list %}{% endblock %}
-    </div>
+    {% block above_list_container %}
+        <div class="mb-3 p-3 rounded-3 bg-body-tertiary">
+            {% block above_list %}{% endblock %}
+        </div>
+    {% endblock %}
 
     {# Group 3: список карточек (или empty-state). #}
     <div class="p-3 rounded-3 bg-body-tertiary">

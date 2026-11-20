@@ -1,0 +1,13 @@
+{% extends '/cabinet/index.html.twig' %}
+{% block title %}{{ parent() }} | Путевой лист №{{ waybill.getNumber() }}{% endblock %}
+{% block content %}
+    {% include 'cabinet/waybill/sheet/_form.html.twig' with {
+        creating: false,
+        formTitle: 'Путевой лист №' ~ waybill.getNumber(),
+        backUrl: path('app_cabinet_waybill_sheet_show', {id: waybill.getId()}),
+        tokenId: 'waybill_edit_' ~ waybill.getId(),
+        startOdometer: waybill.odometerStart(),
+        startFuel: waybill.fuelStart(),
+        availableFuelTypes: waybill.vehicleFuelTypes()|map(type => type.value),
+    } %}
+{% endblock %}

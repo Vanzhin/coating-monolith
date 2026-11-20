@@ -61,3 +61,7 @@ personnel:
 compliance:
   resource: ../src/Compliance/Infrastructure/Controller
   type: attribute
+
+waybills:
+  resource: ../src/Waybills/Infrastructure/Controller
+  type: attribute

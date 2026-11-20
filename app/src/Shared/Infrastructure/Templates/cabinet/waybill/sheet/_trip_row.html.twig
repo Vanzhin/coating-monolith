@@ -1,0 +1,18 @@
+<div data-waybill-form-target="tripRow" data-row-label="Поездка">
+    <div class="p-3 mb-3 rounded-3 bg-body">
+    <div class="d-flex justify-content-between align-items-center mb-3"><strong data-role="row-title">Поездка {{ number }}</strong><button type="button" class="btn btn-sm btn-outline-danger" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash"></i></button></div>
+    <input type="hidden" name="trips[{{ index }}][id]" value="{{ trip.id }}">
+    <div class="row g-3">
+        <div class="col-12"><span class="form-label">Откуда</span><div data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house]|filter(value => value)|join(', ') }}{% if departure.enterprise|default('') %}, {{ departure.enterprise }}{% endif %}</div></div>
+        <div class="col-md-6"><label class="form-label" for="trip-date-{{ index }}">Дата и время</label><input id="trip-date-{{ index }}" name="trips[{{ index }}][date]" value="{{ trip.date }}" class="form-control" type="datetime-local" step="1"></div>
+        <div class="col-md-6"><label class="form-label" for="trip-distance-{{ index }}">Расстояние, км</label><input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="form-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate"></div>
+        <div class="col-md-6"><label class="form-label" for="trip-country-{{ index }}">Страна</label><input id="trip-country-{{ index }}" name="trips[{{ index }}][country]" value="{{ trip.country }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
+        <div class="col-md-6"><label class="form-label" for="trip-city-{{ index }}">Город</label><input id="trip-city-{{ index }}" name="trips[{{ index }}][city]" value="{{ trip.city }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
+        <div class="col-md-6"><label class="form-label" for="trip-street-{{ index }}">Улица</label><input id="trip-street-{{ index }}" name="trips[{{ index }}][street]" value="{{ trip.street }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
+        <div class="col-md-6"><label class="form-label" for="trip-house-{{ index }}">Дом</label><input id="trip-house-{{ index }}" name="trips[{{ index }}][house]" value="{{ trip.house }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
+        <div class="col-12"><label class="form-label" for="trip-enterprise-{{ index }}">Предприятие</label><input id="trip-enterprise-{{ index }}" name="trips[{{ index }}][enterprise]" value="{{ trip.enterprise }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
+    </div>
+    <div class="d-flex justify-content-center mb-3" data-role="trip-insertion" {% if not insertable %}hidden{% endif %}>
+        <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#insert"><i class="bi bi-plus-lg me-1"></i>Вставить поездку</button>
+    </div>
+</div>
