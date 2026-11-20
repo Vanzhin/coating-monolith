@@ -1,0 +1,18 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Waybills\Domain\Aggregate\Vehicle\FuelOperation" table="waybills_fuel_operation">
+        <id name="id" type="uuid"><generator strategy="NONE"/></id>
+        <field name="date" column="occurred_at" type="exact_datetime"/>
+        <field name="fuelType" column="fuel_type" type="text" enum-type="App\Waybills\Domain\Aggregate\Vehicle\FuelType"/>
+        <field name="change" column="amount" type="big_decimal" column-definition="NUMERIC NOT NULL"/>
+        <field name="type" type="text" enum-type="App\Waybills\Domain\Aggregate\Vehicle\FuelOperationType"/>
+        <many-to-one field="vehicle" target-entity="App\Waybills\Domain\Aggregate\Vehicle\Vehicle" fetch="LAZY">
+            <join-column name="vehicle_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
+        <many-to-one field="waybill" target-entity="App\Waybills\Domain\Aggregate\Waybill\Waybill" fetch="LAZY">
+            <join-column name="waybill_id" referenced-column-name="id" nullable="true"/>
+        </many-to-one>
+    </entity>
+</doctrine-mapping>

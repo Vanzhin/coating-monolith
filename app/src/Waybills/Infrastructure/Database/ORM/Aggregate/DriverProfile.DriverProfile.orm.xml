@@ -1,0 +1,10 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile" table="waybills_driver_profile">
+        <id name="id" type="uuid"><generator strategy="NONE"/></id>
+        <field name="ownerId" column="owner_id" type="text" unique="true"/>
+        <field name="driverDetails" column="driver_details" type="waybills_driver_details"><options><option name="jsonb">true</option></options></field>
+        <field name="routeSettings" column="route_settings" type="waybills_route_settings"><options><option name="jsonb">true</option></options></field>
+    </entity>
+</doctrine-mapping>

@@ -1,0 +1,22 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Waybills\Domain\Aggregate\Vehicle\Vehicle" table="waybills_vehicle">
+        <id name="id" type="uuid"><generator strategy="NONE"/></id>
+        <field name="model" type="text"/>
+        <field name="registrationNumber" column="registration_number" type="waybills_registration_number" unique="true"/>
+        <field name="fuelTypes" column="fuel_types" type="json" enum-type="App\Waybills\Domain\Aggregate\Vehicle\FuelType"><options><option name="jsonb">true</option></options></field>
+        <field name="defaultFuelType" column="default_fuel_type" type="text" enum-type="App\Waybills\Domain\Aggregate\Vehicle\FuelType"/>
+        <field name="initialAt" column="initial_at" type="precise_datetime_tz"/>
+        <field name="initialLocation" column="initial_location" type="waybills_location"><options><option name="jsonb">true</option></options></field>
+        <field name="initialOdometer" column="initial_odometer" type="bigint"/>
+        <field name="initialFuelRemaining" column="initial_fuel_remaining" type="big_decimal" column-definition="NUMERIC NOT NULL"/>
+        <field name="currentOdometer" column="current_odometer" type="bigint"/>
+        <field name="fuelRemaining" column="fuel_remaining" type="big_decimal" column-definition="NUMERIC NOT NULL"/>
+        <field name="consumptionRate" column="consumption_rate" type="waybills_consumption_rate" nullable="true"><options><option name="jsonb">true</option></options></field>
+        <one-to-one field="driver" target-entity="App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile">
+            <join-column name="driver_id" referenced-column-name="id" nullable="true" unique="true"/>
+        </one-to-one>
+    </entity>
+</doctrine-mapping>

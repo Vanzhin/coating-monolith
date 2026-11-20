@@ -26,7 +26,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
 /**
  * Драйвер xlsx-шаблонов на PhpSpreadsheet. Плейсхолдеры {{key}} / {{key?}} прямо в ячейках + повтор строки:
  * строка с токенами {{group.sub}} клонируется по числу строк группы (RepeatValue), подполя подставляются.
- * Повтор-строка опциональна по природе (пустой список → строка удаляется). Картинки/мерджи в xlsx не поддержаны.
+ * Повтор-строка опциональна по природе (пустой список → строка удаляется). Горизонтальные объединения
+ * внутри повтор-строки копируются; вертикальные объединения, пересекающие размножаемую строку,
+ * не поддерживаются. Картинки не поддержаны.
  */
 final class XlsxTemplateRenderer implements TemplateRenderer
 {
@@ -136,6 +138,7 @@ final class XlsxTemplateRenderer implements TemplateRenderer
         if (null === $templateRow) {
             return; // группы нет в этом листе
         }
+        $merges = count($rows) > 1 ? $this->repeatRowMerges($sheet, $templateRow) : [];
         if ([] === $rows) {
             $sheet->removeRow($templateRow, 1);
 
@@ -168,8 +171,29 @@ final class XlsxTemplateRenderer implements TemplateRenderer
             }
             if ($i > 0) {
                 $sheet->getRowDimension($target)->setRowHeight($height);
+                foreach ($merges as [$firstColumn, $lastColumn]) {
+                    $sheet->mergeCells($firstColumn.$target.':'.$lastColumn.$target, Worksheet::MERGE_CELL_CONTENT_HIDE);
+                }
             }
         }
+    }
+
+    /** @return list<array{string, string}> */
+    private function repeatRowMerges(Worksheet $sheet, int $templateRow): array
+    {
+        $merges = [];
+        foreach ($sheet->getMergeCells() as $range) {
+            [[$firstColumn, $firstRow], [$lastColumn, $lastRow]] = Coordinate::rangeBoundaries($range);
+            if ($templateRow < $firstRow || $templateRow > $lastRow) {
+                continue;
+            }
+            if ($firstRow !== $lastRow) {
+                throw new AppException(sprintf('Повторяемая строка %d пересекает вертикальное объединение ячеек %s.', $templateRow, $range));
+            }
+            $merges[] = [Coordinate::stringFromColumnIndex($firstColumn), Coordinate::stringFromColumnIndex($lastColumn)];
+        }
+
+        return $merges;
     }
 
     private function findGroupRow(Worksheet $sheet, string $group): ?int
