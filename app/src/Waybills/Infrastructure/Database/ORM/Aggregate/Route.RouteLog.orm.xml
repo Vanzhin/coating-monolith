@@ -1,0 +1,17 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Waybills\Domain\Aggregate\Route\RouteLog" table="waybills_route_log">
+        <id name="id" type="uuid"><generator strategy="NONE"/></id>
+        <field name="date" column="occurred_at" type="exact_datetime"/>
+        <field name="origin" type="text" enum-type="App\Waybills\Domain\Aggregate\Route\RouteLogOrigin"/>
+        <embedded name="destination" class="App\Waybills\Domain\Aggregate\Route\Destination" use-column-prefix="false"/>
+        <many-to-one field="vehicle" target-entity="App\Waybills\Domain\Aggregate\Vehicle\Vehicle" fetch="LAZY">
+            <join-column name="vehicle_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
+        <many-to-one field="previous" target-entity="App\Waybills\Domain\Aggregate\Route\RouteLog" fetch="LAZY">
+            <join-column name="previous_id" referenced-column-name="id" nullable="true"/>
+        </many-to-one>
+    </entity>
+</doctrine-mapping>

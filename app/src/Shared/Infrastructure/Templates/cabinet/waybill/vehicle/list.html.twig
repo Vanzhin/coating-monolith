@@ -1,0 +1,103 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Автомобили{% endblock %}
+
+{% macro vehicle_actions(item, q, page) %}
+    {% if item.canLeave %}
+        <li>
+            <form method="post" action="{{ path('app_cabinet_waybill_vehicle_leave', {id: item.id}) }}" class="m-0">
+                <input type="hidden" name="_token" value="{{ csrf_token('vehicle_occupancy_' ~ item.id) }}">
+                <input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="page" value="{{ page }}">
+                <button type="submit" class="dropdown-item">Выйти</button>
+            </form>
+        </li>
+    {% elseif not item.occupied %}
+        <li>
+            <form method="post" action="{{ path('app_cabinet_waybill_vehicle_enter', {id: item.id}) }}" class="m-0">
+                <input type="hidden" name="_token" value="{{ csrf_token('vehicle_occupancy_' ~ item.id) }}">
+                <input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="page" value="{{ page }}">
+                <button type="submit" class="dropdown-item">Сесть</button>
+            </form>
+        </li>
+    {% endif %}
+    <li><a class="dropdown-item" href="{{ path('app_cabinet_waybill_vehicle_edit', {id: item.id}) }}"><i class="bi bi-pencil me-2"></i>Изменить</a></li>
+    <li><a class="dropdown-item" href="{{ path('app_cabinet_waybill_sheet_list', {vehicleId: item.id}) }}">Путевые листы</a></li>
+{% endmacro %}
+
+{% block content %}
+    {% set pagination %}
+        {% if page > 1 or page * perPage < total %}
+            <nav class="mt-3"><ul class="pagination pagination-sm justify-content-center">
+                {% if page > 1 %}<li class="page-item"><a class="page-link" href="{{ path('app_cabinet_waybill_vehicle_list', {page: page - 1, q: q}) }}">Назад</a></li>{% endif %}
+                <li class="page-item active"><span class="page-link">{{ page }}</span></li>
+                {% if page * perPage < total %}<li class="page-item"><a class="page-link" href="{{ path('app_cabinet_waybill_vehicle_list', {page: page + 1, q: q}) }}">Вперёд</a></li>{% endif %}
+            </ul></nav>
+        {% endif %}
+    {% endset %}
+
+    <div data-controller="entity-preview"
+         data-entity-preview-endpoint-value="{{ path('app_cabinet_waybill_vehicle_preview', {id: '00000000-0000-0000-0000-000000000000'}) }}">
+    {% embed 'components/list_page.html.twig' with {
+        title: 'Автомобили',
+        create_route: 'app_cabinet_waybill_vehicle_create',
+        can_edit: true,
+        is_empty: items is empty,
+    } %}
+        {% block above_list %}
+            <form method="get" action="{{ path('app_cabinet_waybill_vehicle_list') }}">
+                <div class="input-group input-group-lg mb-3">
+                    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Поиск по модели или госномеру">
+                    <button type="submit" class="btn btn-primary" title="Найти" aria-label="Найти"><i class="bi bi-search"></i></button>
+                    <a href="{{ path('app_cabinet_waybill_vehicle_list') }}" class="btn btn-outline-secondary" title="Сброс" aria-label="Сброс"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block empty_state %}
+            <div class="text-center text-muted">Автомобили не найдены.</div>
+            {{ pagination }}
+        {% endblock %}
+
+        {% block list_content %}
+            {% import 'cabinet/waybill/vehicle/list.html.twig' as vehicle %}
+            <div class="ecard-grid">
+                {% for item in items %}
+                    <div class="ecard">
+                        <div class="ecard-media"><i class="bi bi-car-front"></i></div>
+                        <div class="ecard-body">
+                            <div class="ecard-head">
+                                <a href="{{ path('app_cabinet_waybill_vehicle_show', {id: item.id}) }}"
+                                   class="ecard-title stretched-link text-decoration-none text-body"
+                                   data-action="click->entity-preview#open:prevent" data-entity-id="{{ item.id }}">{{ item.model }}</a>
+                                <div class="ecard-kebab dropdown position-relative z-1" data-controller="dropdown-portal">
+                                    <button class="btn btn-sm btn-link text-body-secondary p-1" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        {{ vehicle.vehicle_actions(item, q, page) }}
+                                    </ul>
+                                </div>
+                            </div>
+                            {% set number = item.registrationNumber|upper %}
+                            <div class="mt-1">
+                                <span class="d-inline-flex align-items-center border rounded-2" aria-label="Госномер {{ number }}">
+                                    <span class="px-2" aria-hidden="true">{{ number|slice(0, 6) }}</span>
+                                    <span class="border-start px-2" aria-hidden="true">{{ number|slice(6) }} <small>RUS</small></span>
+                                </span>
+                            </div>
+                            <div class="kv-grid mt-3">
+                                <div class="kvi"><span class="k"><i class="bi bi-speedometer2" aria-hidden="true"></i><span class="visually-hidden">Пробег</span></span><span class="v">{{ item.odometer }} <span class="u">км</span></span></div>
+                                <div class="kvi"><span class="k"><i class="bi bi-fuel-pump" aria-hidden="true"></i><span class="visually-hidden">Остаток топлива</span></span><span class="v">{{ item.fuelRemaining }} <span class="u">л</span></span></div>
+                            </div>
+                            <noscript><ul class="list-unstyled mt-3 position-relative z-1">{{ vehicle.vehicle_actions(item, q, page) }}</ul></noscript>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endblock %}
+
+        {% block below_list %}{{ pagination }}{% endblock %}
+    {% endembed %}
+    </div>
+{% endblock %}

@@ -1,0 +1,10 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <embeddable name="App\Waybills\Domain\Aggregate\Route\Destination">
+        <field name="location" type="waybills_location"><options><option name="jsonb">true</option></options></field>
+        <field name="enterprise" type="text" nullable="true"/>
+        <field name="distance" type="integer"/>
+    </embeddable>
+</doctrine-mapping>

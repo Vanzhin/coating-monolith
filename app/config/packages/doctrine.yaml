@@ -15,6 +15,10 @@ doctrine:
             mixing_ratio: App\Coatings\Infrastructure\Database\DBAL\MixingRatioType
             cas_number: App\ChemicalResistance\Infrastructure\Database\DBAL\CasNumberType
             string_collection: App\Shared\Infrastructure\Database\DBAL\StringCollectionType
+            big_decimal: App\Shared\Infrastructure\Database\DBAL\BigDecimalType
+            positive_number: App\Shared\Infrastructure\Database\DBAL\PositiveNumberType
+            precise_datetime_tz: App\Shared\Infrastructure\Database\DBAL\PreciseDateTimeTzType
+            exact_datetime: App\Shared\Infrastructure\Database\DBAL\ExactDateTimeType
             substrate_scope: App\Coatings\Infrastructure\Database\DBAL\SubstrateScopeType
             document_references: App\Certificates\Infrastructure\Database\DBAL\DocumentReferencesType
             audit_change_set: App\Shared\Infrastructure\Database\DBAL\ChangeSetType
@@ -32,6 +36,13 @@ doctrine:
             inquiry_recognized_parameters: App\Inquiries\Infrastructure\Database\DBAL\RecognizedParametersType
             inquiry_parameter_source: App\Inquiries\Infrastructure\Database\DBAL\ParameterSourceType
             inquiry_verification: App\Inquiries\Infrastructure\Database\DBAL\VerificationType
+            waybills_registration_number: App\Waybills\Infrastructure\Database\DBAL\RegistrationNumberType
+            waybills_location: App\Waybills\Infrastructure\Database\DBAL\LocationType
+            waybills_consumption_rate: App\Waybills\Infrastructure\Database\DBAL\ConsumptionRateType
+            waybills_driver_details: App\Waybills\Infrastructure\Database\DBAL\DriverDetailsType
+            waybills_route_settings: App\Waybills\Infrastructure\Database\DBAL\RouteSettingsType
+            waybills_fuel: App\Waybills\Infrastructure\Database\DBAL\WaybillFuelType
+            waybills_periods: App\Waybills\Infrastructure\Database\DBAL\WaybillPeriodsType
         mapping_types:
             jsonb: json
     orm:
@@ -138,6 +149,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Inquiries/Infrastructure/Database/ORM/Aggregate'
                 prefix: 'App\Inquiries\Domain\Aggregate'
                 alias: Inquiries
+            Waybills:
+                is_bundle: false
+                type: xml
+                dir: '%kernel.project_dir%/src/Waybills/Infrastructure/Database/ORM/Aggregate'
+                prefix: 'App\Waybills\Domain\Aggregate'
+                alias: Waybills
 
 
 #            App:

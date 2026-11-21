@@ -94,13 +94,87 @@ final class XlsxTemplateRendererTest extends TestCase
         self::assertSame('Итого', $out->getCell('A3')->getValue(), 'пустой повтор удалил строку-шаблон, Итого поднялось');
     }
 
-    /** @param array<string, string> $cells */
-    private function template(array $cells): TemplateFile
+    public function test_repeat_copies_horizontal_merges_for_every_row(): void
+    {
+        $template = $this->template([
+            'A3' => '{{routes.from}}',
+            'B3' => 'Скрытое значение',
+            'C3' => '{{routes.to}}',
+            'A4' => 'Итого',
+        ], ['A3:B3', 'C3:D3', 'A4:B4']);
+        $rows = array_fill(0, 24, ['from' => 'База', 'to' => 'Назначение']);
+
+        $out = $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue($rows)]));
+
+        for ($row = 3; $row < 27; ++$row) {
+            self::assertArrayHasKey('A'.$row.':B'.$row, $out->getMergeCells());
+            self::assertArrayHasKey('C'.$row.':D'.$row, $out->getMergeCells());
+            self::assertSame('База', $out->getCell('A'.$row)->getValue());
+            self::assertSame('Скрытое значение', $out->getCell('B'.$row)->getValue());
+            self::assertSame('Назначение', $out->getCell('C'.$row)->getValue());
+        }
+        self::assertArrayHasKey('A27:B27', $out->getMergeCells());
+        self::assertSame('Итого', $out->getCell('A27')->getValue());
+    }
+
+    public function test_repeat_rejects_merge_crossing_template_row(): void
+    {
+        $template = $this->template(['A3' => '{{routes.from}}'], ['A3:A4']);
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('объединение');
+        $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue([
+            ['from' => 'База'],
+            ['from' => 'Назначение'],
+        ])]));
+    }
+
+    public function test_single_and_empty_repeats_keep_surrounding_merges(): void
+    {
+        $template = $this->template([
+            'A3' => '{{routes.from}}',
+            'A4' => 'Итого',
+        ], ['A3:B3', 'A4:B4']);
+
+        $single = $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue([
+            ['from' => 'База'],
+        ])]));
+        self::assertArrayHasKey('A3:B3', $single->getMergeCells());
+        self::assertArrayHasKey('A4:B4', $single->getMergeCells());
+        self::assertSame('База', $single->getCell('A3')->getValue());
+
+        $empty = $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue([])]));
+        self::assertArrayHasKey('A3:B3', $empty->getMergeCells());
+        self::assertSame('Итого', $empty->getCell('A3')->getValue());
+    }
+
+    public function test_vertical_merge_remains_usable_without_row_expansion(): void
+    {
+        $template = $this->template(['A3' => '{{routes.from}}'], ['A3:A4']);
+        $single = $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue([
+            ['from' => 'База'],
+        ])]));
+
+        self::assertArrayHasKey('A3:A4', $single->getMergeCells());
+        self::assertSame('База', $single->getCell('A3')->getValue());
+
+        $empty = $this->renderToSheet($template, new RenderData(['routes' => new RepeatValue([])]));
+        self::assertNotSame('{{routes.from}}', $empty->getCell('A3')->getValue());
+    }
+
+    /**
+     * @param array<string, string> $cells
+     * @param list<string>          $merges
+     */
+    private function template(array $cells, array $merges = []): TemplateFile
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         foreach ($cells as $coord => $text) {
             $sheet->setCellValue($coord, $text);
+        }
+        foreach ($merges as $merge) {
+            $sheet->mergeCells($merge, \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::MERGE_CELL_CONTENT_HIDE);
         }
         $path = tempnam(sys_get_temp_dir(), 'xlsx_tpl_').'.xlsx';
         (new XlsxWriter($spreadsheet))->save($path);

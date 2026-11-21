@@ -1,0 +1,25 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Waybills\Domain\Aggregate\Waybill\Waybill" table="waybills_waybill">
+        <id name="id" type="uuid"><generator strategy="NONE"/></id>
+        <field name="number" type="integer"/>
+        <field name="locked" type="boolean"/>
+        <field name="routePresent" column="route_present" type="boolean"/>
+        <field name="odometerStart" column="odometer_start" type="bigint"/>
+        <field name="odometerEnd" column="odometer_end" type="bigint" nullable="true"/>
+        <field name="fuelStart" column="fuel_start" type="big_decimal" column-definition="NUMERIC NOT NULL"/>
+        <field name="fuel" type="waybills_fuel" nullable="true"><options><option name="jsonb">true</option></options></field>
+        <field name="absences" type="waybills_periods"><options><option name="jsonb">true</option></options></field>
+        <field name="approvedDriver" column="approved_driver" type="waybills_driver_details" nullable="true"><options><option name="jsonb">true</option></options></field>
+        <field name="approvedBase" column="approved_base" type="waybills_location" nullable="true"><options><option name="jsonb">true</option></options></field>
+        <field name="approvedVehicleModel" column="approved_vehicle_model" type="text" nullable="true"/>
+        <field name="approvedRegistrationNumber" column="approved_registration_number" type="waybills_registration_number" nullable="true"/>
+        <field name="approvedConsumptionRate" column="approved_consumption_rate" type="waybills_consumption_rate" nullable="true"><options><option name="jsonb">true</option></options></field>
+        <embedded name="period" class="App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod" use-column-prefix="false"/>
+        <many-to-one field="vehicle" target-entity="App\Waybills\Domain\Aggregate\Vehicle\Vehicle" fetch="LAZY">
+            <join-column name="vehicle_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
+    </entity>
+</doctrine-mapping>

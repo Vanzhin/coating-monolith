@@ -1,0 +1,47 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Карточка водителя{% endblock %}
+
+{% block content %}
+    {% embed 'components/form_page.html.twig' with {
+        title: profile.id ? 'Редактирование карточки водителя' : 'Новая карточка водителя',
+        back_url: path('app_cabinet_waybills_profile'),
+        save_form_id: 'driver-profile-form',
+        anchors: [{id: 'driver-details', label: 'Водитель'}, {id: 'driver-route', label: 'Маршрут'}, {id: 'driver-destinations', label: 'Направления'}],
+    } %}
+        {% block sections %}
+            <form id="driver-profile-form" method="post" class="w-100" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token('waybills_driver_profile') }}">
+                {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+                <section id="driver-details" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Водитель</h6>
+                    <div class="mb-3"><label class="form-label" for="driver-name">ФИО</label><input class="form-control" id="driver-name" name="fullName" value="{{ data.fullName|default('') }}"></div>
+                    <div class="mb-3"><label class="form-label" for="driver-license">Серия и номер водительского удостоверения</label><input class="form-control" id="driver-license" name="licenseNumber" value="{{ data.licenseNumber|default('') }}" placeholder="99 12 123456" data-controller="driver-license-mask" data-action="beforeinput->driver-license-mask#beforeInput input->driver-license-mask#format"></div>
+                    <div class="mb-3"><label class="form-label" for="driver-license-date">Дата выдачи удостоверения</label><input class="form-control" type="date" id="driver-license-date" name="licenseIssuedAt" value="{{ data.licenseIssuedAt|default('') }}"></div>
+                    <div class="mb-3"><label class="form-label" for="driver-snils">СНИЛС</label><input class="form-control" id="driver-snils" name="snils" value="{{ data.snils|default('') }}" inputmode="numeric" placeholder="000-000-000 00" data-controller="snils-mask" data-action="beforeinput->snils-mask#beforeInput input->snils-mask#format"></div>
+                </section>
+                <section id="driver-route" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Маршрут</h6>
+                    <h3 class="h6">Базовая точка</h3>
+                    {% for field, label in {country: 'Страна', city: 'Город', street: 'Улица', house: 'Дом'} %}
+                        <div class="mb-3"><label class="form-label" for="driver-base-{{ field }}">{{ label }}</label><input class="form-control" id="driver-base-{{ field }}" name="base[{{ field }}]" value="{{ data.base[field]|default('') }}"></div>
+                    {% endfor %}
+                </section>
+                <section id="driver-destinations" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                    <h6 class="fw-semibold mb-3">Направления</h6>
+                    {% for key, destination in data.destinations|default([]) %}
+                        <div class="p-3 mb-2 rounded-3 bg-body">
+                            {% for field, label in {country: 'Страна', city: 'Город', street: 'Улица', house: 'Дом'} %}
+                                <div class="mb-3"><label class="form-label" for="destination-{{ key }}-{{ field }}">{{ label }}</label><input class="form-control" id="destination-{{ key }}-{{ field }}" name="destinations[{{ key }}][location][{{ field }}]" value="{{ destination.location[field]|default('') }}"></div>
+                            {% endfor %}
+                            <div class="mb-3"><label class="form-label" for="distance-{{ key }}">Расстояние, км</label><input class="form-control" type="text" id="distance-{{ key }}" name="destinations[{{ key }}][distance]" value="{{ destination.distance ?? '' }}" inputmode="numeric"></div>
+                            <div class="mb-3"><label class="form-label" for="enterprise-{{ key }}">Предприятие</label><input class="form-control" id="enterprise-{{ key }}" name="destinations[{{ key }}][enterprise]" value="{{ destination.enterprise ?? '' }}"></div>
+                            <button class="btn btn-sm btn-outline-danger mt-2" type="submit" name="action" value="remove:{{ key }}" formnovalidate aria-label="Удалить направление" title="Удалить направление"><i class="bi bi-trash"></i></button>
+                        </div>
+                    {% endfor %}
+                    <button class="btn btn-soft-success btn-sm" type="submit" name="action" value="add" formnovalidate><i class="bi bi-plus-lg me-1"></i>Добавить направление</button>
+                </section>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

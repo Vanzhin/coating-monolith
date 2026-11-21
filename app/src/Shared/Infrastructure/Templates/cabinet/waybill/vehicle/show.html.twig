@@ -1,0 +1,15 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | {{ vehicle.model }}{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
+            <h2 class="text-body-emphasis mb-0">{{ vehicle.model }}</h2>
+            <div><a href="{{ path('app_cabinet_waybill_vehicle_list') }}" class="btn btn-outline-secondary">Назад</a> <a href="{{ path('app_cabinet_waybill_sheet_list', {vehicleId: vehicle.id}) }}" class="btn btn-primary">Путевые листы</a></div>
+        </div>
+        <div class="p-3 rounded-3 bg-body-tertiary">
+            {% include 'cabinet/waybill/vehicle/_details.html.twig' with {vehicle: vehicle} only %}
+        </div>
+    </div>
+{% endblock %}

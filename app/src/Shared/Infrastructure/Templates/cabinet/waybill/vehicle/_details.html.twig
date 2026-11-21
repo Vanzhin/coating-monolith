@@ -1,0 +1,13 @@
+<div class="pv-sec">Текущие показания</div>
+<div class="kv-grid">
+    <div class="kvi"><span class="k"><i class="bi bi-speedometer2"></i> Пробег</span><span class="v">{{ vehicle.odometer }}<span class="u">км</span></span></div>
+    <div class="kvi"><span class="k"><i class="bi bi-fuel-pump"></i> Остаток топлива</span><span class="v">{{ vehicle.fuelRemaining }}<span class="u">л</span></span></div>
+</div>
+<div class="pv-sec">Автомобиль</div>
+<div class="kv-grid">
+    <div class="kvi"><span class="k">Госномер</span><span class="v">{{ vehicle.registrationNumber|upper }}</span></div>
+    <div class="kvi"><span class="k">Марки топлива</span><span class="v">{{ vehicle.fuelTypes|join(', ') }}</span></div>
+    <div class="kvi"><span class="k">Топливо по умолчанию</span><span class="v">{{ vehicle.defaultFuelType }}</span></div>
+    {% if vehicle.consumptionRate is not null %}<div class="kvi"><span class="k">Норма расхода</span><span class="v">{{ vehicle.consumptionRate }}<span class="u">л/100 км</span></span></div>{% endif %}
+    <div class="kvi"><span class="k">Водитель</span><span class="v">{{ vehicle.occupied ? 'Занят' : 'Свободен' }}</span></div>
+</div>

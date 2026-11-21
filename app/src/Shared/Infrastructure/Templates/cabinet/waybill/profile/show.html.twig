@@ -1,0 +1,40 @@
+{% extends '/cabinet/index.html.twig' %}
+
+{% block title %}{{ parent() }} | Карточка водителя{% endblock %}
+
+{% block content %}
+    <div class="p-2 p-md-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-body-tertiary">
+            <h2 class="text-body-emphasis mb-0">Карточка водителя</h2>
+            {% if profile.id %}
+                <a class="btn btn-outline-secondary" href="{{ path('app_cabinet_waybills_profile_edit') }}"><i class="bi bi-pencil me-2"></i>Редактировать</a>
+            {% endif %}
+        </div>
+        {% if profile.id %}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                <div class="pv-sec">Водитель</div>
+                <div class="kv-grid">
+                    <div class="kvi"><span class="k">ФИО</span><span class="v">{{ profile.driverDetails.fullName }}</span></div>
+                    <div class="kvi"><span class="k">Водительское удостоверение</span><span class="v">{{ profile.driverDetails.licenseNumber.formatted() }}</span></div>
+                    <div class="kvi"><span class="k">Дата выдачи</span><span class="v">{{ profile.driverDetails.licenseIssuedAt|date('d.m.Y') }}</span></div>
+                    <div class="kvi"><span class="k">СНИЛС</span><span class="v">{{ profile.driverDetails.snils.formatted() }}</span></div>
+                </div>
+                <div class="pv-sec">Базовая точка</div>
+                <div class="kv-grid"><div class="kvi"><span class="v">{{ profile.routeSettings.base.toString() }}</span></div></div>
+                <div class="pv-sec">Направления</div>
+                <div class="kv-grid">
+                    {% for destination in profile.routeSettings.destinations %}
+                        <div class="kvi"><span class="k">{{ destination.location.toString() }}{% if destination.enterprise is not null %} — {{ destination.enterprise }}{% endif %}</span><span class="v">{{ destination.distance }}<span class="u">км</span></span></div>
+                    {% else %}
+                        <div class="text-body-secondary">Нет направлений</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="p-3 rounded-3 bg-body-tertiary">
+                <p>Карточка водителя ещё не создана.</p>
+                <a class="btn btn-primary" href="{{ path('app_cabinet_waybills_profile_edit') }}">Создать карточку</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

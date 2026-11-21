@@ -47,7 +47,9 @@ services:
   # this creates a service per class whose id is the fully-qualified class name
   App\:
     resource: '../src/'
-    exclude: '../src/{Shared/Infrastructure/Database/ES/config}'
+    exclude:
+      - '../src/Shared/Infrastructure/Database/ES/config'
+      - '../src/Waybills/Domain/Calendar/production_calendar.php'
   _instanceof:
     App\Shared\Application\Command\CommandHandlerInterface:
       tags:
@@ -228,6 +230,15 @@ services:
   App\Inquiries\Domain\Repository\InquiryRepositoryInterface:
     alias: App\Inquiries\Infrastructure\Repository\InquiryRepository
 
+  App\Waybills\Domain\Repository\VehicleRepositoryInterface:
+    alias: App\Waybills\Infrastructure\Repository\VehicleRepository
+
+  App\Waybills\Domain\Repository\DriverProfileRepositoryInterface:
+    alias: App\Waybills\Infrastructure\Repository\DriverProfileRepository
+
+  App\Waybills\Domain\Repository\WaybillRepositoryInterface:
+    alias: App\Waybills\Infrastructure\Repository\WaybillRepository
+
   App\Reports\Domain\Repository\CounterpartyRepositoryInterface:
     alias: App\Reports\Infrastructure\Repository\CounterpartyRepository
 
@@ -273,6 +284,10 @@ services:
   App\Compliance\Infrastructure\Controller\WriteOffAct\DownloadAction:
     arguments:
       $writeOffTemplatePath: '%kernel.project_dir%/src/Compliance/Infrastructure/Resources/templates/writeoff_act.docx'
+
+  App\Waybills\Infrastructure\Controller\Waybill\WaybillController:
+    arguments:
+      $waybillTemplatePath: '%kernel.project_dir%/src/Waybills/Infrastructure/Resources/templates/waybill.xlsx'
 
   # Движок заполнения шаблонов: фасад-диспетчер получает все драйверы (docx/xlsx) через тег
   App\Shared\Infrastructure\Service\TemplateRendering:
