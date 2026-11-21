@@ -54,13 +54,17 @@ final class FlysystemFileStorageTest extends KernelTestCase
     public function test_store_writes_bytes_registers_and_reads_back(): void
     {
         $bytes = $this->pdfBytes();
-        $stored = $this->storage->store(new FakePurpose(), 'owner-1', $this->upload($bytes, 'doc.pdf'));
+        $owner = 'owner-'.bin2hex(random_bytes(5));
+        $stored = $this->storage->store(new FakePurpose(), $owner, $this->upload($bytes, 'doc.pdf'));
         $this->createdIds[] = $stored->id();
 
         self::assertSame(StoredFile::STATUS_STORED, $stored->status());
-        self::assertStringStartsWith('test/fake/owner-1/', $stored->storageKey());
+        self::assertStringStartsWith("test/fake/{$owner}/", $stored->storageKey());
         self::assertSame('application/pdf', $stored->mime());
         self::assertTrue($this->fs->fileExists($stored->storageKey()));
+        $path = static::getContainer()->getParameter('file_storage_upload_dir').'/'.$stored->storageKey();
+        self::assertSame(0660, fileperms($path) & 0777);
+        self::assertSame(0770, fileperms(\dirname($path)) & 0777);
         self::assertNotNull($this->repo->get($stored->id()));
         self::assertSame($bytes, stream_get_contents($this->storage->readStream($stored->id())));
     }

@@ -49,7 +49,11 @@ final readonly class InquiryMailboxPoller
                 $this->reader->markSeen($this->account, $message->uid); // только после успешной обработки
             } catch (\Throwable $e) {
                 // не помечаем \Seen — переигрывается в следующий проход
-                $this->logger->error('Письмо из ящика подбора не обработано', ['uid' => $message->uid, 'error' => $e->getMessage()]);
+                $this->logger->error('Письмо из ящика подбора не обработано', [
+                    'uid' => $message->uid,
+                    'error' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
             }
         }
 

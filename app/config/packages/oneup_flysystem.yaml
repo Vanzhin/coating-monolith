@@ -4,17 +4,44 @@ oneup_flysystem:
     upload_general_proposal_adapter:
       local:
         location: '%general_proposal_template_upload_dir%'
+        permissions:
+          file:
+            public: 0o664
+            private: 0o660
+          dir:
+            public: 0o770
+            private: 0o770
     document_scans_adapter:
       local:
         location: '%document_scans_upload_dir%'
+        permissions:
+          file:
+            public: 0o664
+            private: 0o660
+          dir:
+            public: 0o770
+            private: 0o770
     file_storage_adapter:
       local:
         location: '%file_storage_upload_dir%'
+        permissions:
+          file:
+            public: 0o664
+            private: 0o660
+          dir:
+            public: 0o770
+            private: 0o770
 
   filesystems:
     upload_general_proposal:
       adapter: upload_general_proposal_adapter
+      visibility: private
+      directory_visibility: private
     document_scans:
       adapter: document_scans_adapter
+      visibility: private
+      directory_visibility: private
     file_storage:
       adapter: file_storage_adapter
+      visibility: private
+      directory_visibility: private

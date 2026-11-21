@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_UID="${APP_UID:-10001}"
+APP_GID="${APP_GID:-10001}"
+LEGACY_UIDS="${LEGACY_UIDS:-33 82}"
+MARKER="var/.file-storage-permissions-v1"
+READY_MARKER="var/.file-storage-acl-ready-v1"
+FINALIZED_MARKER="var/.file-storage-legacy-acl-finalized-v1"
+BACKUP_DIR="var/.file-storage-permissions-backup-v1"
+PATHS=(var/cache var/log var/uploads config/jwt)
+DATA_PATHS=(var/cache var/log var/uploads)
+
+fail() {
+    printf 'file-storage-permissions: %s\n' "$*" >&2
+    exit 1
+}
+
+ensure_paths() {
+    mkdir -p var/cache var/log var/uploads/file_storage config/jwt
+}
+
+ensure_no_symlinks() {
+    local symlinks
+    symlinks="$(find "${PATHS[@]}" -type l -print)"
+    if [[ -n "$symlinks" ]]; then
+        printf '%s\n' "$symlinks" >&2
+        fail 'обнаружены символьные ссылки; автоматическая миграция остановлена'
+    fi
+}
+
+backup_data() {
+    if [[ -f "$BACKUP_DIR/data-before.tar.gz" ]]; then
+        return
+    fi
+
+    mkdir -p "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"
+
+    local required_kb available_kb
+    required_kb="$(du -sk "${PATHS[@]}" | awk '{sum += $1} END {print sum}')"
+    available_kb="$(df -Pk "$BACKUP_DIR" | awk 'NR == 2 {print $4}')"
+    if (( available_kb <= required_kb )); then
+        fail "недостаточно места для резервной копии: нужно более ${required_kb} KiB"
+    fi
+
+    umask 0077
+    getfacl -R "${PATHS[@]}" > "$BACKUP_DIR/acl-before.txt.tmp"
+    tar -czf "$BACKUP_DIR/data-before.tar.gz.tmp" "${PATHS[@]}"
+    mv "$BACKUP_DIR/acl-before.txt.tmp" "$BACKUP_DIR/acl-before.txt"
+    mv "$BACKUP_DIR/data-before.tar.gz.tmp" "$BACKUP_DIR/data-before.tar.gz"
+    umask 0002
+}
+
+apply_transition_acl() {
+    local acl="u:${APP_UID}:rwX"
+    local default_acl="d:u::rwx,d:g::rwx,d:o::---,d:u:${APP_UID}:rwx"
+    local uid
+
+    for uid in $LEGACY_UIDS; do
+        acl+=",u:${uid}:rwX"
+        default_acl+=",d:u:${uid}:rwx"
+    done
+
+    setfacl -R -m "${acl},m::rwX" "${PATHS[@]}"
+    find "${PATHS[@]}" -type d -exec setfacl -m "${default_acl},d:m::rwx" {} +
+}
+
+prepare() {
+    ensure_paths
+    ensure_no_symlinks
+    backup_data
+    umask 0002
+    apply_transition_acl
+
+    rm -f "$FINALIZED_MARKER"
+    find "${DATA_PATHS[@]}" -type d -exec chmod 2770 {} +
+    find "${DATA_PATHS[@]}" -type f -exec chmod 660 {} +
+    apply_transition_acl
+    printf 'uid=%s\n' "$APP_UID" > "$READY_MARKER"
+}
+
+migrate() {
+    ensure_paths
+
+    if [[ -f "$MARKER" ]]; then
+        printf 'Права файлового хранилища уже мигрированы.\n'
+        return
+    fi
+
+    [[ -f "$READY_MARKER" ]] || fail 'сначала выполните релиз 1 и file-storage-permissions prepare'
+    prepare
+    chown -R "${APP_UID}:${APP_GID}" "${PATHS[@]}"
+    find "${DATA_PATHS[@]}" -type d -exec chmod 2770 {} +
+    find "${DATA_PATHS[@]}" -type f -exec chmod 660 {} +
+
+    apply_transition_acl
+    printf 'uid=%s gid=%s\n' "$APP_UID" "$APP_GID" > "$MARKER"
+    printf 'Миграция завершена. Резервная копия: %s\n' "$BACKUP_DIR"
+}
+
+check_runtime_access() {
+    local expected_uid="${1:-$APP_UID}"
+    [[ "$(id -u)" == "$expected_uid" ]] || fail "проверка должна выполняться от UID ${expected_uid}"
+
+    local directory probe_dir probe
+    for directory in var/cache var/log var/uploads/file_storage config/jwt; do
+        probe_dir="${directory}/.permission-check-$$"
+        mkdir -p "$probe_dir/nested"
+        probe="$probe_dir/nested/before"
+        printf 'write-read-move-delete\n' > "$probe"
+        [[ "$(cat "$probe")" == 'write-read-move-delete' ]] || fail "ошибка чтения в ${directory}"
+        mv "$probe" "$probe_dir/nested/after"
+        rm "$probe_dir/nested/after"
+        rmdir "$probe_dir/nested" "$probe_dir"
+    done
+
+    local unreadable
+    unreadable="$(find config/jwt -type f -exec sh -c '
+        for file do
+            if [ ! -r "$file" ]; then
+                printf "%s\n" "$file"
+            fi
+        done
+    ' sh {} +)"
+    [[ -z "$unreadable" ]] || fail "есть недоступные для чтения JWT-файлы: ${unreadable}"
+
+    printf 'Доступ UID %s к cache, log, uploads и JWT проверен.\n' "$expected_uid"
+}
+
+finalize_legacy_acl() {
+    ensure_paths
+
+    local uid
+    for uid in $LEGACY_UIDS; do
+        setfacl -R -x "u:${uid}" "${PATHS[@]}"
+    done
+    for uid in $LEGACY_UIDS; do
+        find "${PATHS[@]}" -type d -exec setfacl -x "d:u:${uid}" {} +
+    done
+
+    printf 'finalized\n' > "$FINALIZED_MARKER"
+    printf 'ACL legacy UID удалены. Откат на образы с UID 33/82 больше не поддерживается.\n'
+}
+
+cd /app
+case "${1:-}" in
+    prepare)
+        prepare
+        printf 'ACL для перехода применены.\n'
+        ;;
+    migrate)
+        migrate
+        ;;
+    check)
+        umask 0002
+        check_runtime_access "${2:-$APP_UID}"
+        ;;
+    finalize-legacy-acl)
+        finalize_legacy_acl
+        ;;
+    *)
+        fail 'использование: file-storage-permissions prepare|migrate|check|finalize-legacy-acl [uid]'
+        ;;
+esac
