@@ -55,22 +55,19 @@ services:
       - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
       - ./docker/supervisor/log:/var/log/supervisor
 
-  # Init-контейнер (one-shot): единственное место, где что-то ПИШЕТ в /app как root.
-  # После него php-fpm/supervisor стартуют как www-data и никогда не касаются
-  # cache/log как root — это исключает permission-denied в runtime'e.
+  # Init-контейнер (one-shot): root только готовит верхнеуровневые каталоги.
+  # Миграции, JWT и cache warmup выполняются от www-data (82:82), а POSIX ACL
+  # сохраняют доступ PHP-FPM (33) и будущего runtime UID 10001.
+  # app/bin/file-storage-permissions prepare выполняется до init и после swap.
   #
-  # Шаги: wipe var/cache/prod → migrations → JWT-keypair (перенесено из
-  # entrypoint php-fpm, где выполнялось как root и портило права после
-  # init-chown'а) → cache:warmup → выставление прав с setgid-битом на
-  # директориях, чтобы новые файлы, создаваемые www-data в runtime, наследовали
-  # группу www-data.
+  # setgid и umask 0002 сохраняют group-write на новых каталогах и файлах.
+  # Рекурсивный chown/chmod uploads при каждом деплое не выполняется.
   #
   # composer install НЕ здесь — vendor уже в образе (см. docker/php-cli/Dockerfile
   # шаг composer install при сборке в CI). Bind-mount'ит только ./app/var,
   # ./app/config/jwt и ./app/public/build, src и vendor берутся из образа.
   #
-  # set -e гарантирует остановку всей цепочки при первой ошибке — depends_on
-  # `service_completed_successfully` не пустит php-fpm/supervisor до успешного 0.
+  # set -e гарантирует остановку всей цепочки при первой ошибке.
   manager_php-cli:
     hostname: ${DOMAIN}
     working_dir: /app
@@ -83,22 +80,16 @@ services:
       - -c
       - |
         set -e
-        rm -rf var/cache/prod
-        mkdir -p var/cache/prod var/log var/uploads
-        php bin/console --no-interaction doctrine:migrations:migrate
-        php bin/console --no-interaction lexik:jwt:generate-keypair --skip-if-exists
-        php bin/console cache:warmup --env=prod --no-debug
-        chown -R www-data:www-data var/cache var/log config/jwt
-        # setgid на директориях — новые файлы наследуют группу www-data;
-        # 2775 = rwxrwsr-x (owner+group=rw, world=r).
-        find var/cache var/log -type d -exec chmod 2775 {} +
-        find var/cache var/log -type f -exec chmod 664 {} +
-        # var/uploads (загрузки FileStorage: сертификаты, фото отчётов) пишет php-fpm в RUNTIME.
-        # ВАЖНО: init — Alpine (www-data uid 82), php-fpm — Debian (www-data uid 33), uid РАЗНЫЕ,
-        # поэтому chown на www-data init'а бесполезен (fpm остаётся в «others»). Делаем каталог
-        # world-writable + sticky (как и сам var — 777): fpm любого uid создаёт в нём file_storage/…;
-        # наружу файлы отдаёт только GetAction под доступом владельца, листинга каталога нет.
-        chmod 1777 var/uploads
+        umask 0002
+        mkdir -p var/cache var/log var/uploads/file_storage config/jwt
+        chown 82:82 var/cache var/log var/uploads var/uploads/file_storage config/jwt
+        chmod 2770 var/cache var/log var/uploads var/uploads/file_storage
+        su -s /bin/bash www-data -c '
+          rm -rf var/cache/prod
+          php bin/console --no-interaction doctrine:migrations:migrate
+          php bin/console --no-interaction lexik:jwt:generate-keypair --skip-if-exists
+          php bin/console cache:warmup --env=prod --no-debug
+        '
     depends_on:
       manager_redis:
         condition: service_started

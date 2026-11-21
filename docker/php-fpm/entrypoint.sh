@@ -12,4 +12,5 @@ if [ "${1#-}" != "$1" ]; then
 	set -- php-fpm "$@"
 fi
 
+umask 0002
 exec "$@"

@@ -13,6 +13,7 @@ use App\Shared\Domain\Mail\ImapAccount;
 use App\Shared\Domain\Mail\IncomingMessage;
 use App\Tests\Support\Mail\RecordingMailboxReader;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 final class InquiryMailboxPollerTest extends TestCase
@@ -51,6 +52,44 @@ final class InquiryMailboxPollerTest extends TestCase
 
         self::assertSame(['configured' => true, 'processed' => 3, 'created' => 1, 'skipped' => 1], $summary);
         self::assertSame(['1', '2'], $reader->seen); // упавшее (uid 3) НЕ помечено — переиграется
+    }
+
+    public function test_failed_message_is_logged_with_exception_and_retried(): void
+    {
+        $reader = $this->reader([
+            new IncomingMessage('4', 'known@example.com', 'тема', 'тело'),
+        ]);
+        $exception = new \RuntimeException('Permission denied');
+        $attempt = 0;
+        $bus = $this->bus(static function (CommandInterface $c) use ($exception, &$attempt): IngestInquiryEmailResult {
+            \assert($c instanceof IngestInquiryEmailCommand);
+            if (0 === $attempt++) {
+                throw $exception;
+            }
+
+            return IngestInquiryEmailResult::created('inq-4');
+        });
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())
+            ->method('error')
+            ->with(
+                'Письмо из ящика подбора не обработано',
+                self::callback(static function (array $context) use ($exception): bool {
+                    self::assertSame('4', $context['uid']);
+                    self::assertSame('Permission denied', $context['error']);
+                    self::assertSame($exception, $context['exception']);
+
+                    return true;
+                }),
+            );
+        $poller = new InquiryMailboxPoller($reader, $this->account(), $bus, $logger);
+
+        $poller->poll(10);
+        self::assertSame([], $reader->seen);
+
+        $summary = $poller->poll(10);
+        self::assertSame(['4'], $reader->seen);
+        self::assertSame(1, $summary['created']);
     }
 
     private function account(): ImapAccount

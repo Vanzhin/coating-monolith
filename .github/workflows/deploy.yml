@@ -100,13 +100,20 @@ jobs:
             set -euo pipefail
             cd /var/www/sites/1helper
 
+            if [[ -f .last-successful-tag ]]; then
+              PREVIOUS_TAG="$(< .last-successful-tag)"
+            else
+              PREVIOUS_TAG="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+            fi
+            echo "Previous successful release tag: ${PREVIOUS_TAG:-unknown}"
+
             # Синхронизируем рабочее дерево сервера с тегом (даёт актуальные
             # docker-compose.prod.yml, infra/Caddyfile, package.json/lockfile, app-код).
             # Гитайгноренные пути (.env*, app/config/jwt/*.pem, vendor/, node_modules/,
             # public/build/, app/var/) reset не трогает.
             git fetch --all --tags --prune
             git reset --hard ${{ github.ref_name }}
-            git clean -fd -e .env -e app/.env -e app/config/jwt -e app/var -e app/vendor -e app/node_modules -e app/public/build
+            git clean -fd -e .env -e .last-successful-tag -e app/.env -e app/config/jwt -e app/var -e app/vendor -e app/node_modules -e app/public/build
 
             echo "=== Deploying tag ${{ github.ref_name }} (HEAD $(git rev-parse --short HEAD)) ==="
 
@@ -231,12 +238,13 @@ jobs:
             echo "=== Freeing disk space before pull ==="
             df -h / | tail -1
 
-            # 1. Тегированные образы прошлых деплоев (кроме текущего тега и latest).
+            # 1. Тегированные образы прошлых деплоев. Текущий, последний успешный
+            # и latest сохраняем: успешный нужен для немедленного отката.
             CURRENT_TAG="${{ github.ref_name }}"
-            echo "Keeping images with tag: $CURRENT_TAG and latest"
+            echo "Keeping images with tags: $CURRENT_TAG, ${PREVIOUS_TAG:-none} and latest"
             docker images --filter "reference=ghcr.io/vanzhin/coating-monolith*" --format "{{.ID}} {{.Repository}} {{.Tag}}" | \
             while read id repo tag; do
-              if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "latest" ]]; then
+              if [[ "$tag" != "$CURRENT_TAG" ]] && [[ "$tag" != "$PREVIOUS_TAG" ]] && [[ "$tag" != "latest" ]]; then
                 echo "Removing old image: $repo:$tag"
                 docker rmi $id 2>/dev/null || echo "Could not remove $id"
               fi
@@ -261,12 +269,34 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml --profile init pull
 
-            # ГЕЙТ (migrate-first): инит-контейнер (wipe cache + migrate + jwt + warmup + chown)
+            # Первый переходный релиз: владельцев и runtime UID не меняем.
+            # Backup + ACL 33/82/10001 + нормализация режимов выполняются до init.
+            docker compose -f docker-compose.prod.yml --profile init run --rm \
+              --entrypoint bash manager_php-cli -c '
+                set -e
+                bash /app/bin/file-storage-permissions prepare
+                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
+                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
+              '
+
+            # ГЕЙТ (migrate-first): инит-контейнер (wipe cache + migrate + jwt + warmup)
             # гоняется ОТДЕЛЬНЫМ one-shot ДО свопа. Он в profiles:[init], поэтому обычный `up` его
             # не поднимает, а php-fpm/supervisor больше НЕ завязаны на него через depends_on.
             # Если инит упал (миграция/что угодно) → set -euo pipefail рвёт скрипт, `up -d` НЕ
             # выполняется, старый php-fpm остаётся жив → прод продолжает работать («не смог — старое работает»).
             docker compose -f docker-compose.prod.yml --profile init run --rm manager_php-cli
+
+            # После warmup/JWT повторяем ACL и проверяем все UID, пока старые
+            # контейнеры ещё обслуживают трафик. При ошибке swap не выполняется.
+            docker compose -f docker-compose.prod.yml --profile init run --rm \
+              --entrypoint bash manager_php-cli -c '
+                set -e
+                bash /app/bin/file-storage-permissions prepare
+                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
+                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
+              '
 
             # Своп — ТОЛЬКО после успешного инита. --wait ждёт healthcheck нового php-fpm
             # (реально живой FastCGI, а не просто «контейнер запущен»).
@@ -275,5 +305,29 @@ jobs:
             # Caddy резолвит manager_php-fpm при старте — после пересоздания fpm обновляем DNS.
             docker compose -f docker-compose.prod.yml restart caddy
 
+            # После swap исправляем ACL на объектах, созданных старыми процессами
+            # во время переключения. Новые процессы уже используют Flysystem 0770.
+            docker compose -f docker-compose.prod.yml --profile init run --rm \
+              --entrypoint bash manager_php-cli -c '
+                set -e
+                bash /app/bin/file-storage-permissions prepare
+                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
+                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
+              '
+
+            # Runtime UID остаются прежними: PHP-FPM 33, Supervisor 82.
+            docker compose -f docker-compose.prod.yml exec manager_php-fpm \
+              su -s /bin/bash www-data -c 'bash /app/bin/file-storage-permissions check 33'
+            docker compose -f docker-compose.prod.yml exec manager_supervisor \
+              su -s /bin/bash www-data -c 'bash /app/bin/file-storage-permissions check 82'
+            docker compose -f docker-compose.prod.yml exec manager_supervisor \
+              supervisorctl -c /etc/supervisor/supervisord.conf status \
+              messenger-worker scheduler-compliance scheduler-inquiry-mail
+            # php-worker — однократный warmup, его ожидаемое состояние EXITED.
+            docker compose -f docker-compose.prod.yml exec manager_supervisor \
+              supervisorctl -c /etc/supervisor/supervisord.conf status php-worker || true
+
+            printf '%s\n' '${{ github.ref_name }}' > .last-successful-tag
             echo "Deployment completed successfully!"
             docker images | grep vanzhin
