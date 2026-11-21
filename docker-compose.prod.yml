@@ -56,9 +56,9 @@ services:
       - ./docker/supervisor/log:/var/log/supervisor
 
   # Init-контейнер (one-shot): root только готовит верхнеуровневые каталоги.
-  # Миграции, JWT и cache warmup выполняются от www-data (82:82), а POSIX ACL
-  # сохраняют доступ PHP-FPM (33) и будущего runtime UID 10001.
-  # app/bin/file-storage-permissions prepare выполняется до init и после swap.
+  # Миграции, JWT и cache warmup выполняются от app (10001:10001), поэтому
+  # runtime не получает root-owned cache. Однократный перенос существующих
+  # данных и временные ACL выполняет app/bin/file-storage-permissions до init.
   #
   # setgid и umask 0002 сохраняют group-write на новых каталогах и файлах.
   # Рекурсивный chown/chmod uploads при каждом деплое не выполняется.
@@ -82,9 +82,9 @@ services:
         set -e
         umask 0002
         mkdir -p var/cache var/log var/uploads/file_storage config/jwt
-        chown 82:82 var/cache var/log var/uploads var/uploads/file_storage config/jwt
+        chown 10001:10001 var/cache var/log var/uploads var/uploads/file_storage config/jwt
         chmod 2770 var/cache var/log var/uploads var/uploads/file_storage
-        su -s /bin/bash www-data -c '
+        su -s /bin/bash app -c '
           rm -rf var/cache/prod
           php bin/console --no-interaction doctrine:migrations:migrate
           php bin/console --no-interaction lexik:jwt:generate-keypair --skip-if-exists

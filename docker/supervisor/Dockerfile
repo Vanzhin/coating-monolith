@@ -1,5 +1,10 @@
 FROM php:8.5-cli-alpine3.24
 
+ARG APP_UID=10001
+ARG APP_GID=10001
+RUN addgroup -S -g "${APP_GID}" app \
+    && adduser -S -D -H -u "${APP_UID}" -G app -s /sbin/nologin app
+
 # Установщик расширений берём из Docker-Hub образа автора, а не ADD-ом с GitHub-релизов:
 # тот эндпоинт отдавал 504 и валил сборку. Бинарь в образе уже исполняемый — chmod не нужен.
 COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
