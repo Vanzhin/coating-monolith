@@ -269,14 +269,18 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml --profile init pull
 
-            # Первый переходный релиз: владельцев и runtime UID не меняем.
-            # Backup + ACL 33/82/10001 + нормализация режимов выполняются до init.
+            # Однократный перенос прав: backup → ACL для legacy UID 33/82 и нового
+            # UID 10001 → chown существующих данных. ACL сохраняют доступ старых
+            # процессов во время init и позволяют откатить образы после свопа.
+            # При повторном деплое маркер в var/ пропускает рекурсивную миграцию.
             docker compose -f docker-compose.prod.yml --profile init run --rm \
               --entrypoint bash manager_php-cli -c '
                 set -e
-                bash /app/bin/file-storage-permissions prepare
-                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
-                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                bash /app/bin/file-storage-permissions migrate
+                if [[ ! -f var/.file-storage-legacy-acl-finalized-v1 ]]; then
+                  su-exec 33:33 bash /app/bin/file-storage-permissions check 33
+                  su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                fi
                 su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
               '
 
@@ -287,14 +291,15 @@ jobs:
             # выполняется, старый php-fpm остаётся жив → прод продолжает работать («не смог — старое работает»).
             docker compose -f docker-compose.prod.yml --profile init run --rm manager_php-cli
 
-            # После warmup/JWT повторяем ACL и проверяем все UID, пока старые
+            # После warmup/JWT повторно проверяем оба legacy UID, пока старые
             # контейнеры ещё обслуживают трафик. При ошибке swap не выполняется.
             docker compose -f docker-compose.prod.yml --profile init run --rm \
               --entrypoint bash manager_php-cli -c '
                 set -e
-                bash /app/bin/file-storage-permissions prepare
-                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
-                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                if [[ ! -f var/.file-storage-legacy-acl-finalized-v1 ]]; then
+                  su-exec 33:33 bash /app/bin/file-storage-permissions check 33
+                  su-exec 82:82 bash /app/bin/file-storage-permissions check 82
+                fi
                 su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
               '
 
@@ -305,22 +310,12 @@ jobs:
             # Caddy резолвит manager_php-fpm при старте — после пересоздания fpm обновляем DNS.
             docker compose -f docker-compose.prod.yml restart caddy
 
-            # После swap исправляем ACL на объектах, созданных старыми процессами
-            # во время переключения. Новые процессы уже используют Flysystem 0770.
-            docker compose -f docker-compose.prod.yml --profile init run --rm \
-              --entrypoint bash manager_php-cli -c '
-                set -e
-                bash /app/bin/file-storage-permissions prepare
-                su-exec 33:33 bash /app/bin/file-storage-permissions check 33
-                su-exec 82:82 bash /app/bin/file-storage-permissions check 82
-                su-exec 10001:10001 bash /app/bin/file-storage-permissions check 10001
-              '
-
-            # Runtime UID остаются прежними: PHP-FPM 33, Supervisor 82.
+            # Обе runtime-точки обязаны от app создать, прочитать, переместить и удалить
+            # файлы во всех общих каталогах. JWT только читаем, содержимое не выводим.
             docker compose -f docker-compose.prod.yml exec manager_php-fpm \
-              su -s /bin/bash www-data -c 'bash /app/bin/file-storage-permissions check 33'
+              su -s /bin/bash app -c 'bash /app/bin/file-storage-permissions check'
             docker compose -f docker-compose.prod.yml exec manager_supervisor \
-              su -s /bin/bash www-data -c 'bash /app/bin/file-storage-permissions check 82'
+              su -s /bin/bash app -c 'bash /app/bin/file-storage-permissions check'
             docker compose -f docker-compose.prod.yml exec manager_supervisor \
               supervisorctl -c /etc/supervisor/supervisord.conf status \
               messenger-worker scheduler-compliance scheduler-inquiry-mail

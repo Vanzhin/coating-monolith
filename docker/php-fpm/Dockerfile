@@ -1,5 +1,10 @@
 FROM php:8.5-fpm
 
+ARG APP_UID=10001
+ARG APP_GID=10001
+RUN groupadd --gid "${APP_GID}" app \
+    && useradd --uid "${APP_UID}" --gid "${APP_GID}" --no-create-home --no-log-init --home-dir /app --shell /usr/sbin/nologin app
+
 #ARG timezone
 ARG INSTALL_XDEBUG=false
 
@@ -35,6 +40,7 @@ COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensio
 RUN install-php-extensions intl opcache zip pdo_pgsql bcmath sockets gd apcu redis memcached amqp
 
 COPY docker/php-fpm/php.ini /usr/local/etc/php/php.ini
+COPY docker/php-fpm/app.conf /usr/local/etc/php-fpm.d/zz-app.conf
 #RUN sed -i -e "s#TIMEZONE#$timezone#g" /usr/local/etc/php/php.ini
 
 COPY docker/php-fpm/xdebug.ini /tmp/xdebug.ini
@@ -70,7 +76,7 @@ RUN mkdir -p /app/var/cache/prod && \
     mkdir -p /app/var/log
 
 # Set proper permissions
-RUN chown -R www-data:www-data /app
+RUN chown -R app:app /app
 RUN chmod -R 755 /app
 
 # выполняю команду генерации закрытого и открытого ключей для JWT
