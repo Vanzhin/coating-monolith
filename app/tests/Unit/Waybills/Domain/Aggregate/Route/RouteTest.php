@@ -265,6 +265,7 @@ final class RouteTest extends TestCase
         $date = new \DateTimeImmutable('2026-01-02');
         self::assertNull($route->locationAt($date));
         self::assertNull($route->last());
+        self::assertNull($route->predecessor());
         self::assertSame(0, $route->distanceAt($date));
         self::assertSame(123, $route->odometerAt($date, 123));
     }
@@ -388,6 +389,52 @@ final class RouteTest extends TestCase
                 self::assertSame([$first, $last], iterator_to_array($route->logs(), false));
             }
         }
+    }
+
+    public function test_route_reads_predecessor_from_first_log(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $first = $this->linked($previous, '2026-01-01', 'В');
+        $route = new Route($this->vehicle(), $first, $first);
+
+        self::assertSame($previous, $route->predecessor());
+    }
+
+    public function test_empty_route_keeps_predecessor_when_logs_are_inserted_and_removed(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $route = new Route($this->vehicle(), predecessor: $previous);
+        $trip = $this->linked($previous, '2026-01-01', 'В');
+
+        self::assertSame($previous, $route->predecessor());
+        self::assertSame([], iterator_to_array($route->logs(), false));
+
+        $filled = $route->insertAfter($previous, $trip);
+        self::assertSame($previous, $filled->predecessor());
+        self::assertSame([$trip], iterator_to_array($filled->logs(), false));
+
+        $emptied = $filled->replaceSegment($trip, $trip);
+        self::assertSame($previous, $emptied->predecessor());
+        self::assertSame([], iterator_to_array($emptied->logs(), false));
+    }
+
+    public function test_route_rejects_predecessor_from_another_vehicle(): void
+    {
+        $otherVehicle = new Vehicle(Uuid::v7(), 'Другая модель', new RegistrationNumber('B123BC77'), new \DateTimeImmutable('2025-01-01'), new Location('А'), 0, BigDecimal::zero());
+        $otherTrip = new RouteLog(Uuid::v7(), $otherVehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+
+        $this->expectException(AppException::class);
+        new Route($this->vehicle(), predecessor: $otherTrip);
+    }
+
+    public function test_route_rejects_mismatched_predecessor(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $otherPrevious = $this->linked(null, '2025-12-31', 'В');
+        $first = $this->linked($previous, '2026-01-01', 'Г');
+
+        $this->expectException(AppException::class);
+        new Route($this->vehicle(), $first, $first, $otherPrevious);
     }
 
     private function interval(string $from, string $to): DateTimeInterval

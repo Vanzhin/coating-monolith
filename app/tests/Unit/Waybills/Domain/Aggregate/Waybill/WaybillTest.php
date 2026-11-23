@@ -121,21 +121,24 @@ final class WaybillTest extends TestCase
         $this->sheet(fuel: $fuel);
     }
 
-    public function test_refueling_must_have_a_nearby_trip_in_current_sheet(): void
+    public function test_refueling_does_not_require_a_nearby_trip_in_current_sheet(): void
     {
         $fuel = new Fuel(10, 8, new Refuelings(null, $this->refueling('2026-10-04')), 'АИ-95');
-        $this->expectException(AppException::class);
-        $this->sheet(fuel: $fuel, route: $this->route('2026-10-01'));
+
+        $sheet = $this->sheet(fuel: $fuel, route: $this->route('2026-10-01'));
+
+        self::assertSame(30, $sheet->distance());
+        self::assertSame(1, $sheet->fuel()->refuelings()->total());
     }
 
-    public function test_nearby_trip_in_same_sheet_can_cover_refueling(): void
+    public function test_refueling_in_period_is_accepted_regardless_of_trip_date(): void
     {
         $fuel = new Fuel(10, 8, new Refuelings(null, $this->refueling('2026-10-02')), 'АИ-95');
         $sheet = $this->sheet(fuel: $fuel, route: $this->route('2026-10-01'));
         self::assertSame(30, $sheet->distance());
     }
 
-    public function test_automatic_pair_cannot_have_unequal_distances(): void
+    public function test_automatic_trips_are_accepted_when_total_distance_matches_odometer(): void
     {
         $day = new \DateTimeImmutable('2026-10-01');
         $base = new Location('База');
@@ -145,8 +148,10 @@ final class WaybillTest extends TestCase
         $back = new RouteLog(Uuid::v7(), $vehicle, $out, $day, new Destination($base, 16), RouteLogOrigin::Automatic);
         $route = new Route($vehicle, $out, $back);
 
-        $this->expectException(AppException::class);
-        $this->sheet(route: $route);
+        $sheet = $this->sheet(route: $route);
+
+        self::assertSame(30, $sheet->distance());
+        self::assertSame(100030, $sheet->odometerEnd());
     }
 
     public function test_trip_in_period_without_travel_is_rejected(): void

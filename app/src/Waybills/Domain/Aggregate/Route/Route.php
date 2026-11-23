@@ -64,13 +64,22 @@ final readonly class Route
         return new self($vehicle, $first, $last);
     }
 
+    private ?RouteLog $predecessor;
+
     public function __construct(
         private Vehicle $vehicle,
         private ?RouteLog $first = null,
         private ?RouteLog $last = null,
+        ?RouteLog $predecessor = null,
     ) {
         if ((null === $first) !== (null === $last)) {
             throw new AppException('Укажите первую и последнюю поездки маршрута.');
+        }
+        if (null !== $predecessor && $predecessor->vehicle->getId() !== $vehicle->getId()) {
+            throw new AppException('Предыдущая поездка относится к другому автомобилю.');
+        }
+        if (null !== $first && null !== $predecessor && $first->previous !== $predecessor) {
+            throw new AppException('Указан неверный предшественник маршрута.');
         }
 
         $distance = 0;
@@ -100,12 +109,18 @@ final readonly class Route
             }
         }
 
+        $this->predecessor = null === $first ? $predecessor : $first->previous;
         $this->totalDistance = $distance;
     }
 
     public function vehicle(): Vehicle
     {
         return $this->vehicle;
+    }
+
+    public function predecessor(): ?RouteLog
+    {
+        return $this->predecessor;
     }
 
     public function first(): ?RouteLog
@@ -259,7 +274,7 @@ final readonly class Route
         $next = $logs[$offset + $length] ?? null;
         if (null !== $next) {
             $newDeparture = $tail?->destination->location ?? $this->vehicle->initialLocation();
-            if (!$next->departure()->equals($newDeparture)) {
+            if (!$next->departure()->samePlace($newDeparture)) {
                 throw new AppException('Изменение затрагивает следующую поездку. Исправьте её явно.');
             }
         }
@@ -270,7 +285,7 @@ final readonly class Route
             $first ??= $tail;
         }
         if (null === $first) {
-            return new self($this->vehicle);
+            return new self($this->vehicle, predecessor: $previous);
         }
 
         return new self($this->vehicle, $first, $tail);

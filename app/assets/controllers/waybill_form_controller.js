@@ -1,5 +1,8 @@
 import { Controller } from '@hotwired/stimulus';
 
+const locationFields = ['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise', 'latitude', 'longitude'];
+const settlementAbbreviations = { city: 'г.', village: 'д.', selo: 'с.', settlement: 'п.', khutor: 'х.', urban_settlement: 'пгт' };
+
 export default class extends Controller {
     static targets = ['end'];
     static values = { start: String, initialLocation: Object };
@@ -67,7 +70,7 @@ export default class extends Controller {
         const destination = this.departures.get(source);
         if (!destination) return;
 
-        for (const field of ['country', 'city', 'street', 'house', 'enterprise']) {
+        for (const field of locationFields) {
             this.input(added, field).value = destination[field] || '';
         }
         this.input(added, 'distance').value = this.input(source, 'distance').value;
@@ -76,7 +79,7 @@ export default class extends Controller {
 
     destination(row) {
         const destination = {};
-        for (const field of ['country', 'city', 'street', 'house', 'enterprise']) {
+        for (const field of locationFields) {
             destination[field] = this.input(row, field).value;
         }
 
@@ -84,8 +87,10 @@ export default class extends Controller {
     }
 
     locationText(location) {
-        const text = ['country', 'city', 'street', 'house', 'enterprise']
-            .map((field) => (location[field] || '').trim())
+        const abbreviation = settlementAbbreviations[location.cityType] || '';
+        const city = `${abbreviation} ${location.city || ''}`.trim();
+        const text = [location.country, city, location.street, location.house, location.enterprise]
+            .map((part) => (part || '').trim())
             .filter(Boolean)
             .join(', ');
 
@@ -133,6 +138,10 @@ export default class extends Controller {
         rows.querySelectorAll(`[data-waybill-form-target~="${kind}Row"]`).forEach((row, index) => {
             row.querySelectorAll('[name]').forEach((input) => {
                 input.name = input.name.replace(/\[(?:\d+|__i__)\]/, `[${index}]`);
+            });
+            row.querySelectorAll('[data-typeahead-hidden-name-value]').forEach((typeahead) => {
+                const hiddenName = typeahead.getAttribute('data-typeahead-hidden-name-value');
+                typeahead.setAttribute('data-typeahead-hidden-name-value', hiddenName.replace(/\[(?:\d+|__i__)\]/, `[${index}]`));
             });
             row.querySelectorAll('[id], [for]').forEach((element) => {
                 if (element.id) element.id = element.id.replace(/(?:\d+|__i__)$/, String(index));

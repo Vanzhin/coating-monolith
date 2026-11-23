@@ -8,7 +8,7 @@
             {% else %}
                 <input type="hidden" name="version" value="{{ input.version }}">
             {% endif %}
-            {% if error %}<div class="form-alert" role="alert"><i class="bi bi-exclamation-octagon"></i><div><div class="form-alert-title">Не удалось сохранить</div><div>{{ error }}</div></div></div>{% endif %}
+            {% if error %}<div class="form-alert" role="alert"><i class="bi bi-exclamation-octagon"></i><div><div class="form-alert-title">Проверьте данные</div><div>{{ error }}</div></div></div>{% endif %}
             <div id="sec-period" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">{% if creating %}{{ vehicle.model }} — {{ vehicle.registrationNumber|upper }}{% else %}Период{% endif %}</h6>
                 <label for="from" class="form-label">Период</label>
@@ -41,7 +41,9 @@
                 </div>
                 <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
                 <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
+                <button type="submit" name="action" value="fill_route" class="btn btn-outline-secondary btn-sm">Заполнить автоматически</button>
                 <div class="form-text">Первая поездка добавляется со страной «Россия». Следующая копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
+                <div class="form-text">При повторном заполнении изменяются только неотредактированные автоматические поездки. После правки любого участка пара становится ручной.</div>
             </div>
             <div id="sec-fuel" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                 <h6 class="fw-semibold mb-3">Показания и топливо</h6>
@@ -74,5 +76,6 @@
             <input type="hidden" name="refuelingsSubmitted" value="1">
             <input type="hidden" name="absencesSubmitted" value="1">
         </form>
+        {% include 'cabinet/waybill/location/_create_modal.html.twig' with {settlementTypes: settlementTypes} %}
     {% endblock %}
 {% endembed %}

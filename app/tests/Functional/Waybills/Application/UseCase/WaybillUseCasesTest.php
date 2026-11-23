@@ -22,11 +22,14 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000010;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\DTO\TripInput;
 use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
 use App\Waybills\Application\UseCase\Command\DeleteWaybill\DeleteWaybillCommand;
+use App\Waybills\Application\UseCase\Command\FillWaybillRoute\FillWaybillRouteCommand;
 use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
 use App\Waybills\Application\UseCase\Query\GetPagedWaybills\GetPagedWaybillsQuery;
 use App\Waybills\Application\UseCase\Query\GetWaybill\GetWaybillQuery;
@@ -81,7 +84,7 @@ final class WaybillUseCasesTest extends KernelTestCase
         self::assertSame('test_db', $connection->getParams()['host'] ?? null);
         self::assertSame('app_test', $connection->getParams()['dbname'] ?? null);
         $connection->executeStatement('CREATE TEMPORARY TABLE audit_tracked_class (id UUID PRIMARY KEY, entity_class TEXT NOT NULL, fields JSON NOT NULL)');
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class, Version20261122000000::class, Version20261122000001::class] as $migrationClass) {
             $this->applyTemporaryMigration($migrationClass);
         }
         $this->commands = $container->get(CommandBusInterface::class);
@@ -251,7 +254,30 @@ final class WaybillUseCasesTest extends KernelTestCase
         }
     }
 
-    public function test_refueling_cannot_be_covered_by_a_trip_in_a_previous_sheet(): void
+    public function test_fill_route_returns_trips_without_saving_waybill(): void
+    {
+        $command = new CreateWaybillCommand(
+            $this->vehicle->getId(),
+            $this->period('2026-10-01', '2026-10-10'),
+            odometerEnd: 160,
+            routePresent: true,
+            expectedOdometerStart: 100,
+            expectedFuelStart: '10',
+        );
+
+        $result = $this->commands->execute(new FillWaybillRouteCommand($command));
+
+        self::assertTrue($result->isSuccessful(), $result->error() ?? '');
+        $route = $result->route();
+        self::assertNotNull($route);
+        self::assertSame(60, $route->distance());
+        foreach ($route->logs() as $trip) {
+            self::assertSame(RouteLogOrigin::Automatic, $trip->origin);
+        }
+        self::assertSame(0, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM waybills_waybill'));
+    }
+
+    public function test_refueling_in_next_sheet_does_not_require_trip_in_current_or_previous_sheet(): void
     {
         $base = new Location('База');
         $target = new Location('Клиент');
@@ -268,9 +294,11 @@ final class WaybillUseCasesTest extends KernelTestCase
         $fuel = new Fuel(10, 10, new Refuelings(null, new Refueling(new \DateTimeImmutable('2026-10-06'), new PositiveNumber(5))), 'АИ-95');
         $nextPeriod = $this->period('2026-10-06', '2026-10-10');
         $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $nextPeriod));
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('поездка текущего листа');
+
         $this->commands->execute(new UpdateWaybillCommand($id, 1, $nextPeriod, null, $fuel, true));
+
+        $sheet = $this->sheet($id);
+        self::assertSame(5, $sheet->fuel()->refuelings()->total());
     }
 
     private function sheet(string $id): Waybill

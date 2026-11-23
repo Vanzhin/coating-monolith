@@ -12,7 +12,6 @@ use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
 use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Route\Route;
 use App\Waybills\Domain\Aggregate\Route\RouteLog;
-use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelOperation;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelOperationType;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
@@ -170,15 +169,14 @@ class Waybill extends Aggregate
         $distance = $this->assertTripsConsistent($period, $odometerEnd, ...$trips);
         $odometerEnd ??= $this->odometerStart + $distance;
         $this->assertCompleteTripDistance($odometerEnd, $distance);
-        $this->assertAutomaticTrips(...$trips);
         $this->assertUnchangedTripsKeepTheirDeparture(...$trips);
         foreach ($trips as $trip) {
             $this->assertTripOutsideAbsences($trip, ...$absences);
         }
         if (null !== $fuel && null !== $route) {
-            $this->assertRefuelingDates($period, $fuel, $route, ...$absences);
+            $this->assertRefuelingPeriods($period, $fuel, ...$absences);
         }
-        $this->assertRefuelingOperations($period, $fuel, $route, $refuelings, ...$absences);
+        $this->assertRefuelingOperations($period, $fuel, $refuelings, ...$absences);
 
         $this->period = $period;
         $this->odometerEnd = $odometerEnd;
@@ -218,8 +216,8 @@ class Waybill extends Aggregate
         }
         $this->supportedFuelType($this->fuel);
         $this->assertTripsComplete(...iterator_to_array($this->route->logs(), false));
-        $this->assertRefuelingDates($this->period, $this->fuel, $this->route, ...$this->absences);
-        $this->assertRefuelingOperations($this->period, $this->fuel, $this->route, $this->refuelingOperations(), ...$this->absences);
+        $this->assertRefuelingPeriods($this->period, $this->fuel, ...$this->absences);
+        $this->assertRefuelingOperations($this->period, $this->fuel, $this->refuelingOperations(), ...$this->absences);
 
         $this->approvedDriver = $driver->getDriverDetails();
         $this->approvedBase = $driver->getBase();
@@ -300,17 +298,13 @@ class Waybill extends Aggregate
         return $this->vehicle->getId() === $vehicle->getId();
     }
 
-    public function assertRefuelingOperations(WaybillPeriod $period, ?Fuel $fuel, ?Route $route, RefuelingOperations $refuelings, WaybillPeriod ...$absences): void
+    public function assertRefuelingOperations(WaybillPeriod $period, ?Fuel $fuel, RefuelingOperations $refuelings, WaybillPeriod ...$absences): void
     {
-        if (null !== $route && !$this->isForVehicle($route->vehicle())) {
-            throw new AppException('Маршрут относится к другому автомобилю.');
-        }
         $operations = $refuelings->all();
         $hasLegacyRefuelings = $this->hasLegacyRefuelings($fuel) || $this->hasLegacyRefuelings($this->fuel);
         if ([] !== $operations && $hasLegacyRefuelings) {
             throw new AppException('Нельзя добавить отдельные заправки к ранее сохранённой общей сумме.');
         }
-        $travelDays = null === $route ? null : $this->travelDays($route);
         foreach ($operations as $operation) {
             if (!$operation->belongsTo($this->vehicle)) {
                 throw new AppException('Заправка относится к другому автомобилю.');
@@ -322,9 +316,6 @@ class Waybill extends Aggregate
                 if ($absence->contains($operation->date)) {
                     throw new AppException('Заправка попадает в период без поездок.');
                 }
-            }
-            if (null !== $travelDays) {
-                $this->assertTripNearRefueling($operation->date, $travelDays);
             }
         }
     }
@@ -346,21 +337,20 @@ class Waybill extends Aggregate
             throw new \LogicException('Заправки путевого листа уже загружены.');
         }
         $this->assertTripsLoaded();
-        $this->assertRefuelingOperations($this->period, $this->fuel, $this->route, $refuelings, ...$this->absences);
+        $this->assertRefuelingOperations($this->period, $this->fuel, $refuelings, ...$this->absences);
         $this->refuelingOperations = $refuelings;
     }
 
     public function assertSavedRefuelingsAreValid(): void
     {
         $this->assertTripsLoaded();
-        $this->assertRefuelingOperations($this->period, $this->fuel, $this->route, $this->refuelingOperations(), ...$this->absences);
+        $this->assertRefuelingOperations($this->period, $this->fuel, $this->refuelingOperations(), ...$this->absences);
     }
 
     public function assertTrips(int $odometerEnd, RouteLog ...$trips): void
     {
         $distance = $this->assertTripsConsistent($this->period, $odometerEnd, ...$trips);
         $this->assertCompleteTripDistance($odometerEnd, $distance);
-        $this->assertAutomaticTrips(...$trips);
         foreach ($trips as $trip) {
             $this->assertTripOutsideAbsences($trip, ...$this->absences);
         }
@@ -370,7 +360,6 @@ class Waybill extends Aggregate
     {
         $odometerEnd = $this->odometerEnd();
         $distance = $this->assertTripsConsistent($this->period, $odometerEnd, ...$trips);
-        $this->assertAutomaticTrips(...$trips);
         foreach ($trips as $trip) {
             $this->assertTripOutsideAbsences($trip, ...$this->absences);
         }
@@ -387,7 +376,6 @@ class Waybill extends Aggregate
         $this->assertEditable();
         $this->assertTripsLoaded();
         $distance = $this->assertTripsConsistent($this->period, null, ...$trips);
-        $this->assertAutomaticTrips(...$trips);
         $this->assertUnchangedTripsKeepTheirDeparture(...$trips);
         foreach ($trips as $trip) {
             $this->assertTripOutsideAbsences($trip, ...$this->absences);
@@ -395,9 +383,9 @@ class Waybill extends Aggregate
         $last = [] === $trips ? null : $trips[array_key_last($trips)];
         $route = new Route($this->vehicle, $trips[0] ?? null, $last);
         if (null !== $this->fuel) {
-            $this->assertRefuelingDates($this->period, $this->fuel, $route, ...$this->absences);
+            $this->assertRefuelingPeriods($this->period, $this->fuel, ...$this->absences);
         }
-        $this->assertRefuelingOperations($this->period, $this->fuel, $route, $this->refuelingOperations(), ...$this->absences);
+        $this->assertRefuelingOperations($this->period, $this->fuel, $this->refuelingOperations(), ...$this->absences);
 
         $this->route = $route;
         $this->routePresent = true;
@@ -427,7 +415,7 @@ class Waybill extends Aggregate
             $this->assertCompleteTripDistance($this->odometerEnd(), $distance);
         }
         if (null !== $this->fuel) {
-            $this->assertRefuelingDates($this->period, $this->fuel, $route, ...$this->absences);
+            $this->assertRefuelingPeriods($this->period, $this->fuel, ...$this->absences);
         }
         $this->route = $route;
     }
@@ -776,7 +764,7 @@ class Waybill extends Aggregate
                 && $before->origin === $trip->origin;
             $previousTripWasRemoved = null !== $before->previous && !isset($remaining[(string) $before->previous->id]);
             $previousTripWasInserted = null !== $trip->previous && !isset($original[(string) $trip->previous->id]);
-            if ($unchanged && !$previousTripWasRemoved && !$previousTripWasInserted && !$before->departure()->equals($trip->departure())) {
+            if ($unchanged && !$previousTripWasRemoved && !$previousTripWasInserted && !$before->departure()->samePlace($trip->departure())) {
                 throw new AppException('Изменение затрагивает следующую поездку. Исправьте её явно.');
             }
         }
@@ -812,68 +800,6 @@ class Waybill extends Aggregate
             }
             $previous[] = $absence;
         }
-    }
-
-    private function assertAutomaticTrips(RouteLog ...$trips): void
-    {
-        $outward = null;
-        $base = $this->base();
-        foreach ($trips as $trip) {
-            if ((null !== $outward || RouteLogOrigin::Automatic === $trip->origin) && null === $base) {
-                throw new AppException('Для автоматических поездок укажите водителя автомобиля.');
-            }
-            if (null !== $outward) {
-                $day = $outward->date->setTime(0, 0);
-                $returnDay = $trip->date->setTimezone($outward->date->getTimezone())->setTime(0, 0);
-                if (RouteLogOrigin::Automatic !== $trip->origin
-                    || !$trip->destination->location->equals($base)
-                    || $outward->distanceInKilometers() != $trip->distanceInKilometers()
-                    || $day != $returnDay) {
-                    throw new AppException('Автоматические участки не образуют целую пару.');
-                }
-                $outward = null;
-            } elseif (RouteLogOrigin::Automatic === $trip->origin) {
-                if (!$trip->departure()->equals($base)) {
-                    throw new AppException('Автоматическая поездка должна начинаться и заканчиваться на базе.');
-                }
-                $outward = $trip;
-            }
-        }
-        if (null !== $outward) {
-            throw new AppException('Автоматические участки не образуют целую пару.');
-        }
-    }
-
-    private function assertRefuelingDates(WaybillPeriod $period, Fuel $fuel, Route $route, WaybillPeriod ...$absences): void
-    {
-        $this->assertRefuelingPeriods($period, $fuel, ...$absences);
-        $travelDays = $this->travelDays($route);
-        foreach ($fuel->refuelingsOrNull()?->entries() ?? [] as $refueling) {
-            $this->assertTripNearRefueling($refueling->date(), $travelDays);
-        }
-    }
-
-    /** @return array<string, true> */
-    private function travelDays(Route $route): array
-    {
-        $days = [];
-        foreach ($route->logs() as $log) {
-            $days[$log->date->format('Y-m-d')] = true;
-        }
-
-        return $days;
-    }
-
-    /** @param array<string, true> $travelDays */
-    private function assertTripNearRefueling(\DateTimeImmutable $date, array $travelDays): void
-    {
-        foreach ([-1, 0, 1] as $offset) {
-            if (isset($travelDays[$date->modify(sprintf('%+d days', $offset))->format('Y-m-d')])) {
-                return;
-            }
-        }
-
-        throw new AppException('Для заправки нужна поездка текущего листа в этот или соседний день.');
     }
 
     private function assertRefuelingPeriods(WaybillPeriod $period, Fuel $fuel, WaybillPeriod ...$absences): void

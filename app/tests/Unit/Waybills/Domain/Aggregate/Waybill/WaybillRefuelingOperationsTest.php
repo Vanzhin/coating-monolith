@@ -38,7 +38,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
         $second = $this->refueling($vehicle, '2026-01-11T18:00:00+03:00', '0.20000000000000000001', FuelType::Ai92);
         $refuelings = new RefuelingOperations($first, $second);
 
-        $sheet->assertRefuelingOperations($sheet->period(), null, $this->route($vehicle), $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
 
         self::assertSame([$first, $second], $refuelings->all());
         self::assertSame('0.30000000000000000001', (string) $refuelings->total());
@@ -66,7 +66,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
         [$sheet, $vehicle] = $this->draft();
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-10', '12.5'));
 
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
         self::assertSame('12.5', (string) $refuelings->total());
     }
 
@@ -78,7 +78,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('другому автомобилю');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
     }
 
     public function test_rejects_refueling_outside_the_period(): void
@@ -88,7 +88,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('вне периода');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
     }
 
     public function test_rejects_refueling_during_absence(): void
@@ -99,17 +99,17 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('период без поездок');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings, $absence);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings, $absence);
     }
 
-    public function test_rejects_refueling_without_a_nearby_trip_when_route_is_present(): void
+    public function test_accepts_refueling_without_a_nearby_trip_when_route_is_present(): void
     {
         [$sheet, $vehicle] = $this->draft();
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-13', '1'));
 
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('поездка текущего листа');
-        $sheet->assertRefuelingOperations($sheet->period(), null, $this->route($vehicle), $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
+
+        self::assertSame('1', (string) $refuelings->total());
     }
 
     public function test_does_not_replace_legacy_total_with_separate_refuelings(): void
@@ -119,7 +119,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-10', '1'));
         $sheet->reviseDraft($sheet->period(), null, $legacy, null);
         try {
-            $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+            $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
             self::fail('Общая сумма не должна пропасть или задвоиться.');
         } catch (AppException $exception) {
             self::assertStringContainsString('общей сумме', $exception->getMessage());
