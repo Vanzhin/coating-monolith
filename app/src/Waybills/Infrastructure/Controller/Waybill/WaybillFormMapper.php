@@ -13,37 +13,33 @@ use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
 use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
 use App\Waybills\Domain\Aggregate\Route\Destination;
 use App\Waybills\Domain\Aggregate\Route\Location;
+use App\Waybills\Domain\Aggregate\Route\Route;
+use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
+use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Symfony\Component\Uid\Uuid;
 
 final class WaybillFormMapper
 {
+    public function __construct(private readonly LocationFormMapper $locationMapper)
+    {
+    }
+
     /** @return array<string, mixed> */
     public function input(Waybill $waybill, int $version): array
     {
         $fuel = $waybill->fuelOrNull();
-        $trips = [];
-        foreach ($waybill->trips() as $trip) {
-            $location = $trip->destination->location;
-            $trips[] = [
-                'id' => (string) $trip->id,
-                'date' => $trip->date->format('Y-m-d\TH:i:s'),
-                'country' => $location->country, 'city' => $location->city,
-                'street' => $location->street, 'house' => $location->house,
-                'enterprise' => $trip->destination->enterprise ?? '',
-                'distance' => (string) $trip->distanceInKilometers(),
-            ];
-        }
+        $trips = $this->tripRows($waybill->hasRoute() ? $waybill->route() : new Route($waybill->vehicle()));
 
         return [
             'version' => (string) $version,
-            'initialLocation' => $waybill->vehicle()->initialLocation()->jsonSerialize(),
+            'initialLocation' => $this->locationMapper->present($waybill->vehicle()->initialLocation()),
             'blankTrip' => $this->blankTrip(),
             'from' => $waybill->period()->from()->format('Y-m-d'),
             'to' => $waybill->period()->to()->format('Y-m-d'),
@@ -64,6 +60,81 @@ final class WaybillFormMapper
         ];
     }
 
+    /**
+     * @param array<string, mixed> $input
+     *
+     * @return array<string, mixed>
+     */
+    public function withRoute(array $input, Route $route): array
+    {
+        $previousRows = [];
+        foreach ($input['trips'] ?? [] as $row) {
+            if (is_array($row) && isset($row['id']) && is_string($row['id'])) {
+                $previousRows[$row['id']] = $row;
+            }
+        }
+        $input['trips'] = $this->tripRows($route, $previousRows);
+
+        return $input;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $previousRows
+     *
+     * @return list<array<string, string>>
+     */
+    private function tripRows(Route $route, array $previousRows = []): array
+    {
+        $rows = [];
+        $pairId = null;
+        foreach ($route->logs() as $trip) {
+            $automatic = RouteLogOrigin::Automatic === $trip->origin;
+            if ($automatic) {
+                if (null === $pairId) {
+                    $pairId = $trip->id;
+                    $currentPairId = $pairId;
+                } else {
+                    $currentPairId = $pairId;
+                    $pairId = null;
+                }
+            } else {
+                $currentPairId = null;
+                $pairId = null;
+            }
+            $location = $trip->destination->location;
+            $previous = $previousRows[(string) $trip->id] ?? [];
+            $rows[] = [
+                'id' => (string) $trip->id,
+                'date' => $trip->date->format('Y-m-d'),
+                'locationId' => null === $location->id ? '' : (string) $location->id,
+                'country' => $location->country,
+                'city' => null === $location->city ? '' : $location->city->name,
+                'cityType' => null === $location->city || null === $location->city->type ? '' : $location->city->type->value,
+                'street' => $location->street,
+                'house' => $location->house,
+                'enterprise' => $trip->destination->enterprise ?? '',
+                'latitude' => null === $location->latitude ? '' : (string) $location->latitude,
+                'longitude' => null === $location->longitude ? '' : (string) $location->longitude,
+                'distance' => (string) $trip->distanceInKilometers(),
+                'origin' => $trip->origin->value,
+                'pairId' => $automatic ? (string) $currentPairId : ($previous['pairId'] ?? ''),
+                'originalDate' => $automatic ? $trip->date->format('Y-m-d') : ($previous['originalDate'] ?? ''),
+                'originalDistance' => $automatic ? (string) $trip->distanceInKilometers() : ($previous['originalDistance'] ?? ''),
+                'originalLocationId' => $automatic ? (null === $location->id ? '' : (string) $location->id) : ($previous['originalLocationId'] ?? ''),
+                'originalCountry' => $automatic ? $location->country : ($previous['originalCountry'] ?? ''),
+                'originalCity' => $automatic ? (null === $location->city ? '' : $location->city->name) : ($previous['originalCity'] ?? ''),
+                'originalCityType' => $automatic ? (null === $location->city || null === $location->city->type ? '' : $location->city->type->value) : ($previous['originalCityType'] ?? ''),
+                'originalStreet' => $automatic ? $location->street : ($previous['originalStreet'] ?? ''),
+                'originalHouse' => $automatic ? $location->house : ($previous['originalHouse'] ?? ''),
+                'originalEnterprise' => $automatic ? ($trip->destination->enterprise ?? '') : ($previous['originalEnterprise'] ?? ''),
+                'originalLatitude' => $automatic ? (null === $location->latitude ? '' : (string) $location->latitude) : ($previous['originalLatitude'] ?? ''),
+                'originalLongitude' => $automatic ? (null === $location->longitude ? '' : (string) $location->longitude) : ($previous['originalLongitude'] ?? ''),
+            ];
+        }
+
+        return $rows;
+    }
+
     /** @return array<string, mixed> */
     public function createInput(VehicleDTO $vehicle): array
     {
@@ -73,7 +144,7 @@ final class WaybillFormMapper
 
         return [
             'from' => '', 'to' => '',
-            'initialLocation' => $vehicle->initialLocation->jsonSerialize(),
+            'initialLocation' => $this->locationMapper->present($vehicle->initialLocation),
             'blankTrip' => $this->blankTrip(),
             'initialOdometer' => (string) $vehicle->odometer,
             'initialFuel' => (string) $vehicle->fuelRemaining,
@@ -149,21 +220,67 @@ final class WaybillFormMapper
             if (false === $distance) {
                 throw new AppException('Укажите целое расстояние поездки в километрах.');
             }
+            $originValue = $this->text($row, 'origin');
+            $origin = '' === $originValue ? RouteLogOrigin::Manual : RouteLogOrigin::tryFrom($originValue);
+            if (null === $origin) {
+                throw new AppException('Некорректное происхождение поездки.');
+            }
+            $pairId = trim($this->text($row, 'pairId'));
+            if ('' !== $pairId && !Uuid::isValid($pairId)) {
+                throw new AppException('Некорректный идентификатор автоматической пары.');
+            }
+            $originalDate = null;
+            $originalDestination = null;
+            if ('' !== $this->text($row, 'originalDate')) {
+                $originalDistance = filter_var(trim($this->text($row, 'originalDistance')), FILTER_VALIDATE_INT);
+                if (false === $originalDistance) {
+                    throw new AppException('Укажите исходное расстояние автоматической поездки.');
+                }
+                $originalDate = $this->date($this->text($row, 'originalDate'));
+                $originalDestination = new Destination($this->location($row, 'original'), $originalDistance);
+            }
             $original = $known[$id] ?? null;
             $trips[] = new TripInput(
                 '' === $id ? null : Uuid::fromString($id),
                 $this->date($this->text($row, 'date'), $original?->date),
-                new Destination(new Location($this->text($row, 'country'), $this->text($row, 'city'), $this->text($row, 'street'), $this->text($row, 'house')), $distance, $this->text($row, 'enterprise')),
+                new Destination($this->location($row), $distance),
+                $origin,
+                '' === $pairId ? null : Uuid::fromString($pairId),
+                $originalDate,
+                $originalDestination,
             );
         }
 
         return $trips;
     }
 
+    /** @param array<string, mixed> $row */
+    private function location(array $row, string $prefix = ''): Location
+    {
+        $field = static fn (string $name): string => '' === $prefix ? lcfirst($name) : $prefix.$name;
+
+        return $this->locationMapper->fromArray([
+            'id' => $this->text($row, $field('LocationId')),
+            'country' => $this->text($row, $field('Country')),
+            'city' => $this->text($row, $field('City')),
+            'cityType' => $this->text($row, $field('CityType')),
+            'street' => $this->text($row, $field('Street')),
+            'house' => $this->text($row, $field('House')),
+            'enterprise' => $this->text($row, $field('Enterprise')),
+            'latitude' => $this->text($row, $field('Latitude')),
+            'longitude' => $this->text($row, $field('Longitude')),
+        ]);
+    }
+
     /** @return array<string, string> */
     public function blankTrip(): array
     {
-        return ['id' => '', 'date' => '', 'country' => Location::DEFAULT_COUNTRY, 'city' => '', 'street' => '', 'house' => '', 'enterprise' => '', 'distance' => ''];
+        return [
+            'id' => '', 'date' => '', 'locationId' => '', 'country' => Location::DEFAULT_COUNTRY, 'city' => '', 'cityType' => '', 'street' => '', 'house' => '', 'enterprise' => '',
+            'latitude' => '', 'longitude' => '', 'distance' => '', 'origin' => RouteLogOrigin::Manual->value, 'pairId' => '',
+            'originalDate' => '', 'originalDistance' => '', 'originalLocationId' => '', 'originalCountry' => '', 'originalCity' => '', 'originalCityType' => '', 'originalStreet' => '', 'originalHouse' => '', 'originalEnterprise' => '',
+            'originalLatitude' => '', 'originalLongitude' => '',
+        ];
     }
 
     /** @return array<string, string> */
@@ -294,13 +411,14 @@ final class WaybillFormMapper
     private function date(string $input, ?\DateTimeImmutable $existing = null): \DateTimeImmutable
     {
         if (null !== $existing) {
+            $sameDay = $existing->format('Y-m-d') === $input;
             $sameSecond = $existing->format('Y-m-d\TH:i:s') === $input;
             $sameMinute = '00' === $existing->format('s') && $existing->format('Y-m-d\TH:i') === $input;
-            if ($sameSecond || $sameMinute) {
+            if ($sameDay || $sameSecond || $sameMinute) {
                 return $existing;
             }
         }
-        foreach (['Y-m-d\TH:i:s', 'Y-m-d\TH:i'] as $format) {
+        foreach (['Y-m-d', 'Y-m-d\TH:i:s', 'Y-m-d\TH:i'] as $format) {
             $date = \DateTimeImmutable::createFromFormat('!'.$format, $input);
             if (false !== $date && $date->format($format) === $input) {
                 return $date;

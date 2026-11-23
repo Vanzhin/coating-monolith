@@ -17,6 +17,8 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000010;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile;
@@ -72,7 +74,7 @@ final class WaybillRepositoryTest extends KernelTestCase
         $this->connection->executeStatement('CREATE SCHEMA '.$this->schema);
         $this->ownsSchema = true;
         $this->connection->executeStatement('SET search_path TO '.$this->schema);
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class] as $class) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class, Version20261122000000::class, Version20261122000001::class] as $class) {
             // Run each migration twice to verify its idempotence.
             for ($i = 0; $i < 2; ++$i) {
                 $migration = new $class($this->connection, new NullLogger());

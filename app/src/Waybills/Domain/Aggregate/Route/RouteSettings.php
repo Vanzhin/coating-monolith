@@ -14,7 +14,7 @@ final readonly class RouteSettings
     public function __construct(public Location $base, Destination ...$destinations)
     {
         foreach ($destinations as $destination) {
-            if ($base->equals($destination->location)) {
+            if ($base->samePlace($destination->location)) {
                 throw new AppException('Направление не может совпадать с базовой точкой.');
             }
         }

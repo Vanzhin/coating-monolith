@@ -11,6 +11,7 @@ use App\Waybills\Domain\Aggregate\Route\Destination;
 use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Route\RouteSettings;
 use App\Waybills\Infrastructure\Mapper\DriverProfileFormMapper;
+use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,7 +20,7 @@ final class DriverProfileFormMapperTest extends TestCase
     public function test_new_profile_uses_default_country_and_respects_explicit_country(): void
     {
         $profile = new GetOwnDriverProfileQueryResult(null, null, null);
-        $mapper = new DriverProfileFormMapper();
+        $mapper = new DriverProfileFormMapper(new LocationFormMapper());
         $data = $mapper->fromProfile($profile);
         self::assertSame('Россия', $data['base']['country']);
 
@@ -47,7 +48,7 @@ final class DriverProfileFormMapperTest extends TestCase
             (string) Uuid::v7(), new DriverDetails('Водитель', '1234567890', $date, '11223344595'),
             new RouteSettings(new Location('Россия', 'Москва', 'Лесная', '1'), new Destination(new Location('Россия', 'Москва', 'Складская', '2'), 10, 'Склад')),
         );
-        $mapper = new DriverProfileFormMapper();
+        $mapper = new DriverProfileFormMapper(new LocationFormMapper());
         $data = $mapper->fromProfile($profile);
         self::assertSame('12 34 567890', $data['licenseNumber']);
         self::assertSame('112-233-445 95', $data['snils']);
@@ -60,7 +61,7 @@ final class DriverProfileFormMapperTest extends TestCase
         self::assertArrayNotHasKey('vehicleId', $data);
         self::assertSame('Россия, Москва, Лесная, 1', $route->base->toString());
         self::assertSame('Россия, Москва, Складская, 2', $route->destinations()[0]->location->toString());
-        self::assertSame('Москва', $route->base->city);
+        self::assertSame('Москва', $route->base->city?->name);
         self::assertSame('2', $route->destinations()[0]->location->house);
         self::assertSame(10, $route->destinations()[0]->distance);
         self::assertSame('Склад', $route->destinations()[0]->enterprise);
@@ -74,7 +75,7 @@ final class DriverProfileFormMapperTest extends TestCase
 
     public function test_fractional_distance_is_rejected_without_rounding(): void
     {
-        $mapper = new DriverProfileFormMapper();
+        $mapper = new DriverProfileFormMapper(new LocationFormMapper());
         $profile = new GetOwnDriverProfileQueryResult(null, null, null);
         $data = [
             'licenseIssuedAt' => '2020-01-01',

@@ -393,7 +393,7 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
         }
         if (null !== $predecessor && null !== $previous) {
             $location = Location::fromArray(json_decode((string) $predecessor['location'], true, flags: JSON_THROW_ON_ERROR));
-            if (!$location->equals($previous->destination->location) || ExactDateTimeType::parse((string) $predecessor['occurred_at']) != $previous->date) {
+            if (!$location->samePlace($previous->destination->location) || ExactDateTimeType::parse((string) $predecessor['occurred_at']) != $previous->date) {
                 throw new AppException('Предыдущая поездка изменилась. Обновите данные и повторите операцию.');
             }
         }

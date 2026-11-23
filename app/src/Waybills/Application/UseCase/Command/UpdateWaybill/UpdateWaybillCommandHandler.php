@@ -8,6 +8,7 @@ use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\RefuelingOperationBuilder;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Domain\Repository\VehicleRepositoryInterface;
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class UpdateWaybillCommandHandler implements CommandHandlerInterface
 {
-    public function __construct(private WaybillRepositoryInterface $waybills, private VehicleRepositoryInterface $vehicles, private WaybillAccessControl $access, private WaybillRouteBuilder $routes, private RefuelingOperationBuilder $refuelings)
+    public function __construct(private WaybillRepositoryInterface $waybills, private VehicleRepositoryInterface $vehicles, private WaybillAccessControl $access, private WaybillRouteBuilder $routes, private RefuelingOperationBuilder $refuelings, private LocationCatalog $locations)
     {
     }
 
@@ -34,7 +35,8 @@ final readonly class UpdateWaybillCommandHandler implements CommandHandlerInterf
         if ($this->waybills->versionOf($waybill) !== $command->expectedVersion) {
             throw new AppException('Путевой лист изменился. Обновите данные и повторите операцию.');
         }
-        $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$command->trips);
+        $trips = $this->locations->resolveTrips(...$command->trips);
+        $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$trips);
         $operations = $this->refuelings->build($waybill, $command->refuelings);
         $waybill->reviseDraftWithRefuelingOperations($command->period, $command->odometerEnd, $command->fuel, $route, $operations, ...$command->absences);
         $this->waybills->add($waybill);

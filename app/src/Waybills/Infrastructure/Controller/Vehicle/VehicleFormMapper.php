@@ -10,18 +10,24 @@ use App\Waybills\Application\DTO\VehicleDTO;
 use App\Waybills\Application\UseCase\Command\CreateVehicle\CreateVehicleCommand;
 use App\Waybills\Application\UseCase\Command\UpdateVehicle\UpdateVehicleCommand;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
+use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 
 final class VehicleFormMapper
 {
+    public function __construct(private readonly LocationFormMapper $locationMapper)
+    {
+    }
+
     /** @return array<string, string> */
     public function newVehicleInput(): array
     {
         return [
             'model' => '', 'registrationNumber' => '', 'consumptionRate' => '',
             'defaultFuelType' => FuelType::Ai95->value, 'initialAt' => '',
-            'initialCountry' => '', 'initialCity' => '', 'initialStreet' => '', 'initialHouse' => '',
+            'initialLocationId' => '', 'initialCountry' => '', 'initialCity' => '', 'initialCityType' => '', 'initialStreet' => '', 'initialHouse' => '',
+            'initialEnterprise' => '', 'initialLatitude' => '', 'initialLongitude' => '',
             'initialOdometer' => '', 'initialFuelRemaining' => '',
         ];
     }
@@ -43,9 +49,14 @@ final class VehicleFormMapper
             throw new AppException('Укажите корректный начальный остаток топлива.', previous: $exception);
         }
 
+        $location = $this->locationMapper->fromArray([
+            'id' => $input['initialLocationId'], 'country' => $input['initialCountry'], 'city' => $input['initialCity'], 'cityType' => $input['initialCityType'],
+            'street' => $input['initialStreet'], 'house' => $input['initialHouse'], 'enterprise' => $input['initialEnterprise'],
+            'latitude' => $input['initialLatitude'], 'longitude' => $input['initialLongitude'],
+        ]);
+
         return new CreateVehicleCommand(
-            $input['model'], $input['registrationNumber'], $date,
-            $input['initialCountry'], $input['initialCity'], $input['initialStreet'], $input['initialHouse'],
+            $input['model'], $input['registrationNumber'], $date, $location,
             $this->odometer($input['initialOdometer']), $fuelRemaining, $this->consumptionRate($input['consumptionRate']),
             $this->fuelType($input['defaultFuelType']), ...$this->selectedFuelTypes($fuelTypes),
         );

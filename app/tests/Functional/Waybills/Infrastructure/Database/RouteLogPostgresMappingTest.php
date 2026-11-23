@@ -216,7 +216,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
             self::assertSame($ids[$index + 5], (string) $trip->id);
             self::assertNotNull($trip->previous);
             self::assertSame($ids[$index + 4], (string) $trip->previous->id);
-            self::assertSame('Город '.($index + 5), $trip->previous->destination->location->city);
+            self::assertSame('Город '.($index + 5), $trip->previous->destination->location->city?->name);
         }
         $sql = array_column($this->queries->getData()['default'] ?? [], 'sql');
         self::assertCount(1, $sql, implode("\n", $sql));
@@ -273,7 +273,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
         }
         self::assertSame(array_slice($ids, 2, 3), $ordered);
         self::assertSame($ids[1], (string) $cursor->id);
-        self::assertSame('Точка 2', $cursor->destination->location->city);
+        self::assertSame('Точка 2', $cursor->destination->location->city?->name);
         self::assertNotNull($cursor->previous);
         self::assertSame($ids[0], (string) $cursor->previous->id);
         self::assertTrue((new \ReflectionClass(RouteLog::class))->isUninitializedLazyObject($cursor->previous));
@@ -303,7 +303,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
             ->getSingleResult();
 
         self::assertSame($reference, $loaded->previous);
-        self::assertSame('Москва', $loaded->previous->destination->location->city);
+        self::assertSame('Москва', $loaded->previous->destination->location->city?->name);
         self::assertCount(1, $this->queries->getData()['default'] ?? []);
     }
 

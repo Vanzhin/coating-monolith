@@ -6,6 +6,7 @@ namespace App\Waybills\Application\UseCase\Command\CreateVehicle;
 
 use App\Shared\Application\Command\Command;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
+use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use Brick\Math\BigDecimal;
 
@@ -18,10 +19,7 @@ final readonly class CreateVehicleCommand extends Command
         public string $model,
         public string $registrationNumber,
         public \DateTimeImmutable $initialAt,
-        public string $initialCountry,
-        public string $initialCity,
-        public string $initialStreet,
-        public string $initialHouse,
+        public Location $initialLocation,
         public int $initialOdometer,
         public BigDecimal $initialFuelRemaining,
         public ?PositiveNumber $consumptionRate,

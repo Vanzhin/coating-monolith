@@ -16,6 +16,7 @@ use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\UseCase\Command\CreateVehicle\CreateVehicleCommand;
 use App\Waybills\Application\UseCase\Command\UpdateVehicle\UpdateVehicleCommand;
 use App\Waybills\Application\UseCase\Query\GetPagedVehicles\GetPagedVehiclesQuery;
+use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Domain\Repository\VehicleFilter;
 use App\Waybills\Domain\Repository\VehicleRepositoryInterface;
@@ -127,7 +128,7 @@ final class VehicleOperationsTest extends KernelTestCase
     {
         return new CreateVehicleCommand(
             $model, $number, new \DateTimeImmutable('2026-01-01'),
-            'Россия', 'База', '', '', 100, BigDecimal::of(10), $rate, FuelType::Ai95, FuelType::Ai95,
+            new Location('Россия', 'База'), 100, BigDecimal::of(10), $rate, FuelType::Ai95, FuelType::Ai95,
         );
     }
 

@@ -9,6 +9,7 @@ use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\RefuelingOperationBuilder;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
@@ -25,6 +26,7 @@ final readonly class CreateWaybillCommandHandler implements CommandHandlerInterf
         private WaybillAccessControl $access,
         private WaybillRouteBuilder $routes,
         private RefuelingOperationBuilder $refuelings,
+        private LocationCatalog $locations,
     ) {
     }
 
@@ -41,7 +43,8 @@ final readonly class CreateWaybillCommandHandler implements CommandHandlerInterf
         $number = $this->waybills->nextNumber($this->access->currentUserId());
         $waybill = Waybill::createDraft(Uuid::v7(), $number, $vehicle, new DateTimeInterval($command->period->from(), $command->period->to()));
         $waybill->assertInitialReadingsMatchEntered($command->expectedOdometerStart, $command->expectedFuelStart);
-        $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$command->trips);
+        $trips = $this->locations->resolveTrips(...$command->trips);
+        $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$trips);
         $operations = $this->refuelings->build($waybill, $command->refuelings);
         $waybill->reviseDraftWithRefuelingOperations($command->period, $command->odometerEnd, $command->fuel, $route, $operations, ...$command->absences);
         $this->waybills->add($waybill);

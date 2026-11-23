@@ -15,6 +15,8 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000010;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Schema\Schema;
@@ -248,6 +250,47 @@ final class WaybillStorageMigrationTest extends KernelTestCase
         } catch (DriverException $exception) {
             self::assertSame('P0001', $exception->getSQLState());
         }
+    }
+
+    public function test_location_migration_links_exact_addresses_without_merging_typos(): void
+    {
+        $profileId = (string) Uuid::v7();
+        $correct = ['country' => 'Россия', 'city' => 'Екатеринбург', 'street' => 'Ирбитская', 'house' => '8'];
+        $typo = ['country' => 'Россия', 'city' => 'Екаетринбург', 'street' => 'Ирбитская', 'house' => '8'];
+        $settings = [
+            'base' => $typo,
+            'destinations' => [
+                ['location' => $correct, 'distance' => 15, 'enterprise' => null],
+                ['location' => $typo, 'distance' => 55, 'enterprise' => null],
+            ],
+        ];
+        $this->connection->executeStatement(
+            'INSERT INTO waybills_driver_profile (id, owner_id, driver_details, route_settings) VALUES (?, ?, ?, ?)',
+            [$profileId, 'location-owner', '{}', json_encode($settings, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)],
+        );
+        $this->connection->update('waybills_vehicle', ['driver_id' => $profileId, 'initial_location' => json_encode($correct, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)], ['id' => $this->vehicleId]);
+        $tripId = (string) Uuid::v7();
+        $this->connection->executeStatement(
+            "INSERT INTO waybills_route_log (id, vehicle_id, occurred_at, location, distance, origin) VALUES (?, ?, '2026-01-10', ?, 20, 'manual')",
+            [$tripId, $this->vehicleId, json_encode($correct, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)],
+        );
+
+        $this->apply(Version20261122000000::class);
+        $this->apply(Version20261122000001::class);
+
+        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_location'));
+        $vehicleId = $this->connection->fetchOne('SELECT initial_location FROM pg_temp.waybills_vehicle WHERE id = ?', [$this->vehicleId]);
+        $settings = json_decode((string) $this->connection->fetchOne('SELECT route_settings FROM pg_temp.waybills_driver_profile WHERE id = ?', [$profileId]), true, flags: JSON_THROW_ON_ERROR);
+        $tripLocation = json_decode((string) $this->connection->fetchOne('SELECT location FROM pg_temp.waybills_route_log WHERE id = ?', [$tripId]), true, flags: JSON_THROW_ON_ERROR);
+        $vehicleLocation = json_decode((string) $vehicleId, true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($vehicleLocation['id'], $settings['destinations'][0]['location']['id']);
+        self::assertSame($vehicleLocation['id'], $tripLocation['id']);
+        self::assertNotSame($vehicleLocation['id'], $settings['base']['id']);
+        self::assertSame(['name' => 'Екатеринбург', 'type' => null], $vehicleLocation['city']);
+        self::assertSame(['name' => 'Екаетринбург', 'type' => null], $settings['base']['city']);
+
+        $this->apply(Version20261122000001::class);
+        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_location'));
     }
 
     private function hasColumn(string $table, string $column): bool

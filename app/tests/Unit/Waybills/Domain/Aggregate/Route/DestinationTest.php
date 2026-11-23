@@ -17,10 +17,20 @@ final class DestinationTest extends TestCase
         $distance = 15;
         $destination = new Destination($location, $distance, '  Предприятие  ');
 
-        self::assertSame($location, $destination->location);
+        self::assertSame($location->name, $destination->location->name);
         self::assertSame($distance, $destination->distance);
         self::assertSame('Предприятие', $destination->enterprise);
+        self::assertSame('Предприятие', $destination->location->enterprise);
         self::assertTrue((new \ReflectionClass($destination))->isReadOnly());
+    }
+
+    public function test_uses_enterprise_from_location(): void
+    {
+        $location = new Location('Склад', enterprise: 'Предприятие');
+        $destination = new Destination($location, 15);
+
+        self::assertSame($location, $destination->location);
+        self::assertSame('Предприятие', $destination->enterprise);
     }
 
     public function test_fractional_kilometres_are_not_accepted(): void

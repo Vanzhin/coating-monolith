@@ -19,9 +19,13 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000006;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Waybills\Application\DTO\TripInput;
+use App\Waybills\Application\Service\AccessControl\LocationAccessControl;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\RefuelingOperationBuilder;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
@@ -48,6 +52,7 @@ use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
 use App\Waybills\Domain\Repository\WaybillFilter;
+use App\Waybills\Infrastructure\Repository\LocationRepository;
 use App\Waybills\Infrastructure\Repository\VehicleRepository;
 use App\Waybills\Infrastructure\Repository\WaybillRepository;
 use Brick\Math\BigDecimal;
@@ -77,7 +82,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $this->connection = DriverManager::getConnection($params);
         $this->em = new EntityManager($this->connection, $configured->getConfiguration());
 
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261122000000::class, Version20261122000001::class] as $migrationClass) {
             $this->applyTemporaryMigration($migrationClass);
         }
     }
@@ -521,7 +526,8 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $vehicles = new VehicleRepository($registry);
         $repository = new WaybillRepository($this->em, $this->connection);
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
-        $create = new CreateWaybillCommandHandler($vehicles, $repository, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder());
+        $locations = new LocationCatalog(new LocationRepository($registry), new LocationAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher));
+        $create = new CreateWaybillCommandHandler($vehicles, $repository, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder(), $locations);
         $id = $this->connection->transactional(fn (): string => $create(new CreateWaybillCommand($vehicle->getId(), $period)));
         $draft = $repository->findOneById($id);
         self::assertInstanceOf(Waybill::class, $draft);
@@ -529,7 +535,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertSame(100, $draft->odometerStart());
         self::assertFalse($draft->hasRoute());
 
-        $update = new UpdateWaybillCommandHandler($repository, $vehicles, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder());
+        $update = new UpdateWaybillCommandHandler($repository, $vehicles, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder(), $locations);
         $command = new UpdateWaybillCommand($id, 1, $period, null, null, true, [], null,
             new TripInput(null, new \DateTimeImmutable('2026-01-10 10:00:00+00:00'), new Destination(new Location('Первая'), 2)),
             new TripInput(null, new \DateTimeImmutable('2026-01-10 12:00:00+00:00'), new Destination(new Location('Вторая'), 3)),

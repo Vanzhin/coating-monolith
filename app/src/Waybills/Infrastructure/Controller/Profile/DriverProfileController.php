@@ -10,6 +10,7 @@ use App\Waybills\Application\UseCase\Command\CreateDriverProfile\CreateDriverPro
 use App\Waybills\Application\UseCase\Command\UpdateDriverProfile\UpdateDriverProfileCommand;
 use App\Waybills\Application\UseCase\Query\GetOwnDriverProfile\GetOwnDriverProfileQuery;
 use App\Waybills\Domain\Aggregate\Route\Location;
+use App\Waybills\Domain\Aggregate\Route\SettlementType;
 use App\Waybills\Infrastructure\Mapper\DriverProfileFormMapper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -65,6 +66,6 @@ final class DriverProfileController extends AbstractController
             }
         }
 
-        return $this->render('cabinet/waybill/profile/form.html.twig', ['data' => $data, 'profile' => $profile, 'error' => $error], new Response(status: $status));
+        return $this->render('cabinet/waybill/profile/form.html.twig', ['data' => $data, 'profile' => $profile, 'error' => $error, 'settlementTypes' => SettlementType::cases()], new Response(status: $status));
     }
 }

@@ -1,0 +1,56 @@
+{% set idField = idField|default('id') %}
+{% set locationId = location[idField]|default('') %}
+{% set inputAction = inputAction|default('') %}
+{% set existingTitle = location.title|default([location.country|default(''), location.city|default(''), location.street|default(''), location.house|default(''), location.enterprise|default('')]|filter(value => value)|join(', ')) %}
+<div class="col-12" data-controller="location-fields" data-action="typeahead:selected->location-fields#select">
+    <div class="row g-3">
+        <div class="col-12">
+            <label class="form-label" for="location-search-{{ key }}">Найти в справочнике</label>
+            <input id="location-search-{{ key }}" type="text" class="form-control" placeholder="Начните вводить адрес…"
+                   data-controller="typeahead"
+                   data-typeahead-endpoint-value="{{ path('app_cabinet_waybill_location_suggest') }}"
+                   data-typeahead-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"
+                   data-typeahead-create-modal-value="location-create-modal"
+                   data-typeahead-hidden-name-value="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}"
+                   data-typeahead-min-length-value="1"
+                   data-typeahead-aux-fields-value="{{ [{field: 'enterprise', label: 'Предприятие:'}]|json_encode|e('html_attr') }}"
+                   {% if locationId %}data-typeahead-existing-value="{{ {id: locationId, title: existingTitle}|json_encode|e('html_attr') }}"{% endif %}>
+            <input type="hidden" name="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}" value="{{ locationId }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-country-{{ key }}">Страна</label>
+            <input class="form-control" id="location-country-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Country{% else %}{{ name }}[country]{% endif %}" value="{{ location.country|default('') }}" data-location-fields-target="country" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-city-type-{{ key }}">Тип населённого пункта</label>
+            <select class="form-select" id="location-city-type-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}CityType{% else %}{{ name }}[cityType]{% endif %}" data-location-fields-target="cityType" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+                <option value="">Не указан</option>
+                {% for type in settlementTypes %}<option value="{{ type.value }}" {% if location.cityType|default('') == type.value %}selected{% endif %}>{{ type.label() }} ({{ type.abbreviation() }})</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-city-{{ key }}">Населённый пункт</label>
+            <input class="form-control" id="location-city-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}City{% else %}{{ name }}[city]{% endif %}" value="{{ location.city|default('') }}" data-location-fields-target="city" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-street-{{ key }}">Улица</label>
+            <input class="form-control" id="location-street-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Street{% else %}{{ name }}[street]{% endif %}" value="{{ location.street|default('') }}" data-location-fields-target="street" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-house-{{ key }}">Дом</label>
+            <input class="form-control" id="location-house-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}House{% else %}{{ name }}[house]{% endif %}" value="{{ location.house|default('') }}" data-location-fields-target="house" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-enterprise-{{ key }}">Предприятие</label>
+            <input class="form-control" id="location-enterprise-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Enterprise{% else %}{{ name }}[enterprise]{% endif %}" value="{{ location.enterprise|default('') }}" data-location-fields-target="enterprise" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-latitude-{{ key }}">Широта</label>
+            <input class="form-control" id="location-latitude-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Latitude{% else %}{{ name }}[latitude]{% endif %}" value="{{ location.latitude|default('') }}" type="number" step="any" min="-90" max="90" data-location-fields-target="latitude">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="location-longitude-{{ key }}">Долгота</label>
+            <input class="form-control" id="location-longitude-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Longitude{% else %}{{ name }}[longitude]{% endif %}" value="{{ location.longitude|default('') }}" type="number" step="any" min="-180" max="180" data-location-fields-target="longitude">
+        </div>
+    </div>
+</div>

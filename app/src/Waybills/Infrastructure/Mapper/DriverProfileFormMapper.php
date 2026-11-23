@@ -13,7 +13,11 @@ use App\Waybills\Domain\Aggregate\Route\RouteSettings;
 
 final class DriverProfileFormMapper
 {
-    /** @return array{fullName: string, licenseNumber: string, licenseIssuedAt: string, snils: string, base: array<string, string>, destinations: list<array{location: array<string, string>, distance: int, enterprise: ?string}>} */
+    public function __construct(private readonly LocationFormMapper $locationMapper)
+    {
+    }
+
+    /** @return array{fullName: string, licenseNumber: string, licenseIssuedAt: string, snils: string, base: array<string, mixed>, destinations: list<array{location: array<string, mixed>, distance: int, enterprise: ?string}>} */
     public function fromProfile(GetOwnDriverProfileQueryResult $profile): array
     {
         return [
@@ -21,9 +25,9 @@ final class DriverProfileFormMapper
             'licenseNumber' => $profile->driverDetails?->licenseNumber->formatted() ?? '',
             'licenseIssuedAt' => $profile->driverDetails?->licenseIssuedAt->format('Y-m-d') ?? '',
             'snils' => $profile->driverDetails?->snils->formatted() ?? '',
-            'base' => $profile->routeSettings?->base->jsonSerialize() ?? (new Location())->jsonSerialize(),
-            'destinations' => array_map(static fn (Destination $destination) => [
-                'location' => $destination->location->jsonSerialize(),
+            'base' => null === $profile->routeSettings ? $this->locationMapper->present(new Location()) : $this->locationMapper->present($profile->routeSettings->base),
+            'destinations' => array_map(fn (Destination $destination) => [
+                'location' => $this->locationMapper->present($destination->location),
                 'distance' => $destination->distance,
                 'enterprise' => $destination->enterprise,
             ], $profile->routeSettings?->destinations() ?? []),
@@ -48,9 +52,8 @@ final class DriverProfileFormMapper
         $destinations = [];
         foreach ($data['destinations'] ?? [] as $row) {
             $destinations[] = new Destination(
-                $this->location($row['location'] ?? []),
+                $this->location($row['location'] ?? [], isset($row['enterprise']) ? (string) $row['enterprise'] : null),
                 $this->integer($row['distance'] ?? ''),
-                isset($row['enterprise']) ? (string) $row['enterprise'] : null,
             );
         }
 
@@ -60,16 +63,9 @@ final class DriverProfileFormMapper
         ];
     }
 
-    private function location(mixed $data): Location
+    private function location(mixed $data, ?string $enterprise = null): Location
     {
-        $data = is_array($data) ? $data : [];
-
-        return new Location(
-            (string) ($data['country'] ?? Location::DEFAULT_COUNTRY),
-            (string) ($data['city'] ?? ''),
-            (string) ($data['street'] ?? ''),
-            (string) ($data['house'] ?? ''),
-        );
+        return $this->locationMapper->fromArray($data, $enterprise);
     }
 
     private function integer(mixed $value): int
