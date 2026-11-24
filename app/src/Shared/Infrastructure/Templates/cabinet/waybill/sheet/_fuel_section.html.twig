@@ -4,7 +4,7 @@
         <div class="col-6 col-xl-3"><span class="form-label d-block">Начальный остаток, л</span><div class="p-2 rounded-3 bg-body fw-semibold">{{ input.initialFuel }}</div></div>
         <div class="col-6 col-xl-3"><label class="form-label" for="fuelRemaining">Конечный остаток, л</label><input id="fuelRemaining" name="fuelRemaining" value="{{ input.fuelRemaining }}" class="form-control" type="number" min="0" step="any"></div>
     </div>
-    <div class="form-text mb-3">Неизвестный конечный остаток оставьте пустым.</div>
+    <div class="form-text mb-3">Конечный остаток обязателен; если топлива не осталось, укажите 0 л.</div>
     {% if input.legacyRefuelingTotal is not null %}
         <div class="form-text">Ранее сохранённые данные о заправках: {{ input.legacyRefuelingTotal }} л. Они сохранятся без изменений.</div>
     {% endif %}

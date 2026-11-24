@@ -81,7 +81,7 @@ final class WaybillTest extends TestCase
     {
         $draft = $this->draft();
         $route = $this->route('2026-10-01');
-        $draft->reviseDraft($draft->period(), null, null, $route);
+        $draft->reviseDraft($draft->period(), null, new Fuel(10, 7, new Refuelings(), 'АИ-95'), $route);
         self::assertSame(100030, $draft->odometerEnd());
 
         foreach ([100029, 100031] as $invalid) {

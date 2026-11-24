@@ -177,6 +177,10 @@ class Waybill extends Aggregate
             $this->assertRefuelingPeriods($period, $fuel, ...$absences);
         }
         $this->assertRefuelingOperations($period, $fuel, $refuelings, ...$absences);
+        if (null === $fuel) {
+            throw new AppException('Укажите остаток топлива на конец периода.');
+        }
+        $fuel->remaining();
 
         $this->period = $period;
         $this->odometerEnd = $odometerEnd;

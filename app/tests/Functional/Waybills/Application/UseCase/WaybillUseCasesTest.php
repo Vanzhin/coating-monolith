@@ -111,7 +111,7 @@ final class WaybillUseCasesTest extends KernelTestCase
     public function test_shared_vehicle_scope_and_admin_owner_profile(): void
     {
         $firstPeriod = $this->period('2026-10-01', '2026-10-10');
-        $first = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $firstPeriod));
+        $first = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $firstPeriod, fuel: $this->fuel()));
         $this->authenticateAs($this->other);
         try {
             $overlappingPeriod = $this->period('2026-10-10', '2026-10-20');
@@ -125,7 +125,7 @@ final class WaybillUseCasesTest extends KernelTestCase
         } catch (ForbiddenException) {
         }
         try {
-            $this->commands->execute(new UpdateWaybillCommand($first, 1, $firstPeriod, null, null, false));
+            $this->commands->execute(new UpdateWaybillCommand($first, 1, $firstPeriod, null, $this->fuel(), false));
             self::fail('Редактирование чужого листа запрещено.');
         } catch (ForbiddenException) {
         }
@@ -136,7 +136,7 @@ final class WaybillUseCasesTest extends KernelTestCase
         }
         self::assertNotNull($this->waybills->findOneById($first));
         $this->authenticateAs('admin-'.Uuid::v7(), ['ROLE_ADMIN']);
-        $this->commands->execute(new UpdateWaybillCommand($first, 1, $firstPeriod, null, null, false));
+        $this->commands->execute(new UpdateWaybillCommand($first, 1, $firstPeriod, null, $this->fuel(), false));
         $others = $this->queries->execute(new GetPagedWaybillsQuery(new WaybillFilter(driverOwnerId: $this->owner, vehicleId: $this->vehicle->getId())));
         self::assertSame(0, $others->total);
         $this->authenticateAs($this->owner, ['ROLE_ADMIN']);
@@ -148,20 +148,20 @@ final class WaybillUseCasesTest extends KernelTestCase
     public function test_owner_can_delete_draft_without_reusing_its_number(): void
     {
         $period = $this->period('2026-10-01', '2026-10-10');
-        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period));
+        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, fuel: $this->fuel()));
 
         $this->commands->execute(new DeleteWaybillCommand($id, 1));
 
         $this->em->clear();
         self::assertNull($this->waybills->findOneById($id));
-        $next = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period));
+        $next = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, fuel: $this->fuel()));
         self::assertSame(2, $this->sheet($next)->getNumber());
     }
 
     public function test_unlisted_fuel_type_is_rejected(): void
     {
         $period = $this->period('2026-10-01', '2026-10-10');
-        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period));
+        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, fuel: $this->fuel()));
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('марка топлива');
         $this->commands->execute(new UpdateWaybillCommand($id, 1, $period, null, new Fuel(10, 5, new Refuelings(), 'АИ-92'), false));
@@ -171,7 +171,7 @@ final class WaybillUseCasesTest extends KernelTestCase
     {
         $period = $this->period('2026-10-01', '2026-10-10');
         $date = new \DateTimeImmutable('2026-10-03');
-        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period));
+        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, fuel: $this->fuel()));
         $this->commands->execute(new UpdateWaybillCommand($id, 1, $period, 120, $this->fuel(), true, [], null,
             new TripInput(null, $date, new Destination(new Location('Ручная точка'), 10)),
             new TripInput(null, $date, new Destination(new Location('База'), 10)),
@@ -201,10 +201,10 @@ final class WaybillUseCasesTest extends KernelTestCase
         self::assertSame(array_map(static fn (RouteLog $log): string => (string) $log->id, $manual), array_map(static fn (RouteLog $log): string => (string) $log->id, $unchanged->trips()));
     }
 
-    public function test_creates_draft_with_trips_and_partial_fuel_in_one_command(): void
+    public function test_creates_draft_with_trips_and_final_fuel_in_one_command(): void
     {
         $period = $this->period('2026-10-01', '2026-10-10');
-        $fuel = new Fuel(10, null, new Refuelings(new PositiveNumber(12.5)), 'АИ-95');
+        $fuel = new Fuel(10, 20, new Refuelings(new PositiveNumber(12.5)), 'АИ-95');
         $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, 315, $fuel, true, 100, '10', null, [],
             new TripInput(null, new \DateTimeImmutable('2026-10-03'), new Destination(new Location('Первая точка'), 15)),
             new TripInput(null, new \DateTimeImmutable('2026-10-04'), new Destination(new Location('Вторая точка'), 200)),
@@ -216,7 +216,7 @@ final class WaybillUseCasesTest extends KernelTestCase
         self::assertSame(215, $sheet->route()->distance());
         self::assertCount(2, $sheet->trips());
         self::assertSame(12.5, $sheet->fuel()->refuelings()->total());
-        self::assertNull($sheet->fuel()->remainingOrNull());
+        self::assertSame(20, $sheet->fuel()->remaining());
         self::assertSame(1, $this->waybills->versionOf($sheet));
     }
 
@@ -235,7 +235,7 @@ final class WaybillUseCasesTest extends KernelTestCase
                 self::assertSame(1, (int) $this->em->getConnection()->fetchOne('SELECT next_waybill_number FROM waybills_driver_profile WHERE owner_id = ?', [$this->owner]));
             }
         }
-        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period));
+        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $period, fuel: $this->fuel()));
         self::assertSame(1, $this->sheet($id)->getNumber());
     }
 
@@ -293,7 +293,7 @@ final class WaybillUseCasesTest extends KernelTestCase
         $this->em->flush();
         $fuel = new Fuel(10, 10, new Refuelings(null, new Refueling(new \DateTimeImmutable('2026-10-06'), new PositiveNumber(5))), 'АИ-95');
         $nextPeriod = $this->period('2026-10-06', '2026-10-10');
-        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $nextPeriod));
+        $id = $this->commands->execute(new CreateWaybillCommand($this->vehicle->getId(), $nextPeriod, fuel: $this->fuel()));
 
         $this->commands->execute(new UpdateWaybillCommand($id, 1, $nextPeriod, null, $fuel, true));
 

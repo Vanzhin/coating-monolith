@@ -75,7 +75,7 @@ final class WaybillFormMapperTest extends TestCase
         self::assertNull($mapper->updateCommand($waybill, $input)->trips[0]->destination->location->latitude);
     }
 
-    public function test_refueling_is_saved_without_remaining_or_rounding_initial_balance(): void
+    public function test_blank_remaining_is_mapped_without_rounding_initial_balance(): void
     {
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
@@ -95,7 +95,7 @@ final class WaybillFormMapperTest extends TestCase
         $waybill = $this->draft();
         $date = new \DateTimeImmutable('2026-01-10 12:00:00.123456', new \DateTimeZone('Europe/Berlin'));
         $operation = new FuelOperation(Uuid::v7(), $waybill->vehicle(), $date, FuelType::Ai95, BigDecimal::of('0.123456789012345678901'), FuelOperationType::Refueling);
-        $waybill->reviseDraftWithRefuelingOperations($waybill->period(), null, null, null, new RefuelingOperations($operation));
+        $waybill->reviseDraftWithRefuelingOperations($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, new RefuelingOperations($operation));
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
         $input['refuelings'][0]['date'] = '2026-01-10T12:00';
@@ -140,7 +140,7 @@ final class WaybillFormMapperTest extends TestCase
         $waybill = $this->draft();
         $from = new \DateTimeImmutable('2026-01-10 08:00:00.987654', new \DateTimeZone('Europe/Berlin'));
         $to = new \DateTimeImmutable('2026-01-11 18:00:00.123456', new \DateTimeZone('Europe/Berlin'));
-        $waybill->reviseDraft($waybill->period(), null, null, null, WaybillPeriod::fromDates($from, $to));
+        $waybill->reviseDraft($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, WaybillPeriod::fromDates($from, $to));
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
         self::assertSame([['from' => '2026-01-10', 'to' => '2026-01-11']], $input['absences']);
@@ -168,7 +168,7 @@ final class WaybillFormMapperTest extends TestCase
             new \DateTimeImmutable('2026-01-10 08:00:00.987654', new \DateTimeZone('Europe/Berlin')),
             new \DateTimeImmutable('2026-01-11 18:00:00.123456', new \DateTimeZone('Europe/Berlin')),
         );
-        $waybill->reviseDraft($waybill->period(), null, null, null, $original);
+        $waybill->reviseDraft($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, $original);
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
         $input['absences'] = [
@@ -205,7 +205,7 @@ final class WaybillFormMapperTest extends TestCase
         $from = new \DateTimeImmutable('2026-01-10 12:00:00.123456', new \DateTimeZone('Europe/Moscow'));
         $to = new \DateTimeImmutable('2026-01-11 13:00:00.123456', new \DateTimeZone('Europe/Moscow'));
         $second = WaybillPeriod::fromDates($from, $to);
-        $waybill->reviseDraft($waybill->period(), null, null, null, $first, $second);
+        $waybill->reviseDraft($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, $first, $second);
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
         unset($input['absences'][0]);
@@ -218,7 +218,7 @@ final class WaybillFormMapperTest extends TestCase
         self::assertSame($to, $command->absences[0]->to());
     }
 
-    public function test_draft_without_fuel_input_remains_empty(): void
+    public function test_blank_fuel_input_is_mapped_to_null_for_domain_validation(): void
     {
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
@@ -246,7 +246,7 @@ final class WaybillFormMapperTest extends TestCase
     {
         $waybill = $this->draft();
         $legacy = new Refuelings(new PositiveNumber(20));
-        $waybill->reviseDraft($waybill->period(), null, new Fuel('30.00000000000000000001', null, $legacy, 'АИ-95'), null);
+        $waybill->reviseDraft($waybill->period(), null, new Fuel('30.00000000000000000001', 30, $legacy, 'АИ-95'), null);
         $mapper = new WaybillFormMapper(new LocationFormMapper());
 
         $command = $mapper->updateCommand($waybill, $mapper->input($waybill, 1));

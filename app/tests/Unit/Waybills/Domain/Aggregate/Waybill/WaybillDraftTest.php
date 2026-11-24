@@ -152,16 +152,39 @@ final class WaybillDraftTest extends TestCase
         self::assertSame(100, $draft->odometerEnd());
     }
 
-    public function test_draft_can_save_refueling_before_final_fuel_remaining(): void
+    public function test_draft_requires_fuel_on_save(): void
+    {
+        $vehicle = $this->vehicle();
+        $this->driver($vehicle);
+        $draft = Waybill::createDraft(Uuid::v7(), 1, $vehicle, $this->period());
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('Укажите остаток топлива на конец периода.');
+        $draft->reviseDraft($draft->period(), null, null, null);
+    }
+
+    public function test_draft_requires_final_fuel_remaining(): void
     {
         $vehicle = $this->vehicle();
         $this->driver($vehicle);
         $draft = Waybill::createDraft(Uuid::v7(), 1, $vehicle, $this->period());
         $fuel = new Fuel(30, null, new Refuelings(new \App\Shared\Domain\Aggregate\ValueObject\PositiveNumber(12)), 'АИ-95');
-        $draft->reviseDraft($draft->period(), null, $fuel, null);
 
-        self::assertSame(12, $draft->fuel()->refuelings()->total());
-        self::assertNull($draft->fuel()->remainingOrNull());
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('Укажите остаток топлива на конец периода.');
+        $draft->reviseDraft($draft->period(), null, $fuel, null);
+    }
+
+    public function test_draft_accepts_zero_final_fuel_remaining_and_calculates_odometer(): void
+    {
+        $vehicle = $this->vehicle();
+        $this->driver($vehicle);
+        $draft = Waybill::createDraft(Uuid::v7(), 1, $vehicle, $this->period());
+
+        $draft->reviseDraft($draft->period(), null, new Fuel(30, 0, new Refuelings(), 'АИ-95'), null);
+
+        self::assertSame(0, $draft->fuel()->remaining());
+        self::assertSame(100, $draft->odometerEnd());
     }
 
     public function test_invalid_draft_revision_does_not_discard_previously_entered_fuel(): void
@@ -173,7 +196,7 @@ final class WaybillDraftTest extends TestCase
         $draft->reviseDraft($draft->period(), null, $fuel, null);
 
         try {
-            $draft->reviseDraft($draft->period(), 99, null, null);
+            $draft->reviseDraft($draft->period(), 99, $fuel, null);
             self::fail('Конечное показание меньше начального.');
         } catch (AppException) {
             self::assertSame($fuel, $draft->fuel());

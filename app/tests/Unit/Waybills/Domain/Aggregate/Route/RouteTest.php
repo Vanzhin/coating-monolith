@@ -15,6 +15,8 @@ use App\Waybills\Domain\Aggregate\Route\RouteLog;
 use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Vehicle\RegistrationNumber;
 use App\Waybills\Domain\Aggregate\Vehicle\Vehicle;
+use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
+use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
 use Brick\Math\BigDecimal;
@@ -318,7 +320,7 @@ final class RouteTest extends TestCase
         $draft->setTrips($manual);
         $route = $draft->route();
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-02'), new \DateTimeImmutable('2026-01-04'));
-        $draft->reviseDraft($period, null, null, $route);
+        $draft->reviseDraft($period, null, new Fuel((string) $draft->fuelStart(), 30, new Refuelings(), 'АИ-95'), $route);
         self::assertSame($period, $draft->period());
         self::assertSame([$manual], $draft->trips());
 

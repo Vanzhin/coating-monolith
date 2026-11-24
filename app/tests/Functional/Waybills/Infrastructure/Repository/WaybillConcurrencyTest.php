@@ -241,7 +241,7 @@ final class WaybillConcurrencyTest extends KernelTestCase
         $id = Uuid::v7();
         $date = new \DateTimeImmutable('2026-01-10 12:00:00');
         $initial = new FuelOperation($id, $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('1'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, null, new RefuelingOperations($initial));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), null, new RefuelingOperations($initial));
         $firstRepo->add($draft);
         $secondRepo = new WaybillRepository($this->secondManager, $this->second);
         $stale = $secondRepo->findOneById($draft->getId());
@@ -249,9 +249,9 @@ final class WaybillConcurrencyTest extends KernelTestCase
 
         $updated = new FuelOperation($id, $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('2.00000000000000000001'), FuelOperationType::Refueling);
         $added = new FuelOperation(Uuid::v7(), $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('3'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, null, new RefuelingOperations($updated, $added));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, $draft->fuel(), null, new RefuelingOperations($updated, $added));
         $firstRepo->add($draft);
-        $stale->reviseDraftWithRefuelingOperations($stale->period(), null, null, null, new RefuelingOperations());
+        $stale->reviseDraftWithRefuelingOperations($stale->period(), null, $stale->fuel(), null, new RefuelingOperations());
         try {
             $secondRepo->add($stale);
             self::fail('Устаревший лист не должен удалять заправки.');

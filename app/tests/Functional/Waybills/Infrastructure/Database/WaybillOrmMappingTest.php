@@ -234,7 +234,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertSame(105, (int) $this->connection->fetchOne('SELECT odometer_end FROM waybills_waybill WHERE id = ?', [$id]));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$id]));
 
-        $loaded->reviseDraft($loaded->period(), null, null, null);
+        $loaded->reviseDraft($loaded->period(), null, new Fuel((string) $loaded->fuelStart(), 25, new Refuelings(), 'АИ-95'), null);
         $repository->add($loaded);
         self::assertSame(100, (int) $this->connection->fetchOne('SELECT odometer_end FROM waybills_waybill WHERE id = ?', [$id]));
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$id]));
@@ -528,7 +528,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
         $locations = new LocationCatalog(new LocationRepository($registry), new LocationAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher));
         $create = new CreateWaybillCommandHandler($vehicles, $repository, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder(), $locations);
-        $id = $this->connection->transactional(fn (): string => $create(new CreateWaybillCommand($vehicle->getId(), $period)));
+        $id = $this->connection->transactional(fn (): string => $create(new CreateWaybillCommand($vehicle->getId(), $period, fuel: new Fuel((string) $vehicle->fuelRemaining(), 25, new Refuelings(), 'АИ-95'))));
         $draft = $repository->findOneById($id);
         self::assertInstanceOf(Waybill::class, $draft);
         self::assertSame(1, $draft->getNumber());
@@ -536,11 +536,13 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertFalse($draft->hasRoute());
 
         $update = new UpdateWaybillCommandHandler($repository, $vehicles, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder(), $locations);
-        $command = new UpdateWaybillCommand($id, 1, $period, null, null, true, [], null,
+        $command = new UpdateWaybillCommand($id, 1, $period, null, new Fuel((string) $vehicle->fuelRemaining(), 25, new Refuelings(), 'АИ-95'), true, [], null,
             new TripInput(null, new \DateTimeImmutable('2026-01-10 10:00:00+00:00'), new Destination(new Location('Первая'), 2)),
             new TripInput(null, new \DateTimeImmutable('2026-01-10 12:00:00+00:00'), new Destination(new Location('Вторая'), 3)),
         );
         $this->connection->transactional(fn () => $update($command));
+        $this->connection->executeStatement('UPDATE waybills_waybill SET fuel = NULL WHERE id = ?', [$id]);
+        $this->em->clear();
         $lock = new LockWaybillCommandHandler($repository, $vehicles, $access);
         try {
             $this->connection->transactional(fn () => $lock(new LockWaybillCommand($id)));
@@ -744,13 +746,13 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $date = new \DateTimeImmutable('2026-01-10 10:15:30.123456', new \DateTimeZone('Europe/Berlin'));
         $first = new FuelOperation(Uuid::v7(), $vehicle, $date, FuelType::Ai95, BigDecimal::of('0.1'), FuelOperationType::Refueling);
         $second = new FuelOperation(Uuid::v7(), $vehicle, $date, FuelType::Ai92, BigDecimal::of('0.20000000000000000001'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, new Route($vehicle, $trip, $trip), new RefuelingOperations($first, $second));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), new Route($vehicle, $trip, $trip), new RefuelingOperations($first, $second));
         $repository = new WaybillRepository($this->em, $this->connection);
         $repository->add($draft);
         $id = $draft->getId();
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_route_log WHERE draft_waybill_id = ?', [$id]));
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_fuel_operation WHERE draft_waybill_id = ?', [$id]));
-        self::assertNull($this->connection->fetchOne('SELECT fuel FROM waybills_waybill WHERE id = ?', [$id]));
+        self::assertNotNull($this->connection->fetchOne('SELECT fuel FROM waybills_waybill WHERE id = ?', [$id]));
         $this->em->clear();
 
         $repository = new WaybillRepository($this->em, $this->connection);
@@ -764,7 +766,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
 
         $updated = new FuelOperation($refuelings[1]->id, $loaded->vehicle(), $date, FuelType::Ai92, BigDecimal::of('0.3'), FuelOperationType::Refueling);
         $added = new FuelOperation(Uuid::v7(), $loaded->vehicle(), $date, FuelType::Ai95, BigDecimal::of('0.4'), FuelOperationType::Refueling);
-        $loaded->reviseDraftWithRefuelingOperations($loaded->period(), null, null, $loaded->route(), new RefuelingOperations($updated, $added));
+        $loaded->reviseDraftWithRefuelingOperations($loaded->period(), null, $loaded->fuel(), $loaded->route(), new RefuelingOperations($updated, $added));
         $repository->add($loaded);
         self::assertFalse($this->em->contains($refuelings[1]));
         $this->em->clear();
@@ -791,7 +793,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $repository->add($draft);
         $trip = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Клиент'), 5), RouteLogOrigin::Manual);
         $duplicate = new FuelOperation($existing->id, $vehicle, new \DateTimeImmutable('2026-01-10'), FuelType::Ai95, BigDecimal::of('2'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, new Route($vehicle, $trip, $trip), new RefuelingOperations($duplicate));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), new Route($vehicle, $trip, $trip), new RefuelingOperations($duplicate));
 
         try {
             $repository->add($draft);

@@ -56,7 +56,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
             $this->refueling($vehicle, '2026-01-10', '2', FuelType::Ai92),
             $this->refueling($vehicle, '2026-01-11', '3'),
         );
-        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, null, null, $refuelings);
+        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, new Fuel(30, 30, new Refuelings(), 'АИ-95'), null, $refuelings);
 
         self::assertSame([FuelType::Ai95, FuelType::Ai92], $sheet->refueledFuelTypes());
     }
@@ -115,7 +115,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
     public function test_does_not_replace_legacy_total_with_separate_refuelings(): void
     {
         [$sheet, $vehicle] = $this->draft();
-        $legacy = new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95');
+        $legacy = new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95');
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-10', '1'));
         $sheet->reviseDraft($sheet->period(), null, $legacy, null);
         try {
@@ -153,7 +153,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
     public function test_legacy_refuelings_cannot_be_removed(): void
     {
         [$sheet] = $this->draft();
-        $legacy = new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95');
+        $legacy = new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95');
         $sheet->reviseDraft($sheet->period(), null, $legacy, null);
 
         try {
@@ -169,10 +169,10 @@ final class WaybillRefuelingOperationsTest extends TestCase
     {
         [$sheet] = $this->draft();
         $original = new Refuelings(null, new Refueling(new \DateTimeImmutable('2026-01-10'), new PositiveNumber(5)));
-        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, $original, 'АИ-95'), null);
+        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, $original, 'АИ-95'), null);
 
         try {
-            $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, new Refuelings(new PositiveNumber(6)), 'АИ-95'), null);
+            $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, new Refuelings(new PositiveNumber(6)), 'АИ-95'), null);
             self::fail('Ранее сохранённые заправки нельзя заменить другими данными.');
         } catch (AppException $exception) {
             self::assertStringContainsString('Ранее сохранённые заправки', $exception->getMessage());
@@ -183,7 +183,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
     public function test_revision_accepts_an_equal_copy_of_legacy_refuelings(): void
     {
         [$sheet] = $this->draft();
-        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
+        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
 
         $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 25, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
 

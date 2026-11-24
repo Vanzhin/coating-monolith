@@ -632,7 +632,7 @@ final class WaybillControllerTest extends WebTestCase
         $token = $crawler->filter('input[name="_token"]')->attr('value');
         $input = [
             '_token' => $token, 'version' => '1', 'from' => '2026-01-01', 'to' => '2026-01-31',
-            'odometerEnd' => '', 'fuelRemaining' => '', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'odometerEnd' => '', 'fuelRemaining' => '30', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
             'refuelings' => [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '12.5']],
             'trips' => [['id' => '', 'date' => '2026-01-10T12:00', 'distance' => '5', 'country' => 'Россия', 'city' => 'Москва', 'street' => '', 'house' => '', 'enterprise' => 'Склад']],
         ];
@@ -644,7 +644,7 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', '12.5');
         self::assertSame('30.00000000000000000001', $this->connection->fetchOne('SELECT fuel_start::text FROM pg_temp.waybills_waybill'));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE draft_waybill_id IS NOT NULL'));
-        self::assertNull($this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
+        self::assertSame('30.0', $this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
 
         $input['refuelings'][0]['quantity'] = '88';
         $this->client->request('POST', $editUrl, $input);
@@ -772,7 +772,48 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSame(315, (int) $this->connection->fetchOne('SELECT odometer_end FROM pg_temp.waybills_waybill'));
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log'));
         self::assertSame('30.00000000000000000001', $this->connection->fetchOne('SELECT fuel_start::text FROM pg_temp.waybills_waybill'));
-        self::assertNull($this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
+        self::assertSame('30.0', $this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
+    }
+
+    public function test_final_fuel_remaining_is_required_on_create_and_edit_but_zero_is_accepted(): void
+    {
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['fuelRemaining'] = '';
+
+        $this->client->request('POST', $url, $input);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.form-alert', 'Укажите остаток топлива на конец периода.');
+        self::assertSelectorExists('input[name="from"][value="2026-01-01"]');
+        self::assertSelectorExists('input[name="fuelRemaining"][value=""]');
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
+
+        $input['fuelRemaining'] = '0';
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+        self::assertNotNull($showUrl);
+        self::assertSame('0.0', $this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        $edit = [
+            '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
+            'version' => $crawler->filter('input[name="version"]')->attr('value'),
+            'from' => '2026-01-01', 'to' => '2026-01-31', 'odometerEnd' => '100', 'fuelRemaining' => '',
+            'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'trips' => [], 'refuelings' => [], 'absences' => [],
+        ];
+        $this->client->request('POST', $showUrl.'/edit', $edit);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.form-alert', 'Укажите остаток топлива на конец периода.');
+        self::assertSelectorExists('input[name="fuelRemaining"][value=""]');
+        self::assertSame('0.0', $this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
+
+        $edit['fuelRemaining'] = '0';
+        $this->client->request('POST', $showUrl.'/edit', $edit);
+        self::assertResponseRedirects($showUrl);
+        self::assertSame('0.0', $this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
     }
 
     public function test_period_dates_use_compact_fields_on_create_and_edit(): void
@@ -925,7 +966,7 @@ final class WaybillControllerTest extends WebTestCase
         $input = [
             '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
             'version' => '1', 'from' => '2026-01-01', 'to' => '2026-01-31',
-            'fuelRemaining' => '', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'fuelRemaining' => '30', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
             'trips' => [
                 ['id' => '', 'date' => '2026-01-10T12:00', 'distance' => '15', 'country' => 'Россия', 'city' => 'Первая', 'enterprise' => 'Клиент'],
                 ['id' => '', 'date' => '2026-01-11T12:00', 'distance' => '200', 'country' => 'Россия', 'city' => 'Вторая'],
@@ -1108,7 +1149,7 @@ final class WaybillControllerTest extends WebTestCase
             '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
             'version' => $crawler->filter('input[name="version"]')->attr('value'),
             'from' => '2026-01-01', 'to' => '2026-01-31', 'odometerEnd' => '100',
-            'fuelRemaining' => '',
+            'fuelRemaining' => '30',
             'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
             'trips' => [], 'refuelings' => [], 'absences' => $input['absences'],
         ];
@@ -1218,7 +1259,7 @@ final class WaybillControllerTest extends WebTestCase
             'initialOdometer' => $crawler->filter('input[name="initialOdometer"]')->attr('value'),
             'initialFuel' => $crawler->filter('input[name="initialFuel"]')->attr('value'),
             'odometerEnd' => $crawler->filter('input[name="odometerEnd"]')->attr('value'),
-            'fuelRemaining' => '', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'fuelRemaining' => '30', 'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
             'trips' => [], 'absences' => [],
         ];
     }
