@@ -625,17 +625,10 @@ final class WaybillControllerTest extends WebTestCase
         $editUrl = $showUrl.'/edit';
         $crawler = $this->client->request('GET', $editUrl);
         self::assertSame(200, $this->client->getResponse()->getStatusCode(), (string) $this->client->getResponse()->headers->get('X-Debug-Exception'));
-        self::assertSelectorTextContains('#waybill-form', 'Водитель');
-        self::assertSelectorTextContains('#waybill-form', 'Модель — A123BC77');
-        self::assertSame(['sec-period', 'sec-refuel', 'sec-absences', 'sec-trips'], $crawler->filter('#waybill-form > [data-form-scrollspy-target="section"]')->each(static fn (Crawler $section): ?string => $section->attr('id')));
-        self::assertSelectorExists('#sec-period input[name="from"]');
-        self::assertSelectorExists('#sec-period input[name="to"]');
-        self::assertSelectorExists('#sec-trips input[name="odometerEnd"]');
-        self::assertSelectorExists('#sec-refuel input[name="fuelRemaining"]');
-        self::assertSelectorExists('#sec-refuel button.w-100[data-waybill-form-kind-param="refueling"]');
-        self::assertSelectorExists('#sec-absences button.w-100[data-waybill-form-kind-param="absence"]');
-        self::assertSelectorNotExists('.form-appbar button[form="waybill-form"]');
-        self::assertSelectorExists('.form-savebar button[form="waybill-form"]');
+        $this->assertCompactWaybillForm($crawler);
+        self::assertSelectorExists('input[name="version"]');
+        self::assertSelectorNotExists('input[name="initialOdometer"]');
+        self::assertSelectorNotExists('input[name="initialFuel"]');
         $token = $crawler->filter('input[name="_token"]')->attr('value');
         $input = [
             '_token' => $token, 'version' => '1', 'from' => '2026-01-01', 'to' => '2026-01-31',
@@ -730,15 +723,12 @@ final class WaybillControllerTest extends WebTestCase
         $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
         $crawler = $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('#sec-period input[name="from"]');
-        self::assertSelectorExists('.form-appbar button[form="waybill-form"]');
-        self::assertSelectorExists('.form-savebar button[form="waybill-form"]');
-        self::assertSelectorExists('#sec-trips button[type="button"][data-waybill-form-kind-param="trip"]');
-        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"]');
-        self::assertSelectorExists('#sec-fuel input[name="odometerEnd"][value="100"]');
-        self::assertSelectorExists('#sec-fuel button[type="button"][data-waybill-form-kind-param="refueling"]');
-        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"]');
-        self::assertSelectorNotExists('#sec-fuel input[name="refueled"]');
+        $this->assertCompactWaybillForm($crawler);
+        self::assertSelectorExists('#sec-trips input[name="odometerEnd"][value="100"]');
+        self::assertSelectorExists('input[name="initialOdometer"]');
+        self::assertSelectorExists('input[name="initialFuel"]');
+        self::assertSelectorNotExists('input[name="version"]');
+        self::assertSelectorNotExists('#sec-refuel input[name="refueled"]');
         $input = $this->creationInput($crawler);
         $input['refuelings'] = [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '12.5']];
         $input['trips'] = [
@@ -785,13 +775,25 @@ final class WaybillControllerTest extends WebTestCase
         self::assertNull($this->connection->fetchOne("SELECT fuel->>'remaining' FROM pg_temp.waybills_waybill"));
     }
 
-    public function test_period_dates_share_one_input_group(): void
+    public function test_period_dates_use_compact_fields_on_create_and_edit(): void
     {
-        $crawler = $this->client->request('GET', '/cabinet/waybill/sheets/new/'.$this->vehicleId);
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        $assertPeriod = static function (Crawler $crawler): void {
+            self::assertSelectorTextContains('#sec-period label[for="from"]', 'Начало');
+            self::assertSelectorTextContains('#sec-period label[for="to"]', 'Окончание');
+            self::assertCount(2, $crawler->filter('#sec-period .row input[type="date"]'));
+            self::assertCount(0, $crawler->filter('#sec-period .input-group'));
+            self::assertSelectorExists('#sec-period input#from[name="from"]');
+            self::assertSelectorExists('#sec-period input#to[name="to"]');
+        };
+        $assertPeriod($crawler);
 
-        self::assertSelectorTextContains('#sec-period label[for="from"]', 'Период');
-        self::assertCount(2, $crawler->filter('#sec-period .input-group input[type="date"]'));
-        self::assertSelectorExists('#sec-period .input-group input#from[name="from"][aria-label="Начало периода"] + span.input-group-text + input#to[name="to"][aria-label="Конец периода"]');
+        $this->client->request('POST', $url, $this->creationInput($crawler));
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+        self::assertNotNull($showUrl);
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        $assertPeriod($crawler);
     }
 
     public function test_dynamic_rows_use_shared_action_buttons(): void
@@ -1166,6 +1168,24 @@ final class WaybillControllerTest extends WebTestCase
         $response = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
 
         return $response['data'] ?? $response;
+    }
+
+    private function assertCompactWaybillForm(Crawler $crawler): void
+    {
+        self::assertSelectorTextContains('#waybill-form .kvi .v', 'Водитель');
+        self::assertSelectorTextContains('#waybill-form', 'Модель — A123BC77');
+        self::assertSame(['sec-period', 'sec-refuel', 'sec-absences', 'sec-trips'], $crawler->filter('#waybill-form > [data-form-scrollspy-target="section"]')->each(static fn (Crawler $section): ?string => $section->attr('id')));
+        self::assertSelectorExists('#sec-period input[name="from"]');
+        self::assertSelectorExists('#sec-period input[name="to"]');
+        self::assertSelectorExists('#sec-trips input[name="odometerEnd"]');
+        self::assertSelectorExists('#sec-refuel input[name="fuelRemaining"]');
+        self::assertSelectorExists('#sec-refuel button.w-100[data-waybill-form-kind-param="refueling"]');
+        self::assertSelectorExists('#sec-absences button.w-100[data-waybill-form-kind-param="absence"]');
+        self::assertSelectorExists('#sec-trips button.w-100[data-waybill-form-kind-param="trip"]');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] details[open]');
+        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"]');
+        self::assertSelectorNotExists('.form-appbar button[form="waybill-form"]');
+        self::assertSelectorExists('.form-savebar button[form="waybill-form"]');
     }
 
     /** @return list<array<string, string>> */

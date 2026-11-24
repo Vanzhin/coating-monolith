@@ -36,7 +36,7 @@ final readonly class GetVehicleQueryHandler implements QueryHandlerInterface
             array_map(static fn (FuelType $fuelType): string => $fuelType->value, $vehicle->getFuelTypes()),
             $vehicle->getConsumptionRate()?->value(),
             $vehicle->currentOdometer(), (string) $vehicle->fuelRemaining(), $vehicle->initialLocation(),
-            $vehicle->getDefaultFuelType()->value, null !== $vehicle->driver(),
+            $vehicle->getDefaultFuelType()->value, null !== $vehicle->driver(), $vehicle->driver()?->getDriverDetails()->fullName,
         );
     }
 }

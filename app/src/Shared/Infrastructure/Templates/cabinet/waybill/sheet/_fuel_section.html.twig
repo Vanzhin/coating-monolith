@@ -1,34 +1,24 @@
-<div id="{{ creating ? 'sec-fuel' : 'sec-refuel' }}" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-    {% if creating %}
-        <h6 class="fw-semibold mb-3">Показания и топливо</h6>
-    {% else %}
-        <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-fuel-pump"></i></span>Заправки</h6>
-    {% endif %}
-    <div class="row {{ creating ? 'g-3' : 'g-2' }}">
-        {% if creating %}{% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}{% endif %}
-        <div class="{{ creating ? 'col-md-6' : 'col-6 col-xl-3' }}"><span class="form-label d-block">Начальный остаток, л</span><div class="{{ not creating ? 'p-2 rounded-3 bg-body fw-semibold' : '' }}">{{ startFuel }}</div></div>
-        <div class="{{ creating ? 'col-md-6' : 'col-6 col-xl-3' }}"><label class="form-label" for="fuelRemaining">Конечный остаток, л</label><input id="fuelRemaining" name="fuelRemaining" value="{{ input.fuelRemaining }}" class="form-control" type="number" min="0" step="any"></div>
+<div id="sec-refuel" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+    <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-fuel-pump"></i></span>Заправки</h6>
+    <div class="row g-2">
+        <div class="col-6 col-xl-3"><span class="form-label d-block">Начальный остаток, л</span><div class="p-2 rounded-3 bg-body fw-semibold">{{ input.initialFuel }}</div></div>
+        <div class="col-6 col-xl-3"><label class="form-label" for="fuelRemaining">Конечный остаток, л</label><input id="fuelRemaining" name="fuelRemaining" value="{{ input.fuelRemaining }}" class="form-control" type="number" min="0" step="any"></div>
     </div>
-    {% if creating %}
-        <h6 class="fw-semibold mt-3 mb-3">Заправки</h6>
-    {% else %}
-        <div class="form-text mb-3">Неизвестный конечный остаток оставьте пустым.</div>
-    {% endif %}
-    {% if not creating and waybill.fuelOrNull() and waybill.fuelOrNull().refuelingsOrNull() %}
-        <div class="form-text">Ранее сохранённые данные о заправках: {{ waybill.fuelOrNull().refuelings().total() }} л. Они сохранятся без изменений.</div>
+    <div class="form-text mb-3">Неизвестный конечный остаток оставьте пустым.</div>
+    {% if input.legacyRefuelingTotal is not null %}
+        <div class="form-text">Ранее сохранённые данные о заправках: {{ input.legacyRefuelingTotal }} л. Они сохранятся без изменений.</div>
     {% endif %}
     <div id="refueling-rows" data-waybill-form-target="refuelingRows">
         {% for refueling in input.refuelings %}
             {% include 'cabinet/waybill/sheet/_refueling_row.html.twig' with {refueling: refueling, index: loop.index0, number: loop.index} %}
         {% endfor %}
     </div>
-    {% set blankRefueling = {id: '', date: '', fuelType: creating ? vehicle.defaultFuelType : waybill.vehicle().getDefaultFuelType().value, quantity: ''} %}
+    {% set blankRefueling = {id: '', date: '', fuelType: input.defaultFuelType, quantity: ''} %}
     <template data-waybill-form-target="refuelingTemplate">{% include 'cabinet/waybill/sheet/_refueling_row.html.twig' with {refueling: blankRefueling, index: '__i__', number: 1} %}</template>
-    <button type="button" class="btn btn-soft-success btn-sm {{ not creating ? 'w-100' : '' }}" data-action="click->waybill-form#add" data-waybill-form-kind-param="refueling"><i class="bi bi-plus-lg me-1"></i> Добавить заправку</button>
-    {% if creating and (input.initialOdometer is not same as(vehicle.odometer ~ '') or input.initialFuel is not same as(vehicle.fuelRemaining ~ '')) %}
+    <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#add" data-waybill-form-kind-param="refueling"><i class="bi bi-plus-lg me-1"></i> Добавить заправку</button>
+    {% if creating and (input.initialOdometer is not same as(input.currentVehicleOdometer) or input.initialFuel is not same as(input.currentVehicleFuel)) %}
         <div class="form-text">Показания автомобиля изменились. Обновите их и проверьте введённые данные.</div>
         <button type="submit" name="action" value="refresh_readings" class="btn btn-outline-secondary btn-sm">Обновить начальные показания</button>
     {% endif %}
-    {% if creating %}<div class="form-text">Конечный одометр должен совпадать с начальным показанием и суммой поездок. Пустое показание рассчитывается при сохранении.</div>{% endif %}
-    <div class="form-text">Пустой список заправок означает нулевое пополнение.{% if creating %} Неизвестный конечный остаток оставьте пустым.{% endif %}</div>
+    <div class="form-text">Пустой список заправок означает нулевое пополнение.</div>
 </div>

@@ -35,10 +35,18 @@ final class WaybillFormMapper
     public function input(Waybill $waybill, int $version): array
     {
         $fuel = $waybill->fuelOrNull();
+        $driver = $waybill->driver();
         $trips = $this->tripRows($waybill->hasRoute() ? $waybill->route() : new Route($waybill->vehicle()));
 
         return [
             'version' => (string) $version,
+            'initialOdometer' => (string) $waybill->odometerStart(),
+            'initialFuel' => (string) $waybill->fuelStart(),
+            'vehicleLabel' => $waybill->vehicleModel().' — '.strtoupper($waybill->vehicleRegistrationNumber()->value()),
+            'driverName' => null === $driver ? 'Не указан' : $driver->fullName,
+            'availableFuelTypes' => array_map(static fn (FuelType $type): string => $type->value, $waybill->vehicleFuelTypes()),
+            'defaultFuelType' => $waybill->vehicle()->getDefaultFuelType()->value,
+            'legacyRefuelingTotal' => $fuel?->refuelingsOrNull()?->total(),
             'initialLocation' => $this->locationMapper->present($waybill->vehicle()->initialLocation()),
             'blankTrip' => $this->blankTrip(),
             'from' => $waybill->period()->from()->format('Y-m-d'),
@@ -148,6 +156,13 @@ final class WaybillFormMapper
             'blankTrip' => $this->blankTrip(),
             'initialOdometer' => (string) $vehicle->odometer,
             'initialFuel' => (string) $vehicle->fuelRemaining,
+            'currentVehicleOdometer' => (string) $vehicle->odometer,
+            'currentVehicleFuel' => (string) $vehicle->fuelRemaining,
+            'vehicleLabel' => $vehicle->model.' — '.strtoupper($vehicle->registrationNumber),
+            'driverName' => $vehicle->driverName ?? 'Не указан',
+            'availableFuelTypes' => $vehicle->fuelTypes,
+            'defaultFuelType' => $vehicle->defaultFuelType,
+            'legacyRefuelingTotal' => null,
             'odometerEnd' => (string) $vehicle->odometer,
             'fuelType' => $vehicle->defaultFuelType,
             'refuelings' => [], 'fuelRemaining' => '', 'trips' => [], 'absences' => [],

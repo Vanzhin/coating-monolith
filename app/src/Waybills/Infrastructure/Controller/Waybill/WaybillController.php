@@ -95,8 +95,12 @@ final class WaybillController extends AbstractController
             }
         }
 
-        return $this->render('cabinet/waybill/sheet/create.html.twig', [
-            'vehicle' => $vehicle, 'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
+        return $this->render('cabinet/waybill/sheet/form.html.twig', [
+            'creating' => true,
+            'formTitle' => 'Новый путевой лист',
+            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_list', ['vehicleId' => $vehicleId]),
+            'tokenId' => 'waybill_new_'.$vehicleId,
+            'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
     }
 
@@ -187,8 +191,12 @@ final class WaybillController extends AbstractController
             }
         }
 
-        return $this->render('cabinet/waybill/sheet/edit.html.twig', [
-            'waybill' => $waybill, 'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
+        return $this->render('cabinet/waybill/sheet/form.html.twig', [
+            'creating' => false,
+            'formTitle' => 'Путевой лист №'.$waybill->getNumber(),
+            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_show', ['id' => $id]),
+            'tokenId' => 'waybill_edit_'.$id,
+            'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
     }
 
