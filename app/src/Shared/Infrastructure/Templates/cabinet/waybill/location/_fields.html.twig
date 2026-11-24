@@ -44,13 +44,5 @@
             <label class="form-label" for="location-enterprise-{{ key }}">Предприятие</label>
             <input class="form-control" id="location-enterprise-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Enterprise{% else %}{{ name }}[enterprise]{% endif %}" value="{{ location.enterprise|default('') }}" data-location-fields-target="enterprise" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
         </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-latitude-{{ key }}">Широта</label>
-            <input class="form-control" id="location-latitude-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Latitude{% else %}{{ name }}[latitude]{% endif %}" value="{{ location.latitude|default('') }}" type="number" step="any" min="-90" max="90" data-location-fields-target="latitude">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-longitude-{{ key }}">Долгота</label>
-            <input class="form-control" id="location-longitude-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Longitude{% else %}{{ name }}[longitude]{% endif %}" value="{{ location.longitude|default('') }}" type="number" step="any" min="-180" max="180" data-location-fields-target="longitude">
-        </div>
     </div>
 </div>

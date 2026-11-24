@@ -9,6 +9,7 @@ use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
 use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
@@ -31,6 +32,7 @@ final readonly class FillWaybillRouteCommandHandler implements CommandHandlerInt
         private WaybillRouteBuilder $routes,
         private WaybillRouteFiller $filler,
         private ProductionCalendar $calendar,
+        private LocationCatalog $locations,
     ) {
     }
 
@@ -44,7 +46,8 @@ final readonly class FillWaybillRouteCommandHandler implements CommandHandlerInt
         $odometerEnd = $source->odometerEnd
             ?? throw new AppException('Для автоматического заполнения укажите конечный одометр.');
 
-        $fixedRoute = $this->routes->buildFixed($waybill, $this->waybills->findPredecessor($waybill), $source->routePresent, ...$source->trips);
+        $trips = $this->locations->restoreTripCoordinates($waybill, $settings, ...$source->trips);
+        $fixedRoute = $this->routes->buildFixed($waybill, $this->waybills->findPredecessor($waybill), $source->routePresent, ...$trips);
         if (null === $fixedRoute) {
             throw new AppException('Для автоматического заполнения укажите маршрут.');
         }

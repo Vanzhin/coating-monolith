@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['country', 'city', 'cityType', 'street', 'house', 'enterprise', 'latitude', 'longitude'];
+    static targets = ['country', 'city', 'cityType', 'street', 'house', 'enterprise'];
 
     select(event) {
         const location = event.detail;

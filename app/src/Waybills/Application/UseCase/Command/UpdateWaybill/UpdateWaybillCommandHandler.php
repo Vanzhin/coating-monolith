@@ -35,7 +35,7 @@ final readonly class UpdateWaybillCommandHandler implements CommandHandlerInterf
         if ($this->waybills->versionOf($waybill) !== $command->expectedVersion) {
             throw new AppException('Путевой лист изменился. Обновите данные и повторите операцию.');
         }
-        $trips = $this->locations->resolveTrips(...$command->trips);
+        $trips = $this->locations->resolveTrips($waybill, ...$command->trips);
         $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$trips);
         $operations = $this->refuelings->build($waybill, $command->refuelings);
         $waybill->reviseDraftWithRefuelingOperations($command->period, $command->odometerEnd, $command->fuel, $route, $operations, ...$command->absences);

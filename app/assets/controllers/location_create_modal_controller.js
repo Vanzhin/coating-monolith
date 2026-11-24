@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['country', 'city', 'cityType', 'street', 'house', 'enterprise', 'latitude', 'longitude', 'errorBox'];
+    static targets = ['country', 'city', 'cityType', 'street', 'house', 'enterprise', 'errorBox'];
 
     open(prefillCity, requester) {
         this._requester = requester || null;
@@ -9,7 +9,7 @@ export default class extends Controller {
         this.countryTarget.value = 'Россия';
         this.cityTarget.value = (prefillCity || '').trim();
         this.cityTypeTarget.value = 'city';
-        for (const target of ['street', 'house', 'enterprise', 'latitude', 'longitude']) this[`${target}Target`].value = '';
+        for (const target of ['street', 'house', 'enterprise']) this[`${target}Target`].value = '';
         this._modal().show();
         setTimeout(() => this.cityTarget.focus(), 200);
     }
@@ -21,7 +21,7 @@ export default class extends Controller {
             return;
         }
         const body = {};
-        for (const field of ['country', 'city', 'cityType', 'street', 'house', 'enterprise', 'latitude', 'longitude']) body[field] = this[`${field}Target`].value.trim();
+        for (const field of ['country', 'city', 'cityType', 'street', 'house', 'enterprise']) body[field] = this[`${field}Target`].value.trim();
 
         try {
             const response = await fetch(this._requester.createUrlValue, {

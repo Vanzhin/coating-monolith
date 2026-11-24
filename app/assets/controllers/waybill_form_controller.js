@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 
-const locationFields = ['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise', 'latitude', 'longitude'];
+const locationFields = ['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise'];
 const settlementAbbreviations = { city: 'г.', village: 'д.', selo: 'с.', settlement: 'п.', khutor: 'х.', urban_settlement: 'пгт' };
 
 export default class extends Controller {
@@ -52,7 +52,7 @@ export default class extends Controller {
     }
 
     refreshTrips() {
-        let departure = { ...this.initialLocationValue, enterprise: this.initialLocationValue.enterprise || '' };
+        let departure = { ...this.initialLocationValue, locationId: this.initialLocationValue.id || '', enterprise: this.initialLocationValue.enterprise || '' };
         this.departures = new Map();
         const rows = this.tripRows();
         for (const [index, row] of rows.entries()) {

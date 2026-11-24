@@ -65,6 +65,10 @@ final class DriverProfileFormMapper
 
     private function location(mixed $data, ?string $enterprise = null): Location
     {
+        if (is_array($data)) {
+            unset($data['latitude'], $data['longitude']);
+        }
+
         return $this->locationMapper->fromArray($data, $enterprise);
     }
 

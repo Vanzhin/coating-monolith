@@ -81,6 +81,32 @@ final class LocationTest extends TestCase
         self::assertFalse($location->samePlace(new Location('Россия', 'Екаетринбург')));
     }
 
+    public function test_restores_coordinates_only_for_the_same_unchanged_address(): void
+    {
+        $id = Uuid::v7();
+        $original = new Location('Россия', 'Москва', 'Лесная', '1', 'Склад', 55.7, 37.6, $id);
+        $unchanged = new Location('Россия', 'Москва', 'Лесная', '1', 'Другой склад', id: $id);
+
+        $restored = $unchanged->withCoordinatesFromUnchangedAddress($original);
+
+        self::assertSame(55.7, $restored->latitude);
+        self::assertSame(37.6, $restored->longitude);
+        self::assertSame('Другой склад', $restored->enterprise);
+        self::assertNull((new Location('Россия', 'Москва', 'Лесная', '2', id: $id))->withCoordinatesFromUnchangedAddress($original)->latitude);
+        self::assertNull((new Location('Россия', 'Москва', 'Лесная', '1', id: Uuid::v7()))->withCoordinatesFromUnchangedAddress($original)->latitude);
+        self::assertNull((new Location('Россия', 'Москва', 'Лесная', '1'))->withCoordinatesFromUnchangedAddress($original)->latitude);
+    }
+
+    public function test_preserves_explicit_coordinates_and_supports_old_snapshots_without_ids(): void
+    {
+        $original = new Location('Россия', 'Москва', latitude: 55.7, longitude: 37.6);
+        $unchanged = new Location('Россия', 'Москва');
+        $explicit = new Location('Россия', 'Москва', latitude: 55.8, longitude: 37.7);
+
+        self::assertSame(55.7, $unchanged->withCoordinatesFromUnchangedAddress($original)->latitude);
+        self::assertSame(55.8, $explicit->withCoordinatesFromUnchangedAddress($original)->latitude);
+    }
+
     public function test_rejects_incomplete_coordinates(): void
     {
         $this->expectException(AppException::class);

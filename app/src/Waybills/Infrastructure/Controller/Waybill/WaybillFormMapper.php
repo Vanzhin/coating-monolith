@@ -240,10 +240,14 @@ final class WaybillFormMapper
                 $originalDestination = new Destination($this->location($row, 'original'), $originalDistance);
             }
             $original = $known[$id] ?? null;
+            $location = $this->location($row);
+            if (null !== $original) {
+                $location = $location->withCoordinatesFromUnchangedAddress($original->destination->location);
+            }
             $trips[] = new TripInput(
                 '' === $id ? null : Uuid::fromString($id),
                 $this->date($this->text($row, 'date'), $original?->date),
-                new Destination($this->location($row), $distance),
+                new Destination($location, $distance),
                 $origin,
                 '' === $pairId ? null : Uuid::fromString($pairId),
                 $originalDate,
@@ -267,8 +271,8 @@ final class WaybillFormMapper
             'street' => $this->text($row, $field('Street')),
             'house' => $this->text($row, $field('House')),
             'enterprise' => $this->text($row, $field('Enterprise')),
-            'latitude' => $this->text($row, $field('Latitude')),
-            'longitude' => $this->text($row, $field('Longitude')),
+            'latitude' => '' === $prefix ? null : $this->text($row, $field('Latitude')),
+            'longitude' => '' === $prefix ? null : $this->text($row, $field('Longitude')),
         ]);
     }
 

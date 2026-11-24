@@ -15,6 +15,6 @@ final readonly class CreateLocationCommandHandler implements CommandHandlerInter
 
     public function __invoke(CreateLocationCommand $command): CreateLocationCommandResult
     {
-        return new CreateLocationCommandResult($this->locations->resolve($command->location));
+        return new CreateLocationCommandResult($this->locations->resolveExact($command->location));
     }
 }

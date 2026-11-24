@@ -30,7 +30,7 @@ final readonly class UpdateDriverProfileCommandHandler implements CommandHandler
         if (!$this->access->canEdit($profile)) {
             throw new ForbiddenException();
         }
-        $route = $this->locations->synchronizeSettings($command->routeSettings);
+        $route = $this->locations->synchronizeSettings($command->routeSettings, $profile->getRouteSettings());
         $profile->changeDriverDetails($command->driverDetails);
         $profile->replaceDestinations();
         $profile->changeBase($route->base);

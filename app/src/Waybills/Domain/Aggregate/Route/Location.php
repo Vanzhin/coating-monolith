@@ -74,6 +74,35 @@ final readonly class Location implements \JsonSerializable
         return $this->equals($other);
     }
 
+    public function withCoordinatesFromUnchangedAddress(self $original): self
+    {
+        if (null !== $this->latitude || !$this->hasSameIdentity($original) || !$this->equals($original)) {
+            return $this;
+        }
+
+        return new self($this->country, $this->city, $this->street, $this->house, $this->enterprise, $original->latitude, $original->longitude, $this->id);
+    }
+
+    public function hasSameIdentity(self $other): bool
+    {
+        return null === $this->id ? null === $other->id : $this->id->equals($other->id);
+    }
+
+    public function hasSameDescription(self $other): bool
+    {
+        return $this->equals($other) && $this->enterprise === $other->enterprise;
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return null !== $this->latitude;
+    }
+
+    public function hasSameCoordinates(self $other): bool
+    {
+        return $this->latitude === $other->latitude && $this->longitude === $other->longitude;
+    }
+
     public function withId(?Uuid $id): self
     {
         return new self($this->country, $this->city, $this->street, $this->house, $this->enterprise, $this->latitude, $this->longitude, $id);

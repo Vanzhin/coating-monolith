@@ -53,6 +53,28 @@ final class WaybillFormMapperTest extends TestCase
         self::assertSame(5, $command->trips[0]->destination->distance);
     }
 
+    public function test_trip_coordinates_come_from_the_unchanged_stored_snapshot(): void
+    {
+        $waybill = $this->draft();
+        $location = new Location('Россия', 'Москва', 'Лесная', '1', latitude: 55.7, longitude: 37.6, id: Uuid::v7());
+        $trip = new RouteLog(Uuid::v7(), $waybill->vehicle(), null, new \DateTimeImmutable('2026-01-10'), new Destination($location, 5), RouteLogOrigin::Manual);
+        $waybill->setTrips($trip);
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $input = $mapper->input($waybill, 1);
+        $input['trips'][0]['latitude'] = '1';
+        $input['trips'][0]['longitude'] = '2';
+
+        $command = $mapper->updateCommand($waybill, $input);
+        self::assertSame(55.7, $command->trips[0]->destination->location->latitude);
+        self::assertSame(37.6, $command->trips[0]->destination->location->longitude);
+
+        $input['trips'][0]['house'] = '2';
+        self::assertNull($mapper->updateCommand($waybill, $input)->trips[0]->destination->location->latitude);
+        $input['trips'][0]['house'] = '1';
+        $input['trips'][0]['locationId'] = (string) Uuid::v7();
+        self::assertNull($mapper->updateCommand($waybill, $input)->trips[0]->destination->location->latitude);
+    }
+
     public function test_refueling_is_saved_without_remaining_or_rounding_initial_balance(): void
     {
         $waybill = $this->draft();

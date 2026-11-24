@@ -27,7 +27,7 @@ final class VehicleFormMapper
             'model' => '', 'registrationNumber' => '', 'consumptionRate' => '',
             'defaultFuelType' => FuelType::Ai95->value, 'initialAt' => '',
             'initialLocationId' => '', 'initialCountry' => '', 'initialCity' => '', 'initialCityType' => '', 'initialStreet' => '', 'initialHouse' => '',
-            'initialEnterprise' => '', 'initialLatitude' => '', 'initialLongitude' => '',
+            'initialEnterprise' => '',
             'initialOdometer' => '', 'initialFuelRemaining' => '',
         ];
     }
@@ -52,7 +52,6 @@ final class VehicleFormMapper
         $location = $this->locationMapper->fromArray([
             'id' => $input['initialLocationId'], 'country' => $input['initialCountry'], 'city' => $input['initialCity'], 'cityType' => $input['initialCityType'],
             'street' => $input['initialStreet'], 'house' => $input['initialHouse'], 'enterprise' => $input['initialEnterprise'],
-            'latitude' => $input['initialLatitude'], 'longitude' => $input['initialLongitude'],
         ]);
 
         return new CreateVehicleCommand(

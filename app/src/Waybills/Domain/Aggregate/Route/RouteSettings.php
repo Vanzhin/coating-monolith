@@ -26,4 +26,28 @@ final readonly class RouteSettings
     {
         return $this->destinations;
     }
+
+    public function restoreCoordinatesForUnchangedLocation(Location $location): Location
+    {
+        $matches = [];
+        foreach ([$this->base, ...array_map(static fn (Destination $destination): Location => $destination->location, $this->destinations)] as $candidate) {
+            if ($candidate->hasSameIdentity($location) && $candidate->equals($location)) {
+                $matches[] = $candidate;
+            }
+        }
+
+        $sameEnterprise = array_values(array_filter($matches, static fn (Location $candidate): bool => $candidate->enterprise === $location->enterprise));
+        if ([] !== $sameEnterprise) {
+            $first = $sameEnterprise[0];
+            foreach ($sameEnterprise as $candidate) {
+                if ($candidate->latitude !== $first->latitude || $candidate->longitude !== $first->longitude) {
+                    return $location;
+                }
+            }
+
+            return $location->withCoordinatesFromUnchangedAddress($first);
+        }
+
+        return [] === $sameEnterprise && 1 === count($matches) ? $location->withCoordinatesFromUnchangedAddress($matches[0]) : $location;
+    }
 }
