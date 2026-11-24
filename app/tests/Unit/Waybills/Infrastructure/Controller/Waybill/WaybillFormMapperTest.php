@@ -143,6 +143,14 @@ final class WaybillFormMapperTest extends TestCase
         $waybill->reviseDraft($waybill->period(), null, null, null, WaybillPeriod::fromDates($from, $to));
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
+        self::assertSame([['from' => '2026-01-10', 'to' => '2026-01-11']], $input['absences']);
+
+        $command = $mapper->updateCommand($waybill, $input);
+
+        self::assertCount(1, $command->absences);
+        self::assertSame($from, $command->absences[0]->from());
+        self::assertSame($to, $command->absences[0]->to());
+
         $input['absences'][0]['from'] = '2026-01-10T08:00';
         $input['absences'][0]['to'] = '2026-01-11T18:00';
 
@@ -151,6 +159,40 @@ final class WaybillFormMapperTest extends TestCase
         self::assertCount(1, $command->absences);
         self::assertSame($from, $command->absences[0]->from());
         self::assertSame($to, $command->absences[0]->to());
+    }
+
+    public function test_new_and_changed_absences_cover_the_entire_final_day(): void
+    {
+        $waybill = $this->draft();
+        $original = WaybillPeriod::fromDates(
+            new \DateTimeImmutable('2026-01-10 08:00:00.987654', new \DateTimeZone('Europe/Berlin')),
+            new \DateTimeImmutable('2026-01-11 18:00:00.123456', new \DateTimeZone('Europe/Berlin')),
+        );
+        $waybill->reviseDraft($waybill->period(), null, null, null, $original);
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $input = $mapper->input($waybill, 1);
+        $input['absences'] = [
+            ['from' => '2026-01-10', 'to' => '2026-01-12'],
+            ['from' => '2026-01-15', 'to' => '2026-01-15'],
+        ];
+
+        $command = $mapper->updateCommand($waybill, $input);
+
+        self::assertSame('2026-01-10 00:00:00.000000', $command->absences[0]->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-12 23:59:59.999999', $command->absences[0]->to()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-15 00:00:00.000000', $command->absences[1]->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-15 23:59:59.999999', $command->absences[1]->to()->format('Y-m-d H:i:s.u'));
+    }
+
+    public function test_new_absences_reject_time_instead_of_ignoring_it(): void
+    {
+        $waybill = $this->draft();
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $input = $mapper->input($waybill, 1);
+        $input['absences'] = [['from' => '2026-01-10T08:00', 'to' => '2026-01-11T18:00']];
+
+        $this->expectException(AppException::class);
+        $mapper->updateCommand($waybill, $input);
     }
 
     public function test_removing_an_absence_preserves_remaining_timezone_and_microseconds(): void

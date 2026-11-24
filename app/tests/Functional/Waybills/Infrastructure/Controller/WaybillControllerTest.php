@@ -1048,13 +1048,19 @@ final class WaybillControllerTest extends WebTestCase
         $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
         $crawler = $this->client->request('GET', $url);
         $input = $this->creationInput($crawler);
-        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] input[name="absences[__i__][from]"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] input[type="date"][name="absences[__i__][from]"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] input[type="date"][name="absences[__i__][to]"]');
         self::assertSelectorExists('#sec-absences button[type="button"][data-waybill-form-kind-param="absence"]');
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
 
         $input['absences'] = [
-            ['from' => '2026-01-22T00:00', 'to' => '2026-01-23T23:59'],
+            ['from' => '2026-01-22', 'to' => '2026-01-23'],
         ];
+        $input['refuelings'] = [['id' => '', 'date' => '2026-01-23T23:30', 'fuelType' => 'АИ-95', 'quantity' => '5']];
+        $this->client->request('POST', $url, $input);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.form-alert', 'Заправка попадает в период без поездок');
+        $input['refuelings'] = [];
         $this->client->request('POST', $url, $input);
         self::assertResponseRedirects();
         $showUrl = $this->client->getResponse()->headers->get('Location');
@@ -1067,6 +1073,8 @@ final class WaybillControllerTest extends WebTestCase
         ];
 
         $crawler = $this->client->request('GET', $showUrl.'/edit');
+        self::assertSelectorExists('input[type="date"][name="absences[0][from]"][value="2026-01-22"]');
+        self::assertSelectorExists('input[type="date"][name="absences[0][to]"][value="2026-01-23"]');
         $save = [
             '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
             'version' => $crawler->filter('input[name="version"]')->attr('value'),

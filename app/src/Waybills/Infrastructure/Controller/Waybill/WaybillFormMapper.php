@@ -54,8 +54,8 @@ final class WaybillFormMapper
             'fuelRemaining' => null === $fuel?->remainingOrNull() ? '' : (string) $fuel->remaining(),
             'trips' => $trips,
             'absences' => array_map(static fn (WaybillPeriod $absence): array => [
-                'from' => $absence->from()->format('Y-m-d\TH:i:s'),
-                'to' => $absence->to()->format('Y-m-d\TH:i:s'),
+                'from' => $absence->from()->format('Y-m-d'),
+                'to' => $absence->to()->format('Y-m-d'),
             ], $waybill->absences()),
         ];
     }
@@ -346,9 +346,10 @@ final class WaybillFormMapper
             throw new AppException('Некорректный список периодов без поездок.');
         }
         $unchanged = [];
+        $unchangedWithTime = [];
         foreach ($waybill?->absences() ?? [] as $absence) {
-            $key = $absence->from()->format('Y-m-d\TH:i:s').'/'.$absence->to()->format('Y-m-d\TH:i:s');
-            $unchanged[$key] = $absence;
+            $unchanged[$absence->from()->format('Y-m-d').'/'.$absence->to()->format('Y-m-d')] = $absence;
+            $unchangedWithTime[$absence->from()->format('Y-m-d\TH:i:s').'/'.$absence->to()->format('Y-m-d\TH:i:s')] = $absence;
         }
         $absences = [];
         foreach ($rows as $row) {
@@ -357,11 +358,14 @@ final class WaybillFormMapper
             }
             $from = $this->text($row, 'from');
             $to = $this->text($row, 'to');
-            $key = $this->dateWithSeconds($from).'/'.$this->dateWithSeconds($to);
-            $original = $unchanged[$key] ?? null;
+            $original = $unchanged[$from.'/'.$to] ?? $unchangedWithTime[$this->dateWithSeconds($from).'/'.$this->dateWithSeconds($to)] ?? null;
+            if (null !== $original) {
+                $absences[] = $original;
+                continue;
+            }
             $absences[] = WaybillPeriod::fromDates(
-                $this->date($from, $original?->from()),
-                $this->date($to, $original?->to()),
+                $this->periodDate($from),
+                $this->periodDate($to, endOfDay: true),
             );
         }
 
