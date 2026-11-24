@@ -1,4 +1,8 @@
-{% embed 'components/form_page.html.twig' with {title: formTitle, back_url: backUrl, save_form_id: 'waybill-form', save_label: 'Сохранить', anchors: [{id: 'sec-period', label: 'Период'}, {id: 'sec-absences', label: 'Без поездок'}, {id: 'sec-trips', label: 'Поездки'}, {id: 'sec-fuel', label: 'Показания и топливо'}]} %}
+{% set anchors = creating
+    ? [{id: 'sec-period', label: 'Период'}, {id: 'sec-absences', label: 'Без поездок'}, {id: 'sec-trips', label: 'Поездки'}, {id: 'sec-fuel', label: 'Показания и топливо'}]
+    : [{id: 'sec-period', label: 'Период'}, {id: 'sec-refuel', label: 'Заправки'}, {id: 'sec-absences', label: 'Без поездок'}, {id: 'sec-trips', label: 'Поездки'}] %}
+{% embed 'components/form_page.html.twig' with {title: formTitle, back_url: backUrl, save_form_id: 'waybill-form', save_label: 'Сохранить', anchors: anchors} %}
+    {% block appbar_save %}{% if creating %}{{ parent() }}{% endif %}{% endblock %}
     {% block sections %}
         <form id="waybill-form" method="post" class="w-100" novalidate data-controller="waybill-form" data-waybill-form-start-value="{{ startOdometer }}" data-waybill-form-initial-location-value="{{ input.initialLocation|json_encode }}">
             <input type="hidden" name="_token" value="{{ csrf_token(tokenId) }}">
@@ -9,29 +13,54 @@
                 <input type="hidden" name="version" value="{{ input.version }}">
             {% endif %}
             {% if error %}<div class="form-alert" role="alert"><i class="bi bi-exclamation-octagon"></i><div><div class="form-alert-title">Проверьте данные</div><div>{{ error }}</div></div></div>{% endif %}
-            <div id="sec-period" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                <h6 class="fw-semibold mb-3">{% if creating %}{{ vehicle.model }} — {{ vehicle.registrationNumber|upper }}{% else %}Период{% endif %}</h6>
-                <label for="from" class="form-label">Период</label>
-                <div class="input-group">
-                    <input id="from" name="from" class="form-control" type="date" value="{{ input.from }}" aria-label="Начало периода">
-                    <span class="input-group-text">—</span>
-                    <input id="to" name="to" class="form-control" type="date" value="{{ input.to }}" aria-label="Конец периода">
+            {% if not creating %}
+                {% set driver = waybill.driver() %}
+                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
+                    <div class="kv-grid">
+                        <div class="kvi"><span class="k">Водитель</span><span class="v">{{ driver ? driver.fullName : 'Не указан' }}</span></div>
+                        <div class="kvi"><span class="k">Автомобиль</span><span class="v">{{ waybill.vehicleModel() }} — {{ waybill.vehicleRegistrationNumber().value()|upper }}</span></div>
+                    </div>
                 </div>
+            {% endif %}
+            <div id="sec-period" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
+                <h6 class="fw-semibold mb-3">{% if creating %}{{ vehicle.model }} — {{ vehicle.registrationNumber|upper }}{% else %}<span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-calendar3"></i></span>Период{% endif %}</h6>
+                {% if creating %}
+                <label for="from" class="form-label">Период</label>
+                <div>
+                    <div class="input-group">
+                        <input id="from" name="from" class="form-control" type="date" value="{{ input.from }}" aria-label="Начало периода">
+                        <span class="input-group-text">—</span>
+                        <input id="to" name="to" class="form-control" type="date" value="{{ input.to }}" aria-label="Конец периода">
+                    </div>
+                </div>
+                {% else %}
+                <div class="row g-2 col-lg-8 col-xl-6">
+                    <div class="col-6"><label for="from" class="form-label">Начало</label><input id="from" name="from" class="form-control" type="date" value="{{ input.from }}"></div>
+                    <div class="col-6"><label for="to" class="form-label">Окончание</label><input id="to" name="to" class="form-control" type="date" value="{{ input.to }}"></div>
+                </div>
+                {% endif %}
                 <div class="form-text">Конечная дата входит в период целиком.</div>
             </div>
+            {% if not creating %}
+                {% include 'cabinet/waybill/sheet/_fuel_section.html.twig' %}
+            {% endif %}
             <div id="sec-absences" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                <h6 class="fw-semibold mb-3">Периоды без поездок</h6>
+                <h6 class="fw-semibold mb-3">{% if not creating %}<span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-calendar-x"></i></span>{% endif %}Периоды без поездок</h6>
                 <div id="absence-rows" data-waybill-form-target="absenceRows">
                     {% for absence in input.absences %}
                         {% include 'cabinet/waybill/sheet/_absence_row.html.twig' with {absence: absence, index: loop.index0, number: loop.index} %}
                     {% endfor %}
                 </div>
                 <template data-waybill-form-target="absenceTemplate">{% include 'cabinet/waybill/sheet/_absence_row.html.twig' with {absence: {from: '', to: ''}, index: '__i__', number: 1} %}</template>
-                <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#add" data-waybill-form-kind-param="absence"><i class="bi bi-plus-lg me-1"></i> Добавить период без поездок</button>
+                <button type="button" class="btn btn-soft-success btn-sm {{ not creating ? 'w-100' : '' }}" data-action="click->waybill-form#add" data-waybill-form-kind-param="absence"><i class="bi bi-plus-lg me-1"></i> Добавить период без поездок</button>
                 <div class="form-text">Поездки и заправки не могут попадать в эти периоды.</div>
             </div>
             <div id="sec-trips" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                <h6 class="fw-semibold mb-3">Поездки</h6>
+                <h6 class="fw-semibold mb-3">{% if not creating %}<span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-signpost-split"></i></span>{% endif %}Поездки</h6>
+                {% if not creating %}
+                    <div class="row g-2">{% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}</div>
+                    <div class="form-text mb-3">Конечный одометр должен совпадать с начальным показанием и суммой поездок. Пустое показание рассчитывается при сохранении.</div>
+                {% endif %}
                 <div id="trip-rows" data-waybill-form-target="tripRows">
                     {% set departure = input.initialLocation %}
                     {% for trip in input.trips %}
@@ -40,38 +69,16 @@
                     {% endfor %}
                 </div>
                 <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
-                <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
-                <button type="submit" name="action" value="fill_route" class="btn btn-outline-secondary btn-sm">Заполнить автоматически</button>
+                {% if not creating %}<div class="row g-0"><div class="col-auto" aria-hidden="true"><i class="bi bi-circle-fill small me-2 invisible"></i></div><div class="col">{% endif %}
+                <button type="button" class="btn btn-soft-success btn-sm {{ not creating ? 'w-100' : '' }}" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
+                {% if not creating %}</div></div>{% endif %}
+                <button type="submit" name="action" value="fill_route" class="btn {{ creating ? 'btn-outline-secondary' : 'btn-soft-primary mt-2' }} btn-sm">{% if not creating %}<i class="bi bi-magic me-1"></i>{% endif %}Заполнить автоматически</button>
                 <div class="form-text">Первая поездка добавляется со страной «Россия». Следующая копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
                 <div class="form-text">При повторном заполнении изменяются только неотредактированные автоматические поездки. После правки любого участка пара становится ручной.</div>
             </div>
-            <div id="sec-fuel" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                <h6 class="fw-semibold mb-3">Показания и топливо</h6>
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Начальный одометр, км</label><div>{{ startOdometer }}</div></div>
-                    <div class="col-md-6"><label class="form-label" for="odometerEnd">Конечный одометр, км</label><input id="odometerEnd" name="odometerEnd" value="{{ input.odometerEnd }}" class="form-control" type="number" min="0" step="1" data-waybill-form-target="end"></div>
-                    <div class="col-md-6"><label class="form-label">Начальный остаток, л</label><div>{{ startFuel }}</div></div>
-                    <div class="col-md-6"><label class="form-label" for="fuelRemaining">Конечный остаток, л</label><input id="fuelRemaining" name="fuelRemaining" value="{{ input.fuelRemaining }}" class="form-control" type="number" min="0" step="any"></div>
-                </div>
-                <h6 class="fw-semibold mt-3 mb-3">Заправки</h6>
-                {% if not creating and waybill.fuelOrNull() and waybill.fuelOrNull().refuelingsOrNull() %}
-                    <div class="form-text">Ранее сохранённые данные о заправках: {{ waybill.fuelOrNull().refuelings().total() }} л. Они сохранятся без изменений.</div>
-                {% endif %}
-                <div id="refueling-rows" data-waybill-form-target="refuelingRows">
-                    {% for refueling in input.refuelings %}
-                        {% include 'cabinet/waybill/sheet/_refueling_row.html.twig' with {refueling: refueling, index: loop.index0, number: loop.index} %}
-                    {% endfor %}
-                </div>
-                {% set blankRefueling = {id: '', date: '', fuelType: creating ? vehicle.defaultFuelType : waybill.vehicle().getDefaultFuelType().value, quantity: ''} %}
-                <template data-waybill-form-target="refuelingTemplate">{% include 'cabinet/waybill/sheet/_refueling_row.html.twig' with {refueling: blankRefueling, index: '__i__', number: 1} %}</template>
-                <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#add" data-waybill-form-kind-param="refueling"><i class="bi bi-plus-lg me-1"></i> Добавить заправку</button>
-                {% if creating and (input.initialOdometer is not same as(vehicle.odometer ~ '') or input.initialFuel is not same as(vehicle.fuelRemaining ~ '')) %}
-                    <div class="form-text">Показания автомобиля изменились. Обновите их и проверьте введённые данные.</div>
-                    <button type="submit" name="action" value="refresh_readings" class="btn btn-outline-secondary btn-sm">Обновить начальные показания</button>
-                {% endif %}
-                <div class="form-text">Конечный одометр должен совпадать с начальным показанием и суммой поездок. Пустое показание рассчитывается при сохранении.</div>
-                <div class="form-text">Пустой список заправок означает нулевое пополнение. Неизвестный конечный остаток оставьте пустым.</div>
-            </div>
+            {% if creating %}
+                {% include 'cabinet/waybill/sheet/_fuel_section.html.twig' %}
+            {% endif %}
             <input type="hidden" name="tripsSubmitted" value="1">
             <input type="hidden" name="refuelingsSubmitted" value="1">
             <input type="hidden" name="absencesSubmitted" value="1">

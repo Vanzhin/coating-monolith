@@ -25,7 +25,9 @@
                     (<section id class="fsec" data-form-scrollspy-target="section">),
                     плюс соседние sheet/модалки.
      appbar_extra — доп. действия в app-bar слева от «Сохранить» (напр. ссылка
-                    на смежную сущность).
+                     на смежную сущность).
+     appbar_save  — верхняя кнопка сохранения; можно переопределить независимо
+                     от нижней панели.
      savebar_extra — доп. кнопки в липкой нижней панели (напр. групповые действия
                     над выбранными). Рендерятся между «Назад» и «Сохранить».
 
@@ -53,12 +55,14 @@
             <div class="form-appbar-title">{{ title }}</div>
             <div class="form-appbar-actions">
                 {% block appbar_extra %}{% endblock %}
-                {% if save_enabled %}
-                    <button type="submit" form="{{ save_form_id }}" class="btn btn-primary btn-sm" title="{{ save_label }}">
-                        <i class="bi bi-check-lg d-md-none"></i>
-                        <span class="d-none d-md-inline">{{ save_label }}</span>
-                    </button>
-                {% endif %}
+                {% block appbar_save %}
+                    {% if save_enabled %}
+                        <button type="submit" form="{{ save_form_id }}" class="btn btn-primary btn-sm" title="{{ save_label }}">
+                            <i class="bi bi-check-lg d-md-none"></i>
+                            <span class="d-none d-md-inline">{{ save_label }}</span>
+                        </button>
+                    {% endif %}
+                {% endblock %}
             </div>
         </div>
 

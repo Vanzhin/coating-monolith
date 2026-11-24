@@ -1,0 +1,2 @@
+<div class="{{ creating ? 'col-md-6' : 'col-6 col-xl-3' }}"><span class="form-label d-block">Начальный одометр, км</span><div class="{{ not creating ? 'p-2 rounded-3 bg-body fw-semibold' : '' }}">{{ startOdometer }}</div></div>
+<div class="{{ creating ? 'col-md-6' : 'col-6 col-xl-3' }}"><label class="form-label" for="odometerEnd">Конечный одометр, км</label><input id="odometerEnd" name="odometerEnd" value="{{ input.odometerEnd }}" class="form-control" type="number" min="0" step="1" data-waybill-form-target="end"></div>

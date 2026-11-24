@@ -57,13 +57,35 @@ export default class extends Controller {
         const rows = this.tripRows();
         for (const [index, row] of rows.entries()) {
             this.departures.set(row, departure);
-            const label = row.querySelector('[data-role="departure"]');
-            if (label) label.textContent = this.locationText(departure);
+            row.querySelectorAll('[data-role="departure"]').forEach((label) => {
+                label.textContent = this.locationText(departure);
+            });
             const insertion = row.querySelector('[data-role="trip-insertion"]');
             if (insertion) insertion.hidden = index === rows.length - 1;
+            const routeLine = row.querySelector('[data-role="route-line"]');
+            if (routeLine) routeLine.hidden = index === rows.length - 1;
             departure = this.destination(row);
+            this.updateTripSummary(row, departure);
         }
         this.recalculate();
+    }
+
+    refreshTripSummary(event) {
+        const row = event.currentTarget.closest('[data-waybill-form-target~="tripRow"]');
+        if (row) this.updateTripSummary(row, this.destination(row));
+    }
+
+    updateTripSummary(row, destination) {
+        const date = row.querySelector('[data-role="trip-date"]');
+        const distance = row.querySelector('[data-role="trip-distance"]');
+        const location = row.querySelector('[data-role="destination"]');
+        if (!date || !distance || !location) return;
+
+        const dateValue = this.input(row, 'date').value;
+        date.textContent = dateValue ? dateValue.split('-').reverse().join('.') : 'Дата не указана';
+        const distanceValue = this.input(row, 'distance').value;
+        distance.textContent = distanceValue ? `${distanceValue} км` : 'Расстояние не указано';
+        location.textContent = this.locationText(destination);
     }
 
     copyReturnTrip(source, added) {
