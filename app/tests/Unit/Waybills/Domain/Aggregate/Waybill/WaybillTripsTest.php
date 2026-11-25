@@ -429,15 +429,29 @@ final class WaybillTripsTest extends TestCase
         self::assertFalse($draft->isLocked());
     }
 
-    public function test_rejects_automatic_trip_without_return(): void
+    public function test_accepts_automatic_round_trip_with_one_kilometer_difference(): void
+    {
+        foreach ([[10, 11], [11, 10]] as [$outwardDistance, $returnDistance]) {
+            $vehicle = $this->vehicle();
+            $draft = $this->draft($vehicle);
+            $out = $this->trip($vehicle, null, '2026-01-10 10:00:00+03:00', 'Б', $outwardDistance, RouteLogOrigin::Automatic);
+            $back = $this->trip($vehicle, $out, '2026-01-10 12:00:00+03:00', 'А', $returnDistance, RouteLogOrigin::Automatic);
+
+            $draft->assertTrips(100 + $outwardDistance + $returnDistance, $out, $back);
+
+            self::assertFalse($draft->isLocked());
+        }
+    }
+
+    public function test_accepts_automatic_trip_without_return_when_distance_matches_odometer(): void
     {
         $vehicle = $this->vehicle();
         $draft = $this->draft($vehicle);
         $out = $this->trip($vehicle, null, '2026-01-10 10:00:00+03:00', 'Б', 5, RouteLogOrigin::Automatic);
 
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('не образуют целую пару');
         $draft->assertTrips(105, $out);
+
+        self::assertFalse($draft->isLocked());
     }
 
     private function vehicle(): Vehicle

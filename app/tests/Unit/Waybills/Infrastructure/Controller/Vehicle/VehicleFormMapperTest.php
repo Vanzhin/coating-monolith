@@ -9,6 +9,7 @@ use App\Waybills\Application\DTO\VehicleDTO;
 use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Infrastructure\Controller\Vehicle\VehicleFormMapper;
+use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -18,12 +19,12 @@ final class VehicleFormMapperTest extends TestCase
     {
         $vehicle = new VehicleDTO('id', 'Модель', 'a123bc77', [], null, null, null, new Location('Россия', 'База'));
 
-        self::assertSame('A123BC77', (new VehicleFormMapper())->vehicleInput($vehicle)['registrationNumber']);
+        self::assertSame('A123BC77', (new VehicleFormMapper(new LocationFormMapper()))->vehicleInput($vehicle)['registrationNumber']);
     }
 
     public function test_create_command_preserves_initial_data_and_fuel_precision(): void
     {
-        $mapper = new VehicleFormMapper();
+        $mapper = new VehicleFormMapper(new LocationFormMapper());
         $input = array_replace($mapper->newVehicleInput(), [
             'model' => 'Модель', 'registrationNumber' => 'A123BC77',
             'initialAt' => '2026-01-02T10:30', 'initialCity' => 'Москва',
@@ -36,7 +37,7 @@ final class VehicleFormMapperTest extends TestCase
         self::assertSame('Модель', $command->model);
         self::assertSame('A123BC77', $command->registrationNumber);
         self::assertSame('2026-01-02 10:30', $command->initialAt->format('Y-m-d H:i'));
-        self::assertSame('Москва', $command->initialCity);
+        self::assertSame('Москва', $command->initialLocation->city?->name);
         self::assertSame(123, $command->initialOdometer);
         self::assertSame('30.00000000000000000001', (string) $command->initialFuelRemaining);
         self::assertSame(8.5, $command->consumptionRate?->value());
@@ -46,7 +47,7 @@ final class VehicleFormMapperTest extends TestCase
 
     public function test_update_command_uses_the_same_typed_fuel_fields(): void
     {
-        $mapper = new VehicleFormMapper();
+        $mapper = new VehicleFormMapper(new LocationFormMapper());
         $input = [
             'model' => 'Модель', 'registrationNumber' => 'A123BC77',
             'consumptionRate' => '8.5', 'defaultFuelType' => 'АИ-92',
@@ -64,7 +65,7 @@ final class VehicleFormMapperTest extends TestCase
     #[DataProvider('invalidInputs')]
     public function test_rejects_invalid_form_representation(string $field, string $value, string $message): void
     {
-        $mapper = new VehicleFormMapper();
+        $mapper = new VehicleFormMapper(new LocationFormMapper());
         $input = array_replace($mapper->newVehicleInput(), [
             'model' => 'Модель', 'registrationNumber' => 'A123BC77',
             'initialAt' => '2026-01-02T10:30', 'initialCity' => 'Москва',

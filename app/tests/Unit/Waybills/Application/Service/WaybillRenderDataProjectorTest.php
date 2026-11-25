@@ -74,7 +74,7 @@ final class WaybillRenderDataProjectorTest extends TestCase
             new FuelOperation(Uuid::v7(), $vehicle, new \DateTimeImmutable('2026-01-11 12:00'), FuelType::Ai92, BigDecimal::of('2'), FuelOperationType::Refueling),
             new FuelOperation(Uuid::v7(), $vehicle, new \DateTimeImmutable('2026-01-12 12:00'), FuelType::Ai95, BigDecimal::of('3'), FuelOperationType::Refueling),
         );
-        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, null, null, $refuelings);
+        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, new Fuel((string) $sheet->fuelStart(), 30, new Refuelings(), 'АИ-95'), null, $refuelings);
 
         $data = (new WaybillRenderDataProjector())->project($sheet);
 

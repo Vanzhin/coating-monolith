@@ -15,6 +15,7 @@ use App\Waybills\Application\UseCase\Command\EnterVehicle\EnterVehicleCommand;
 use App\Waybills\Application\UseCase\Command\LeaveVehicle\LeaveVehicleCommand;
 use App\Waybills\Application\UseCase\Query\GetPagedVehicles\GetPagedVehiclesQuery;
 use App\Waybills\Application\UseCase\Query\GetVehicle\GetVehicleQuery;
+use App\Waybills\Domain\Aggregate\Route\SettlementType;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Domain\Repository\VehicleFilter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -130,7 +131,7 @@ final class VehicleController extends AbstractController
 
         return $this->render('cabinet/waybill/vehicle/form.html.twig', [
             'input' => $input, 'id' => $id, 'error' => $error, 'fuelTypes' => FuelType::cases(),
-            'selectedFuelTypes' => $selectedFuelTypes, 'timezone' => date_default_timezone_get(),
+            'selectedFuelTypes' => $selectedFuelTypes, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
     }
 

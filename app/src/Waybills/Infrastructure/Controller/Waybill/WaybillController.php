@@ -12,13 +12,17 @@ use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\TemplateRendering;
 use App\Waybills\Application\DTO\WaybillEditData;
+use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
 use App\Waybills\Application\UseCase\Command\DeleteWaybill\DeleteWaybillCommand;
+use App\Waybills\Application\UseCase\Command\FillWaybillRoute\FillWaybillRouteCommand;
 use App\Waybills\Application\UseCase\Command\LockWaybill\LockWaybillCommand;
+use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
 use App\Waybills\Application\UseCase\Query\GetPagedVehicles\GetPagedVehiclesQuery;
 use App\Waybills\Application\UseCase\Query\GetPagedWaybills\GetPagedWaybillsQuery;
 use App\Waybills\Application\UseCase\Query\GetVehicle\GetVehicleQuery;
 use App\Waybills\Application\UseCase\Query\GetWaybillForEdit\GetWaybillForEditQuery;
 use App\Waybills\Application\UseCase\Query\GetWaybillRenderData\GetWaybillRenderDataQuery;
+use App\Waybills\Domain\Aggregate\Route\SettlementType;
 use App\Waybills\Domain\Repository\VehicleFilter;
 use App\Waybills\Domain\Repository\WaybillFilter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -66,7 +70,7 @@ final class WaybillController extends AbstractController
     #[Route('/new/{vehicleId}', name: 'app_cabinet_waybill_sheet_create', methods: ['GET', 'POST'])]
     public function create(Request $request, string $vehicleId): Response
     {
-        $vehicle = $this->queries->execute(new GetVehicleQuery($vehicleId));
+        $vehicle = $this->queries->execute(new GetVehicleQuery($vehicleId, forWaybillCreation: true));
         $input = $this->mapper->createInput($vehicle);
         $error = null;
         $status = Response::HTTP_OK;
@@ -78,6 +82,8 @@ final class WaybillController extends AbstractController
                     $fresh = $this->mapper->createInput($vehicle);
                     $input['initialOdometer'] = $fresh['initialOdometer'];
                     $input['initialFuel'] = $fresh['initialFuel'];
+                } elseif ('fill_route' === $request->request->getString('action')) {
+                    $input = $this->withFilledRoute($this->mapper->createCommand($vehicleId, $input), $input);
                 } else {
                     $id = $this->commands->execute($this->mapper->createCommand($vehicleId, $input));
 
@@ -89,8 +95,12 @@ final class WaybillController extends AbstractController
             }
         }
 
-        return $this->render('cabinet/waybill/sheet/create.html.twig', [
-            'vehicle' => $vehicle, 'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(),
+        return $this->render('cabinet/waybill/sheet/form.html.twig', [
+            'creating' => true,
+            'formTitle' => 'Новый путевой лист',
+            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_list', ['vehicleId' => $vehicleId]),
+            'tokenId' => 'waybill_new_'.$vehicleId,
+            'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
     }
 
@@ -158,28 +168,55 @@ final class WaybillController extends AbstractController
     #[Route('/{id}/edit', name: 'app_cabinet_waybill_sheet_edit', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET', 'POST'])]
     public function edit(Request $request, string $id): Response
     {
-        $editData = $this->queries->execute(new GetWaybillForEditQuery($id));
+        $editData = $this->queries->execute(new GetWaybillForEditQuery($id, withPredecessor: true));
         $waybill = $editData->waybill;
         $waybill->assertEditable();
-        $input = $this->mapper->input($waybill, $editData->version);
+        $input = $this->mapper->input($waybill, $editData->version, $editData->predecessor);
         $error = null;
         $status = Response::HTTP_OK;
         if ($request->isMethod('POST')) {
             try {
                 $this->postedInput($request, $input);
                 $this->checkToken($request, 'waybill_edit_'.$id);
-                $this->commands->execute($this->mapper->updateCommand($waybill, $input));
+                if ('fill_route' === $request->request->getString('action')) {
+                    $input = $this->withFilledRoute($this->mapper->updateCommand($waybill, $input), $input);
+                } else {
+                    $this->commands->execute($this->mapper->updateCommand($waybill, $input));
 
-                return $this->redirectToRoute('app_cabinet_waybill_sheet_show', ['id' => $id]);
+                    return $this->redirectToRoute('app_cabinet_waybill_sheet_show', ['id' => $id]);
+                }
             } catch (AppException $exception) {
                 $error = $exception->getMessage();
                 $status = $exception->getCode();
             }
         }
 
-        return $this->render('cabinet/waybill/sheet/edit.html.twig', [
-            'waybill' => $waybill, 'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(),
+        return $this->render('cabinet/waybill/sheet/form.html.twig', [
+            'creating' => false,
+            'formTitle' => 'Путевой лист №'.$waybill->getNumber(),
+            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_show', ['id' => $id]),
+            'tokenId' => 'waybill_edit_'.$id,
+            'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     *
+     * @return array<string, mixed>
+     */
+    private function withFilledRoute(CreateWaybillCommand|UpdateWaybillCommand $command, array $input): array
+    {
+        $result = $this->commands->execute(new FillWaybillRouteCommand($command));
+        if (!$result->isSuccessful()) {
+            throw new AppException($result->error() ?? 'Не удалось заполнить маршрут.');
+        }
+        $route = $result->route();
+        if (null === $route) {
+            throw new \LogicException('Успешный результат заполнения не содержит маршрут.');
+        }
+
+        return $this->mapper->withRoute($input, $route);
     }
 
     /** @param array<string, mixed> $input */

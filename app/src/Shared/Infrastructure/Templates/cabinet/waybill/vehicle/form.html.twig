@@ -57,14 +57,12 @@
                             <div class="col-md-6"><label for="initialOdometer" class="form-label">Показание одометра, км <span class="text-danger">*</span></label><input id="initialOdometer" name="initialOdometer" value="{{ input.initialOdometer }}" class="form-control" type="number" min="0" step="1" required></div>
                             <div class="col-md-6"><label for="initialFuelRemaining" class="form-label">Остаток топлива, л <span class="text-danger">*</span></label><input id="initialFuelRemaining" name="initialFuelRemaining" value="{{ input.initialFuelRemaining }}" class="form-control" type="number" min="0" step="any" required></div>
                             <div class="col-12"><div class="form-label">Начальная точка <span class="text-danger">*</span></div><div class="form-text">Укажите хотя бы одну часть адреса.</div></div>
-                            <div class="col-md-6"><label for="initialCountry" class="form-label">Страна</label><input id="initialCountry" name="initialCountry" value="{{ input.initialCountry }}" class="form-control"></div>
-                            <div class="col-md-6"><label for="initialCity" class="form-label">Город</label><input id="initialCity" name="initialCity" value="{{ input.initialCity }}" class="form-control"></div>
-                            <div class="col-md-6"><label for="initialStreet" class="form-label">Улица</label><input id="initialStreet" name="initialStreet" value="{{ input.initialStreet }}" class="form-control"></div>
-                            <div class="col-md-6"><label for="initialHouse" class="form-label">Дом</label><input id="initialHouse" name="initialHouse" value="{{ input.initialHouse }}" class="form-control"></div>
+                            {% include 'cabinet/waybill/location/_fields.html.twig' with {flatPrefix: 'initial', location: {id: input.initialLocationId, country: input.initialCountry, city: input.initialCity, cityType: input.initialCityType, street: input.initialStreet, house: input.initialHouse, enterprise: input.initialEnterprise}, key: 'vehicle-initial', settlementTypes: settlementTypes} %}
                         </div>
                     </div>
                 {% endif %}
             </form>
+            {% if not id %}{% include 'cabinet/waybill/location/_create_modal.html.twig' with {settlementTypes: settlementTypes} %}{% endif %}
         {% endblock %}
     {% endembed %}
 {% endblock %}

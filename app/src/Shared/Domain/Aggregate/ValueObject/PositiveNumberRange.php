@@ -9,7 +9,7 @@ use App\Shared\Infrastructure\Exception\AppException;
 /**
  * Валидный диапазон, который принимает только положительные числа.
  */
-final class PositiveNumberRange extends NumberRange
+final readonly class PositiveNumberRange extends NumberRange
 {
     /**
      * Дополнительное бизнес-правило: значения не могут быть меньше нуля.

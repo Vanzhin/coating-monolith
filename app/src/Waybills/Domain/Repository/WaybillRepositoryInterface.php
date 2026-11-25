@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Waybills\Domain\Repository;
 
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use App\Waybills\Domain\Aggregate\Route\RouteLog;
+use App\Waybills\Domain\Aggregate\Vehicle\Vehicle;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 
 interface WaybillRepositoryInterface
@@ -23,10 +25,13 @@ interface WaybillRepositoryInterface
 
     public function findOneById(string $id): ?Waybill;
 
+    /** Проверяет UUID поездок во всём журнале, независимо от автомобиля и статуса. */
+    public function hasExistingTripIds(StringCollection $ids): bool;
+
     public function versionOf(Waybill $waybill): int;
 
-    /** Возвращает непосредственную предшествующую поездку автомобиля. */
-    public function findPredecessor(Waybill $waybill): ?RouteLog;
+    /** Возвращает поездку, предшествующую черновику или новому листу автомобиля. */
+    public function findPredecessor(Waybill|Vehicle $source): ?RouteLog;
 
     public function findByFilter(WaybillFilter $filter): PaginationResult;
 }

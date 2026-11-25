@@ -8,6 +8,7 @@ use App\Shared\Application\Command\CommandHandlerInterface;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\Service\AccessControl\DriverProfileAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Domain\Repository\DriverProfileRepositoryInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,6 +17,7 @@ final readonly class UpdateDriverProfileCommandHandler implements CommandHandler
     public function __construct(
         private DriverProfileRepositoryInterface $profiles,
         private DriverProfileAccessControl $access,
+        private LocationCatalog $locations,
     ) {
     }
 
@@ -28,10 +30,11 @@ final readonly class UpdateDriverProfileCommandHandler implements CommandHandler
         if (!$this->access->canEdit($profile)) {
             throw new ForbiddenException();
         }
+        $route = $this->locations->synchronizeSettings($command->routeSettings, $profile->getRouteSettings());
         $profile->changeDriverDetails($command->driverDetails);
         $profile->replaceDestinations();
-        $profile->changeBase($command->routeSettings->base);
-        $profile->replaceDestinations(...$command->routeSettings->destinations());
+        $profile->changeBase($route->base);
+        $profile->replaceDestinations(...$route->destinations());
         $this->profiles->add($profile);
     }
 }

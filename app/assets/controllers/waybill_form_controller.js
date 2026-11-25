@@ -1,11 +1,14 @@
 import { Controller } from '@hotwired/stimulus';
 
+const locationFields = ['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise'];
+const settlementAbbreviations = { city: 'г.', village: 'д.', selo: 'с.', settlement: 'п.', khutor: 'х.', urban_settlement: 'пгт' };
+
 export default class extends Controller {
     static targets = ['end'];
     static values = { start: String, initialLocation: Object };
 
     connect() {
-        this.refreshTrips();
+        this.refreshTrips(false);
     }
 
     add(event) {
@@ -48,26 +51,48 @@ export default class extends Controller {
         this.input(inserted, 'city').focus();
     }
 
-    refreshTrips() {
-        let departure = { ...this.initialLocationValue, enterprise: this.initialLocationValue.enterprise || '' };
+    refreshTrips(recalculate = true) {
+        let departure = { ...this.initialLocationValue, locationId: this.initialLocationValue.id || '', enterprise: this.initialLocationValue.enterprise || '' };
         this.departures = new Map();
         const rows = this.tripRows();
         for (const [index, row] of rows.entries()) {
             this.departures.set(row, departure);
-            const label = row.querySelector('[data-role="departure"]');
-            if (label) label.textContent = this.locationText(departure);
+            row.querySelectorAll('[data-role="departure"]').forEach((label) => {
+                label.textContent = this.locationText(departure);
+            });
             const insertion = row.querySelector('[data-role="trip-insertion"]');
             if (insertion) insertion.hidden = index === rows.length - 1;
+            const routeLine = row.querySelector('[data-role="route-line"]');
+            if (routeLine) routeLine.hidden = index === rows.length - 1;
             departure = this.destination(row);
+            this.updateTripSummary(row, departure);
         }
-        this.recalculate();
+        if (recalculate) this.recalculate();
+    }
+
+    refreshTripSummary(event) {
+        const row = event.currentTarget.closest('[data-waybill-form-target~="tripRow"]');
+        if (row) this.updateTripSummary(row, this.destination(row));
+    }
+
+    updateTripSummary(row, destination) {
+        const date = row.querySelector('[data-role="trip-date"]');
+        const distance = row.querySelector('[data-role="trip-distance"]');
+        const location = row.querySelector('[data-role="destination"]');
+        if (!date || !distance || !location) return;
+
+        const dateValue = this.input(row, 'date').value;
+        date.textContent = dateValue ? dateValue.split('-').reverse().join('.') : 'Дата не указана';
+        const distanceValue = this.input(row, 'distance').value;
+        distance.textContent = distanceValue ? `${distanceValue} км` : 'Расстояние не указано';
+        location.textContent = this.locationText(destination);
     }
 
     copyReturnTrip(source, added) {
         const destination = this.departures.get(source);
         if (!destination) return;
 
-        for (const field of ['country', 'city', 'street', 'house', 'enterprise']) {
+        for (const field of locationFields) {
             this.input(added, field).value = destination[field] || '';
         }
         this.input(added, 'distance').value = this.input(source, 'distance').value;
@@ -76,7 +101,7 @@ export default class extends Controller {
 
     destination(row) {
         const destination = {};
-        for (const field of ['country', 'city', 'street', 'house', 'enterprise']) {
+        for (const field of locationFields) {
             destination[field] = this.input(row, field).value;
         }
 
@@ -84,8 +109,10 @@ export default class extends Controller {
     }
 
     locationText(location) {
-        const text = ['country', 'city', 'street', 'house', 'enterprise']
-            .map((field) => (location[field] || '').trim())
+        const abbreviation = settlementAbbreviations[location.cityType] || '';
+        const city = `${abbreviation} ${location.city || ''}`.trim();
+        const text = [location.country, city, location.street, location.house, location.enterprise]
+            .map((part) => (part || '').trim())
             .filter(Boolean)
             .join(', ');
 
@@ -133,6 +160,10 @@ export default class extends Controller {
         rows.querySelectorAll(`[data-waybill-form-target~="${kind}Row"]`).forEach((row, index) => {
             row.querySelectorAll('[name]').forEach((input) => {
                 input.name = input.name.replace(/\[(?:\d+|__i__)\]/, `[${index}]`);
+            });
+            row.querySelectorAll('[data-typeahead-hidden-name-value]').forEach((typeahead) => {
+                const hiddenName = typeahead.getAttribute('data-typeahead-hidden-name-value');
+                typeahead.setAttribute('data-typeahead-hidden-name-value', hiddenName.replace(/\[(?:\d+|__i__)\]/, `[${index}]`));
             });
             row.querySelectorAll('[id], [for]').forEach((element) => {
                 if (element.id) element.id = element.id.replace(/(?:\d+|__i__)$/, String(index));

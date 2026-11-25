@@ -44,7 +44,7 @@ final class WaybillStorageTypesTest extends TestCase
         self::assertSame([], $loadedFuel->refuelings()->entries());
         self::assertSame('Europe/Berlin', $loadedDriver?->licenseIssuedAt->getTimezone()->getName());
         self::assertSame('Россия, Москва, Лесная, 1', $loadedBase?->toString());
-        self::assertSame('Москва', $loadedBase->city);
+        self::assertSame('Москва', $loadedBase->city?->name);
     }
 
     public function test_invalid_fuel_shape_is_rejected(): void

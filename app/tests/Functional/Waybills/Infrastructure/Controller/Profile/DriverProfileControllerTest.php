@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Waybills\Infrastructure\Controller\Profile;
 
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000000;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000002;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use Doctrine\DBAL\Schema\Schema;
@@ -31,7 +32,7 @@ final class DriverProfileControllerTest extends WebTestCase
         $connection->executeStatement('CREATE TEMPORARY TABLE user_user (ulid VARCHAR(26) PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255), roles JSON NOT NULL, is_active BOOLEAN NOT NULL)');
         $connection->executeStatement('CREATE TEMPORARY TABLE user_channel (id UUID PRIMARY KEY, owner_id VARCHAR(26) NOT NULL REFERENCES user_user(ulid), type VARCHAR(100) NOT NULL, value TEXT NOT NULL, is_verified BOOLEAN NOT NULL, verified_at TIMESTAMP(0) WITHOUT TIME ZONE)');
         $connection->executeStatement('CREATE TEMPORARY TABLE notification (id UUID PRIMARY KEY, owner_id VARCHAR(26) NOT NULL, is_read BOOLEAN NOT NULL)');
-        foreach ([Version20261121000000::class, Version20261121000002::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000002::class, Version20261122000000::class] as $migrationClass) {
             $migration = new $migrationClass($connection, new NullLogger());
             $migration->up(new Schema());
             foreach ($migration->getSql() as $query) {

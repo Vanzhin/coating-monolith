@@ -81,6 +81,24 @@ final class RouteLogTest extends TestCase
         new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination(new Location('Б'), 1.5), RouteLogOrigin::Manual); // @phpstan-ignore-line
     }
 
+    public function test_allows_trip_on_first_day_of_vehicle_history(): void
+    {
+        $vehicle = $this->vehicle('2026-01-01 12:00:00');
+
+        $log = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01 00:00:00'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+
+        self::assertSame('2026-01-01', $log->date->format('Y-m-d'));
+    }
+
+    public function test_rejects_trip_before_first_day_of_vehicle_history(): void
+    {
+        $vehicle = $this->vehicle('2026-01-02 00:00:00');
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('Дата поездки не может быть раньше начала истории автомобиля.');
+        new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01 23:59:59'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+    }
+
     public function test_with_previous_keeps_destination_and_original_unchanged(): void
     {
         $vehicle = $this->vehicle();
@@ -99,8 +117,37 @@ final class RouteLogTest extends TestCase
         self::assertSame($first->destination->location, $changed->departure());
     }
 
-    private function vehicle(): Vehicle
+    public function test_assert_departure_unchanged_accepts_an_equivalent_snapshot(): void
     {
-        return new Vehicle(Uuid::v7(), 'Модель', new RegistrationNumber('A123BC77'), new \DateTimeImmutable('2025-01-01'), new Location('А'), 100, BigDecimal::of('20'));
+        $vehicle = $this->vehicle();
+        $location = new Location('Россия', 'Москва', 'Лесная', '1', 'Склад', 55.7, 37.6, Uuid::v7());
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination($location, 1), RouteLogOrigin::Automatic);
+        $manual = new RouteLog(Uuid::v7(), $vehicle, $previous, new \DateTimeImmutable('2026-01-02'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+        $expected = Location::fromArray($location->jsonSerialize());
+
+        $manual->assertDepartureUnchanged($expected);
+
+        self::assertNotSame($location, $expected);
+        self::assertSame($location, $manual->departure());
+    }
+
+    public function test_assert_departure_unchanged_rejects_changed_metadata_of_the_same_place(): void
+    {
+        $vehicle = $this->vehicle();
+        $id = Uuid::v7();
+        $location = new Location('Россия', 'Москва', enterprise: 'Склад', id: $id);
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination($location, 1), RouteLogOrigin::Automatic);
+        $manual = new RouteLog(Uuid::v7(), $vehicle, $previous, new \DateTimeImmutable('2026-01-02'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+        $expected = new Location('Россия', 'Москва', enterprise: 'Офис', id: $id);
+        self::assertTrue($manual->departure()->samePlace($expected));
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('Нельзя перестроить маршрут: изменится отправление ручной поездки. Исправьте её явно.');
+        $manual->assertDepartureUnchanged($expected);
+    }
+
+    private function vehicle(string $initialAt = '2025-01-01'): Vehicle
+    {
+        return new Vehicle(Uuid::v7(), 'Модель', new RegistrationNumber('A123BC77'), new \DateTimeImmutable($initialAt), new Location('А'), 100, BigDecimal::of('20'));
     }
 }

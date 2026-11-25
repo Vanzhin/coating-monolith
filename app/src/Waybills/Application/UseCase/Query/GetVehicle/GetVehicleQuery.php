@@ -8,7 +8,7 @@ use App\Shared\Application\Query\Query;
 
 final readonly class GetVehicleQuery extends Query
 {
-    public function __construct(public string $id)
+    public function __construct(public string $id, public bool $forWaybillCreation = false)
     {
     }
 }

@@ -113,19 +113,18 @@ final class LinkedRouteTest extends TestCase
         self::assertSame('2025-01-01 00:00:00+00:00', $trip->date->format('Y-m-d H:i:sP'));
     }
 
-    public function test_compares_vehicle_history_start_as_an_instant_across_time_zones(): void
+    public function test_allows_trip_at_vehicle_history_start_across_time_zones(): void
     {
         $trip = $this->log($this->vehicle(), null, '2025-01-01 03:00:00+03:00', 'Б');
 
         self::assertEquals(new \DateTimeImmutable('2025-01-01 00:00:00+00:00'), $trip->date);
     }
 
-    public function test_rejects_earlier_instant_even_when_local_date_is_later(): void
+    public function test_allows_earlier_instant_on_same_calendar_day_across_time_zones(): void
     {
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('раньше начала истории автомобиля');
+        $trip = $this->log($this->vehicle(), null, '2025-01-01 00:30:00+03:00', 'Б');
 
-        $this->log($this->vehicle(), null, '2025-01-01 00:30:00+03:00', 'Б');
+        self::assertEquals(new \DateTimeImmutable('2025-01-01 00:30:00+03:00'), $trip->date);
     }
 
     public function test_rejects_destination_equal_to_departure_even_for_distinct_location_objects(): void

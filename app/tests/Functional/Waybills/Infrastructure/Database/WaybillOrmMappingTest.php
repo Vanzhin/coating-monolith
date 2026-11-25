@@ -19,9 +19,13 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000006;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Waybills\Application\DTO\TripInput;
+use App\Waybills\Application\Service\AccessControl\LocationAccessControl;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\RefuelingOperationBuilder;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
@@ -37,6 +41,7 @@ use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Route\Route;
 use App\Waybills\Domain\Aggregate\Route\RouteLog;
 use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
+use App\Waybills\Domain\Aggregate\Route\RouteSettings;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelOperation;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelOperationType;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
@@ -45,9 +50,15 @@ use App\Waybills\Domain\Aggregate\Vehicle\RegistrationNumber;
 use App\Waybills\Domain\Aggregate\Vehicle\Vehicle;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
+use App\Waybills\Domain\Aggregate\Waybill\OdometerRange;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
 use App\Waybills\Domain\Repository\WaybillFilter;
+use App\Waybills\Domain\Service\Calendar\ProductionCalendar;
+use App\Waybills\Domain\Service\WaybillRouteFiller;
+use App\Waybills\Infrastructure\Controller\Waybill\WaybillFormMapper;
+use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
+use App\Waybills\Infrastructure\Repository\LocationRepository;
 use App\Waybills\Infrastructure\Repository\VehicleRepository;
 use App\Waybills\Infrastructure\Repository\WaybillRepository;
 use Brick\Math\BigDecimal;
@@ -77,7 +88,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $this->connection = DriverManager::getConnection($params);
         $this->em = new EntityManager($this->connection, $configured->getConfiguration());
 
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261122000000::class, Version20261122000001::class] as $migrationClass) {
             $this->applyTemporaryMigration($migrationClass);
         }
     }
@@ -183,6 +194,54 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertNull($this->connection->fetchOne('SELECT fuel FROM waybills_waybill WHERE id = ?', [$id]));
     }
 
+    public function test_unsaved_automatic_pair_keeps_ids_after_repeated_fill_and_save(): void
+    {
+        [$vehicle, $driver] = $this->vehicle('30');
+        $this->em->persist($driver);
+        $this->em->persist($vehicle);
+        $this->em->flush();
+        $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
+        $draft = Waybill::createDraft(Uuid::v7(), 1, $vehicle, new DateTimeInterval($period->from(), $period->to()));
+        $date = new \DateTimeImmutable('2026-01-10');
+        $destination = new Destination(new Location('Клиент'), 10);
+        $outward = new RouteLog(Uuid::v7(), $vehicle, null, $date, $destination, RouteLogOrigin::Automatic);
+        $back = new RouteLog(Uuid::v7(), $vehicle, $outward, $date, new Destination($vehicle->initialLocation(), 10), RouteLogOrigin::Automatic);
+        $expectedManualIds = [(string) $outward->id, (string) $back->id];
+        $repository = new WaybillRepository($this->em, $this->connection);
+        $builder = new WaybillRouteBuilder($repository);
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $input = $mapper->withRoute($mapper->input($draft, 1), new Route($vehicle, $outward, $back));
+        $input['trips'][0]['distance'] = '12';
+        $settings = new RouteSettings($vehicle->initialLocation(), $destination);
+        $filler = new WaybillRouteFiller();
+
+        for ($attempt = 0; $attempt < 2; ++$attempt) {
+            $fixed = $builder->buildFixed($draft, null, true, ...$mapper->updateCommand($draft, $input)->trips);
+            self::assertNotNull($fixed);
+            $filled = $filler->fill($settings, $period, $fixed, new OdometerRange(100, 142), new ProductionCalendar());
+            self::assertTrue($filled->isSuccessful(), $filled->error() ?? '');
+            $route = $filled->route();
+            self::assertNotNull($route);
+            $input = $mapper->withRoute($input, $route);
+        }
+
+        $route = $builder->build($draft, null, true, ...$mapper->updateCommand($draft, $input)->trips);
+        self::assertNotNull($route);
+        $trips = iterator_to_array($route->logs(), false);
+        $expectedIds = array_map(static fn (RouteLog $trip): string => (string) $trip->id, $trips);
+        $draft->setTrips(...$trips);
+        $repository->add($draft);
+        $id = $draft->getId();
+        $this->em->clear();
+
+        $loaded = (new WaybillRepository($this->em, $this->connection))->findOneById($id);
+        self::assertInstanceOf(Waybill::class, $loaded);
+        self::assertSame($expectedIds, array_map(static fn (RouteLog $trip): string => (string) $trip->id, $loaded->trips()));
+        $manual = array_values(array_filter($loaded->trips(), static fn (RouteLog $trip): bool => RouteLogOrigin::Manual === $trip->origin));
+        self::assertSame($expectedManualIds, array_map(static fn (RouteLog $trip): string => (string) $trip->id, $manual));
+        self::assertSame(142, $loaded->odometerEnd());
+    }
+
     public function test_repository_rejects_save_after_driver_leaves_without_losing_draft(): void
     {
         [$vehicle, $driver] = $this->vehicle();
@@ -229,7 +288,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertSame(105, (int) $this->connection->fetchOne('SELECT odometer_end FROM waybills_waybill WHERE id = ?', [$id]));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$id]));
 
-        $loaded->reviseDraft($loaded->period(), null, null, null);
+        $loaded->reviseDraft($loaded->period(), null, new Fuel((string) $loaded->fuelStart(), 25, new Refuelings(), 'АИ-95'), null);
         $repository->add($loaded);
         self::assertSame(100, (int) $this->connection->fetchOne('SELECT odometer_end FROM waybills_waybill WHERE id = ?', [$id]));
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$id]));
@@ -254,7 +313,8 @@ final class WaybillOrmMappingTest extends KernelTestCase
         try {
             $repository->add($draft);
             self::fail('Повторный ID поездки должен вызвать отказ.');
-        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException) {
+        } catch (AppException $exception) {
+            self::assertSame('Поездка не принадлежит этому черновику.', $exception->getMessage());
             self::assertSame(1, (int) $this->connection->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
             self::assertFalse((bool) $this->connection->fetchOne('SELECT route_present FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
             self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_route_log WHERE draft_waybill_id = ?', [$draft->getId()]));
@@ -355,6 +415,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertInstanceOf(Waybill::class, $loaded);
         self::assertSame((string) $previous->id, (string) $loaded->trips()[0]->previous?->id);
         self::assertSame((string) $previous->id, (string) $repository->findPredecessor($loaded)?->id);
+        self::assertSame((string) $previous->id, (string) $repository->findPredecessor($vehicle)?->id);
         self::assertSame('Предыдущая', $loaded->trips()[0]->departure()->toString());
     }
 
@@ -521,20 +582,23 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $vehicles = new VehicleRepository($registry);
         $repository = new WaybillRepository($this->em, $this->connection);
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
-        $create = new CreateWaybillCommandHandler($vehicles, $repository, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder());
-        $id = $this->connection->transactional(fn (): string => $create(new CreateWaybillCommand($vehicle->getId(), $period)));
+        $locations = new LocationCatalog(new LocationRepository($registry), new LocationAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher));
+        $create = new CreateWaybillCommandHandler($vehicles, $repository, $access, new WaybillRouteBuilder($repository), new RefuelingOperationBuilder(), $locations);
+        $id = $this->connection->transactional(fn (): string => $create(new CreateWaybillCommand($vehicle->getId(), $period, fuel: new Fuel((string) $vehicle->fuelRemaining(), 25, new Refuelings(), 'АИ-95'))));
         $draft = $repository->findOneById($id);
         self::assertInstanceOf(Waybill::class, $draft);
         self::assertSame(1, $draft->getNumber());
         self::assertSame(100, $draft->odometerStart());
         self::assertFalse($draft->hasRoute());
 
-        $update = new UpdateWaybillCommandHandler($repository, $vehicles, $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder());
-        $command = new UpdateWaybillCommand($id, 1, $period, null, null, true, [], null,
+        $update = new UpdateWaybillCommandHandler($repository, $vehicles, $access, new WaybillRouteBuilder($repository), new RefuelingOperationBuilder(), $locations);
+        $command = new UpdateWaybillCommand($id, 1, $period, null, new Fuel((string) $vehicle->fuelRemaining(), 25, new Refuelings(), 'АИ-95'), true, [], null,
             new TripInput(null, new \DateTimeImmutable('2026-01-10 10:00:00+00:00'), new Destination(new Location('Первая'), 2)),
             new TripInput(null, new \DateTimeImmutable('2026-01-10 12:00:00+00:00'), new Destination(new Location('Вторая'), 3)),
         );
         $this->connection->transactional(fn () => $update($command));
+        $this->connection->executeStatement('UPDATE waybills_waybill SET fuel = NULL WHERE id = ?', [$id]);
+        $this->em->clear();
         $lock = new LockWaybillCommandHandler($repository, $vehicles, $access);
         try {
             $this->connection->transactional(fn () => $lock(new LockWaybillCommand($id)));
@@ -738,13 +802,13 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $date = new \DateTimeImmutable('2026-01-10 10:15:30.123456', new \DateTimeZone('Europe/Berlin'));
         $first = new FuelOperation(Uuid::v7(), $vehicle, $date, FuelType::Ai95, BigDecimal::of('0.1'), FuelOperationType::Refueling);
         $second = new FuelOperation(Uuid::v7(), $vehicle, $date, FuelType::Ai92, BigDecimal::of('0.20000000000000000001'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, new Route($vehicle, $trip, $trip), new RefuelingOperations($first, $second));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), new Route($vehicle, $trip, $trip), new RefuelingOperations($first, $second));
         $repository = new WaybillRepository($this->em, $this->connection);
         $repository->add($draft);
         $id = $draft->getId();
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_route_log WHERE draft_waybill_id = ?', [$id]));
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_fuel_operation WHERE draft_waybill_id = ?', [$id]));
-        self::assertNull($this->connection->fetchOne('SELECT fuel FROM waybills_waybill WHERE id = ?', [$id]));
+        self::assertNotNull($this->connection->fetchOne('SELECT fuel FROM waybills_waybill WHERE id = ?', [$id]));
         $this->em->clear();
 
         $repository = new WaybillRepository($this->em, $this->connection);
@@ -758,7 +822,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
 
         $updated = new FuelOperation($refuelings[1]->id, $loaded->vehicle(), $date, FuelType::Ai92, BigDecimal::of('0.3'), FuelOperationType::Refueling);
         $added = new FuelOperation(Uuid::v7(), $loaded->vehicle(), $date, FuelType::Ai95, BigDecimal::of('0.4'), FuelOperationType::Refueling);
-        $loaded->reviseDraftWithRefuelingOperations($loaded->period(), null, null, $loaded->route(), new RefuelingOperations($updated, $added));
+        $loaded->reviseDraftWithRefuelingOperations($loaded->period(), null, $loaded->fuel(), $loaded->route(), new RefuelingOperations($updated, $added));
         $repository->add($loaded);
         self::assertFalse($this->em->contains($refuelings[1]));
         $this->em->clear();
@@ -785,7 +849,7 @@ final class WaybillOrmMappingTest extends KernelTestCase
         $repository->add($draft);
         $trip = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Клиент'), 5), RouteLogOrigin::Manual);
         $duplicate = new FuelOperation($existing->id, $vehicle, new \DateTimeImmutable('2026-01-10'), FuelType::Ai95, BigDecimal::of('2'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, new Route($vehicle, $trip, $trip), new RefuelingOperations($duplicate));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), new Route($vehicle, $trip, $trip), new RefuelingOperations($duplicate));
 
         try {
             $repository->add($draft);

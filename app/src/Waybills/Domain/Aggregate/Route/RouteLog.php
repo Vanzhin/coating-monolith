@@ -18,7 +18,8 @@ final class RouteLog
         public readonly Destination $destination,
         public readonly RouteLogOrigin $origin,
     ) {
-        if ($date < $vehicle->initialAt()) {
+        $historyStart = $vehicle->initialAt()->setTimezone($date->getTimezone());
+        if ($date->format('Y-m-d') < $historyStart->format('Y-m-d')) {
             throw new AppException('Дата поездки не может быть раньше начала истории автомобиля.');
         }
         if (null !== $previous && $previous->vehicle->getId() !== $vehicle->getId()) {
@@ -27,7 +28,7 @@ final class RouteLog
         if (null !== $previous && $previous->date > $date) {
             throw new AppException('Дата поездки не может быть раньше предыдущей.');
         }
-        if ($this->departure()->equals($destination->location)) {
+        if ($this->departure()->samePlace($destination->location)) {
             throw new AppException('Начальная и конечная точки поездки должны различаться.');
         }
 
@@ -43,6 +44,13 @@ final class RouteLog
         }
 
         return $this->previous->destination->location;
+    }
+
+    public function assertDepartureUnchanged(Location $expected): void
+    {
+        if (!$this->departure()->hasSameSnapshot($expected)) {
+            throw new AppException('Нельзя перестроить маршрут: изменится отправление ручной поездки. Исправьте её явно.');
+        }
     }
 
     public function distanceInKilometers(): int

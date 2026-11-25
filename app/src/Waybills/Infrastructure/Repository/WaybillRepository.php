@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Waybills\Infrastructure\Repository;
 
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Repository\PaginationResult;
 use App\Shared\Infrastructure\Database\DBAL\ExactDateTimeType;
 use App\Shared\Infrastructure\Exception\AppException;
@@ -19,6 +20,7 @@ use App\Waybills\Domain\Repository\WaybillRepositoryInterface;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
@@ -88,6 +90,9 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
             // После отката flush больше не соответствует данным БД.
             if ($flushed) {
                 $this->em->close();
+            }
+            if ($exception instanceof DeadlockException) {
+                throw new AppException('Не удалось сохранить путевой лист из-за одновременного изменения. Попробуйте ещё раз.', previous: $exception);
             }
             throw $exception;
         }
@@ -274,6 +279,19 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
         return $waybill;
     }
 
+    public function hasExistingTripIds(StringCollection $ids): bool
+    {
+        if (0 === $ids->count()) {
+            return false;
+        }
+
+        return false !== $this->connection->fetchOne(
+            'SELECT 1 FROM waybills_route_log WHERE id IN (?) LIMIT 1',
+            [$ids->getList()],
+            [ArrayParameterType::STRING],
+        );
+    }
+
     public function findByFilter(WaybillFilter $filter): PaginationResult
     {
         $where = [];
@@ -309,9 +327,9 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
         return new PaginationResult($items, $total);
     }
 
-    public function findPredecessor(Waybill $waybill): ?RouteLog
+    public function findPredecessor(Waybill|Vehicle $source): ?RouteLog
     {
-        [, $predecessor] = $this->readDraftBoundary($waybill);
+        [, $predecessor] = $this->readDraftBoundary($source);
         if (null === $predecessor) {
             return null;
         }
@@ -345,9 +363,11 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
     }
 
     /** @return array{list<string>, array<string, mixed>|null} */
-    private function readDraftBoundary(Waybill $waybill): array
+    private function readDraftBoundary(Waybill|Vehicle $source): array
     {
-        $rows = $this->connection->fetchAllAssociative('SELECT id, previous_id, draft_waybill_id, occurred_at, location FROM waybills_route_log WHERE vehicle_id = ?', [$waybill->vehicleId()]);
+        $vehicleId = $source instanceof Waybill ? $source->vehicleId() : $source->getId();
+        $draftId = $source instanceof Waybill ? $source->getId() : null;
+        $rows = $this->connection->fetchAllAssociative('SELECT id, previous_id, draft_waybill_id, occurred_at, location FROM waybills_route_log WHERE vehicle_id = ?', [$vehicleId]);
         $next = [];
         foreach ($rows as $row) {
             $key = $row['previous_id'] ?? '';
@@ -367,9 +387,9 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
                     throw new AppException('Изменение затрагивает утверждённую историю поездок.');
                 }
                 $predecessor = $current;
-            } elseif ($current['draft_waybill_id'] === $waybill->getId()) {
+            } elseif (null !== $draftId && $current['draft_waybill_id'] === $draftId) {
                 $draftIds[] = (string) $current['id'];
-            } else {
+            } elseif (null !== $draftId) {
                 throw new AppException('Журнал содержит поездки другого черновика.');
             }
             $current = $next[$current['id']] ?? null;
@@ -393,7 +413,7 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
         }
         if (null !== $predecessor && null !== $previous) {
             $location = Location::fromArray(json_decode((string) $predecessor['location'], true, flags: JSON_THROW_ON_ERROR));
-            if (!$location->equals($previous->destination->location) || ExactDateTimeType::parse((string) $predecessor['occurred_at']) != $previous->date) {
+            if (!$location->samePlace($previous->destination->location) || ExactDateTimeType::parse((string) $predecessor['occurred_at']) != $previous->date) {
                 throw new AppException('Предыдущая поездка изменилась. Обновите данные и повторите операцию.');
             }
         }
@@ -421,7 +441,14 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
                     throw new AppException('Поездка изменилась. Обновите данные и повторите операцию.');
                 }
             } else {
-                $this->connection->insert('waybills_route_log', ['id' => $id, 'vehicle_id' => $waybill->vehicleId(), 'draft_waybill_id' => $waybill->getId(), ...$values]);
+                $count = $this->connection->executeStatement(<<<'SQL'
+                    INSERT INTO waybills_route_log (id, vehicle_id, draft_waybill_id, previous_id, occurred_at, location, enterprise, distance, origin)
+                    VALUES (:id, :vehicle_id, :draft_waybill_id, :previous_id, :occurred_at, :location, :enterprise, :distance, :origin)
+                    ON CONFLICT (id) DO NOTHING
+                    SQL, ['id' => $id, 'vehicle_id' => $waybill->vehicleId(), 'draft_waybill_id' => $waybill->getId(), ...$values]);
+                if (1 !== $count) {
+                    throw new AppException('Поездка не принадлежит этому черновику.');
+                }
             }
         }
         $removed = array_values(array_diff($draftIds, $newIds));

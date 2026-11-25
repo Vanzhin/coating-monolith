@@ -30,4 +30,50 @@ final class RouteSettingsTest extends TestCase
         $this->expectException(AppException::class);
         new RouteSettings(new Location('База'), new Destination(new Location('База'), 1));
     }
+
+    public function test_restores_coordinates_from_a_single_matching_route_location(): void
+    {
+        $settings = new RouteSettings(
+            new Location('База', latitude: 56.8, longitude: 60.6),
+            new Destination(new Location('Завод', latitude: 56.9, longitude: 60.7), 10),
+        );
+
+        self::assertSame(56.8, $settings->restoreCoordinatesForUnchangedLocation(new Location('База'))->latitude);
+        self::assertSame(56.9, $settings->restoreCoordinatesForUnchangedLocation(new Location('Завод'))->latitude);
+        self::assertNull($settings->restoreCoordinatesForUnchangedLocation(new Location('Гостиница'))->latitude);
+    }
+
+    public function test_does_not_guess_coordinates_when_route_settings_are_ambiguous(): void
+    {
+        $settings = new RouteSettings(
+            new Location('База'),
+            new Destination(new Location('Завод', latitude: 56.9, longitude: 60.7), 10),
+            new Destination(new Location('Завод', latitude: 57.0, longitude: 61.0), 12),
+        );
+
+        self::assertNull($settings->restoreCoordinatesForUnchangedLocation(new Location('Завод'))->latitude);
+    }
+
+    public function test_distinguishes_enterprises_at_the_same_legacy_address(): void
+    {
+        $settings = new RouteSettings(
+            new Location('База'),
+            new Destination(new Location('Завод', enterprise: 'Первое', latitude: 56.9, longitude: 60.7), 10),
+            new Destination(new Location('Завод', enterprise: 'Второе', latitude: 57.0, longitude: 61.0), 12),
+        );
+
+        self::assertSame(57.0, $settings->restoreCoordinatesForUnchangedLocation(new Location('Завод', enterprise: 'Второе'))->latitude);
+        self::assertNull($settings->restoreCoordinatesForUnchangedLocation(new Location('Завод', enterprise: 'Третье'))->latitude);
+    }
+
+    public function test_uses_consistent_coordinates_from_duplicate_legacy_locations(): void
+    {
+        $settings = new RouteSettings(
+            new Location('База'),
+            new Destination(new Location('Завод', latitude: 56.9, longitude: 60.7), 10),
+            new Destination(new Location('Завод', latitude: 56.9, longitude: 60.7), 12),
+        );
+
+        self::assertSame(56.9, $settings->restoreCoordinatesForUnchangedLocation(new Location('Завод'))->latitude);
+    }
 }

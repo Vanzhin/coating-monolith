@@ -1,18 +1,39 @@
 <div data-waybill-form-target="tripRow" data-row-label="Поездка">
-    <div class="p-3 mb-3 rounded-3 bg-body">
-    <div class="d-flex justify-content-between align-items-center mb-3"><strong data-role="row-title">Поездка {{ number }}</strong><button type="button" class="btn btn-sm btn-outline-danger" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash"></i></button></div>
-    <input type="hidden" name="trips[{{ index }}][id]" value="{{ trip.id }}">
-    <div class="row g-3">
-        <div class="col-12"><span class="form-label">Откуда</span><div data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house]|filter(value => value)|join(', ') }}{% if departure.enterprise|default('') %}, {{ departure.enterprise }}{% endif %}</div></div>
-        <div class="col-md-6"><label class="form-label" for="trip-date-{{ index }}">Дата и время</label><input id="trip-date-{{ index }}" name="trips[{{ index }}][date]" value="{{ trip.date }}" class="form-control" type="datetime-local" step="1"></div>
-        <div class="col-md-6"><label class="form-label" for="trip-distance-{{ index }}">Расстояние, км</label><input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="form-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate"></div>
-        <div class="col-md-6"><label class="form-label" for="trip-country-{{ index }}">Страна</label><input id="trip-country-{{ index }}" name="trips[{{ index }}][country]" value="{{ trip.country }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
-        <div class="col-md-6"><label class="form-label" for="trip-city-{{ index }}">Город</label><input id="trip-city-{{ index }}" name="trips[{{ index }}][city]" value="{{ trip.city }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
-        <div class="col-md-6"><label class="form-label" for="trip-street-{{ index }}">Улица</label><input id="trip-street-{{ index }}" name="trips[{{ index }}][street]" value="{{ trip.street }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
-        <div class="col-md-6"><label class="form-label" for="trip-house-{{ index }}">Дом</label><input id="trip-house-{{ index }}" name="trips[{{ index }}][house]" value="{{ trip.house }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
-        <div class="col-12"><label class="form-label" for="trip-enterprise-{{ index }}">Предприятие</label><input id="trip-enterprise-{{ index }}" name="trips[{{ index }}][enterprise]" value="{{ trip.enterprise }}" class="form-control" data-action="input->waybill-form#refreshTrips"></div>
-    </div>
-    <div class="d-flex justify-content-center mb-3" data-role="trip-insertion" {% if not insertable %}hidden{% endif %}>
-        <button type="button" class="btn btn-soft-success btn-sm" data-action="click->waybill-form#insert"><i class="bi bi-plus-lg me-1"></i>Вставить поездку</button>
+    {% set automatic = trip.origin|default('manual') == 'automatic' %}
+    <div class="row g-0">
+        <div class="col-auto" aria-hidden="true"><div class="d-flex flex-column align-items-center h-100 me-2"><i class="bi bi-circle-fill text-primary small"></i><span class="border-start border-2 flex-grow-1" data-role="route-line" {% if not insertable %}hidden{% endif %}></span></div></div>
+        <div class="col position-relative">
+            <details class="p-3 mb-2 rounded-3 bg-body" data-action="input->waybill-form#refreshTripSummary change->waybill-form#refreshTripSummary" {% if number == 1 %}open{% endif %}>
+                <summary class="pe-5">
+                    <span class="text-body-secondary small"><span data-role="trip-date">{{ trip.date ?: 'Дата не указана' }}</span> · <span data-role="trip-distance">{{ trip.distance ? trip.distance ~ ' км' : 'Расстояние не указано' }}</span> · <i class="bi {{ automatic ? 'bi-arrow-repeat' : 'bi-pencil' }}" title="{{ automatic ? 'Автоматическая поездка' : 'Ручная поездка' }}" aria-label="{{ automatic ? 'Автоматическая поездка' : 'Ручная поездка' }}"></i> {{ automatic ? 'Автоматическая' : 'Ручная' }}</span>
+                    <span class="d-block text-body-secondary" data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house, departure.enterprise|default('')]|filter(value => value)|join(', ') ?: 'Не указана' }}</span>
+                    <strong class="d-block">↓ <span data-role="destination">{{ [trip.country|default(''), trip.city|default(''), trip.street|default(''), trip.house|default(''), trip.enterprise|default('')]|filter(value => value)|join(', ') ?: 'Не указана' }}</span></strong>
+                </summary>
+                <input type="hidden" name="trips[{{ index }}][id]" value="{{ trip.id }}">
+                <input type="hidden" name="trips[{{ index }}][origin]" value="{{ automatic ? 'automatic' : 'manual' }}">
+                <input type="hidden" name="trips[{{ index }}][pairId]" value="{{ trip.pairId|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalDate]" value="{{ trip.originalDate|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalDistance]" value="{{ trip.originalDistance|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalLocationId]" value="{{ trip.originalLocationId|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalCountry]" value="{{ trip.originalCountry|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalCity]" value="{{ trip.originalCity|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalCityType]" value="{{ trip.originalCityType|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalStreet]" value="{{ trip.originalStreet|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalHouse]" value="{{ trip.originalHouse|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalEnterprise]" value="{{ trip.originalEnterprise|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalLatitude]" value="{{ trip.originalLatitude|default('') }}">
+                <input type="hidden" name="trips[{{ index }}][originalLongitude]" value="{{ trip.originalLongitude|default('') }}">
+                <div class="row g-3 mt-1">
+                    <div class="col-12"><span class="form-label">Откуда</span><div data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house]|filter(value => value)|join(', ') }}{% if departure.enterprise|default('') %}, {{ departure.enterprise }}{% endif %}</div></div>
+                    <div class="col-md-6"><label class="form-label" for="trip-date-{{ index }}">Дата</label><input id="trip-date-{{ index }}" name="trips[{{ index }}][date]" value="{{ trip.date }}" class="form-control" type="date"></div>
+                    <div class="col-md-6"><label class="form-label" for="trip-distance-{{ index }}">Расстояние, км</label><input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="form-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate"></div>
+                    {% include 'cabinet/waybill/location/_fields.html.twig' with {name: 'trips[' ~ index ~ ']', location: trip, key: 'trip-' ~ index, idField: 'locationId', inputAction: 'input->waybill-form#refreshTrips', settlementTypes: settlementTypes} %}
+                </div>
+            </details>
+            <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash"></i></button>
+            <div class="mb-2" data-role="trip-insertion" {% if not insertable %}hidden{% endif %}>
+                <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#insert"><i class="bi bi-plus-lg me-1"></i>Добавить поездку</button>
+            </div>
+        </div>
     </div>
 </div>

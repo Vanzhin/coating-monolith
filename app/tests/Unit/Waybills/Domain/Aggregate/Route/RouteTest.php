@@ -15,9 +15,12 @@ use App\Waybills\Domain\Aggregate\Route\RouteLog;
 use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Vehicle\RegistrationNumber;
 use App\Waybills\Domain\Aggregate\Vehicle\Vehicle;
+use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
+use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
 use Brick\Math\BigDecimal;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -265,6 +268,7 @@ final class RouteTest extends TestCase
         $date = new \DateTimeImmutable('2026-01-02');
         self::assertNull($route->locationAt($date));
         self::assertNull($route->last());
+        self::assertNull($route->predecessor());
         self::assertSame(0, $route->distanceAt($date));
         self::assertSame(123, $route->odometerAt($date, 123));
     }
@@ -317,7 +321,7 @@ final class RouteTest extends TestCase
         $draft->setTrips($manual);
         $route = $draft->route();
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-02'), new \DateTimeImmutable('2026-01-04'));
-        $draft->reviseDraft($period, null, null, $route);
+        $draft->reviseDraft($period, null, new Fuel((string) $draft->fuelStart(), 30, new Refuelings(), 'АИ-95'), $route);
         self::assertSame($period, $draft->period());
         self::assertSame([$manual], $draft->trips());
 
@@ -388,6 +392,209 @@ final class RouteTest extends TestCase
                 self::assertSame([$first, $last], iterator_to_array($route->logs(), false));
             }
         }
+    }
+
+    public function test_route_reads_predecessor_from_first_log(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $first = $this->linked($previous, '2026-01-01', 'В');
+        $route = new Route($this->vehicle(), $first, $first);
+
+        self::assertSame($previous, $route->predecessor());
+    }
+
+    public function test_empty_route_keeps_predecessor_when_logs_are_inserted_and_removed(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $route = new Route($this->vehicle(), predecessor: $previous);
+        $trip = $this->linked($previous, '2026-01-01', 'В');
+
+        self::assertSame($previous, $route->predecessor());
+        self::assertSame([], iterator_to_array($route->logs(), false));
+
+        $filled = $route->insertAfter($previous, $trip);
+        self::assertSame($previous, $filled->predecessor());
+        self::assertSame([$trip], iterator_to_array($filled->logs(), false));
+
+        $emptied = $filled->replaceSegment($trip, $trip);
+        self::assertSame($previous, $emptied->predecessor());
+        self::assertSame([], iterator_to_array($emptied->logs(), false));
+    }
+
+    public function test_route_rejects_predecessor_from_another_vehicle(): void
+    {
+        $otherVehicle = new Vehicle(Uuid::v7(), 'Другая модель', new RegistrationNumber('B123BC77'), new \DateTimeImmutable('2025-01-01'), new Location('А'), 0, BigDecimal::zero());
+        $otherTrip = new RouteLog(Uuid::v7(), $otherVehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+
+        $this->expectException(AppException::class);
+        new Route($this->vehicle(), predecessor: $otherTrip);
+    }
+
+    public function test_route_rejects_mismatched_predecessor(): void
+    {
+        $previous = $this->linked(null, '2025-12-31', 'Б');
+        $otherPrevious = $this->linked(null, '2025-12-31', 'В');
+        $first = $this->linked($previous, '2026-01-01', 'Г');
+
+        $this->expectException(AppException::class);
+        new Route($this->vehicle(), $first, $first, $otherPrevious);
+    }
+
+    #[DataProvider('changedDepartureSnapshots')]
+    public function test_automatic_insertion_rejects_a_changed_manual_departure_snapshot(Location $original, Location $changed): void
+    {
+        $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+        $manual = $this->linked($first, '2026-01-03', 'Г');
+        $route = new Route($this->vehicle(), $first, $manual);
+        $out = $this->linked($first, '2026-01-02', 'В', origin: RouteLogOrigin::Automatic);
+        $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($changed, 1), RouteLogOrigin::Automatic);
+        self::assertTrue($original->samePlace($changed));
+
+        try {
+            $route->insertAfter($first, $out, $back);
+            self::fail('Автоматическая вставка не должна менять снимок отправления.');
+        } catch (AppException $exception) {
+            self::assertSame('Нельзя перестроить маршрут: изменится отправление ручной поездки. Исправьте её явно.', $exception->getMessage());
+            self::assertSame([$first, $manual], iterator_to_array($route->logs(), false));
+            self::assertSame($original, $manual->departure());
+        }
+    }
+
+    /** @return iterable<string, array{Location, Location}> */
+    public static function changedDepartureSnapshots(): iterable
+    {
+        $snapshot = [
+            'id' => '018f0000-0000-7000-8000-000000000001',
+            'country' => 'Россия',
+            'city' => 'Москва',
+            'street' => 'Лесная',
+            'house' => '1',
+            'enterprise' => 'Склад',
+            'latitude' => 55.7,
+            'longitude' => 37.6,
+        ];
+        $legacy = array_replace($snapshot, ['id' => null]);
+
+        yield 'address with the same id' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['house' => '2']))];
+        yield 'enterprise with the same id' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['enterprise' => 'Офис']))];
+        yield 'coordinates with the same id' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['latitude' => 55.8]))];
+        yield 'id removed' => [Location::fromArray($snapshot), Location::fromArray($legacy)];
+        yield 'id added to legacy snapshot' => [Location::fromArray($legacy), Location::fromArray($snapshot)];
+        yield 'legacy enterprise' => [Location::fromArray($legacy), Location::fromArray(array_replace($legacy, ['enterprise' => 'Офис']))];
+        yield 'legacy coordinates' => [Location::fromArray($legacy), Location::fromArray(array_replace($legacy, ['longitude' => 37.7]))];
+    }
+
+    public function test_automatic_insertion_accepts_an_unchanged_manual_departure_snapshot(): void
+    {
+        foreach ([Uuid::v7(), null] as $id) {
+            $original = new Location('Россия', 'Москва', 'Лесная', '1', 'Склад', 55.7, 37.6, $id);
+            $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+            $manual = $this->linked($first, '2026-01-03', 'Г');
+            $route = new Route($this->vehicle(), $first, $manual);
+            $out = $this->linked($first, '2026-01-02', 'В', origin: RouteLogOrigin::Automatic);
+            $equivalent = Location::fromArray($original->jsonSerialize());
+            $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($equivalent, 1), RouteLogOrigin::Automatic);
+
+            $updated = iterator_to_array($route->insertAfter($first, $out, $back)->logs(), false);
+
+            self::assertSame([$first, $out, $back], array_slice($updated, 0, 3));
+            self::assertSame($manual->id, $updated[3]->id);
+            self::assertSame($original->jsonSerialize(), $updated[3]->departure()->jsonSerialize());
+            self::assertSame([$first, $manual], iterator_to_array($route->logs(), false));
+        }
+    }
+
+    #[DataProvider('changedDepartureSnapshots')]
+    public function test_insertion_with_manual_trips_may_change_metadata_of_the_same_departure_place(Location $original, Location $changed): void
+    {
+        $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+        $manual = $this->linked($first, '2026-01-03', 'Г');
+        $route = new Route($this->vehicle(), $first, $manual);
+
+        foreach ([
+            [RouteLogOrigin::Manual, RouteLogOrigin::Manual],
+            [RouteLogOrigin::Manual, RouteLogOrigin::Automatic],
+            [RouteLogOrigin::Automatic, RouteLogOrigin::Manual],
+        ] as [$outOrigin, $backOrigin]) {
+            $out = $this->linked($first, '2026-01-02', 'В', origin: $outOrigin);
+            $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($changed, 1), $backOrigin);
+            $updated = iterator_to_array($route->insertAfter($first, $out, $back)->logs(), false);
+
+            self::assertSame($manual->id, $updated[3]->id);
+            self::assertSame($changed, $updated[3]->departure());
+        }
+        self::assertSame([$first, $manual], iterator_to_array($route->logs(), false));
+    }
+
+    #[DataProvider('changedDepartureSnapshots')]
+    public function test_explicit_replacement_may_change_metadata_of_the_same_departure_place(Location $original, Location $changed): void
+    {
+        $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+        $oldOut = $this->linked($first, '2026-01-02', 'В', origin: RouteLogOrigin::Automatic);
+        $oldBack = new RouteLog(Uuid::v7(), $this->vehicle(), $oldOut, $oldOut->date, new Destination($original, 1), RouteLogOrigin::Automatic);
+        $manual = $this->linked($oldBack, '2026-01-03', 'Г');
+        $route = new Route($this->vehicle(), $first, $manual);
+
+        foreach ([RouteLogOrigin::Manual, RouteLogOrigin::Automatic] as $origin) {
+            $out = $this->linked($first, '2026-01-02', 'Д', origin: $origin);
+            $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($changed, 1), $origin);
+            $updated = iterator_to_array($route->replaceSegment($oldOut, $oldBack, $out, $back)->logs(), false);
+
+            self::assertSame($manual->id, $updated[3]->id);
+            self::assertSame($changed, $updated[3]->departure());
+        }
+        self::assertSame([$first, $oldOut, $oldBack, $manual], iterator_to_array($route->logs(), false));
+    }
+
+    #[DataProvider('changedDepartureSnapshots')]
+    public function test_explicit_removal_may_change_metadata_of_the_same_departure_place(Location $original, Location $changed): void
+    {
+        $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+        $out = $this->linked($first, '2026-01-02', 'В');
+        $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($changed, 1), RouteLogOrigin::Manual);
+        $manual = $this->linked($back, '2026-01-03', 'Г');
+        $route = new Route($this->vehicle(), $first, $manual);
+
+        $updated = iterator_to_array($route->replaceSegment($out, $back)->logs(), false);
+
+        self::assertSame($manual->id, $updated[1]->id);
+        self::assertSame($original, $updated[1]->departure());
+        self::assertSame([$first, $out, $back, $manual], iterator_to_array($route->logs(), false));
+    }
+
+    public function test_rewrite_still_rejects_a_different_physical_place_for_all_next_trips(): void
+    {
+        foreach ([RouteLogOrigin::Manual, RouteLogOrigin::Automatic] as $origin) {
+            $first = $this->linked(null, '2026-01-01', 'Б');
+            $next = $this->linked($first, '2026-01-03', 'Г', origin: $origin);
+            $route = new Route($this->vehicle(), $first, $next);
+            $out = $this->linked($first, '2026-01-02', 'В', origin: RouteLogOrigin::Automatic);
+
+            try {
+                $route->insertAfter($first, $out);
+                self::fail('Вставка не должна нарушать физическую связность маршрута.');
+            } catch (AppException $exception) {
+                self::assertSame('Изменение затрагивает следующую поездку. Исправьте её явно.', $exception->getMessage());
+                self::assertSame([$first, $next], iterator_to_array($route->logs(), false));
+            }
+        }
+    }
+
+    public function test_automatic_next_trip_still_uses_physical_place_comparison(): void
+    {
+        $id = Uuid::v7();
+        $original = new Location('Россия', 'Москва', enterprise: 'Склад', id: $id);
+        $changed = new Location('Россия', 'Москва', enterprise: 'Офис', id: $id);
+        $first = new RouteLog(Uuid::v7(), $this->vehicle(), null, new \DateTimeImmutable('2026-01-01'), new Destination($original, 1), RouteLogOrigin::Manual);
+        $next = $this->linked($first, '2026-01-03', 'Г', origin: RouteLogOrigin::Automatic);
+        $route = new Route($this->vehicle(), $first, $next);
+        $out = $this->linked($first, '2026-01-02', 'В', origin: RouteLogOrigin::Automatic);
+        $back = new RouteLog(Uuid::v7(), $this->vehicle(), $out, $out->date, new Destination($changed, 1), RouteLogOrigin::Automatic);
+
+        $updated = iterator_to_array($route->insertAfter($first, $out, $back)->logs(), false);
+
+        self::assertSame($next->id, $updated[3]->id);
+        self::assertSame($changed, $updated[3]->departure());
     }
 
     private function interval(string $from, string $to): DateTimeInterval

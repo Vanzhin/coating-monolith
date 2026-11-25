@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Waybills\Infrastructure\Repository;
 
 use App\Shared\Application\Security\AccessGuard;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
@@ -19,10 +20,14 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000010;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Exception\ForbiddenException;
 use App\Waybills\Application\DTO\TripInput;
+use App\Waybills\Application\Service\AccessControl\LocationAccessControl;
 use App\Waybills\Application\Service\AccessControl\WaybillAccessControl;
+use App\Waybills\Application\Service\LocationCatalog;
 use App\Waybills\Application\Service\RefuelingOperationBuilder;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
@@ -44,6 +49,7 @@ use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
+use App\Waybills\Infrastructure\Repository\LocationRepository;
 use App\Waybills\Infrastructure\Repository\VehicleRepository;
 use App\Waybills\Infrastructure\Repository\WaybillRepository;
 use Brick\Math\BigDecimal;
@@ -85,7 +91,7 @@ final class WaybillConcurrencyTest extends KernelTestCase
         $this->first->executeStatement('SET search_path TO '.$this->schema);
         $this->second->executeStatement('SET search_path TO '.$this->schema);
         $this->second->executeStatement("SET lock_timeout = '100ms'");
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class, Version20261122000000::class, Version20261122000001::class] as $migrationClass) {
             $this->applyMigration($migrationClass);
         }
         $config = static::getContainer()->get(EntityManagerInterface::class)->getConfiguration();
@@ -229,6 +235,42 @@ final class WaybillConcurrencyTest extends KernelTestCase
         self::assertSame(2, (int) $this->first->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
     }
 
+    public function test_trip_id_claimed_after_availability_check_rolls_back_new_draft(): void
+    {
+        $repository = new WaybillRepository($this->secondManager, $this->second);
+        $id = Uuid::v7();
+        self::assertFalse($repository->hasExistingTripIds(new StringCollection((string) $id)));
+
+        $otherVehicle = new Vehicle(Uuid::v7(), 'Другой', new RegistrationNumber('B124CC77'), new \DateTimeImmutable('2025-01-01'), new Location('Другая база'), 0, BigDecimal::zero());
+        $occupied = new RouteLog($id, $otherVehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Чужая точка'), 7, 'Чужое предприятие'), RouteLogOrigin::Manual);
+        $this->first->beginTransaction();
+        $this->firstManager->persist($otherVehicle);
+        $this->firstManager->persist($occupied);
+        $this->firstManager->flush();
+        $this->first->commit();
+        $original = $this->first->fetchAssociative('SELECT * FROM waybills_route_log WHERE id = ?', [(string) $id]);
+        self::assertIsArray($original);
+
+        $vehicle = $this->secondManager->find(Vehicle::class, $this->vehicle->getId());
+        self::assertInstanceOf(Vehicle::class, $vehicle);
+        $draft = $this->draft($vehicle, 1);
+        $trip = new RouteLog($id, $vehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Своя точка'), 5), RouteLogOrigin::Manual);
+        $draft->setTrips($trip);
+
+        try {
+            $repository->add($draft);
+            self::fail('Занятый после проверки UUID должен отклонить сохранение.');
+        } catch (AppException $exception) {
+            self::assertSame('Поездка не принадлежит этому черновику.', $exception->getMessage());
+        }
+
+        self::assertSame(0, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
+        self::assertSame(0, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_route_log WHERE draft_waybill_id = ?', [$draft->getId()]));
+        self::assertSame(1, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_route_log'));
+        self::assertSame($original, $this->first->fetchAssociative('SELECT * FROM waybills_route_log WHERE id = ?', [(string) $id]));
+        self::assertSame(100, (int) $this->first->fetchOne('SELECT current_odometer FROM waybills_vehicle WHERE id = ?', [$vehicle->getId()]));
+    }
+
     public function test_stale_edit_cannot_replace_or_delete_saved_refuelings(): void
     {
         $firstRepo = new WaybillRepository($this->firstManager, $this->first);
@@ -236,7 +278,7 @@ final class WaybillConcurrencyTest extends KernelTestCase
         $id = Uuid::v7();
         $date = new \DateTimeImmutable('2026-01-10 12:00:00');
         $initial = new FuelOperation($id, $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('1'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, null, new RefuelingOperations($initial));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, new Fuel((string) $draft->fuelStart(), 25, new Refuelings(), 'АИ-95'), null, new RefuelingOperations($initial));
         $firstRepo->add($draft);
         $secondRepo = new WaybillRepository($this->secondManager, $this->second);
         $stale = $secondRepo->findOneById($draft->getId());
@@ -244,9 +286,9 @@ final class WaybillConcurrencyTest extends KernelTestCase
 
         $updated = new FuelOperation($id, $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('2.00000000000000000001'), FuelOperationType::Refueling);
         $added = new FuelOperation(Uuid::v7(), $this->vehicle, $date, FuelType::Ai95, BigDecimal::of('3'), FuelOperationType::Refueling);
-        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, null, null, new RefuelingOperations($updated, $added));
+        $draft->reviseDraftWithRefuelingOperations($draft->period(), null, $draft->fuel(), null, new RefuelingOperations($updated, $added));
         $firstRepo->add($draft);
-        $stale->reviseDraftWithRefuelingOperations($stale->period(), null, null, null, new RefuelingOperations());
+        $stale->reviseDraftWithRefuelingOperations($stale->period(), null, $stale->fuel(), null, new RefuelingOperations());
         try {
             $secondRepo->add($stale);
             self::fail('Устаревший лист не должен удалять заправки.');
@@ -297,7 +339,9 @@ final class WaybillConcurrencyTest extends KernelTestCase
             }
         };
         $access = new WaybillAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher);
-        $handler = new UpdateWaybillCommandHandler(new WaybillRepository($this->secondManager, $this->second), new VehicleRepository($registry), $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder());
+        $locations = new LocationCatalog(new LocationRepository($registry), new LocationAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher));
+        $repository = new WaybillRepository($this->secondManager, $this->second);
+        $handler = new UpdateWaybillCommandHandler($repository, new VehicleRepository($registry), $access, new WaybillRouteBuilder($repository), new RefuelingOperationBuilder(), $locations);
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
         $command = new UpdateWaybillCommand($draft->getId(), 1, $period, null, null, true, [], null, new TripInput(null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Назначение'), 1)));
 

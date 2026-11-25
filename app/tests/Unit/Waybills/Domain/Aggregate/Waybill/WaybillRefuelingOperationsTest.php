@@ -38,7 +38,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
         $second = $this->refueling($vehicle, '2026-01-11T18:00:00+03:00', '0.20000000000000000001', FuelType::Ai92);
         $refuelings = new RefuelingOperations($first, $second);
 
-        $sheet->assertRefuelingOperations($sheet->period(), null, $this->route($vehicle), $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
 
         self::assertSame([$first, $second], $refuelings->all());
         self::assertSame('0.30000000000000000001', (string) $refuelings->total());
@@ -56,7 +56,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
             $this->refueling($vehicle, '2026-01-10', '2', FuelType::Ai92),
             $this->refueling($vehicle, '2026-01-11', '3'),
         );
-        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, null, null, $refuelings);
+        $sheet->reviseDraftWithRefuelingOperations($sheet->period(), null, new Fuel(30, 30, new Refuelings(), 'АИ-95'), null, $refuelings);
 
         self::assertSame([FuelType::Ai95, FuelType::Ai92], $sheet->refueledFuelTypes());
     }
@@ -66,7 +66,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
         [$sheet, $vehicle] = $this->draft();
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-10', '12.5'));
 
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
         self::assertSame('12.5', (string) $refuelings->total());
     }
 
@@ -78,7 +78,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('другому автомобилю');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
     }
 
     public function test_rejects_refueling_outside_the_period(): void
@@ -88,7 +88,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('вне периода');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
     }
 
     public function test_rejects_refueling_during_absence(): void
@@ -99,27 +99,27 @@ final class WaybillRefuelingOperationsTest extends TestCase
 
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('период без поездок');
-        $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings, $absence);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings, $absence);
     }
 
-    public function test_rejects_refueling_without_a_nearby_trip_when_route_is_present(): void
+    public function test_accepts_refueling_without_a_nearby_trip_when_route_is_present(): void
     {
         [$sheet, $vehicle] = $this->draft();
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-13', '1'));
 
-        $this->expectException(AppException::class);
-        $this->expectExceptionMessage('поездка текущего листа');
-        $sheet->assertRefuelingOperations($sheet->period(), null, $this->route($vehicle), $refuelings);
+        $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
+
+        self::assertSame('1', (string) $refuelings->total());
     }
 
     public function test_does_not_replace_legacy_total_with_separate_refuelings(): void
     {
         [$sheet, $vehicle] = $this->draft();
-        $legacy = new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95');
+        $legacy = new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95');
         $refuelings = new RefuelingOperations($this->refueling($vehicle, '2026-01-10', '1'));
         $sheet->reviseDraft($sheet->period(), null, $legacy, null);
         try {
-            $sheet->assertRefuelingOperations($sheet->period(), null, null, $refuelings);
+            $sheet->assertRefuelingOperations($sheet->period(), null, $refuelings);
             self::fail('Общая сумма не должна пропасть или задвоиться.');
         } catch (AppException $exception) {
             self::assertStringContainsString('общей сумме', $exception->getMessage());
@@ -153,7 +153,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
     public function test_legacy_refuelings_cannot_be_removed(): void
     {
         [$sheet] = $this->draft();
-        $legacy = new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95');
+        $legacy = new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95');
         $sheet->reviseDraft($sheet->period(), null, $legacy, null);
 
         try {
@@ -169,10 +169,10 @@ final class WaybillRefuelingOperationsTest extends TestCase
     {
         [$sheet] = $this->draft();
         $original = new Refuelings(null, new Refueling(new \DateTimeImmutable('2026-01-10'), new PositiveNumber(5)));
-        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, $original, 'АИ-95'), null);
+        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, $original, 'АИ-95'), null);
 
         try {
-            $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, new Refuelings(new PositiveNumber(6)), 'АИ-95'), null);
+            $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, new Refuelings(new PositiveNumber(6)), 'АИ-95'), null);
             self::fail('Ранее сохранённые заправки нельзя заменить другими данными.');
         } catch (AppException $exception) {
             self::assertStringContainsString('Ранее сохранённые заправки', $exception->getMessage());
@@ -183,7 +183,7 @@ final class WaybillRefuelingOperationsTest extends TestCase
     public function test_revision_accepts_an_equal_copy_of_legacy_refuelings(): void
     {
         [$sheet] = $this->draft();
-        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, null, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
+        $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 30, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
 
         $sheet->reviseDraft($sheet->period(), null, new Fuel(30, 25, new Refuelings(new PositiveNumber(20)), 'АИ-95'), null);
 

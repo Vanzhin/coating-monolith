@@ -51,10 +51,13 @@ export default class extends Controller {
         this._loadingMore = false;
 
         // hidden с id — рядом с инпутом (тот же родитель → уходит в форму). Элемент НЕ переносим.
-        this._hidden = document.createElement('input');
-        this._hidden.type = 'hidden';
-        this._hidden.name = this.hiddenNameValue;
-        this.element.insertAdjacentElement('afterend', this._hidden);
+        this._hidden = Array.from(this.element.parentElement.querySelectorAll('input[type="hidden"]')).find(input => input.name === this.hiddenNameValue);
+        if (!this._hidden) {
+            this._hidden = document.createElement('input');
+            this._hidden.type = 'hidden';
+            this._hidden.name = this.hiddenNameValue;
+            this.element.insertAdjacentElement('afterend', this._hidden);
+        }
 
         // title-компаньон (<name>Title): бэк восстанавливает чип из формы при ошибке валидации.
         // Для массивных полей (name="x[]") ставим Title ПЕРЕД скобками (x[] → xTitle[]) — иначе
@@ -234,6 +237,7 @@ export default class extends Controller {
         this.element.value = item[this.mainFieldValue] ?? '';
         this._hidden.value = item.id;
         this._hiddenTitle.value = item[this.mainFieldValue] ?? '';
+        this.element.dispatchEvent(new CustomEvent('typeahead:selected', { detail: item, bubbles: true }));
         this._clearHint();
         this._hide();
         this._emitChange();

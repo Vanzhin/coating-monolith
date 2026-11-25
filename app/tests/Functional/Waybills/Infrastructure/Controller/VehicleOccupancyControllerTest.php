@@ -15,6 +15,8 @@ use App\Shared\Infrastructure\Database\Migrations\Version20261121000007;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000008;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000009;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000010;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000000;
+use App\Shared\Infrastructure\Database\Migrations\Version20261122000001;
 use App\Users\Domain\Entity\User;
 use App\Users\Domain\Entity\ValueObject\Email;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
@@ -49,7 +51,7 @@ final class VehicleOccupancyControllerTest extends WebTestCase
         $connection->executeStatement('CREATE TEMPORARY TABLE user_user (ulid VARCHAR(26) PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255), roles JSON NOT NULL, is_active BOOLEAN NOT NULL)');
         $connection->executeStatement('CREATE TEMPORARY TABLE user_channel (id UUID PRIMARY KEY, owner_id VARCHAR(26) NOT NULL REFERENCES user_user(ulid), type VARCHAR(100) NOT NULL, value TEXT NOT NULL, is_verified BOOLEAN NOT NULL, verified_at TIMESTAMP(0) WITHOUT TIME ZONE)');
         $connection->executeStatement('CREATE TEMPORARY TABLE notification (id UUID PRIMARY KEY, owner_id VARCHAR(26) NOT NULL, is_read BOOLEAN NOT NULL)');
-        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class] as $migrationClass) {
+        foreach ([Version20261121000000::class, Version20261121000001::class, Version20261121000002::class, Version20261121000003::class, Version20261121000004::class, Version20261121000005::class, Version20261121000006::class, Version20261121000007::class, Version20261121000008::class, Version20261121000009::class, Version20261121000010::class, Version20261122000000::class, Version20261122000001::class] as $migrationClass) {
             $migration = new $migrationClass($connection, new NullLogger());
             $migration->up(new Schema());
             foreach ($migration->getSql() as $query) {
