@@ -48,6 +48,6 @@ final readonly class RouteSettings
             return $location->withCoordinatesFromUnchangedAddress($first);
         }
 
-        return [] === $sameEnterprise && 1 === count($matches) ? $location->withCoordinatesFromUnchangedAddress($matches[0]) : $location;
+        return 1 === count($matches) ? $location->withCoordinatesFromUnchangedAddress($matches[0]) : $location;
     }
 }
