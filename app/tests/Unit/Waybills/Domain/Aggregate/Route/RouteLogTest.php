@@ -117,6 +117,35 @@ final class RouteLogTest extends TestCase
         self::assertSame($first->destination->location, $changed->departure());
     }
 
+    public function test_assert_departure_unchanged_accepts_an_equivalent_snapshot(): void
+    {
+        $vehicle = $this->vehicle();
+        $location = new Location('Россия', 'Москва', 'Лесная', '1', 'Склад', 55.7, 37.6, Uuid::v7());
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination($location, 1), RouteLogOrigin::Automatic);
+        $manual = new RouteLog(Uuid::v7(), $vehicle, $previous, new \DateTimeImmutable('2026-01-02'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+        $expected = Location::fromArray($location->jsonSerialize());
+
+        $manual->assertDepartureUnchanged($expected);
+
+        self::assertNotSame($location, $expected);
+        self::assertSame($location, $manual->departure());
+    }
+
+    public function test_assert_departure_unchanged_rejects_changed_metadata_of_the_same_place(): void
+    {
+        $vehicle = $this->vehicle();
+        $id = Uuid::v7();
+        $location = new Location('Россия', 'Москва', enterprise: 'Склад', id: $id);
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-01'), new Destination($location, 1), RouteLogOrigin::Automatic);
+        $manual = new RouteLog(Uuid::v7(), $vehicle, $previous, new \DateTimeImmutable('2026-01-02'), new Destination(new Location('Б'), 1), RouteLogOrigin::Manual);
+        $expected = new Location('Россия', 'Москва', enterprise: 'Офис', id: $id);
+        self::assertTrue($manual->departure()->samePlace($expected));
+
+        $this->expectException(AppException::class);
+        $this->expectExceptionMessage('Нельзя перестроить маршрут: изменится отправление ручной поездки. Исправьте её явно.');
+        $manual->assertDepartureUnchanged($expected);
+    }
+
     private function vehicle(string $initialAt = '2025-01-01'): Vehicle
     {
         return new Vehicle(Uuid::v7(), 'Модель', new RegistrationNumber('A123BC77'), new \DateTimeImmutable($initialAt), new Location('А'), 100, BigDecimal::of('20'));

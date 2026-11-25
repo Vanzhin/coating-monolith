@@ -263,11 +263,13 @@ final readonly class Route
     private function rewrite(array $logs, int $offset, int $length, ?RouteLog $previous, RouteLog ...$replacement): self
     {
         $this->assertAutomaticTripsDoNotReplaceManual(array_slice($logs, $offset, $length), ...$replacement);
+        $isAutomaticInsertion = 0 === $length && [] !== $replacement;
         $tail = $previous;
         foreach ($replacement as $log) {
             if ($log->vehicle->getId() !== $this->vehicle->getId() || $log->previous !== $tail) {
                 throw new AppException('Новые поездки должны продолжать выбранную цепочку автомобиля.');
             }
+            $isAutomaticInsertion = $isAutomaticInsertion && RouteLogOrigin::Automatic === $log->origin;
             $tail = $log;
         }
 
@@ -276,6 +278,9 @@ final readonly class Route
             $newDeparture = $tail?->destination->location ?? $this->vehicle->initialLocation();
             if (!$next->departure()->samePlace($newDeparture)) {
                 throw new AppException('Изменение затрагивает следующую поездку. Исправьте её явно.');
+            }
+            if ($isAutomaticInsertion && RouteLogOrigin::Manual === $next->origin) {
+                $next->assertDepartureUnchanged($newDeparture);
             }
         }
 

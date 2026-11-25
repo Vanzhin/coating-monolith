@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Waybills\Infrastructure\Repository;
 
 use App\Shared\Application\Security\AccessGuard;
+use App\Shared\Domain\Aggregate\Collection\StringCollection;
 use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use App\Shared\Domain\Security\AuthUserInterface;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
@@ -234,6 +235,42 @@ final class WaybillConcurrencyTest extends KernelTestCase
         self::assertSame(2, (int) $this->first->fetchOne('SELECT version FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
     }
 
+    public function test_trip_id_claimed_after_availability_check_rolls_back_new_draft(): void
+    {
+        $repository = new WaybillRepository($this->secondManager, $this->second);
+        $id = Uuid::v7();
+        self::assertFalse($repository->hasExistingTripIds(new StringCollection((string) $id)));
+
+        $otherVehicle = new Vehicle(Uuid::v7(), 'Другой', new RegistrationNumber('B124CC77'), new \DateTimeImmutable('2025-01-01'), new Location('Другая база'), 0, BigDecimal::zero());
+        $occupied = new RouteLog($id, $otherVehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Чужая точка'), 7, 'Чужое предприятие'), RouteLogOrigin::Manual);
+        $this->first->beginTransaction();
+        $this->firstManager->persist($otherVehicle);
+        $this->firstManager->persist($occupied);
+        $this->firstManager->flush();
+        $this->first->commit();
+        $original = $this->first->fetchAssociative('SELECT * FROM waybills_route_log WHERE id = ?', [(string) $id]);
+        self::assertIsArray($original);
+
+        $vehicle = $this->secondManager->find(Vehicle::class, $this->vehicle->getId());
+        self::assertInstanceOf(Vehicle::class, $vehicle);
+        $draft = $this->draft($vehicle, 1);
+        $trip = new RouteLog($id, $vehicle, null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Своя точка'), 5), RouteLogOrigin::Manual);
+        $draft->setTrips($trip);
+
+        try {
+            $repository->add($draft);
+            self::fail('Занятый после проверки UUID должен отклонить сохранение.');
+        } catch (AppException $exception) {
+            self::assertSame('Поездка не принадлежит этому черновику.', $exception->getMessage());
+        }
+
+        self::assertSame(0, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_waybill WHERE id = ?', [$draft->getId()]));
+        self::assertSame(0, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_route_log WHERE draft_waybill_id = ?', [$draft->getId()]));
+        self::assertSame(1, (int) $this->first->fetchOne('SELECT COUNT(*) FROM waybills_route_log'));
+        self::assertSame($original, $this->first->fetchAssociative('SELECT * FROM waybills_route_log WHERE id = ?', [(string) $id]));
+        self::assertSame(100, (int) $this->first->fetchOne('SELECT current_odometer FROM waybills_vehicle WHERE id = ?', [$vehicle->getId()]));
+    }
+
     public function test_stale_edit_cannot_replace_or_delete_saved_refuelings(): void
     {
         $firstRepo = new WaybillRepository($this->firstManager, $this->first);
@@ -303,7 +340,8 @@ final class WaybillConcurrencyTest extends KernelTestCase
         };
         $access = new WaybillAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher);
         $locations = new LocationCatalog(new LocationRepository($registry), new LocationAccessControl(static::getContainer()->get(AccessGuard::class), $fetcher));
-        $handler = new UpdateWaybillCommandHandler(new WaybillRepository($this->secondManager, $this->second), new VehicleRepository($registry), $access, new WaybillRouteBuilder(), new RefuelingOperationBuilder(), $locations);
+        $repository = new WaybillRepository($this->secondManager, $this->second);
+        $handler = new UpdateWaybillCommandHandler($repository, new VehicleRepository($registry), $access, new WaybillRouteBuilder($repository), new RefuelingOperationBuilder(), $locations);
         $period = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31'));
         $command = new UpdateWaybillCommand($draft->getId(), 1, $period, null, null, true, [], null, new TripInput(null, new \DateTimeImmutable('2026-01-10'), new Destination(new Location('Назначение'), 1)));
 

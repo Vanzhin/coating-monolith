@@ -103,6 +103,13 @@ final readonly class Location implements \JsonSerializable
         return $this->latitude === $other->latitude && $this->longitude === $other->longitude;
     }
 
+    public function hasSameSnapshot(self $other): bool
+    {
+        return $this->hasSameIdentity($other)
+            && $this->hasSameDescription($other)
+            && $this->hasSameCoordinates($other);
+    }
+
     public function withId(?Uuid $id): self
     {
         return new self($this->country, $this->city, $this->street, $this->house, $this->enterprise, $this->latitude, $this->longitude, $id);

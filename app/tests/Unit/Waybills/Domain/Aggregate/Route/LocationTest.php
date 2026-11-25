@@ -81,6 +81,46 @@ final class LocationTest extends TestCase
         self::assertFalse($location->samePlace(new Location('Россия', 'Екаетринбург')));
     }
 
+    #[DataProvider('snapshots')]
+    public function test_compares_the_entire_snapshot(Location $original, Location $other, bool $expected): void
+    {
+        self::assertSame($expected, $original->hasSameSnapshot($other));
+        self::assertSame($expected, $other->hasSameSnapshot($original));
+    }
+
+    /** @return iterable<string, array{Location, Location, bool}> */
+    public static function snapshots(): iterable
+    {
+        $snapshot = [
+            'id' => '018f0000-0000-7000-8000-000000000001',
+            'country' => 'Россия',
+            'city' => ['name' => 'Москва', 'type' => 'city'],
+            'street' => 'Лесная',
+            'house' => '1',
+            'enterprise' => 'Склад',
+            'latitude' => 55.7,
+            'longitude' => 37.6,
+        ];
+        $legacy = array_replace($snapshot, ['id' => null]);
+
+        yield 'identical snapshot' => [Location::fromArray($snapshot), Location::fromArray($snapshot), true];
+        yield 'different id' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['id' => '018f0000-0000-7000-8000-000000000002'])), false];
+        yield 'missing id' => [Location::fromArray($snapshot), Location::fromArray($legacy), false];
+        yield 'legacy snapshot' => [Location::fromArray($legacy), Location::fromArray($legacy), true];
+        yield 'country' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['country' => 'Беларусь'])), false];
+        yield 'city name' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['city' => ['name' => 'Минск', 'type' => 'city']])), false];
+        yield 'city type' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['city' => ['name' => 'Москва', 'type' => 'village']])), false];
+        yield 'missing city' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['city' => null])), false];
+        yield 'street' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['street' => 'Новая'])), false];
+        yield 'house' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['house' => '2'])), false];
+        yield 'enterprise' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['enterprise' => 'Офис'])), false];
+        yield 'latitude' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['latitude' => 55.8])), false];
+        yield 'longitude' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['longitude' => 37.7])), false];
+        yield 'missing coordinates' => [Location::fromArray($snapshot), Location::fromArray(array_replace($snapshot, ['latitude' => null, 'longitude' => null])), false];
+        yield 'legacy enterprise' => [Location::fromArray($legacy), Location::fromArray(array_replace($legacy, ['enterprise' => 'Офис'])), false];
+        yield 'legacy coordinates' => [Location::fromArray($legacy), Location::fromArray(array_replace($legacy, ['latitude' => 55.8])), false];
+    }
+
     public function test_restores_coordinates_only_for_the_same_unchanged_address(): void
     {
         $id = Uuid::v7();

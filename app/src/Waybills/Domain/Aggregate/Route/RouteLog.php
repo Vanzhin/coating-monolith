@@ -46,6 +46,13 @@ final class RouteLog
         return $this->previous->destination->location;
     }
 
+    public function assertDepartureUnchanged(Location $expected): void
+    {
+        if (!$this->departure()->hasSameSnapshot($expected)) {
+            throw new AppException('Нельзя перестроить маршрут: изменится отправление ручной поездки. Исправьте её явно.');
+        }
+    }
+
     public function distanceInKilometers(): int
     {
         return $this->destination->distance;
