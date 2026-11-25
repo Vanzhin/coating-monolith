@@ -43,8 +43,9 @@ final readonly class CreateWaybillCommandHandler implements CommandHandlerInterf
         $number = $this->waybills->nextNumber($this->access->currentUserId());
         $waybill = Waybill::createDraft(Uuid::v7(), $number, $vehicle, new DateTimeInterval($command->period->from(), $command->period->to()));
         $waybill->assertInitialReadingsMatchEntered($command->expectedOdometerStart, $command->expectedFuelStart);
-        $trips = $this->locations->resolveTrips($waybill, ...$command->trips);
-        $route = $this->routes->build($waybill, $this->waybills->findPredecessor($waybill), $command->routePresent, ...$trips);
+        $previous = $this->waybills->findPredecessor($waybill);
+        $trips = $this->locations->resolveTrips($waybill, $previous, ...$command->trips);
+        $route = $this->routes->build($waybill, $previous, $command->routePresent, ...$trips);
         $operations = $this->refuelings->build($waybill, $command->refuelings);
         $waybill->reviseDraftWithRefuelingOperations($command->period, $command->odometerEnd, $command->fuel, $route, $operations, ...$command->absences);
         $this->waybills->add($waybill);

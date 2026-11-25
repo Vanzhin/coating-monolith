@@ -8,6 +8,7 @@ use App\Shared\Domain\Audit\TrackedClassRepositoryInterface;
 use App\Shared\Domain\Security\AuthUserFetcherInterface;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Audit\CachedAuditPolicy;
+use App\Shared\Infrastructure\Database\DBAL\ExactDateTimeType;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000000;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000001;
 use App\Shared\Infrastructure\Database\Migrations\Version20261121000002;
@@ -39,12 +40,14 @@ use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Domain\Aggregate\Vehicle\RegistrationNumber;
 use App\Waybills\Domain\Aggregate\Vehicle\Vehicle;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
+use App\Waybills\Infrastructure\Repository\WaybillRepository;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -224,6 +227,7 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
         $origins = $this->connection->fetchAllKeyValue('SELECT id, origin FROM pg_temp.waybills_route_log');
         self::assertCount(4, $origins);
+        self::assertEqualsCanonicalizing(array_column($input['trips'], 'id'), array_keys($origins));
         foreach ($origins as $id => $origin) {
             self::assertSame(isset($editedIds[$id]) ? 'manual' : 'automatic', $origin);
         }
@@ -265,9 +269,410 @@ final class WaybillControllerTest extends WebTestCase
         self::assertCount(2, $crawler->filter('#trip-rows input[name$="[origin]"][value="automatic"]'));
         unset($input['action']);
         $input['trips'] = $this->postedTrips($crawler);
+        $automaticIds = array_column(array_filter($input['trips'], static fn (array $trip): bool => 'automatic' === $trip['origin']), 'id');
+        self::assertCount(2, array_diff($automaticIds, array_keys($updatedOrigins)));
         $this->client->request('POST', $showUrl.'/edit', $input);
         self::assertResponseRedirects($showUrl);
+        self::assertEqualsCanonicalizing(array_column($input['trips'], 'id'), $this->connection->fetchFirstColumn('SELECT id FROM pg_temp.waybills_route_log'));
         self::assertGreaterThanOrEqual(1, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE location->>'id' = ? AND location->>'latitude' IS NULL", [(string) $locationId]));
+    }
+
+    #[DataProvider('foreignTripRequests')]
+    public function test_foreign_trip_id_is_rejected_without_changing_saved_data(bool $edit, bool $fill, string $origin): void
+    {
+        $createUrl = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $createUrl);
+        self::assertResponseIsSuccessful();
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $vehicle->driver()->replaceDestinations(new Destination(new Location('Россия', 'Плановый клиент'), 15));
+        $otherDriver = new DriverProfile(Uuid::v7(), 'other-driver', new DriverDetails('Другой водитель', '1234567890', new \DateTimeImmutable('2020-01-01'), '11223344595'), new Location('Россия', 'Чужая база'));
+        $otherVehicle = new Vehicle(Uuid::v7(), 'Секретная модель', new RegistrationNumber('B124CC77'), new \DateTimeImmutable('2025-01-01'), new Location('Россия', 'Чужая база'), 0, BigDecimal::zero());
+        $otherVehicle->enter($otherDriver);
+        $em->persist($otherDriver);
+        $em->persist($otherVehicle);
+        $em->flush();
+
+        $foreignDraft = Waybill::createDraft(Uuid::v7(), 2, $otherVehicle, new DateTimeInterval(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31 23:59:59')));
+        $foreignTrip = new RouteLog(Uuid::v7(), $otherVehicle, null, new \DateTimeImmutable('2026-01-09'), new Destination(new Location('Россия', 'Секретный склад'), 37), RouteLogOrigin::Manual);
+        $foreignDraft->setTrips($foreignTrip);
+        (new WaybillRepository($em, $this->connection))->add($foreignDraft);
+        $foreignId = (string) $foreignTrip->id;
+        self::assertSame($foreignDraft->getId(), $this->connection->fetchOne('SELECT draft_waybill_id FROM pg_temp.waybills_route_log WHERE id = ?', [$foreignId]));
+        $em->clear();
+
+        $input = $this->creationInput($crawler);
+        $url = $createUrl;
+        if ($edit) {
+            $input['odometerEnd'] = '130';
+            $input['trips'] = [
+                ['id' => '', 'date' => '2026-01-06', 'distance' => '15', 'country' => 'Россия', 'city' => 'Свой клиент'],
+                ['id' => '', 'date' => '2026-01-07', 'distance' => '15', 'country' => 'Россия', 'city' => 'База'],
+            ];
+            $this->client->request('POST', $createUrl, $input);
+            self::assertResponseRedirects();
+            $showUrl = $this->client->getResponse()->headers->get('Location');
+            self::assertNotNull($showUrl);
+            $url = $showUrl.'/edit';
+            $crawler = $this->client->request('GET', $url);
+            self::assertResponseIsSuccessful();
+            $input = [
+                '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
+                'version' => $crawler->filter('input[name="version"]')->attr('value'),
+                'from' => '2026-01-01', 'to' => '2026-01-31', 'odometerEnd' => '130', 'fuelRemaining' => '30',
+                'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+                'trips' => $this->postedTrips($crawler), 'refuelings' => [], 'absences' => [],
+            ];
+        }
+
+        if ('automatic' === $origin) {
+            $input['action'] = 'fill_route';
+            $input['odometerEnd'] = $edit ? '160' : '130';
+            $crawler = $this->client->request('POST', $url, $input);
+            self::assertResponseIsSuccessful();
+            self::assertCount(0, $crawler->filter('.form-alert'));
+            $trips = $this->postedTrips($crawler);
+            $automaticIndexes = array_keys(array_filter($trips, static fn (array $trip): bool => 'automatic' === $trip['origin']));
+            self::assertCount(2, $automaticIndexes);
+            [$first, $second] = $automaticIndexes;
+            self::assertSame($trips[$first]['pairId'], $trips[$second]['pairId']);
+            foreach ($automaticIndexes as $index) {
+                self::assertTrue(Uuid::isValid($trips[$index]['id']));
+                self::assertSame([$trips[$index]['date'], $trips[$index]['distance'], $trips[$index]['country'], $trips[$index]['city']],
+                    [$trips[$index]['originalDate'], $trips[$index]['originalDistance'], $trips[$index]['originalCountry'], $trips[$index]['originalCity']]);
+            }
+
+            // Неподменённая пара полностью заменяется при повторном заполнении.
+            $input['trips'] = $trips;
+            $crawler = $this->client->request('POST', $url, $input);
+            self::assertResponseIsSuccessful();
+            self::assertCount(0, $crawler->filter('.form-alert'));
+            self::assertSame([], array_values(array_intersect([$trips[$first]['id'], $trips[$second]['id']], array_column($this->postedTrips($crawler), 'id'))));
+            $trips[$first]['id'] = $foreignId;
+            $input['trips'] = $trips;
+        } else {
+            $input['odometerEnd'] = $edit ? '145' : '115';
+            $input['trips'][] = [
+                'id' => $foreignId, 'date' => '2026-01-20', 'distance' => '15', 'country' => 'Россия', 'city' => 'Подставленная точка', 'cityType' => 'city',
+                'street' => 'Тестовая', 'house' => '1', 'enterprise' => 'Подставленное предприятие', 'origin' => 'manual',
+                'originalDate' => '2026-01-20', 'originalDistance' => '15', 'originalCountry' => 'Россия', 'originalCity' => 'Подставленная точка', 'originalCityType' => 'city',
+                'originalStreet' => 'Тестовая', 'originalHouse' => '1', 'originalEnterprise' => 'Подставленное предприятие',
+            ];
+            $control = $input;
+            $control['action'] = 'fill_route';
+            $controlId = (string) Uuid::v7();
+            $control['trips'][array_key_last($control['trips'])]['id'] = $controlId;
+            $crawler = $this->client->request('POST', $url, $control);
+            self::assertResponseIsSuccessful();
+            self::assertCount(0, $crawler->filter('.form-alert'));
+            self::assertContains($controlId, array_column($this->postedTrips($crawler), 'id'));
+        }
+        if ($fill) {
+            $input['action'] = 'fill_route';
+        } else {
+            unset($input['action']);
+        }
+
+        $tripsBefore = $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_route_log ORDER BY id');
+        $draftsBefore = $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_waybill ORDER BY id');
+        $vehiclesBefore = $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_vehicle ORDER BY id');
+        $driversBefore = $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_driver_profile ORDER BY id');
+        self::assertCount($edit ? 3 : 1, $tripsBefore);
+        self::assertCount($edit ? 2 : 1, $draftsBefore);
+
+        $crawler = $this->client->request('POST', $url, $input);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('Поездка не принадлежит этому черновику.', trim($crawler->filter('.form-alert-title + div')->text()));
+        foreach (['Секретная модель', 'B124CC77', 'Другой водитель', 'Чужая база', 'Секретный склад'] as $foreignData) {
+            self::assertStringNotContainsString($foreignData, (string) $this->client->getResponse()->getContent());
+        }
+        self::assertSame($tripsBefore, $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_route_log ORDER BY id'));
+        self::assertSame($draftsBefore, $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_waybill ORDER BY id'));
+        self::assertSame($vehiclesBefore, $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_vehicle ORDER BY id'));
+        self::assertSame($driversBefore, $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.waybills_driver_profile ORDER BY id'));
+    }
+
+    /** @return iterable<string, array{bool, bool, string}> */
+    public static function foreignTripRequests(): iterable
+    {
+        yield 'create manual' => [false, false, 'manual'];
+        yield 'create automatic' => [false, false, 'automatic'];
+        yield 'update manual' => [true, false, 'manual'];
+        yield 'update automatic' => [true, false, 'automatic'];
+        yield 'fill create manual' => [false, true, 'manual'];
+        yield 'fill create removable automatic pair' => [false, true, 'automatic'];
+        yield 'fill edit manual' => [true, true, 'manual'];
+        yield 'fill edit removable automatic pair' => [true, true, 'automatic'];
+    }
+
+    public function test_deadlock_during_save_is_shown_without_persisting_the_waybill(): void
+    {
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['odometerEnd'] = '105';
+        $input['trips'] = [['id' => '', 'date' => '2026-01-10', 'distance' => '5', 'country' => 'Россия', 'city' => 'Клиент']];
+        $locationsBefore = (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_location');
+        $numberBefore = $this->connection->fetchOne('SELECT next_waybill_number FROM pg_temp.waybills_driver_profile');
+        $this->connection->executeStatement(<<<'SQL'
+            CREATE FUNCTION pg_temp.raise_trip_deadlock() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'test deadlock' USING ERRCODE = '40P01';
+            END;
+            $$
+            SQL);
+        $this->connection->executeStatement('CREATE TRIGGER trip_deadlock BEFORE INSERT ON pg_temp.waybills_route_log FOR EACH ROW EXECUTE FUNCTION pg_temp.raise_trip_deadlock()');
+
+        $crawler = $this->client->request('POST', $url, $input);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('Не удалось сохранить путевой лист из-за одновременного изменения. Попробуйте ещё раз.', trim($crawler->filter('.form-alert-title + div')->text()));
+        self::assertSelectorExists('input[name="odometerEnd"][value="105"]');
+        self::assertSelectorExists('input[name="trips[0][distance]"][value="5"]');
+        self::assertSelectorExists('input[name="trips[0][city]"][value="Клиент"]');
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log'));
+        self::assertSame($locationsBefore, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_location'));
+        self::assertSame($numberBefore, $this->connection->fetchOne('SELECT next_waybill_number FROM pg_temp.waybills_driver_profile'));
+    }
+
+    public function test_new_manual_trip_ids_with_original_snapshots_are_saved_on_create_and_edit(): void
+    {
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        self::assertResponseIsSuccessful();
+        $input = $this->creationInput($crawler);
+        $firstId = (string) Uuid::v7();
+        $input['odometerEnd'] = '115';
+        $input['trips'] = [[
+            'id' => $firstId, 'date' => '2026-01-10', 'distance' => '15', 'country' => 'Россия', 'city' => 'Клиент', 'origin' => 'manual',
+            'originalDate' => '2026-01-10', 'originalDistance' => '15', 'originalCountry' => 'Россия', 'originalCity' => 'Клиент',
+        ]];
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+        self::assertSame($firstId, $this->connection->fetchOne('SELECT id FROM pg_temp.waybills_route_log'));
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+        self::assertNotNull($showUrl);
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        self::assertResponseIsSuccessful();
+        $input['_token'] = $crawler->filter('input[name="_token"]')->attr('value');
+        $input['version'] = $crawler->filter('input[name="version"]')->attr('value');
+        $input['odometerEnd'] = '130';
+        $input['trips'] = $this->postedTrips($crawler);
+        $secondId = (string) Uuid::v7();
+        $input['trips'][] = [
+            'id' => $secondId, 'date' => '2026-01-11', 'distance' => '15', 'country' => 'Россия', 'city' => 'База', 'origin' => 'manual',
+            'originalDate' => '2026-01-11', 'originalDistance' => '15', 'originalCountry' => 'Россия', 'originalCity' => 'База',
+        ];
+        $this->client->request('POST', $showUrl.'/edit', $input);
+        self::assertResponseRedirects($showUrl);
+        self::assertSame([$firstId, $secondId], $this->connection->fetchFirstColumn('SELECT id FROM pg_temp.waybills_route_log ORDER BY occurred_at'));
+    }
+
+    public function test_new_manual_trips_survive_repeated_fill_and_save_on_create_and_edit(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $vehicle->driver()->replaceDestinations(new Destination(new Location('Россия', 'Клиент'), 15));
+        $em->flush();
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '140';
+        $input['trips'] = [['id' => '', 'date' => '2026-01-12', 'distance' => '10', 'country' => 'Россия', 'city' => 'Ручная']];
+        $crawler = $this->client->request('POST', $url, $input);
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.form-alert'));
+        self::assertCount(3, $crawler->filter('#trip-rows [data-waybill-form-target~="tripRow"]'));
+        $manual = array_values(array_filter($this->postedTrips($crawler), static fn (array $trip): bool => 'manual' === $trip['origin']));
+        self::assertCount(1, $manual);
+        self::assertSame('', $manual[0]['id']);
+
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '140';
+        $input['trips'] = $this->postedTrips($crawler);
+        $crawler = $this->client->request('POST', $url, $input);
+        self::assertResponseIsSuccessful();
+        self::assertCount(3, $this->postedTrips($crawler));
+
+        $input = $this->creationInput($crawler);
+        $input['trips'] = $this->postedTrips($crawler);
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+        self::assertNotNull($showUrl);
+        self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log'));
+        self::assertSame(1, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE origin = 'manual'"));
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        $trips = $this->postedTrips($crawler);
+        $last = $trips[array_key_last($trips)];
+        $trips[] = ['id' => '', 'date' => $last['date'], 'distance' => '5', 'country' => 'Россия', 'city' => 'Дополнительная'];
+        $edit = [
+            '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
+            'version' => $crawler->filter('input[name="version"]')->attr('value'),
+            'from' => '2026-01-01', 'to' => '2026-01-31', 'odometerEnd' => '145', 'fuelRemaining' => '30',
+            'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'trips' => $trips, 'refuelings' => [], 'absences' => [], 'action' => 'fill_route',
+        ];
+        $crawler = $this->client->request('POST', $showUrl.'/edit', $edit);
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.form-alert'));
+        self::assertCount(4, $this->postedTrips($crawler));
+        $manual = array_values(array_filter($this->postedTrips($crawler), static fn (array $trip): bool => 'manual' === $trip['origin']));
+        self::assertCount(2, $manual);
+        self::assertSame(1, count(array_filter($manual, static fn (array $trip): bool => '' === $trip['id'])));
+
+        $edit['trips'] = $this->postedTrips($crawler);
+        $crawler = $this->client->request('POST', $showUrl.'/edit', $edit);
+        self::assertResponseIsSuccessful();
+        self::assertCount(4, $this->postedTrips($crawler));
+        unset($edit['action']);
+        $edit['trips'] = $this->postedTrips($crawler);
+        $this->client->request('POST', $showUrl.'/edit', $edit);
+
+        self::assertResponseRedirects($showUrl);
+        self::assertSame(4, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log'));
+        self::assertSame(2, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE origin = 'manual'"));
+        self::assertSame(145, (int) $this->connection->fetchOne('SELECT odometer_end FROM pg_temp.waybills_waybill'));
+    }
+
+    public function test_fill_replaces_outdated_automatic_pairs_after_a_later_manual_trip_is_inserted(): void
+    {
+        $payload = ['country' => 'Россия', 'city' => 'База', 'cityType' => 'city', 'street' => 'Транспортная', 'house' => '10', 'enterprise' => 'ООО База', 'latitude' => '56.8', 'longitude' => '60.6'];
+        $this->client->request('POST', '/cabinet/waybill/locations/quick', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        self::assertResponseStatusCodeSame(201);
+        $response = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        $baseId = Uuid::fromString(($response['data'] ?? $response)['id']);
+        $base = new Location('Россия', new Settlement('База', SettlementType::City), 'Транспортная', '10', 'ООО База', 56.8, 60.6, $baseId);
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        (new \ReflectionProperty($vehicle, 'initialLocation'))->setValue($vehicle, $base);
+        $vehicle->driver()->changeBase($base);
+        $vehicle->driver()->replaceDestinations(new Destination(new Location('Россия', 'Клиент'), 15));
+        $em->flush();
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '160';
+        $crawler = $this->client->request('POST', $url, $input);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.form-alert'));
+        $trips = $this->postedTrips($crawler);
+        self::assertCount(4, $trips);
+        self::assertSame(['automatic', 'automatic', 'automatic', 'automatic'], array_column($trips, 'origin'));
+        self::assertSame($trips[0]['pairId'], $trips[1]['pairId']);
+        self::assertSame($trips[2]['pairId'], $trips[3]['pairId']);
+        self::assertNotSame($trips[0]['pairId'], $trips[2]['pairId']);
+        self::assertSame($trips[0]['date'], $trips[1]['date']);
+        self::assertSame($trips[2]['date'], $trips[3]['date']);
+        self::assertNotSame($trips[0]['date'], $trips[2]['date']);
+
+        $departureFields = array_flip(['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise', 'originalLatitude', 'originalLongitude']);
+        $departure = array_intersect_key($trips[1], $departureFields);
+        self::assertSame([
+            'locationId' => (string) $baseId, 'country' => 'Россия', 'city' => 'База', 'cityType' => 'city', 'street' => 'Транспортная',
+            'house' => '10', 'enterprise' => 'ООО База', 'originalLatitude' => '56.8', 'originalLongitude' => '60.6',
+        ], $departure);
+        // Первая генерация ограничена январём, поэтому ручная поездка всегда позже обеих пар.
+        $manual = [
+            'id' => '', 'date' => '2026-02-01', 'distance' => '10', 'country' => 'Россия', 'city' => 'Ручная', 'cityType' => 'city',
+            'street' => 'Тестовая', 'house' => '1', 'enterprise' => 'ООО Получатель', 'origin' => 'manual',
+        ];
+        self::assertLessThan($manual['date'], $trips[2]['date']);
+        array_splice($trips, 2, 0, [$manual]);
+        $input['to'] = '2026-02-28';
+        $input['odometerEnd'] = '170';
+        $input['trips'] = $trips;
+
+        for ($fill = 0; $fill < 2; ++$fill) {
+            $crawler = $this->client->request('POST', $url, $input);
+            self::assertSame(200, $this->client->getResponse()->getStatusCode(), (string) $this->client->getResponse()->headers->get('X-Debug-Exception'));
+            self::assertCount(0, $crawler->filter('.form-alert'));
+            $trips = $this->postedTrips($crawler);
+            self::assertCount(5, $trips);
+            self::assertSame(['automatic', 'automatic', 'automatic', 'automatic', 'manual'], array_column($trips, 'origin'));
+            self::assertSame($trips[0]['date'], $trips[1]['date']);
+            self::assertSame($trips[2]['date'], $trips[3]['date']);
+            self::assertNotSame($trips[0]['date'], $trips[2]['date']);
+            self::assertSame($manual, array_intersect_key($trips[4], $manual));
+            self::assertSame($departure, array_intersect_key($trips[3], $departureFields));
+            $dates = array_column($trips, 'date');
+            $sortedDates = $dates;
+            sort($sortedDates);
+            self::assertSame($sortedDates, $dates);
+            self::assertSame(70, array_sum(array_column($trips, 'distance')));
+            $input['trips'] = $trips;
+        }
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
+
+        unset($input['action']);
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+        self::assertNotNull($showUrl);
+        self::assertSame(5, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_route_log'));
+        self::assertSame(4, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE origin = 'automatic'"));
+        $saved = $this->connection->fetchAssociative("SELECT trip.id, trip.occurred_at, trip.distance, trip.location, predecessor.location AS departure FROM pg_temp.waybills_route_log trip JOIN pg_temp.waybills_route_log predecessor ON predecessor.id = trip.previous_id WHERE trip.origin = 'manual'");
+        self::assertNotFalse($saved);
+        self::assertSame($manual['date'], ExactDateTimeType::parse((string) $saved['occurred_at'])->format('Y-m-d'));
+        self::assertSame((int) $manual['distance'], (int) $saved['distance']);
+        $location = json_decode($saved['location'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($manual['country'], $location['country']);
+        self::assertSame($manual['city'], $location['city']['name']);
+        self::assertSame($manual['cityType'], $location['city']['type']);
+        self::assertSame($manual['street'], $location['street']);
+        self::assertSame($manual['house'], $location['house']);
+        self::assertSame($manual['enterprise'], $location['enterprise']);
+        self::assertJsonStringEqualsJsonString(json_encode($base, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), $saved['departure']);
+        self::assertSame(170, (int) $this->connection->fetchOne('SELECT odometer_end FROM pg_temp.waybills_waybill'));
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        $trips = $this->postedTrips($crawler);
+        self::assertSame((string) $saved['id'], $trips[4]['id']);
+        self::assertLessThan('2026-01-31', $trips[2]['date']);
+        $detour = ['id' => '', 'date' => '2026-01-31', 'distance' => '5', 'country' => 'Россия', 'city' => 'Промежуточная', 'origin' => 'manual'];
+        $return = ['id' => '', 'date' => '2026-01-31', 'distance' => '5', 'locationId' => (string) $baseId, 'country' => 'Россия', 'city' => 'База', 'cityType' => 'city', 'street' => 'Транспортная', 'house' => '10', 'enterprise' => 'ООО База', 'origin' => 'manual'];
+        array_splice($trips, 2, 0, [$detour, $return]);
+        $edit = [
+            '_token' => $crawler->filter('input[name="_token"]')->attr('value'),
+            'version' => $crawler->filter('input[name="version"]')->attr('value'),
+            'from' => '2026-01-01', 'to' => '2026-02-28', 'odometerEnd' => '180', 'fuelRemaining' => '30',
+            'tripsSubmitted' => '1', 'refuelingsSubmitted' => '1', 'absencesSubmitted' => '1',
+            'trips' => $trips, 'refuelings' => [], 'absences' => [], 'action' => 'fill_route',
+        ];
+        for ($fill = 0; $fill < 2; ++$fill) {
+            $crawler = $this->client->request('POST', $showUrl.'/edit', $edit);
+            self::assertSame(200, $this->client->getResponse()->getStatusCode(), (string) $this->client->getResponse()->headers->get('X-Debug-Exception'));
+            self::assertCount(0, $crawler->filter('.form-alert'));
+            $trips = $this->postedTrips($crawler);
+            self::assertCount(7, $trips);
+            self::assertCount(3, array_filter($trips, static fn (array $trip): bool => 'manual' === $trip['origin']));
+            self::assertCount(1, array_filter($trips, static fn (array $trip): bool => $trip['id'] === $saved['id']));
+            $dates = array_column($trips, 'date');
+            $sortedDates = $dates;
+            sort($sortedDates);
+            self::assertSame($sortedDates, $dates);
+            self::assertSame(80, array_sum(array_column($trips, 'distance')));
+            $edit['trips'] = $trips;
+        }
+        unset($edit['action']);
+        $this->client->request('POST', $showUrl.'/edit', $edit);
+        self::assertResponseRedirects($showUrl);
+        $departure = $this->connection->fetchOne('SELECT predecessor.location FROM pg_temp.waybills_route_log trip JOIN pg_temp.waybills_route_log predecessor ON predecessor.id = trip.previous_id WHERE trip.id = ?', [$saved['id']]);
+        self::assertIsString($departure);
+        self::assertJsonStringEqualsJsonString(json_encode($base, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), $departure);
+        self::assertSame(180, (int) $this->connection->fetchOne('SELECT odometer_end FROM pg_temp.waybills_waybill'));
     }
 
     public function test_manual_return_preserves_legacy_initial_location_coordinates(): void
@@ -310,12 +715,12 @@ final class WaybillControllerTest extends WebTestCase
         $waybill = Waybill::createDraft(Uuid::v7(), 1, $vehicle, new DateTimeInterval(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31 23:59:59')));
         $catalog = static::getContainer()->get(LocationCatalog::class);
         $date = new \DateTimeImmutable('2026-01-10');
-        $known = $catalog->resolveTrips($waybill, new TripInput(null, $date, new Destination(new Location('Россия', 'База', id: $baseId), 15)));
+        $known = $catalog->resolveTrips($waybill, null, new TripInput(null, $date, new Destination(new Location('Россия', 'База', id: $baseId), 15)));
         self::assertSame(56.8, $known[0]->destination->location->latitude);
         self::assertSame((string) $baseId, (string) $known[0]->destination->location->id);
 
         $this->expectException(ForbiddenException::class);
-        $catalog->resolveTrips($waybill, new TripInput(null, $date, new Destination(new Location('Россия', 'Чужая', id: $foreignId), 15)));
+        $catalog->resolveTrips($waybill, null, new TripInput(null, $date, new Destination(new Location('Россия', 'Чужая', id: $foreignId), 15)));
     }
 
     public function test_repeated_fill_preserves_coordinates_of_legacy_points_without_ids(): void
@@ -344,6 +749,102 @@ final class WaybillControllerTest extends WebTestCase
         self::assertResponseRedirects();
         self::assertSame(4, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE origin = 'automatic'"));
         self::assertSame(2, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE location->>'latitude' = '56.8' AND location->>'longitude' = '60.6'"));
+    }
+
+    public function test_converted_unsaved_pair_restores_coordinates_from_settings_not_post(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $vehicle->driver()->replaceDestinations(new Destination(new Location('Россия', 'Клиент', latitude: 56.8, longitude: 60.6), 15));
+        $em->flush();
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '130';
+        $crawler = $this->client->request('POST', $url, $input);
+        self::assertResponseIsSuccessful();
+
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '131';
+        $input['trips'] = $this->postedTrips($crawler);
+        $input['trips'][0]['distance'] = '16';
+        $crawler = $this->client->request('POST', $url, $input);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.form-alert'));
+        $input = $this->creationInput($crawler);
+        $input['trips'] = $this->postedTrips($crawler);
+        self::assertSame(['manual', 'manual'], array_column($input['trips'], 'origin'));
+        $input['trips'][0]['latitude'] = '1.1';
+        $input['trips'][0]['longitude'] = '2.2';
+        $input['trips'][0]['originalLatitude'] = '1.1';
+        $input['trips'][0]['originalLongitude'] = '2.2';
+
+        $this->client->request('POST', $url, $input);
+
+        self::assertResponseRedirects();
+        self::assertSame(2, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_route_log WHERE origin = 'manual'"));
+        $saved = json_decode((string) $this->connection->fetchOne("SELECT location FROM pg_temp.waybills_route_log WHERE location->'city'->>'name' = 'Клиент'"), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(56.8, $saved['latitude']);
+        self::assertSame(60.6, $saved['longitude']);
+    }
+
+    public function test_return_reuses_only_actual_predecessor_snapshot_after_driver_change(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $baseId = Uuid::v7();
+        $foreignId = Uuid::v7();
+        $base = new Location('Россия', 'Фактическая база', latitude: 56.8, longitude: 60.6, id: $baseId);
+        $em->persist(new CatalogLocation($baseId, 'previous-driver', $base, new \DateTimeImmutable()));
+        $em->persist(new CatalogLocation($foreignId, 'previous-driver', new Location('Россия', 'Чужая'), new \DateTimeImmutable()));
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2025-12-31'), new Destination($base, 5), RouteLogOrigin::Manual);
+        $em->persist($previous);
+        $vehicle->driver()->changeBase($base);
+        $vehicle->driver()->replaceDestinations(new Destination(new Location('Россия', 'Клиент'), 15));
+        $em->flush();
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+
+        $crawler = $this->client->request('GET', $url);
+        self::assertResponseIsSuccessful();
+        $input = $this->creationInput($crawler);
+        $input['action'] = 'fill_route';
+        $input['odometerEnd'] = '130';
+        $crawler = $this->client->request('POST', $url, $input);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.form-alert'));
+        $input = $this->creationInput($crawler);
+        $input['trips'] = $this->postedTrips($crawler);
+        self::assertSame((string) $baseId, $input['trips'][1]['locationId']);
+        $this->client->request('POST', $url, $input);
+
+        self::assertResponseRedirects();
+        $saved = json_decode((string) $this->connection->fetchOne('SELECT location FROM pg_temp.waybills_route_log WHERE location->>\'id\' = ? AND draft_waybill_id IS NOT NULL', [(string) $baseId]), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame(56.8, $saved['latitude']);
+        self::assertSame(60.6, $saved['longitude']);
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_location WHERE id = ?', [(string) $baseId]));
+
+        $this->client->request('GET', '/cabinet/waybill/sheets');
+        $user = static::getContainer()->get(AuthUserFetcherInterface::class)->getAuthUser();
+        self::assertInstanceOf(User::class, $user);
+        (new \ReflectionProperty($user, 'roles'))->setValue($user, ['ROLE_USER']);
+        static::getContainer()->get(TokenStorageInterface::class)->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+        $draft = Waybill::createDraft(Uuid::v7(), 2, $vehicle, new DateTimeInterval(new \DateTimeImmutable('2026-02-01'), new \DateTimeImmutable('2026-02-28')));
+        $catalog = static::getContainer()->get(LocationCatalog::class);
+        $known = $catalog->resolveTrips(
+            $draft,
+            $previous,
+            new TripInput(null, new \DateTimeImmutable('2026-02-10'), new Destination(new Location('Россия', 'Фактическая база', id: $baseId), 15)),
+        );
+        self::assertSame(56.8, $known[0]->destination->location->latitude);
+
+        $this->expectException(ForbiddenException::class);
+        $catalog->resolveTrips(
+            $draft,
+            $previous,
+            new TripInput(null, new \DateTimeImmutable('2026-02-10'), new Destination(new Location('Россия', 'Чужая', id: $foreignId), 15)),
+        );
     }
 
     public function test_fill_button_skips_dates_before_vehicle_history(): void
@@ -402,9 +903,9 @@ final class WaybillControllerTest extends WebTestCase
         $waybill->setTrips($trip);
         $catalog = static::getContainer()->get(LocationCatalog::class);
 
-        $changed = $catalog->resolveTrips($waybill, new TripInput($trip->id, $date, new Destination(new Location('Россия', $city, latitude: 57.0, longitude: 61.0, id: $locationId), 15)));
+        $changed = $catalog->resolveTrips($waybill, null, new TripInput($trip->id, $date, new Destination(new Location('Россия', $city, latitude: 57.0, longitude: 61.0, id: $locationId), 15)));
         self::assertSame(57.0, $changed[0]->destination->location->latitude);
-        $cleared = $catalog->resolveTrips($waybill, new TripInput($trip->id, $date, new Destination(new Location('Россия', $city, id: $locationId), 15)));
+        $cleared = $catalog->resolveTrips($waybill, null, new TripInput($trip->id, $date, new Destination(new Location('Россия', $city, id: $locationId), 15)));
         self::assertNull($cleared[0]->destination->location->latitude);
     }
 
@@ -701,8 +1202,36 @@ final class WaybillControllerTest extends WebTestCase
         self::assertEquals('77', $this->connection->fetchOne('SELECT amount::text FROM pg_temp.waybills_fuel_operation'));
     }
 
+    public function test_create_and_empty_edit_forms_use_the_actual_predecessor_location(): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2025-12-31'), new Destination(new Location('Россия', 'Фактическая'), 5), RouteLogOrigin::Manual);
+        $em->persist($previous);
+        $em->flush();
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+
+        $crawler = $this->client->request('GET', $url);
+        $location = json_decode($crawler->filter('#waybill-form')->attr('data-waybill-form-initial-location-value'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('Фактическая', $location['city']);
+        $input = $this->creationInput($crawler);
+        $input['odometerEnd'] = '100';
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+        $showUrl = $this->client->getResponse()->headers->get('Location');
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        $location = json_decode($crawler->filter('#waybill-form')->attr('data-waybill-form-initial-location-value'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('Фактическая', $location['city']);
+    }
+
     public function test_another_administrator_cannot_create_a_draft_for_the_current_driver(): void
     {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $vehicle = $em->find(Vehicle::class, $this->vehicleId);
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2025-12-31'), new Destination(new Location('Россия', 'Скрытая'), 5), RouteLogOrigin::Manual);
+        $em->persist($previous);
+        $em->flush();
         $other = new User(new Email('other-waybill-web@example.com'));
         (new \ReflectionProperty($other, 'roles'))->setValue($other, ['ROLE_ADMIN']);
         (new \ReflectionProperty($other, 'isActive'))->setValue($other, true);
@@ -711,6 +1240,8 @@ final class WaybillControllerTest extends WebTestCase
         $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
         $crawler = $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
+        $location = json_decode($crawler->filter('#waybill-form')->attr('data-waybill-form-initial-location-value'), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('База', $location['city']);
         $this->client->request('POST', $url, $this->creationInput($crawler));
 
         self::assertResponseStatusCodeSame(403);

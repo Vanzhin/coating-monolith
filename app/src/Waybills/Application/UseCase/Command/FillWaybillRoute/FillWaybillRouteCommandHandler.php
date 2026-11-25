@@ -46,8 +46,9 @@ final readonly class FillWaybillRouteCommandHandler implements CommandHandlerInt
         $odometerEnd = $source->odometerEnd
             ?? throw new AppException('Для автоматического заполнения укажите конечный одометр.');
 
-        $trips = $this->locations->restoreTripCoordinates($waybill, $settings, ...$source->trips);
-        $fixedRoute = $this->routes->buildFixed($waybill, $this->waybills->findPredecessor($waybill), $source->routePresent, ...$trips);
+        $previous = $this->waybills->findPredecessor($waybill);
+        $trips = $this->locations->restoreTripCoordinates($waybill, $settings, $previous, ...$source->trips);
+        $fixedRoute = $this->routes->buildFixed($waybill, $previous, $source->routePresent, ...$trips);
         if (null === $fixedRoute) {
             throw new AppException('Для автоматического заполнения укажите маршрут.');
         }

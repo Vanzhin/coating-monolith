@@ -11,6 +11,7 @@ use App\Waybills\Application\Service\AccessControl\LocationAccessControl;
 use App\Waybills\Domain\Aggregate\Location\Location as CatalogLocation;
 use App\Waybills\Domain\Aggregate\Route\Destination;
 use App\Waybills\Domain\Aggregate\Route\Location;
+use App\Waybills\Domain\Aggregate\Route\RouteLog;
 use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Route\RouteSettings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
@@ -88,20 +89,20 @@ final readonly class LocationCatalog
     }
 
     /** @return list<TripInput> */
-    public function resolveTrips(?Waybill $waybill, TripInput ...$trips): array
+    public function resolveTrips(?Waybill $waybill, ?RouteLog $previous, TripInput ...$trips): array
     {
-        $trips = $this->restoreTripCoordinates($waybill, $waybill?->vehicle()->driver()?->getRouteSettings(), ...$trips);
+        $trips = $this->restoreTripCoordinates($waybill, $waybill?->vehicle()->driver()?->getRouteSettings(), $previous, ...$trips);
         $originals = [];
         foreach ($waybill?->trips() ?? [] as $trip) {
             $originals[(string) $trip->id] = $trip->destination->location;
         }
 
-        return array_map(function (TripInput $trip) use ($originals, $waybill): TripInput {
+        return array_map(function (TripInput $trip) use ($originals, $waybill, $previous): TripInput {
             $address = $trip->destination->location;
             $original = null === $trip->id ? null : ($originals[(string) $trip->id] ?? null);
             if (null !== $original && $original->hasSameIdentity($address) && $original->hasSameDescription($address)) {
                 $location = $this->sameAddress($original, $address) ? $original : $this->resolveAddress($address->withId(null), inferMissingCoordinates: false);
-            } elseif (null !== ($known = $this->findWaybillLocation($waybill, $address)) && $this->sameAddress($known, $address)) {
+            } elseif (null !== ($known = $this->findRouteLocation($waybill, $previous, $address)) && $this->sameAddress($known, $address)) {
                 $location = $known;
             } else {
                 $location = $this->resolve($address);
@@ -112,26 +113,26 @@ final readonly class LocationCatalog
     }
 
     /** @return list<TripInput> */
-    public function restoreTripCoordinates(?Waybill $waybill, ?RouteSettings $settings, TripInput ...$trips): array
+    public function restoreTripCoordinates(?Waybill $waybill, ?RouteSettings $settings, ?RouteLog $previous, TripInput ...$trips): array
     {
         $originals = [];
         foreach ($waybill?->trips() ?? [] as $trip) {
             $originals[(string) $trip->id] = $trip->destination->location;
         }
 
-        return array_map(function (TripInput $trip) use ($settings, $originals, $waybill): TripInput {
+        return array_map(function (TripInput $trip) use ($settings, $originals, $waybill, $previous): TripInput {
             $address = $trip->destination->location;
             $original = null === $trip->id ? null : ($originals[(string) $trip->id] ?? null);
             if (null !== $original && $original->hasSameIdentity($address) && $original->hasSameDescription($address)) {
                 return $trip;
             }
-            $known = $this->findWaybillLocation($waybill, $address);
+            $known = $this->findRouteLocation($waybill, $previous, $address);
             if (null !== $known) {
                 return $this->withTripLocation($trip, $address->withCoordinatesFromUnchangedAddress($known));
             }
 
             if (null === $address->id) {
-                if (RouteLogOrigin::Automatic !== $trip->origin || null === $settings) {
+                if (null === $settings || (RouteLogOrigin::Automatic !== $trip->origin && null === $trip->originalDestination)) {
                     return $trip;
                 }
 
@@ -172,14 +173,17 @@ final readonly class LocationCatalog
         return $location;
     }
 
-    private function findWaybillLocation(?Waybill $waybill, Location $address): ?Location
+    private function findRouteLocation(?Waybill $waybill, ?RouteLog $previous, Location $address): ?Location
     {
-        if (null === $waybill) {
-            return null;
+        $candidates = [];
+        if (null !== $previous) {
+            $candidates[] = $previous->destination->location;
         }
-        $candidates = [$waybill->vehicle()->initialLocation()];
-        foreach ($waybill->trips() as $trip) {
-            $candidates[] = $trip->destination->location;
+        if (null !== $waybill) {
+            $candidates[] = $waybill->vehicle()->initialLocation();
+            foreach ($waybill->trips() as $trip) {
+                $candidates[] = $trip->destination->location;
+            }
         }
         $match = null;
         foreach ($candidates as $candidate) {
