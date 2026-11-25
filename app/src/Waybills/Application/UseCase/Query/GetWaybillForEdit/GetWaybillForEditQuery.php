@@ -8,7 +8,7 @@ use App\Shared\Application\Query\Query;
 
 final readonly class GetWaybillForEditQuery extends Query
 {
-    public function __construct(public string $waybillId)
+    public function __construct(public string $waybillId, public bool $withPredecessor = false)
     {
     }
 }

@@ -20,6 +20,10 @@ final readonly class GetWaybillForEditQueryHandler implements QueryHandlerInterf
     {
         $waybill = $this->queries->execute(new GetWaybillQuery($query->waybillId));
 
-        return new WaybillEditData($waybill, $this->waybills->versionOf($waybill));
+        return new WaybillEditData(
+            $waybill,
+            $this->waybills->versionOf($waybill),
+            $query->withPredecessor ? $this->waybills->findPredecessor($waybill) : null,
+        );
     }
 }

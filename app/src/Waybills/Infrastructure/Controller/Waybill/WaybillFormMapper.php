@@ -14,6 +14,7 @@ use App\Waybills\Application\UseCase\Command\UpdateWaybill\UpdateWaybillCommand;
 use App\Waybills\Domain\Aggregate\Route\Destination;
 use App\Waybills\Domain\Aggregate\Route\Location;
 use App\Waybills\Domain\Aggregate\Route\Route;
+use App\Waybills\Domain\Aggregate\Route\RouteLog;
 use App\Waybills\Domain\Aggregate\Route\RouteLogOrigin;
 use App\Waybills\Domain\Aggregate\Vehicle\FuelType;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
@@ -32,11 +33,13 @@ final class WaybillFormMapper
     }
 
     /** @return array<string, mixed> */
-    public function input(Waybill $waybill, int $version): array
+    public function input(Waybill $waybill, int $version, ?RouteLog $previous = null): array
     {
         $fuel = $waybill->fuelOrNull();
         $driver = $waybill->driver();
-        $trips = $this->tripRows($waybill->hasRoute() ? $waybill->route() : new Route($waybill->vehicle()));
+        $route = $waybill->hasRoute() ? $waybill->route() : new Route($waybill->vehicle());
+        $previous ??= $route->predecessor();
+        $trips = $this->tripRows($route);
 
         return [
             'version' => (string) $version,
@@ -47,7 +50,7 @@ final class WaybillFormMapper
             'availableFuelTypes' => array_map(static fn (FuelType $type): string => $type->value, $waybill->vehicleFuelTypes()),
             'defaultFuelType' => $waybill->vehicle()->getDefaultFuelType()->value,
             'legacyRefuelingTotal' => $fuel?->refuelingsOrNull()?->total(),
-            'initialLocation' => $this->locationMapper->present($waybill->vehicle()->initialLocation()),
+            'initialLocation' => $this->locationMapper->present($previous?->destination->location ?? $waybill->vehicle()->initialLocation()),
             'blankTrip' => $this->blankTrip(),
             'from' => $waybill->period()->from()->format('Y-m-d'),
             'to' => $waybill->period()->to()->format('Y-m-d'),
@@ -82,16 +85,17 @@ final class WaybillFormMapper
             }
         }
         $input['trips'] = $this->tripRows($route, $previousRows);
+        $input['initialLocation'] = $this->locationMapper->present($route->predecessor()?->destination->location ?? $route->vehicle()->initialLocation());
 
         return $input;
     }
 
     /**
-     * @param array<string, array<string, mixed>> $previousRows
+     * @param array<string, array<string, mixed>>|null $previousRows
      *
      * @return list<array<string, string>>
      */
-    private function tripRows(Route $route, array $previousRows = []): array
+    private function tripRows(Route $route, ?array $previousRows = null): array
     {
         $rows = [];
         $pairId = null;
@@ -111,8 +115,9 @@ final class WaybillFormMapper
             }
             $location = $trip->destination->location;
             $previous = $previousRows[(string) $trip->id] ?? [];
+            $newManual = null !== $previousRows && RouteLogOrigin::Manual === $trip->origin && !isset($previousRows[(string) $trip->id]);
             $rows[] = [
-                'id' => (string) $trip->id,
+                'id' => $newManual ? '' : (string) $trip->id,
                 'date' => $trip->date->format('Y-m-d'),
                 'locationId' => null === $location->id ? '' : (string) $location->id,
                 'country' => $location->country,
@@ -152,7 +157,7 @@ final class WaybillFormMapper
 
         return [
             'from' => '', 'to' => '',
-            'initialLocation' => $this->locationMapper->present($vehicle->initialLocation),
+            'initialLocation' => $this->locationMapper->present($vehicle->routeStartLocation ?? $vehicle->initialLocation),
             'blankTrip' => $this->blankTrip(),
             'initialOdometer' => (string) $vehicle->odometer,
             'initialFuel' => (string) $vehicle->fuelRemaining,
@@ -375,7 +380,10 @@ final class WaybillFormMapper
             $to = $this->text($row, 'to');
             $original = $unchanged[$from.'/'.$to] ?? $unchangedWithTime[$this->dateWithSeconds($from).'/'.$this->dateWithSeconds($to)] ?? null;
             if (null !== $original) {
-                $absences[] = $original;
+                $absences[] = WaybillPeriod::fromDates(
+                    $original->from()->setTime(0, 0),
+                    $original->to()->setTime(23, 59, 59, 999999),
+                );
                 continue;
             }
             $absences[] = WaybillPeriod::fromDates(
@@ -416,7 +424,7 @@ final class WaybillFormMapper
     private function periodDate(string $input, ?\DateTimeImmutable $existing = null, bool $endOfDay = false): \DateTimeImmutable
     {
         if (null !== $existing && $existing->format('Y-m-d') === $input) {
-            return $existing;
+            return $endOfDay ? $existing->setTime(23, 59, 59, 999999) : $existing->setTime(0, 0);
         }
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $input);
         if (false === $date || $date->format('Y-m-d') !== $input) {

@@ -45,6 +45,20 @@ test('summary shows current date, distance and destination, including empty valu
     assert.equal(row.summary.destination.textContent, 'Не указана');
 });
 
+test('connect preserves the returned odometer and later changes recalculate it', () => {
+    const controller = new WaybillFormController();
+    controller.startValue = '100';
+    controller.initialLocationValue = {};
+    controller.endTarget = { value: '120' };
+    controller.tripRows = () => [];
+
+    controller.connect();
+    assert.equal(controller.endTarget.value, '120');
+
+    controller.refreshTrips();
+    assert.equal(controller.endTarget.value, '100');
+});
+
 test('refresh links departures, updates summaries and hides insertion after the last trip', () => {
     const controller = new WaybillFormController();
     const first = trip({ date: '2026-11-01', distance: '24', locationId: '', country: 'Россия', cityType: 'city', city: 'Химки', street: '', house: '', enterprise: '' });

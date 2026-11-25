@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Waybills\Infrastructure\Controller\Waybill;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile;
 use App\Waybills\Domain\Aggregate\Route\Destination;
@@ -23,6 +24,7 @@ use App\Waybills\Domain\Aggregate\Waybill\Fuel\Fuel;
 use App\Waybills\Domain\Aggregate\Waybill\Fuel\Refuelings;
 use App\Waybills\Domain\Aggregate\Waybill\Waybill;
 use App\Waybills\Domain\Aggregate\Waybill\WaybillPeriod;
+use App\Waybills\Domain\Repository\WaybillRepositoryInterface;
 use App\Waybills\Infrastructure\Controller\Waybill\WaybillFormMapper;
 use App\Waybills\Infrastructure\Mapper\LocationFormMapper;
 use Brick\Math\BigDecimal;
@@ -31,7 +33,7 @@ use Symfony\Component\Uid\Uuid;
 
 final class WaybillFormMapperTest extends TestCase
 {
-    public function test_round_trip_preserves_trip_ids_timezones_and_microseconds(): void
+    public function test_round_trip_normalizes_period_and_preserves_trip_time(): void
     {
         $waybill = $this->draft();
         $date = new \DateTimeImmutable('2026-01-10 12:00:00.123456', new \DateTimeZone('Europe/Berlin'));
@@ -41,8 +43,8 @@ final class WaybillFormMapperTest extends TestCase
 
         $command = $mapper->updateCommand($waybill, $mapper->input($waybill, 1));
 
-        self::assertSame($waybill->period()->from(), $command->period->from());
-        self::assertSame($waybill->period()->to(), $command->period->to());
+        self::assertSame('2026-01-01 00:00:00.000000', $command->period->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-31 23:59:59.999999', $command->period->to()->format('Y-m-d H:i:s.u'));
         self::assertNull($command->fuel);
         self::assertSame(105, $command->odometerEnd);
         self::assertTrue($command->routePresent);
@@ -108,17 +110,17 @@ final class WaybillFormMapperTest extends TestCase
         self::assertSame('0.123456789012345678901', (string) $command->refuelings->items[0]->quantity);
     }
 
-    public function test_unchanged_period_dates_keep_timezone_and_microseconds(): void
+    public function test_unchanged_period_dates_cover_full_days_in_original_timezone(): void
     {
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
 
         $command = $mapper->updateCommand($waybill, $mapper->input($waybill, 1));
 
-        self::assertSame($waybill->period()->from(), $command->period->from());
-        self::assertSame($waybill->period()->to(), $command->period->to());
+        self::assertSame('2026-01-01 00:00:00.000000', $command->period->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-31 23:59:59.999999', $command->period->to()->format('Y-m-d H:i:s.u'));
         self::assertSame('Europe/Berlin', $command->period->from()->getTimezone()->getName());
-        self::assertSame('987654', $command->period->from()->format('u'));
+        self::assertSame('Europe/Berlin', $command->period->to()->getTimezone()->getName());
     }
 
     public function test_changed_period_dates_cover_whole_days(): void
@@ -135,7 +137,7 @@ final class WaybillFormMapperTest extends TestCase
         self::assertSame('2026-02-28 23:59:59.999999', $command->period->to()->format('Y-m-d H:i:s.u'));
     }
 
-    public function test_absence_round_trip_preserves_timezone_and_microseconds(): void
+    public function test_absence_round_trip_covers_full_days_in_original_timezone(): void
     {
         $waybill = $this->draft();
         $from = new \DateTimeImmutable('2026-01-10 08:00:00.987654', new \DateTimeZone('Europe/Berlin'));
@@ -148,8 +150,10 @@ final class WaybillFormMapperTest extends TestCase
         $command = $mapper->updateCommand($waybill, $input);
 
         self::assertCount(1, $command->absences);
-        self::assertSame($from, $command->absences[0]->from());
-        self::assertSame($to, $command->absences[0]->to());
+        self::assertSame('2026-01-10 00:00:00.000000', $command->absences[0]->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-11 23:59:59.999999', $command->absences[0]->to()->format('Y-m-d H:i:s.u'));
+        self::assertSame('Europe/Berlin', $command->absences[0]->from()->getTimezone()->getName());
+        self::assertSame('Europe/Berlin', $command->absences[0]->to()->getTimezone()->getName());
 
         $input['absences'][0]['from'] = '2026-01-10T08:00';
         $input['absences'][0]['to'] = '2026-01-11T18:00';
@@ -157,8 +161,8 @@ final class WaybillFormMapperTest extends TestCase
         $command = $mapper->updateCommand($waybill, $input);
 
         self::assertCount(1, $command->absences);
-        self::assertSame($from, $command->absences[0]->from());
-        self::assertSame($to, $command->absences[0]->to());
+        self::assertSame('2026-01-10 00:00:00.000000', $command->absences[0]->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-11 23:59:59.999999', $command->absences[0]->to()->format('Y-m-d H:i:s.u'));
     }
 
     public function test_new_and_changed_absences_cover_the_entire_final_day(): void
@@ -195,7 +199,7 @@ final class WaybillFormMapperTest extends TestCase
         $mapper->updateCommand($waybill, $input);
     }
 
-    public function test_removing_an_absence_preserves_remaining_timezone_and_microseconds(): void
+    public function test_removing_an_absence_preserves_remaining_timezone_and_normalizes_boundaries(): void
     {
         $waybill = $this->draft();
         $first = WaybillPeriod::fromDates(
@@ -214,8 +218,10 @@ final class WaybillFormMapperTest extends TestCase
         $command = $mapper->updateCommand($waybill, $input);
 
         self::assertCount(1, $command->absences);
-        self::assertSame($from, $command->absences[0]->from());
-        self::assertSame($to, $command->absences[0]->to());
+        self::assertSame('2026-01-10 00:00:00.000000', $command->absences[0]->from()->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-01-11 23:59:59.999999', $command->absences[0]->to()->format('Y-m-d H:i:s.u'));
+        self::assertSame('Europe/Moscow', $command->absences[0]->from()->getTimezone()->getName());
+        self::assertSame('Europe/Moscow', $command->absences[0]->to()->getTimezone()->getName());
     }
 
     public function test_blank_fuel_input_is_mapped_to_null_for_domain_validation(): void
@@ -265,6 +271,49 @@ final class WaybillFormMapperTest extends TestCase
         $this->expectException(AppException::class);
         $this->expectExceptionMessage('без потери данных');
         $mapper->updateCommand($waybill, $input);
+    }
+
+    public function test_normalized_absence_rejects_an_existing_trip_without_changing_the_draft(): void
+    {
+        $waybill = $this->draft();
+        $absence = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-10 12:00', new \DateTimeZone('Europe/Berlin')), new \DateTimeImmutable('2026-01-10 14:00', new \DateTimeZone('Europe/Berlin')));
+        $trip = new RouteLog(Uuid::v7(), $waybill->vehicle(), null, new \DateTimeImmutable('2026-01-10 00:00', new \DateTimeZone('Europe/Berlin')), new Destination(new Location('Россия', 'Москва'), 5), RouteLogOrigin::Manual);
+        $waybill->setTrips($trip);
+        $waybill->reviseDraft($waybill->period(), 105, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), $waybill->route(), $absence);
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $command = $mapper->updateCommand($waybill, $mapper->input($waybill, 1));
+        $repository = $this->createStub(WaybillRepositoryInterface::class);
+        $repository->method('hasExistingTripIds')->willReturn(false);
+        $route = (new WaybillRouteBuilder($repository))->build($waybill, null, true, ...$command->trips);
+
+        try {
+            $waybill->reviseDraft($command->period, $command->odometerEnd, $command->fuel, $route, ...$command->absences);
+            self::fail('Поездка в отображаемый день отсутствия должна быть отклонена.');
+        } catch (AppException $exception) {
+            self::assertSame('Поездка попадает в период без поездок.', $exception->getMessage());
+        }
+        self::assertSame('12:00', $waybill->absences()[0]->from()->format('H:i'));
+        self::assertSame('14:00', $waybill->absences()[0]->to()->format('H:i'));
+    }
+
+    public function test_normalized_absence_rejects_an_existing_refueling_without_changing_the_draft(): void
+    {
+        $waybill = $this->draft();
+        $absence = WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-10 12:00', new \DateTimeZone('Europe/Berlin')), new \DateTimeImmutable('2026-01-10 14:00', new \DateTimeZone('Europe/Berlin')));
+        $operation = new FuelOperation(Uuid::v7(), $waybill->vehicle(), new \DateTimeImmutable('2026-01-10 00:00', new \DateTimeZone('Europe/Berlin')), FuelType::Ai95, BigDecimal::of('3'), FuelOperationType::Refueling);
+        $fuel = new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95');
+        $waybill->reviseDraftWithRefuelingOperations($waybill->period(), 100, $fuel, null, new RefuelingOperations($operation), $absence);
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $command = $mapper->updateCommand($waybill, $mapper->input($waybill, 1));
+
+        try {
+            $waybill->reviseDraftWithRefuelingOperations($command->period, $command->odometerEnd, $command->fuel, null, $waybill->refuelingOperations(), ...$command->absences);
+            self::fail('Заправка в отображаемый день отсутствия должна быть отклонена.');
+        } catch (AppException $exception) {
+            self::assertSame('Заправка попадает в период без поездок.', $exception->getMessage());
+        }
+        self::assertSame('12:00', $waybill->absences()[0]->from()->format('H:i'));
+        self::assertSame('14:00', $waybill->absences()[0]->to()->format('H:i'));
     }
 
     private function draft(): Waybill

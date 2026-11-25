@@ -8,7 +8,7 @@ export default class extends Controller {
     static values = { start: String, initialLocation: Object };
 
     connect() {
-        this.refreshTrips();
+        this.refreshTrips(false);
     }
 
     add(event) {
@@ -51,7 +51,7 @@ export default class extends Controller {
         this.input(inserted, 'city').focus();
     }
 
-    refreshTrips() {
+    refreshTrips(recalculate = true) {
         let departure = { ...this.initialLocationValue, locationId: this.initialLocationValue.id || '', enterprise: this.initialLocationValue.enterprise || '' };
         this.departures = new Map();
         const rows = this.tripRows();
@@ -67,7 +67,7 @@ export default class extends Controller {
             departure = this.destination(row);
             this.updateTripSummary(row, departure);
         }
-        this.recalculate();
+        if (recalculate) this.recalculate();
     }
 
     refreshTripSummary(event) {

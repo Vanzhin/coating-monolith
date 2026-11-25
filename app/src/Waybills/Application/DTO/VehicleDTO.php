@@ -21,6 +21,7 @@ final readonly class VehicleDTO
         public string $defaultFuelType = '',
         public bool $occupied = false,
         public ?string $driverName = null,
+        public ?Location $routeStartLocation = null,
     ) {
     }
 }

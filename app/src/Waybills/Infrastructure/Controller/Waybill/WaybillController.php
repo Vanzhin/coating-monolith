@@ -70,7 +70,7 @@ final class WaybillController extends AbstractController
     #[Route('/new/{vehicleId}', name: 'app_cabinet_waybill_sheet_create', methods: ['GET', 'POST'])]
     public function create(Request $request, string $vehicleId): Response
     {
-        $vehicle = $this->queries->execute(new GetVehicleQuery($vehicleId));
+        $vehicle = $this->queries->execute(new GetVehicleQuery($vehicleId, forWaybillCreation: true));
         $input = $this->mapper->createInput($vehicle);
         $error = null;
         $status = Response::HTTP_OK;
@@ -168,10 +168,10 @@ final class WaybillController extends AbstractController
     #[Route('/{id}/edit', name: 'app_cabinet_waybill_sheet_edit', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET', 'POST'])]
     public function edit(Request $request, string $id): Response
     {
-        $editData = $this->queries->execute(new GetWaybillForEditQuery($id));
+        $editData = $this->queries->execute(new GetWaybillForEditQuery($id, withPredecessor: true));
         $waybill = $editData->waybill;
         $waybill->assertEditable();
-        $input = $this->mapper->input($waybill, $editData->version);
+        $input = $this->mapper->input($waybill, $editData->version, $editData->predecessor);
         $error = null;
         $status = Response::HTTP_OK;
         if ($request->isMethod('POST')) {
