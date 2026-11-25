@@ -200,6 +200,75 @@ final class WaybillRouteFillerTest extends TestCase
         self::assertCount(2, $logs);
         self::assertTrue($logs[0]->departure()->samePlace($settings->base));
         self::assertTrue($logs[1]->destination->location->samePlace($settings->base));
+        self::assertSame($settings->base, $logs[1]->destination->location);
+    }
+
+    public function test_automatic_pairs_before_manual_trip_return_to_its_original_departure_snapshot(): void
+    {
+        $id = Uuid::v7();
+        $original = new Location('Россия', 'Москва', 'Лесная', '1', 'Старый склад', 55.7, 37.6, $id);
+        $updatedBase = new Location('Россия', 'Москва', 'Новая', '2', 'Новый склад', 55.8, 37.7, $id);
+        $settings = new RouteSettings($updatedBase, new Destination(new Location('Направление'), 10));
+        $vehicle = $this->vehicle($original);
+        $manual = $this->trip($vehicle, null, '2026-02-04', 'Командировка', 5);
+        $route = $this->route($vehicle, null, $manual);
+
+        $filled = $this->assertFilled($this->fill($settings, $route, 1045, $this->period('2026-02-02', '2026-02-03')));
+        $logs = $this->logs($filled);
+
+        self::assertCount(5, $logs);
+        self::assertSame($original, $logs[1]->destination->location);
+        self::assertSame($original, $logs[3]->destination->location);
+        self::assertSame($manual->id, $logs[4]->id);
+        self::assertSame($manual->date, $logs[4]->date);
+        self::assertSame($manual->destination, $logs[4]->destination);
+        self::assertSame($original, $logs[4]->departure());
+        self::assertSame([$manual], $this->logs($route));
+        self::assertSame(45, $filled->distance());
+    }
+
+    public function test_automatic_pair_preserves_legacy_departure_snapshot_from_predecessor(): void
+    {
+        $original = new Location('Россия', 'Москва', 'Лесная', '1', 'Старый склад', 55.7, 37.6);
+        $updatedBase = new Location('Россия', 'Москва', 'Лесная', '1', 'Новый склад', 55.8, 37.7);
+        $settings = new RouteSettings($updatedBase, new Destination(new Location('Направление'), 10));
+        $vehicle = $this->vehicle('Старт');
+        $previous = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-01-30'), new Destination($original, 5), RouteLogOrigin::Manual);
+        $manual = $this->trip($vehicle, $previous, '2026-02-02 18:00', 'Командировка', 5);
+        $route = $this->route($vehicle, $previous, $manual);
+
+        $filled = $this->assertFilled($this->fill($settings, $route, 1025, $this->period('2026-02-02', '2026-02-02')));
+        $logs = $this->logs($filled);
+
+        self::assertCount(3, $logs);
+        self::assertSame($previous, $logs[0]->previous);
+        self::assertSame($original, $logs[1]->destination->location);
+        self::assertSame($manual->id, $logs[2]->id);
+        self::assertSame($original, $logs[2]->departure());
+        self::assertSame($previous, $filled->predecessor());
+        self::assertSame([$manual], $this->logs($route));
+    }
+
+    public function test_automatic_pair_between_manual_trips_preserves_next_departure_snapshot(): void
+    {
+        $id = Uuid::v7();
+        $original = new Location('Россия', 'Москва', 'Лесная', '1', 'Старый склад', 55.7, 37.6, $id);
+        $updatedBase = new Location('Россия', 'Москва', 'Новая', '2', 'Новый склад', 55.8, 37.7, $id);
+        $settings = new RouteSettings($updatedBase, new Destination(new Location('Направление'), 10));
+        $vehicle = $this->vehicle('Старт');
+        $first = new RouteLog(Uuid::v7(), $vehicle, null, new \DateTimeImmutable('2026-02-02'), new Destination($original, 5), RouteLogOrigin::Manual);
+        $next = $this->trip($vehicle, $first, '2026-02-03 18:00', 'Командировка', 5);
+        $route = $this->route($vehicle, null, $first, $next);
+
+        $filled = $this->assertFilled($this->fill($settings, $route, 1030, $this->period('2026-02-03', '2026-02-03')));
+        $logs = $this->logs($filled);
+
+        self::assertCount(4, $logs);
+        self::assertSame($first, $logs[0]);
+        self::assertSame($original, $logs[2]->destination->location);
+        self::assertSame($next->id, $logs[3]->id);
+        self::assertSame($original, $logs[3]->departure());
+        self::assertSame([$first, $next], $this->logs($route));
     }
 
     public function test_working_saturday_and_transferred_weekend_are_respected(): void

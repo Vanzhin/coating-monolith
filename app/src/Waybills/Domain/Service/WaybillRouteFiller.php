@@ -128,10 +128,13 @@ final class WaybillRouteFiller
         });
 
         $options = $this->randomizedOptions($solution->options());
+        $fixedTrips = iterator_to_array($fixedRoute->logs(), false);
         $route = $fixedRoute;
         foreach ($selectedDates as $index => $selectedDate) {
             $option = $options[$index];
             $previous = $selectedDate['previous'];
+            $next = $fixedTrips[$selectedDate['gap']] ?? null;
+            $returnLocation = null !== $next && RouteLogOrigin::Manual === $next->origin ? $next->departure() : $base;
             $outward = new RouteLog(
                 Uuid::v7(),
                 $fixedRoute->vehicle(),
@@ -140,7 +143,7 @@ final class WaybillRouteFiller
                 new Destination($option->destination->location, $option->outwardDistance, $option->destination->enterprise),
                 RouteLogOrigin::Automatic,
             );
-            $back = new RouteLog(Uuid::v7(), $fixedRoute->vehicle(), $outward, $selectedDate['date'], new Destination($base, $option->returnDistance), RouteLogOrigin::Automatic);
+            $back = new RouteLog(Uuid::v7(), $fixedRoute->vehicle(), $outward, $selectedDate['date'], new Destination($returnLocation, $option->returnDistance), RouteLogOrigin::Automatic);
             $route = $route->insertAfter($previous, $outward, $back);
         }
 
