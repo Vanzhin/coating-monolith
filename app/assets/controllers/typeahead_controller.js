@@ -60,12 +60,12 @@ export default class extends Controller {
         }
 
         // title-компаньон (<name>Title): бэк восстанавливает чип из формы при ошибке валидации.
-        // Для массивных полей (name="x[]") ставим Title ПЕРЕД скобками (x[] → xTitle[]) — иначе
-        // "x[]Title" PHP сворачивает в тот же массив x[] и туда попадает название вместо id.
+        // Title подставляем внутрь последних скобок (locationId] → locationTitle]) и перед []
+        // (x[] → xTitle[]): иначе PHP сворачивает компаньон в поле id и заменяет его названием.
         this._hiddenTitle = document.createElement('input');
         this._hiddenTitle.type = 'hidden';
-        if (/Id$/.test(this.hiddenNameValue)) {
-            this._hiddenTitle.name = this.hiddenNameValue.replace(/Id$/, 'Title');
+        if (/Id\]?$/.test(this.hiddenNameValue)) {
+            this._hiddenTitle.name = this.hiddenNameValue.replace(/Id(\]?)$/, 'Title$1');
         } else if (/\[\]$/.test(this.hiddenNameValue)) {
             this._hiddenTitle.name = this.hiddenNameValue.replace(/\[\]$/, 'Title[]');
         } else {

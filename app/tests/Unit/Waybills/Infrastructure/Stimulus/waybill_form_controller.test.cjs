@@ -85,3 +85,26 @@ test('refresh links departures, updates summaries and hides insertion after the 
     controller.copyReturnTrip(first, added);
     assert.equal(added.inputs.locationId.value, 'base-id');
 });
+
+test('manual and catalog address changes preserve the entered odometer', () => {
+    const controller = new WaybillFormController();
+    const row = trip({ date: '2026-11-01', distance: '15', locationId: '', country: 'Россия', cityType: 'city', city: 'Первая', street: '', house: '', enterprise: '' });
+    controller.startValue = '100';
+    controller.initialLocationValue = { id: 'base-id', country: 'Россия', city: 'База' };
+    controller.endTarget = { value: '760' };
+    controller.tripRows = () => [row];
+
+    row.inputs.city.value = 'Ручной адрес';
+    controller.refreshTripLocations();
+    assert.equal(controller.endTarget.value, '760');
+    assert.equal(row.summary.destination.textContent, 'Россия, г. Ручной адрес');
+
+    row.inputs.locationId.value = 'catalog-id';
+    row.inputs.city.value = 'Справочный адрес';
+    controller.refreshTripLocations();
+    assert.equal(controller.endTarget.value, '760');
+    assert.equal(row.summary.destination.textContent, 'Россия, г. Справочный адрес');
+
+    controller.refreshTrips();
+    assert.equal(controller.endTarget.value, '115');
+});

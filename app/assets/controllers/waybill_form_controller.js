@@ -70,6 +70,10 @@ export default class extends Controller {
         if (recalculate) this.recalculate();
     }
 
+    refreshTripLocations() {
+        this.refreshTrips(false);
+    }
+
     refreshTripSummary(event) {
         const row = event.currentTarget.closest('[data-waybill-form-target~="tripRow"]');
         if (row) this.updateTripSummary(row, this.destination(row));
