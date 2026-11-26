@@ -123,7 +123,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
         self::assertSame(RouteLogOrigin::Automatic, $loaded->origin);
         self::assertSame(2, $loaded->distanceInKilometers());
         self::assertNull($loaded->destination->enterprise);
-        self::assertSame(['country' => 'Россия', 'city' => 'Тверь', 'street' => 'Мира', 'house' => '12'], $loaded->destination->location->jsonSerialize());
+        self::assertSame($second->destination->location->jsonSerialize(), $loaded->destination->location->jsonSerialize());
         self::assertNotNull($loaded->previous);
         self::assertSame((string) $firstId, (string) $loaded->previous->id);
         self::assertSame($firstDate->format('U.u'), $loaded->previous->date->format('U.u'));
@@ -133,7 +133,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
         self::assertSame(RouteLogOrigin::Manual, $loaded->previous->origin);
         self::assertSame(1, $loaded->previous->distanceInKilometers());
         self::assertSame('Склад', $loaded->previous->destination->enterprise);
-        self::assertSame(['country' => 'Россия', 'city' => 'Москва', 'street' => 'Лесная', 'house' => '1'], $loaded->previous->destination->location->jsonSerialize());
+        self::assertSame($first->destination->location->jsonSerialize(), $loaded->previous->destination->location->jsonSerialize());
         self::assertTrue($loaded->departure()->equals($loaded->previous->destination->location));
     }
 
@@ -156,7 +156,7 @@ final class RouteLogPostgresMappingTest extends KernelTestCase
         self::assertSame(RouteLogOrigin::Manual, $loaded->origin);
         self::assertSame(1, $loaded->distanceInKilometers());
         self::assertSame('Склад', $loaded->destination->enterprise);
-        self::assertSame(['country' => 'Россия', 'city' => 'Москва', 'street' => 'Лесная', 'house' => '1'], $loaded->destination->location->jsonSerialize());
+        self::assertSame($trip->destination->location->jsonSerialize(), $loaded->destination->location->jsonSerialize());
     }
 
     public function test_seeded_draft_reference_is_not_lost_on_load_and_flush(): void

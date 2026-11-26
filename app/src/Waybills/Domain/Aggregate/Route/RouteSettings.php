@@ -29,6 +29,13 @@ final readonly class RouteSettings
 
     public function restoreCoordinatesForUnchangedLocation(Location $location): Location
     {
+        $unchanged = $this->findUnchangedLocation($location);
+
+        return null === $unchanged ? $location : $location->withCoordinatesFromUnchangedAddress($unchanged);
+    }
+
+    public function findUnchangedLocation(Location $location): ?Location
+    {
         $matches = [];
         foreach ([$this->base, ...array_map(static fn (Destination $destination): Location => $destination->location, $this->destinations)] as $candidate) {
             if ($candidate->hasSameIdentity($location) && $candidate->equals($location)) {
@@ -41,13 +48,13 @@ final readonly class RouteSettings
             $first = $sameEnterprise[0];
             foreach ($sameEnterprise as $candidate) {
                 if ($candidate->latitude !== $first->latitude || $candidate->longitude !== $first->longitude) {
-                    return $location;
+                    return null;
                 }
             }
 
-            return $location->withCoordinatesFromUnchangedAddress($first);
+            return $first;
         }
 
-        return [] === $sameEnterprise && 1 === count($matches) ? $location->withCoordinatesFromUnchangedAddress($matches[0]) : $location;
+        return 1 === count($matches) ? $matches[0] : null;
     }
 }

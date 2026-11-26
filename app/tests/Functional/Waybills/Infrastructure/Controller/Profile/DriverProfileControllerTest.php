@@ -127,10 +127,10 @@ final class DriverProfileControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="destinations[0][location][country]"][value=""]');
         self::assertSelectorExists('input[name="destinations[1][location][country]"][value="Россия"]');
         self::assertSelectorExists('input[name="destinations[1][distance]"][type="text"][inputmode="numeric"]');
-        self::assertSelectorExists('input[name="destinations[1][enterprise]"]');
+        self::assertSelectorExists('input[name="destinations[1][location][enterprise]"]');
         self::assertSelectorExists('#driver-destinations button[type="submit"][name="action"][value="remove:1"][aria-label="Удалить направление"] .bi-trash');
         self::assertSelectorExists('input[name="destinations[0][distance]"][value="не число"]');
-        $data['destinations'][1] = ['location' => ['city' => 'Вторая точка'], 'distance' => '1', 'enterprise' => ''];
+        $data['destinations'][1] = ['location' => ['city' => 'Вторая точка', 'enterprise' => ''], 'distance' => '1'];
         $this->post($data + ['action' => 'remove:1']);
         self::assertResponseIsSuccessful();
         self::assertSelectorNotExists('input[name="destinations[1][location][city]"]');
@@ -158,10 +158,10 @@ final class DriverProfileControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="snils"][value="112-233-445 95"]');
         self::assertSelectorExists('input[name="licenseNumber"][value="77 AA 123456"]');
         self::assertSelectorExists('input[name="destinations[0][distance]"][value="10"]');
-        self::assertSelectorExists('input[name="destinations[0][enterprise]"][value="Предприятие"]');
+        self::assertSelectorExists('input[name="destinations[0][location][enterprise]"][value="Предприятие"]');
         $data['fullName'] = 'Петров Пётр';
         $data['destinations'][0]['location']['street'] = 'Клиент';
-        $data['destinations'][0]['enterprise'] = '';
+        $data['destinations'][0]['location']['enterprise'] = '';
         $this->post($data);
         self::assertResponseRedirects('/cabinet/waybills/profile');
         $this->client->followRedirect();
@@ -179,7 +179,7 @@ final class DriverProfileControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('.alert-danger', 'Укажите целое число километров для расстояния.');
         self::assertSelectorExists('input[name="destinations[0][distance]"][value="не число"]');
-        self::assertSelectorExists('input[name="destinations[0][enterprise]"][value="  Предприятие  "]');
+        self::assertSelectorExists('input[name="destinations[0][location][enterprise]"][value="  Предприятие  "]');
         self::assertSelectorNotExists('input[name="vehicleId"]');
 
         $data['destinations'][0]['distance'] = '0';
@@ -196,7 +196,7 @@ final class DriverProfileControllerTest extends WebTestCase
     public function test_enterprise_named_zero_is_shown(): void
     {
         $data = $this->data();
-        $data['destinations'][0]['enterprise'] = '0';
+        $data['destinations'][0]['location']['enterprise'] = '0';
         $this->post($data);
         self::assertResponseRedirects('/cabinet/waybills/profile');
         $this->client->followRedirect();
@@ -298,14 +298,14 @@ final class DriverProfileControllerTest extends WebTestCase
         self::assertSelectorTextNotContains('body', 'Иванов Иван');
     }
 
-    /** @return array{fullName: string, licenseNumber: string, licenseIssuedAt: string, snils: string, base: array<string, string>, destinations: list<array{location: array<string, string>, distance: string, enterprise: string}>} */
+    /** @return array{fullName: string, licenseNumber: string, licenseIssuedAt: string, snils: string, base: array<string, string>, destinations: list<array{location: array<string, string>, distance: string}>} */
     private function data(): array
     {
         return [
             'fullName' => 'Иванов Иван', 'licenseNumber' => '12 34 567890', 'licenseIssuedAt' => '2020-01-01',
             'snils' => '112-233-445 95',
             'base' => ['country' => 'Россия', 'city' => 'Москва', 'street' => 'База', 'house' => '1'],
-            'destinations' => [['location' => ['country' => 'Россия', 'city' => 'Москва', 'street' => 'Склад', 'house' => '2'], 'distance' => '10', 'enterprise' => '  Предприятие  ']],
+            'destinations' => [['location' => ['country' => 'Россия', 'city' => 'Москва', 'street' => 'Склад', 'house' => '2', 'enterprise' => '  Предприятие  '], 'distance' => '10']],
         ];
     }
 

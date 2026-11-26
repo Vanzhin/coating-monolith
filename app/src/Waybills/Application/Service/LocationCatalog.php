@@ -126,6 +126,12 @@ final readonly class LocationCatalog
             if (null !== $original && $original->hasSameIdentity($address) && $original->hasSameDescription($address)) {
                 return $trip;
             }
+            if (null !== $settings && null !== $trip->originalDestination) {
+                $configured = $settings->findUnchangedLocation($address);
+                if (null !== $configured) {
+                    return $this->withTripLocation($trip, $address->withCoordinatesFromUnchangedAddress($configured));
+                }
+            }
             $known = $this->findRouteLocation($waybill, $previous, $address);
             if (null !== $known) {
                 return $this->withTripLocation($trip, $address->withCoordinatesFromUnchangedAddress($known));

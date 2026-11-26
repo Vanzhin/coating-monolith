@@ -27,7 +27,7 @@
                     <div class="col-12"><span class="form-label">Откуда</span><div data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house]|filter(value => value)|join(', ') }}{% if departure.enterprise|default('') %}, {{ departure.enterprise }}{% endif %}</div></div>
                     <div class="col-md-6"><label class="form-label" for="trip-date-{{ index }}">Дата</label><input id="trip-date-{{ index }}" name="trips[{{ index }}][date]" value="{{ trip.date }}" class="form-control" type="date"></div>
                     <div class="col-md-6"><label class="form-label" for="trip-distance-{{ index }}">Расстояние, км</label><input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="form-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate"></div>
-                    {% include 'cabinet/waybill/location/_fields.html.twig' with {name: 'trips[' ~ index ~ ']', location: trip, key: 'trip-' ~ index, idField: 'locationId', inputAction: 'input->waybill-form#refreshTrips', settlementTypes: settlementTypes} %}
+                    {% include 'cabinet/waybill/location/_fields.html.twig' with {name: 'trips[' ~ index ~ ']', location: trip, key: 'trip-' ~ index, idField: 'locationId', inputAction: 'input->waybill-form#refreshTripLocations', settlementTypes: settlementTypes} %}
                 </div>
             </details>
             <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash"></i></button>
