@@ -47,7 +47,7 @@ final class LocationController extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         try {
-            $result = $this->commands->execute(new CreateLocationCommand($this->mapper->fromArray($payload, requireSettlementType: true)));
+            $result = $this->commands->execute(new CreateLocationCommand($this->mapper->fromArray($payload)));
             \assert($result instanceof CreateLocationCommandResult);
         } catch (AppException $exception) {
             return new JsonResponse(['message' => $exception->getMessage()], $exception->getCode() ?: Response::HTTP_UNPROCESSABLE_ENTITY);

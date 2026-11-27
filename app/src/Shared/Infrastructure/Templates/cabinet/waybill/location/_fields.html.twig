@@ -1,22 +1,36 @@
 {% set idField = idField|default('id') %}
 {% set locationId = location[idField]|default('') %}
+{% set locationCard = card|default(false) %}
 {% set inputAction = inputAction|default('') %}
 {% set existingTitle = location.title|default([location.country|default(''), location.city|default(''), location.street|default(''), location.house|default(''), location.enterprise|default('')]|filter(value => value)|join(', ')) %}
-<div class="col-12" data-controller="location-fields" data-action="typeahead:selected->location-fields#select">
-    <div class="row g-3">
-        <div class="col-12">
-            <label class="form-label" for="location-search-{{ key }}">Найти в справочнике</label>
-            <input id="location-search-{{ key }}" type="text" class="form-control" placeholder="Начните вводить адрес…"
-                   data-controller="typeahead"
-                   data-typeahead-endpoint-value="{{ path('app_cabinet_waybill_location_suggest') }}"
-                   data-typeahead-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"
-                   data-typeahead-create-modal-value="location-create-modal"
-                   data-typeahead-hidden-name-value="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}"
-                   data-typeahead-min-length-value="1"
-                   data-typeahead-aux-fields-value="{{ [{field: 'enterprise', label: 'Предприятие:'}]|json_encode|e('html_attr') }}"
-                   {% if locationId %}data-typeahead-existing-value="{{ {id: locationId, title: existingTitle}|json_encode|e('html_attr') }}"{% endif %}>
-            <input type="hidden" name="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}" value="{{ locationId }}">
+<div class="col-12" data-controller="location-fields" data-action="typeahead:selected->location-fields#select" {% if locationCard %}data-location-fields-card-value="true" data-location-fields-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"{% endif %}>
+    {% if locationCard %}
+        <div class="p-3 rounded-3 bg-body-tertiary" data-location-fields-target="cardPanel" hidden>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="flex-grow-1"><span class="form-label d-block">Куда</span><div class="fw-semibold" data-location-fields-target="summaryText"></div></div>
+                <button type="button" class="btn btn-soft-primary btn-sm" data-action="click->location-fields#find" data-location-fields-target="findButton"><i class="bi bi-search me-1"></i>Найти</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-action="click->location-fields#clear" data-location-fields-target="clearButton" hidden><i class="bi bi-trash me-1"></i>Удалить</button>
+            </div>
         </div>
+        <input type="hidden" name="{{ name }}[{{ idField }}]" value="{{ locationId }}" data-location-fields-target="locationId">
+    {% endif %}
+    <div class="row g-3" {% if locationCard %}data-location-fields-target="fieldsPanel"{% endif %}>
+        {% if locationCard %}<div class="col-12"><span class="form-label">Куда</span></div>{% endif %}
+        {% if not locationCard %}
+            <div class="col-12">
+                <label class="form-label" for="location-search-{{ key }}">Найти в справочнике</label>
+                <input id="location-search-{{ key }}" type="text" class="form-control" placeholder="Начните вводить адрес…"
+                       data-controller="typeahead"
+                       data-typeahead-endpoint-value="{{ path('app_cabinet_waybill_location_suggest') }}"
+                       data-typeahead-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"
+                       data-typeahead-create-modal-value="location-create-modal"
+                       data-typeahead-hidden-name-value="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}"
+                       data-typeahead-min-length-value="1"
+                       data-typeahead-aux-fields-value="{{ [{field: 'enterprise', label: 'Предприятие:'}]|json_encode|e('html_attr') }}"
+                       {% if locationId %}data-typeahead-existing-value="{{ {id: locationId, title: existingTitle}|json_encode|e('html_attr') }}"{% endif %}>
+                <input type="hidden" name="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}" value="{{ locationId }}">
+            </div>
+        {% endif %}
         <div class="col-md-6">
             <label class="form-label" for="location-country-{{ key }}">Страна</label>
             <input class="form-control" id="location-country-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Country{% else %}{{ name }}[country]{% endif %}" value="{{ location.country|default('') }}" data-location-fields-target="country" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>

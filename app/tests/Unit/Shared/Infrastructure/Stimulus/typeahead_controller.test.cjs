@@ -11,11 +11,13 @@ function element(tagName) {
         children: [],
         parentElement: null,
         attributes: {},
-        classList: { add() {} },
+        classList: { add() {}, remove() {} },
         value: '',
         setAttribute(name, value) { this.attributes[name] = String(value); },
         getAttribute(name) { return this.attributes[name] ?? null; },
         addEventListener() {},
+        dispatchEvent() {},
+        remove() {},
         appendChild(child) {
             child.parentElement = this;
             this.children.push(child);
@@ -40,10 +42,19 @@ const document = {
     addEventListener() {},
     removeEventListener() {},
 };
+const window = {
+    location: { origin: 'http://localhost' },
+    addEventListener() {},
+    removeEventListener() {},
+};
+let fetchImplementation = async () => { throw new Error('Unexpected fetch'); };
 const source = fs.readFileSync(path.resolve(__dirname, '../../../../../assets/controllers/typeahead_controller.js'), 'utf8')
     .replace("import { Controller } from '@hotwired/stimulus';", 'class Controller {}')
     .replace('export default class extends Controller', 'class TypeaheadController extends Controller');
-const TypeaheadController = vm.runInNewContext(`${source}\nTypeaheadController;`, { document, setTimeout, clearTimeout });
+const TypeaheadController = vm.runInNewContext(`${source}\nTypeaheadController;`, {
+    document, window, URL, Event, setTimeout, clearTimeout,
+    fetch: (...args) => fetchImplementation(...args),
+});
 
 function connectedTypeahead(hiddenName, id, title) {
     const parent = element('div');
@@ -56,6 +67,11 @@ function connectedTypeahead(hiddenName, id, title) {
     controller.hiddenNameValue = hiddenName;
     controller.existingValue = { id, title };
     controller.parentFieldValue = '';
+    controller.endpointValue = '/suggest';
+    controller.mainFieldValue = 'title';
+    controller.auxFieldsValue = [];
+    controller.allowCreateValue = false;
+    controller.minLengthValue = 3;
     controller.connect();
 
     return controller;
@@ -84,4 +100,81 @@ test('nested location title keeps the UUID intact in real PHP POST parsing', () 
 test('flat and list companion names keep their established PHP-safe shape', () => {
     assert.equal(connectedTypeahead('organizationId', 'id', 'title')._hiddenTitle.name, 'organizationTitle');
     assert.equal(connectedTypeahead('positionIds[]', 'id', 'title')._hiddenTitle.name, 'positionIdsTitle[]');
+});
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((res) => { resolve = res; });
+    return { promise, resolve };
+}
+
+function searchResponse(title) {
+    return {
+        ok: true,
+        async json() { return { items: [{ id: title, title }], hasMore: false }; },
+    };
+}
+
+async function assertStaleResponseIsIgnored(invalidate) {
+    const controller = connectedTypeahead('locationId', '', '');
+    const pending = deferred();
+    const rendered = [];
+    controller._loadingState = () => {};
+    controller._render = (items, query) => rendered.push({ items, query });
+    fetchImplementation = () => pending.promise;
+    const request = controller._fetch('Старый', 1, false);
+
+    invalidate(controller);
+    pending.resolve(searchResponse('Старый'));
+    await request;
+
+    assert.deepEqual(rendered, []);
+    controller.disconnect();
+}
+
+test('editing the query invalidates a previous request before the debounce fires', async () => {
+    await assertStaleResponseIsIgnored((controller) => {
+        controller.element.value = 'Новый запрос';
+        controller._onInput();
+        clearTimeout(controller._debounce);
+        controller._debounce = null;
+    });
+});
+
+test('clearing the query invalidates a previous request and closes the results', async () => {
+    await assertStaleResponseIsIgnored((controller) => {
+        controller.element.value = '';
+        controller._onInput();
+    });
+});
+
+test('closing the picker invalidates a previous request and cancels a pending search', async () => {
+    await assertStaleResponseIsIgnored((controller) => {
+        controller.element.value = 'Отложенный';
+        controller._onInput();
+        controller._hide();
+        assert.equal(controller._debounce, null);
+    });
+});
+
+test('only the latest completed query renders its results', async () => {
+    const controller = connectedTypeahead('locationId', '', '');
+    const first = deferred();
+    const second = deferred();
+    const rendered = [];
+    controller._show = () => {};
+    controller._render = (items, query) => rendered.push({ items, query });
+    fetchImplementation = (url) => 'Первый' === url.searchParams.get('q') ? first.promise : second.promise;
+    const firstRequest = controller._fetch('Первый', 1, false);
+    const secondRequest = controller._fetch('Второй', 1, false);
+
+    second.resolve(searchResponse('Второй'));
+    await secondRequest;
+    first.resolve(searchResponse('Первый'));
+    await firstRequest;
+
+    assert.equal(rendered.length, 1);
+    assert.equal(rendered[0].query, 'Второй');
+    assert.equal(rendered[0].items[0].title, 'Второй');
+    controller.disconnect();
 });
