@@ -1,2 +1,15 @@
-<div class="col-6 col-xl-3"><span class="form-label d-block">Начальный одометр, км</span><div class="p-2 rounded-3 bg-body fw-semibold">{{ input.initialOdometer }}</div></div>
-<div class="col-6 col-xl-3"><label class="form-label" for="odometerEnd">Конечный одометр, км</label><input id="odometerEnd" name="odometerEnd" value="{{ input.odometerEnd }}" class="form-control" type="number" min="0" step="1" data-waybill-form-target="end"></div>
+<div class="col-12 col-xl-4 order-first order-xl-last">
+    <div id="odometer-control" class="p-3 rounded-3 bg-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-speedometer2 me-2"></i>Контроль пробега</h6>
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-4"><span class="form-label d-block small text-body-secondary">Начальный одометр</span><div class="fw-semibold" data-waybill-form-target="startOdometer">{{ input.initialOdometer }} км</div></div>
+            <div class="col-6 col-md-4"><span class="form-label d-block small text-body-secondary">По поездкам</span><div class="fw-semibold" data-waybill-form-target="distance">—</div></div>
+            <div class="col-12 col-md-4"><span class="form-label d-block small text-body-secondary">Расчётный одометр</span><div class="fw-semibold" data-waybill-form-target="calculated">—</div></div>
+            <div class="col-12 col-md-6"><label class="form-label small" for="odometerEnd">Конечный одометр / цель для подбора, км</label><input id="odometerEnd" name="odometerEnd" value="{{ input.odometerEnd }}" class="form-control" type="number" min="0" step="1" data-waybill-form-target="end" data-action="input->waybill-form#recalculate"></div>
+            <div class="col-12 col-md-6"><button type="submit" name="action" value="fill_route" class="btn btn-soft-primary btn-sm"><i class="bi bi-magic me-1"></i>Заполнить автоматически</button></div>
+        </div>
+        <div class="form-text mt-2" data-waybill-form-target="difference" aria-live="polite">Расхождение: —</div>
+        <div class="form-text">Цель можно оставить пустой: конечный одометр рассчитается при сохранении. Для автоподбора нужна указанная цель.</div>
+        <div class="form-text">Автоподбор предлагает поездки, но не сохраняет лист. Повторный подбор заменит неизменённые автоматические пары; после правки пара станет ручной.</div>
+    </div>
+</div>

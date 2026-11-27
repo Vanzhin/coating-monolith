@@ -168,7 +168,7 @@ final class WaybillFormMapper
             'availableFuelTypes' => $vehicle->fuelTypes,
             'defaultFuelType' => $vehicle->defaultFuelType,
             'legacyRefuelingTotal' => null,
-            'odometerEnd' => (string) $vehicle->odometer,
+            'odometerEnd' => '',
             'fuelType' => $vehicle->defaultFuelType,
             'refuelings' => [], 'fuelRemaining' => '', 'trips' => [], 'absences' => [],
         ];
@@ -300,7 +300,7 @@ final class WaybillFormMapper
     public function blankTrip(): array
     {
         return [
-            'id' => '', 'date' => '', 'locationId' => '', 'country' => Location::DEFAULT_COUNTRY, 'city' => '', 'cityType' => '', 'street' => '', 'house' => '', 'enterprise' => '',
+            'id' => '', 'date' => '', 'locationId' => '', 'country' => '', 'city' => '', 'cityType' => '', 'street' => '', 'house' => '', 'enterprise' => '',
             'latitude' => '', 'longitude' => '', 'distance' => '', 'origin' => RouteLogOrigin::Manual->value, 'pairId' => '',
             'originalDate' => '', 'originalDistance' => '', 'originalLocationId' => '', 'originalCountry' => '', 'originalCity' => '', 'originalCityType' => '', 'originalStreet' => '', 'originalHouse' => '', 'originalEnterprise' => '',
             'originalLatitude' => '', 'originalLongitude' => '',

@@ -4,11 +4,11 @@ const locationFields = ['locationId', 'country', 'city', 'cityType', 'street', '
 const settlementAbbreviations = { city: 'г.', village: 'д.', selo: 'с.', settlement: 'п.', khutor: 'х.', urban_settlement: 'пгт' };
 
 export default class extends Controller {
-    static targets = ['end'];
+    static targets = ['end', 'startOdometer', 'distance', 'calculated', 'difference'];
     static values = { start: String, initialLocation: Object };
 
     connect() {
-        this.refreshTrips(false);
+        this.refreshTrips();
     }
 
     add(event) {
@@ -48,7 +48,7 @@ export default class extends Controller {
         this.input(inserted, 'date').value = this.input(row, 'date').value;
         this.renumber('trip');
         this.refreshTrips();
-        this.input(inserted, 'city').focus();
+        inserted.querySelector('summary')?.focus();
     }
 
     refreshTrips(recalculate = true) {
@@ -62,8 +62,6 @@ export default class extends Controller {
             });
             const insertion = row.querySelector('[data-role="trip-insertion"]');
             if (insertion) insertion.hidden = index === rows.length - 1;
-            const routeLine = row.querySelector('[data-role="route-line"]');
-            if (routeLine) routeLine.hidden = index === rows.length - 1;
             departure = this.destination(row);
             this.updateTripSummary(row, departure);
         }
@@ -124,14 +122,49 @@ export default class extends Controller {
     }
 
     recalculate() {
-        let odometer = BigInt(this.startValue);
-        for (const row of this.tripRows()) {
-            const input = this.input(row, 'distance');
-            if (input.value === '') continue;
-            if (!/^[0-9]+$/.test(input.value) || BigInt(input.value) === 0n) return;
-            odometer += BigInt(input.value);
+        const start = BigInt(this.startValue);
+        this.startOdometerTarget.textContent = this.formatKilometers(start);
+        const distance = this.tripDistance();
+        if (distance === null) {
+            this.distanceTarget.textContent = '—';
+            this.calculatedTarget.textContent = '—';
+            this.differenceTarget.textContent = 'Расхождение: —';
+            return;
         }
-        this.endTarget.value = odometer.toString();
+
+        const calculated = start + distance;
+        this.distanceTarget.textContent = this.formatKilometers(distance);
+        this.calculatedTarget.textContent = this.formatKilometers(calculated);
+        this.updateDifference(calculated);
+    }
+
+    tripDistance() {
+        let distance = 0n;
+        for (const row of this.tripRows()) {
+            const value = this.input(row, 'distance').value;
+            if (!/^[0-9]+$/.test(value)) return null;
+            const tripDistance = BigInt(value);
+            if (tripDistance === 0n) return null;
+            distance += tripDistance;
+        }
+
+        return distance;
+    }
+
+    updateDifference(calculated) {
+        const target = this.endTarget.value.trim();
+        if (!/^[0-9]+$/.test(target)) {
+            this.differenceTarget.textContent = 'Расхождение: —';
+            return;
+        }
+
+        const difference = BigInt(target) - calculated;
+        const sign = difference > 0n ? '+' : '';
+        this.differenceTarget.textContent = `Расхождение: ${sign}${this.formatKilometers(difference)}`;
+    }
+
+    formatKilometers(value) {
+        return `${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} км`;
     }
 
     rows(kind) {

@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Waybills\Infrastructure\Controller\Waybill;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Waybills\Application\DTO\VehicleDTO;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile;
@@ -33,6 +34,30 @@ use Symfony\Component\Uid\Uuid;
 
 final class WaybillFormMapperTest extends TestCase
 {
+    public function test_create_input_leaves_final_odometer_empty_for_server_calculation(): void
+    {
+        $vehicle = new VehicleDTO((string) Uuid::v7(), 'Модель', 'A123BC77', ['АИ-95'], null, 42150, '30', new Location('Россия', 'База'), 'АИ-95');
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+
+        $input = $mapper->createInput($vehicle);
+
+        self::assertSame('42150', $input['initialOdometer']);
+        self::assertSame('', $input['odometerEnd']);
+    }
+
+    public function test_blank_trip_has_no_destination_on_create_and_edit(): void
+    {
+        $vehicle = new VehicleDTO((string) Uuid::v7(), 'Модель', 'A123BC77', ['АИ-95'], null, 100, '30', new Location('Россия', 'База'), 'АИ-95');
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $blank = $mapper->blankTrip();
+
+        foreach (['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise'] as $field) {
+            self::assertSame('', $blank[$field], $field);
+        }
+        self::assertSame($blank, $mapper->createInput($vehicle)['blankTrip']);
+        self::assertSame($blank, $mapper->input($this->draft(), 1)['blankTrip']);
+    }
+
     public function test_round_trip_normalizes_period_and_preserves_trip_time(): void
     {
         $waybill = $this->draft();

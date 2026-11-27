@@ -42,22 +42,21 @@
                 </div>
                 <div id="sec-trips" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
                     <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-signpost-split"></i></span>Поездки</h6>
-                    <div class="row g-2">{% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}</div>
-                    <div class="form-text mb-3">Конечный одометр должен совпадать с начальным показанием и суммой поездок. Пустое показание рассчитывается при сохранении.</div>
-                    <div id="trip-rows" data-waybill-form-target="tripRows">
-                        {% set departure = input.initialLocation %}
-                        {% for trip in input.trips %}
-                            {% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: trip, departure: departure, index: loop.index0, number: loop.index, insertable: not loop.last} %}
-                            {% set departure = trip %}
-                        {% endfor %}
+                    <div class="row g-3">
+                        {% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}
+                        <div id="trip-journal" class="col-12 col-xl-8 order-last order-xl-first">
+                            <div id="trip-rows" data-waybill-form-target="tripRows">
+                                {% set departure = input.initialLocation %}
+                                {% for trip in input.trips %}
+                                    {% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: trip, departure: departure, index: loop.index0, number: loop.index, insertable: not loop.last} %}
+                                    {% set departure = trip %}
+                                {% endfor %}
+                            </div>
+                            <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
+                            <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
+                            <div class="form-text">При создании точки страна по умолчанию — «Россия». Следующая поездка копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
+                        </div>
                     </div>
-                    <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
-                    <div class="row g-0"><div class="col-auto" aria-hidden="true"><i class="bi bi-circle-fill small me-2 invisible"></i></div><div class="col">
-                        <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
-                    </div></div>
-                    <button type="submit" name="action" value="fill_route" class="btn btn-soft-primary mt-2 btn-sm"><i class="bi bi-magic me-1"></i>Заполнить автоматически</button>
-                    <div class="form-text">Первая поездка добавляется со страной «Россия». Следующая копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
-                    <div class="form-text">При повторном заполнении изменяются только неотредактированные автоматические поездки. После правки любого участка пара становится ручной.</div>
                 </div>
                 <input type="hidden" name="tripsSubmitted" value="1">
                 <input type="hidden" name="refuelingsSubmitted" value="1">
