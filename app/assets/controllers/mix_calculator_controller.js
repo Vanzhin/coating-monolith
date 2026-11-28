@@ -63,14 +63,14 @@ export default class extends Controller {
             // У покрытия нет соотношения — сообщаем и оставляем ручной ввод.
             this.coatingRatio = null;
             this.unlock();
-            this.showBaseSeg(false);
+            this.syncBaseSeg(false, false);
             this.showMsg('У этого покрытия нет данных о соотношении — введите пропорцию вручную.');
             return;
         }
 
         this.coatingRatio = ratio;
         this.showMsg(null);
-        this.showBaseSeg(hasVolume && hasMass);
+        this.syncBaseSeg(hasVolume, hasMass);
         const base = hasVolume ? 'volume' : 'mass';
         this.setBaseRadio(base);
         this.loadBase(base);
@@ -87,7 +87,7 @@ export default class extends Controller {
     clearCoating() {
         this.coatingRatio = null;
         this.unlock();
-        this.showBaseSeg(false);
+        this.syncBaseSeg(false, false);
         this.showMsg(null);
     }
 
@@ -126,10 +126,18 @@ export default class extends Controller {
         this.partTargets.forEach((el) => { el.readOnly = false; });
     }
 
-    showBaseSeg(show) {
+    syncBaseSeg(hasVolume, hasMass) {
         if (this.hasBaseSegTarget) {
-            this.baseSegTarget.hidden = !show;
+            this.baseSegTarget.hidden = !(hasVolume || hasMass);
         }
+
+        const availability = { volume: hasVolume, mass: hasMass };
+        Object.entries(availability).forEach(([base, available]) => {
+            const radio = this.element.querySelector(`input[name="mixBase"][value="${base}"]`);
+            if (radio) {
+                radio.disabled = !available;
+            }
+        });
     }
 
     setBaseRadio(base) {
