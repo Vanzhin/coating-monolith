@@ -3,19 +3,29 @@
 {% set locationCard = card|default(false) %}
 {% set inputAction = inputAction|default('') %}
 {% set existingTitle = location.title|default([location.country|default(''), location.city|default(''), location.street|default(''), location.house|default(''), location.enterprise|default('')]|filter(value => value)|join(', ')) %}
-<div class="col-12" data-controller="location-fields" data-action="typeahead:selected->location-fields#select" {% if locationCard %}data-location-fields-card-value="true" data-location-fields-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"{% endif %}>
+<div class="col-12" data-controller="location-fields" data-action="typeahead:selected->location-fields#select input->location-fields#refresh change->location-fields#refresh" {% if locationCard %}data-location-fields-card-value="true"{% endif %}>
     {% if locationCard %}
-        <div class="p-3 rounded-3 bg-body-tertiary" data-location-fields-target="cardPanel" hidden>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div class="flex-grow-1"><span class="form-label d-block">Куда</span><div class="fw-semibold" data-location-fields-target="summaryText"></div></div>
-                <button type="button" class="btn btn-soft-primary btn-sm" data-action="click->location-fields#find" data-location-fields-target="findButton"><i class="bi bi-search me-1"></i>Найти</button>
-                <button type="button" class="btn btn-outline-danger btn-sm" data-action="click->location-fields#clear" data-location-fields-target="clearButton" hidden><i class="bi bi-trash me-1"></i>Удалить</button>
+        <div>
+            <div class="wb-field">
+                <div class="wb-field-body">
+                    <label class="wb-field-label" for="location-search-{{ key }}">Куда</label>
+                    <input id="location-search-{{ key }}" type="text" class="wb-field-control" placeholder="Начните вводить адрес…"
+                           data-controller="typeahead" data-location-fields-target="searchInput"
+                           data-typeahead-endpoint-value="{{ path('app_cabinet_waybill_location_suggest') }}"
+                           data-typeahead-create-url-value="{{ path('app_cabinet_waybill_location_quick') }}"
+                           data-typeahead-create-modal-value="location-create-modal"
+                           data-typeahead-hidden-name-value="{{ name }}[{{ idField }}]"
+                           data-typeahead-min-length-value="1"
+                           data-typeahead-aux-fields-value="{{ [{field: 'enterprise', label: 'Предприятие:'}]|json_encode|e('html_attr') }}"
+                           {% if locationId %}data-typeahead-existing-value="{{ {id: locationId, title: existingTitle}|json_encode|e('html_attr') }}"{% endif %}>
+                    <input type="hidden" name="{{ name }}[{{ idField }}]" value="{{ locationId }}" data-location-fields-target="locationId">
+                </div>
+                <i class="bi bi-search wb-field-ic" aria-hidden="true"></i>
             </div>
+            <button type="button" class="wb-trip-manual wb-trip-clear" data-action="click->location-fields#clear" data-location-fields-target="clearButton" hidden><i class="bi bi-trash me-1"></i>Очистить адрес</button>
         </div>
-        <input type="hidden" name="{{ name }}[{{ idField }}]" value="{{ locationId }}" data-location-fields-target="locationId">
     {% endif %}
-    <div class="row g-3" {% if locationCard %}data-location-fields-target="fieldsPanel"{% endif %}>
-        {% if locationCard %}<div class="col-12"><span class="form-label">Куда</span></div>{% endif %}
+    <div class="row g-2{% if locationCard %} mt-2{% endif %}" {% if locationCard %}hidden{% endif %}>
         {% if not locationCard %}
             <div class="col-12">
                 <label class="form-label" for="location-search-{{ key }}">Найти в справочнике</label>
@@ -31,32 +41,32 @@
                 <input type="hidden" name="{% if flatPrefix is defined %}{{ flatPrefix }}LocationId{% else %}{{ name }}[{{ idField }}]{% endif %}" value="{{ locationId }}">
             </div>
         {% endif %}
-        <div class="col-md-6">
-            <label class="form-label" for="location-country-{{ key }}">Страна</label>
-            <input class="form-control" id="location-country-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Country{% else %}{{ name }}[country]{% endif %}" value="{{ location.country|default('') }}" data-location-fields-target="country" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-city-type-{{ key }}">Тип населённого пункта</label>
-            <select class="form-select" id="location-city-type-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}CityType{% else %}{{ name }}[cityType]{% endif %}" data-location-fields-target="cityType" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-country-{{ key }}">Страна</label>
+            <input class="{{ locationCard ? 'wb-field-control' : 'form-control' }}" id="location-country-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Country{% else %}{{ name }}[country]{% endif %}" value="{{ location.country|default('') }}" data-location-fields-target="country" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div></div></div>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-city-type-{{ key }}">Тип населённого пункта</label>
+            <select class="{{ locationCard ? 'wb-field-control' : 'form-select' }}" id="location-city-type-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}CityType{% else %}{{ name }}[cityType]{% endif %}" data-location-fields-target="cityType" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
                 <option value="">Не указан</option>
                 {% for type in settlementTypes %}<option value="{{ type.value }}" {% if location.cityType|default('') == type.value %}selected{% endif %}>{{ type.label() }} ({{ type.abbreviation() }})</option>{% endfor %}
             </select>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-city-{{ key }}">Населённый пункт</label>
-            <input class="form-control" id="location-city-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}City{% else %}{{ name }}[city]{% endif %}" value="{{ location.city|default('') }}" data-location-fields-target="city" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-street-{{ key }}">Улица</label>
-            <input class="form-control" id="location-street-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Street{% else %}{{ name }}[street]{% endif %}" value="{{ location.street|default('') }}" data-location-fields-target="street" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-house-{{ key }}">Дом</label>
-            <input class="form-control" id="location-house-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}House{% else %}{{ name }}[house]{% endif %}" value="{{ location.house|default('') }}" data-location-fields-target="house" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="location-enterprise-{{ key }}">Предприятие</label>
-            <input class="form-control" id="location-enterprise-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Enterprise{% else %}{{ name }}[enterprise]{% endif %}" value="{{ location.enterprise|default('') }}" data-location-fields-target="enterprise" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
-        </div>
+        </div></div></div>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-city-{{ key }}">Населённый пункт</label>
+            <input class="{{ locationCard ? 'wb-field-control' : 'form-control' }}" id="location-city-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}City{% else %}{{ name }}[city]{% endif %}" value="{{ location.city|default('') }}" data-location-fields-target="city" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div></div></div>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-street-{{ key }}">Улица</label>
+            <input class="{{ locationCard ? 'wb-field-control' : 'form-control' }}" id="location-street-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Street{% else %}{{ name }}[street]{% endif %}" value="{{ location.street|default('') }}" data-location-fields-target="street" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div></div></div>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-house-{{ key }}">Дом</label>
+            <input class="{{ locationCard ? 'wb-field-control' : 'form-control' }}" id="location-house-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}House{% else %}{{ name }}[house]{% endif %}" value="{{ location.house|default('') }}" data-location-fields-target="house" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div></div></div>
+        <div class="col-md-6"><div class="{{ locationCard ? 'wb-field' }}"><div class="{{ locationCard ? 'wb-field-body' }}">
+            <label class="{{ locationCard ? 'wb-field-label' : 'form-label' }}" for="location-enterprise-{{ key }}">Предприятие</label>
+            <input class="{{ locationCard ? 'wb-field-control' : 'form-control' }}" id="location-enterprise-{{ key }}" name="{% if flatPrefix is defined %}{{ flatPrefix }}Enterprise{% else %}{{ name }}[enterprise]{% endif %}" value="{{ location.enterprise|default('') }}" data-location-fields-target="enterprise" {% if inputAction %}data-action="{{ inputAction }}"{% endif %}>
+        </div></div></div>
     </div>
 </div>

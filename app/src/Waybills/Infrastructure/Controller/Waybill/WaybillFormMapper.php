@@ -456,7 +456,7 @@ final class WaybillFormMapper
             }
         }
 
-        throw new AppException('Укажите корректные дату и время.');
+        throw new AppException('Укажите корректную дату.');
     }
 
     private function number(string $input): float

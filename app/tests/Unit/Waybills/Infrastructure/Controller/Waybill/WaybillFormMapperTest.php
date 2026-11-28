@@ -107,13 +107,14 @@ final class WaybillFormMapperTest extends TestCase
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
-        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '3.50000000000000000001']];
+        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10', 'fuelType' => 'АИ-95', 'quantity' => '3.50000000000000000001']];
 
         $command = $mapper->updateCommand($waybill, $input);
 
         self::assertNull($command->fuel);
         self::assertSame('30.00000000000000000001', (string) $waybill->fuelStart());
         self::assertNotNull($command->refuelings);
+        self::assertSame('2026-01-10 00:00:00.000000', $command->refuelings->items[0]->date->format('Y-m-d H:i:s.u'));
         self::assertSame('3.50000000000000000001', (string) $command->refuelings->items[0]->quantity);
     }
 
@@ -125,7 +126,7 @@ final class WaybillFormMapperTest extends TestCase
         $waybill->reviseDraftWithRefuelingOperations($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, new RefuelingOperations($operation));
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
-        $input['refuelings'][0]['date'] = '2026-01-10T12:00';
+        $input['refuelings'][0]['date'] = '2026-01-10';
 
         $command = $mapper->updateCommand($waybill, $input);
 

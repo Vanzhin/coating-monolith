@@ -162,6 +162,7 @@
     bottom: 0;
     z-index: 1020;
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.5rem;
     margin-inline: -0.75rem;
@@ -448,22 +449,4 @@ button.rec-sec-head:hover {
     margin: 0;
     float: none;
     cursor: pointer;
-}
-
-
-#trip-rows {
-    interpolate-size: allow-keywords;
-}
-#trip-rows details::details-content {
-    block-size: 0;
-    overflow: hidden;
-    transition: block-size 0.2s ease, content-visibility 0.2s allow-discrete;
-}
-#trip-rows details[open]::details-content {
-    block-size: auto;
-}
-@media (prefers-reduced-motion: reduce) {
-    #trip-rows details::details-content {
-        transition: none;
-    }
 }

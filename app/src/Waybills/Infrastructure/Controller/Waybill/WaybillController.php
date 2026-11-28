@@ -11,7 +11,6 @@ use App\Shared\Domain\Templating\TemplateFile;
 use App\Shared\Domain\Templating\TextValue;
 use App\Shared\Infrastructure\Exception\AppException;
 use App\Shared\Infrastructure\Service\TemplateRendering;
-use App\Waybills\Application\DTO\WaybillEditData;
 use App\Waybills\Application\UseCase\Command\CreateWaybill\CreateWaybillCommand;
 use App\Waybills\Application\UseCase\Command\DeleteWaybill\DeleteWaybillCommand;
 use App\Waybills\Application\UseCase\Command\FillWaybillRoute\FillWaybillRouteCommand;
@@ -125,6 +124,7 @@ final class WaybillController extends AbstractController
 
         return $this->render('cabinet/waybill/sheet/form.html.twig', [
             'creating' => true,
+            'locked' => false,
             'formTitle' => 'Новый путевой лист',
             'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_list', ['vehicleId' => $vehicleId]),
             'tokenId' => 'waybill_new_'.$vehicleId,
@@ -133,11 +133,9 @@ final class WaybillController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_cabinet_waybill_sheet_show', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
-    public function show(string $id): Response
+    public function show(Request $request, string $id): Response
     {
-        $editData = $this->getWaybill($id);
-
-        return $this->render('cabinet/waybill/sheet/show.html.twig', ['waybill' => $editData->waybill, 'version' => $editData->version]);
+        return $this->edit($request, $id);
     }
 
     #[Route('/{id}/delete', name: 'app_cabinet_waybill_sheet_delete', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
@@ -198,12 +196,13 @@ final class WaybillController extends AbstractController
     {
         $editData = $this->queries->execute(new GetWaybillForEditQuery($id, withPredecessor: true));
         $waybill = $editData->waybill;
-        $waybill->assertEditable();
+        $locked = $waybill->isLocked();
         $input = $this->mapper->input($waybill, $editData->version, $editData->predecessor);
         $error = null;
         $status = Response::HTTP_OK;
         if ($request->isMethod('POST')) {
             try {
+                $waybill->assertEditable();
                 $this->postedInput($request, $input);
                 $this->checkToken($request, 'waybill_edit_'.$id);
                 if ('fill_route' === $request->request->getString('action')) {
@@ -221,8 +220,10 @@ final class WaybillController extends AbstractController
 
         return $this->render('cabinet/waybill/sheet/form.html.twig', [
             'creating' => false,
+            'locked' => $locked,
+            'waybill' => $waybill,
             'formTitle' => 'Путевой лист №'.$waybill->getNumber(),
-            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_show', ['id' => $id]),
+            'backUrl' => $this->generateUrl('app_cabinet_waybill_sheet_list', ['vehicleId' => $waybill->vehicleId()]),
             'tokenId' => 'waybill_edit_'.$id,
             'input' => $input, 'error' => $error, 'timezone' => date_default_timezone_get(), 'settlementTypes' => SettlementType::cases(),
         ], new Response(status: $status));
@@ -333,18 +334,6 @@ final class WaybillController extends AbstractController
     {
         if (!$this->isCsrfTokenValid($id, $request->request->getString('_token'))) {
             throw new AppException('Сессия устарела, попробуйте ещё раз.', Response::HTTP_FORBIDDEN);
-        }
-    }
-
-    private function getWaybill(string $id): WaybillEditData
-    {
-        try {
-            return $this->queries->execute(new GetWaybillForEditQuery($id));
-        } catch (AppException $exception) {
-            if (Response::HTTP_NOT_FOUND === $exception->getCode()) {
-                throw $this->createNotFoundException($exception->getMessage(), $exception);
-            }
-            throw $exception;
         }
     }
 }

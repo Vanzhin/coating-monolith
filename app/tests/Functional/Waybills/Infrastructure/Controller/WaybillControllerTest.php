@@ -135,10 +135,11 @@ final class WaybillControllerTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/cabinet/waybill/sheets');
         self::assertResponseIsSuccessful();
-        self::assertCount(1, $crawler->filter('a.btn-soft-success[title="Добавить"][href="/cabinet/waybill/sheets/new"]'));
+        self::assertCount(1, $crawler->filter('a.btn-primary[href="/cabinet/waybill/sheets/new"]'));
         self::assertCount(0, $crawler->filter('a.btn-outline-secondary[href="/cabinet/waybill/vehicle"]'));
-        self::assertCount(0, $crawler->filterXPath('//h2[normalize-space(.)="Путевые листы"]/parent::div/following-sibling::div[contains(concat(" ", normalize-space(@class), " "), " mb-3 ")]'));
-        self::assertSelectorTextContains('body', 'Путевые листы не найдены');
+        self::assertSelectorExists('form.wb-filters input[name="vehicleId"]');
+        self::assertCount(0, $crawler->filter('.wb-sheet'));
+        self::assertSelectorTextContains('body', 'Пока нет путевых листов');
         self::assertSelectorTextNotContains('body', 'Путевой лист №2');
         $this->client->request('GET', '/cabinet/waybill/sheets/new');
         self::assertResponseRedirects('/cabinet/waybill/sheets/new/'.$this->vehicleId);
@@ -149,9 +150,51 @@ final class WaybillControllerTest extends WebTestCase
         self::assertResponseRedirects();
         $this->client->request('GET', '/cabinet/waybill/sheets');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.ecard', 'Путевой лист №1');
-        self::assertSelectorTextContains('.ecard', 'Модель');
+        self::assertSelectorTextContains('.wb-sheet', 'Путевой лист №1');
+        self::assertSelectorTextContains('.wb-sheet', 'Модель — A123BC77');
+        self::assertSelectorTextContains('.wb-sheet', '0 на 0 км');
+        self::assertSelectorTextContains('.wb-sheet .wb-badge--draft', 'Черновик');
         self::assertSelectorTextNotContains('body', 'Путевой лист №2');
+    }
+
+    public function test_list_shows_real_statistics_and_working_filters(): void
+    {
+        $url = '/cabinet/waybill/sheets/new/'.$this->vehicleId;
+        $crawler = $this->client->request('GET', $url);
+        $input = $this->creationInput($crawler);
+        $input['odometerEnd'] = '';
+        $input['trips'] = [
+            ['id' => '', 'date' => '2026-01-10', 'distance' => '10', 'country' => 'Россия', 'city' => 'Первая'],
+            ['id' => '', 'date' => '2026-01-11', 'distance' => '20', 'country' => 'Россия', 'city' => 'Вторая'],
+        ];
+        $this->client->request('POST', $url, $input);
+        self::assertResponseRedirects();
+
+        $query = ['vehicleId' => $this->vehicleId, 'status' => 'draft', 'from' => '2026-01-15', 'to' => '2026-01-31'];
+        $crawler = $this->client->request('GET', '/cabinet/waybill/sheets?'.http_build_query($query));
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('.wb-sheet'));
+        self::assertSelectorTextContains('.wb-sheet', 'Модель — A123BC77');
+        self::assertSelectorTextContains('.wb-sheet', '2 на 30 км');
+        self::assertSelectorTextContains('.wb-sheet .wb-badge--draft', 'Черновик');
+        self::assertSame($this->vehicleId, $crawler->filter('input[name="vehicleId"]')->attr('value'));
+        self::assertSame($this->vehicleId, json_decode($crawler->filter('#waybill-vehicle-filter')->attr('data-typeahead-existing-value'), true, flags: JSON_THROW_ON_ERROR)['id']);
+        self::assertSame('2026-01-15', $crawler->filter('input[name="from"]')->attr('value'));
+        self::assertSame('2026-01-31', $crawler->filter('input[name="to"]')->attr('value'));
+        self::assertSelectorExists('#waybill-period-filter[data-date-range-target="display"]');
+        self::assertStringContainsString('status=draft', $crawler->filter('.wb-tab.is-active')->attr('href'));
+
+        foreach ([
+            ['status' => 'done'],
+            ['status' => 'draft', 'from' => '2026-02-01'],
+            ['from' => '2026-02-30'],
+            ['vehicleId' => (string) Uuid::v7()],
+        ] as $filters) {
+            $crawler = $this->client->request('GET', '/cabinet/waybill/sheets?'.http_build_query($filters));
+            self::assertResponseIsSuccessful();
+            self::assertCount(0, $crawler->filter('.wb-sheet'));
+            self::assertSelectorTextContains('.wb-empty--lg', 'Путевые листы не найдены');
+        }
     }
 
     public function test_add_without_an_occupied_vehicle_explains_how_to_choose_one(): void
@@ -238,8 +281,8 @@ final class WaybillControllerTest extends WebTestCase
         self::assertNotNull($showUrl);
         $crawler = $this->client->request('GET', $showUrl.'/edit');
         self::assertResponseIsSuccessful();
-        self::assertCount(2, $this->client->getCrawler()->filter('#trip-rows details summary i[aria-label="Ручная поездка"]'));
-        self::assertCount(2, $this->client->getCrawler()->filter('#trip-rows details summary i[aria-label="Автоматическая поездка"]'));
+        self::assertCount(2, $this->client->getCrawler()->filter('#trip-rows details summary .wb-badge--manual'));
+        self::assertCount(2, $this->client->getCrawler()->filter('#trip-rows details summary .wb-badge--auto'));
         $input['_token'] = $crawler->filter('input[name="_token"]')->attr('value');
         $input['version'] = $crawler->filter('input[name="version"]')->attr('value');
         $input['trips'] = $this->postedTrips($crawler);
@@ -1269,7 +1312,7 @@ final class WaybillControllerTest extends WebTestCase
             self::assertSelectorExists('input[name="trips[0][id]"][value="'.$id.'"]');
             self::assertSelectorExists('input[name="trips[0][date]"][value="2026-01-10"]');
             self::assertSelectorExists('input[name="trips[0][distance]"][value="15"]');
-            $this->assertEditableTripLocationFields($crawler, '0');
+            $this->assertSearchableTripLocationFields($crawler, '0');
             foreach ($tables as $table) {
                 self::assertSame($before[$table], $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.'.$table.' ORDER BY id'), $table);
             }
@@ -1287,7 +1330,7 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="trips[0][locationId]"][value="'.$partialLocationId.'"]');
         self::assertSelectorExists('select[name="trips[0][cityType]"] option[value="city"][selected]');
         self::assertSelectorExists('input[name="trips[0][enterprise]"][value="Черновик предприятия"]');
-        $this->assertEditableTripLocationFields($crawler, '0');
+        $this->assertSearchableTripLocationFields($crawler, '0');
         foreach ($tables as $table) {
             self::assertSame($before[$table], $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.'.$table.' ORDER BY id'), $table);
         }
@@ -1341,7 +1384,7 @@ final class WaybillControllerTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $showUrl.'/edit');
         self::assertResponseIsSuccessful();
-        $this->assertEditableTripLocationFields($crawler, '0');
+        $this->assertSearchableTripLocationFields($crawler, '0');
         $trip = $this->postedTrips($crawler)[0];
         self::assertNotSame($trip['id'], $trip['locationId']);
         self::assertSame($locationId, $trip['locationId']);
@@ -1399,7 +1442,7 @@ final class WaybillControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('.form-alert', 'Укажите адрес точки маршрута.');
         self::assertSame($trips, $this->postedTrips($crawler));
-        $this->assertEditableTripLocationFields($crawler, '0');
+        $this->assertSearchableTripLocationFields($crawler, '0');
         foreach ($tables as $table) {
             self::assertSame($before[$table], $this->connection->fetchAllAssociative('SELECT * FROM pg_temp.'.$table.' ORDER BY id'), $table);
         }
@@ -1418,7 +1461,7 @@ final class WaybillControllerTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $showUrl.'/edit');
         self::assertResponseIsSuccessful();
-        $this->assertEditableTripLocationFields($crawler, '0');
+        $this->assertSearchableTripLocationFields($crawler, '0');
         $row = $this->postedTrips($crawler)[0];
         self::assertSame((string) $trip->id, $row['id']);
         self::assertSame('', $row['locationId']);
@@ -1486,34 +1529,33 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorTextContains('#trip-rows details summary', '→');
         self::assertSelectorTextNotContains('#trip-rows details summary', 'Откуда:');
         self::assertSelectorTextNotContains('#trip-rows details summary', 'Куда:');
-        self::assertSelectorExists('#trip-rows details > summary:not(.row) > span.row > span.col-4.col-md-2.text-truncate[data-role="trip-date"]');
-        self::assertSelectorExists('#trip-rows details summary > span.row > span.col-8.col-md-6 > span.d-block.text-truncate[data-role="departure"]');
-        self::assertSelectorExists('#trip-rows details summary > span.row > span.col-8.col-md-6 > strong.d-block.text-truncate [data-role="destination"]');
-        self::assertCount(2, $crawler->filter('#trip-rows details summary > span.row > span.col-8.col-md-6 > .text-truncate'));
-        self::assertSelectorExists('#trip-rows details summary > span.row > span.col-4.col-md-2.text-truncate[data-role="trip-distance"]');
+        self::assertSelectorExists('#trip-rows details > summary.wb-trip-summary > span.wb-trip-date[data-role="trip-date"]');
+        self::assertSelectorExists('#trip-rows details summary > span.wb-trip-route > span.from[data-role="departure"]');
+        self::assertSelectorExists('#trip-rows details summary > span.wb-trip-route > b[data-role="destination"]');
+        self::assertCount(2, $crawler->filter('#trip-rows details summary .wb-trip-route [data-role="departure"], #trip-rows details summary .wb-trip-route [data-role="destination"]'));
+        self::assertSelectorExists('#trip-rows details summary > span.wb-trip-dist[data-role="trip-distance"]');
         self::assertCount(1, $crawler->filter('#trip-rows details summary'));
         self::assertSelectorExists('#trip-rows details input[name="trips[0][distance]"]');
-        self::assertSelectorExists('#trip-rows details + div.dropdown.position-absolute > button[data-bs-toggle="dropdown"][aria-label="Действия с поездкой"] i.bi-three-dots-vertical');
+        self::assertSelectorExists('#trip-rows details + div.dropdown.wb-trip-menu > button[data-bs-toggle="dropdown"][aria-label="Действия с поездкой"] i.bi-three-dots-vertical');
         self::assertSelectorExists('#trip-rows div.dropdown > ul.dropdown-menu.dropdown-menu-end');
         self::assertSelectorNotExists('#trip-rows details button[data-waybill-form-kind-param="trip"], #trip-rows summary button');
         self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] details:not([open]) input[name="trips[__i__][city]"]');
         self::assertSelectorExists('#trip-rows [data-role="trip-insertion"][hidden] button.dropdown-item[data-action="click->waybill-form#insert"]');
         self::assertSelectorTextContains('#trip-rows [data-role="trip-insertion"] button', 'Добавить поездку ниже');
         self::assertSelectorExists('#trip-rows div.dropdown button.dropdown-item.text-danger[data-action="click->waybill-form#remove"][data-waybill-form-kind-param="trip"]');
-        self::assertSelectorExists('#trip-rows details .p-3.rounded-3.bg-body-tertiary [data-role="departure"].fw-semibold');
+        self::assertSelectorExists('#trip-rows details .wb-trip-from [data-role="departure"].wb-meta-v');
         self::assertSelectorExists('#trip-rows details .bi-arrow-down');
-        self::assertSelectorExists('#trip-rows [data-location-fields-card-value="true"] > div.p-3.rounded-3.bg-body-tertiary');
-        self::assertSelectorExists('#trip-rows [data-location-fields-card-value="true"] [data-location-fields-target="summaryText"]');
+        self::assertSelectorExists('#trip-rows [data-location-fields-card-value="true"] [data-location-fields-target="searchInput"][data-controller="typeahead"]');
         self::assertSelectorExists('#trip-rows input[name="trips[0][city]"][value="Москва"]');
-        self::assertSelectorExists('#trip-rows [data-location-fields-card-value="true"] button[data-action="click->location-fields#find"]');
+        self::assertSelectorNotExists('#trip-rows [data-action="click->location-fields#toggleManual"]');
         self::assertSelectorExists('#trip-rows [data-location-fields-card-value="true"] button[data-action="click->location-fields#clear"]');
         self::assertSelectorNotExists('#trip-rows [data-location-fields-card-value="true"] button[data-action="click->location-fields#create"]');
-        $this->assertEditableTripLocationFields($crawler, '0');
+        $this->assertSearchableTripLocationFields($crawler, '0');
         self::assertSelectorExists('#locationCreateModal.modal.fade .modal-dialog .modal-content [data-location-create-modal-target="searchPanel"] input[data-controller="typeahead"]');
         self::assertSelectorExists('#locationCreateModal [data-location-create-modal-target="createButton"][data-action="click->location-create-modal#showCreate"]');
         self::assertSelectorExists('#locationCreateModal [data-location-create-modal-target="submitButton"][data-action="click->location-create-modal#submit"]');
-        self::assertSelectorExists('#sec-trips button.w-100[data-waybill-form-kind-param="trip"]');
-        self::assertSelectorExists('#sec-trips button[name="action"][value="fill_route"].btn-soft-primary i.bi-magic');
+        self::assertSelectorExists('#sec-trips button.wb-add[data-waybill-form-kind-param="trip"]');
+        self::assertSelectorExists('#sec-trips button[name="action"][value="fill_route"].wb-primary i.bi-magic');
         $input['version'] = $crawler->filter('input[name="version"]')->attr('value');
         $input['trips'][0]['id'] = $crawler->filter('input[name="trips[0][id]"]')->attr('value');
         $input['refuelings'][0]['id'] = $crawler->filter('input[name="refuelings[0][id]"]')->attr('value');
@@ -1614,7 +1656,7 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorTextContains('.form-alert', 'Для автоматического заполнения укажите конечный одометр.');
         self::assertSelectorExists('input[name="odometerEnd"][value=""]');
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
-        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '12.5']];
+        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10', 'fuelType' => 'АИ-95', 'quantity' => '12.5']];
         $input['trips'] = [
             ['id' => '', 'date' => '2026-01-10T12:00', 'distance' => '15', 'country' => 'Россия', 'city' => 'Первая', 'enterprise' => 'Склад'],
         ];
@@ -1711,6 +1753,12 @@ final class WaybillControllerTest extends WebTestCase
             self::assertCount(0, $crawler->filter('#sec-period .input-group'));
             self::assertSelectorExists('#sec-period input#from[name="from"]');
             self::assertSelectorExists('#sec-period input#to[name="to"]');
+            self::assertCount(1, $crawler->filter('#sec-period input[name="from"]'));
+            self::assertCount(1, $crawler->filter('#sec-period input[name="to"]'));
+            self::assertSelectorExists('#sec-period[data-controller~="date-range"] [data-date-range-target="fallback"]:not([hidden])');
+            self::assertSelectorExists('#sec-period [data-date-range-target="enhanced"][hidden] input#period-range:not([name])[readonly][aria-haspopup="dialog"]');
+            self::assertSelectorTextContains('#sec-period label[for="period-range"]', 'Даты путевого листа');
+            self::assertSelectorExists('#sec-period #period-range-calendar[hidden][role="dialog"] [data-date-range-target="calendar"]');
         };
         $assertPeriod($crawler);
 
@@ -1729,14 +1777,24 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] input[name="trips[__i__][city]"][data-action="input->waybill-form#refreshTripLocations"]');
         self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] [data-role="trip-insertion"][hidden] button[data-action="click->waybill-form#insert"]');
         self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] div.dropdown button.dropdown-item.text-danger[data-action="click->waybill-form#remove"][title="Удалить поездку"][aria-label="Удалить поездку"] i.bi.bi-trash');
-        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] [data-location-fields-card-value="true"] [data-location-fields-target="findButton"]');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] [data-location-fields-card-value="true"] input[data-controller="typeahead"][data-location-fields-target="searchInput"]');
+        self::assertSelectorNotExists('template[data-waybill-form-target="tripTemplate"] [data-action="click->location-fields#toggleManual"]');
         self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] [data-location-fields-card-value="true"] [data-location-fields-target="clearButton"]');
-        $this->assertEditableTripLocationFields($this->client->getCrawler(), '__i__', template: true);
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] [data-controller="date-picker"] input[name="trips[__i__][date]"][data-date-picker-target="input"]');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] #trip-date-display-__i__[data-date-picker-target="display"][aria-controls="trip-date-calendar-__i__"]');
+        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"] [data-controller="date-picker"] input[type="date"][name="refuelings[__i__][date]"][data-date-picker-target="input"]');
+        self::assertSelectorNotExists('template[data-waybill-form-target="refuelingTemplate"] input[type="time"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] .wb-absence-range[data-controller="date-range"] #absence-range-__i__[data-date-range-target="display"][aria-controls="absence-range-calendar-__i__"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] #absence-range-calendar-__i__[data-date-range-target="popup"] [data-date-range-target="calendar"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] input[type="date"][name="absences[__i__][from]"][data-date-range-target="from"]');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] input[type="date"][name="absences[__i__][to]"][data-date-range-target="to"]');
+        self::assertSelectorNotExists('template[data-waybill-form-target="absenceTemplate"] [data-controller="date-picker"]');
+        $this->assertSearchableTripLocationFields($this->client->getCrawler(), '__i__', template: true);
         foreach (['refueling' => 'заправку', 'absence' => 'период'] as $kind => $label) {
-            self::assertSelectorExists(sprintf('template[data-waybill-form-target="%sTemplate"] button.btn.btn-sm.btn-outline-danger[data-action="click->waybill-form#remove"][title="Удалить %s"][aria-label="Удалить %s"] i.bi.bi-trash', $kind, $label, $label));
+            self::assertSelectorExists(sprintf('template[data-waybill-form-target="%sTemplate"] button.btn.btn-sm.btn-link.text-danger[data-action="click->waybill-form#remove"][title="Удалить %s"][aria-label="Удалить %s"] i.bi.bi-trash', $kind, $label, $label));
         }
         foreach (['trip', 'refueling', 'absence'] as $kind) {
-            self::assertSelectorExists(sprintf('button.btn.btn-soft-success.btn-sm[data-action="click->waybill-form#add"][data-waybill-form-kind-param="%s"] i.bi.bi-plus-lg.me-1', $kind));
+            self::assertSelectorExists(sprintf('button.wb-add[data-action="click->waybill-form#add"][data-waybill-form-kind-param="%s"] i.bi.bi-plus-lg', $kind));
         }
     }
 
@@ -1751,8 +1809,8 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_waybill'));
 
         $input['refuelings'] = [
-            ['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '0.1'],
-            ['id' => '', 'date' => '2026-01-11T12:00', 'fuelType' => 'АИ-92', 'quantity' => '0.20000000000000000001'],
+            ['id' => '', 'date' => '2026-01-10', 'fuelType' => 'АИ-95', 'quantity' => '0.1'],
+            ['id' => '', 'date' => '2026-01-11', 'fuelType' => 'АИ-92', 'quantity' => '0.20000000000000000001'],
         ];
         $input['trips'] = [
             ['id' => '', 'date' => '2026-01-10T12:00', 'distance' => '1', 'country' => 'Россия', 'city' => 'Первая', 'street' => '', 'house' => '', 'enterprise' => ''],
@@ -1763,10 +1821,12 @@ final class WaybillControllerTest extends WebTestCase
         self::assertResponseRedirects();
         $showUrl = $this->client->getResponse()->headers->get('Location');
         self::assertNotNull($showUrl);
-        $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', '0.30000000000000000001');
-        self::assertSelectorTextContains('.kv-grid', 'АИ-95, АИ-92');
+        self::assertSelectorExists('input[name="refuelings[0][quantity]"][value="0.1"]');
+        self::assertSelectorExists('input[name="refuelings[1][quantity]"][value="0.20000000000000000001"]');
+        self::assertSelectorExists('select[name="refuelings[0][fuelType]"] option[value="АИ-95"][selected]');
+        self::assertSelectorExists('select[name="refuelings[1][fuelType]"] option[value="АИ-92"][selected]');
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pg_temp.waybills_fuel_operation'));
 
         $editUrl = $showUrl.'/edit';
@@ -1787,7 +1847,8 @@ final class WaybillControllerTest extends WebTestCase
         $this->client->request('POST', $editUrl, $input);
         self::assertResponseRedirects();
         $this->client->followRedirect();
-        self::assertSelectorTextContains('body', '0.4');
+        self::assertSelectorExists('input[name="refuelings[0][quantity]"][value="0.1"]');
+        self::assertSelectorExists('input[name="refuelings[1][quantity]"][value="0.3"]');
         self::assertSame($input['refuelings'][1]['id'], $this->connection->fetchOne('SELECT id FROM pg_temp.waybills_fuel_operation WHERE position = 1'));
     }
 
@@ -1908,7 +1969,8 @@ final class WaybillControllerTest extends WebTestCase
         $showUrl = $this->client->getResponse()->headers->get('Location');
         self::assertNotNull($showUrl);
         $this->client->followRedirect();
-        self::assertSelectorTextContains('body', 'Россия, База → Россия, Первая');
+        self::assertSelectorTextContains('#trip-rows [data-role="departure"]', 'Россия, База');
+        self::assertSelectorTextContains('#trip-rows [data-role="destination"]', 'Россия, Первая');
 
         $crawler = $this->client->request('GET', $showUrl.'/edit');
         $input['_token'] = $crawler->filter('input[name="_token"]')->attr('value');
@@ -1958,7 +2020,7 @@ final class WaybillControllerTest extends WebTestCase
         $input['fuelRemaining'] = '20';
         $input['odometerEnd'] = '';
         $input['trips'] = [['id' => '', 'date' => '2026-01-10T12:00', 'distance' => '5', 'country' => 'Россия', 'city' => 'Москва', 'street' => '', 'house' => '', 'enterprise' => 'Склад']];
-        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '12.5']];
+        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10', 'fuelType' => 'АИ-95', 'quantity' => '12.5']];
         $this->client->request('POST', $url, $input);
         self::assertResponseRedirects();
         $showUrl = $this->client->getResponse()->headers->get('Location');
@@ -1988,7 +2050,30 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSame(105, (int) $this->connection->fetchOne('SELECT current_odometer FROM pg_temp.waybills_vehicle'));
         self::assertSame('20', $this->connection->fetchOne('SELECT fuel_remaining::text FROM pg_temp.waybills_vehicle'));
         self::assertSame(1, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pg_temp.waybills_fuel_operation WHERE type = 'reconciliation'"));
-        self::assertCount(0, $crawler->filter('a[href$="/edit"]'));
+        self::assertSelectorTextContains('#waybill-form .wb-meta', 'Утверждён · только чтение');
+        self::assertSelectorExists('#waybill-form fieldset.wb-form-fields[disabled]');
+        self::assertCount(0, $crawler->filter('button[form="waybill-form"]'));
+        self::assertCount(0, $crawler->filter('form[action$="/approve"], form[action$="/delete"]'));
+        self::assertCount(0, $crawler->filter('#waybill-form button[data-waybill-form-kind-param], #waybill-form button[name="action"], #waybill-form .wb-trip-menu'));
+        self::assertCount(1, $crawler->filter('a[href$="/download"]'));
+
+        $crawler = $this->client->request('GET', $showUrl.'/edit');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#waybill-form fieldset.wb-form-fields[disabled]');
+        self::assertCount(0, $crawler->filter('button[form="waybill-form"]'));
+        $before = $this->connection->fetchAssociative('SELECT * FROM pg_temp.waybills_waybill');
+        unset($input['initialOdometer'], $input['initialFuel']);
+        $input['_token'] = $crawler->filter('#waybill-form input[name="_token"]')->attr('value');
+        $input['version'] = $crawler->filter('#waybill-form input[name="version"]')->attr('value');
+        $this->client->request('POST', $showUrl.'/edit', $input);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.form-alert', 'Зафиксированный путевой лист нельзя изменять или удалять');
+        self::assertSame($before, $this->connection->fetchAssociative('SELECT * FROM pg_temp.waybills_waybill'));
+
+        $this->client->request('GET', '/cabinet/waybill/sheets?status=done');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.wb-sheet .wb-badge--done', 'Готов');
+        self::assertSelectorTextContains('.wb-sheet', 'A123BC77');
         $this->client->request('GET', $showUrl.'/download');
         self::assertResponseIsSuccessful();
         $this->client->request('POST', $showUrl.'/approve', $approve);
@@ -2027,7 +2112,8 @@ final class WaybillControllerTest extends WebTestCase
         $showUrl = $this->client->getResponse()->headers->get('Location');
         self::assertNotNull($showUrl);
         $crawler = $this->client->request('GET', $showUrl);
-        self::assertSelectorTextContains('body', '22.01.2026 00:00:00');
+        self::assertSelectorExists('input[type="date"][name="absences[0][from]"][value="2026-01-22"]');
+        self::assertSelectorExists('input[type="date"][name="absences[0][to]"][value="2026-01-23"]');
         $delete = [
             '_token' => $crawler->filter('form[action$="/delete"] input[name="_token"]')->attr('value'),
             'version' => $crawler->filter('form[action$="/delete"] input[name="version"]')->attr('value'),
@@ -2102,7 +2188,7 @@ final class WaybillControllerTest extends WebTestCase
         return $response['data'] ?? $response;
     }
 
-    private function assertEditableTripLocationFields(Crawler $crawler, string $index, bool $template = false): void
+    private function assertSearchableTripLocationFields(Crawler $crawler, string $index, bool $template = false): void
     {
         $scope = $template ? 'template[data-waybill-form-target="tripTemplate"]' : '#trip-rows';
         $row = $crawler->filter($scope.' [data-waybill-form-target~="tripRow"]');
@@ -2110,11 +2196,13 @@ final class WaybillControllerTest extends WebTestCase
         $formFields = $crawler->filter($template ? $scope : '#waybill-form');
         $card = $row->filter('[data-location-fields-card-value="true"]');
         self::assertCount(1, $card);
-        $cardPanel = $card->filter('[data-location-fields-target~="cardPanel"]');
-        $fieldsPanel = $card->filter('[data-location-fields-target~="fieldsPanel"]');
-        self::assertCount(1, $cardPanel);
+        $search = $card->filter('input[data-location-fields-target~="searchInput"][data-controller="typeahead"]');
+        $fieldsPanel = $card->filter('div.row.g-2.mt-2[hidden]');
+        self::assertCount(1, $search);
+        self::assertSame('location-create-modal', $search->attr('data-typeahead-create-modal-value'));
+        self::assertNotEmpty($search->attr('data-typeahead-create-url-value'));
         self::assertCount(1, $fieldsPanel);
-        self::assertNotNull($cardPanel->attr('hidden'));
+        self::assertCount(0, $card->filter('[data-action="click->location-fields#toggleManual"]'));
 
         foreach (['country', 'city', 'cityType', 'street', 'house', 'enterprise'] as $field) {
             $selector = sprintf('[name="trips[%s][%s]"]', $index, $field);
@@ -2124,7 +2212,6 @@ final class WaybillControllerTest extends WebTestCase
             self::assertCount(1, $fieldsPanel->filter($selector), $field);
             self::assertNull($control->attr('disabled'), $field);
             self::assertNull($control->attr('readonly'), $field);
-            $this->assertLocationControlVisible($control, $field);
             if ('cityType' === $field) {
                 self::assertSame('select', $control->nodeName());
                 self::assertCount(1, $control->filter('option[value="city"]'));
@@ -2167,15 +2254,14 @@ final class WaybillControllerTest extends WebTestCase
 
     private function assertCompactWaybillForm(Crawler $crawler): void
     {
-        self::assertSelectorTextContains('#waybill-form .kvi .v', 'Водитель');
+        self::assertSelectorTextContains('#waybill-form .wb-meta', 'ВОДИТЕЛЬ');
         self::assertSelectorTextContains('#waybill-form', 'Модель — A123BC77');
-        self::assertSame(['sec-period', 'sec-refuel', 'sec-absences', 'sec-trips'], $crawler->filter('#waybill-form > [data-form-scrollspy-target="section"]')->each(static fn (Crawler $section): ?string => $section->attr('id')));
-        $tripColumns = $crawler->filter('#sec-trips > .row > div');
+        self::assertSame(['sec-period', 'sec-refuel', 'sec-absences', 'sec-trips'], $crawler->filter('#waybill-form > .wb-form-fields > [data-form-scrollspy-target="section"]')->each(static fn (Crawler $section): ?string => $section->attr('id')));
+        $tripColumns = $crawler->filter('#sec-trips > .wb-trips-grid > *');
         self::assertCount(2, $tripColumns);
-        self::assertSame('col-12 col-xl-4 order-first order-xl-last', $tripColumns->eq(0)->attr('class'));
-        self::assertCount(1, $tripColumns->eq(0)->filter('#odometer-control'));
+        self::assertSame('odometer-control', $tripColumns->eq(0)->attr('id'));
+        self::assertSame('wb-odo wb-odo-stack', $tripColumns->eq(0)->attr('class'));
         self::assertSame('trip-journal', $tripColumns->eq(1)->attr('id'));
-        self::assertSame('col-12 col-xl-8 order-last order-xl-first', $tripColumns->eq(1)->attr('class'));
         self::assertSelectorExists('#trip-journal > #trip-rows');
         self::assertSelectorExists('#sec-period input[name="from"]');
         self::assertSelectorExists('#sec-period input[name="to"]');
@@ -2186,15 +2272,31 @@ final class WaybillControllerTest extends WebTestCase
         self::assertSelectorTextContains('#odometer-control', 'Расчётный одометр');
         self::assertSame('Конечный одометр / цель для подбора, км', $crawler->filter('label[for="odometerEnd"]')->text());
         self::assertSelectorExists('#odometerEnd[data-action="input->waybill-form#recalculate"]');
-        self::assertSelectorExists('#odometer-control button[name="action"][value="fill_route"].btn-soft-primary i.bi-magic');
+        self::assertSelectorExists('#odometer-control button[name="action"][value="fill_route"].wb-primary i.bi-magic');
         self::assertSelectorTextContains('#odometer-control', 'Цель можно оставить пустой: конечный одометр рассчитается при сохранении. Для автоподбора нужна указанная цель.');
         self::assertSelectorTextContains('#odometer-control', 'Автоподбор предлагает поездки, но не сохраняет лист. Повторный подбор заменит неизменённые автоматические пары; после правки пара станет ручной.');
         self::assertSame(0, $crawler->filter('#odometer-control [data-waybill-form-target="startOdometer"][name], #odometer-control [data-waybill-form-target="distance"][name], #odometer-control [data-waybill-form-target="calculated"][name], #odometer-control [data-waybill-form-target="difference"][name]')->count());
         self::assertSelectorExists('#sec-refuel input[name="fuelRemaining"]');
-        self::assertSelectorExists('#sec-refuel button.w-100[data-waybill-form-kind-param="refueling"]');
-        self::assertSelectorExists('#sec-absences button.w-100[data-waybill-form-kind-param="absence"]');
-        self::assertSelectorExists('#sec-trips button.w-100[data-waybill-form-kind-param="trip"]');
-        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] details:not([open])');
+        self::assertSelectorExists('#sec-refuel .wb-summary-item > label[for="fuelRemaining"] + input#fuelRemaining[required]');
+        self::assertSelectorExists('#sec-refuel [data-waybill-form-target="refueledTotal"]');
+        self::assertSelectorTextContains('#sec-refuel [data-waybill-form-target="refuelingEmpty"]', 'Нет добавленных заправок');
+        self::assertSelectorTextContains('#sec-refuel .wb-summary', 'Начальный остаток');
+        self::assertSelectorNotExists('#sec-refuel input[name="initialFuel"]');
+        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"] details.wb-refueling[open] .wb-refueling-date input[type="date"]');
+        self::assertSelectorNotExists('template[data-waybill-form-target="refuelingTemplate"] input[type="time"]');
+        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"] select[name$="[fuelType]"].wb-field-control');
+        self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"] input[name$="[quantity]"][step="any"].wb-field-control');
+        self::assertSelectorExists('template[data-waybill-form-target="absenceTemplate"] .wb-absence-fields input[type="date"].wb-field-control');
+        self::assertSelectorExists('#sec-refuel button.wb-add[data-waybill-form-kind-param="refueling"]');
+        self::assertSelectorExists('#sec-absences button.wb-add[data-waybill-form-kind-param="absence"]');
+        self::assertSelectorExists('#sec-trips button.wb-add[data-waybill-form-kind-param="trip"]');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] details[name="waybill-trips"]:not([open])');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] summary[data-action="click->waybill-form#toggleTrip"] i.wb-trip-caret.bi-chevron-right');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] details > .waybill-trip-content > input[name="trips[__i__][id]"]:not([disabled])');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] .waybill-trip-content input[type="date"].wb-field-control');
+        self::assertSelectorExists('template[data-waybill-form-target="tripTemplate"] .waybill-trip-content input[name$="[distance]"].wb-field-control');
+        self::assertCount(0, $crawler->filter('#trip-rows details[open]'));
+        self::assertCount(0, $crawler->filter('#waybill-form .form-floating'));
         self::assertSelectorExists('template[data-waybill-form-target="refuelingTemplate"]');
         self::assertSelectorNotExists('.form-appbar button[form="waybill-form"]');
         self::assertSelectorExists('.form-savebar button[form="waybill-form"]');
