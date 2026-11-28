@@ -544,7 +544,7 @@ final class WaybillRouteBuilderTest extends TestCase
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $builder = $this->builder;
         $input = $mapper->input($waybill, 1);
-        $input['trips'] = [array_merge($mapper->blankTrip(), ['date' => '2026-01-10', 'city' => 'Ручная', 'distance' => '10'])];
+        $input['trips'] = [array_merge($mapper->blankTrip(), ['date' => '2026-01-10', 'country' => 'Россия', 'city' => 'Ручная', 'distance' => '10'])];
         $fixed = $builder->buildFixed($waybill, null, true, ...$mapper->updateCommand($waybill, $input)->trips);
 
         $preview = $mapper->withRoute($input, $fixed);
@@ -560,7 +560,7 @@ final class WaybillRouteBuilderTest extends TestCase
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
-        $input['trips'] = [array_merge($mapper->blankTrip(), ['id' => (string) Uuid::v7(), 'date' => '2026-01-10', 'city' => 'Чужая', 'distance' => '10'])];
+        $input['trips'] = [array_merge($mapper->blankTrip(), ['id' => (string) Uuid::v7(), 'date' => '2026-01-10', 'country' => 'Россия', 'city' => 'Чужая', 'distance' => '10'])];
 
         $this->expectExceptionMessage('Поездка не принадлежит этому черновику.');
         $this->builder->build($waybill, null, true, ...$mapper->updateCommand($waybill, $input)->trips);
@@ -586,7 +586,7 @@ final class WaybillRouteBuilderTest extends TestCase
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $builder = $this->builder;
         $input = $mapper->withRoute($mapper->input($waybill, 1), new Route($waybill->vehicle(), $outward, $back));
-        $manual = array_merge($mapper->blankTrip(), ['date' => '2026-01-10', 'city' => 'В', 'distance' => '5']);
+        $manual = array_merge($mapper->blankTrip(), ['date' => '2026-01-10', 'country' => 'Россия', 'city' => 'В', 'distance' => '5']);
         array_splice($input['trips'], 1, 0, [$manual]);
 
         $fixed = $builder->buildFixed($waybill, null, true, ...$mapper->updateCommand($waybill, $input)->trips);

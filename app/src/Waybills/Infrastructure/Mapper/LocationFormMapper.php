@@ -23,7 +23,7 @@ final class LocationFormMapper
         ];
     }
 
-    public function fromArray(mixed $data, ?string $enterprise = null, bool $requireSettlementType = false): Location
+    public function fromArray(mixed $data, ?string $enterprise = null): Location
     {
         $data = is_array($data) ? $data : [];
         $id = $data['id'] ?? null;
@@ -35,9 +35,6 @@ final class LocationFormMapper
         $type = '' === $type ? null : $type;
         if (null !== $type && (!is_string($type) || null === SettlementType::tryFrom($type))) {
             throw new AppException('Некорректный тип населённого пункта.');
-        }
-        if ($requireSettlementType && null !== $city && null === $type && null === $city->type) {
-            throw new AppException('Выберите тип населённого пункта.');
         }
         if (null !== $city && null !== $type) {
             $city = new Settlement($city->name, SettlementType::from($type));

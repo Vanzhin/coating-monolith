@@ -162,6 +162,7 @@
     bottom: 0;
     z-index: 1020;
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.5rem;
     margin-inline: -0.75rem;

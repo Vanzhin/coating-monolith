@@ -1,39 +1,56 @@
-<div data-waybill-form-target="tripRow" data-row-label="Поездка">
-    {% set automatic = trip.origin|default('manual') == 'automatic' %}
-    <div class="row g-0">
-        <div class="col-auto" aria-hidden="true"><div class="d-flex flex-column align-items-center h-100 me-2"><i class="bi bi-circle-fill text-primary small"></i><span class="border-start border-2 flex-grow-1" data-role="route-line" {% if not insertable %}hidden{% endif %}></span></div></div>
-        <div class="col position-relative">
-            <details class="p-3 mb-2 rounded-3 bg-body" data-action="input->waybill-form#refreshTripSummary change->waybill-form#refreshTripSummary" {% if number == 1 %}open{% endif %}>
-                <summary class="pe-5">
-                    <span class="text-body-secondary small"><span data-role="trip-date">{{ trip.date ?: 'Дата не указана' }}</span> · <span data-role="trip-distance">{{ trip.distance ? trip.distance ~ ' км' : 'Расстояние не указано' }}</span> · <i class="bi {{ automatic ? 'bi-arrow-repeat' : 'bi-pencil' }}" title="{{ automatic ? 'Автоматическая поездка' : 'Ручная поездка' }}" aria-label="{{ automatic ? 'Автоматическая поездка' : 'Ручная поездка' }}"></i> {{ automatic ? 'Автоматическая' : 'Ручная' }}</span>
-                    <span class="d-block text-body-secondary" data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house, departure.enterprise|default('')]|filter(value => value)|join(', ') ?: 'Не указана' }}</span>
-                    <strong class="d-block">↓ <span data-role="destination">{{ [trip.country|default(''), trip.city|default(''), trip.street|default(''), trip.house|default(''), trip.enterprise|default('')]|filter(value => value)|join(', ') ?: 'Не указана' }}</span></strong>
-                </summary>
-                <input type="hidden" name="trips[{{ index }}][id]" value="{{ trip.id }}">
-                <input type="hidden" name="trips[{{ index }}][origin]" value="{{ automatic ? 'automatic' : 'manual' }}">
-                <input type="hidden" name="trips[{{ index }}][pairId]" value="{{ trip.pairId|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalDate]" value="{{ trip.originalDate|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalDistance]" value="{{ trip.originalDistance|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalLocationId]" value="{{ trip.originalLocationId|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalCountry]" value="{{ trip.originalCountry|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalCity]" value="{{ trip.originalCity|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalCityType]" value="{{ trip.originalCityType|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalStreet]" value="{{ trip.originalStreet|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalHouse]" value="{{ trip.originalHouse|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalEnterprise]" value="{{ trip.originalEnterprise|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalLatitude]" value="{{ trip.originalLatitude|default('') }}">
-                <input type="hidden" name="trips[{{ index }}][originalLongitude]" value="{{ trip.originalLongitude|default('') }}">
-                <div class="row g-3 mt-1">
-                    <div class="col-12"><span class="form-label">Откуда</span><div data-role="departure">{{ [departure.country, departure.city, departure.street, departure.house]|filter(value => value)|join(', ') }}{% if departure.enterprise|default('') %}, {{ departure.enterprise }}{% endif %}</div></div>
-                    <div class="col-md-6"><label class="form-label" for="trip-date-{{ index }}">Дата</label><input id="trip-date-{{ index }}" name="trips[{{ index }}][date]" value="{{ trip.date }}" class="form-control" type="date"></div>
-                    <div class="col-md-6"><label class="form-label" for="trip-distance-{{ index }}">Расстояние, км</label><input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="form-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate"></div>
-                    {% include 'cabinet/waybill/location/_fields.html.twig' with {name: 'trips[' ~ index ~ ']', location: trip, key: 'trip-' ~ index, idField: 'locationId', inputAction: 'input->waybill-form#refreshTripLocations', settlementTypes: settlementTypes} %}
+{% set automatic = trip.origin|default('manual') == 'automatic' %}
+{% set departureText = [departure.country, departure.city, departure.street, departure.house, departure.enterprise|default('')]|filter(value => value)|join(', ') %}
+{% set destinationText = [trip.country|default(''), trip.city|default(''), trip.street|default(''), trip.house|default(''), trip.enterprise|default('')]|filter(value => value)|join(', ') %}
+{% set hasContent = trip.date or trip.distance or destinationText %}
+<div class="wb-trip-wrap{{ hasContent ? ' wb-trip--has-content' : '' }}" data-waybill-form-target="tripRow" data-row-label="Поездка">
+    <details name="waybill-trips" class="wb-trip" data-action="input->waybill-form#refreshTripSummary change->waybill-form#refreshTripSummary">
+        <summary class="wb-trip-summary" data-action="click->waybill-form#toggleTrip">
+            <i class="bi bi-chevron-right wb-trip-caret" aria-hidden="true"></i>
+            <span class="wb-trip-date" data-role="trip-date">{{ trip.date ? trip.date|slice(8, 2) ~ '.' ~ trip.date|slice(5, 2) ~ '.' ~ trip.date|slice(0, 4) : '' }}</span>
+            <span class="wb-trip-route"><span class="from" data-role="departure">{{ departureText }}</span><span data-role="trip-arrow" aria-hidden="true"> → </span><b data-role="destination">{{ destinationText ?: 'Новая поездка' }}</b></span>
+            <span class="wb-trip-dist" data-role="trip-distance">{{ trip.distance ? trip.distance ~ ' км' : '' }}</span>
+            <span class="wb-badge {{ automatic ? 'wb-badge--auto' : 'wb-badge--manual' }}">{{ automatic ? 'Авто' : 'Ручная' }}</span>
+        </summary>
+        <div class="waybill-trip-content wb-trip-body">
+            <strong data-role="row-title" class="visually-hidden">Поездка {{ number }}</strong>
+            <input type="hidden" name="trips[{{ index }}][id]" value="{{ trip.id }}">
+            <input type="hidden" name="trips[{{ index }}][origin]" value="{{ automatic ? 'automatic' : 'manual' }}">
+            <input type="hidden" name="trips[{{ index }}][pairId]" value="{{ trip.pairId|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalDate]" value="{{ trip.originalDate|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalDistance]" value="{{ trip.originalDistance|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalLocationId]" value="{{ trip.originalLocationId|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalCountry]" value="{{ trip.originalCountry|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalCity]" value="{{ trip.originalCity|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalCityType]" value="{{ trip.originalCityType|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalStreet]" value="{{ trip.originalStreet|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalHouse]" value="{{ trip.originalHouse|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalEnterprise]" value="{{ trip.originalEnterprise|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalLatitude]" value="{{ trip.originalLatitude|default('') }}">
+            <input type="hidden" name="trips[{{ index }}][originalLongitude]" value="{{ trip.originalLongitude|default('') }}">
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    {% include 'components/date_picker.html.twig' with {id: 'trip-date', index: index, name: 'trips[' ~ index ~ '][date]', value: trip.date, label: 'Дата'} %}
                 </div>
-            </details>
-            <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash"></i></button>
-            <div class="mb-2" data-role="trip-insertion" {% if not insertable %}hidden{% endif %}>
-                <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#insert"><i class="bi bi-plus-lg me-1"></i>Добавить поездку</button>
+                <div class="col-6">
+                    <div class="wb-field"><div class="wb-field-body">
+                        <label class="wb-field-label" for="trip-distance-{{ index }}">Расстояние, км</label>
+                        <input id="trip-distance-{{ index }}" name="trips[{{ index }}][distance]" value="{{ trip.distance }}" class="wb-field-control" type="number" min="1" step="1" data-action="input->waybill-form#recalculate">
+                    </div></div>
+                </div>
             </div>
+            <div class="wb-trip-from mb-1">
+                <div class="wb-meta-k">ОТКУДА</div>
+                <div class="wb-meta-v" data-role="departure">{{ departureText }}</div>
+            </div>
+            <div class="wb-trip-arrow" aria-hidden="true"><i class="bi bi-arrow-down"></i></div>
+            {% include 'cabinet/waybill/location/_fields.html.twig' with {name: 'trips[' ~ index ~ ']', location: trip, key: 'trip-' ~ index, idField: 'locationId', inputAction: 'input->waybill-form#refreshTripLocations', settlementTypes: settlementTypes, card: true} %}
         </div>
-    </div>
+    </details>
+    {% if not locked %}<div class="dropdown wb-trip-menu">
+        <button class="btn btn-sm btn-link text-body-secondary p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с поездкой" title="Действия с поездкой"><i class="bi bi-three-dots-vertical"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li data-role="trip-insertion" {% if not insertable %}hidden{% endif %}><button type="button" class="dropdown-item" data-action="click->waybill-form#insert"><i class="bi bi-plus-lg me-2"></i>Добавить поездку ниже</button></li>
+            <li><button type="button" class="dropdown-item text-danger" data-action="click->waybill-form#remove" data-waybill-form-kind-param="trip" title="Удалить поездку" aria-label="Удалить поездку"><i class="bi bi-trash me-2"></i>Удалить поездку</button></li>
+        </ul>
+    </div>{% endif %}
 </div>

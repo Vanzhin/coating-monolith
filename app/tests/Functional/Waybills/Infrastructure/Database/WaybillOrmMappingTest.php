@@ -447,6 +447,34 @@ final class WaybillOrmMappingTest extends KernelTestCase
         self::assertSame('Другой водитель', $draft->driver()?->fullName);
     }
 
+    public function test_filter_matches_locked_state_and_period_overlap(): void
+    {
+        [$vehicle, $driver] = $this->vehicle();
+        $this->em->persist($driver);
+        $this->em->persist($vehicle);
+        $this->em->flush();
+        $repository = new WaybillRepository($this->em, $this->connection);
+        $january = Waybill::create(Uuid::v7(), 1, $vehicle, WaybillPeriod::fromDates(new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-01-31')), 100, new Fuel((string) $vehicle->fuelRemaining(), 30, new Refuelings(), 'АИ-95'), new Route($vehicle));
+        $january->lock();
+        $this->em->persist($january);
+        $this->em->flush();
+        $february = Waybill::createDraft(Uuid::v7(), 2, $vehicle, new DateTimeInterval(new \DateTimeImmutable('2026-02-01'), new \DateTimeImmutable('2026-02-28')));
+        $repository->add($february);
+        $this->em->clear();
+        $find = static fn (?bool $locked = null, ?string $from = null, ?string $to = null) => $repository->findByFilter(new WaybillFilter(locked: $locked, from: $from, to: $to));
+
+        self::assertSame(2, $find()->total);
+        self::assertSame($february->getId(), $find(locked: false)->items[0]->getId());
+        self::assertSame($january->getId(), $find(locked: true)->items[0]->getId());
+        self::assertSame(2, $find(from: '2026-01-15')->total);
+        self::assertSame($january->getId(), $find(from: '2026-01-15', to: '2026-01-31')->items[0]->getId());
+        self::assertSame($february->getId(), $find(from: '2026-02-01')->items[0]->getId());
+        self::assertSame($january->getId(), $find(to: '2026-01-31')->items[0]->getId());
+        self::assertSame(2, $find(from: '2026-01-15', to: '2026-02-15')->total);
+        self::assertSame(0, $find(from: '2026-02-30')->total);
+        self::assertSame(0, $find(to: 'not-a-date')->total);
+    }
+
     public function test_vehicle_cannot_have_a_second_draft_even_for_another_period(): void
     {
         [$vehicle, $driver] = $this->vehicle();

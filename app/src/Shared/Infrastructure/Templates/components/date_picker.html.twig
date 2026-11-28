@@ -1,0 +1,20 @@
+{% set pickerType = type|default('date') %}
+{% set pickerIndex = index is defined ? '-' ~ index : '' %}
+{% set pickerId = id ~ pickerIndex %}
+{% set pickerDisplayId = id ~ '-display' ~ pickerIndex %}
+{% set pickerCalendarId = id ~ '-calendar' ~ pickerIndex %}
+{% set pickerFieldClass = field_class|default('') %}
+<div class="wb-field{{ pickerFieldClass ? ' ' ~ pickerFieldClass }}" data-controller="date-picker">
+    <div class="wb-field-body">
+        <label class="wb-field-label" for="{{ pickerId }}">{{ label }}</label>
+        <input id="{{ pickerId }}" name="{{ name }}" value="{{ value }}" class="wb-field-control" type="{{ pickerType }}" {% if pickerType == 'datetime-local' %}step="1"{% endif %} data-date-picker-target="input" {% if required|default(false) %}required{% endif %}>
+        <div class="date-picker-enhanced" data-date-picker-target="enhanced" hidden>
+            <input id="{{ pickerDisplayId }}" class="wb-field-control date-picker-value" type="text" placeholder="{{ placeholder|default('ДД.ММ.ГГГГ') }}" autocomplete="off" readonly data-date-picker-target="display" data-action="click->date-picker#toggle keydown->date-picker#onDisplayKeydown" aria-label="{{ label }}" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ pickerCalendarId }}">
+            {% if pickerType == 'datetime-local' %}
+                <input class="wb-field-control date-picker-time" type="time" step="1" data-date-picker-target="time" data-action="input->date-picker#changeTime" aria-label="Время">
+            {% endif %}
+        </div>
+    </div>
+    <i class="bi bi-calendar3 wb-field-ic" aria-hidden="true" data-action="click->date-picker#toggle"></i>
+    <div id="{{ pickerCalendarId }}" class="date-range-popover" role="dialog" aria-label="Календарь: {{ label }}" data-date-picker-target="popup" hidden><div data-date-picker-target="calendar"></div></div>
+</div>

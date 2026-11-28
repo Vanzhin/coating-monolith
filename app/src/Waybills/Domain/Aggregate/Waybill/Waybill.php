@@ -563,6 +563,11 @@ class Waybill extends Aggregate
         return $this->odometerEnd() - $this->odometerStart();
     }
 
+    public function tripDistance(): int
+    {
+        return $this->routePresent ? $this->route()->distance() : 0;
+    }
+
     public function fuel(): Fuel
     {
         if (null === $this->fuel) {

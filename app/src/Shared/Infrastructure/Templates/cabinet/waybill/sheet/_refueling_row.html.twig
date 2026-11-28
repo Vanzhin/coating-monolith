@@ -1,9 +1,29 @@
-<div class="p-2 mb-2 rounded-3 bg-body" data-waybill-form-target="refuelingRow" data-row-label="Заправка">
+{% set refuelingTitle = refueling.date ? refueling.date|slice(8, 2) ~ '.' ~ refueling.date|slice(5, 2) ~ '.' ~ refueling.date|slice(0, 4) : 'Новая заправка' %}
+<details class="wb-refueling" data-waybill-form-target="refuelingRow" data-row-label="Заправка" data-action="input->waybill-form#refreshRefuelingSummary change->waybill-form#refreshRefuelingSummary" {% if isNew|default(false) %}open{% endif %}>
     <input type="hidden" name="refuelings[{{ index }}][id]" value="{{ refueling.id }}">
-    <div class="row g-2 align-items-end">
-        <div class="col-12 col-lg-auto order-lg-last pb-lg-1 d-flex justify-content-between align-items-center"><strong data-role="row-title" class="visually-hidden">Заправка {{ number }}</strong><button type="button" class="btn btn-sm btn-outline-danger" data-action="click->waybill-form#remove" data-waybill-form-kind-param="refueling" title="Удалить заправку" aria-label="Удалить заправку"><i class="bi bi-trash"></i></button></div>
-        <div class="col-md-4 col-lg-4"><label class="form-label" for="refueling-date-{{ index }}">Дата и время</label><input id="refueling-date-{{ index }}" name="refuelings[{{ index }}][date]" value="{{ refueling.date }}" class="form-control" type="datetime-local" step="1"></div>
-        <div class="col-md-4 col-lg-3"><label class="form-label" for="refueling-type-{{ index }}">Вид топлива</label><select id="refueling-type-{{ index }}" name="refuelings[{{ index }}][fuelType]" class="form-select"><option value="">Выберите</option>{% if refueling.fuelType and refueling.fuelType not in input.availableFuelTypes %}<option value="{{ refueling.fuelType }}" selected>{{ refueling.fuelType }}</option>{% endif %}{% for type in input.availableFuelTypes %}<option value="{{ type }}" {% if refueling.fuelType == type %}selected{% endif %}>{{ type }}</option>{% endfor %}</select></div>
-        <div class="col-md-4 col-lg-3"><label class="form-label" for="refueling-quantity-{{ index }}">Количество, л</label><input id="refueling-quantity-{{ index }}" name="refuelings[{{ index }}][quantity]" value="{{ refueling.quantity }}" class="form-control" type="number" min="0" step="any"></div>
+    <summary class="wb-row">
+        <span class="wb-row-main">
+            <strong data-role="row-title" class="visually-hidden">Заправка {{ number }}</strong>
+            <span class="wb-row-title" data-role="refueling-date">{{ refuelingTitle }}</span>
+            <span class="wb-row-sub"><span data-role="refueling-fuel-type">{{ refueling.fuelType ?: 'Вид топлива не выбран' }}</span> · <span data-role="refueling-quantity">{{ refueling.quantity is not empty ? refueling.quantity ~ ' л' : '0 л' }}</span></span>
+        </span>
+    </summary>
+    {% if not locked %}<button type="button" class="btn btn-sm btn-link text-danger p-1 wb-row-delete" data-action="click->waybill-form#remove" data-waybill-form-kind-param="refueling" title="Удалить заправку" aria-label="Удалить заправку"><i class="bi bi-trash"></i></button>{% endif %}
+    <div class="wb-refueling-body">
+        <div class="wb-refueling-fields">
+            {% include 'components/date_picker.html.twig' with {id: 'refueling-date', index: index, name: 'refuelings[' ~ index ~ '][date]', value: refueling.date|slice(0, 10), label: 'Дата', field_class: 'wb-refueling-date'} %}
+            <div class="wb-field">
+                <div class="wb-field-body">
+                    <label class="wb-field-label" for="refueling-type-{{ index }}">Вид топлива</label>
+                    <select id="refueling-type-{{ index }}" name="refuelings[{{ index }}][fuelType]" class="wb-field-control"><option value="">Выберите</option>{% if refueling.fuelType and refueling.fuelType not in input.availableFuelTypes %}<option value="{{ refueling.fuelType }}" selected>{{ refueling.fuelType }}</option>{% endif %}{% for type in input.availableFuelTypes %}<option value="{{ type }}" {% if refueling.fuelType == type %}selected{% endif %}>{{ type }}</option>{% endfor %}</select>
+                </div>
+            </div>
+            <div class="wb-field">
+                <div class="wb-field-body">
+                    <label class="wb-field-label" for="refueling-quantity-{{ index }}">Количество, л</label>
+                    <input id="refueling-quantity-{{ index }}" name="refuelings[{{ index }}][quantity]" value="{{ refueling.quantity }}" class="wb-field-control" type="number" min="0" step="any">
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</details>

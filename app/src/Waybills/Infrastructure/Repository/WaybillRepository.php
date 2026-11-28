@@ -307,6 +307,23 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
             $where[] = 'vehicle_id = :vehicle';
             $params['vehicle'] = $filter->vehicleId;
         }
+        if (null !== $filter->locked) {
+            $where[] = $filter->locked ? 'locked = TRUE' : 'locked = FALSE';
+        }
+        if (null !== $filter->from) {
+            if (!$this->isCalendarDate($filter->from)) {
+                return new PaginationResult([], 0);
+            }
+            $where[] = 'SUBSTRING(period_to, 1, 10) >= :period_from';
+            $params['period_from'] = $filter->from;
+        }
+        if (null !== $filter->to) {
+            if (!$this->isCalendarDate($filter->to)) {
+                return new PaginationResult([], 0);
+            }
+            $where[] = 'SUBSTRING(period_from, 1, 10) <= :period_to';
+            $params['period_to'] = $filter->to;
+        }
         $condition = [] === $where ? '' : ' WHERE '.implode(' AND ', $where);
         $total = (int) $this->connection->fetchOne('SELECT COUNT(*) FROM waybills_waybill'.$condition, $params);
         $query = $this->connection->createQueryBuilder()->select('id')->from('waybills_waybill')
@@ -544,6 +561,12 @@ final readonly class WaybillRepository implements WaybillRepositoryInterface
                 $this->em->detach($operation);
             }
         }
+    }
+
+    private function isCalendarDate(string $value): bool
+    {
+        return 1 === preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches)
+            && checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
     }
 
     private function toBool(mixed $value): bool

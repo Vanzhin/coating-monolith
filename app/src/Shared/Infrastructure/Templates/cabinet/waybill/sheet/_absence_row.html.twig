@@ -1,7 +1,32 @@
-<div class="p-2 mb-2 rounded-3 bg-body" data-waybill-form-target="absenceRow" data-row-label="Период">
-    <div class="row g-2 align-items-end">
-        <div class="col-12 col-lg-auto order-lg-last pb-lg-1 d-flex justify-content-between align-items-center"><strong data-role="row-title" class="visually-hidden">Период {{ number }}</strong><button type="button" class="btn btn-sm btn-outline-danger" data-action="click->waybill-form#remove" data-waybill-form-kind-param="absence" title="Удалить период" aria-label="Удалить период"><i class="bi bi-trash"></i></button></div>
-        <div class="col-md-5"><label class="form-label" for="absence-from-{{ index }}">Начало</label><input id="absence-from-{{ index }}" name="absences[{{ index }}][from]" value="{{ absence.from|slice(0, 10) }}" class="form-control" type="date"></div>
-        <div class="col-md-5"><label class="form-label" for="absence-to-{{ index }}">Окончание</label><input id="absence-to-{{ index }}" name="absences[{{ index }}][to]" value="{{ absence.to|slice(0, 10) }}" class="form-control" type="date"></div>
+<div class="wb-row mb-2" data-waybill-form-target="absenceRow" data-row-label="Период">
+    <strong data-role="row-title" class="visually-hidden">Период {{ number }}</strong>
+    <div class="wb-absence-fields flex-grow-1">
+        <div class="wb-absence-range" data-controller="date-range">
+            <div data-date-range-target="enhanced" hidden>
+                <div class="wb-field date-range-field">
+                    <div class="wb-field-body">
+                        <label class="wb-field-label" for="absence-range-{{ index }}">Период без поездок</label>
+                        <input id="absence-range-{{ index }}" class="wb-field-control" type="text" placeholder="ДД.ММ.ГГГГ — ДД.ММ.ГГГГ" autocomplete="off" readonly data-date-range-target="display" data-action="click->date-range#toggle keydown->date-range#onDisplayKeydown" aria-haspopup="dialog" aria-expanded="false" aria-controls="absence-range-calendar-{{ index }}">
+                    </div>
+                    <i class="bi bi-calendar3 wb-field-ic" aria-hidden="true"></i>
+                </div>
+            </div>
+            <div class="wb-absence-fallback" data-date-range-target="fallback">
+                <div class="wb-field">
+                    <div class="wb-field-body">
+                        <label class="wb-field-label" for="absence-from-{{ index }}">Начало</label>
+                        <input id="absence-from-{{ index }}" name="absences[{{ index }}][from]" class="wb-field-control" type="date" value="{{ absence.from|slice(0, 10) }}" data-date-range-target="from">
+                    </div>
+                </div>
+                <div class="wb-field">
+                    <div class="wb-field-body">
+                        <label class="wb-field-label" for="absence-to-{{ index }}">Окончание</label>
+                        <input id="absence-to-{{ index }}" name="absences[{{ index }}][to]" class="wb-field-control" type="date" value="{{ absence.to|slice(0, 10) }}" data-date-range-target="to">
+                    </div>
+                </div>
+            </div>
+            <div id="absence-range-calendar-{{ index }}" class="date-range-popover" role="dialog" aria-label="Выбор периода без поездок" data-date-range-target="popup" hidden><div data-date-range-target="calendar"></div></div>
+        </div>
+        {% if not locked %}<div class="wb-row-action"><button type="button" class="btn btn-sm btn-link text-danger p-1" data-action="click->waybill-form#remove" data-waybill-form-kind-param="absence" title="Удалить период" aria-label="Удалить период"><i class="bi bi-trash"></i></button></div>{% endif %}
     </div>
 </div>

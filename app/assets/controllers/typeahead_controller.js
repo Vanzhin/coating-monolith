@@ -115,6 +115,7 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this._seq += 1;
         if (this._debounce) clearTimeout(this._debounce);
         document.removeEventListener('pointerdown', this._onDocPointer);
         if (this.parentFieldValue) document.removeEventListener('change', this._onParentChange);
@@ -123,6 +124,7 @@ export default class extends Controller {
     }
 
     _onInput() {
+        this._seq += 1;
         this._hidden.value = ''; // правка инвалидирует выбор, пока не выбрана новая строка
         this._hiddenTitle.value = '';
         this._clearHint();
@@ -400,6 +402,12 @@ export default class extends Controller {
     }
 
     _hide() {
+        this._seq += 1;
+        this._loadingMore = false;
+        if (this._debounce) {
+            clearTimeout(this._debounce);
+            this._debounce = null;
+        }
         this._menu.classList.remove('show');
         this._activeIndex = -1;
         this._detachReposition();

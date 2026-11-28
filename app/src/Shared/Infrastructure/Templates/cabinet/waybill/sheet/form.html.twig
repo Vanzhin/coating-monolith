@@ -2,10 +2,22 @@
 {% block title %}{{ parent() }} | {{ formTitle }}{% endblock %}
 {% block content %}
     {% set anchors = [{id: 'sec-period', label: 'Период'}, {id: 'sec-refuel', label: 'Заправки'}, {id: 'sec-absences', label: 'Без поездок'}, {id: 'sec-trips', label: 'Поездки'}] %}
-    {% embed 'components/form_page.html.twig' with {title: formTitle, back_url: backUrl, save_form_id: 'waybill-form', save_label: 'Сохранить', anchors: anchors} %}
+    {% embed 'components/form_page.html.twig' with {title: formTitle, back_url: backUrl, save_form_id: 'waybill-form', save_label: 'Сохранить', anchors: anchors, save_enabled: not locked} %}
         {% block appbar_save %}{% endblock %}
+        {% block appbar_extra %}
+            {% if not creating %}
+                <a href="{{ path('app_cabinet_waybill_sheet_download', {id: waybill.getId()}) }}" class="btn btn-outline-secondary btn-sm" title="Скачать XLSX"><i class="bi bi-file-earmark-spreadsheet"></i><span class="d-none d-md-inline ms-1">Скачать XLSX</span></a>
+            {% endif %}
+        {% endblock %}
+        {% block savebar_extra %}
+            {% if not creating and not locked %}
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveWaybillModal" title="Утвердить"><i class="bi bi-check2"></i><span class="d-none d-md-inline ms-1">Утвердить</span></button>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteWaybillModal" title="Удалить"><i class="bi bi-trash3"></i><span class="d-none d-md-inline ms-1">Удалить</span></button>
+            {% endif %}
+        {% endblock %}
         {% block sections %}
-            <form id="waybill-form" method="post" class="w-100" novalidate data-controller="waybill-form" data-waybill-form-start-value="{{ input.initialOdometer }}" data-waybill-form-initial-location-value="{{ input.initialLocation|json_encode }}">
+            <form id="waybill-form" method="post" class="w-100 wb-page" novalidate data-controller="waybill-form" data-waybill-form-start-value="{{ input.initialOdometer }}" data-waybill-form-initial-location-value="{{ input.initialLocation|json_encode }}">
+                <fieldset class="wb-form-fields" {% if locked %}disabled{% endif %}>
                 <input type="hidden" name="_token" value="{{ csrf_token(tokenId) }}">
                 {% if creating %}
                     <input type="hidden" name="initialOdometer" value="{{ input.initialOdometer }}">
@@ -14,56 +26,123 @@
                     <input type="hidden" name="version" value="{{ input.version }}">
                 {% endif %}
                 {% if error %}<div class="form-alert" role="alert"><i class="bi bi-exclamation-octagon"></i><div><div class="form-alert-title">Проверьте данные</div><div>{{ error }}</div></div></div>{% endif %}
-                <div class="p-3 mb-3 rounded-3 bg-body-tertiary">
-                    <div class="kv-grid">
-                        <div class="kvi"><span class="k">Водитель</span><span class="v">{{ input.driverName }}</span></div>
-                        <div class="kvi"><span class="k">Автомобиль</span><span class="v">{{ input.vehicleLabel }}</span></div>
+                <div class="wb-meta mb-3">
+                    <div class="wb-meta-item">
+                        <i class="bi bi-person wb-meta-ic" aria-hidden="true"></i>
+                        <div><div class="wb-meta-k">ВОДИТЕЛЬ</div><div class="wb-meta-v">{{ input.driverName }}</div></div>
                     </div>
-                </div>
-                <div id="sec-period" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-calendar3"></i></span>Период</h6>
-                    <div class="row g-2 col-lg-8 col-xl-6">
-                        <div class="col-6"><label for="from" class="form-label">Начало</label><input id="from" name="from" class="form-control" type="date" value="{{ input.from }}"></div>
-                        <div class="col-6"><label for="to" class="form-label">Окончание</label><input id="to" name="to" class="form-control" type="date" value="{{ input.to }}"></div>
+                    <div class="wb-meta-item">
+                        <i class="bi bi-car-front wb-meta-ic" aria-hidden="true"></i>
+                        <div><div class="wb-meta-k">АВТОМОБИЛЬ</div><div class="wb-meta-v">{{ input.vehicleLabel }}</div></div>
                     </div>
-                    <div class="form-text">Конечная дата входит в период целиком.</div>
+                    {% if locked %}
+                        <div class="wb-meta-item">
+                            <i class="bi bi-shield-check wb-meta-ic" aria-hidden="true"></i>
+                            <div><div class="wb-meta-k">СТАТУС</div><div class="wb-meta-v">Утверждён · только чтение</div></div>
+                        </div>
+                    {% endif %}
                 </div>
+                <section id="sec-period" class="wb-card fsec" data-form-scrollspy-target="section" data-controller="date-range">
+                    <div class="wb-sec-head">
+                        <span class="wb-sec-tile"><i class="bi bi-calendar3"></i></span>
+                        <h2 class="wb-sec-title">Период</h2>
+                    </div>
+                    <div data-date-range-target="enhanced" hidden>
+                        <div class="wb-field date-range-field">
+                            <div class="wb-field-body">
+                                <label class="wb-field-label" for="period-range">Даты путевого листа</label>
+                                <input id="period-range" class="wb-field-control" type="text" placeholder="ДД.ММ.ГГГГ — ДД.ММ.ГГГГ" autocomplete="off" readonly data-date-range-target="display" data-action="click->date-range#toggle keydown->date-range#onDisplayKeydown" aria-haspopup="dialog" aria-expanded="false" aria-controls="period-range-calendar" aria-describedby="period-range-hint">
+                            </div>
+                            <i class="bi bi-calendar3 wb-field-ic" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                    <div data-date-range-target="fallback">
+                        <div class="row g-2">
+                            <div class="col-6"><div class="wb-field"><div class="wb-field-body"><label class="wb-field-label" for="from">Начало</label><input id="from" name="from" class="wb-field-control" type="date" value="{{ input.from }}" data-date-range-target="from" aria-describedby="period-range-hint"></div></div></div>
+                            <div class="col-6"><div class="wb-field"><div class="wb-field-body"><label class="wb-field-label" for="to">Окончание</label><input id="to" name="to" class="wb-field-control" type="date" value="{{ input.to }}" data-date-range-target="to" aria-describedby="period-range-hint"></div></div></div>
+                        </div>
+                    </div>
+                    <div id="period-range-hint" class="wb-hint">Конечная дата входит в период целиком.</div>
+                    <div id="period-range-calendar" class="date-range-popover" role="dialog" aria-label="Выбор дат путевого листа" data-date-range-target="popup" hidden><div data-date-range-target="calendar"></div></div>
+                </section>
                 {% include 'cabinet/waybill/sheet/_fuel_section.html.twig' %}
-                <div id="sec-absences" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-calendar-x"></i></span>Периоды без поездок</h6>
+                <section id="sec-absences" class="wb-card fsec" data-form-scrollspy-target="section">
+                    <div class="wb-sec-head">
+                        <span class="wb-sec-tile"><i class="bi bi-calendar-x"></i></span>
+                        <h2 class="wb-sec-title">Периоды без поездок</h2>
+                        {% if not locked %}<button type="button" class="wb-add" data-action="click->waybill-form#add" data-waybill-form-kind-param="absence"><i class="bi bi-plus-lg"></i> Добавить период</button>{% endif %}
+                    </div>
                     <div id="absence-rows" data-waybill-form-target="absenceRows">
                         {% for absence in input.absences %}
                             {% include 'cabinet/waybill/sheet/_absence_row.html.twig' with {absence: absence, index: loop.index0, number: loop.index} %}
                         {% endfor %}
                     </div>
-                    <template data-waybill-form-target="absenceTemplate">{% include 'cabinet/waybill/sheet/_absence_row.html.twig' with {absence: {from: '', to: ''}, index: '__i__', number: 1} %}</template>
-                    <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#add" data-waybill-form-kind-param="absence"><i class="bi bi-plus-lg me-1"></i> Добавить период без поездок</button>
-                    <div class="form-text">Поездки и заправки не могут попадать в эти периоды.</div>
-                </div>
-                <div id="sec-trips" class="p-3 mb-3 rounded-3 bg-body-tertiary fsec" data-form-scrollspy-target="section">
-                    <h6 class="fw-semibold mb-3"><span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary p-2 me-2"><i class="bi bi-signpost-split"></i></span>Поездки</h6>
-                    <div class="row g-2">{% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}</div>
-                    <div class="form-text mb-3">Конечный одометр должен совпадать с начальным показанием и суммой поездок. Пустое показание рассчитывается при сохранении.</div>
-                    <div id="trip-rows" data-waybill-form-target="tripRows">
-                        {% set departure = input.initialLocation %}
-                        {% for trip in input.trips %}
-                            {% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: trip, departure: departure, index: loop.index0, number: loop.index, insertable: not loop.last} %}
-                            {% set departure = trip %}
-                        {% endfor %}
+                    <div class="wb-empty" data-waybill-form-target="absenceEmpty" {% if input.absences is not empty %}hidden{% endif %}>
+                        <div class="wb-empty-title">Нет периодов без поездок</div>
+                        <div class="wb-empty-text">Поездки и заправки можно ставить на любые дни периода</div>
                     </div>
-                    <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
-                    <div class="row g-0"><div class="col-auto" aria-hidden="true"><i class="bi bi-circle-fill small me-2 invisible"></i></div><div class="col">
-                        <button type="button" class="btn btn-soft-success btn-sm w-100" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg me-1"></i> Добавить поездку</button>
-                    </div></div>
-                    <button type="submit" name="action" value="fill_route" class="btn btn-soft-primary mt-2 btn-sm"><i class="bi bi-magic me-1"></i>Заполнить автоматически</button>
-                    <div class="form-text">Первая поездка добавляется со страной «Россия». Следующая копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
-                    <div class="form-text">При повторном заполнении изменяются только неотредактированные автоматические поездки. После правки любого участка пара становится ручной.</div>
-                </div>
+                    <template data-waybill-form-target="absenceTemplate">{% include 'cabinet/waybill/sheet/_absence_row.html.twig' with {absence: {from: '', to: ''}, index: '__i__', number: 1} %}</template>
+                </section>
+                <section id="sec-trips" class="wb-card fsec" data-form-scrollspy-target="section">
+                    <div class="wb-sec-head">
+                        <span class="wb-sec-tile"><i class="bi bi-signpost-split"></i></span>
+                        <h2 class="wb-sec-title">Поездки</h2>
+                        <span class="wb-sec-count" data-waybill-form-target="tripCount">{{ input.trips|length }}</span>
+                        {% if not locked %}<button type="button" class="wb-add" data-action="click->waybill-form#add" data-waybill-form-kind-param="trip"><i class="bi bi-plus-lg"></i> Добавить поездку</button>{% endif %}
+                    </div>
+                    <div class="wb-trips-grid">
+                        {% include 'cabinet/waybill/sheet/_odometer_fields.html.twig' %}
+                        <div id="trip-journal">
+                            <div id="trip-rows" data-waybill-form-target="tripRows">
+                                {% set departure = input.initialLocation %}
+                                {% for trip in input.trips %}
+                                    {% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: trip, departure: departure, index: loop.index0, number: loop.index, insertable: not loop.last} %}
+                                    {% set departure = trip %}
+                                {% endfor %}
+                            </div>
+                            <div class="wb-empty mt-2" data-waybill-form-target="tripEmpty" {% if input.trips is not empty %}hidden{% endif %}>
+                                <div class="wb-empty-title">Нет добавленных поездок</div>
+                                <div class="wb-empty-text">Добавьте поездку вручную или заполните маршрут автоматически</div>
+                            </div>
+                            <template data-waybill-form-target="tripTemplate">{% include 'cabinet/waybill/sheet/_trip_row.html.twig' with {trip: input.blankTrip, departure: {country: '', city: '', street: '', house: '', enterprise: ''}, index: '__i__', number: 1, insertable: false} %}</template>
+                            <div class="wb-hint">При создании точки страна по умолчанию — «Россия». Следующая поездка копирует предыдущую в обратном направлении с той же датой и расстоянием. Между существующими поездками можно вставить новую.</div>
+                        </div>
+                    </div>
+                </section>
                 <input type="hidden" name="tripsSubmitted" value="1">
                 <input type="hidden" name="refuelingsSubmitted" value="1">
                 <input type="hidden" name="absencesSubmitted" value="1">
+                </fieldset>
             </form>
-            {% include 'cabinet/waybill/location/_create_modal.html.twig' with {settlementTypes: settlementTypes} %}
+            {% if not locked %}
+                {% include 'cabinet/waybill/location/_create_modal.html.twig' with {settlementTypes: settlementTypes} %}
+            {% endif %}
+            {% if not creating and not locked %}
+                <div class="modal fade" id="approveWaybillModal" tabindex="-1" aria-labelledby="approveWaybillModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                        <div class="modal-body"><h5 class="modal-title mb-2" id="approveWaybillModalLabel">Утвердить путевой лист?</h5><p class="text-body-secondary small mb-0">После утверждения лист нельзя изменить или удалить. Показания и журнал автомобиля будут обновлены.</p></div>
+                        <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                            <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                            <form method="post" action="{{ path('app_cabinet_waybill_sheet_approve', {id: waybill.getId()}) }}" class="flex-fill m-0">
+                                <input type="hidden" name="_token" value="{{ csrf_token('waybill_approve_' ~ waybill.getId()) }}"><input type="hidden" name="version" value="{{ input.version }}">
+                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-check2 me-1"></i>Утвердить</button>
+                            </form>
+                        </div>
+                    </div></div>
+                </div>
+                <div class="modal fade" id="deleteWaybillModal" tabindex="-1" aria-labelledby="deleteWaybillModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                        <div class="modal-body text-center pt-4 pb-2"><h5 class="modal-title mb-2" id="deleteWaybillModalLabel">Удалить черновик путевого листа?</h5><p class="text-body-secondary small mb-0">Вместе с ним удалятся его поездки и заправки. Действие необратимо.</p></div>
+                        <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                            <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Отмена</button>
+                            <form method="post" action="{{ path('app_cabinet_waybill_sheet_delete', {id: waybill.getId()}) }}" class="flex-fill m-0">
+                                <input type="hidden" name="_token" value="{{ csrf_token('waybill_delete_' ~ waybill.getId()) }}"><input type="hidden" name="version" value="{{ input.version }}">
+                                <button type="submit" class="btn btn-danger w-100"><i class="bi bi-trash3 me-1"></i>Удалить</button>
+                            </form>
+                        </div>
+                    </div></div>
+                </div>
+            {% endif %}
         {% endblock %}
     {% endembed %}
 {% endblock %}

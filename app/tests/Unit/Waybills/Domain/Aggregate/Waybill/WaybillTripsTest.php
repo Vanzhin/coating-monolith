@@ -51,6 +51,19 @@ final class WaybillTripsTest extends TestCase
         self::assertSame([$first, $last], iterator_to_array($draft->route()->logs(), false));
     }
 
+    public function test_trip_distance_uses_the_route_total(): void
+    {
+        $vehicle = $this->vehicle();
+        $draft = $this->draft($vehicle);
+        self::assertSame(0, $draft->tripDistance());
+        $first = $this->trip($vehicle, null, '2026-01-10 10:00:00+03:00', 'Б', 2);
+        $last = $this->trip($vehicle, $first, '2026-01-10 12:00:00+03:00', 'Г', 3);
+        $draft->setTrips($first, $last);
+
+        self::assertSame(5, $draft->tripDistance());
+        self::assertSame(5, $draft->distance());
+    }
+
     public function test_invalid_trip_replacement_preserves_previous_trips(): void
     {
         $vehicle = $this->vehicle();

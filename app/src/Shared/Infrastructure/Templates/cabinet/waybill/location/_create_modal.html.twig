@@ -1,20 +1,39 @@
-<div data-controller="location-create-modal">
+<div data-controller="location-create-modal" data-action="typeahead:selected->location-create-modal#selectLocation">
     <div class="modal fade" id="locationCreateModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Новая точка маршрута</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button></div>
+                <div class="modal-header"><h5 class="modal-title" data-location-create-modal-target="title">Новая точка маршрута</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button></div>
                 <div class="modal-body">
                     <div class="alert alert-danger d-none" data-location-create-modal-target="errorBox"></div>
-                    <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label">Страна</label><input class="form-control" data-location-create-modal-target="country"></div>
-                        <div class="col-md-6"><label class="form-label">Тип населённого пункта</label><select class="form-select" data-location-create-modal-target="cityType"><option value="">Не указан</option>{% for type in settlementTypes %}<option value="{{ type.value }}">{{ type.label() }} ({{ type.abbreviation() }})</option>{% endfor %}</select></div>
-                        <div class="col-md-6"><label class="form-label">Населённый пункт</label><input class="form-control" data-location-create-modal-target="city"></div>
-                        <div class="col-md-6"><label class="form-label">Улица</label><input class="form-control" data-location-create-modal-target="street"></div>
-                        <div class="col-md-6"><label class="form-label">Дом</label><input class="form-control" data-location-create-modal-target="house"></div>
-                        <div class="col-md-6"><label class="form-label">Предприятие</label><input class="form-control" data-location-create-modal-target="enterprise"></div>
+                    <div data-location-create-modal-target="searchPanel" hidden>
+                        <label class="form-label" for="locationPickerSearch">Найти в справочнике</label>
+                        <input id="locationPickerSearch" type="text" class="form-control" placeholder="Начните вводить адрес…"
+                               data-controller="typeahead"
+                               data-location-create-modal-target="searchInput"
+                               data-typeahead-endpoint-value="{{ path('app_cabinet_waybill_location_suggest') }}"
+                               data-typeahead-hidden-name-value="locationPickerId"
+                               data-typeahead-allow-create-value="false"
+                               data-typeahead-min-length-value="1"
+                               data-typeahead-aux-fields-value="{{ [{field: 'enterprise', label: 'Предприятие:'}]|json_encode|e('html_attr') }}">
+                        <div class="form-text">Выберите существующую точку или создайте новую.</div>
+                    </div>
+                    <div data-location-create-modal-target="formPanel">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Страна</label><input class="form-control" data-location-create-modal-target="country"></div>
+                            <div class="col-md-6"><label class="form-label">Тип населённого пункта</label><select class="form-select" data-location-create-modal-target="cityType"><option value="">Не указан</option>{% for type in settlementTypes %}<option value="{{ type.value }}">{{ type.label() }} ({{ type.abbreviation() }})</option>{% endfor %}</select></div>
+                            <div class="col-md-6"><label class="form-label">Населённый пункт</label><input class="form-control" data-location-create-modal-target="city"></div>
+                            <div class="col-md-6"><label class="form-label">Улица</label><input class="form-control" data-location-create-modal-target="street"></div>
+                            <div class="col-md-6"><label class="form-label">Дом</label><input class="form-control" data-location-create-modal-target="house"></div>
+                            <div class="col-md-6"><label class="form-label">Предприятие</label><input class="form-control" data-location-create-modal-target="enterprise"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button><button type="button" class="btn btn-primary" data-action="click->location-create-modal#submit">Создать</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-soft-success" data-action="click->location-create-modal#showCreate" data-location-create-modal-target="createButton" hidden><i class="bi bi-plus-lg me-1"></i>Создать</button>
+                    <button type="button" class="btn btn-outline-secondary" data-action="click->location-create-modal#showSearch" data-location-create-modal-target="backButton" hidden>Назад к поиску</button>
+                    <button type="button" class="btn btn-primary" data-action="click->location-create-modal#submit" data-location-create-modal-target="submitButton">Создать</button>
+                </div>
             </div>
         </div>
     </div>

@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Waybills\Infrastructure\Controller\Waybill;
 use App\Shared\Domain\Aggregate\ValueObject\PositiveNumber;
 use App\Shared\Domain\ValueObject\DateTimeInterval;
 use App\Shared\Infrastructure\Exception\AppException;
+use App\Waybills\Application\DTO\VehicleDTO;
 use App\Waybills\Application\Service\WaybillRouteBuilder;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverDetails;
 use App\Waybills\Domain\Aggregate\DriverProfile\DriverProfile;
@@ -33,6 +34,30 @@ use Symfony\Component\Uid\Uuid;
 
 final class WaybillFormMapperTest extends TestCase
 {
+    public function test_create_input_leaves_final_odometer_empty_for_server_calculation(): void
+    {
+        $vehicle = new VehicleDTO((string) Uuid::v7(), 'Модель', 'A123BC77', ['АИ-95'], null, 42150, '30', new Location('Россия', 'База'), 'АИ-95');
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+
+        $input = $mapper->createInput($vehicle);
+
+        self::assertSame('42150', $input['initialOdometer']);
+        self::assertSame('', $input['odometerEnd']);
+    }
+
+    public function test_blank_trip_has_no_destination_on_create_and_edit(): void
+    {
+        $vehicle = new VehicleDTO((string) Uuid::v7(), 'Модель', 'A123BC77', ['АИ-95'], null, 100, '30', new Location('Россия', 'База'), 'АИ-95');
+        $mapper = new WaybillFormMapper(new LocationFormMapper());
+        $blank = $mapper->blankTrip();
+
+        foreach (['locationId', 'country', 'city', 'cityType', 'street', 'house', 'enterprise'] as $field) {
+            self::assertSame('', $blank[$field], $field);
+        }
+        self::assertSame($blank, $mapper->createInput($vehicle)['blankTrip']);
+        self::assertSame($blank, $mapper->input($this->draft(), 1)['blankTrip']);
+    }
+
     public function test_round_trip_normalizes_period_and_preserves_trip_time(): void
     {
         $waybill = $this->draft();
@@ -82,13 +107,14 @@ final class WaybillFormMapperTest extends TestCase
         $waybill = $this->draft();
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
-        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10T12:00', 'fuelType' => 'АИ-95', 'quantity' => '3.50000000000000000001']];
+        $input['refuelings'] = [['id' => '', 'date' => '2026-01-10', 'fuelType' => 'АИ-95', 'quantity' => '3.50000000000000000001']];
 
         $command = $mapper->updateCommand($waybill, $input);
 
         self::assertNull($command->fuel);
         self::assertSame('30.00000000000000000001', (string) $waybill->fuelStart());
         self::assertNotNull($command->refuelings);
+        self::assertSame('2026-01-10 00:00:00.000000', $command->refuelings->items[0]->date->format('Y-m-d H:i:s.u'));
         self::assertSame('3.50000000000000000001', (string) $command->refuelings->items[0]->quantity);
     }
 
@@ -100,7 +126,7 @@ final class WaybillFormMapperTest extends TestCase
         $waybill->reviseDraftWithRefuelingOperations($waybill->period(), null, new Fuel('30.00000000000000000001', 30, new Refuelings(), 'АИ-95'), null, new RefuelingOperations($operation));
         $mapper = new WaybillFormMapper(new LocationFormMapper());
         $input = $mapper->input($waybill, 1);
-        $input['refuelings'][0]['date'] = '2026-01-10T12:00';
+        $input['refuelings'][0]['date'] = '2026-01-10';
 
         $command = $mapper->updateCommand($waybill, $input);
 
