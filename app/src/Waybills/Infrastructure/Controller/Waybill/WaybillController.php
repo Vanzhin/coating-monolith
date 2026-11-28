@@ -30,6 +30,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Uid\Uuid;
 
 #[Route('/cabinet/waybill/sheets')]
 final class WaybillController extends AbstractController
@@ -44,11 +45,38 @@ final class WaybillController extends AbstractController
     public function list(Request $request): Response
     {
         $vehicleId = $request->query->getString('vehicleId');
+        $status = $request->query->getString('status');
+        if (!in_array($status, ['draft', 'done'], true)) {
+            $status = '';
+        }
+        $from = $request->query->getString('from');
+        $to = $request->query->getString('to');
         $page = max(1, $request->query->getInt('page', 1));
-        $result = $this->queries->execute(new GetPagedWaybillsQuery(new WaybillFilter(vehicleId: '' === $vehicleId ? null : $vehicleId, pager: Pager::fromPage($page, self::PER_PAGE))));
+        $filter = new WaybillFilter(
+            vehicleId: '' === $vehicleId ? null : $vehicleId,
+            pager: Pager::fromPage($page, self::PER_PAGE),
+            locked: match ($status) {
+                'draft' => false, 'done' => true, default => null,
+            },
+            from: '' === $from ? null : $from,
+            to: '' === $to ? null : $to,
+        );
+        $result = $this->queries->execute(new GetPagedWaybillsQuery($filter));
+        $selectedVehicle = null;
+        if (Uuid::isValid($vehicleId)) {
+            try {
+                $vehicle = $this->queries->execute(new GetVehicleQuery($vehicleId));
+                $selectedVehicle = ['id' => $vehicle->id, 'title' => $vehicle->model.' — '.strtoupper($vehicle->registrationNumber)];
+            } catch (AppException $exception) {
+                if (Response::HTTP_NOT_FOUND !== $exception->getCode()) {
+                    throw $exception;
+                }
+            }
+        }
 
         return $this->render('cabinet/waybill/sheet/list.html.twig', [
             'items' => $result->items, 'total' => $result->total, 'vehicleId' => $vehicleId,
+            'status' => $status, 'from' => $from, 'to' => $to, 'selectedVehicle' => $selectedVehicle,
             'page' => $page, 'perPage' => self::PER_PAGE,
         ]);
     }

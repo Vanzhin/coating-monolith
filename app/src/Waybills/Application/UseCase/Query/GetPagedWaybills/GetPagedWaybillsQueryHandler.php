@@ -23,7 +23,14 @@ final readonly class GetPagedWaybillsQueryHandler implements QueryHandlerInterfa
             throw new ForbiddenException();
         }
         $filter = $query->filter;
-        $filter = new WaybillFilter($this->access->currentUserId(), $filter->vehicleId, $filter->pager);
+        $filter = new WaybillFilter(
+            driverOwnerId: $this->access->currentUserId(),
+            vehicleId: $filter->vehicleId,
+            pager: $filter->pager,
+            locked: $filter->locked,
+            from: $filter->from,
+            to: $filter->to,
+        );
 
         return $this->waybills->findByFilter($filter);
     }

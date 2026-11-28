@@ -12,6 +12,9 @@ final readonly class WaybillFilter
         public ?string $driverOwnerId = null,
         public ?string $vehicleId = null,
         public Pager $pager = new Pager(Pager::DEFAULT_PAGE, Pager::DEFAULT_LIMIT),
+        public ?bool $locked = null,
+        public ?string $from = null,
+        public ?string $to = null,
     ) {
     }
 }
