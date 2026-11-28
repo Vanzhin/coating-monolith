@@ -1,0 +1,100 @@
+@import "~vanilla-calendar-pro/styles/core.css";
+@import "~vanilla-calendar-pro/styles/months.css";
+
+.date-range-field {
+    position: relative;
+}
+.date-range-field .form-control {
+    padding-right: 2.75rem;
+    cursor: pointer;
+}
+.date-range-field > i {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    z-index: 2;
+    transform: translateY(-50%);
+    color: var(--bs-secondary-color);
+    pointer-events: none;
+}
+.date-range-popover {
+    z-index: 1060;
+    max-width: calc(100vw - 1rem);
+}
+.date-range-popover [data-vc="calendar"] {
+    max-width: calc(100vw - 1rem);
+    border: 1px solid var(--bs-border-color);
+    background: var(--surface);
+    color: var(--bs-body-color);
+    box-shadow: 0 .75rem 2rem color-mix(in srgb, var(--bs-body-color) 18%, transparent);
+    --vc-bg: var(--surface);
+    --vc-color: var(--bs-body-color);
+    --vc-focus-outline-color: var(--bs-primary);
+    --vc-header-color: var(--bs-body-color);
+    --vc-title-color: var(--bs-body-color);
+    --vc-title-color-hover: var(--bs-primary);
+    --vc-week-day-color: var(--bs-secondary-color);
+    --vc-week-day-off-color: var(--bs-secondary-color);
+    --vc-date-bg: var(--surface);
+    --vc-date-color: var(--bs-body-color);
+    --vc-date-bg-hover: var(--bs-tertiary-bg);
+    --vc-date-hover-bg: var(--bs-tertiary-bg);
+    --vc-date-hover-edge-bg: var(--accent-subtle);
+    --vc-date-selected-bg: var(--bs-primary);
+    --vc-date-selected-color: #fff;
+    --vc-date-weekend-color: var(--bs-body-color);
+    --vc-date-weekend-selected-bg: var(--bs-primary);
+    --vc-date-weekend-selected-color: #fff;
+    --vc-date-range-middle-bg: var(--accent-subtle);
+    --vc-date-range-middle-color: var(--bs-body-color);
+    --vc-date-range-middle-weekend-bg: var(--accent-subtle);
+    --vc-date-range-middle-weekend-color: var(--bs-body-color);
+    --vc-date-range-middle-outside-bg: var(--bs-tertiary-bg);
+    --vc-date-range-middle-outside-color: var(--bs-secondary-color);
+    --vc-date-outside-color: var(--bs-secondary-color);
+    --vc-date-today-bg: var(--bs-tertiary-bg);
+    --vc-date-today-color: var(--bs-primary);
+    --vc-months-years-bg: var(--surface);
+    --vc-months-years-color: var(--bs-body-color);
+    --vc-months-years-bg-hover: var(--bs-tertiary-bg);
+    --vc-months-years-bg-selected: var(--bs-primary);
+    --vc-months-years-color-selected: #fff;
+}
+.date-range-popover [data-vc="grid"] {
+    gap: .75rem;
+}
+.date-range-popover [data-vc="dates"] [role="row"] {
+    min-height: 2rem;
+}
+@media (max-width: 639.98px) {
+    .date-range-popover [data-vc="calendar"] {
+        min-width: min(17rem, calc(100vw - 1rem));
+        padding: .75rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .date-range-popover [data-vc="calendar"],
+    .date-range-popover [data-vc="calendar"] * {
+        transition: none !important;
+    }
+}
+
+.date-picker-enhanced {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+}
+.date-picker-enhanced[hidden] {
+    display: none;
+}
+.date-picker-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    cursor: pointer;
+}
+.date-picker-time {
+    flex: 0 0 7rem;
+    width: auto;
+    min-width: 0;
+}

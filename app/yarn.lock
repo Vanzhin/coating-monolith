@@ -2803,6 +2803,11 @@ uuid@^8.3.0:
   resolved "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
+vanilla-calendar-pro@3.4.2:
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/vanilla-calendar-pro/-/vanilla-calendar-pro-3.4.2.tgz#1285eb6881326dd02b618305fe9aaccdeae9022e"
+  integrity sha512-sJpzbjKA+Pkb4fTygETVl2WCU8rKCGvuspbfqWqq9XWZxPzNcF4Z6H2sK6fNPqsfTaamX5mMs9de1W/VlX8DpA==
+
 watchpack@^2.4.1:
   version "2.4.2"
   resolved "https://registry.npmjs.org/watchpack/-/watchpack-2.4.2.tgz"
